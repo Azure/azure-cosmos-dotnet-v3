@@ -1,0 +1,274 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select cast float]]></Description>
+      <Expression><![CDATA[query.Select(x => Convert(DisplayClass.floatValue, Int32))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE 5 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select identity]]></Description>
+      <Expression><![CDATA[query.Select(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select int expr]]></Description>
+      <Expression><![CDATA[query.Select(x => (((x.x % 10) + 2) + (x.x % 5)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (((root["x"] % 10) + 2) + (root["x"] % 5)) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select int expr w const]]></Description>
+      <Expression><![CDATA[query.Select(x => (x.x + DisplayClass.constInt))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["x"] + 2) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w new array]]></Description>
+      <Expression><![CDATA[query.Select(d => new [] {d.x, (d.x + 1)})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE [root["x"], (root["x"] + 1)] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select new]]></Description>
+      <Expression><![CDATA[query.Select(d => new AnonymousType(first = d.x, second = d.x))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"first": root["x"], "second": root["x"]} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select nested new]]></Description>
+      <Expression><![CDATA[query.Select(d => new AnonymousType(first = d.x, second = new AnonymousType(third = d.x)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"first": root["x"], "second": {"third": root["x"]}} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter int >]]></Description>
+      <Expression><![CDATA[query.Where(x => (x.x > 2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["x"] > 2) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter method >]]></Description>
+      <Expression><![CDATA[query.Where(x => (x.x > id(3)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["x"] > 3) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter int > -> Select int expr]]></Description>
+      <Expression><![CDATA[query.Where(x => (x.x > 2)).Select(x => (x.x + 2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["x"] + 2) 
+FROM root 
+WHERE (root["x"] > 2) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select int expr -> Filter int >]]></Description>
+      <Expression><![CDATA[query.Select(x => (x.x + 2)).Where(x => (x > 2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["x"] + 2) 
+FROM root 
+WHERE ((root["x"] + 2) > 2) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter int > -> Filter another field]]></Description>
+      <Expression><![CDATA[query.Where(x => (x.x > 2)).Where(y => (y.x < 4))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter x -> Filter y -> Select y expr]]></Description>
+      <Expression><![CDATA[query.Where(x => (x.x > 2)).Where(y => (y.x < 4)).Select(y => (y.x + y.x))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["x"] + root["x"]) 
+FROM root 
+WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select expr w const array]]></Description>
+      <Expression><![CDATA[query.Select(x => (x.x + DisplayClass.array[2]))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["x"] + 3) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select const array index]]></Description>
+      <Expression><![CDATA[query.Where(x => ((x.x >= 0) AndAlso (x.x < 3))).Select(x => new [] {1, 2, 3}[x.x])]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE [1, 2, 3][root["x"]] 
+FROM root 
+WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select new simple]]></Description>
+      <Expression><![CDATA[query.Select(x => new simple() {x = x.x, y = x.x})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"x": root["x"], "y": root["x"]} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select new nested]]></Description>
+      <Expression><![CDATA[query.Select(x => new nested() {s = new simple() {x = x.x, y = x.x}, x = 2})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"s": {"x": root["x"], "y": root["x"]}, "x": 2} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select new complex]]></Description>
+      <Expression><![CDATA[query.Select(d => new complex() {dbl = 1, str = "", b = False, dblArray = new [] {1, 2}, inside = new simple() {x = d.x, y = d.x}})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"dbl": 1, "str": "", "b": false, "dblArray": [1, 2], "inside": {"x": root["x"], "y": root["x"]}} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select cast double x]]></Description>
+      <Expression><![CDATA[query.Select(x => Convert(x.x, Double))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["x"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select indexer x]]></Description>
+      <Expression><![CDATA[query.Where(x => ((x.x >= 0) AndAlso (x.x < ArrayLength(DisplayClass.array)))).Select(x => DisplayClass.array[x.x])]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE [1, 2, 3][root["x"]] 
+FROM root 
+WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select new constructor]]></Description>
+      <Expression><![CDATA[query.Select(x => new TimeSpan(Convert(x.x, Int64)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Constructor invocation is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select method id]]></Description>
+      <Expression><![CDATA[query.Select(x => id(x))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'id' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select identity]]></Description>
+      <Expression><![CDATA[query.Select(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select simple property]]></Description>
+      <Expression><![CDATA[query.Select(x => x.x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["x"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

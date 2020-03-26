@@ -1,0 +1,375 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select 1st parent family name]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Parents.Count() > 0)).Select(f => f.Parents[0].FamilyName)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Parents"][0]["FamilyName"] 
+FROM root 
+WHERE (ARRAY_LENGTH(root["Parents"]) > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select 1st children grade expr]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).Select(f => (f.Children[0].Grade + 13))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["Children"][0]["Grade"] + 13) 
+FROM root 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter 1st children's 1st pet name]]></Description>
+      <Expression><![CDATA[query.Where(f => (((f.Children.Count() > 0) AndAlso (f.Children[0].Pets.Count() > 0)) AndAlso (f.Children[0].Pets.get_Item(0).GivenName == "Fluffy")))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 0)) AND (root["Children"][0]["Pets"][0]["GivenName"] = "Fluffy")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter 1st children's thing A value]]></Description>
+      <Expression><![CDATA[query.Where(f => ((f.Children.Count() > 0) AndAlso (f.Children[0].Things.get_Item("A") == "B")))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((ARRAY_LENGTH(root["Children"]) > 0) AND (root["Children"][0]["Things"]["A"] = "B")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter 1st children's gender -> Select his 1st pet]]></Description>
+      <Expression><![CDATA[query.Where(f => (((f.Children.Count() > 0) AndAlso (f.Children[0].Pets.Count() > 0)) AndAlso (f.Children[0].Gender == "female"))).Select(f => f.Children[0].Pets.get_Item(0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Children"][0]["Pets"][0] 
+FROM root 
+WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 0)) AND (root["Children"][0]["Gender"] = "female")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter 1st children's gender -> Select his 2nd pet]]></Description>
+      <Expression><![CDATA[query.Where(f => (((f.Children.Count() > 0) AndAlso (f.Children[0].Pets.Count() > 1)) AndAlso (f.Children[0].Gender == "female"))).Select(f => f.Children[0].Pets.get_Item(1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Children"][0]["Pets"][1] 
+FROM root 
+WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 1)) AND (root["Children"][0]["Gender"] = "female")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select FamilyId of all children]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Select(c => new AnonymousType(Id = f.FamilyId)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"Id": root["FamilyId"]} 
+FROM root 
+JOIN c0 IN root["Children"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter family with null Id]]></Description>
+      <Expression><![CDATA[query.Where(f => (null == f.FamilyId))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (null = root["FamilyId"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter family with null Id #2]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.FamilyId == null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["FamilyId"] = null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter family with null object]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.NullObject == null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullObject"] = null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter family with null Id #3]]></Description>
+      <Expression><![CDATA[query.Where(f => (null == f.FamilyId))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (null = root["FamilyId"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter registered family]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.IsRegistered == False))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["IsRegistered"] = false) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter family by FamilyId]]></Description>
+      <Expression><![CDATA[query.Where(f => f.FamilyId.Equals("WakefieldFamily"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["FamilyId"] = "WakefieldFamily") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter family nullable int]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.NullableInt == null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableInt"] = null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter family nullable int #2]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.NullableInt == DisplayClass.nullIntVal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableInt"] = null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter family nullable int =]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.NullableInt == Convert(5, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter nullableInt = nullInt]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.NullableInt == DisplayClass.nullableIntVal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter nullableInt = nullInt value]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.NullableInt == Convert(DisplayClass.nullableIntVal.Value, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter int = nullInt]]></Description>
+      <Expression><![CDATA[query.Where(f => (Convert(f.Int, Nullable`1) == DisplayClass.nullableIntVal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Int"] = 5) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter int = nullInt value]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Int == DisplayClass.nullableIntVal.Value))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Int"] = 5) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter int = nullInt]]></Description>
+      <Expression><![CDATA[query.Where(f => (Convert(f.Int, Nullable`1) == DisplayClass.nullIntVal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Int"] = null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter int < nullInt]]></Description>
+      <Expression><![CDATA[query.Where(f => (Convert(f.Int, Nullable`1) < DisplayClass.nullIntVal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Int"] < null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Guid filter by Id]]></Description>
+      <Expression><![CDATA[query.Where(g => (g.Id == DisplayClass.guidObject.Id))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Guid filter by Id #2]]></Description>
+      <Expression><![CDATA[query.Where(g => (g.Id.ToString() == DisplayClass.guidObject.Id.ToString()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Array compare]]></Description>
+      <Expression><![CDATA[query.Where(a => (a.ArrayField == DisplayClass.arrayObject.ArrayField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["ArrayField"] = [1, 2, 3]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Array compare null]]></Description>
+      <Expression><![CDATA[query.Where(a => (a.ArrayField == DisplayClass.nullArray))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["ArrayField"] = null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[List compare]]></Description>
+      <Expression><![CDATA[query.Where(a => (a.ListField == DisplayClass.listObject.ListField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["ListField"] = [1, 2, 3]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Nested great family query filter children name]]></Description>
+      <Expression><![CDATA[query.SelectMany(gf => gf.GreatFamily.Family.Children.Where(c => (c.GivenName == "Jesse")).Select(c => gf))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN c0 IN root["GreatFamily"]["Family"]["Children"] 
+WHERE (c0["GivenName"] = "Jesse") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Sport filter sport name]]></Description>
+      <Expression><![CDATA[query.Where(s => (s.SportName == "Tennis"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["id"] = "Tennis") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Sport filter sport type]]></Description>
+      <Expression><![CDATA[query.Where(s => (s.SportType == "Racquet"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["json"] = "Racquet") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Sport2 filter by id]]></Description>
+      <Expression><![CDATA[query.Where(s => (s.id == "json"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["id"] = "json") ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

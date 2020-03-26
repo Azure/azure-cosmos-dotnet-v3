@@ -1,0 +1,12 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[New]]></Description>
+      <Expression><![CDATA[query.Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Constructor invocation is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

@@ -3407,32 +3407,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await database.DeleteAsync();
         }
 
-        public static string DumpFullExceptionMessage(Exception e)
-        {
-            StringBuilder exceptionMessage = new StringBuilder();
-            while (e != null)
-            {
-                DocumentClientException docException = e as DocumentClientException;
-                if (docException != null && docException.Error != null)
-                {
-                    exceptionMessage.Append("Code : " + docException.Error.Code);
-                    if (docException.Error.ErrorDetails != null)
-                    {
-                        exceptionMessage.AppendLine(" ; Details : " + docException.Error.ErrorDetails);
-                    }
-                    if (docException.Error.Message != null)
-                    {
-                        exceptionMessage.AppendLine(" ; Message : " + docException.Error.Message);
-                    }
-                    exceptionMessage.Append(" --> ");
-                }
-
-                e = e.InnerException;
-            }
-
-            return exceptionMessage.ToString();
-        }
-
         private async Task ValidateCollectionQuotaTestsWithFailure(bool useGateway)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway);

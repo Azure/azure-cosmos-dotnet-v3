@@ -1,0 +1,37 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Coalesce]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField ?? "str"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] ?? "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter with coalesce comparison]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField == (doc.StringField2 ?? "str"))).Select(doc => doc.NumericField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NumericField"] 
+FROM root 
+WHERE (root["StringField"] = (root["StringField2"] ?? "str")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter with coalesce comparison #2]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField).Where(str => ((str ?? "str") == "str2"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+WHERE ((root["StringField"] ?? "str") = "str2") ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

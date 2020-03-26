@@ -1,0 +1,215 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat another array]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.Concat(new [] {1, 2, 3}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONCAT(root["ArrayField"], [1, 2, 3]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat constant list]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.Concat(DisplayClass.constantList))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONCAT(root["ArrayField"], [1, 2, 3]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat w/ ArrayField itself]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.Concat(doc.ArrayField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONCAT(root["ArrayField"], root["ArrayField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat enumerable w/ constant list]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.EnumerableField.Concat(DisplayClass.constantList))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONCAT(root["EnumerableField"], [1, 2, 3]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayField contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.Contains(1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONTAINS(root["ArrayField"], 1) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[EnumerableField contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.EnumerableField.Contains(1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONTAINS(root["EnumerableField"], 1) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[EnumerableField not contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => Not(doc.EnumerableField.Contains(1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (NOT ARRAY_CONTAINS(root["EnumerableField"], 1)) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant list contains numeric field]]></Description>
+      <Expression><![CDATA[query.Select(doc => DisplayClass.constantList.Contains(Convert(doc.NumericField, Int32)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["NumericField"] IN (1, 2, 3)) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant array contains numeric field]]></Description>
+      <Expression><![CDATA[query.Select(doc => DisplayClass.constantArray.Contains(Convert(doc.NumericField, Int32)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["NumericField"] IN (1, 2, 3)) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant list contains numeric field in filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Where(number => DisplayClass.constantList.Contains(Convert(number, Int32)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NumericField"] 
+FROM root 
+WHERE (root["NumericField"] IN (1, 2, 3)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant array contains numeric field in filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Where(number => DisplayClass.constantArray.Contains(Convert(number, Int32)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NumericField"] 
+FROM root 
+WHERE (root["NumericField"] IN (1, 2, 3)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant list not contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => Not(DisplayClass.constantList.Contains(Convert(doc.NumericField, Int32))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["NumericField"] NOT IN (1, 2, 3)) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant array not contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => Not(DisplayClass.constantArray.Contains(Convert(doc.NumericField, Int32))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["NumericField"] NOT IN (1, 2, 3)) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter constant list not contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Where(number => Not(DisplayClass.constantList.Contains(Convert(number, Int32))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NumericField"] 
+FROM root 
+WHERE (root["NumericField"] NOT IN (1, 2, 3)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter constant array not contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Where(number => Not(DisplayClass.constantArray.Contains(Convert(number, Int32))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NumericField"] 
+FROM root 
+WHERE (root["NumericField"] NOT IN (1, 2, 3)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Empty list contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => DisplayClass.emptyList.Contains(Convert(doc.NumericField, Int32)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE false 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Empty list not contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => Not(DisplayClass.emptyList.Contains(Convert(doc.NumericField, Int32))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (NOT false) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count ArrayField]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_LENGTH(root["ArrayField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count EnumerableField]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.EnumerableField.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_LENGTH(root["EnumerableField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

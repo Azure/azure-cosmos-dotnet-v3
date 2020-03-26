@@ -1,0 +1,283 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(SelectMany(Where -> Select))]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => pet)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE pet0 
+FROM root 
+JOIN child0 IN root["Children"] 
+JOIN pet0 IN child0["Pets"] 
+WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where -> SelectMany(Where -> Select))]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.Where(c => (c.Grade > 10)).SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => pet)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE pet0 
+FROM root 
+JOIN c0 IN root["Children"] 
+JOIN pet0 IN c0["Pets"] 
+WHERE ((c0["Grade"] > 10) AND (pet0["GivenName"] = "Fluffy")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(SelectMany(Where -> Select new {}))]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => new AnonymousType(family = family.FamilyId, child = child.GivenName, pet = pet.GivenName))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"family": root["FamilyId"], "child": child0["GivenName"], "pet": pet0["GivenName"]} 
+FROM root 
+JOIN child0 IN root["Children"] 
+JOIN pet0 IN child0["Pets"] 
+WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE p0["FamilyName"] 
+FROM root 
+JOIN p0 IN root["Parents"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName).Select(n => n.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(p0["FamilyName"]) 
+FROM root 
+JOIN p0 IN root["Parents"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Where)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName).Where(n => (n.Count() > 10)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE p0["FamilyName"] 
+FROM root 
+JOIN p0 IN root["Parents"] 
+WHERE (LENGTH(p0["FamilyName"]) > 10) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select) -> Select]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName)).Select(n => n.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(p0["FamilyName"]) 
+FROM root 
+JOIN p0 IN root["Parents"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany()]]></Description>
+      <Expression><![CDATA[query.SelectMany(root => root.Children)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root0 
+FROM root 
+JOIN root0 IN root["Children"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> SelectMany]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).SelectMany(c => c.Pets)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c0 
+FROM root 
+JOIN f0 IN root["Children"] 
+JOIN c0 IN f0["Pets"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Where -> SelectMany(Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Where(c => (c.Pets.Count() > 0)).SelectMany(c => c.Pets.Select(p => p.GivenName))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE p0["GivenName"] 
+FROM root 
+JOIN f0 IN root["Children"] 
+JOIN p0 IN f0["Pets"] 
+WHERE (ARRAY_LENGTH(f0["Pets"]) > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Where -> SelectMany(Select new)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Where(c => (c.Pets.Count() > 0)).SelectMany(c => c.Pets.Select(p => new AnonymousType(PetName = p.GivenName, OwnerName = c.GivenName)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"PetName": p0["GivenName"], "OwnerName": f0["GivenName"]} 
+FROM root 
+JOIN f0 IN root["Children"] 
+JOIN p0 IN f0["Pets"] 
+WHERE (ARRAY_LENGTH(f0["Pets"]) > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).SelectMany(f => f.Children)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0 
+FROM root 
+JOIN f0 IN root["Children"] 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Select]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Select(c => c.FamilyName)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0["FamilyName"] 
+FROM root 
+JOIN f0 IN root["Children"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Select(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+FROM root 
+JOIN c0 IN root["Children"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE p0["FamilyName"] 
+FROM root 
+JOIN p0 IN root["Parents"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName).Select(n => n.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(p0["FamilyName"]) 
+FROM root 
+JOIN p0 IN root["Parents"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Where)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName).Where(n => (n.Count() > 10)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE p0["FamilyName"] 
+FROM root 
+JOIN p0 IN root["Parents"] 
+WHERE (LENGTH(p0["FamilyName"]) > 10) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Take -> Where)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Take(2).Where(c => (c.FamilyName.Count() > 10)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT VALUE r0 
+    FROM (
+        SELECT TOP 2 VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"]
+    ) AS r0 
+    WHERE (LENGTH(r0["FamilyName"]) > 10)
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(OrderBy -> Take -> Where)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.OrderBy(c => c.Grade).Take(2).Where(c => (c.FamilyName.Count() > 10)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE r0 
+    FROM (
+        SELECT TOP 2 VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        ORDER BY c0["Grade"] ASC
+    ) AS r0 
+    WHERE (LENGTH(r0["FamilyName"]) > 10)
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct -> Where)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Distinct().Where(c => (c.FamilyName.Count() > 10)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Children"] 
+    WHERE (LENGTH(v0["FamilyName"]) > 10)
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

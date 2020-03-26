@@ -1,0 +1,71 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsDefined array]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsDefined())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE IS_DEFINED(root["ArrayField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsDefined string]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.IsDefined())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_DEFINED(root["StringField"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsNull array]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsNull())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE IS_NULL(root["ArrayField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsNull string]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.IsNull())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_NULL(root["StringField"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsPrimitive array]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsPrimitive())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE IS_PRIMITIVE(root["ArrayField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsPrimitive string]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.IsPrimitive())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_PRIMITIVE(root["StringField"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

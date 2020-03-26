@@ -1,0 +1,13 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[MemberAssignment]]></Description>
+      <Expression><![CDATA[query.Select(doc => new Datum() {DataMember = doc.DataMember, Default = doc.Default, JsonProperty = doc.JsonProperty, JsonPropertyAndDataMember = doc.JsonPropertyAndDataMember})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"dataMember": root["dataMember"], "Default": root["Default"], "jsonProperty": root["jsonProperty"], "jsonPropertyHasHigherPriority": root["jsonPropertyHasHigherPriority"]} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

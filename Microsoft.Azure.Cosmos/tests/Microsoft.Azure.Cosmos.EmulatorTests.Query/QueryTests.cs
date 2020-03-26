@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -534,7 +534,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
         */
@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -573,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -614,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -674,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -699,7 +699,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 
@@ -855,7 +855,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException e)
             {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                Assert.Fail("Unexpected exception : " + Logger.DumpFullExceptionMessage(e));
             }
         }
 

@@ -1,0 +1,25 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w/ DataObject initializer]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObject() {NumericField = doc.NumericField, StringField = doc.StringField})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NumericField": root["NumericField"], "StringField": root["StringField"]} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObject() {NumericField = doc.NumericField, StringField = doc.StringField}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"NumericField": root["NumericField"], "StringField": root["StringField"]}) ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

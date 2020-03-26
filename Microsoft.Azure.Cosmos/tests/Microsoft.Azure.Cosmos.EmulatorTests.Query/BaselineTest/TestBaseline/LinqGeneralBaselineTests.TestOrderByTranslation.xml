@@ -1,0 +1,258 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> order by]]></Description>
+      <Expression><![CDATA[query.Select(family => family.FamilyId).OrderBy(id => id)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> order by -> Select]]></Description>
+      <Expression><![CDATA[query.Select(family => family.FamilyId).OrderBy(id => id).Select(x => x.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(root["FamilyId"]) 
+FROM root 
+ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> OrderBy -> Select query]]></Description>
+      <Expression><![CDATA[query.Where(f => ((f.Int == 5) AndAlso (f.NullableInt != null))).OrderBy(f => f.IsRegistered).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+WHERE ((root["Int"] = 5) AND (root["NullableInt"] != null)) 
+ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> OrderBy -> Select]]></Description>
+      <Expression><![CDATA[query.Where(f => ((f.Int == 5) AndAlso (f.NullableInt != null))).OrderBy(f => f.IsRegistered).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+WHERE ((root["Int"] = 5) AND (root["NullableInt"] != null)) 
+ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy query]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Select query]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Select]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).Select(f => f.FamilyId).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 10 VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Select -> Select]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).Select(f => f.FamilyId).Select(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> order by]]></Description>
+      <Expression><![CDATA[query.Select(family => family.FamilyId).OrderByDescending(id => id)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> order by -> Select]]></Description>
+      <Expression><![CDATA[query.Select(family => family.FamilyId).OrderByDescending(id => id).Select(x => x.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(root["FamilyId"]) 
+FROM root 
+ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> OrderBy Desc -> Select query]]></Description>
+      <Expression><![CDATA[query.Where(f => ((f.Int == 5) AndAlso (f.NullableInt != null))).OrderByDescending(f => f.IsRegistered).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+WHERE ((root["Int"] = 5) AND (root["NullableInt"] != null)) 
+ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> OrderBy Desc -> Select]]></Description>
+      <Expression><![CDATA[query.Where(f => ((f.Int == 5) AndAlso (f.NullableInt != null))).OrderByDescending(f => f.IsRegistered).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+WHERE ((root["Int"] = 5) AND (root["NullableInt"] != null)) 
+ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy Desc query]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy Desc]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy Desc -> Select query]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy Desc -> Select]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 10 VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Select -> Select]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId).Select(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy multiple expressions]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenBy(f => f.Int).Select(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+ORDER BY root["FamilyId"] ASC, root["Int"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

@@ -1,0 +1,61 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select]]></Description>
+      <Expression><![CDATA[query.Select("FamilyId", new [] {})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where]]></Description>
+      <Expression><![CDATA[query.Where("FamilyId = "some id"", new [] {})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["FamilyId"] = "some id") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where longer]]></Description>
+      <Expression><![CDATA[query.Where("FamilyId = "some id" AND IsRegistered = True OR Int > 101", new [] {})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (root["Int"] > 101)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where w/ parameters]]></Description>
+      <Expression><![CDATA[query.Where("FamilyId = @0 AND IsRegistered = @1 OR Int > @2", new [] {"some id", Convert(True, Object), Convert(101, Object)})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (root["Int"] > 101)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Select]]></Description>
+      <Expression><![CDATA[query.Where("FamilyId = "some id"", new [] {}).Select("Int", new [] {})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Int"] 
+FROM root 
+WHERE (root["FamilyId"] = "some id") ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

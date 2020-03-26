@@ -1,0 +1,227 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo ==]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo(doc.StringField2) == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] = root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo >]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo(doc.StringField2) > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] > root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo >=]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo(doc.StringField2) >= 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] >= root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo <]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo(doc.StringField2) < 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] < root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo <=]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo(doc.StringField2) <= 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] <= root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo static string ==]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] = "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo static string >]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] > "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo static string >=]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") >= 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] >= "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo static string <]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") < 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] < "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo static string <=]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") <= 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] <= "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo == reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 == doc.StringField.CompareTo(doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] = root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo < reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 < doc.StringField.CompareTo(doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] > root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo <= reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 <= doc.StringField.CompareTo(doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] >= root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo > reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 > doc.StringField.CompareTo(doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] < root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected CompareTo >= reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 >= doc.StringField.CompareTo(doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] <= root["StringField2"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo > 1]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") > 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo == 1]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") == 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo == -1]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") == -1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo | 0]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") | 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo & 0]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") & 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[CompareTo ^ 0]]></Description>
+      <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") ^ 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

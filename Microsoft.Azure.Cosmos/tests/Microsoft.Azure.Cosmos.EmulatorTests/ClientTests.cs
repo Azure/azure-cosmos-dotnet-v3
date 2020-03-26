@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -89,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 });
 
-                LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book();
+                Book myBook = new Book();
                 myBook.Id = Guid.NewGuid().ToString();
                 myBook.Title = "Azure DocumentDB 101";
 

@@ -1,0 +1,896 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct string]]></Description>
+      <Expression><![CDATA[query.Select(f => f.FamilyId).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root["FamilyId"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct int]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root["Int"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct bool]]></Description>
+      <Expression><![CDATA[query.Select(f => f.IsRegistered).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root["IsRegistered"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct nullable int]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.NullableInt != null)).Select(f => f.NullableInt).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root["NullableInt"] 
+FROM root 
+WHERE (root["NullableInt"] != null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct null]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.NullObject != null)).Select(f => f.NullObject).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root["NullObject"] 
+FROM root 
+WHERE (root["NullObject"] != null) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct children]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE f0 
+FROM root 
+JOIN f0 IN root["Children"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct parent]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE f0 
+FROM root 
+JOIN f0 IN root["Parents"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct family]]></Description>
+      <Expression><![CDATA[query.Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multiple distincts]]></Description>
+      <Expression><![CDATA[query.Distinct().Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct new obj]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(Parents = f.Parents.Count(), Children = f.Children.Count())).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE {"Parents": ARRAY_LENGTH(root["Parents"]), "Children": ARRAY_LENGTH(root["Children"])} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct new obj]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(Parents = f.Parents.Count(), Children = f.Children.Count())).Select(f => f.Parents).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE {"Parents": ARRAY_LENGTH(root["Parents"]), "Children": ARRAY_LENGTH(root["Children"])}["Parents"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Distinct().Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT TOP 10 VALUE root["Int"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Distinct]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Take(10).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT TOP 10 VALUE root["Int"] 
+    FROM root
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> OrderBy]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Distinct().OrderBy(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root["Int"] 
+FROM root 
+ORDER BY root["Int"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Distinct]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Int).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root 
+FROM root 
+ORDER BY root["Int"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> Take -> OrderBy]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Distinct().Take(10).OrderBy(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT DISTINCT TOP 10 VALUE root["Int"] 
+    FROM root
+) AS r1 
+ORDER BY r1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Take -> Distinct]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).OrderBy(x => x).Take(10).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r1 
+FROM (
+    SELECT TOP 10 VALUE root["Int"] 
+    FROM root 
+    ORDER BY root["Int"] ASC
+) AS r1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Distinct]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Where(x => (x > 10)).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root["Int"] 
+FROM root 
+WHERE (root["Int"] > 10) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> Where]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Distinct().Where(x => (x > 10))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root["Int"] 
+FROM root 
+WHERE (root["Int"] > 10) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select obj) -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE f0 
+FROM root 
+JOIN f0 IN root["Parents"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(SelectMany(Where -> Select)) -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => pet))).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE pet0 
+FROM root 
+JOIN child0 IN root["Children"] 
+JOIN pet0 IN child0["Pets"] 
+WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(SelectMany(Where -> Select -> Distinct))]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => pet).Distinct()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN child0 IN root["Children"] 
+JOIN (
+    SELECT DISTINCT VALUE pet0 
+    FROM child0 
+    JOIN pet0 IN child0["Pets"] 
+    WHERE (pet0["GivenName"] = "Fluffy")
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(SelectMany(Where -> Select -> Select) -> Distinct)]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => pet.GivenName).Select(name => name.Count()))).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE LENGTH(pet0["GivenName"]) 
+FROM root 
+JOIN child0 IN root["Children"] 
+JOIN pet0 IN child0["Pets"] 
+WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(SelectMany(Where -> Select new {} -> Select) -> Distinct)]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => new AnonymousType(family = family.FamilyId, child = child.GivenName, pet = pet.GivenName)).Select(p => p.child)).Distinct())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE {"family": root["FamilyId"], "child": child0["GivenName"], "pet": pet0["GivenName"]}["child"] 
+    FROM root 
+    JOIN child0 IN root["Children"] 
+    JOIN pet0 IN child0["Pets"] 
+    WHERE (pet0["GivenName"] = "Fluffy")
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(SelectMany(Where -> Select new {}) -> Distinct)]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => new AnonymousType(family = family.FamilyId, child = child.GivenName, pet = pet.GivenName)))).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE {"family": root["FamilyId"], "child": child0["GivenName"], "pet": pet0["GivenName"]} 
+FROM root 
+JOIN child0 IN root["Children"] 
+JOIN pet0 IN child0["Pets"] 
+WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(SelectMany(Where -> Select new {} -> Distinct))]]></Description>
+      <Expression><![CDATA[query.SelectMany(family => family.Children.SelectMany(child => child.Pets.Where(pet => (pet.GivenName == "Fluffy")).Select(pet => new AnonymousType(family = family.FamilyId, child = child.GivenName, pet = pet.GivenName)).Distinct()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN child0 IN root["Children"] 
+JOIN (
+    SELECT DISTINCT VALUE {"family": root["FamilyId"], "child": child0["GivenName"], "pet": pet0["GivenName"]} 
+    FROM child0 
+    JOIN pet0 IN child0["Pets"] 
+    WHERE (pet0["GivenName"] = "Fluffy")
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+ORDER BY v2 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Where(f => (f.FamilyName.Count() < 20))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+ORDER BY v2 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Where(f => (f.FamilyName.Count() < 20)).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT TOP 5 VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+ORDER BY v2 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where -> Take -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Where(f => (f.FamilyName.Count() < 20)).Take(5).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT DISTINCT TOP 5 VALUE v2 
+    FROM root 
+    JOIN (
+        SELECT DISTINCT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Parents"]
+    ) AS v2 
+    WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+    ORDER BY v2 ASC
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT TOP 5 VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+ORDER BY v2 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Take -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Take(5).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT DISTINCT TOP 5 VALUE v2 
+    FROM root 
+    JOIN (
+        SELECT DISTINCT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Parents"]
+    ) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2 ASC
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT TOP 5 VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> Take -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().Take(5).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT DISTINCT TOP 5 VALUE v2 
+    FROM root 
+    JOIN (
+        SELECT DISTINCT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Parents"]
+    ) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10)
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+ORDER BY v2 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+ORDER BY v2 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> OrderBy]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Distinct().OrderBy(f => f.GivenName.Length)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+ORDER BY v2["GivenName"]["Length"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Distinct().OrderBy(f => f.GivenName.Length).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT TOP 5 VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+ORDER BY v2["GivenName"]["Length"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+ORDER BY v2 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE (LENGTH(v2["FamilyName"]) > 10) 
+ORDER BY v2 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Where -> Where]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Where(f => (f.FamilyName.Count() < 20))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> OrderBy]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+ORDER BY v2["FamilyName"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+ORDER BY v2["FamilyName"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Select]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Select(f => f.FamilyName.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(v2["FamilyName"]) 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Distinct) -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Select(f => f.FamilyName.Count()).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE LENGTH(v2["FamilyName"]) 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Parents"]
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Distinct) -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).OrderBy(n => n).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE v1 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE p0["GivenName"] 
+    FROM root 
+    JOIN p0 IN root["Parents"]
+) AS v1 
+ORDER BY v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Distinct) -> Where -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Where(n => (n.Count() > 10)).OrderBy(n => n).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE v1 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE p0["GivenName"] 
+    FROM root 
+    JOIN p0 IN root["Parents"]
+) AS v1 
+WHERE (LENGTH(v1) > 10) 
+ORDER BY v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select) -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName)).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE p0["FamilyName"] 
+FROM root 
+JOIN p0 IN root["Parents"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Distinct)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.FamilyName).Distinct())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE p0["FamilyName"] 
+    FROM root 
+    JOIN p0 IN root["Parents"]
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Distinct) -> Distinct]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE v1 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE p0["GivenName"] 
+    FROM root 
+    JOIN p0 IN root["Parents"]
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Distinct) -> Where]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Where(n => (n.Count() > 10))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE p0["GivenName"] 
+    FROM root 
+    JOIN p0 IN root["Parents"]
+) AS v1 
+WHERE (LENGTH(v1) > 10) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json.Linq;
@@ -317,13 +316,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 testCollections.Add(collection);
 
                 string uniqDocumentName = "SmokeTestDocument" + Guid.NewGuid().ToString("N");
-                LinqGeneralBaselineTests.Book myDocument = new LinqGeneralBaselineTests.Book();
+                Book myDocument = new Book();
                 myDocument.Id = uniqDocumentName;
                 myDocument.Title = "My Book"; //Simple Property.
-                myDocument.Languages = new LinqGeneralBaselineTests.Language[] { new LinqGeneralBaselineTests.Language { Name = "English", Copyright = "London Publication" }, new LinqGeneralBaselineTests.Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
-                myDocument.Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }; //Complex Property
+                myDocument.Languages = new Language[] { new Language { Name = "English", Copyright = "London Publication" }, new Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
+                myDocument.Author = new Author { Name = "Don", Location = "France" }; //Complex Property
                 myDocument.Price = 9.99;
-                myDocument.Editions = new List<LinqGeneralBaselineTests.Edition>() { new LinqGeneralBaselineTests.Edition() { Name = "First", Year = 2001 }, new LinqGeneralBaselineTests.Edition() { Name = "Second", Year = 2005 } };
+                myDocument.Editions = new List<Edition>() { new Edition() { Name = "First", Year = 2001 }, new Edition() { Name = "Second", Year = 2005 } };
                 Document document = await client.CreateDocumentAsync(collection.SelfLink, myDocument);
                 Assert.AreEqual(document.AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName, uniqCollectionName, uniqDocumentName, typeof(Document)));
                 results = await SqlQueryDocuments(client, collection.SelfLink, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqDocumentName), 10);  // query through collection link

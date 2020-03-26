@@ -2410,40 +2410,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         #endregion
 
         #region Book type tests
-        public class Author
-        {
-            [JsonProperty(PropertyName = Constants.Properties.Id)]
-            public string Name { get; set; }
-            public string Location { get; set; }
-        }
-
-        public class Language
-        {
-            public string Name { get; set; }
-            public string Copyright { get; set; }
-        }
-
-        public class Edition
-        {
-            public string Name { get; set; }
-            public int Year { get; set; }
-        }
-
-        public class Book
-        {
-            //Verify that we can override the propertyName but still can query them using .NET Property names.
-            [JsonProperty(PropertyName = "title")]
-            public string Title { get; set; }
-            [JsonProperty(PropertyName = "name")]
-            public string Name { get; set; }
-            public Language[] Languages { get; set; }
-            public Author Author { get; set; }
-            public double Price { get; set; }
-            [JsonProperty(PropertyName = Constants.Properties.Id)]
-            public string Id { get; set; }
-            public List<Edition> Editions { get; set; }
-        }
-
         [TestMethod]
         public async Task ValidateServerSideQueryEvalWithPagination()
         {
@@ -2476,7 +2442,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 client.createDocument(client.getSelfLink(), { id: 'testDoc' + output, title : 'My Book'}, {}, callback); }";
 
             StoredProcedureExecuteResponse<int> scriptResponse = null;
-            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteCosmosProcedure(collection, script, out scriptResponse, "My Book");
+            int totalNumberOfDocuments = CreateExecuteAndDeleteCosmosProcedure(collection, script, out scriptResponse, "My Book");
 
             IOrderedQueryable<Book> linqQueryable = collection.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution : true);
             int totalHit = linqQueryable.Where(book => book.Title == "My Book").Count();
@@ -2684,6 +2650,34 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public override LinqTestOutput ExecuteTest(LinqTestInput input)
         {
             return LinqTestsCommon.ExecuteTest(input);
+        }
+
+        internal static TValue CreateExecuteAndDeleteCosmosProcedure<TValue>(Container collection,
+            string transientProcedure,
+            out StoredProcedureExecuteResponse<TValue> response,
+            string partitionKey = null)
+        {
+            // create
+            StoredProcedureProperties storedProcedure = new StoredProcedureProperties
+            {
+                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                Body = transientProcedure
+            };
+            StoredProcedureResponse retrievedStoredProcedure = collection.Scripts.CreateStoredProcedureAsync(storedProcedure).Result;
+            Assert.IsNotNull(retrievedStoredProcedure);
+            Assert.AreEqual(storedProcedure.Id, retrievedStoredProcedure.Resource.Id);
+
+            response = collection.Scripts.ExecuteStoredProcedureAsync<TValue>(
+                storedProcedure.Id,
+                new Cosmos.PartitionKey(partitionKey),
+                null).Result;
+            Assert.IsNotNull(response);
+
+            // delete
+            StoredProcedureResponse deleteResponse = collection.Scripts.DeleteStoredProcedureAsync(storedProcedure.Id).Result;
+            Assert.IsNotNull(deleteResponse);
+
+            return response;
         }
     }
 }

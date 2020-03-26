@@ -1,0 +1,74 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ enum field comparison]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.EnumField1, Int32) == 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["EnumField1"] = "One") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ enum field comparison #2]]></Description>
+      <Expression><![CDATA[query.Where(doc => (1 == Convert(doc.EnumField1, Int32)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ("One" = root["EnumField1"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ enum field comparison #3]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.EnumField2, Int32) == 2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["EnumField2"] = "Two") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ nullable enum field comparison]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.NullableEnum1, Nullable`1) == Convert(One, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableEnum1"] = "One") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ nullable enum field comparison #2]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.NullableEnum2, Nullable`1) == Convert(Two, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableEnum2"] = "Two") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ enum field comparison #4]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.EnumNumber, Int32) == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["EnumNumber"] = 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

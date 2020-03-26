@@ -1,0 +1,2053 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(OrderBy)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.OrderBy(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
+    )
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Take)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Take(2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT TOP 2 VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"]
+    )
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Pets.Count() > 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Distinct)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Distinct())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT DISTINCT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"]
+    )
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Count)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Count(c => (c.Grade > 80)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 80)
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Sum)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Sum(c => c.Grade))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Count)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count(c => (c.Pets.Count() > 0)) > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+) AS v0 
+WHERE (v0 > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Sum)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Sum(c => c.Grade) > 100))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v0 
+WHERE (v0 > 100) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Select)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Select(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v0 
+ORDER BY v0 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Sum)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Sum(c => c.Grade))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v0 
+ORDER BY v0 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Count)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Count(c => (c.Grade > 90)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 90)
+) AS v0 
+ORDER BY v0 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select -> Distinct -> Count)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Gender).Distinct().Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM (
+        SELECT DISTINCT VALUE c0["Gender"] 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    ) AS r1
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select -> Sum)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Grade).Sum())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select -> OrderBy -> Take)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.GivenName).OrderBy(n => n.Length).Take(1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT TOP 1 VALUE c0["GivenName"] 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        ORDER BY c0["GivenName"]["Length"] ASC
+    )
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(SelectMany -> Select)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.SelectMany(c => c.Pets).Select(c => c.GivenName.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE LENGTH(c1["GivenName"]) 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN c1 IN c0["Pets"]
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where -> Count)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 50)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 50)
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where -> OrderBy -> Take)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 50)).OrderBy(c => c.Pets.Count()).Take(3))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT TOP 3 VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 50) 
+        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
+    )
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where -> Select -> Take)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 50)).Select(c => c.Pets.Count()).Take(3))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT TOP 3 VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 50)
+    )
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where -> Select(array) -> Take)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 50)).Select(c => c.Pets).Take(3))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT TOP 3 VALUE c0["Pets"] 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 50)
+    )
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(where -> Select -> Distinct)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => ((c.Grade > 50) AndAlso (c.Pets.Count() > 0))).Select(c => c.Gender).Distinct())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT DISTINCT VALUE c0["Gender"] 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE ((c0["Grade"] > 50) AND (ARRAY_LENGTH(c0["Pets"]) > 0))
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(OrderBy -> Take -> Select)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.OrderBy(c => c.Grade).Take(1).Select(c => c.Gender))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT TOP 1 VALUE c0["Gender"] 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        ORDER BY c0["Grade"] ASC
+    )
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(OrderBy -> Take -> Select -> Average)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.OrderBy(c => c.Pets.Count()).Take(2).Select(c => c.Grade).Average())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2[0] 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE AVG(r0) 
+        FROM (
+            SELECT TOP 2 VALUE c0["Grade"] 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
+        ) AS r0
+    )
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Select -> Count)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Select(c => c.Pets.Count()).Count() > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v0 
+WHERE (v0 > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Where -> Count)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Where(c => (c.Pets.Count() > 0)).Count() > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+) AS v0 
+WHERE (v0 > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Where -> Sum)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Where(c => (c.Pets.Count() > 0)).Sum(c => c.Grade) < 200))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+) AS v0 
+WHERE (v0 < 200) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Where -> OrderBy -> Take -> Select)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Where(c => (c.Pets.Count() > 0)).OrderBy(c => c.Grade).Take(1).Where(c => (c.Grade > 80)).Count() > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM (
+        SELECT TOP 1 VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0) 
+        ORDER BY c0["Grade"] ASC
+    ) AS r0 
+    WHERE (r0["Grade"] > 80)
+) AS v1 
+WHERE (v1 > 0) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Select -> Where)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Select(c => c.Pets.Count()).Where(x => (x > 1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 1)
+    )
+) AS v0 
+ORDER BY v0 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Where -> Count)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Where(c => (c.Pets.Count() > 3)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
+) AS v0 
+ORDER BY v0 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Select -> Sum)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Select(c => c.Grade).Sum())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v1 
+ORDER BY v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(OrderBy -> Take -> Sum)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.OrderBy(c => c.Pets.Count()).Take(2).Sum(c => c.Grade))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(r0["Grade"]) 
+    FROM (
+        SELECT TOP 2 VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
+    ) AS r0
+) AS v1 
+ORDER BY v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(unary (Where -> Count))]]></Description>
+      <Expression><![CDATA[query.Where(f => (-f.Children.Where(c => (c.Grade < 20)).Count() == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] < 20)
+) AS v0 
+WHERE ((- v0) = 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(binary with Count)]]></Description>
+      <Expression><![CDATA[query.Select(f => (5 + f.Children.Count(c => (c.Pets.Count() > 0))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (5 + v0) 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(constant + Where -> Count)]]></Description>
+      <Expression><![CDATA[query.Select(f => (5 + f.Children.Where(c => (c.Pets.Count() > 0)).Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (5 + v0) 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where((Where -> Count) % constant)]]></Description>
+      <Expression><![CDATA[query.Where(f => ((f.Children.Where(c => (c.Pets.Count() > 0)).Count() % 2) == 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+) AS v0 
+WHERE ((v0 % 2) = 1) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(conditional Any ? Select : Select)]]></Description>
+      <Expression><![CDATA[query.Select(f => IIF(f.Children.Any(), f.Children.Select(c => c.GivenName), f.Parents.Select(p => p.GivenName)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (v1 ? v2 : v3) 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"]
+    )
+) AS v1 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0["GivenName"] 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v2 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE p0["GivenName"] 
+        FROM root 
+        JOIN p0 IN root["Parents"]
+    )
+) AS v3 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(conditional Any(filter) ? Max : Sum)]]></Description>
+      <Expression><![CDATA[query.Select(f => IIF(f.Children.Any(c => (c.Grade > 97)), f.Children.Max(c => c.Grade), f.Children.Sum(c => c.Grade)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (v0 ? v1[0] : v2) 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 97)
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE MAX(c1["Grade"]) 
+        FROM root 
+        JOIN c1 IN root["Children"]
+    )
+) AS v1 
+JOIN (
+    SELECT VALUE SUM(c2["Grade"]) 
+    FROM root 
+    JOIN c2 IN root["Children"]
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new array)]]></Description>
+      <Expression><![CDATA[query.Select(f => new [] {f.Children.Count(), f.Children.Sum(c => c.Grade)})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE [ARRAY_LENGTH(root["Children"]), v0] 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new)]]></Description>
+      <Expression><![CDATA[query.Select(f => new [] {f.Children.Count(), f.Children.Sum(c => c.Grade)})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE [ARRAY_LENGTH(root["Children"]), v0] 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select new)]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenPetCount = f.Children.Select(c => c.Pets.Count())))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenPetCount": v0} 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new Where)]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenWithPets = f.Children.Where(c => (c.Pets.Count() > 3))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenWithPets": v0} 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new Where)]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, GoodChildren = f.Children.Where(c => (c.Grade > 90))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"FamilyId": root["FamilyId"], "GoodChildren": v0} 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 90)
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new Where -> Select)]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenWithPets = f.Children.Where(c => (c.Pets.Count() > 3)).Select(c => c.GivenName)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenWithPets": v0} 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0["GivenName"] 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new Where -> Count) -> Where]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(Family = f, ChildrenCount = f.Children.Where(c => (c.Grade > 0)).Count())).Where(f => (f.ChildrenCount > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE {"Family": root, "ChildrenCount": v0} 
+    FROM root 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 0)
+    ) AS v0
+) AS r0 
+WHERE (r0["ChildrenCount"] > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where -> Concat(Where))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 90)).Concat(f.Children.Where(c => (c.Grade < 10))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONCAT(v0, v1) 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 90)
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c1 
+        FROM root 
+        JOIN c1 IN root["Children"] 
+        WHERE (c1["Grade"] < 10)
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select -> Contains(Sum))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Grade).Contains(f.Children.Sum(c => c.Pets.Count())))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONTAINS(v0, v1) 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0["Grade"] 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
+    FROM root 
+    JOIN c1 IN root["Children"]
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select -> Contains(Where -> Count))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Grade).Contains(f.Children.Where(c => (c.Grade > 50)).Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONTAINS(v0, v1) 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0["Grade"] 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c1 IN root["Children"] 
+    WHERE (c1["Grade"] > 50)
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Select(array indexer)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Where(c => (c.Grade > 20)).Count() >= 2)).Select(f => f.Children.Where(c => (c.Grade > 20)).ToArray()[1])]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1[1] 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 20)
+) AS v0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c1 
+        FROM root 
+        JOIN c1 IN root["Children"] 
+        WHERE (c1["Grade"] > 20)
+    )
+) AS v1 
+WHERE (v0 >= 2) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Select(array indexer)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Where(c => (c.Grade > 20)).Count() >= 2)).Select(f => f.Children.Where(c => (c.Grade > 20)).ToArray()[(f.Children.Count() % 2)])]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1[(ARRAY_LENGTH(root["Children"]) % 2)] 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 20)
+) AS v0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c1 
+        FROM root 
+        JOIN c1 IN root["Children"] 
+        WHERE (c1["Grade"] > 20)
+    )
+) AS v1 
+WHERE (v0 >= 2) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Floor(sum(map), sum(map)))]]></Description>
+      <Expression><![CDATA[query.Select(f => Floor(((1 * Convert(f.Children.Sum(c => c.Grade), Double)) / Convert((f.Children.Sum(c => c.Pets.Count()) + 1), Double))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE FLOOR(((1 * v0) / (v1 + 1))) 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(c0["Grade"]) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v0 
+JOIN (
+    SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
+    FROM root 
+    JOIN c1 IN root["Children"]
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Pow(Sum(map), Count(Any)))]]></Description>
+      <Expression><![CDATA[query.Select(f => Pow(Convert(f.Children.Sum(c => c.Pets.Count()), Double), Convert(f.Children.Count(c => c.Pets.Any(p => ((p.GivenName.Count() == 0) OrElse (p.GivenName.Substring(0, 1) == "A")))), Double)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE POWER(v0, v2) 
+FROM root 
+JOIN (
+    SELECT VALUE SUM(ARRAY_LENGTH(c0["Pets"])) 
+    FROM root 
+    JOIN c0 IN root["Children"]
+) AS v0 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c1 IN root["Children"] 
+    JOIN (
+        SELECT VALUE EXISTS(
+            SELECT VALUE p0 
+            FROM c1 
+            JOIN p0 IN c1["Pets"] 
+            WHERE ((LENGTH(p0["GivenName"]) = 0) OR (SUBSTRING(p0["GivenName"], 0, 1) = "A"))
+        )
+    ) AS v1 
+    WHERE v1
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Log(Where -> Count))]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => Log(Convert(f.Children.Where(c => (c.Pets.Count() > 0)).Count(), Double)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+) AS v0 
+ORDER BY LOG(v0) ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select) -> Where]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Pets.Count())).Where(x => (x.Count() > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE v0 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+            FROM root 
+            JOIN c0 IN root["Children"]
+        )
+    ) AS v0
+) AS r0 
+WHERE (ARRAY_LENGTH(r0) > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new w/ Where) -> Where -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => (c.Grade > 90)))).Where(f => ((f.FamilyId.CompareTo("ABC") > 0) AndAlso (f.SmartChildren.Count() > 0))).OrderBy(f => f.ChildrenCount).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 10 VALUE r0 
+FROM (
+    SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenCount": ARRAY_LENGTH(root["Children"]), "SmartChildren": v0} 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE c0 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            WHERE (c0["Grade"] > 90)
+        )
+    ) AS v0
+) AS r0 
+WHERE ((r0["FamilyId"] > "ABC") AND (ARRAY_LENGTH(r0["SmartChildren"]) > 0)) 
+ORDER BY r0["ChildrenCount"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new { Select(Select), conditional Count Take }) -> Where -> Select(Select(Any))]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenPetFirstChars = f.Children.Select(c => c.Pets.Select(p => p.GivenName.Substring(0, 1))), FirstChild = IIF((f.Children.Count() > 0), f.Children.Take(1), null))).Where(f => (f.FirstChild != null)).Select(f => f.ChildrenPetFirstChars.Select(chArray => chArray.Any(a => f.FamilyId.StartsWith(a))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v6 
+FROM (
+    SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenPetFirstChars": v1, "FirstChild": ((ARRAY_LENGTH(root["Children"]) > 0) ? v4 : null)} 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE v0 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            JOIN (
+                SELECT VALUE ARRAY(
+                    SELECT VALUE SUBSTRING(p0["GivenName"], 0, 1) 
+                    FROM c0 
+                    JOIN p0 IN c0["Pets"]
+                )
+            ) AS v0
+        )
+    ) AS v1 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT TOP 1 VALUE v2 
+            FROM root 
+            JOIN v2 IN root["Children"]
+        )
+    ) AS v4
+) AS r0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE v5 
+        FROM r0 
+        JOIN chArray0 IN r0["ChildrenPetFirstChars"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE a 
+                FROM chArray0 
+                JOIN a IN chArray0 
+                WHERE STARTSWITH(r0["FamilyId"], a)
+            )
+        ) AS v5
+    )
+) AS v6 
+WHERE (r0["FirstChild"] != null) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new (Select(new (Select, Select))))]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenProfile = f.Children.Select(c => new AnonymousType(Fullname = ((c.GivenName + " ") + c.FamilyName), PetNames = c.Pets.Select(p => p.GivenName), ParentNames = f.Parents.Select(p => p.GivenName)))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenProfile": v2} 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE {"Fullname": ((c0["GivenName"] || " ") || c0["FamilyName"]), "PetNames": v0, "ParentNames": v1} 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE p0["GivenName"] 
+                FROM c0 
+                JOIN p0 IN c0["Pets"]
+            )
+        ) AS v0 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE p1["GivenName"] 
+                FROM c0 
+                JOIN p1 IN root["Parents"]
+            )
+        ) AS v1
+    )
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(array) -> Where(Sum(map))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children).Where(children => (children.Sum(c => c.Grade) > 100))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root["Children"] 
+    FROM root
+) AS r0 
+JOIN (
+    SELECT VALUE SUM(c["Grade"]) 
+    FROM r0 
+    JOIN c IN r0
+) AS v0 
+WHERE (v0 > 100) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select) -> Select(Sum())]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Grade)).Select(children => children.Sum())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM (
+    SELECT VALUE v0 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE c0["Grade"] 
+            FROM root 
+            JOIN c0 IN root["Children"]
+        )
+    ) AS v0
+) AS r0 
+JOIN (
+    SELECT VALUE SUM(v1) 
+    FROM r0 
+    JOIN v1 IN r0
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select) -> Select(Sum(map))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children).Select(children => children.Sum(c => c.Grade))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM (
+    SELECT VALUE root["Children"] 
+    FROM root
+) AS r0 
+JOIN (
+    SELECT VALUE SUM(c["Grade"]) 
+    FROM r0 
+    JOIN c IN r0
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Any binary) -> Select(Sum(map))]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Any(c => (c.Grade > 90)) AndAlso f.IsRegistered)).Select(f => f.Children.Sum(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 90)
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
+    FROM root 
+    JOIN c1 IN root["Children"]
+) AS v1 
+WHERE (v0 AND root["IsRegistered"]) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Any binary) -> OrderBy(Count(filter)) -> Select(Sum(map))]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Any(c => (c.Grade > 90)) AndAlso f.IsRegistered)).OrderBy(f => f.Children.Count(c => (c.Things.Count() > 3))).Select(f => f.Children.Sum(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 90)
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c1 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c1["Things"]) > 3)
+) AS v1 
+JOIN (
+    SELECT VALUE SUM(ARRAY_LENGTH(c2["Pets"])) 
+    FROM root 
+    JOIN c2 IN root["Children"]
+) AS v2 
+WHERE (v0 AND root["IsRegistered"]) 
+ORDER BY v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select(Select))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Pets.Select(p => p.GivenName.Count())))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE v0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE LENGTH(p0["GivenName"]) 
+                FROM c0 
+                JOIN p0 IN c0["Pets"]
+            )
+        ) AS v0
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select(Select))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.Pets.Select(p => p)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE v0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE p0 
+                FROM c0 
+                JOIN p0 IN c0["Pets"]
+            )
+        ) AS v0
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select(new Count))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Select(c => new AnonymousType(HasSiblingWithSameStartingChar = (f.Children.Count(child => ((child.GivenName + " ").Substring(0, 1) == (c.GivenName + " ").Substring(0, 1))) > 1))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE {"HasSiblingWithSameStartingChar": (v0 > 1)} 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM c0 
+            JOIN child0 IN root["Children"] 
+            WHERE (SUBSTRING((child0["GivenName"] || " "), 0, 1) = SUBSTRING((c0["GivenName"] || " "), 0, 1))
+        ) AS v0
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Select(conditional ? Take : OrderBy -> Array indexer)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).Select(f => IIF((f.Children.Count() == 1), f.Children.Take(1).ToArray()[0], f.Children.OrderBy(c => c.Grade).ToArray()[1]))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((ARRAY_LENGTH(root["Children"]) = 1) ? v2[0] : v3[1]) 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT TOP 1 VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"]
+    )
+) AS v2 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        ORDER BY c0["Grade"] ASC
+    )
+) AS v3 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where(Where -> Count) -> Select(new Count))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Pets.Where(p => ((p.GivenName.Count() > 10) AndAlso (p.GivenName.Substring(0, 1) == "A"))).Count() > 0)).Select(c => new AnonymousType(HasSiblingWithSameStartingChar = (f.Children.Count(child => ((child.GivenName + " ").Substring(0, 1) == (c.GivenName + " ").Substring(0, 1))) > 1))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE {"HasSiblingWithSameStartingChar": (v1 > 1)} 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM c0 
+            JOIN p0 IN c0["Pets"] 
+            WHERE ((LENGTH(p0["GivenName"]) > 10) AND (SUBSTRING(p0["GivenName"], 0, 1) = "A"))
+        ) AS v0 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM c0 
+            JOIN child0 IN root["Children"] 
+            WHERE (SUBSTRING((child0["GivenName"] || " "), 0, 1) = SUBSTRING((c0["GivenName"] || " "), 0, 1))
+        ) AS v1 
+        WHERE (v0 > 0)
+    )
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select(Select))]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Select(c => c.Pets.Select(p => p.GivenName.Count())))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN c0 IN root["Children"] 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE LENGTH(p0["GivenName"]) 
+        FROM c0 
+        JOIN p0 IN c0["Pets"]
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where(Any))]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Where(c => c.Pets.Any(p => (p.GivenName.Count() > 10))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c0 
+FROM root 
+JOIN c0 IN root["Children"] 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE p0 
+        FROM c0 
+        JOIN p0 IN c0["Pets"] 
+        WHERE (LENGTH(p0["GivenName"]) > 10)
+    )
+) AS v0 
+WHERE v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Where(Count) -> Count)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Parents.Where(p => (p.FamilyName.Count() > 10)).Count() > 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN p0 IN root["Parents"] 
+    WHERE (LENGTH(p0["FamilyName"]) > 10)
+) AS v0 
+WHERE (v0 > 1) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Where(Where -> Count) -> Count)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Where(c => (c.Pets.Where(p => (p.GivenName.Count() > 15)).Count() > 0)).Count() > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM c0 
+        JOIN p0 IN c0["Pets"] 
+        WHERE (LENGTH(p0["GivenName"]) > 15)
+    ) AS v0 
+    WHERE (v0 > 0)
+) AS v1 
+WHERE (v1 > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Select(Select -> Any))]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Select(c => c.Pets.Select(p => p.GivenName)).Any(t => (t.Count() > 3)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE r0 
+        FROM (
+            SELECT VALUE v0 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            JOIN (
+                SELECT VALUE ARRAY(
+                    SELECT VALUE p0["GivenName"] 
+                    FROM c0 
+                    JOIN p0 IN c0["Pets"]
+                )
+            ) AS v0
+        ) AS r0 
+        WHERE (ARRAY_LENGTH(r0) > 3)
+    )
+) AS v1 
+WHERE v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new) -> Select(Select)]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, Family = f)).Select(f => f.Family.Children.Select(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM (
+    SELECT VALUE {"FamilyId": root["FamilyId"], "Family": root} 
+    FROM root
+) AS r0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM r0 
+        JOIN c0 IN r0["Family"]["Children"]
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Select(Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Select(c => c.Pets.Select(p => p.GivenName.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN f0 IN root["Children"] 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE LENGTH(p0["GivenName"]) 
+        FROM f0 
+        JOIN p0 IN f0["Pets"]
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where) -> Where(Any) -> Select(Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Where(c => (c.Grade > 80))).Where(c => c.Pets.Any(p => (p.GivenName.Count() > 20))).Select(c => c.Pets.Select(p => p.GivenName.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN c0 IN root["Children"] 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE p0 
+        FROM c0 
+        JOIN p0 IN c0["Pets"] 
+        WHERE (LENGTH(p0["GivenName"]) > 20)
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE LENGTH(p1["GivenName"]) 
+        FROM c0 
+        JOIN p1 IN c0["Pets"]
+    )
+) AS v1 
+WHERE ((c0["Grade"] > 80) AND v0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> Select(new) -> Where(Select(Select -> Any))]]></Description>
+      <Expression><![CDATA[query.Distinct().Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenCount = f.Children.Count(), Family = f)).Where(f => f.Family.Children.Select(c => c.Pets.Select(p => p.GivenName)).Any(t => (t.Count() > 3)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE {"FamilyId": r0["FamilyId"], "ChildrenCount": ARRAY_LENGTH(r0["Children"]), "Family": r0} 
+    FROM (
+        SELECT DISTINCT VALUE root 
+        FROM root
+    ) AS r0
+) AS r1 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE r2 
+        FROM (
+            SELECT VALUE v1 
+            FROM r1 
+            JOIN c0 IN r1["Family"]["Children"] 
+            JOIN (
+                SELECT VALUE ARRAY(
+                    SELECT VALUE p0["GivenName"] 
+                    FROM c0 
+                    JOIN p0 IN c0["Pets"]
+                )
+            ) AS v1
+        ) AS r2 
+        WHERE (ARRAY_LENGTH(r2) > 3)
+    )
+) AS v2 
+WHERE v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Select(Select)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).Select(f => f.Children.Select(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v0 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> Select(Select)]]></Description>
+      <Expression><![CDATA[query.Distinct().Select(f => f.Children.Select(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM (
+    SELECT DISTINCT VALUE root 
+    FROM root
+) AS r0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM r0 
+        JOIN c0 IN r0["Children"]
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Select(Select)]]></Description>
+      <Expression><![CDATA[query.Take(10).Select(f => f.Children.Select(c => c.Pets.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 10 VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Any w const array)]]></Description>
+      <Expression><![CDATA[query.Select(f => new [] {1, 2, 3}.Any())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Input is not of type IDocumentQuery.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Any)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Any())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"]
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Any w lambda)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Any(c => (c.Grade > 80)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 80)
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new Any)]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, HasGoodChildren = f.Children.Any(c => (c.Grade > 80))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"FamilyId": root["FamilyId"], "HasGoodChildren": v0} 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 80)
+    )
+) AS v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new 2 Any)]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(HasChildrenWithPets = f.Children.Any(c => (c.Pets.Count() > 0)), HasGoodChildren = f.Children.Any(c => (c.Grade > 80))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"HasChildrenWithPets": v0, "HasGoodChildren": v1} 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c1 
+        FROM root 
+        JOIN c1 IN root["Children"] 
+        WHERE (c1["Grade"] > 80)
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Nested Any)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Any(c => c.Pets.Any(p => (p.GivenName.Count() > 10))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE p0 
+                FROM c0 
+                JOIN p0 IN c0["Pets"] 
+                WHERE (LENGTH(p0["GivenName"]) > 10)
+            )
+        ) AS v0 
+        WHERE v0
+    )
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(Any)]]></Description>
+      <Expression><![CDATA[query.Where(f => f.Children.Any(c => (c.Pets.Count() > 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    )
+) AS v0 
+WHERE v0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where(simple expr && Any)]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.FamilyId.Contains("a") AndAlso f.Children.Any(c => (c.Pets.Count() > 0))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    )
+) AS v0 
+WHERE (CONTAINS(root["FamilyId"], "a") AND v0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Any)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Any(c => (c.Pets.Count() > 3)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
+    )
+) AS v0 
+ORDER BY v0 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Take)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Take(2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT TOP 2 VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Children"]
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(OrderBy)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.OrderBy(c => c.Grade))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v0 
+FROM root 
+JOIN (
+    SELECT VALUE c0 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    ORDER BY c0["Grade"] ASC
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where -> Take)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Where(c => (c.FamilyName.Count() > 10)).Take(2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT TOP 2 VALUE c0 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (LENGTH(c0["FamilyName"]) > 10)
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where -> Take -> Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Where(c => (c.FamilyName.Count() > 10)).Take(2).Select(c => c.Grade))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT TOP 2 VALUE c0["Grade"] 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (LENGTH(c0["FamilyName"]) > 10)
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

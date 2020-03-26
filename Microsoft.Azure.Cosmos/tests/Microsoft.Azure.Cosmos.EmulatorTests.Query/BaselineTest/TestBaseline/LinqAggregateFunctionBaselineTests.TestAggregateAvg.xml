@@ -1,0 +1,259 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Avg number]]></Description>
+      <Expression><![CDATA[query.Average(doc => doc.Number), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter true flag -> Avg w/ mapping]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Flag).Average(doc => doc.Number), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root 
+WHERE root["Flag"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter false flag -> Avg w/ mapping]]></Description>
+      <Expression><![CDATA[query.Where(doc => Not(doc.Flag)).Average(doc => doc.Number), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root 
+WHERE (NOT root["Flag"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Avg]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Average(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Avg w/ mapping]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Average(num => num), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Avg]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.Multiples.Where(m => ((m % 3) == 0)).Select(m => m)).Average(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(m0) 
+FROM root 
+JOIN m0 IN root["Multiples"] 
+WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where) -> Avg(Sum(map))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 80))).Average(children => children.Sum(c => c.Grade)), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(v1) 
+FROM (
+    SELECT VALUE v0 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE c0 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            WHERE (c0["Grade"] > 80)
+        )
+    ) AS v0
+) AS r0 
+JOIN (
+    SELECT VALUE SUM(c["Grade"]) 
+    FROM r0 
+    JOIN c IN r0
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Skip -> Avg]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Skip(90).Average(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(r0) 
+FROM (
+    SELECT VALUE root["Int"] 
+    FROM root 
+    OFFSET 90 LIMIT 2147483647
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Skip -> Take -> Avg]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Skip(90).Take(5).Average(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(r0) 
+FROM (
+    SELECT VALUE root["Int"] 
+    FROM root 
+    OFFSET 90 LIMIT 5
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select number -> Avg]]></Description>
+      <Expression><![CDATA[query.Skip(5).Take(5).Select(f => f.Int).Average(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(r0) 
+FROM (
+    SELECT VALUE root["Int"] 
+    FROM root 
+    OFFSET 5 LIMIT 5
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> SelectMany(Select) -> Skip -> Take -> Avg]]></Description>
+      <Expression><![CDATA[query.Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Average(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(r1) 
+FROM (
+    SELECT VALUE c0["Grade"] 
+    FROM (
+        SELECT VALUE root 
+        FROM root 
+        OFFSET 5 LIMIT 5
+    ) AS r0 
+    JOIN c0 IN r0["Children"] 
+    OFFSET 10 LIMIT 20
+) AS r1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select(new() -> Skip -> Take)]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(20).Where(f => (f.Children.Count() > 2)).Select(f => new AnonymousType(v0 = f.Children.Skip(1).Select(c => c.Grade).Average(), v1 = f.Children.Skip(1).Take(3).Select(c => c.Grade).Average(), v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Average(), v3 = f.Records.Transactions.Select(t => t.Amount).OrderBy(a => a).Skip(10).Take(20).Average(), v4 = f.Children.Where(c => (c.Grade > 20)).OrderBy(c => c.Grade).Select(c => c.Grade).Skip(1).Average())).Skip(1).Take(10).Select(f => (((((f.v0 + f.v1) + f.v2) + f.v3) + f.v4) / 5)).Average(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(r9) 
+FROM (
+    SELECT VALUE (((((r8["v0"] + r8["v1"]) + r8["v2"]) + r8["v3"]) + r8["v4"]) / 5) 
+    FROM (
+        SELECT VALUE {"v0": v5[0], "v1": v10[0], "v2": v15[0], "v3": v19[0], "v4": v22[0]} 
+        FROM (
+            SELECT VALUE root 
+            FROM root 
+            OFFSET 1 LIMIT 20
+        ) AS r0 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE AVG(r1) 
+                FROM (
+                    SELECT VALUE v2["Grade"] 
+                    FROM r0 
+                    JOIN v2 IN r0["Children"] 
+                    OFFSET 1 LIMIT 2147483647
+                ) AS r1
+            )
+        ) AS v5 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE AVG(r2) 
+                FROM (
+                    SELECT VALUE v6["Grade"] 
+                    FROM r0 
+                    JOIN v6 IN r0["Children"] 
+                    OFFSET 1 LIMIT 3
+                ) AS r2
+            )
+        ) AS v10 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE AVG(r4) 
+                FROM (
+                    SELECT VALUE r3["Grade"] 
+                    FROM (
+                        SELECT TOP 3 VALUE v11 
+                        FROM r0 
+                        JOIN v11 IN r0["Children"]
+                    ) AS r3 
+                    OFFSET 1 LIMIT 2147483647
+                ) AS r4
+            )
+        ) AS v15 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE AVG(r6) 
+                FROM (
+                    SELECT VALUE t0["Amount"] 
+                    FROM r0 
+                    JOIN t0 IN r0["Records"]["Transactions"] 
+                    ORDER BY t0["Amount"] ASC 
+                    OFFSET 10 LIMIT 20
+                ) AS r6
+            )
+        ) AS v19 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE AVG(r7) 
+                FROM (
+                    SELECT VALUE c0["Grade"] 
+                    FROM r0 
+                    JOIN c0 IN r0["Children"] 
+                    WHERE (c0["Grade"] > 20) 
+                    ORDER BY c0["Grade"] ASC 
+                    OFFSET 1 LIMIT 2147483647
+                ) AS r7
+            )
+        ) AS v22 
+        WHERE (ARRAY_LENGTH(r0["Children"]) > 2) 
+        OFFSET 1 LIMIT 10
+    ) AS r8
+) AS r9 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

@@ -1,0 +1,781 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenBy(f => f.Int)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] ASC, root["Int"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenByDescending]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenByDescending(f => f.Int)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] ASC, root["Int"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId).ThenBy(f => f.Int)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] DESC, root["Int"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending -> ThenByDescending]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId).ThenByDescending(f => f.Int)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] DESC, root["Int"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy subquery -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Where(c => (c.Grade > 100)).Count()).ThenByDescending(f => f.Int)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 100)
+) AS v0 
+ORDER BY v0 ASC, root["Int"] DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy subquery]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenByDescending(f => f.Parents.Where(p => (p.GivenName.Length > 10)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN p0 IN root["Parents"] 
+    WHERE (p0["GivenName"]["Length"] > 10)
+) AS v0 
+ORDER BY root["FamilyId"] ASC, v0 DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy subquery -> ThenBy subquery]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.Children.Where(c => (c.Grade > 100)).Count()).ThenBy(f => f.Parents.Where(p => (p.GivenName.Length > 10)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 100)
+) AS v0 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN p0 IN root["Parents"] 
+    WHERE (p0["GivenName"]["Length"] > 10)
+) AS v1 
+ORDER BY v0 DESC, v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenBy(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenByDescending]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenByDescending(f => f.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] ASC, root["FamilyId"] DESC ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending subquery -> ThenBy subquery]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.Children.Where(c => (c.Grade > 100)).Count()).ThenBy(f => f.Children.Where(c => (c.Grade > 100)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 100)
+) AS v0 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c1 IN root["Children"] 
+    WHERE (c1["Grade"] > 100)
+) AS v1 
+ORDER BY v0 DESC, v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => (f.Int * 2)).ThenBy(f => f.FamilyId.Substring(2, 3))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY (root["Int"] * 2) ASC, SUBSTRING(root["FamilyId"], 2, 3) ASC ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => Not(Convert(f.NullableInt, Object).IsDefined())).ThenByDescending(f => (f.Tags.Count() % 2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY (NOT IS_DEFINED(root["NullableInt"])) ASC, (ARRAY_LENGTH(root["Tags"]) % 2) DESC ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => IIF(f.IsRegistered, f.FamilyId, f.Int.ToString())).ThenBy(f => (f.Records.Transactions.Max(t => t.Amount) % 1000))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE MAX(t0["Amount"]) 
+        FROM root 
+        JOIN t0 IN root["Records"]["Transactions"]
+    )
+) AS v0 
+ORDER BY (root["IsRegistered"] ? root["FamilyId"] : root["Int"]) DESC, (v0[0] % 1000) ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.FamilyId).OrderBy(f => f.Int).ThenByDescending(f => f.IsRegistered)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["Int"] ASC, root["IsRegistered"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenBy(f => f.Int).ThenByDescending(f => f.IsRegistered)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] ASC, root["Int"] ASC, root["IsRegistered"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Orderby subquery -> ThenBy subquery]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).OrderBy(f => f.Children.Where(c => (c.Grade > 100)).Count()).ThenBy(f => f.Parents.Where(p => (p.GivenName.Length > 10)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 100)
+) AS v0 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN p0 IN root["Parents"] 
+    WHERE (p0["GivenName"]["Length"] > 10)
+) AS v1 
+ORDER BY v0 ASC, v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy subquery -> ThenBy subquery]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenByDescending(f => f.Parents.Where(p => (p.GivenName.Length > 10)).Count()).ThenBy(f => f.Children.Where(c => (c.Grade > 100)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN p0 IN root["Parents"] 
+    WHERE (p0["GivenName"]["Length"] > 10)
+) AS v0 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (c0["Grade"] > 100)
+) AS v1 
+ORDER BY root["FamilyId"] ASC, v0 DESC, v1 ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy(OrderBy -> ThenBy -> Select)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenByDescending(f => f.Parents.OrderBy(p => p.FamilyName).ThenByDescending(p => p.GivenName).Select(p => (p.FamilyName + p.GivenName)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
+        FROM root 
+        JOIN p0 IN root["Parents"] 
+        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC
+    )
+) AS v0 
+ORDER BY root["FamilyId"] ASC, v0 DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(OrderBy -> ThenBy) -> ThenBy(OrderBy -> ThenBy)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.OrderBy(c => c.Grade).ThenBy(c => c.Pets.Count)).ThenByDescending(f => f.Parents.OrderBy(p => p.FamilyName).ThenByDescending(p => p.GivenName).Select(p => (p.FamilyName + p.GivenName)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        ORDER BY c0["Grade"] ASC, c0["Pets"]["Count"] ASC
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
+        FROM root 
+        JOIN p0 IN root["Parents"] 
+        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC
+    )
+) AS v1 
+ORDER BY v0 ASC, v1 DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> ThenBy(OrderBy -> ThenBy -> Take -> Select)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).ThenByDescending(f => f.Parents.OrderBy(p => p.FamilyName).ThenByDescending(p => p.GivenName).Take(1).Select(p => (p.FamilyName + p.GivenName)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT TOP 1 VALUE (p0["FamilyName"] || p0["GivenName"]) 
+        FROM root 
+        JOIN p0 IN root["Parents"] 
+        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC
+    )
+) AS v1 
+ORDER BY root["FamilyId"] ASC, v1 DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(OrderBy -> ThenBy -> Take -> OrderBy -> ThenBy) -> ThenBy(OrderBy -> ThenBy)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.OrderBy(c => c.Grade).ThenByDescending(c => c.Pets.Count).Take(10).OrderByDescending(c => c.GivenName).ThenBy(c => c.Gender)).ThenByDescending(f => f.Parents.OrderBy(p => p.FamilyName).ThenByDescending(p => p.GivenName).Select(p => (p.FamilyName + p.GivenName)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE r0 
+        FROM (
+            SELECT TOP 10 VALUE c0 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            ORDER BY c0["Grade"] ASC, c0["Pets"]["Count"] DESC
+        ) AS r0 
+        ORDER BY r0["GivenName"] DESC, r0["Gender"] ASC
+    )
+) AS v1 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
+        FROM root 
+        JOIN p0 IN root["Parents"] 
+        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC
+    )
+) AS v2 
+ORDER BY v1 ASC, v2 DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, FamilyNumber = f.Int, ChildrenCount = f.Children.Count(), ChildrenPetCount = f.Children.Select(c => c.Pets.Count()).Sum())).OrderBy(r => r.FamilyId).ThenBy(r => r.FamilyNumber)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE {"FamilyId": root["FamilyId"], "FamilyNumber": root["Int"], "ChildrenCount": ARRAY_LENGTH(root["Children"]), "ChildrenPetCount": v1} 
+    FROM root 
+    JOIN (
+        SELECT VALUE SUM(ARRAY_LENGTH(c0["Pets"])) 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    ) AS v1
+) AS r1 
+ORDER BY r1["FamilyId"] ASC, r1["FamilyNumber"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Underlying object does not have an '_rid' field.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Select(c => new AnonymousType(FamilyId = f.FamilyId, FamilyNumber = f.Int, ChildrenCount = f.Children.Count(), Name = c.GivenName, SpecialPetCount = c.Pets.Where(p => (p.GivenName.Length > 5)).Count())).OrderBy(r => r.FamilyId).ThenBy(r => r.FamilyNumber))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v1 
+FROM root 
+JOIN (
+    SELECT VALUE r0 
+    FROM (
+        SELECT VALUE {"FamilyId": root["FamilyId"], "FamilyNumber": root["Int"], "ChildrenCount": ARRAY_LENGTH(root["Children"]), "Name": c0["GivenName"], "SpecialPetCount": v0} 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM c0 
+            JOIN p0 IN c0["Pets"] 
+            WHERE (p0["GivenName"]["Length"] > 5)
+        ) AS v0
+    ) AS r0 
+    ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC
+) AS v1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Select(c => new AnonymousType(FamilyId = f.FamilyId, FamilyNumber = f.Int, ChildrenCount = f.Children.Count(), Name = c.GivenName, SpecialPetCount = c.Pets.Where(p => (p.GivenName.Length > 5)).Count()))).OrderBy(r => r.FamilyId).ThenBy(r => r.FamilyNumber).Select(r => r.FamilyId)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0["FamilyId"] 
+FROM (
+    SELECT VALUE {"FamilyId": root["FamilyId"], "FamilyNumber": root["Int"], "ChildrenCount": ARRAY_LENGTH(root["Children"]), "Name": c0["GivenName"], "SpecialPetCount": v0} 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM c0 
+        JOIN p0 IN c0["Pets"] 
+        WHERE (p0["GivenName"]["Length"] > 5)
+    ) AS v0
+) AS r0 
+ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Underlying object does not have an '_rid' field.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new(Where, Sum) -> OrderBy(Count) -> ThenBy)]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(ChildrenWithPets = f.Children.Where(c => (c.Pets.Count() > 0)), TotalExpenses = f.Records.Transactions.Sum(t => t.Amount))).OrderByDescending(r => r.ChildrenWithPets.Count()).ThenByDescending(r => r.TotalExpenses)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE {"ChildrenWithPets": v0, "TotalExpenses": v1} 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE c0 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+        )
+    ) AS v0 
+    JOIN (
+        SELECT VALUE SUM(t0["Amount"]) 
+        FROM root 
+        JOIN t0 IN root["Records"]["Transactions"]
+    ) AS v1
+) AS r0 
+ORDER BY ARRAY_LENGTH(r0["ChildrenWithPets"]) DESC, r0["TotalExpenses"] DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new(Min, Count, SelectMany->Select->Distinct->Count)) -> OrderByDescending -> ThenBy]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(ParentGivenName = f.Parents.Min(p => p.GivenName), ParentCount = f.Parents.Count(), GoodChildrenCount = f.Children.Where(c => (c.Grade > 95)).Count(), UniquePetsNameCount = f.Children.SelectMany(c => c.Pets).Select(p => p.GivenName).Distinct().Count())).OrderByDescending(r => r.GoodChildrenCount).ThenBy(r => r.UniquePetsNameCount)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r2 
+FROM (
+    SELECT VALUE {"ParentGivenName": v0[0], "ParentCount": ARRAY_LENGTH(root["Parents"]), "GoodChildrenCount": v1, "UniquePetsNameCount": v3} 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE MIN(p0["GivenName"]) 
+            FROM root 
+            JOIN p0 IN root["Parents"]
+        )
+    ) AS v0 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 95)
+    ) AS v1 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM (
+            SELECT DISTINCT VALUE c2["GivenName"] 
+            FROM root 
+            JOIN c1 IN root["Children"] 
+            JOIN c2 IN c1["Pets"]
+        ) AS r1
+    ) AS v3
+) AS r2 
+ORDER BY r2["GoodChildrenCount"] DESC, r2["UniquePetsNameCount"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).OrderBy(f => f.IsRegistered).ThenByDescending(f => f.Int)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+ORDER BY root["IsRegistered"] ASC, root["Int"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany -> OrderBy -> ThenBy -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).SelectMany(f => f.Children).OrderBy(c => c.Grade).ThenByDescending(c => c.Pets.Count()).Take(3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 3 VALUE f0 
+FROM root 
+JOIN f0 IN root["Children"] 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany -> OrderBy -> ThenBy -> Skip -> Take -> Where -> Select -> Distinct]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).SelectMany(f => f.Children).OrderByDescending(c => c.Grade).ThenBy(c => c.GivenName).Skip(2).Take(20).Where(c => (c.Pets.Where(p => (p.GivenName.Length > 10)).Count() > 0)).Select(c => c.GivenName).Distinct()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r1 
+FROM (
+    SELECT VALUE r0["GivenName"] 
+    FROM (
+        SELECT VALUE f0 
+        FROM root 
+        JOIN f0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+        ORDER BY f0["Grade"] DESC, f0["GivenName"] ASC 
+        OFFSET 2 LIMIT 20
+    ) AS r0 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM r0 
+        JOIN p0 IN r0["Pets"] 
+        WHERE (p0["GivenName"]["Length"] > 10)
+    ) AS v2 
+    WHERE (v2 > 0)
+) AS r1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany -> OrderBy -> ThenBy -> Select => Distinct => Take => OrderBy]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).SelectMany(f => f.Children).OrderBy(c => c.Grade).ThenByDescending(c => c.Pets.Count()).Select(c => c.GivenName).Distinct().Take(10).Skip(5).OrderBy(n => n.Length)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r2 
+FROM (
+    SELECT VALUE r1 
+    FROM (
+        SELECT DISTINCT TOP 10 VALUE f0["GivenName"] 
+        FROM root 
+        JOIN f0 IN root["Children"] 
+        WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+        ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC
+    ) AS r1 
+    OFFSET 5 LIMIT 2147483647
+) AS r2 
+ORDER BY r2["Length"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany -> OrderBy -> ThenBy -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).SelectMany(f => f.Records.Transactions).OrderBy(t => t.Type).ThenBy(t => t.Amount).Take(100)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 100 VALUE f0 
+FROM root 
+JOIN f0 IN root["Records"]["Transactions"] 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+ORDER BY f0["Type"] ASC, f0["Amount"] ASC ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.Take(100).OrderBy(f => f.IsRegistered).ThenByDescending(f => f.Int)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 100 VALUE root 
+    FROM root
+) AS r0 
+ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> OrderBy -> ThenBy -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(100).OrderBy(f => f.IsRegistered).ThenByDescending(f => f.Int).Skip(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 100 VALUE root 
+    FROM root
+) AS r0 
+ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC 
+OFFSET 5 LIMIT 2147483647 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.Distinct().OrderBy(f => f.IsRegistered).ThenByDescending(f => f.Int)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root 
+FROM root 
+ORDER BY root["IsRegistered"] ASC, root["Int"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany(Select(new Where->Count)) -> Distinct -> OrderBy -> ThenBy]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).SelectMany(f => f.Children.Select(c => new AnonymousType(Name = c.GivenName, PetWithLongNames = c.Pets.Where(p => (p.GivenName.Length > 8)).Count()))).Distinct().OrderByDescending(r => r.Name).ThenBy(r => r.PetWithLongNames)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT VALUE {"Name": c0["GivenName"], "PetWithLongNames": v0} 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM c0 
+        JOIN p0 IN c0["Pets"] 
+        WHERE (p0["GivenName"]["Length"] > 8)
+    ) AS v0 
+    WHERE (ARRAY_LENGTH(root["Children"]) > 0)
+) AS r0 
+ORDER BY r0["Name"] DESC, r0["PetWithLongNames"] ASC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Any) -> ThenBy(Any)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Any(c => (c.Grade > 90))).ThenByDescending(f => f.Parents.Any(p => (p.GivenName.Length > 10)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 90)
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE EXISTS(
+        SELECT VALUE p0 
+        FROM root 
+        JOIN p0 IN root["Parents"] 
+        WHERE (p0["GivenName"]["Length"] > 10)
+    )
+) AS v1 
+ORDER BY v0 ASC, v1 DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Min) -> ThenBy(Max) -> ThenBy(Sum) -> ThenBy(Avg)]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Min(c => c.GivenName)).ThenByDescending(f => f.Parents.Max(p => p.GivenName)).ThenBy(f => f.Records.Transactions.Sum(t => t.Amount)).ThenByDescending(f => f.Records.Transactions.Average(t => t.Amount))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE MIN(c0["GivenName"]) 
+        FROM root 
+        JOIN c0 IN root["Children"]
+    )
+) AS v0 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE MAX(p0["GivenName"]) 
+        FROM root 
+        JOIN p0 IN root["Parents"]
+    )
+) AS v1 
+JOIN (
+    SELECT VALUE SUM(t0["Amount"]) 
+    FROM root 
+    JOIN t0 IN root["Records"]["Transactions"]
+) AS v2 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE AVG(t1["Amount"]) 
+        FROM root 
+        JOIN t1 IN root["Records"]["Transactions"]
+    )
+) AS v3 
+ORDER BY v0[0] ASC, v1[0] DESC, v2 ASC, v3[0] DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

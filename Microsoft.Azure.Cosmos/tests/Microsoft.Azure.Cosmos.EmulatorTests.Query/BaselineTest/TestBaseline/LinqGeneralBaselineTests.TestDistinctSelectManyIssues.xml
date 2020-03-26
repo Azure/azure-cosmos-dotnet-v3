@@ -1,0 +1,28 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> OrderBy -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Distinct().OrderBy(x => x).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT TOP 10 VALUE root["Int"] 
+FROM root 
+ORDER BY root["Int"] ASC ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Microsoft.VisualStudio.TestTools.UnitTesting.AssertFailedException: Assert.IsTrue failed.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Distinct -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).OrderBy(x => x).Distinct().Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT TOP 10 VALUE root["Int"] 
+FROM root 
+ORDER BY root["Int"] ASC ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Microsoft.VisualStudio.TestTools.UnitTesting.AssertFailedException: Assert.IsTrue failed.]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

@@ -1,0 +1,317 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any]]></Description>
+      <Expression><![CDATA[query.Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter true flag -> Any]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Flag).Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE root["Flag"]
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter false flag -> Any]]></Description>
+      <Expression><![CDATA[query.Where(doc => Not(doc.Flag)).Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE (NOT root["Flag"])
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Any]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root["Number"] 
+    FROM root
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Any]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.Multiples.Where(m => ((m % 3) == 0)).Select(m => m)).Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE m0 
+    FROM root 
+    JOIN m0 IN root["Multiples"] 
+    WHERE ((m0 % 3) = 0)
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any w/ boolean filter]]></Description>
+      <Expression><![CDATA[query.Any(doc => doc.Flag), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE root["Flag"]
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any w/ operator filter]]></Description>
+      <Expression><![CDATA[query.Any(doc => (doc.Number < -7)), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE (root["Number"] < -7)
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Any w/ operator filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Any(num => (num < -13)), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root["Number"] 
+    FROM root 
+    WHERE (root["Number"] < -13)
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select) -> Any(Sum)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Multiples).Any(array => (array.Sum() > 5)), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v2) > 0) 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT VALUE root["Multiples"] 
+        FROM root
+    ) AS r0 
+    JOIN (
+        SELECT VALUE SUM(v0) 
+        FROM r0 
+        JOIN v0 IN r0
+    ) AS v1 
+    WHERE (v1 > 5)
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where) -> Any(Sum(map))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Pets.Count() > 0))).Any(children => (children.Sum(c => c.Grade) > 150)), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v2) > 0) 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT VALUE v0 
+        FROM root 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE c0 
+                FROM root 
+                JOIN c0 IN root["Children"] 
+                WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+            )
+        ) AS v0
+    ) AS r0 
+    JOIN (
+        SELECT VALUE SUM(c["Grade"]) 
+        FROM r0 
+        JOIN c IN r0
+    ) AS v1 
+    WHERE (v1 > 150)
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Any]]></Description>
+      <Expression><![CDATA[query.Skip(20).Take(1).Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v2) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 20 LIMIT 1
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Skip) -> Any]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Skip(4)).Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v2) > 0) 
+FROM (
+    SELECT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Children"] 
+    OFFSET 4 LIMIT 2147483647
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select(new()) -> Skip -> Take -> Select -> Any]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(20).Select(f => new AnonymousType(v0 = f.Children.Skip(3).Select(c => c.Grade).Any(), v1 = f.Children.Skip(3).Take(3).Select(c => c.Grade).Any(), v2 = f.Children.Take(3).Skip(4).Select(c => c.Grade).Any(), v3 = f.Records.Transactions.Select(t => t.Amount).OrderBy(a => a).Skip(10).Take(20).Any(), v4 = f.Children.Where(c => (c.Grade > 80)).OrderBy(c => c.Grade).Select(c => c.Grade).Skip(4).Any(), v5 = f.Children.Where(c => (c.Grade > 80)).OrderBy(c => c.Grade).Skip(4).SelectMany(c => c.Pets.Where(p => (p.GivenName.CompareTo("A") > 0)).Skip(1).Take(2)).Take(3).Any())).Skip(1).Take(10).Select(f => ((f.v0 AndAlso f.v1) OrElse (f.v0 AndAlso f.v1))).Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v26) > 0) 
+FROM (
+    SELECT VALUE ((r3["v0"] AND r3["v1"]) OR (r3["v0"] AND r3["v1"])) 
+    FROM (
+        SELECT VALUE {"v0": v4, "v1": v8, "v2": v12, "v3": v15, "v4": v17, "v5": v23} 
+        FROM root 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE v2["Grade"] 
+                FROM root 
+                JOIN v2 IN root["Children"] 
+                OFFSET 3 LIMIT 2147483647
+            )
+        ) AS v4 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE v5["Grade"] 
+                FROM root 
+                JOIN v5 IN root["Children"] 
+                OFFSET 3 LIMIT 3
+            )
+        ) AS v8 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE r0["Grade"] 
+                FROM (
+                    SELECT TOP 3 VALUE v9 
+                    FROM root 
+                    JOIN v9 IN root["Children"]
+                ) AS r0 
+                OFFSET 4 LIMIT 2147483647
+            )
+        ) AS v12 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE t0["Amount"] 
+                FROM root 
+                JOIN t0 IN root["Records"]["Transactions"] 
+                ORDER BY t0["Amount"] ASC 
+                OFFSET 10 LIMIT 20
+            )
+        ) AS v15 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE c0["Grade"] 
+                FROM root 
+                JOIN c0 IN root["Children"] 
+                WHERE (c0["Grade"] > 80) 
+                ORDER BY c0["Grade"] ASC 
+                OFFSET 4 LIMIT 2147483647
+            )
+        ) AS v17 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT TOP 3 VALUE v21 
+                FROM (
+                    SELECT VALUE c1 
+                    FROM root 
+                    JOIN c1 IN root["Children"] 
+                    WHERE (c1["Grade"] > 80) 
+                    ORDER BY c1["Grade"] ASC 
+                    OFFSET 4 LIMIT 2147483647
+                ) AS r2 
+                JOIN (
+                    SELECT VALUE p0 
+                    FROM r2 
+                    JOIN p0 IN r2["Pets"] 
+                    WHERE (p0["GivenName"] > "A") 
+                    OFFSET 1 LIMIT 2
+                ) AS v21
+            )
+        ) AS v23 
+        OFFSET 1 LIMIT 20
+    ) AS r3 
+    OFFSET 1 LIMIT 10
+) AS v26 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

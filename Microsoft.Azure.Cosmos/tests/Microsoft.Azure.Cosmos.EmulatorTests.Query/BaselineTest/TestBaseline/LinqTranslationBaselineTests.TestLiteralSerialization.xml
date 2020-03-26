@@ -1,0 +1,442 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Byte 1]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 1} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Byte MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 0} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Byte MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 255))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 255} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SByte 2]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 2} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SByte MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -128))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": -128} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SByte MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 127))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 127} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt16 3]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 3))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 3} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt16 MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 0} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt16 MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 65535))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 65535} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt32 4]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 4))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 4} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt32 MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 0} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt32 MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 4294967295))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 4294967295} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt64 5]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 5))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 5} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt64 MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 0} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt64 MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 18446744073709551615))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 1.8446744073709552E+19} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int16 6]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 6))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 6} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int16 MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -32768))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": -32768} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int16 MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 32767))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 32767} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int32 7]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 7))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 7} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int32 MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -2147483648))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": -2147483648} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int32 MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 2147483647))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 2147483647} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int64 8]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 8))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 8} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int64 MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -9223372036854775808))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": -9223372036854775808} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int64 MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 9223372036854775807))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 9223372036854775807} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Decimal 9]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 9))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 9} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Decimal MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -79228162514264337593543950335))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": -7.9228162514264338E+28} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Decimal MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 79228162514264337593543950335))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 7.9228162514264338E+28} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double 10]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 10))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 10} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -1.79769313486232E+308))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": -1.7976931348623157E+308} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 1.79769313486232E+308))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 1.7976931348623157E+308} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single 11]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 11))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 11} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single MinValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -3.402823E+38))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": -3.40282347E+38} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single MaxValue]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 3.402823E+38))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": 3.40282347E+38} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Bool true]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = True))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": true} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Bool false]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = False))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": false} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String empty]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = String.Empty))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": ""} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String str1]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = "str1"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": "str1"} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String special]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = "long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": "long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890"} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String unicode]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = "unicode 㐀㐁㨀㨁䶴䶵"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": "unicode 㐀㐁㨀㨁䶴䶵"} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[null object]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = DisplayClass.nullStr))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"value": null} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

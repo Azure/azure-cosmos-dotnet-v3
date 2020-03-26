@@ -1,0 +1,297 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count]]></Description>
+      <Expression><![CDATA[query.Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter true flag -> Count]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Flag).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE root["Flag"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter false flag -> Count]]></Description>
+      <Expression><![CDATA[query.Where(doc => Not(doc.Flag)).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE (NOT root["Flag"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Count]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Count]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.Multiples.Where(m => ((m % 3) == 0)).Select(m => m)).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+JOIN m0 IN root["Multiples"] 
+WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count w/ boolean filter]]></Description>
+      <Expression><![CDATA[query.Count(doc => doc.Flag), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE root["Flag"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count w/ operator filter]]></Description>
+      <Expression><![CDATA[query.Count(doc => (doc.Number < -7)), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE (root["Number"] < -7) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Count w/ operator filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Count(num => (num < -13)), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE (root["Number"] < -13) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Skip -> Count]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Skip(90).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE root["Int"] 
+    FROM root 
+    OFFSET 90 LIMIT 2147483647
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Skip -> Take -> Count]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Skip(90).Take(5).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE root["Int"] 
+    FROM root 
+    OFFSET 90 LIMIT 5
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select number -> Count]]></Description>
+      <Expression><![CDATA[query.Skip(5).Take(5).Select(f => f.Int).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE root["Int"] 
+    FROM root 
+    OFFSET 5 LIMIT 5
+) AS r0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> SelectMany(Select) -> Skip -> Take -> Count]]></Description>
+      <Expression><![CDATA[query.Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE c0["Grade"] 
+    FROM (
+        SELECT VALUE root 
+        FROM root 
+        OFFSET 5 LIMIT 5
+    ) AS r0 
+    JOIN c0 IN r0["Children"] 
+    OFFSET 10 LIMIT 20
+) AS r1 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select(new(Skip -> Select -> Count, Skip -> Take -> Select -> Count, Take -> Skip -> Select -> Count) -> Skip -> Take)]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(20).Select(f => new AnonymousType(v0 = f.Children.Skip(1).Select(c => c.Grade).Count(), v1 = f.Children.Skip(1).Take(3).Select(c => c.Grade).Count(), v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Count())).Skip(1).Take(10).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE r4 
+    FROM (
+        SELECT VALUE {"v0": v4, "v1": v8, "v2": v12} 
+        FROM root 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM (
+                SELECT VALUE v2["Grade"] 
+                FROM root 
+                JOIN v2 IN root["Children"] 
+                OFFSET 1 LIMIT 2147483647
+            ) AS r0
+        ) AS v4 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM (
+                SELECT VALUE v5["Grade"] 
+                FROM root 
+                JOIN v5 IN root["Children"] 
+                OFFSET 1 LIMIT 3
+            ) AS r1
+        ) AS v8 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM (
+                SELECT VALUE r2["Grade"] 
+                FROM (
+                    SELECT TOP 3 VALUE v9 
+                    FROM root 
+                    JOIN v9 IN root["Children"]
+                ) AS r2 
+                OFFSET 1 LIMIT 2147483647
+            ) AS r3
+        ) AS v12 
+        OFFSET 1 LIMIT 20
+    ) AS r4 
+    OFFSET 1 LIMIT 10
+) AS r5 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select(new() -> Skip -> Take)]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(20).Select(f => new AnonymousType(v0 = f.Children.Skip(1).Count(c => (c.Grade > 50)), v1 = f.Children.Skip(1).Take(3).Count(c => (c.Grade > 50)), v2 = f.Children.Take(3).Skip(1).Count(c => (c.Grade > 50)), v3 = f.Records.Transactions.Select(t => t.Amount).OrderBy(a => a).Skip(10).Take(20).Count(), v4 = f.Children.Where(c => (c.Grade > 20)).OrderBy(c => c.Grade).Select(c => c.Grade).Skip(1).Count())).Skip(1).Take(10).Count(f => ((f.v0 + f.v1) > (f.v2 + f.v3))), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE r7 
+    FROM (
+        SELECT VALUE {"v0": v4, "v1": v8, "v2": v12, "v3": v15, "v4": v17} 
+        FROM root 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM (
+                SELECT VALUE v2 
+                FROM root 
+                JOIN v2 IN root["Children"] 
+                OFFSET 1 LIMIT 2147483647
+            ) AS r0 
+            WHERE (r0["Grade"] > 50)
+        ) AS v4 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM (
+                SELECT VALUE v5 
+                FROM root 
+                JOIN v5 IN root["Children"] 
+                OFFSET 1 LIMIT 3
+            ) AS r1 
+            WHERE (r1["Grade"] > 50)
+        ) AS v8 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM (
+                SELECT VALUE r2 
+                FROM (
+                    SELECT TOP 3 VALUE v9 
+                    FROM root 
+                    JOIN v9 IN root["Children"]
+                ) AS r2 
+                OFFSET 1 LIMIT 2147483647
+            ) AS r3 
+            WHERE (r3["Grade"] > 50)
+        ) AS v12 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM (
+                SELECT VALUE t0["Amount"] 
+                FROM root 
+                JOIN t0 IN root["Records"]["Transactions"] 
+                ORDER BY t0["Amount"] ASC 
+                OFFSET 10 LIMIT 20
+            ) AS r5
+        ) AS v15 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM (
+                SELECT VALUE c0["Grade"] 
+                FROM root 
+                JOIN c0 IN root["Children"] 
+                WHERE (c0["Grade"] > 20) 
+                ORDER BY c0["Grade"] ASC 
+                OFFSET 1 LIMIT 2147483647
+            ) AS r6
+        ) AS v17 
+        OFFSET 1 LIMIT 20
+    ) AS r7 
+    OFFSET 1 LIMIT 10
+) AS r8 
+WHERE ((r8["v0"] + r8["v1"]) > (r8["v2"] + r8["v3"])) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

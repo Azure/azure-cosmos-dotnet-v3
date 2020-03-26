@@ -1,0 +1,38 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ ternary conditional ?]]></Description>
+      <Expression><![CDATA[query.Where(doc => IIF((doc.NumericField < 3), True, False)).Select(doc => doc.StringField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+WHERE ((root["NumericField"] < 3) ? true : false) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ ternary conditional ? and contains]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == Convert(IIF(doc.ArrayField.Contains(1), 1, 5), Double))).Select(doc => doc.StringField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+WHERE (root["NumericField"] = (ARRAY_CONTAINS(root["ArrayField"], 1) ? 1 : 5)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ ternary conditional ? and contains #2]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == Convert(IIF((doc.StringField == "str"), 1, IIF(doc.ArrayField.Contains(1), 3, 4)), Double))).Select(doc => doc.StringField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+WHERE (root["NumericField"] = ((root["StringField"] = "str") ? 1 : (ARRAY_CONTAINS(root["ArrayField"], 1) ? 3 : 4))) ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

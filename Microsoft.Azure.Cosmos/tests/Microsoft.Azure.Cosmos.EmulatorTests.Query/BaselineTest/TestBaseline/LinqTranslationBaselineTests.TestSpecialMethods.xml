@@ -1,0 +1,35 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Equals]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Equals("str"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] = "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ToString]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.ToString())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[get_item]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.EnumerableField.get_Item(0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["EnumerableField"][0] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

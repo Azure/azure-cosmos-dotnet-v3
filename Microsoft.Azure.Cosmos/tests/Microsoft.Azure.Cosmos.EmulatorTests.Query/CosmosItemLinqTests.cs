@@ -755,10 +755,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(response.RequestCharge > 0);
 
             bool disableDiagnostics = queryRequestOptions.DiagnosticContextFactory != null;
-            CosmosDiagnosticsTests.VerifyQueryDiagnostics(
+            VerifyQueryDiagnostics(
                 diagnostics: response.Diagnostics,
                 isFirstPage: false,
                 disableDiagnostics: disableDiagnostics);
+        }
+
+        public static void VerifyQueryDiagnostics(
+            CosmosDiagnostics diagnostics,
+            bool isFirstPage,
+            bool disableDiagnostics)
+        {
+            string info = diagnostics.ToString();
+            if (disableDiagnostics)
+            {
+                Assert.AreEqual(string.Empty, info);
+                return;
+            }
+
+
+            CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
+
+            // If all the pages are buffered then several of the normal summary validation will fail.
+            if (diagnosticsContext.TotalRequestCount > 0)
+            {
+                DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
+            }
+
+            DiagnosticValidator.ValidateQueryDiagnostics(diagnosticsContext, isFirstPage);
         }
     }
 }

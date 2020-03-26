@@ -1,0 +1,380 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat 2]]></Description>
+      <Expression><![CDATA[query.Select(doc => Concat(doc.StringField, "str"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONCAT(root["StringField"], "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat 3]]></Description>
+      <Expression><![CDATA[query.Select(doc => Concat(doc.StringField, "str1", "str2"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONCAT(root["StringField"], "str1", "str2") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat 4]]></Description>
+      <Expression><![CDATA[query.Select(doc => Concat(doc.StringField, "str1", "str2", "str3"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat 5]]></Description>
+      <Expression><![CDATA[query.Select(doc => Concat(new [] {doc.StringField, "str1", "str2", "str3", "str4"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3", "str4") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Concat array]]></Description>
+      <Expression><![CDATA[query.Select(doc => Concat(new [] {doc.StringField, "str1", "str2", "str3", "str4"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3", "str4") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains w/ string]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Contains("str"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONTAINS(root["StringField"], "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains w/ char]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Contains(c))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONTAINS(root["StringField"], "c") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains in string constant]]></Description>
+      <Expression><![CDATA[query.Select(doc => "str".Contains(doc.StringField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONTAINS("str", root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains in constant list]]></Description>
+      <Expression><![CDATA[query.Select(doc => DisplayClass.constantList.Contains(doc.StringField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] IN ("one", "two", "three")) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains in constant array]]></Description>
+      <Expression><![CDATA[query.Select(doc => DisplayClass.constantArray.Contains(doc.StringField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] IN ("one", "two", "three")) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains in constant list in filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField).Where(str => DisplayClass.constantList.Contains(str))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+WHERE (root["StringField"] IN ("one", "two", "three")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains in constant array in filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField).Where(str => DisplayClass.constantArray.Contains(str))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+WHERE (root["StringField"] IN ("one", "two", "three")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Not in constant list]]></Description>
+      <Expression><![CDATA[query.Select(doc => Not(DisplayClass.constantList.Contains(doc.StringField)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] NOT IN ("one", "two", "three")) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Not in constant array]]></Description>
+      <Expression><![CDATA[query.Select(doc => Not(DisplayClass.constantArray.Contains(doc.StringField)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] NOT IN ("one", "two", "three")) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter not in constant list]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField).Where(str => Not(DisplayClass.constantList.Contains(str)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+WHERE (root["StringField"] NOT IN ("one", "two", "three")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter not in constant array]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField).Where(str => Not(DisplayClass.constantArray.Contains(str)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+WHERE (root["StringField"] NOT IN ("one", "two", "three")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Empty list contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => DisplayClass.emptyList.Contains(doc.StringField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE false 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Empty list not contains]]></Description>
+      <Expression><![CDATA[query.Select(doc => Not(DisplayClass.emptyList.Contains(doc.StringField)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (NOT false) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[EndsWith]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.EndsWith("str"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ENDSWITH(root["StringField"], "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant string EndsWith]]></Description>
+      <Expression><![CDATA[query.Select(doc => "str".EndsWith(doc.StringField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ENDSWITH("str", root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IndexOf char]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.IndexOf(c))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE INDEX_OF(root["StringField"], "c") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IndexOf string]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.IndexOf("str"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE INDEX_OF(root["StringField"], "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IndexOf char w/ startIndex]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.IndexOf(c, 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE INDEX_OF(root["StringField"], "c", 0) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IndexOf string w/ startIndex]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.IndexOf("str", 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE INDEX_OF(root["StringField"], "str", 0) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ToLower]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.ToLower())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LOWER(root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimStart]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimStart())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LTRIM(root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Replace char]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Replace(c, a))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE REPLACE(root["StringField"], "c", "a") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Replace string]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Replace("str", "str2"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE REPLACE(root["StringField"], "str", "str2") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimEnd]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimEnd())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE RTRIM(root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[StartsWith]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.StartsWith("str"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE STARTSWITH(root["StringField"], "str") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String constant StartsWith]]></Description>
+      <Expression><![CDATA[query.Select(doc => "str".StartsWith(doc.StringField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE STARTSWITH("str", root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Substring]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Substring(0, 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE SUBSTRING(root["StringField"], 0, 1) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ToUpper]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.ToUpper())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE UPPER(root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

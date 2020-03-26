@@ -1,0 +1,239 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take 0]]></Description>
+      <Expression><![CDATA[query.Take(0)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 0 VALUE root 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Take]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Take(1)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root["NumericField"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter -> Take]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField > 100)).Take(2)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 2 VALUE root 
+FROM root 
+WHERE (root["NumericField"] > 100) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Filter -> Take]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Where(number => (number > 100)).Take(7)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 7 VALUE root["NumericField"] 
+FROM root 
+WHERE (root["NumericField"] > 100) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField > 100)).Select(doc => doc.NumericField).Take(8)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 8 VALUE root["NumericField"] 
+FROM root 
+WHERE (root["NumericField"] > 100) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Fitler -> OrderBy -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField > 100)).OrderBy(doc => doc.NumericField).Select(doc => doc.NumericField).Take(9)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 9 VALUE root["NumericField"] 
+FROM root 
+WHERE (root["NumericField"] > 100) 
+ORDER BY root["NumericField"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Filter]]></Description>
+      <Expression><![CDATA[query.Take(3).Where(doc => (doc.NumericField > 100))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 3 VALUE root 
+    FROM root
+) AS r0 
+WHERE (r0["NumericField"] > 100) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Filter -> Select]]></Description>
+      <Expression><![CDATA[query.Take(4).Where(doc => (doc.NumericField > 100)).Select(doc => doc.NumericField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0["NumericField"] 
+FROM (
+    SELECT TOP 4 VALUE root 
+    FROM root
+) AS r0 
+WHERE (r0["NumericField"] > 100) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Select -> Filter]]></Description>
+      <Expression><![CDATA[query.Take(5).Select(doc => doc.NumericField).Where(number => (number > 100))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 5 VALUE root["NumericField"] 
+    FROM root
+) AS r0 
+WHERE (r0 > 100) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Take -> Filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Take(6).Where(number => (number > 100))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 6 VALUE root["NumericField"] 
+    FROM root
+) AS r0 
+WHERE (r0 > 100) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Filter -> OrderBy -> Select]]></Description>
+      <Expression><![CDATA[query.Take(10).Where(doc => (doc.NumericField > 100)).OrderByDescending(doc => doc.NumericField).Select(doc => doc.NumericField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0["NumericField"] 
+FROM (
+    SELECT TOP 10 VALUE root 
+    FROM root
+) AS r0 
+WHERE (r0["NumericField"] > 100) 
+ORDER BY r0["NumericField"] DESC 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take 10 -> Take 5]]></Description>
+      <Expression><![CDATA[query.Take(10).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE root 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take 5 -> Take 10]]></Description>
+      <Expression><![CDATA[query.Take(5).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE root 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take 10 -> Select -> Take 1]]></Description>
+      <Expression><![CDATA[query.Take(10).Select(doc => doc.NumericField).Take(1)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root["NumericField"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take 10 -> Filter -> Take 2]]></Description>
+      <Expression><![CDATA[query.Take(10).Where(doc => (doc.NumericField > 100)).Take(2)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 2 VALUE r0 
+FROM (
+    SELECT TOP 10 VALUE root 
+    FROM root
+) AS r0 
+WHERE (r0["NumericField"] > 100) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -1 -> Take 5]]></Description>
+      <Expression><![CDATA[query.Take(-1).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The count value provided for a Take expression must be a non-negative integer.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -2 -> Select]]></Description>
+      <Expression><![CDATA[query.Take(-2).Select(doc => doc.NumericField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The count value provided for a Take expression must be a non-negative integer.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter -> Take -3]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField > 100)).Take(-3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The count value provided for a Take expression must be a non-negative integer.]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

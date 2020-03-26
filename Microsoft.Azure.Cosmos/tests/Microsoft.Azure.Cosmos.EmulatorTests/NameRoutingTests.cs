@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -456,26 +455,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Cosmos.Database database = await client.CreateDatabaseAsync(databaseId);
             Container collection = await database.CreateContainerAsync(containerSetting);
 
-            LinqGeneralBaselineTests.Book myDocument = new LinqGeneralBaselineTests.Book();
+            Book myDocument = new Book();
             myDocument.Id = Guid.NewGuid().ToString();
             myDocument.Title = "My Book"; //Simple Property.
-            myDocument.Languages = new LinqGeneralBaselineTests.Language[] { new LinqGeneralBaselineTests.Language { Name = "English", Copyright = "London Publication" }, new LinqGeneralBaselineTests.Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
-            myDocument.Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }; //Complex Property
+            myDocument.Languages = new Language[] { new Language { Name = "English", Copyright = "London Publication" }, new Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
+            myDocument.Author = new Author { Name = "Don", Location = "France" }; //Complex Property
             myDocument.Price = 9.99;
 
-            await collection.CreateItemAsync<LinqGeneralBaselineTests.Book>(myDocument);
+            await collection.CreateItemAsync<Book>(myDocument);
 
             myDocument.Title = "My new Book";
             // Testing the ReplaceDocumentAsync API with DocumentUri as the parameter
-            ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument, myDocument.Id);
+            ItemResponse<Book> replacedDocument = await collection.ReplaceItemAsync<Book>(myDocument, myDocument.Id);
 
             QueryRequestOptions options = new QueryRequestOptions() { MaxConcurrency = 1, MaxItemCount = 1 };
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
-            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
+            FeedIterator<Book> cosmosResultSet = collection.GetItemQueryIterator<Book>(queryText: sqlQueryText, requestOptions: options);
             Assert.AreEqual(0, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             sqlQueryText = @"select * from root r where r.title = ""My new Book""";
-            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
+            cosmosResultSet = collection.GetItemQueryIterator<Book>(queryText: sqlQueryText, requestOptions: options);
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             myDocument.Title = "My old Book";
@@ -483,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await collection.ReplaceItemAsync(myDocument, myDocument.Id);
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
-            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
+            cosmosResultSet = collection.GetItemQueryIterator<Book>(queryText: sqlQueryText, requestOptions: options);
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
         }
 

@@ -1,0 +1,180 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[array create]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Select(i => new [] {i})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE [root["Int"]] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[unary operation]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Select(i => -i)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (- root["Int"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[binary operation]]></Description>
+      <Expression><![CDATA[query.Select(f => f).Select(i => ((i.Int % 10) * i.Children.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((root["Int"] % 10) * ARRAY_LENGTH(root["Children"])) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[literal]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Int).Select(i => 0)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE 0 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[function call]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Parents).Select(p => p.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_LENGTH(root["Parents"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[object create]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Parents).Select(p => new AnonymousType(parentCount = p.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"parentCount": ARRAY_LENGTH(root["Parents"])} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[conditional]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children).Select(c => IIF((c.Count() > 0), "have kids", "no kids"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((ARRAY_LENGTH(root["Children"]) > 0) ? "have kids" : "no kids") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[property ref + indexer]]></Description>
+      <Expression><![CDATA[query.Select(f => f).Where(f => ((f.Children.Count() > 0) AndAlso (f.Children[0].Pets.Count() > 0))).Select(f => f.Children[0].Pets.get_Item(0).GivenName)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Children"][0]["Pets"][0]["GivenName"] 
+FROM root 
+WHERE ((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 0)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[array creation -> indexer]]></Description>
+      <Expression><![CDATA[query.Select(f => new [] {f.Int}).Select(array => array[0])]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE [root["Int"]][0] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[unary, indexer, property, function call -> function call]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).Select(f => -f.Children[0].Pets.Count()).Select(i => Abs(i))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ABS((- ARRAY_LENGTH(root["Children"][0]["Pets"]))) 
+FROM root 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[binary operation, function call -> conditional]]></Description>
+      <Expression><![CDATA[query.Select(i => ((i.Int % 10) * i.Children.Count())).Select(i => IIF((i > 0), new [] {i}, new [] {}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((((root["Int"] % 10) * ARRAY_LENGTH(root["Children"])) > 0) ? [((root["Int"] % 10) * ARRAY_LENGTH(root["Children"]))] : []) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[object creation -> conditional]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(parentCount = f.Parents.Count(), childrenCount = f.Children.Count())).Select(r => IIF((r.parentCount > 0), Floor((Convert(r.childrenCount, Double) / Convert(r.parentCount, Double))), 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (({"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["parentCount"] > 0) ? FLOOR(({"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["childrenCount"] / {"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["parentCount"])) : 0) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[indexer -> function call]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Parents[0]).Select(p => Concat(p.FamilyName, p.GivenName))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONCAT(root["Parents"][0]["FamilyName"], root["Parents"][0]["GivenName"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[conditional -> object creation]]></Description>
+      <Expression><![CDATA[query.Select(f => IIF((f.Parents.Count() > 0), f.Parents, new Microsoft.Azure.Cosmos.Services.Management.Tests.Parent[](0))).Select(p => new AnonymousType(parentCount = p.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"parentCount": ARRAY_LENGTH(((ARRAY_LENGTH(root["Parents"]) > 0) ? root["Parents"] : []))} 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[object creation -> conditional]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(children = f.Children)).Select(c => IIF((c.children.Count() > 0), c.children[0].GivenName, "no kids"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((ARRAY_LENGTH({"children": root["Children"]}["children"]) > 0) ? {"children": root["Children"]}["children"][0]["GivenName"] : "no kids") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[object creation -> conditional]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(family = f, children = f.Children.Count())).Select(f => IIF(((f.children > 0) AndAlso (f.family.Children[0].Pets.Count() > 0)), f.family.Children[0].Pets.get_Item(0).GivenName, "no kids"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((({"family": root, "children": ARRAY_LENGTH(root["Children"])}["children"] > 0) AND (ARRAY_LENGTH({"family": root, "children": ARRAY_LENGTH(root["Children"])}["family"]["Children"][0]["Pets"]) > 0)) ? {"family": root, "children": ARRAY_LENGTH(root["Children"])}["family"]["Children"][0]["Pets"][0]["GivenName"] : "no kids") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

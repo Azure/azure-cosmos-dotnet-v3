@@ -1,0 +1,113 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple Equality on custom property]]></Description>
+      <Expression><![CDATA[query.Where(book => (book.Title == "My Book"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["title"] = "My Book") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Nested Property access]]></Description>
+      <Expression><![CDATA[query.Where(book => (book.Author.Name == "Don"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Author"]["id"] = "Don") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Array references & Project Author out..]]></Description>
+      <Expression><![CDATA[query.Where(book => (book.Languages[0].Name == "English")).Select(book => book.Author)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Author"] 
+FROM root 
+WHERE (root["Languages"][0]["Name"] = "English") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany]]></Description>
+      <Expression><![CDATA[query.SelectMany(book => book.Languages).Where(lang => (lang.Name == "French")).Select(lang => lang.Copyright)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE book0["Copyright"] 
+FROM root 
+JOIN book0 IN root["Languages"] 
+WHERE (book0["Name"] = "French") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[NumericRange query]]></Description>
+      <Expression><![CDATA[query.Where(book => (book.Price < 10)).Select(book => book.Author)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Author"] 
+FROM root 
+WHERE (root["Price"] < 10) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Or query]]></Description>
+      <Expression><![CDATA[query.Where(book => ((book.Title == "My Book") OrElse (book.Author.Name == "Don")))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((root["title"] = "My Book") OR (root["Author"]["id"] = "Don")) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany query on a List type.]]></Description>
+      <Expression><![CDATA[query.SelectMany(book => book.Editions).Select(ed => ed.Name)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE book0["Name"] 
+FROM root 
+JOIN book0 IN root["Editions"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany]]></Description>
+      <Expression><![CDATA[query.SelectMany(book => book.Languages.Where(lng => (lng.Name == "English")).Select(lng => book.Author))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Author"] 
+FROM root 
+JOIN lng0 IN root["Languages"] 
+WHERE (lng0["Name"] = "English") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany]]></Description>
+      <Expression><![CDATA[query.SelectMany(book => book.Editions.Where(edition => (edition.Year == 2001)).Select(lng => book.Author))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Author"] 
+FROM root 
+JOIN edition0 IN root["Editions"] 
+WHERE (edition0["Year"] = 2001) ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

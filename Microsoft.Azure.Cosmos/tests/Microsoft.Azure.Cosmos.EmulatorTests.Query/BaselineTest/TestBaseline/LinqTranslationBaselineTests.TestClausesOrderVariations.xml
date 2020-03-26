@@ -1,0 +1,50 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Select]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField == "str")).Select(doc => doc.NumericField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NumericField"] 
+FROM root 
+WHERE (root["StringField"] = "str") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Where]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Where(number => (number == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NumericField"] 
+FROM root 
+WHERE (root["NumericField"] = 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Multiple Where]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Point).Where(point => (point.Position.Latitude == 100)).Where(point => (point.Position.Longitude == 50)).Where(point => (point.Position.Altitude == Convert(Convert(20, Double), Nullable`1))).Where(point => (point.Position.Coordinates.get_Item(0) == 100)).Where(point => (point.Position.Coordinates.get_Item(1) == 50))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Point"] 
+FROM root 
+WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["coordinates"]["Longitude"] = 50)) AND (root["Point"]["coordinates"]["Altitude"] = 20)) AND (root["Point"]["coordinates"]["Coordinates"][0] = 100)) AND (root["Point"]["coordinates"]["Coordinates"][1] = 50)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multiple Where -> Select]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.Point.Position.Latitude == 100)).Where(doc => (doc.Point.Position.Longitude == 50)).Where(doc => (doc.Point.Position.Altitude == Convert(Convert(20, Double), Nullable`1))).Where(doc => (doc.Point.Position.Coordinates.get_Item(0) == 100)).Where(doc => (doc.Point.Position.Coordinates.get_Item(1) == 50)).Select(doc => doc.Point)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Point"] 
+FROM root 
+WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["coordinates"]["Longitude"] = 50)) AND (root["Point"]["coordinates"]["Altitude"] = 20)) AND (root["Point"]["coordinates"]["Coordinates"][0] = 100)) AND (root["Point"]["coordinates"]["Coordinates"][1] = 50)) ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

@@ -1,0 +1,74 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NullableField == Convert(5, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableField"] = 5) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ .Value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NullableField.HasValue AndAlso (doc.NullableField.Value == 5)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (IS_DEFINED(root["NullableField"]) AND (root["NullableField"] = 5)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ .HasValue]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.NullableField.HasValue)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_DEFINED(root["NullableField"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ .HasValue comparison true]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NullableField.HasValue == True))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (IS_DEFINED(root["NullableField"]) = true) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ .HasValue comparison false]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NullableField.HasValue == False))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (IS_DEFINED(root["NullableField"]) = false) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ .HasValue not]]></Description>
+      <Expression><![CDATA[query.Where(doc => Not(doc.NullableField.HasValue))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (NOT IS_DEFINED(root["NullableField"])) ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

@@ -1,0 +1,50 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter by JsonProperty]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.JsonProperty == "Hello"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["jsonProperty"] = "Hello") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter by DataMember]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DataMember == "Hello"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["dataMember"] = "Hello") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter by Default]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.Default == "Hello"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Default"] = "Hello") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter by JsonPropertyAndDataMember]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.JsonPropertyAndDataMember == "Hello"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["jsonPropertyHasHigherPriority"] = "Hello") ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

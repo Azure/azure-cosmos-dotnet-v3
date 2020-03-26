@@ -1,0 +1,1747 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip]]></Description>
+      <Expression><![CDATA[query.Skip(3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 3 LIMIT 2147483647 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(2)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 1 LIMIT 2 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip(negative number) -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(-1).Take(1)]]></Expression>
+      <ErrorMessage><![CDATA[expression must be a non-negative integer]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take(negative number)]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(-2)]]></Expression>
+      <ErrorMessage><![CDATA[expression must be a non-negative integer]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(1).Skip(2).Take(3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 3 LIMIT 3 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(3).Take(5).Take(3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 3 LIMIT 3 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(2).Skip(3).Take(4)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 1 LIMIT 2
+) AS r0 
+OFFSET 3 LIMIT 4 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Take -> Skip]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(2).Take(3).Skip(4)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 1 LIMIT 2
+) AS r0 
+OFFSET 4 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Skip -> Take -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(5).Skip(2).Take(10).Take(3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 7 LIMIT 3 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(7).Skip(3)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 7 VALUE root 
+    FROM root
+) AS r0 
+OFFSET 3 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Take -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(2).Take(3).Skip(5)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 2 VALUE root 
+    FROM root
+) AS r0 
+OFFSET 5 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Skip -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(3).Skip(1).Skip(2)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 3 VALUE root 
+    FROM root
+) AS r0 
+OFFSET 3 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Take -> Skip -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(5).Take(3).Skip(1).Skip(1)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 3 VALUE root 
+    FROM root
+) AS r0 
+OFFSET 2 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Skip -> Take -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(10).Skip(2).Take(5).Skip(1)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT TOP 10 VALUE root 
+        FROM root
+    ) AS r0 
+    OFFSET 2 LIMIT 5
+) AS r1 
+OFFSET 1 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Skip -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Take(10).Skip(4).Skip(2).Take(2)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 10 VALUE root 
+    FROM root
+) AS r0 
+OFFSET 6 LIMIT 2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.FamilyId).Skip(1).Take(2)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+OFFSET 1 LIMIT 2 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Take -> Skip]]></Description>
+      <Expression><![CDATA[query.Select(f => f.FamilyId).Take(2).Skip(1)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 2 VALUE root["FamilyId"] 
+    FROM root
+) AS r0 
+OFFSET 1 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Skip -> Take -> Select]]></Description>
+      <Expression><![CDATA[query.Select(f => f.FamilyId).Skip(7).Take(13).Select(f => f.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(root["FamilyId"]) 
+FROM root 
+OFFSET 7 LIMIT 13 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select -> Take -> Skip]]></Description>
+      <Expression><![CDATA[query.Skip(5).Take(11).Select(f => f.Children.Count()).Take(7).Skip(3)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE ARRAY_LENGTH(root["Children"]) 
+    FROM root 
+    OFFSET 5 LIMIT 7
+) AS r0 
+OFFSET 3 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(10).Select(f => f.FamilyId).Take(7)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+OFFSET 10 LIMIT 7 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Select -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(7).Select(f => f.FamilyId).Skip(3)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 7 VALUE root["FamilyId"] 
+    FROM root
+) AS r0 
+OFFSET 3 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Skip(7).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0 
+FROM root 
+JOIN f0 IN root["Children"] 
+OFFSET 7 LIMIT 5 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Skip -> Take -> SelectMany]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Skip(11).Take(3).SelectMany(c => c.Pets)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c0 
+FROM (
+    SELECT VALUE f0 
+    FROM root 
+    JOIN f0 IN root["Children"] 
+    OFFSET 11 LIMIT 3
+) AS r0 
+JOIN c0 IN r0["Pets"] 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> SelectMany -> Take -> Skip -> SelectMany]]></Description>
+      <Expression><![CDATA[query.Skip(1).SelectMany(f => f.Children).Take(13).Skip(3).SelectMany(c => c.Pets)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c0 
+FROM (
+    SELECT VALUE r1 
+    FROM (
+        SELECT TOP 13 VALUE f0 
+        FROM (
+            SELECT VALUE root 
+            FROM root 
+            OFFSET 1 LIMIT 2147483647
+        ) AS r0 
+        JOIN f0 IN r0["Children"]
+    ) AS r1 
+    OFFSET 3 LIMIT 2147483647
+) AS r2 
+JOIN c0 IN r2["Pets"] 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> SelectMany -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).SelectMany(c => c.Pets).Skip(3).Take(4)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c0 
+FROM root 
+JOIN f0 IN root["Children"] 
+JOIN c0 IN f0["Pets"] 
+OFFSET 3 LIMIT 4 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Skip -> SelectMany -> Skip -> SelectMany]]></Description>
+      <Expression><![CDATA[query.Take(50).Skip(25).SelectMany(f => f.Children).Skip(10).SelectMany(c => c.Pets)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c0 
+FROM (
+    SELECT VALUE f0 
+    FROM (
+        SELECT VALUE r0 
+        FROM (
+            SELECT TOP 50 VALUE root 
+            FROM root
+        ) AS r0 
+        OFFSET 25 LIMIT 2147483647
+    ) AS r1 
+    JOIN f0 IN r1["Children"] 
+    OFFSET 10 LIMIT 2147483647
+) AS r2 
+JOIN c0 IN r2["Pets"] 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => f.IsRegistered).Skip(3).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE root["IsRegistered"] 
+OFFSET 3 LIMIT 5 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Skip -> Take -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).Skip(7).Take(11).Where(f => (f.Tags.Count() > 2)).Skip(1).Take(3)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+    OFFSET 7 LIMIT 11
+) AS r0 
+WHERE (ARRAY_LENGTH(r0["Tags"]) > 2) 
+OFFSET 1 LIMIT 3 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Where -> Skip]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(25).Where(f => (f.Int > 10)).Skip(5)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 1 LIMIT 25
+) AS r0 
+WHERE (r0["Int"] > 10) 
+OFFSET 5 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Where -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(25).Where(f => f.FamilyId.Contains("A")).Skip(10)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 25 VALUE root 
+    FROM root
+) AS r0 
+WHERE CONTAINS(r0["FamilyId"], "A") 
+OFFSET 10 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Take -> Skip -> Where]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 1)).Take(10).Skip(3).Where(f => (f.Int > 0))]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT TOP 10 VALUE root 
+        FROM root 
+        WHERE (ARRAY_LENGTH(root["Children"]) > 1)
+    ) AS r0 
+    OFFSET 3 LIMIT 2147483647
+) AS r1 
+WHERE (r1["Int"] > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Int).Skip(3).Take(7)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["Int"] ASC 
+OFFSET 3 LIMIT 7 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Skip -> Take -> OrderBy -> Take -> Skip]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Int).Skip(3).Take(11).OrderBy(f => f.FamilyId).Take(7).Skip(1)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT TOP 7 VALUE r0 
+    FROM (
+        SELECT VALUE root 
+        FROM root 
+        ORDER BY root["Int"] ASC 
+        OFFSET 3 LIMIT 11
+    ) AS r0 
+    ORDER BY r0["FamilyId"] ASC
+) AS r1 
+OFFSET 1 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> OrderBy]]></Description>
+      <Expression><![CDATA[query.Skip(3).Take(43).OrderBy(f => f.IsRegistered)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 3 LIMIT 43
+) AS r0 
+ORDER BY r0["IsRegistered"] ASC 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> OrderByDescending -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(50).OrderByDescending(f => f.Int).Skip(13)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 50 VALUE root 
+    FROM root
+) AS r0 
+ORDER BY r0["Int"] DESC 
+OFFSET 13 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> OrderByDescending -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(7).OrderByDescending(f => f.Int).Take(17)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 17 VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 7 LIMIT 2147483647
+) AS r0 
+ORDER BY r0["Int"] DESC 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Distinct().Skip(3).Take(7)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE root 
+FROM root 
+OFFSET 3 LIMIT 7 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Distinct]]></Description>
+      <Expression><![CDATA[query.Skip(3).Take(11).Distinct()]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 3 LIMIT 11
+) AS r0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select -> Distinct -> Skip -> Take -> Distinct -> Skip]]></Description>
+      <Expression><![CDATA[query.Skip(10).Take(60).Select(f => f.Int).Distinct().Skip(15).Take(20).Distinct().Skip(7)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r1 
+FROM (
+    SELECT DISTINCT VALUE r0 
+    FROM (
+        SELECT VALUE root["Int"] 
+        FROM root 
+        OFFSET 10 LIMIT 60
+    ) AS r0 
+    OFFSET 15 LIMIT 20
+) AS r1 
+OFFSET 7 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Distinct -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(7).Distinct().Skip(20).Take(10)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 7 LIMIT 2147483647
+) AS r0 
+OFFSET 20 LIMIT 10 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Skip -> Distinct -> Skip]]></Description>
+      <Expression><![CDATA[query.Take(30).Skip(10).Distinct().Skip(7)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r1 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT TOP 30 VALUE root 
+        FROM root
+    ) AS r0 
+    OFFSET 10 LIMIT 2147483647
+) AS r1 
+OFFSET 7 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new) -> SelectMany -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, Children = f.Children)).SelectMany(c => c.Children).Skip(3).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c0 
+FROM (
+    SELECT VALUE {"FamilyId": root["FamilyId"], "Children": root["Children"]} 
+    FROM root
+) AS r0 
+JOIN c0 IN r0["Children"] 
+OFFSET 3 LIMIT 10 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Select -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Select(c => c.GivenName).Skip(7).Take(3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0["GivenName"] 
+FROM root 
+JOIN f0 IN root["Children"] 
+OFFSET 7 LIMIT 3 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> SelectMany -> Skip -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(10).Take(20).SelectMany(f => f.Children).Skip(3).Select(c => c.GivenName).Take(5)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0["GivenName"] 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 10 LIMIT 20
+) AS r0 
+JOIN f0 IN r0["Children"] 
+OFFSET 3 LIMIT 5 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> SelectMany -> Take -> Skip -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(10).SelectMany(f => f.Children).Take(10).Skip(1).Select(c => c.FamilyName).Take(7)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1["FamilyName"] 
+FROM (
+    SELECT TOP 10 VALUE f0 
+    FROM (
+        SELECT VALUE root 
+        FROM root 
+        OFFSET 10 LIMIT 2147483647
+    ) AS r0 
+    JOIN f0 IN r0["Children"]
+) AS r1 
+OFFSET 1 LIMIT 7 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> SelectMany -> Skip -> Select -> Take]]></Description>
+      <Expression><![CDATA[query.Take(30).SelectMany(f => f.Children).Skip(10).Select(c => c.Grade).Take(3)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0["Grade"] 
+FROM (
+    SELECT TOP 30 VALUE root 
+    FROM root
+) AS r0 
+JOIN f0 IN r0["Children"] 
+OFFSET 10 LIMIT 3 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children).Where(c => (c.Count() > 0)).Skip(3).Take(7)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Children"] 
+FROM root 
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+OFFSET 3 LIMIT 7 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Skip -> Take -> Select -> Skip]]></Description>
+      <Expression><![CDATA[query.Where(f => f.IsRegistered).Skip(7).Take(3).Select(f => f.FamilyId).Skip(2)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root["FamilyId"] 
+    FROM root 
+    WHERE root["IsRegistered"] 
+    OFFSET 7 LIMIT 3
+) AS r0 
+OFFSET 2 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Skip -> Take -> OrderBy]]></Description>
+      <Expression><![CDATA[query.Select(f => f.FamilyId).Skip(1).Take(2).OrderBy(s => s)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root["FamilyId"] 
+    FROM root 
+    OFFSET 1 LIMIT 2
+) AS r0 
+ORDER BY r0 ASC 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending -> Take -> Skip -> Select]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(f => f.Int).Take(10).Skip(3).Select(f => (f.Int + 1))]]></Expression>
+      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (r0["Int"] + 1) 
+FROM (
+    SELECT TOP 10 VALUE root 
+    FROM root 
+    ORDER BY root["Int"] DESC
+) AS r0 
+OFFSET 3 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Select -> Distinct -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Take(7).Select(f => f.Int).Distinct().Skip(1).Take(5)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT TOP 7 VALUE root["Int"] 
+    FROM root
+) AS r0 
+OFFSET 1 LIMIT 5 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Where(c => (c.Grade > 100)).Skip(10).Take(20)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0 
+FROM root 
+JOIN f0 IN root["Children"] 
+WHERE (f0["Grade"] > 100) 
+OFFSET 10 LIMIT 20 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Skip -> SelectMany -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => f.IsRegistered).Skip(10).SelectMany(f => f.Children).Take(7)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 7 VALUE f0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE root["IsRegistered"] 
+    OFFSET 10 LIMIT 2147483647
+) AS r0 
+JOIN f0 IN r0["Children"] 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Skip -> SelectMany -> SelectMany]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Int).Skip(10).SelectMany(f => f.Children).SelectMany(c => c.Pets)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE c0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    ORDER BY root["Int"] ASC 
+    OFFSET 10 LIMIT 2147483647
+) AS r0 
+JOIN f0 IN r0["Children"] 
+JOIN c0 IN f0["Pets"] 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> OrderBy -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(10).Take(20)]]></Expression>
+      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0 
+FROM root 
+JOIN f0 IN root["Children"] 
+ORDER BY f0["Grade"] ASC 
+OFFSET 10 LIMIT 20 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Distinct -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Distinct().Skip(7).Take(11)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE f0 
+FROM root 
+JOIN f0 IN root["Children"] 
+OFFSET 7 LIMIT 11 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> Skip -> SelectMany]]></Description>
+      <Expression><![CDATA[query.Distinct().Skip(3).SelectMany(f => f.Children)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0 
+FROM (
+    SELECT DISTINCT VALUE root 
+    FROM root 
+    OFFSET 3 LIMIT 2147483647
+) AS r0 
+JOIN f0 IN r0["Children"] 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Int).Where(f => f.IsRegistered).Skip(11).Take(3)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE root["IsRegistered"] 
+ORDER BY root["Int"] ASC 
+OFFSET 11 LIMIT 3 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Where -> Take -> OrderBy]]></Description>
+      <Expression><![CDATA[query.Skip(20).Where(f => (f.Children.Count() > 0)).Take(10).OrderBy(f => f.Int)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT TOP 10 VALUE r0 
+    FROM (
+        SELECT VALUE root 
+        FROM root 
+        OFFSET 20 LIMIT 2147483647
+    ) AS r0 
+    WHERE (ARRAY_LENGTH(r0["Children"]) > 0)
+) AS r1 
+ORDER BY r1["Int"] ASC 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Skip -> Take -> Distinct]]></Description>
+      <Expression><![CDATA[query.Where(f => f.IsRegistered).Skip(3).Take(17).Distinct()]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE root["IsRegistered"] 
+    OFFSET 3 LIMIT 17
+) AS r0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Distinct -> Where -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(22).Distinct().Where(f => (f.Parents.Count() > 0)).Take(7)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT TOP 7 VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 22 LIMIT 2147483647
+) AS r0 
+WHERE (ARRAY_LENGTH(r0["Parents"]) > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Where -> OrderBy -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.FamilyId).Where(id => (id.Count() > 10)).OrderBy(id => id).Skip(1).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["FamilyId"] 
+FROM root 
+WHERE (LENGTH(root["FamilyId"]) > 10) 
+ORDER BY root["FamilyId"] ASC 
+OFFSET 1 LIMIT 10 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Where -> OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.FamilyId).Where(id => (id.Count() > 10)).OrderBy(id => id).Skip(1).Take(10).Select(id => (id + "_suffix")).Where(id => (id.Count() > 12)).Skip(2).Take(4)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE (root["FamilyId"] || "_suffix") 
+    FROM root 
+    WHERE (LENGTH(root["FamilyId"]) > 10) 
+    ORDER BY root["FamilyId"] ASC 
+    OFFSET 1 LIMIT 10
+) AS r1 
+WHERE (LENGTH(r1) > 12) 
+OFFSET 2 LIMIT 4 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Skip -> OrderBy -> Skip -> Distinct -> Skip]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Records).Skip(5).OrderBy(r => r.Transactions.Count()).Skip(1).Distinct().Skip(3)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r1 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT VALUE root["Records"] 
+        FROM root 
+        OFFSET 5 LIMIT 2147483647
+    ) AS r0 
+    ORDER BY ARRAY_LENGTH(r0["Transactions"]) ASC 
+    OFFSET 1 LIMIT 2147483647
+) AS r1 
+OFFSET 3 LIMIT 2147483647 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new(new(new(new(new))))) -> (Skip -> Select) x 6 -> Skip -> Where -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, L1 = new AnonymousType(L2 = new AnonymousType(L3 = new AnonymousType(L4 = new AnonymousType(Records = f.Records)))))).Skip(1).Select(f => f.L1).Skip(2).Select(f => f.L2).Skip(3).Select(f => f.L3).Skip(4).Select(f => f.L4).Skip(5).Select(f => f.Records).Skip(6).Select(f => f.Transactions).Skip(7).Where(t => (t.Count() > 100)).Take(20)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 20 VALUE r6 
+FROM (
+    SELECT VALUE r5["Transactions"] 
+    FROM (
+        SELECT VALUE r4["Records"] 
+        FROM (
+            SELECT VALUE r3["L4"] 
+            FROM (
+                SELECT VALUE r2["L3"] 
+                FROM (
+                    SELECT VALUE r1["L2"] 
+                    FROM (
+                        SELECT VALUE r0["L1"] 
+                        FROM (
+                            SELECT VALUE {"FamilyId": root["FamilyId"], "L1": {"L2": {"L3": {"L4": {"Records": root["Records"]}}}}} 
+                            FROM root 
+                            OFFSET 1 LIMIT 2147483647
+                        ) AS r0 
+                        OFFSET 2 LIMIT 2147483647
+                    ) AS r1 
+                    OFFSET 3 LIMIT 2147483647
+                ) AS r2 
+                OFFSET 4 LIMIT 2147483647
+            ) AS r3 
+            OFFSET 5 LIMIT 2147483647
+        ) AS r4 
+        OFFSET 6 LIMIT 2147483647
+    ) AS r5 
+    OFFSET 7 LIMIT 2147483647
+) AS r6 
+WHERE (ARRAY_LENGTH(r6) > 100) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> (Skip -> Select -> Where -> OrderBy -> Distinct -> Take) x 3 -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(L1 = f)).Skip(1).Select(f => f.L1).Where(f => (f.Int > 10)).OrderBy(f => f.FamilyId).Distinct().Take(100).Skip(2).Select(f => new AnonymousType(L2 = f)).Where(f => (f.L2.FamilyId.CompareTo("A") > 0)).OrderBy(f => f.L2.Int).Distinct().Take(50).Skip(3).Select(f => f.L2).Where(f => (f.Children.Count() > 1)).OrderBy(f => f.IsRegistered).Distinct().Take(40).Skip(4).Take(25)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r6 
+FROM (
+    SELECT DISTINCT TOP 40 VALUE r5 
+    FROM (
+        SELECT VALUE r4["L2"] 
+        FROM (
+            SELECT DISTINCT TOP 50 VALUE r3 
+            FROM (
+                SELECT VALUE {"L2": r2} 
+                FROM (
+                    SELECT DISTINCT TOP 100 VALUE r1 
+                    FROM (
+                        SELECT VALUE r0["L1"] 
+                        FROM (
+                            SELECT VALUE {"L1": root} 
+                            FROM root 
+                            OFFSET 1 LIMIT 2147483647
+                        ) AS r0
+                    ) AS r1 
+                    WHERE (r1["Int"] > 10) 
+                    ORDER BY r1["FamilyId"] ASC
+                ) AS r2 
+                OFFSET 2 LIMIT 2147483647
+            ) AS r3 
+            WHERE (r3["L2"]["FamilyId"] > "A") 
+            ORDER BY r3["L2"]["Int"] ASC
+        ) AS r4 
+        OFFSET 3 LIMIT 2147483647
+    ) AS r5 
+    WHERE (ARRAY_LENGTH(r5["Children"]) > 1) 
+    ORDER BY r5["IsRegistered"] ASC
+) AS r6 
+OFFSET 4 LIMIT 25 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Distinct -> Select -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Distinct().Select(f => f.Records).Where(r => (r.Transactions.Count() > 2)).Skip(1).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE r0["Records"] 
+    FROM (
+        SELECT DISTINCT VALUE root 
+        FROM root
+    ) AS r0
+) AS r1 
+WHERE (ARRAY_LENGTH(r1["Transactions"]) > 2) 
+OFFSET 1 LIMIT 10 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> OrderBy -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Int > 10)).OrderBy(f => f.FamilyId).Skip(1).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Int"] > 10) 
+ORDER BY root["FamilyId"] ASC 
+OFFSET 1 LIMIT 5 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Int > 10)).OrderBy(f => f.FamilyId).Skip(1).Take(5).Select(f => f.Records).Where(r => (r.Transactions != null)).Skip(1).Take(3)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root["Records"] 
+    FROM root 
+    WHERE (root["Int"] > 10) 
+    ORDER BY root["FamilyId"] ASC 
+    OFFSET 1 LIMIT 5
+) AS r0 
+WHERE (r0["Transactions"] != null) 
+OFFSET 1 LIMIT 3 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Skip -> Take -> SelectMany -> OrderBy -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Int > 20)).Skip(5).Take(20).SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(5).Take(10)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE (root["Int"] > 20) 
+    OFFSET 5 LIMIT 20
+) AS r0 
+JOIN f0 IN r0["Children"] 
+ORDER BY f0["Grade"] ASC 
+OFFSET 5 LIMIT 10 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Int).Skip(1).Take(10).Select(f => f.Records).Where(r => (r.Transactions.Count() > 10)).Skip(2).Take(3)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root["Records"] 
+    FROM root 
+    ORDER BY root["Int"] ASC 
+    OFFSET 1 LIMIT 10
+) AS r0 
+WHERE (ARRAY_LENGTH(r0["Transactions"]) > 10) 
+OFFSET 2 LIMIT 3 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Select -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(1).Take(10).Select(f => f.Children.Count()).Where(c => (c > 1)).Skip(1).Take(4)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE ARRAY_LENGTH(root["Children"]) 
+    FROM root 
+    OFFSET 1 LIMIT 10
+) AS r0 
+WHERE (r0 > 1) 
+OFFSET 1 LIMIT 4 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> Take -> Where -> Skip -> Take -> OrderBy -> Skip -> Take -> Select -> Skip -> Distinct -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Skip(2).Take(10).Where(f => (f.Int > 10)).Skip(1).Take(9).OrderBy(f => f.FamilyId).Skip(3).Take(5).Select(f => f.Children.Count()).Skip(1).Distinct().Skip(1).Take(1)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE r3 
+FROM (
+    SELECT VALUE r2 
+    FROM (
+        SELECT VALUE ARRAY_LENGTH(r1["Children"]) 
+        FROM (
+            SELECT VALUE r0 
+            FROM (
+                SELECT VALUE root 
+                FROM root 
+                OFFSET 2 LIMIT 10
+            ) AS r0 
+            WHERE (r0["Int"] > 10) 
+            OFFSET 1 LIMIT 9
+        ) AS r1 
+        ORDER BY r1["FamilyId"] ASC 
+        OFFSET 3 LIMIT 5
+    ) AS r2 
+    OFFSET 1 LIMIT 2147483647
+) AS r3 
+OFFSET 1 LIMIT 1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Skip -> OrderBy -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Take(10).Skip(2).Where(f => f.IsRegistered).OrderBy(f => f.Int).Skip(1).Take(9)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT TOP 10 VALUE root 
+        FROM root
+    ) AS r0 
+    OFFSET 2 LIMIT 2147483647
+) AS r1 
+WHERE r1["IsRegistered"] 
+ORDER BY r1["Int"] ASC 
+OFFSET 1 LIMIT 9 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> Distinct -> Select -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Take(10).Distinct().Select(f => f.Children).Where(c => (c.Count() > 0)).Skip(2).Take(5)]]></Expression>
+      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r2 
+FROM (
+    SELECT VALUE r1["Children"] 
+    FROM (
+        SELECT DISTINCT VALUE r0 
+        FROM (
+            SELECT TOP 10 VALUE root 
+            FROM root
+        ) AS r0
+    ) AS r1
+) AS r2 
+WHERE (ARRAY_LENGTH(r2) > 0) 
+OFFSET 2 LIMIT 5 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Skip -> Take -> SelectMany -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Records).Skip(1).Take(10).SelectMany(r => r.Transactions).Skip(1).Take(9)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE root["Records"] 
+    FROM root 
+    OFFSET 1 LIMIT 10
+) AS r0 
+JOIN r1 IN r0["Transactions"] 
+OFFSET 1 LIMIT 9 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany -> OrderBy -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => f.IsRegistered).SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(10).Take(20)]]></Expression>
+      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE f0 
+FROM root 
+JOIN f0 IN root["Children"] 
+WHERE root["IsRegistered"] 
+ORDER BY f0["Grade"] ASC 
+OFFSET 10 LIMIT 20 ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> Select -> Skip -> Take -> Select -> Where -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Select(c => c.FamilyName).Skip(1).Take(20).Select(n => n.Count()).Where(l => (l > 10)).Skip(2).Take(50)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r1 
+FROM (
+    SELECT VALUE LENGTH(r0) 
+    FROM (
+        SELECT VALUE f0["FamilyName"] 
+        FROM root 
+        JOIN f0 IN root["Children"] 
+        OFFSET 1 LIMIT 20
+    ) AS r0
+) AS r1 
+WHERE (r1 > 10) 
+OFFSET 2 LIMIT 50 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new(Where -> Skip)) -> Where]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(id = f.FamilyId, GoodChildren = f.Children.Where(c => (c.Grade > 75)).Skip(1))).Where(f => (f.GoodChildren.Count() > 0))]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE {"id": root["FamilyId"], "GoodChildren": v1} 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE c0 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            WHERE (c0["Grade"] > 75) 
+            OFFSET 1 LIMIT 2147483647
+        )
+    ) AS v1
+) AS r0 
+WHERE (ARRAY_LENGTH(r0["GoodChildren"]) > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Skip -> Take) -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Skip(1).Take(1)).Skip(3).Take(10)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v3 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"] 
+        OFFSET 1 LIMIT 1
+    )
+) AS v3 
+OFFSET 3 LIMIT 10 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new(Skip -> Take, Skip, Take) -> Skip -> Take -> Where]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(v0 = f.Children.Skip(1).Take(2), v1 = f.Parents.Skip(1), v2 = f.Records.Transactions.Take(10))).Skip(1).Take(20).Where(f => (f.v0.Count() > 0)).Take(10)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 10 VALUE r0 
+FROM (
+    SELECT VALUE {"v0": v3, "v1": v6, "v2": v9} 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE v0 
+            FROM root 
+            JOIN v0 IN root["Children"] 
+            OFFSET 1 LIMIT 2
+        )
+    ) AS v3 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE v4 
+            FROM root 
+            JOIN v4 IN root["Parents"] 
+            OFFSET 1 LIMIT 2147483647
+        )
+    ) AS v6 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT TOP 10 VALUE v7 
+            FROM root 
+            JOIN v7 IN root["Records"]["Transactions"]
+        )
+    ) AS v9 
+    OFFSET 1 LIMIT 20
+) AS r0 
+WHERE (ARRAY_LENGTH(r0["v0"]) > 0) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(new(SelectMany -> SelectMany -> Distinct, OrderByDescending -> Take -> SelectMany -> Skip, Select -> OrderBy -> Skip -> Take -> Sum) -> Where -> Skip -> Take -> SelectMany -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(v0 = f.Children.SelectMany(c => c.Pets.Skip(1).SelectMany(p => p.GivenName).Distinct()), v1 = f.Children.OrderByDescending(c => c.Grade).Take(2).SelectMany(c => c.Pets.Select(p => p.GivenName).Skip(2)), v2 = f.Records.Transactions.Select(t => t.Amount).OrderBy(a => a).Skip(10).Take(20).Sum())).Where(f => (f.v2 > 100)).Skip(5).Take(20).SelectMany(f => f.v1).Distinct().Skip(3).Take(22)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT DISTINCT VALUE f0 
+FROM (
+    SELECT VALUE r4 
+    FROM (
+        SELECT VALUE {"v0": v4, "v1": v7, "v2": v11} 
+        FROM root 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE v3 
+                FROM root 
+                JOIN c0 IN root["Children"] 
+                JOIN (
+                    SELECT DISTINCT VALUE p0 
+                    FROM (
+                        SELECT VALUE v0 
+                        FROM c0 
+                        JOIN v0 IN c0["Pets"] 
+                        OFFSET 1 LIMIT 2147483647
+                    ) AS r0 
+                    JOIN p0 IN r0["GivenName"]
+                ) AS v3
+            )
+        ) AS v4 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE p1["GivenName"] 
+                FROM (
+                    SELECT TOP 2 VALUE c1 
+                    FROM root 
+                    JOIN c1 IN root["Children"] 
+                    ORDER BY c1["Grade"] DESC
+                ) AS r1 
+                JOIN p1 IN r1["Pets"] 
+                OFFSET 2 LIMIT 2147483647
+            )
+        ) AS v7 
+        JOIN (
+            SELECT VALUE SUM(r3) 
+            FROM (
+                SELECT VALUE t0["Amount"] 
+                FROM root 
+                JOIN t0 IN root["Records"]["Transactions"] 
+                ORDER BY t0["Amount"] ASC 
+                OFFSET 10 LIMIT 20
+            ) AS r3
+        ) AS v11
+    ) AS r4 
+    WHERE (r4["v2"] > 100) 
+    OFFSET 5 LIMIT 20
+) AS r5 
+JOIN f0 IN r5["v1"] 
+OFFSET 3 LIMIT 22 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Skip -> SelectMany(Skip -> OrderBy)]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Records).Skip(1).SelectMany(r => r.Transactions.Skip(10).OrderBy(t => t.Date))]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v3 
+FROM (
+    SELECT VALUE root["Records"] 
+    FROM root 
+    OFFSET 1 LIMIT 2147483647
+) AS r0 
+JOIN (
+    SELECT VALUE r1 
+    FROM (
+        SELECT VALUE v1 
+        FROM r0 
+        JOIN v1 IN r0["Transactions"] 
+        OFFSET 10 LIMIT 2147483647
+    ) AS r1 
+    ORDER BY r1["Date"] ASC
+) AS v3 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Where(Skip -> Take -> Count) - > Skip -> Take]]></Description>
+      <Expression><![CDATA[query.Where(f => (f.Children.Count() > 2)).Where(f => (f.Children.Skip(1).Take(10).Count() > 1)).Skip(1).Take(10)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM (
+        SELECT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"] 
+        OFFSET 1 LIMIT 10
+    ) AS r0
+) AS v3 
+WHERE ((ARRAY_LENGTH(root["Children"]) > 2) AND (v3 > 1)) 
+OFFSET 1 LIMIT 10 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy(Skip -> Take -> Count) -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.Children.Skip(1).Take(5).Count())]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE COUNT(1) 
+    FROM (
+        SELECT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"] 
+        OFFSET 1 LIMIT 5
+    ) AS r0
+) AS v3 
+ORDER BY v3 ASC 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Skip -> Take) -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Skip(1).Take(2)).Skip(3).Take(20)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v3 
+FROM root 
+JOIN (
+    SELECT VALUE v0 
+    FROM root 
+    JOIN v0 IN root["Children"] 
+    OFFSET 1 LIMIT 2
+) AS v3 
+OFFSET 3 LIMIT 20 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Skip -> Take) -> Skip -> Take -> SelectMany(Skip -> Take) -> Skip -> Take]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Skip(1).Take(2)).Skip(3).Take(20).SelectMany(c => c.Pets.Skip(1).Take(2)).Skip(1).Take(10)]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v9 
+FROM (
+    SELECT VALUE v3 
+    FROM root 
+    JOIN (
+        SELECT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"] 
+        OFFSET 1 LIMIT 2
+    ) AS v3 
+    OFFSET 3 LIMIT 20
+) AS r0 
+JOIN (
+    SELECT VALUE v6 
+    FROM r0 
+    JOIN v6 IN r0["Pets"] 
+    OFFSET 1 LIMIT 2
+) AS v9 
+OFFSET 1 LIMIT 10 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where -> OrderBy -> Skip -> Distinct)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Where(c => (c.Grade > 10)).OrderBy(c => c.Grade).Skip(1).Distinct())]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v2 
+FROM root 
+JOIN (
+    SELECT DISTINCT VALUE r0 
+    FROM (
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 10) 
+        ORDER BY c0["Grade"] ASC 
+        OFFSET 1 LIMIT 2147483647
+    ) AS r0
+) AS v2 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Skip -> SelectMany(Skip -> Select) -> Take)]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children.Skip(1).SelectMany(c => c.Pets.Skip(1).Select(p => p.GivenName)).Take(10))]]></Expression>
+      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE v5 
+FROM root 
+JOIN (
+    SELECT VALUE v2["GivenName"] 
+    FROM (
+        SELECT VALUE v0 
+        FROM root 
+        JOIN v0 IN root["Children"] 
+        OFFSET 1 LIMIT 2147483647
+    ) AS r0 
+    JOIN v2 IN r0["Pets"] 
+    OFFSET 1 LIMIT 10
+) AS v5 
+]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

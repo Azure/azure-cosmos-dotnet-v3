@@ -1,0 +1,46 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select JsonProperty]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.JsonProperty)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["jsonProperty"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select DataMember]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DataMember)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["dataMember"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select Default]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Default)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Default"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select JsonPropertyAndDataMember]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.JsonPropertyAndDataMember)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["jsonPropertyHasHigherPriority"] 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

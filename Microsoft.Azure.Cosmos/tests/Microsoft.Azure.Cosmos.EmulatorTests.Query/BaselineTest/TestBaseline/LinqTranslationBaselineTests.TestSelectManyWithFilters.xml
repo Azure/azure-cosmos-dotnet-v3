@@ -1,0 +1,113 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where -> Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Where(number => (doc.NumericField > 0)).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE (root["NumericField"] > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany(Select)]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField > 0)).SelectMany(doc => doc.EnumerableField.Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE (root["NumericField"] > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where -> Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Where(number => (number > 0)).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE (number0 > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Select -> Where)]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Select(number => number).Where(number => (number > 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE (number0 > 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where1 -> Where2 -> Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Where(number => (doc.NumericField > 0)).Where(number => (number > 10)).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE ((root["NumericField"] > 0) AND (number0 > 10)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany(Where2 -> Where1 -> Select)]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Where(number => (number > 10)).Where(number => (doc.NumericField > 0)).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE ((number0 > 10) AND (root["NumericField"] > 0)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> SelectMany(Where -> Select)]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField > 0)).SelectMany(doc => doc.EnumerableField.Where(number => (number > 10)).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE ((root["NumericField"] > 0) AND (number0 > 10)) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> OrderBy -> Take -> SelectMany(Where -> Select)]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField > 0)).OrderBy(doc => doc.StringField).Take(10).SelectMany(doc => doc.EnumerableField.Where(number => (number > 10)).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM (
+    SELECT TOP 10 VALUE root 
+    FROM root 
+    WHERE (root["NumericField"] > 0) 
+    ORDER BY root["StringField"] ASC
+) AS r0 
+JOIN number0 IN r0["EnumerableField"] 
+WHERE (number0 > 10) 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>
