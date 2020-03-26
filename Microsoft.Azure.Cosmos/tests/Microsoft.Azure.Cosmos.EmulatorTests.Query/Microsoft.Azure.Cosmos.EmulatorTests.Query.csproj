@@ -225,6 +225,9 @@
     <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\ReplicationTests.cs">
       <Link>ReplicationTests.cs</Link>
     </Compile>
+    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\DynamicQueryable.cs">
+      <Link>DynamicQueryable.cs</Link>
+    </Compile>
     <None Include="..\Microsoft.Azure.Cosmos.EmulatorTests\settings.json">
       <Link>settings.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
