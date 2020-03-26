@@ -158,7 +158,8 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyRange,
                 queryPageDiagnostics);
 
-            if (this.clientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+            if (queryResponseCore.IsSuccess &&
+                this.clientContext.ClientOptions.EncryptionKeyWrapProvider != null)
             {
                 return await this.GetDecryptedElementResponseAsync(queryResponseCore, message, cancellationToken);
             }
