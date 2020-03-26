@@ -175,37 +175,16 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (CosmosElement document in queryResponseCore.CosmosElements)
             {
-                if (document is CosmosObject documentObject &&
-                    documentObject.TryGetValue(Constants.Properties.EncryptedInfo, out CosmosElement encryptedInfo) &&
-                    encryptedInfo != null &&
-                    encryptedInfo.Type == CosmosElementType.Object)
+                using (message.DiagnosticsContext.CreateScope("Decrypt"))
                 {
-                    EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
-                    using (message.DiagnosticsContext.CreateScope("Decrypt"))
-                    {
-                        Stream decryptedContent = await this.clientContext.EncryptionProcessor.DecryptAsync(
-                            encryptionProperties,
-                            (DatabaseCore)this.cosmosContainerCore.Database,
-                            this.clientContext.ClientOptions.EncryptionKeyWrapProvider,
-                            message.DiagnosticsContext,
-                            cancellationToken);
+                    CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
+                        document as CosmosObject, 
+                        (DatabaseCore)this.cosmosContainerCore.Database,
+                        this.clientContext.ClientOptions.EncryptionKeyWrapProvider,
+                        message.DiagnosticsContext,
+                        cancellationToken);
 
-                        CosmosObject decryptedContentObject = this.clientContext.SerializerCore.FromStream<CosmosElement>(decryptedContent) as CosmosObject;
-
-                        Dictionary<string, CosmosElement> documentContent = documentObject.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                        documentContent.Remove(Constants.Properties.EncryptedInfo);
-                        if (decryptedContentObject != null)
-                        {
-                            documentContent = documentContent.Union(decryptedContentObject.ToDictionary(kvp => kvp.Key, kvp => kvp.Value))
-                                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                        }
-
-                        documents.Add(CosmosObject.Create(documentContent));
-                    }
-                }
-                else
-                {
-                    documents.Add(document);
+                    documents.Add(decryptedDocument);
                 }
             }
 
