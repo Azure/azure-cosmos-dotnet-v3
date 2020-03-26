@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// When the value of this property is false, the SDK will automatically discover write and read regions, and use them when the configured application region is not available.
         /// When set to true, availability is limited to the endpoint specified on the CosmosClient constructor.
-        /// Defining the <see cref="ApplicationRegion"/> or<see cref="PreferredRegions"/>  is not allowed when setting the value to true.
+        /// Defining the <see cref="ApplicationRegion"/> or <see cref="PreferredRegions"/>  is not allowed when setting the value to true.
         /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability">High availability</seealso>
         public bool LimitToEndpoint { get; set; } = false;
