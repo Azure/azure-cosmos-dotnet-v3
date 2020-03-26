@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="activityId">An ActivityId associated with the operation that generated the exception.</param>
         /// <param name="requestCharge">A request charge associated with the operation that generated the exception.</param>
 #if INTERNAL
-    [Obsolete("Go through a factory method or derived class instead.")]
+        [Obsolete("Go through a factory method or derived class instead.")]
 #endif
         public CosmosException(
             string message,
