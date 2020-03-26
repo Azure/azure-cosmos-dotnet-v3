@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- [#1314](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1314) Added configuration for proactive TCP end-of-connection detection
+
 ## <a name="3.7.0"/> [3.7.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0) - 2020-03-26
 
 ### Added
