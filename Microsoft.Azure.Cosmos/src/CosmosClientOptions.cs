@@ -417,6 +417,17 @@ namespace Microsoft.Azure.Cosmos
         public bool AllowBulkExecution { get; set; }
 
         /// <summary>
+        /// Gets or sets the flag to enable address cache refresh on TCP connection reset notification.
+        /// </summary>
+        /// <remarks>
+        /// Does not apply if <see cref="ConnectionMode.Gateway"/> is used.
+        /// </remarks>
+        /// <value>
+        /// The default value is false
+        /// </value>
+        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
         /// <value>
@@ -545,7 +556,8 @@ namespace Microsoft.Azure.Cosmos
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
-                PortReuseMode = this.portReuseMode
+                PortReuseMode = this.portReuseMode,
+                EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery
             };
 
             if (this.ApplicationRegion != null)

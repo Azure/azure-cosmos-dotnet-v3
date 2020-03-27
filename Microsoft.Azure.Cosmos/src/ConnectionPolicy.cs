@@ -199,6 +199,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the flag to enable address cache refresh on connection reset notification.
+        /// </summary>
+        /// <value>
+        /// The default value is false
+        /// </value>
+        public bool EnableTcpConnectionEndpointRediscovery
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Gets the default connection policy used to connect to the Azure Cosmos DB service.
         /// </summary>
         /// <value>
