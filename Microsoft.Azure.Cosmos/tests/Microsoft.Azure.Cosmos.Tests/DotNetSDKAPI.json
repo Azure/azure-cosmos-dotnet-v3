@@ -1383,12 +1383,24 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Boolean EnableTcpConnectionEndpointRediscovery": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Boolean get_AllowBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_AllowBulkExecution()"
+        },
+        "Boolean get_EnableTcpConnectionEndpointRediscovery()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_EnableTcpConnectionEndpointRediscovery()"
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1442,18 +1454,6 @@
           "Attributes": [
             "JsonConverterAttribute"
           ],
-          "MethodInfo": null
-        },
-        "System.Collections.Generic.IReadOnlyList`1[System.String] get_PreferredRegions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_PreferredRegions()"
-        },
-        "System.Collections.Generic.IReadOnlyList`1[System.String] PreferredRegions": {
-          "Type": "Property",
-          "Attributes": [],
           "MethodInfo": null
         },
         "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] CustomHandlers[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
@@ -1642,6 +1642,13 @@
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
         },
+        "Void set_EnableTcpConnectionEndpointRediscovery(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableTcpConnectionEndpointRediscovery(Boolean)"
+        },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
           "Attributes": [],
@@ -1692,13 +1699,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_PortReuseMode(System.Nullable`1[Microsoft.Azure.Cosmos.PortReuseMode])"
-        },
-        "Void set_PreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_PreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])"
         },
         "Void set_RequestTimeout(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -2625,11 +2625,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)"
-        },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)": {
           "Type": "Method",
