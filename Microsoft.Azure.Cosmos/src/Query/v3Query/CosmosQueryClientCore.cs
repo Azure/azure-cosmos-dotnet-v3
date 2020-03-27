@@ -178,8 +178,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (message.DiagnosticsContext.CreateScope("Decrypt"))
                 {
+                    if (!(document is CosmosObject documentObject))
+                    {
+                        documents.Add(document);
+                        continue;
+                    }
+
                     CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
-                        document as CosmosObject, 
+                        documentObject, 
                         (DatabaseCore)this.cosmosContainerCore.Database,
                         this.clientContext.ClientOptions.EncryptionKeyWrapProvider,
                         message.DiagnosticsContext,

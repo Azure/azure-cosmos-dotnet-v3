@@ -335,6 +335,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task DecryptQueryValueResponse()
+        {
+            TestDoc testDoc = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            string query = "SELECT VALUE COUNT(1) FROM c";
+
+            FeedIterator feedIterator = EncryptionTests.containerCore.GetItemQueryStreamIterator(query);
+            while (feedIterator.HasMoreResults)
+            {
+                ResponseMessage response = await feedIterator.ReadNextAsync();
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.IsNull(response.ErrorMessage);
+            }
+        }
+
+        [TestMethod]
         public async Task EncryptionRudItem()
         {
             TestDoc testDoc = await EncryptionTests.UpsertItemAsync(
