@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ApiType apiType = ApiType.Sql;
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
+            bool enableTcpConnectionEndpointRediscovery = true;
             CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
             {
                 IgnoreNullValues = true,
@@ -70,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
+            Assert.IsFalse(clientOptions.EnableTcpConnectionEndpointRediscovery);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -82,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxRequestsPerTcpConnection);
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
             Assert.IsTrue(policy.EnableEndpointDiscovery);
+            Assert.IsFalse(policy.EnableTcpConnectionEndpointRediscovery);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -133,7 +136,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 openTcpConnectionTimeout,
                 maxRequestsPerTcpConnection,
                 maxTcpConnectionsPerEndpoint,
-                portReuseMode
+                portReuseMode,
+                enableTcpConnectionEndpointRediscovery
             );
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -145,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRequestsPerTcpConnection, clientOptions.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, clientOptions.MaxTcpConnectionsPerEndpoint);
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
+            Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -153,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
+            Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
         }
 
         [TestMethod]

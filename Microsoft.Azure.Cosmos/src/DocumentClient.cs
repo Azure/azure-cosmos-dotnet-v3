@@ -6801,6 +6801,18 @@ namespace Microsoft.Azure.Cosmos
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
         {
+            this.AddressResolver = new GlobalAddressResolver(
+                this.GlobalEndpointManager,
+                this.ConnectionPolicy.ConnectionProtocol,
+                this,
+                this.collectionCache,
+                this.partitionKeyRangeCache,
+                this.ConnectionPolicy.UserAgentContainer,
+                this.accountServiceConfiguration,
+                this.httpMessageHandler,
+                this.ConnectionPolicy,
+                this.ApiType);
+
             // Check if we have a store client factory in input and if we do, do not initialize another store client
             // The purpose is to reuse store client factory across all document clients inside compute gateway
             if (storeClientFactory != null)
@@ -6829,7 +6841,9 @@ namespace Microsoft.Azure.Cosmos
                     receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
                     sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
                     enableCpuMonitor: this.enableCpuMonitor,
-                    retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration());
+                    retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
+                    enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
+                    addressResolver: this.AddressResolver);
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6839,18 +6853,6 @@ namespace Microsoft.Azure.Cosmos
                 this.storeClientFactory = newClientFactory;
                 this.isStoreClientFactoryCreatedInternally = true;
             }
-
-            this.AddressResolver = new GlobalAddressResolver(
-                this.GlobalEndpointManager,
-                this.ConnectionPolicy.ConnectionProtocol,
-                this,
-                this.collectionCache,
-                this.partitionKeyRangeCache,
-                this.ConnectionPolicy.UserAgentContainer,
-                this.accountServiceConfiguration,
-                this.httpMessageHandler,
-                this.ConnectionPolicy,
-                this.ApiType);
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }
