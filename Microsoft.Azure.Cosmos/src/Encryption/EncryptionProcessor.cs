@@ -165,40 +165,37 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            Debug.Assert(document != null);
             Debug.Assert(database != null);
             Debug.Assert(diagnosticsContext != null);
 
-            if (document == null || encryptionKeyWrapProvider == null)
+            if (encryptionKeyWrapProvider == null)
             {
                 return null;
             }
 
-            if (document.TryGetValue(Constants.Properties.EncryptedInfo, out CosmosElement encryptedInfo) &&
-                encryptedInfo != null &&
-                encryptedInfo.Type == CosmosElementType.Object)
-            {
-                EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
-
-                JObject plainTextJObj = await this.DecryptContentAsync(
-                    encryptionProperties,
-                    database,
-                    diagnosticsContext,
-                    cancellationToken);
-
-                Dictionary<string, CosmosElement> documentContent = document.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                documentContent.Remove(Constants.Properties.EncryptedInfo);
-
-                foreach (JProperty property in plainTextJObj.Properties())
-                {
-                    documentContent.Add(property.Name, property.Value.ToObject<CosmosElement>());
-                }
-
-                return CosmosObject.Create(documentContent);
-            }
-            else
+            if (!document.TryGetValue(Constants.Properties.EncryptedInfo, out CosmosElement encryptedInfo))
             {
                 return document;
             }
+
+            EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
+
+            JObject plainTextJObj = await this.DecryptContentAsync(
+                encryptionProperties,
+                database,
+                diagnosticsContext,
+                cancellationToken);
+
+            Dictionary<string, CosmosElement> documentContent = document.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            documentContent.Remove(Constants.Properties.EncryptedInfo);
+
+            foreach (JProperty property in plainTextJObj.Properties())
+            {
+                documentContent.Add(property.Name, property.Value.ToObject<CosmosElement>());
+            }
+
+            return CosmosObject.Create(documentContent);
         }
 
         private async Task<JObject> DecryptContentAsync(
