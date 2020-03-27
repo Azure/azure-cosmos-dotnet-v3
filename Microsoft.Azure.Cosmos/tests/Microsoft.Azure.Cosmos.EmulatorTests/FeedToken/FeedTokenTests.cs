@@ -79,6 +79,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull((nullDeserialized as QueryFeedTokenInternal).QueryDefinition);
         }
 
+        /// <summary>
+        /// Covers the case of someone migrating from PKRangeId in V2
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task QueryFeedToken_BackwardCompatibleSerialization()
+        {
+            string continuation = "TBD";
+            DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
+            Documents.PartitionKeyRange oneRange = ranges.First();
+
+            QueryDefinition queryDefinition = new QueryDefinition("select * from c");
+            FeedTokenPartitionKeyRange feedTokenPartitionKeyRange = new FeedTokenPartitionKeyRange(oneRange.Id, continuationToken: continuation);
+            QueryFeedToken queryFeedToken = new QueryFeedTokenInternal(feedTokenPartitionKeyRange, queryDefinition);
+
+            string serialization = queryFeedToken.ToString();
+            QueryFeedTokenInternal deserialized = QueryFeedToken.FromString(serialization) as QueryFeedTokenInternal;
+            Assert.AreEqual(queryDefinition.QueryText, deserialized.QueryDefinition.QueryText);
+            Assert.AreEqual(feedTokenPartitionKeyRange.PartitionKeyRangeId, (deserialized.QueryFeedToken as FeedTokenPartitionKeyRange).PartitionKeyRangeId);
+            Assert.AreEqual(continuation, (deserialized.QueryFeedToken as FeedTokenPartitionKeyRange).GetContinuation());
+        }
+
         [TestMethod]
         public async Task FeedToken_EPKRange_Serialization()
         {

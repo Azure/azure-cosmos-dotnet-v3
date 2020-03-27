@@ -38,23 +38,7 @@ namespace Microsoft.Azure.Cosmos
 
             JObject jObject = JObject.Load(reader);
 
-            if (!jObject.TryGetValue(FeedTokenPartitionKeyRangeConverter.TypePropertyName, out JToken typeJtoken)
-                || !Enum.TryParse(typeJtoken.Value<int>().ToString(), ignoreCase: true, out FeedTokenType feedTokenType))
-            {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
-            }
-
-            if (!jObject.TryGetValue(FeedTokenPartitionKeyRangeConverter.ContinuationPropertyName, out JToken continuationJToken))
-            {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
-            }
-
-            if (!jObject.TryGetValue(FeedTokenPartitionKeyRangeConverter.PartitionKeyRangeIdPropertyName, out JToken pkJToken))
-            {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
-            }
-
-            return new FeedTokenPartitionKeyRange(pkJToken.Value<string>(), continuationJToken.Value<string>());
+            return FeedTokenPartitionKeyRangeConverter.ReadJObject(jObject);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -75,6 +59,27 @@ namespace Microsoft.Azure.Cosmos
             }
 
             throw new JsonSerializationException(ClientResources.FeedToken_UnrecognizedFeedToken);
+        }
+
+        public static object ReadJObject(JObject jObject)
+        {
+            if (!jObject.TryGetValue(FeedTokenPartitionKeyRangeConverter.TypePropertyName, out JToken typeJtoken)
+                || !Enum.TryParse(typeJtoken.Value<int>().ToString(), ignoreCase: true, out FeedTokenType feedTokenType))
+            {
+                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
+            }
+
+            if (!jObject.TryGetValue(FeedTokenPartitionKeyRangeConverter.ContinuationPropertyName, out JToken continuationJToken))
+            {
+                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
+            }
+
+            if (!jObject.TryGetValue(FeedTokenPartitionKeyRangeConverter.PartitionKeyRangeIdPropertyName, out JToken pkJToken))
+            {
+                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
+            }
+
+            return new FeedTokenPartitionKeyRange(pkJToken.Value<string>(), continuationJToken.Value<string>());
         }
     }
 }

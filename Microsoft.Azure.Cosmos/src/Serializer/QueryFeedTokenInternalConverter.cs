@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -55,7 +53,16 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(serializer.Deserialize<SqlQuerySpec>(queryToken.CreateReader()));
             }
 
-            IQueryFeedToken queryFeedToken = (IQueryFeedToken)FeedTokenEPKRangeConverter.ReadJObject(feedToken.Value<JObject>(), serializer);
+            IQueryFeedToken queryFeedToken = null;
+            try
+            {
+                queryFeedToken = (IQueryFeedToken)FeedTokenEPKRangeConverter.ReadJObject(feedToken.Value<JObject>(), serializer);
+            }
+            catch (JsonReaderException)
+            {
+                // Backward compatibility to allow PKRangeId token
+                queryFeedToken = (IQueryFeedToken)FeedTokenPartitionKeyRangeConverter.ReadJObject(feedToken.Value<JObject>());
+            }
 
             return new QueryFeedTokenInternal(queryFeedToken, queryDefinition);
         }
