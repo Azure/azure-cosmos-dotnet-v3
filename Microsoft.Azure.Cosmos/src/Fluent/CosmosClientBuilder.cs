@@ -168,10 +168,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="CosmosClientOptions.PreferredRegions"/>
+        /// <seealso cref="CosmosClientOptions.ApplicationPreferredRegions"/>
         public CosmosClientBuilder WithPreferredRegions(IReadOnlyList<string> preferredRegions)
         {
-            this.clientOptions.PreferredRegions = preferredRegions ?? throw new ArgumentNullException(nameof(preferredRegions));
+            this.clientOptions.ApplicationPreferredRegions = preferredRegions ?? throw new ArgumentNullException(nameof(preferredRegions));
             return this;
         }
 

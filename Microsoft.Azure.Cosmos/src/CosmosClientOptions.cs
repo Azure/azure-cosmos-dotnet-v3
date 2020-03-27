@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithPreferredRegions(IReadOnlyList{string})"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
-        public IReadOnlyList<string> PreferredRegions { get; set; }
+        public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
 
         /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target
@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// When the value of this property is false, the SDK will automatically discover write and read regions, and use them when the configured application region is not available.
         /// When set to true, availability is limited to the endpoint specified on the CosmosClient constructor.
-        /// Defining the <see cref="ApplicationRegion"/> or <see cref="PreferredRegions"/>  is not allowed when setting the value to true.
+        /// Defining the <see cref="ApplicationRegion"/> or <see cref="ApplicationPreferredRegions"/>  is not allowed when setting the value to true.
         /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability">High availability</seealso>
         public bool LimitToEndpoint { get; set; } = false;
@@ -553,9 +553,9 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
             }
 
-            if (this.PreferredRegions != null)
+            if (this.ApplicationPreferredRegions != null)
             {
-                connectionPolicy.SetPreferredLocations(this.PreferredRegions);
+                connectionPolicy.SetPreferredLocations(this.ApplicationPreferredRegions);
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
@@ -656,14 +656,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"Cannot specify {nameof(this.ApplicationRegion)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
             }
 
-            if (this.PreferredRegions?.Count > 0 && this.LimitToEndpoint)
+            if (this.ApplicationPreferredRegions?.Count > 0 && this.LimitToEndpoint)
             {
-                throw new ArgumentException($"Cannot specify {nameof(this.PreferredRegions)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
+                throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
             }
 
-            if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.PreferredRegions?.Count > 0)
+            if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.ApplicationPreferredRegions?.Count > 0)
             {
-                throw new ArgumentException($"Cannot specify {nameof(this.PreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
+                throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
             }
         }
 
