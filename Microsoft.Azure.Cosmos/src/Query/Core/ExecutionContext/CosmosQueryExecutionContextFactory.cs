@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Transactions;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -225,7 +226,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 || partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                 || partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
 
-            bool shouldCreatePassthoughQuery = singleLogicalPartitionKeyQuery && !queryHasPartialResults;
+            bool shouldCreatePassthoughQuery = (singleLogicalPartitionKeyQuery && !queryHasPartialResults)
+                || (!singleLogicalPartitionKeyQuery && !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy && !queryHasPartialResults);
 
             Task<TryCatch<CosmosQueryExecutionContext>> tryCreateContextTask;
             if (shouldCreatePassthoughQuery)

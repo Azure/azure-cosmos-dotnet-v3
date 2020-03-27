@@ -430,5 +430,50 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             // Test initialie does load CosmosClient
             Assert.IsFalse(CustomTypeExtensions.ByPassQueryParsing());
         }
+
+        [TestMethod]
+        public async Task TestPassthroughQueryAsync()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+                {
+                    foreach (int maxItemCount in new int[] { 10, 100 })
+                    {
+                        foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                        {
+                            QueryRequestOptions feedOptions = new QueryRequestOptions
+                            {
+                                MaxBufferedItemCount = 7000,
+                                MaxConcurrency = maxDegreeOfParallelism,
+                                MaxItemCount = maxItemCount,
+                                ReturnResultsInDeterministicOrder = true,
+                            };
+
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.AreEqual(
+                                documents.Count(),
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+                    }
+                }
+            }
+        }
     }
 }
