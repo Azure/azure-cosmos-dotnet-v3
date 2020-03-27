@@ -173,10 +173,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             List<CosmosElement> documents = new List<CosmosElement>();
-
-            foreach (CosmosElement document in queryResponseCore.CosmosElements)
+            using (message.DiagnosticsContext.CreateScope("Decrypt"))
             {
-                using (message.DiagnosticsContext.CreateScope("Decrypt"))
+                foreach (CosmosElement document in queryResponseCore.CosmosElements)
                 {
                     if (!(document is CosmosObject documentObject))
                     {
@@ -185,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
-                        documentObject, 
+                        documentObject,
                         (DatabaseCore)this.cosmosContainerCore.Database,
                         this.clientContext.ClientOptions.EncryptionKeyWrapProvider,
                         message.DiagnosticsContext,
