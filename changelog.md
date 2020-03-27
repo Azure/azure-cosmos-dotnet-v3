@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## <a name="3.7.0"/> [3.7.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0) - 2020-03-26
+
 ### Added
 - [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Add GetElapsedClientLatency to CosmosDiagnostics
 - [#1239](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1239) Made MultiPolygon and PolygonCoordinates classes public.
 - [#1233](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1265) PartitionKey now supports operators ==, != for equality comparison.
 - [#1285](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1285) Add query plan retrevial to diagnostics
+- [#1289](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1289) Query ORDER BY Resume Optimization
 
 ### Fixed
 
