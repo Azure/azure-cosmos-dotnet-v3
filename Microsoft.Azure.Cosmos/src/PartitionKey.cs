@@ -131,6 +131,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+            if (this.InternalKey == null)
+            {
+                return PartitionKey.NullPartitionKeyInternal.GetHashCode();
+            }
+
             return this.InternalKey.GetHashCode();
         }
 
@@ -141,7 +146,19 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>true if <paramref name="other"/> has the same value as this instance; otherwise, false.</returns>
         public bool Equals(PartitionKey other)
         {
-            return this.InternalKey.Equals(other.InternalKey);
+            PartitionKeyInternal partitionKeyInternal = this.InternalKey;
+            PartitionKeyInternal otherPartitionKeyInternal = other.InternalKey;
+            if (partitionKeyInternal == null)
+            {
+                partitionKeyInternal = PartitionKey.NullPartitionKeyInternal;
+            }
+
+            if (otherPartitionKeyInternal == null)
+            {
+                otherPartitionKeyInternal = PartitionKey.NullPartitionKeyInternal;
+            }
+
+            return partitionKeyInternal.Equals(otherPartitionKeyInternal);
         }
 
         /// <summary>
@@ -150,6 +167,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The string representation of the partition key value</returns>
         public override string ToString()
         {
+            if (this.InternalKey == null)
+            {
+                return PartitionKey.NullPartitionKeyInternal.ToJsonString();
+            }
+
             return this.InternalKey.ToJsonString();
         }
 
