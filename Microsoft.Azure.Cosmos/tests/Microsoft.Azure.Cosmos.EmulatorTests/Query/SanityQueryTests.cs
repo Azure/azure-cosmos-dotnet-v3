@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
@@ -434,16 +435,25 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestMethod]
         public async Task TestPassthroughQueryAsync()
         {
-            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            uint numberOfDocuments = 100;
-            QueryOracleUtil util = new QueryOracle2(seed);
-            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+            string[] inputDocs = new[]
+            {
+                @"{""id"":""documentId1"",""key"":""A"",""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId2"",""key"":""A"",""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId3"",""key"":""A"",""prop"":1,""shortArray"":[{""a"":7}]}",
+                @"{""id"":""documentId4"",""key"":5,""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId5"",""key"":5,""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId6"",""key"":5,""prop"":1,""shortArray"":[{""a"":7}]}",
+                @"{""id"":""documentId10"",""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId11"",""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId12"",""prop"":1,""shortArray"":[{""a"":7}]}",
+            };
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                inputDocuments,
-                ImplementationAsync);
+                inputDocs,
+                ImplementationAsync,
+                "/key");
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
@@ -451,23 +461,102 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     foreach (int maxItemCount in new int[] { 10, 100 })
                     {
-                        foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                        QueryRequestOptions feedOptions = new QueryRequestOptions
                         {
-                            QueryRequestOptions feedOptions = new QueryRequestOptions
-                            {
-                                MaxBufferedItemCount = 7000,
-                                MaxConcurrency = maxDegreeOfParallelism,
-                                MaxItemCount = maxItemCount,
-                                ReturnResultsInDeterministicOrder = true,
-                            };
+                            MaxBufferedItemCount = 7000,
+                            MaxConcurrency = maxDegreeOfParallelism,
+                            MaxItemCount = maxItemCount,
 
+                        };
+
+                        foreach (string query in new string[]
+                        {
+                            "SELECT c.id WHERE c.key = 5 FROM c",
+                            "SELECT c._ts, c.id FROM c WHERE c.key = 5 ORDER BY c._ts",
+                        })
+                        {
                             List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
                                 container,
                                 query,
                                 feedOptions);
 
                             Assert.AreEqual(
-                                documents.Count(),
+                                3,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            string query = "SELECT TOP 2 c.id WHERE c.key = 5 FROM c";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.AreEqual(
+                                2,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            string query = "SELECT c.id WHERE c.key = 5 FROM c OFFSET 1 LIMIT 1";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.AreEqual(
+                                1,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            string query = "SELECT VALUE COUNT(1) WHERE c.key = 5 FROM c";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.AreEqual(
+                                1,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+
+                            Assert.AreEqual(
+                                3,
+                                Number64.ToLong((queryResults.First() as CosmosNumber64).GetValue()),
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            string query = "SELECT VALUE COUNT(1) WHERE c.key = 5 FROM c GROUP BY c.key";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.AreEqual(
+                                1,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+
+                            Assert.AreEqual(
+                                3,
+                                Number64.ToLong((queryResults.First() as CosmosNumber64).GetValue()),
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            string query = "SELECT DISTINCT VALUE c.key WHERE c.key = 5 FROM c";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.AreEqual(
+                                1,
                                 queryResults.Count,
                                 $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                         }
