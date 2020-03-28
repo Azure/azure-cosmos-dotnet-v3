@@ -190,6 +190,60 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 }
 <# SaveOutput($"Cosmos{cosmosNumberType}.LazyCosmos{cosmosNumberType}.cs"); #>
 <# } #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    interface ICosmosNumberVisitor
+    {
+<# foreach (KeyValuePair<string, string> kvp in cosmosNumberTypeToDotNetType) 
+{
+    string cosmosNumberType = kvp.Key;
+    string dotNetType = kvp.Value;
+#>
+        void Visit(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>);
+<# } #>
+    }
+}
+<# SaveOutput("ICosmosNumberVisitor.cs"); #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    interface ICosmosNumberVisitor<TArg, TOutput>
+    {
+<# foreach (KeyValuePair<string, string> kvp in cosmosNumberTypeToDotNetType) 
+{
+    string cosmosNumberType = kvp.Key;
+    string dotNetType = kvp.Value;
+#>
+        TOutput Visit(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>, TArg input);
+<# } #>
+    }
+}
+<# SaveOutput("ICosmosNumberVisitor{TArg,TOutput}.cs"); #>
 <#+
 private void SaveOutput(string outputFileName) {
   string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
