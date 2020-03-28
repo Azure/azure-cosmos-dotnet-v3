@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
 
         /// <inheritdoc />
-        public abstract void WriteNumberValue(Number64 value);
+        public abstract void WriteNumber64Value(Number64 value);
 
         /// <inheritdoc />
         public abstract void WriteBoolValue(bool value);
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                 case JsonTokenType.Number:
                                     {
                                         Number64 value = jsonReader.GetNumberValue();
-                                        this.WriteNumberValue(value);
+                                        this.WriteNumber64Value(value);
                                     }
                                     break;
 
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     case JsonNodeType.Number:
                         Number64 numberValue = jsonNavigator.GetNumberValue(jsonNavigatorNode);
-                        this.WriteNumberValue(numberValue);
+                        this.WriteNumber64Value(numberValue);
                         break;
 
                     case JsonNodeType.String:

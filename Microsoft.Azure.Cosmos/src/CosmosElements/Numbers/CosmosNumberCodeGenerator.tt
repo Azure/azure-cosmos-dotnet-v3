@@ -48,13 +48,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
     abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
     {
         protected Cosmos<#= cosmosNumberType #>()
-            : base(CosmosNumberType.Float32)
+            : base(CosmosNumberType.<#= cosmosNumberType #>)
         {
         }
 
         public override Number64 Value => this.GetValue();
 
-        public abstract float GetValue();
+        public abstract <#= dotNetType #> GetValue();
 
         public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
         {
@@ -83,22 +83,23 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
                 throw new ArgumentNullException($"{nameof(jsonWriter)}");
             }
 
-            jsonWriter.WriteFloat32Value(this.GetValue());
+            jsonWriter.Write<#= cosmosNumberType #>Value(this.GetValue());
         }
 
-        public static CosmosFloat32 Create(
+        public static Cosmos<#= cosmosNumberType #> Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
         {
-            return new LazyCosmosFloat32(jsonNavigator, jsonNavigatorNode);
+            return new LazyCosmos<#= cosmosNumberType #>(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosFloat32 Create(float number)
+        public static Cosmos<#= cosmosNumberType #> Create(<#= dotNetType #> number)
         {
-            return new EagerCosmosFloat32(number);
+            return new EagerCosmos<#= cosmosNumberType #>(number);
         }
     }
 }
+<# SaveOutput($"Cosmos{cosmosNumberType}.cs"); #>
 <# } #>
 <#+
 private void SaveOutput(string outputFileName) {

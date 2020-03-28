@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
-                jsonWriter.WriteNumberValue(this.number);
+                jsonWriter.WriteNumber64Value(this.number);
             }
 
             public override Number64 GetValue()

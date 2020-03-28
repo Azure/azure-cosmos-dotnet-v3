@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
-                jsonWriter.WriteNumberValue(this.lazyNumber.Value);
+                jsonWriter.WriteNumber64Value(this.lazyNumber.Value);
             }
 
             public override Number64 GetValue()
