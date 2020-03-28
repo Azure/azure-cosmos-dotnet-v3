@@ -100,6 +100,40 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
     }
 }
 <# SaveOutput($"Cosmos{cosmosNumberType}.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    {
+        private sealed class EagerCosmos<#= cosmosNumberType #> : Cosmos<#= cosmosNumberType #>
+        {
+            private readonly <#= dotNetType #> number;
+
+            public EagerCosmos<#= cosmosNumberType #>(<#= dotNetType #> number)
+            {
+                this.number = number;
+            }
+
+            public override <#= dotNetType #> GetValue()
+            {
+                return this.number;
+            }
+        }
+    }
+}
+<# SaveOutput($"Cosmos{cosmosNumberType}.EagerCosmos{cosmosNumberType}.cs"); #>
 <# } #>
 <#+
 private void SaveOutput(string outputFileName) {
