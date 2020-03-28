@@ -134,6 +134,61 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
     }
 }
 <# SaveOutput($"Cosmos{cosmosNumberType}.EagerCosmos{cosmosNumberType}.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+    using System;
+    using Microsoft.Azure.Cosmos.Json;
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    {
+        private sealed class LazyCosmos<#= cosmosNumberType #> : Cosmos<#= cosmosNumberType #>
+        {
+            private readonly Lazy<<#= dotNetType #>> lazyNumber;
+
+            public LazyCosmos<#= cosmosNumberType #>(
+                IJsonNavigator jsonNavigator,
+                IJsonNavigatorNode jsonNavigatorNode)
+            {
+                if (jsonNavigator == null)
+                {
+                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
+                }
+
+                if (jsonNavigatorNode == null)
+                {
+                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
+                }
+
+                JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
+                if (type != JsonNodeType.<#= cosmosNumberType #>)
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(jsonNavigatorNode)} must be a {JsonNodeType.<#= cosmosNumberType #>} node. Got {type} instead.");
+                }
+
+                this.lazyNumber = new Lazy<<#= dotNetType #>>(() => jsonNavigator.Get<#= cosmosNumberType #>Value(jsonNavigatorNode));
+            }
+
+            public override <#= dotNetType #> GetValue()
+            {
+                return this.lazyNumber.Value;
+            }
+        }
+    }
+}
+<# SaveOutput($"Cosmos{cosmosNumberType}.LazyCosmos{cosmosNumberType}.cs"); #>
 <# } #>
 <#+
 private void SaveOutput(string outputFileName) {

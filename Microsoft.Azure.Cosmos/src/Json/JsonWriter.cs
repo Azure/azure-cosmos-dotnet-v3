@@ -361,8 +361,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Either the formats did not match or we couldn't retrieve the buffered raw JSON
                 switch (jsonNodeType)
                 {
-                    case JsonNodeType.Number:
-                        Number64 numberValue = jsonNavigator.GetNumberValue(jsonNavigatorNode);
+                    case JsonNodeType.Number64:
+                        Number64 numberValue = jsonNavigator.GetNumber64Value(jsonNavigatorNode);
                         this.WriteNumber64Value(numberValue);
                         break;
 
