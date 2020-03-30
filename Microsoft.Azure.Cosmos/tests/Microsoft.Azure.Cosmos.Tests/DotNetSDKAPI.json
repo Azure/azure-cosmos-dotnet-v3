@@ -1383,12 +1383,24 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Boolean EnableTcpConnectionEndpointRediscovery": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Boolean get_AllowBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_AllowBulkExecution()"
+        },
+        "Boolean get_EnableTcpConnectionEndpointRediscovery()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_EnableTcpConnectionEndpointRediscovery()"
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1629,6 +1641,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+        },
+        "Void set_EnableTcpConnectionEndpointRediscovery(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableTcpConnectionEndpointRediscovery(Boolean)"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",

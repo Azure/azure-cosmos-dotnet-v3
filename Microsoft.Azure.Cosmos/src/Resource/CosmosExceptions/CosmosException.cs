@@ -28,8 +28,13 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Error error,
             Exception innerException)
-            : base(message, innerException)
+            : base(CosmosException.GetMessageHelper(
+                statusCodes,
+                subStatusCode,
+                message,
+                activityId), innerException)
         {
+            this.ResponseBody = message;
             this.stackTrace = stackTrace;
             this.ActivityId = activityId;
             this.StatusCode = statusCodes;
@@ -162,12 +167,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A string representation of the exception.</returns>
         public override string ToString()
         {
-            return this.ToStringHelper(true);
-        }
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append(this.GetType().FullName);
+            stringBuilder.Append(" : ");
 
-        internal string ToString(bool includeDiagnostics)
-        {
-            return this.ToStringHelper(includeDiagnostics);
+            this.ToStringHelper(stringBuilder);
+
+            return stringBuilder.ToString();
         }
 
         internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
@@ -192,40 +198,37 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        private string ToStringHelper(bool includeDiagnostics)
+        private static string GetMessageHelper(
+            HttpStatusCode statusCode,
+            int subStatusCode,
+            string responseBody,
+            string activityId)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(this.GetType().FullName);
-            stringBuilder.Append(" : ");
 
-            if (this.TryGetTroubleshootingLink(out string tsgLink))
+            stringBuilder.Append($"Response status code does not indicate success: ");
+            stringBuilder.Append($"{statusCode} ({(int)statusCode})");
+            stringBuilder.Append("; Substatus: ");
+            stringBuilder.Append(subStatusCode);
+            stringBuilder.Append("; ActivityId: ");
+            stringBuilder.Append(activityId ?? string.Empty);
+            stringBuilder.Append("; Reason: (");
+            stringBuilder.Append(responseBody ?? string.Empty);
+            stringBuilder.Append(");");
+
+            return stringBuilder.ToString();
+        }
+
+        private string ToStringHelper(
+            StringBuilder stringBuilder)
+        {
+            if (stringBuilder == null)
             {
-                stringBuilder.Append($" Troubleshooting Guide: \"{tsgLink}\"; ");
+                throw new ArgumentNullException(nameof(stringBuilder));
             }
 
-            if (this.Message != null)
-            {
-                stringBuilder.Append(this.Message);
-                stringBuilder.AppendLine();
-            }
-
-            stringBuilder.AppendFormat("StatusCode = {0};", this.StatusCode);
+            stringBuilder.Append(this.Message);
             stringBuilder.AppendLine();
-
-            stringBuilder.AppendFormat("SubStatusCode = {0};", this.SubStatusCode);
-            stringBuilder.AppendLine();
-
-            stringBuilder.AppendFormat("ActivityId = {0};", this.ActivityId ?? Guid.Empty.ToString());
-            stringBuilder.AppendLine();
-
-            stringBuilder.AppendFormat("RequestCharge = {0};", this.RequestCharge);
-            stringBuilder.AppendLine();
-
-            if (includeDiagnostics && this.Diagnostics != null)
-            {
-                stringBuilder.Append(this.Diagnostics);
-                stringBuilder.AppendLine();
-            }
 
             if (this.InnerException != null)
             {
@@ -237,7 +240,16 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.AppendLine();
             }
 
-            stringBuilder.Append(this.StackTrace);
+            if (this.StackTrace != null)
+            {
+                stringBuilder.Append(this.StackTrace);
+                stringBuilder.AppendLine();
+            }
+
+            if (this.Diagnostics != null)
+            {
+                stringBuilder.Append(this.Diagnostics);
+            }
 
             return stringBuilder.ToString();
         }
