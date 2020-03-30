@@ -21,4 +21,8 @@
 
 ## Solution
 
-Use the portal or the SDK to increase the throttling.
+Use the portal or the SDK to increase the provisioned throughput.
+
+## Related documentation
+* [Provision throughput on containers and databases](https://docs.microsoft.com/azure/cosmos-db/set-throughput)
+* [Request units in Azure Cosmos DB](https://docs.microsoft.com/azure/cosmos-db/request-units)
