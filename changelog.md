@@ -14,7 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#1312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1312) Fixed null reference when using default(PartitionKey)
+- [#1296](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1296) Decrypt the encrypted properties before returning query result
 
+## <a name="3.7.1-preview"/> [3.7.0-preview2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.1-preview) - 2020-03-30
+
+- [#1210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1210) Change Feed pull model
+- [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties
+- [#1314](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1314) Added configuration for proactive TCP end-of-connection detection
+- [#1312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1312) Fixed null reference when using default(PartitionKey)
+- [#1296](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1296) Decrypt the encrypted properties before returning query result
 
 ## <a name="3.7.0"/> [3.7.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0) - 2020-03-26
 
@@ -24,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1233](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1265) PartitionKey now supports operators ==, != for equality comparison.
 - [#1285](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1285) Add query plan retrevial to diagnostics
 - [#1289](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1289) Query ORDER BY Resume Optimization
+- [#1074](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1074) Bulk API congestion control
 
 ### Fixed
 
@@ -38,7 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1274](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1274) ObjectDisposedException is thrown when calling all SDK objects like Database and Container that reference a disposed client 
 - [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Fix bug where Request Options was getting lost for Database.ReadStreamAsync and Database.DeleteStreamAsync
 - [#1304](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1304) Fixed XML documentation so it now is visible in Visual Studio
-- [#1296](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1296) Decrypt the encrypted properties before returning query result
 
 ## <a name="3.7.0-preview2"/> [3.7.0-preview2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0-preview2) - 2020-03-09
 
