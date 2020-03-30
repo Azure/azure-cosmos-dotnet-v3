@@ -8,10 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+
+- [#1314](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1314) Added configuration for proactive TCP end-of-connection detection
+
+### Fixed
+
+- [#1312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1312) Fixed null reference when using default(PartitionKey)
+
+
+## <a name="3.7.0"/> [3.7.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0) - 2020-03-26
+
+### Added
 - [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Add GetElapsedClientLatency to CosmosDiagnostics
 - [#1239](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1239) Made MultiPolygon and PolygonCoordinates classes public.
 - [#1233](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1265) PartitionKey now supports operators ==, != for equality comparison.
 - [#1285](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1285) Add query plan retrevial to diagnostics
+- [#1289](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1289) Query ORDER BY Resume Optimization
 
 ### Fixed
 
@@ -24,7 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1263](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1263) Fix a bug where retry after internval did not get set on query stream responses
 - [#1198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1198) Fixes null reference exception when calling a disposed CosmosClient
 - [#1274](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1274) ObjectDisposedException is thrown when calling all SDK objects like Database and Container that reference a disposed client 
-- [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Fix bug where Request Options was getting lost for Database.ReadStreamAsync and Database.DeleteStreamAsync  
+- [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Fix bug where Request Options was getting lost for Database.ReadStreamAsync and Database.DeleteStreamAsync
+- [#1304](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1304) Fixed XML documentation so it now is visible in Visual Studio
+- [#1296](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1296) Decrypt the encrypted properties before returning query result
 
 ## <a name="3.7.0-preview2"/> [3.7.0-preview2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0-preview2) - 2020-03-09
 
