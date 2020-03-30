@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
                 statusCodes,
                 subStatusCode,
                 message,
-                activityId), innerException)
+                activityId,
+                innerException), innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
@@ -186,9 +187,17 @@ namespace Microsoft.Azure.Cosmos
                  diagnostics: this.DiagnosticsContext);
         }
 
-        private bool TryGetTroubleshootingLink(out string tsgLink)
+        private static bool TryGetTroubleshootingLink(
+            HttpStatusCode statusCode,
+            int subStatusCode,
+            Exception innerException,
+            out string tsgLink)
         {
-            if (CosmosTroubleshootingLink.TryGetTroubleshootingLinks(this, out CosmosTroubleshootingLink link))
+            if (CosmosTroubleshootingLink.TryGetTroubleshootingLinks(
+                (int)statusCode,
+                subStatusCode,
+                innerException,
+                out CosmosTroubleshootingLink link))
             {
                 tsgLink = link.Link;
                 return true;
@@ -202,7 +211,8 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             int subStatusCode,
             string responseBody,
-            string activityId)
+            string activityId,
+            Exception innerException)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -210,6 +220,17 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append($"{statusCode} ({(int)statusCode})");
             stringBuilder.Append("; Substatus: ");
             stringBuilder.Append(subStatusCode);
+
+            if (CosmosException.TryGetTroubleshootingLink(
+                statusCode,
+                subStatusCode,
+                innerException,
+                out string tsgLink))
+            {
+                stringBuilder.Append("; Troubleshooting: ");
+                stringBuilder.Append(tsgLink);
+            }
+
             stringBuilder.Append("; ActivityId: ");
             stringBuilder.Append(activityId ?? string.Empty);
             stringBuilder.Append("; Reason: (");

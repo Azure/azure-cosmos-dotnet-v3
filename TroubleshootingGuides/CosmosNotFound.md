@@ -34,5 +34,3 @@ There is multiple SDK client instances and the read happened before the write.
 * [Consistency levels](https://docs.microsoft.com/azure/cosmos-db/consistency-levels)
 * [Choose the right consistency level](https://docs.microsoft.com/azure/cosmos-db/consistency-levels-choosing)
 * [Consistency, availability, and performance tradeoffs](https://docs.microsoft.com/azure/cosmos-db/consistency-levels-tradeoffs)
-### Cause 2: Invalid chacters in id field
-For this scenario use query to get the item and replace/escape the invalid characters.

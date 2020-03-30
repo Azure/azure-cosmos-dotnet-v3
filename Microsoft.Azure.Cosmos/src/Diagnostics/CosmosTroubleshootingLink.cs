@@ -48,22 +48,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static bool TryGetTroubleshootingLinks(
-            CosmosException cosmosException,
+            int statusCodes,
+            int subStatusCode,
+            Exception innerException,
             out CosmosTroubleshootingLink troubleshootingLink)
         {
-            if (TryGetTransportException(cosmosException, out troubleshootingLink))
+            if (TryGetTransportException(innerException, out troubleshootingLink))
             {
                 return true;
             }
 
             return CosmosTroubleshootingLink.StatusCodeToLink.TryGetValue(
-                ((int)cosmosException.StatusCode, cosmosException.SubStatusCode),
+                (statusCodes, subStatusCode),
                 out troubleshootingLink);
         }
 
-        private static bool TryGetTransportException(CosmosException exception, out CosmosTroubleshootingLink troubleshootingLink)
+        private static bool TryGetTransportException(Exception innerException, out CosmosTroubleshootingLink troubleshootingLink)
         {
-            Exception innerException = exception.InnerException;
             while (innerException != null)
             {
                 if (innerException is TransportException transportException)
