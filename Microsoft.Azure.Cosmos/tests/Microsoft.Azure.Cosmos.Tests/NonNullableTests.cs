@@ -28,21 +28,23 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ImplicitConversion_ValueToNonNullable()
         {
-            void Blah(NonNullable<object> foo)
+            void Blah(NonNullable<MyClass> foo)
             {
             }
 
-            Blah(new object());
+            Blah(new MyClass());
         }
 
         [TestMethod]
         public void ImplicitConversion_NonNullableToValue()
         {
-            void Blah(object foo)
+            void Blah(MyClass foo)
             {
             }
 
-            Blah(new NonNullable<object>(new object()));
+            NonNullable<MyClass> nonNullable = new NonNullable<MyClass>(new MyClass());
+            ((MyClass)nonNullable).Foo();
+            Blah(nonNullable);
         }
 
         [TestMethod]
@@ -67,6 +69,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             object reference = new object();
             NonNullable<object> nonNullable = new NonNullable<object>(reference);
             Assert.AreEqual(nonNullable.ToString(), reference.ToString());
+        }
+
+        private sealed class MyClass
+        {
+            public void Foo()
+            {
+            }
         }
     }
 }

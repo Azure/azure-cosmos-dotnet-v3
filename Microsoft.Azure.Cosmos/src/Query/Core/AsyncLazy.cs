@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
     internal sealed class AsyncLazy<T>
     {
-        private readonly Func<CancellationToken, Task<T>> valueFactory;
+        private readonly NonNullable<Func<CancellationToken, Task<T>>> valueFactory;
         private T value;
 
         public AsyncLazy(Func<CancellationToken, Task<T>> valueFactory)
         {
-            this.valueFactory = valueFactory ?? throw new ArgumentNullException(nameof(valueFactory));
+            this.valueFactory = valueFactory;
         }
 
         public bool ValueInitialized { get; private set; }
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             cancellationToken.ThrowIfCancellationRequested();
             if (!this.ValueInitialized)
             {
-                this.value = await this.valueFactory(cancellationToken);
+                this.value = await this.valueFactory.Reference(cancellationToken);
                 this.ValueInitialized = true;
             }
 

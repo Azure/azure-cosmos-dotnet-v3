@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
@@ -89,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <summary>
         /// The root level component that all calls will be forwarded to.
         /// </summary>
-        private readonly IDocumentQueryExecutionComponent component;
+        private readonly NonNullable<IDocumentQueryExecutionComponent> component;
 
         /// <summary>
         /// The actual page size to drain.
@@ -105,9 +104,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             IDocumentQueryExecutionComponent component,
             int actualPageSize)
         {
-            this.component = component ?? throw new ArgumentNullException($"{nameof(component)} can not be null.");
+            this.component = new NonNullable<IDocumentQueryExecutionComponent>(component);
             this.actualPageSize = (actualPageSize < 0) ? throw new ArgumentOutOfRangeException($"{nameof(actualPageSize)} can not be negative.") : actualPageSize;
         }
+
+        private IDocumentQueryExecutionComponent Component => this.component.Reference;
 
         /// <summary>
         /// Gets a value indicating whether this execution context is done draining documents.
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             get
             {
-                return this.component.IsDone;
+                return this.component.Reference.IsDone;
             }
         }
 
@@ -273,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// </summary>
         public override void Dispose()
         {
-            this.component.Dispose();
+            this.component.Reference.Dispose();
         }
 
         /// <summary>
@@ -304,10 +305,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             try
             {
-                QueryResponseCore queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
+                QueryResponseCore queryResponse = await this.component.Reference.DrainAsync(this.actualPageSize, token);
                 if (!queryResponse.IsSuccess)
                 {
-                    this.component.Stop();
+                    this.component.Reference.Stop();
                     return queryResponse;
                 }
 
@@ -338,14 +339,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             catch (Exception)
             {
-                this.component.Stop();
+                this.component.Reference.Stop();
                 throw;
             }
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
-            return this.component.GetCosmosElementContinuationToken();
+            return this.component.Reference.GetCosmosElementContinuationToken();
         }
     }
 }
