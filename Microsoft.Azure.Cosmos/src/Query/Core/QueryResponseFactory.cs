@@ -63,8 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         subStatusCodes: null,
                         cosmosException: unkownCosmosException,
                         requestCharge: 0,
-                        activityId: QueryResponseCore.EmptyGuidString,
-                        diagnostics: QueryResponseCore.EmptyDiagnostics);
+                        activityId: QueryResponseCore.EmptyGuidString);
                 }
             }
 
@@ -78,8 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 subStatusCodes: (Microsoft.Azure.Documents.SubStatusCodes)cosmosException.SubStatusCode,
                 cosmosException: cosmosException,
                 requestCharge: 0,
-                activityId: cosmosException.ActivityId,
-                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                activityId: cosmosException.ActivityId);
 
             return queryResponseCore;
         }
@@ -95,8 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 subStatusCodes: null,
                 cosmosException: cosmosException,
                 requestCharge: 0,
-                activityId: documentClientException.ActivityId,
-                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                activityId: documentClientException.ActivityId);
 
             return queryResponseCore;
         }
@@ -129,8 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     cosmosException.Error,
                     cosmosException.InnerException),
                 requestCharge: queryResponseCore.RequestCharge,
-                activityId: queryResponseCore.ActivityId,
-                diagnostics: queryResponseCore.Diagnostics);
+                activityId: queryResponseCore.ActivityId);
 
             return queryResponseCore;
         }

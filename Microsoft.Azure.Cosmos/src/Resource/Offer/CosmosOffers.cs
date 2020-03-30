@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
-              diagnosticsScope: null,
+              diagnosticsContext: null,
               cancellationToken: cancellationToken);
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
         }

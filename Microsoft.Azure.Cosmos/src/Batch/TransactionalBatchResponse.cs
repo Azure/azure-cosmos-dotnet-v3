@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.RetryAfter = retryAfter;
             this.ActivityId = activityId;
-            this.Diagnostics = diagnosticsContext;
+            this.Diagnostics = diagnosticsContext.Diagnostics;
             this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 

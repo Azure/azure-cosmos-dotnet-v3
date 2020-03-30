@@ -116,7 +116,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
-                        diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
                 }
                 else
@@ -131,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                        disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
                        activityId: null,
                        requestCharge: 0,
-                       diagnostics: QueryResponseCore.EmptyDiagnostics,
                        responseLengthBytes: 0);
                 }
 

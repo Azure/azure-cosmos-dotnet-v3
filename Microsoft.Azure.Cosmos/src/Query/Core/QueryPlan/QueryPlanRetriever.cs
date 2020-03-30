@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -77,15 +78,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
-            CosmosQueryClient client,
+            CosmosQueryContext queryContext,
             SqlQuerySpec sqlQuerySpec,
             Uri resourceLink,
             PartitionKey? partitionKey,
             CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (queryContext == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(queryContext));
             }
 
             if (sqlQuerySpec == null)
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            return client.ExecuteQueryPlanRequestAsync(
+            return queryContext.ExecuteQueryPlanRequestAsync(
                 resourceLink,
                 ResourceType.Document,
                 OperationType.QueryPlan,

@@ -5,7 +5,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -23,15 +26,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
         internal static readonly string EmptyGuidString = Guid.Empty.ToString();
-        internal static readonly IReadOnlyCollection<QueryPageDiagnostics> EmptyDiagnostics = new List<QueryPageDiagnostics>();
-
+        
         private QueryResponseCore(
             IReadOnlyList<CosmosElement> result,
             bool isSuccess,
             HttpStatusCode statusCode,
             double requestCharge,
             string activityId,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
@@ -42,7 +43,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.CosmosElements = result;
             this.StatusCode = statusCode;
             this.ActivityId = activityId;
-            this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.ResponseLengthBytes = responseLengthBytes;
             this.RequestCharge = requestCharge;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
@@ -67,8 +67,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal string ActivityId { get; }
 
-        internal IReadOnlyCollection<QueryPageDiagnostics> Diagnostics { get; }
-
         internal long ResponseLengthBytes { get; }
 
         internal bool IsSuccess { get; }
@@ -79,8 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string activityId,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
-            string continuationToken,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
+            string continuationToken)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                result: result,
@@ -88,7 +85,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                statusCode: HttpStatusCode.OK,
                requestCharge: requestCharge,
                activityId: activityId,
-               diagnostics: diagnostics,
                responseLengthBytes: responseLengthBytes,
                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                continuationToken: continuationToken,
@@ -103,8 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SubStatusCodes? subStatusCodes,
             CosmosException cosmosException,
             double requestCharge,
-            string activityId,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
+            string activityId)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                 result: QueryResponseCore.EmptyList,
@@ -112,7 +107,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                 statusCode: statusCode,
                 requestCharge: requestCharge,
                 activityId: activityId,
-                diagnostics: diagnostics,
                 responseLengthBytes: 0,
                 disallowContinuationTokenMessage: null,
                 continuationToken: null,

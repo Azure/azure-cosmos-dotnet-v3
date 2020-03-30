@@ -75,7 +75,16 @@ namespace Microsoft.Azure.Cosmos
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException documentClientException, RequestMessage requestMessage)
         {
             CosmosDiagnosticsContext diagnosticsContext = requestMessage?.DiagnosticsContext;
-            if (diagnosticsContext == null)
+            if (requestMessage != null)
+            {
+                diagnosticsContext = requestMessage.DiagnosticsContext;
+
+                if (diagnosticsContext == null)
+                {
+                    throw new ArgumentNullException("Request message should contain a DiagnosticsContext");
+                }
+            }
+            else
             {
                 diagnosticsContext = new CosmosDiagnosticsContextCore();
             }
@@ -114,17 +123,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return responseMessage;
-        }
-
-        internal static Headers ToCosmosHeaders(this StoreResponse storeResponse)
-        {
-            Headers headers = new Headers();
-            for (int i = 0; i < storeResponse.ResponseHeaderNames.Length; i++)
-            {
-                headers.Add(storeResponse.ResponseHeaderNames[i], storeResponse.ResponseHeaderValues[i]);
-            }
-
-            return headers;
         }
 
         internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)

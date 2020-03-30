@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -43,17 +44,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken);
 
-        internal abstract Task<QueryResponseCore> ExecuteItemQueryAsync<QueryRequestOptionType>(
+        internal abstract Task<QueryResponseCore> ExecuteItemQueryAsync(
             Uri resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
-            QueryRequestOptionType requestOptions,
+            QueryRequestOptions requestOptions,
+            Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             Documents.PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
-            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken);
 
         internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -63,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         internal abstract void ClearSessionTokenCache(string collectionFullName);

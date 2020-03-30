@@ -75,7 +75,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
-                List<QueryPageDiagnostics> diagnosticsPages = new List<QueryPageDiagnostics>();
                 while (!this.Source.IsDone)
                 {
                     QueryResponseCore sourceResponse = await this.Source.DrainAsync(int.MaxValue, cancellationToken);
@@ -86,10 +85,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
                     requestCharge += sourceResponse.RequestCharge;
                     responseLengthBytes += sourceResponse.ResponseLengthBytes;
-                    if (sourceResponse.Diagnostics != null)
-                    {
-                        diagnosticsPages.AddRange(sourceResponse.Diagnostics);
-                    }
 
                     foreach (CosmosElement element in sourceResponse.CosmosElements)
                     {
@@ -113,7 +108,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     activityId: null,
                     disallowContinuationTokenMessage: null,
                     requestCharge: requestCharge,
-                    diagnostics: diagnosticsPages,
                     responseLengthBytes: responseLengthBytes);
             }
 

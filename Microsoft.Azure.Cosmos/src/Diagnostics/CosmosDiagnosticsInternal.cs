@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     /// <summary>
     /// Extends <see cref="CosmosDiagnostics"/> to expose internal APIs.
     /// </summary>
-    internal abstract class CosmosDiagnosticsInternal : CosmosDiagnostics
+    internal abstract class CosmosDiagnosticsInternal
     {
         public abstract void Accept(CosmosDiagnosticsInternalVisitor visitor);
 

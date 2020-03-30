@@ -282,14 +282,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
         private static CosmosClientContext GetContext()
         {
-            return new ClientContextCore(
-                client: null,
-                clientOptions: null,
-                serializerCore: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: new MockDocumentClient(),
-                userAgent: null);
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            cosmosClientContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            return cosmosClientContext.Object;
         }
     }
 }

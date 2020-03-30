@@ -341,7 +341,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     disallowContinuationTokenMessage: queryResponse.DisallowContinuationTokenMessage,
                     activityId: queryResponse.ActivityId,
                     requestCharge: queryResponse.RequestCharge,
-                    diagnostics: queryResponse.Diagnostics,
                     responseLengthBytes: queryResponse.ResponseLengthBytes);
             }
             catch (Exception)

@@ -25,12 +25,14 @@ jobs:
       IsSoftware: true
 
   # Analyze source and build output text files for credentials
-  #- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
-  #  displayName: 'CredScan'
-  #  inputs:
-  #    scanFolder: $(Build.SourcesDirectory)
-  #    suppressionsFile: CredScanSuppressions.json
-  #    debugMode: true
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
+    displayName: 'CredScan'
+    inputs:
+      toolMajorVersion: V2
+      scanFolder: $(Build.SourcesDirectory)
+      suppressionsFile: CredScanSuppressions.json
+      debugMode: false
+      verboseOutput: false
 
   # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@1

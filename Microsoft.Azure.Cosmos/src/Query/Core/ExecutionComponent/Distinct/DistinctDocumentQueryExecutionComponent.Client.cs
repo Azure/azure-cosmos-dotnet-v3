@@ -163,7 +163,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         disallowContinuationTokenMessage: null,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
-                        diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
                 }
                 else
@@ -174,7 +173,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         disallowContinuationTokenMessage: ClientDistinctDocumentQueryExecutionComponent.DisallowContinuationTokenMessage,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
-                        diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
                 }
 

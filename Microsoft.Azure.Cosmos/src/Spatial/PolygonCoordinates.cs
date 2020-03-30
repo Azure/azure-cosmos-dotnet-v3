@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// <seealso cref="MultiPolygon"/>
     [DataContract]
     [JsonConverter(typeof(PolygonCoordinatesJsonConverter))]
-    internal sealed class PolygonCoordinates : IEquatable<PolygonCoordinates>
+    public sealed class PolygonCoordinates : IEquatable<PolygonCoordinates>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PolygonCoordinates"/> class.

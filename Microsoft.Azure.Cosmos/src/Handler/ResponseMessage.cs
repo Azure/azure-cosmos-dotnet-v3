@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext;
+        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext.Diagnostics;
 
         internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 

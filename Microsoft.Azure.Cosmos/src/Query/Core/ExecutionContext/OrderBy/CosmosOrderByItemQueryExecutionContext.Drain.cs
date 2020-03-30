@@ -123,8 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 activityId: null,
                 responseLengthBytes: this.GetAndResetResponseLengthBytes(),
                 disallowContinuationTokenMessage: null,
-                continuationToken: this.ContinuationToken,
-                diagnostics: this.GetAndResetDiagnostics());
+                continuationToken: this.ContinuationToken);
         }
 
         /// <summary>

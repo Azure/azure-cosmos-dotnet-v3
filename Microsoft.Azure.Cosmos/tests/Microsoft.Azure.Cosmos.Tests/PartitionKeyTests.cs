@@ -4,8 +4,8 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class PartitionKeyTests
@@ -110,6 +110,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.IsFalse(Cosmos.PartitionKey.TryParseJsonString("Ceci n'est pas une partition key.", out Cosmos.PartitionKey thisNotAPartitionKey));
+        }
+
+        [TestMethod]
+        public void TestCosmosPartitionKeyComparison()
+        {
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals((object) new Cosmos.PartitionKey("pk")));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals(new Cosmos.PartitionKey("pk")));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk") == new Cosmos.PartitionKey("pk"));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk") != new Cosmos.PartitionKey("other_pk"));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").GetHashCode() == new Cosmos.PartitionKey("pk").GetHashCode());
+
+            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals((object) new Cosmos.PartitionKey("other_pk")));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals(new Cosmos.PartitionKey("other_pk")));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk") == new Cosmos.PartitionKey("other_pk"));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk") != new Cosmos.PartitionKey("pk"));
         }
     }
 }
