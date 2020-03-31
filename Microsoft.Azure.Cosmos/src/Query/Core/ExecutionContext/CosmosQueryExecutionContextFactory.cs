@@ -261,32 +261,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             string collectionRid,
             CancellationToken cancellationToken)
         {
-            PartitionedQueryExecutionInfo passThroughQueryInfo = new PartitionedQueryExecutionInfo()
-            {
-                QueryInfo = new QueryInfo()
-                {
-                    Aggregates = null,
-                    DistinctType = DistinctQueryType.None,
-                    GroupByAliases = null,
-                    GroupByAliasToAggregateType = null,
-                    GroupByExpressions = null,
-                    HasSelectValue = false,
-                    Limit = null,
-                    Offset = null,
-                    OrderBy = null,
-                    OrderByExpressions = null,
-                    RewrittenQuery = null,
-                    Top = null,
-                },
-                QueryRanges = partitionedQueryExecutionInfo.QueryRanges,
-            };
-
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 collectionRid: collectionRid,
-                partitionedQueryExecutionInfo: passThroughQueryInfo,
+                partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 partitionKeyRanges: targetRanges,
-                initialPageSize: (int)inputParameters.MaxItemCount,
+                initialPageSize: inputParameters.MaxItemCount,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 maxItemCount: inputParameters.MaxItemCount,
                 maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
