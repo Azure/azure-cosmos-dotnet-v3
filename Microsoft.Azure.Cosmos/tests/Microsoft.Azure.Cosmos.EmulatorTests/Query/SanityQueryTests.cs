@@ -450,35 +450,38 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                /*CollectionTypes.SinglePartition |*/ CollectionTypes.MultiPartition,
                 inputDocs,
                 ImplementationAsync,
                 "/key");
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+                foreach (int maxDegreeOfParallelism in new int[] { 1/*, 100*/ })
                 {
-                    foreach (int maxItemCount in new int[] { 10, 100 })
+                    foreach (int maxItemCount in new int[] { 10/*, 100*/ })
                     {
                         QueryRequestOptions feedOptions = new QueryRequestOptions
                         {
                             MaxBufferedItemCount = 7000,
                             MaxConcurrency = maxDegreeOfParallelism,
                             MaxItemCount = maxItemCount,
-
                         };
 
                         foreach (string query in new string[]
                         {
-                            "SELECT c.id WHERE c.key = 5 FROM c",
-                            "SELECT c._ts, c.id FROM c WHERE c.key = 5 ORDER BY c._ts",
+                            "SELECT * FROM c WHERE c.key = 5",
+                            "SELECT * FROM c WHERE c.key = 5 ORDER BY c._ts",
                         })
                         {
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
                             List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
                                 container,
                                 query,
                                 feedOptions);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
 
                             Assert.AreEqual(
                                 3,
@@ -487,11 +490,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         }
 
                         {
-                            string query = "SELECT TOP 2 c.id WHERE c.key = 5 FROM c";
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT TOP 2 c.id FROM c WHERE c.key = 5";
                             List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
                                 container,
                                 query,
                                 feedOptions);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
 
                             Assert.AreEqual(
                                 2,
@@ -500,11 +508,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         }
 
                         {
-                            string query = "SELECT c.id WHERE c.key = 5 FROM c OFFSET 1 LIMIT 1";
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT c.id FROM c WHERE c.key = 5 OFFSET 1 LIMIT 1";
                             List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
                                 container,
                                 query,
                                 feedOptions);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
 
                             Assert.AreEqual(
                                 1,
@@ -513,29 +526,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         }
 
                         {
-                            string query = "SELECT VALUE COUNT(1) WHERE c.key = 5 FROM c";
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT VALUE COUNT(1) FROM c WHERE c.key = 5";
                             List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
                                 container,
                                 query,
                                 feedOptions);
 
-                            Assert.AreEqual(
-                                1,
-                                queryResults.Count,
-                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
-
-                            Assert.AreEqual(
-                                3,
-                                Number64.ToLong((queryResults.First() as CosmosNumber64).GetValue()),
-                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
-                        }
-
-                        {
-                            string query = "SELECT VALUE COUNT(1) WHERE c.key = 5 FROM c GROUP BY c.key";
-                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
-                                container,
-                                query,
-                                feedOptions);
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
 
                             Assert.AreEqual(
                                 1,
@@ -549,11 +549,36 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         }
 
                         {
-                            string query = "SELECT DISTINCT VALUE c.key WHERE c.key = 5 FROM c";
-                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT VALUE c.key FROM c WHERE c.key = 5 GROUP BY c.key";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
                                 container,
                                 query,
-                                feedOptions);
+                                feedOptions,
+                                QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                            Assert.AreEqual(
+                                1,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT DISTINCT VALUE c.key FROM c WHERE c.key = 5";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
+                                container,
+                                query,
+                                feedOptions,
+                                QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value); 
 
                             Assert.AreEqual(
                                 1,
