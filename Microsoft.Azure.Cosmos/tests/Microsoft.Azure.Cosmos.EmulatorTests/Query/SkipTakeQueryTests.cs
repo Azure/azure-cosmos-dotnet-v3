@@ -24,7 +24,7 @@
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                /*CollectionTypes.SinglePartition | */CollectionTypes.MultiPartition,
                 documentsToInsert,
                 ImplementationAsync,
                 "/" + partitionKey);

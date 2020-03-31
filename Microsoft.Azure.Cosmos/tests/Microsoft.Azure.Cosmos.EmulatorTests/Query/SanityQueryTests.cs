@@ -450,16 +450,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct,
-                /*CollectionTypes.SinglePartition |*/ CollectionTypes.MultiPartition,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 inputDocs,
                 ImplementationAsync,
                 "/key");
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                foreach (int maxDegreeOfParallelism in new int[] { 1/*, 100*/ })
+                foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
                 {
-                    foreach (int maxItemCount in new int[] { 10/*, 100*/ })
+                    foreach (int maxItemCount in new int[] { 10, 100 })
                     {
                         QueryRequestOptions feedOptions = new QueryRequestOptions
                         {

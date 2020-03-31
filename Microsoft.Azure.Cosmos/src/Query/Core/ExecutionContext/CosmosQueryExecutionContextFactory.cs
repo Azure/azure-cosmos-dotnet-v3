@@ -199,8 +199,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 || partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                 || partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
 
-            bool shouldCreatePassthoughQuery = (singleLogicalPartitionKeyQuery && !queryHasPartialResults)
-                || (!singleLogicalPartitionKeyQuery && !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy && !queryHasPartialResults);
+            bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && !queryHasPartialResults;
+            bool crossContinuationNoClientSideAggregationQuery = !singleLogicalPartitionKeyQuery
+                && !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy
+                && !partitionedQueryExecutionInfo.QueryInfo.HasTop
+                && !partitionedQueryExecutionInfo.QueryInfo.HasLimit
+                && !partitionedQueryExecutionInfo.QueryInfo.HasOffset
+                && !queryHasPartialResults;
+
+            bool shouldCreatePassthoughQuery = streamingSinglePartitionQuery || crossContinuationNoClientSideAggregationQuery;
 
             Task<TryCatch<CosmosQueryExecutionContext>> tryCreateContextTask;
             if (shouldCreatePassthoughQuery)
