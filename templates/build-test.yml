@@ -13,6 +13,12 @@ jobs:
     vmImage: ${{ parameters.VmImage }}
 
   steps:
+  - uses: morrisoncole/pr-lint-action@v1.0.0
+    with:
+      title-regex: '(\[Internal\])? (Added|Fixed) .{3}.+: .{3}.+'
+      on-failed-regex-comment: "Please follow the required format. [Internal] (Added|Fixed) Category: Description"
+
+  steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
