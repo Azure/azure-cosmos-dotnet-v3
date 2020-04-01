@@ -267,15 +267,5 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.ContinuationToken = continuationToken;
             }
         }
-
-        internal static void FillMaxItemCount(
-            RequestMessage request,
-            int? maxItemCount)
-        {
-            if (maxItemCount != null && maxItemCount.HasValue)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
-            }
-        }
     }
 }

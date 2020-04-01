@@ -28,14 +28,10 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
         private string containerRid;
-        private string continuationToken;
-        private int? maxItemCount;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
-            string continuationToken,
-            int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
@@ -43,8 +39,6 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
             this.container = container;
             this.changeFeedOptions = options;
-            this.maxItemCount = maxItemCount;
-            this.continuationToken = continuationToken;
         }
 
         /// <summary>
@@ -98,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
+        internal async Task<(string, ResponseMessage)> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -106,13 +100,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.container.GetRIDAsync(cancellationToken);
-                this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
+                this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
+                    this.containerRid,
+                    (this.changeFeedOptions?.From as ChangeFeedRequestOptions.StartFromContinuation)?.Continuation,
+                    pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-            string partitionKeyRangeId = rangeId;
-            this.continuationToken = currentRangeToken.Token;
-            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(currentRangeToken.Token);
+            this.changeFeedOptions.PartitionKeyRangeId = rangeId;
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
                 return await this.ReadNextInternalAsync(cancellationToken);
@@ -125,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
                 currentRangeToken.Token = response.Headers.ETag;
             }
 
-            return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
+            return (rangeId, response);
         }
 
         /// <summary>
@@ -153,9 +150,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal virtual Task<ResponseMessage> NextResultSetDelegateAsync(
-            string continuationToken,
-            string partitionKeyRangeId,
-            int? maxItemCount,
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
@@ -166,16 +160,11 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
                 cosmosContainerCore: this.container,
-                requestEnricher: request =>
-                {
-                    ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                    ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                    ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
-                },
+                requestEnricher: default,
                 responseCreator: response => response,
-                partitionKey: null,
-                streamPayload: null,
-                diagnosticsContext: null,
+                partitionKey: default,
+                streamPayload: default,
+                diagnosticsContext: default,
                 cancellationToken: cancellationToken);
         }
 

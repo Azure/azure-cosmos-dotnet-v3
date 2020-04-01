@@ -41,7 +41,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.FeedTokenEPKRange == null)
             {
-                ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, this.PartitionKeyRangeId);
+                if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
+                {
+                    request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(this.PartitionKeyRangeId);
+                }
             }
             else
             {

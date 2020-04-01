@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    class ChangeFeedRequestOptions : RequestOptions
+    sealed class ChangeFeedRequestOptions : RequestOptions
     {
         /// <summary>
         /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
@@ -37,19 +36,36 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public StartFrom From { get; set; }
 
+        internal string PartitionKeyRangeId { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
         internal override void PopulateRequestOptions(RequestMessage request)
         {
+            Debug.Assert(request != null);
+
+            base.PopulateRequestOptions(request);
+
             PopulateStartFromRequstOptionVisitor visitor = new PopulateStartFromRequstOptionVisitor(request);
             this.From.Accept(visitor);
 
-            ChangeFeedRequestOptions.FillMaxItemCount(request, this.MaxItemCount);
-            request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
+            if (this.MaxItemCount.HasValue)
+            {
+                request.Headers.Add(
+                    HttpConstants.HttpHeaders.PageSize,
+                    this.MaxItemCount.Value.ToString(CultureInfo.InvariantCulture));
+            }
 
-            base.PopulateRequestOptions(request);
+            if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
+            {
+                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(this.PartitionKeyRangeId);
+            }
+
+            request.Headers.Add(
+                HttpConstants.HttpHeaders.A_IM,
+                HttpConstants.A_IMHeaderValues.IncrementalFeed);
         }
 
         [Obsolete]
@@ -64,33 +80,6 @@ namespace Microsoft.Azure.Cosmos
         {
             get => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
             set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
-        }
-
-        internal static void FillPartitionKeyRangeId(RequestMessage request, string partitionKeyRangeId)
-        {
-            Debug.Assert(request != null);
-
-            if (!string.IsNullOrEmpty(partitionKeyRangeId))
-            {
-                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(partitionKeyRangeId);
-            }
-        }
-
-        internal static void FillPartitionKey(RequestMessage request, PartitionKey partitionKey)
-        {
-            Debug.Assert(request != null);
-
-            request.Headers.PartitionKey = partitionKey.ToJsonString();
-        }
-
-        internal static void FillMaxItemCount(RequestMessage request, int? maxItemCount)
-        {
-            Debug.Assert(request != null);
-
-            if (maxItemCount.HasValue)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
-            }
         }
 
         /// <summary>

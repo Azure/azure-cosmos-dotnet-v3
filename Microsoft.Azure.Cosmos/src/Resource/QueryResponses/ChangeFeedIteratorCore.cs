@@ -99,6 +99,8 @@ namespace Microsoft.Azure.Cosmos
                 this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
             }
 
+            this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.feedTokenInternal.GetContinuation());
+
             Uri resourceUri = this.container.LinkUri;
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -108,7 +110,6 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
                 {
-                    ChangeFeedRequestOptions.FillContinuationToken(request, this.feedTokenInternal.GetContinuation());
                     this.feedTokenInternal.EnrichRequest(request);
                 },
                 partitionKey: null,

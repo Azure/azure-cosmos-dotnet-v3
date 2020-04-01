@@ -600,8 +600,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal FeedIterator GetStandByFeedIterator(
-            string continuationToken = null,
-            int? maxItemCount = null,
             ChangeFeedRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -609,8 +607,6 @@ namespace Microsoft.Azure.Cosmos
 
             return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,
-                continuationToken: continuationToken,
-                maxItemCount: maxItemCount,
                 container: this,
                 options: cosmosQueryRequestOptions);
         }

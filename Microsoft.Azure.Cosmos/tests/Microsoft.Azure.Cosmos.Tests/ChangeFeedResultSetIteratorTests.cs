@@ -63,7 +63,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object,
+                new ContainerCore(mockContext.Object, databaseCore, "myColl"),
+                new ChangeFeedRequestOptions()
+                {
+                    MaxItemCount = 10,
+                });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(!firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should not contain the second continuation");
@@ -119,7 +124,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object,
+                new ContainerCore(mockContext.Object, databaseCore, "myColl"),
+                new ChangeFeedRequestOptions()
+                {
+                    MaxItemCount = 10,
+                });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -178,7 +188,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object,
+                new ContainerCore(mockContext.Object, databaseCore, "myColl"),
+                new ChangeFeedRequestOptions()
+                {
+                    MaxItemCount = 10,
+                });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -232,7 +247,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object,
+                new ContainerCore(mockContext.Object, databaseCore, "myColl"),
+                new ChangeFeedRequestOptions()
+                {
+                    MaxItemCount = 10,
+                });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);

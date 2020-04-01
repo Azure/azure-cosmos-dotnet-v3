@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
@@ -20,42 +19,29 @@ namespace Microsoft.Azure.Cosmos
         private readonly ContainerCore container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly FeedTokenInternal feedToken;
-        private string continuationToken;
-        private string partitionKeyRangeId;
         private bool hasMoreResultsInternal;
 
-        internal ChangeFeedPartitionKeyResultSetIteratorCore(
+        public ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
-            string partitionKeyRangeId,
-            string continuationToken,
-            int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
+            if (clientContext == null)
+            {
+                throw new ArgumentNullException(nameof(clientContext));
+            }
+
             if (container == null)
             {
                 throw new ArgumentNullException(nameof(container));
             }
 
-            if (partitionKeyRangeId == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRangeId));
-            }
-
             this.clientContext = clientContext;
             this.container = container;
             this.changeFeedOptions = options;
-            this.MaxItemCount = maxItemCount;
-            this.continuationToken = continuationToken;
-            this.partitionKeyRangeId = partitionKeyRangeId;
-            this.feedToken = new FeedTokenPartitionKeyRange(this.partitionKeyRangeId);
-            this.feedToken.UpdateContinuation(this.continuationToken);
+            this.feedToken = new FeedTokenPartitionKeyRange(options?.PartitionKeyRangeId);
+            this.feedToken.UpdateContinuation((options?.From as ChangeFeedRequestOptions.StartFromContinuation).Continuation);
         }
-
-        /// <summary>
-        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
-        /// </summary>
-        public int? MaxItemCount { get; set; }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
@@ -80,23 +66,21 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
+            return this.NextResultSetDelegateAsync(
+                this.changeFeedOptions,
+                cancellationToken)
                 .ContinueWith(task =>
                 {
                     ResponseMessage response = task.Result;
                     // Change Feed uses ETAG
-                    this.continuationToken = response.Headers.ETag;
-                    this.feedToken.UpdateContinuation(this.continuationToken);
+                    this.feedToken.UpdateContinuation(response.Headers.ETag);
                     this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
-                    response.Headers.ContinuationToken = this.continuationToken;
+                    response.Headers.ContinuationToken = response.Headers.ETag;
                     return response;
                 }, cancellationToken);
         }
 
         private Task<ResponseMessage> NextResultSetDelegateAsync(
-            string continuationToken,
-            string partitionKeyRangeId,
-            int? maxItemCount,
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
@@ -107,15 +91,10 @@ namespace Microsoft.Azure.Cosmos
                resourceType: Documents.ResourceType.Document,
                operationType: Documents.OperationType.ReadFeed,
                requestOptions: options,
-               requestEnricher: request =>
-               {
-                   ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                   ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                   ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
-               },
-               partitionKey: null,
-               streamPayload: null,
-               diagnosticsContext: null,
+               requestEnricher: default,
+               partitionKey: default,
+               streamPayload: default,
+               diagnosticsContext: default,
                cancellationToken: cancellationToken);
 
         }
