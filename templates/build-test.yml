@@ -8,15 +8,6 @@ parameters:
 
 jobs:
 - job:
-  displayName: Tests PRLint
-
-  steps:
-  - uses: morrisoncole/pr-lint-action@v1.0.0
-    with:
-      title-regex: '(\[Internal\])? (Added|Fixed) .{3}.+: .{3}.+'
-      on-failed-regex-comment: "Please follow the required format. [Internal] (Added|Fixed) Category: Description"
-
-- job:
   displayName: Tests ${{ parameters.BuildConfiguration }}
   pool:
     vmImage: ${{ parameters.VmImage }}
