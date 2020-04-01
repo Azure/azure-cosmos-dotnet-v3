@@ -46,12 +46,14 @@ namespace Microsoft.Azure.Cosmos
         public ItemBatchOperation(
             OperationType operationType,
             int operationIndex,
+            ContainerCore containerCore,
             string id = null,
             Stream resourceStream = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
+            this.ContainerCore = containerCore;
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
@@ -70,7 +72,9 @@ namespace Microsoft.Azure.Cosmos
 
         public int OperationIndex { get; internal set; }
 
-        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
+        internal ContainerCore ContainerCore { get; }
+
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
         internal string PartitionKeyJson { get; set; }
 
@@ -316,7 +320,22 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
-                this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
+                Stream stream = this.ResourceStream;
+                if (this.RequestOptions != null && this.RequestOptions.EncryptionOptions != null)
+                {
+                    using (this.DiagnosticsContext.CreateScope("Encrypt"))
+                    {
+                        stream = await this.ContainerCore.ClientContext.EncryptionProcessor.EncryptAsync(
+                            stream,
+                            this.RequestOptions.EncryptionOptions,
+                            (DatabaseCore)this.ContainerCore.Database,
+                            this.ContainerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
+                            this.DiagnosticsContext,
+                            cancellationToken);
+                    }
+                }
+
+                this.body = await BatchExecUtils.StreamToMemoryAsync(stream, cancellationToken);
             }
         }
 
@@ -372,9 +391,10 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             int operationIndex,
             T resource,
+            ContainerCore containerCore,
             string id = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
-            : base(operationType, operationIndex, id: id, requestOptions: requestOptions)
+            : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;
         }
@@ -394,7 +414,7 @@ namespace Microsoft.Azure.Cosmos
                 return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 
-            return Task.FromResult(true);
+            return Task.CompletedTask;
         }
     }
 }

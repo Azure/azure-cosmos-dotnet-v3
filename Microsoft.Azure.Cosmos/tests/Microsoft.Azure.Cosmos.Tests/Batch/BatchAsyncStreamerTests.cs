@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private const int MaxBatchByteSize = 100000;
         private const int defaultMaxDegreeOfConcurrency = 10;
         private static Exception expectedException = new Exception();
-        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, "0");
+        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, new Cosmos.PartitionKey(), "0");
         private TimerPool TimerPool = new TimerPool(1);
         private SemaphoreSlim limiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
 
@@ -56,7 +56,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
-                    MockCosmosUtil.Serializer);
+                    MockCosmosUtil.Serializer,
+                    CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
@@ -150,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Task<TransactionalBatchOperationResult>> contexts = new List<Task<TransactionalBatchOperationResult>>(100);
             for (int i = 0; i < 600; i++)
             {
-                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
+                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, new Cosmos.PartitionKey(), i.ToString());
                 ItemBatchOperationContext context = AttachContext(operation);
                 batchAsyncStreamer.Add(operation);
                 contexts.Add(context.OperationTask);
@@ -181,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Task<TransactionalBatchOperationResult>> contexts = new List<Task<TransactionalBatchOperationResult>>(10);
             for (int i = 0; i < 10; i++)
             {
-                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
+                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, new Cosmos.PartitionKey(), i.ToString());
                 ItemBatchOperationContext context = AttachContext(operation);
                 batchAsyncStreamer.Add(operation);
                 contexts.Add(context.OperationTask);

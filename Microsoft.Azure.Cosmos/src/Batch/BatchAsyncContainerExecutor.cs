@@ -251,7 +251,11 @@ namespace Microsoft.Azure.Cosmos
 
                     using (diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.ToResponse"))
                     {
-                        TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.SerializerCore).ConfigureAwait(false);
+                        TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                            responseMessage,
+                            serverRequest,
+                            this.cosmosClientContext.SerializerCore,
+                            cancellationToken).ConfigureAwait(false);
 
                         return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                     }
