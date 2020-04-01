@@ -9,12 +9,12 @@
    4. Description is a user friendly explanation of the change
 
 ### Format
-`[Internal](Added/Fixed)(Category)(Description)`
+`[Internal](Added/Fixed)(Category):(Description)`
 
 ### Example
-Added Diagnostics GetElapsedClientLatency to CosmosDiagnostics 
-Fixed PartitionKey null reference when using default(PartitionKey)
-Internal added query code generator for CosmosNumbers for easy additions in the future.
+Added Diagnostics: GetElapsedClientLatency to CosmosDiagnostics 
+Fixed PartitionKey: null reference when using default(PartitionKey)
+[Internal] Added Query: code generator for CosmosNumbers for easy additions in the future.
 
 ## Description
 
