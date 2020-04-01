@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -19,8 +20,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
     class ChangeFeedRequestOptions : RequestOptions
     {
-        public const string IfNoneMatchAllHeaderValue = "*";
-
         /// <summary>
         /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
         /// </summary>
@@ -44,19 +43,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="RequestMessage"/></param>
         internal override void PopulateRequestOptions(RequestMessage request)
         {
-            // Check if no Continuation Token is present
-            if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
-            {
-                if (this.StartTime == null)
-                {
-                    request.Headers.IfNoneMatch = ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue;
-                }
-                else if (this.StartTime != null
-                    && this.StartTime != ChangeFeedRequestOptions.DateTimeStartFromBeginning)
-                {
-                    request.Headers.Add(HttpConstants.HttpHeaders.IfModifiedSince, this.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
-                }
-            }
+            PopulateStartFromRequstOptionVisitor visitor = new PopulateStartFromRequstOptionVisitor(request);
+            this.From.Accept(visitor);
 
             ChangeFeedRequestOptions.FillMaxItemCount(request, this.MaxItemCount);
             request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
@@ -93,17 +81,6 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(request != null);
 
             request.Headers.PartitionKey = partitionKey.ToJsonString();
-        }
-
-        internal static void FillContinuationToken(RequestMessage request, string continuationToken)
-        {
-            Debug.Assert(request != null);
-
-            if (!string.IsNullOrWhiteSpace(continuationToken))
-            {
-                // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-                request.Headers.IfNoneMatch = continuationToken;
-            }
         }
 
         internal static void FillMaxItemCount(RequestMessage request, int? maxItemCount)
@@ -168,6 +145,41 @@ namespace Microsoft.Azure.Cosmos
             public abstract void Visit(StartFromContinuation startFromContinuation);
         }
 
+        internal sealed class PopulateStartFromRequstOptionVisitor : StartFromVisitor
+        {
+            private const string IfNoneMatchAllHeaderValue = "*";
+
+            private readonly RequestMessage requestMessage;
+
+            public PopulateStartFromRequstOptionVisitor(RequestMessage requestMessage)
+            {
+                if (requestMessage == null)
+                {
+                    throw new ArgumentNullException(nameof(requestMessage));
+                }
+
+                this.requestMessage = requestMessage;
+            }
+
+            public override void Visit(StartFromNow startFromNow)
+            {
+                this.requestMessage.Headers.IfNoneMatch = PopulateStartFromRequstOptionVisitor.IfNoneMatchAllHeaderValue;
+            }
+
+            public override void Visit(StartFromTime startFromTime)
+            {
+                this.requestMessage.Headers.Add(
+                    HttpConstants.HttpHeaders.IfModifiedSince,
+                    startFromTime.Time.ToString("r", CultureInfo.InvariantCulture));
+            }
+
+            public override void Visit(StartFromContinuation startFromContinuation)
+            {
+                // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
+                this.requestMessage.Headers.IfNoneMatch = startFromContinuation.Continuation;
+            }
+        }
+
         /// <summary>
         /// Derived instance of <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
         /// </summary>
@@ -214,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
             /// </summary>
             public DateTime Time { get; }
 
-            public override void Accept(StartFromVisitor visitor)
+            internal override void Accept(StartFromVisitor visitor)
             {
                 visitor.Visit(this);
             }
