@@ -129,6 +129,8 @@ namespace Microsoft.Azure.Cosmos
             {
             }
 
+            internal abstract void Accept(StartFromVisitor visitor);
+
             /// <summary>
             /// Creates a <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
             /// </summary>
@@ -159,6 +161,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal abstract class StartFromVisitor
+        {
+            public abstract void Visit(StartFromNow startFromNow);
+            public abstract void Visit(StartFromTime startFromTime);
+            public abstract void Visit(StartFromContinuation startFromContinuation);
+        }
+
         /// <summary>
         /// Derived instance of <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
         /// </summary>
@@ -172,6 +181,11 @@ namespace Microsoft.Azure.Cosmos
             public StartFromNow()
                 : base()
             {
+            }
+
+            internal override void Accept(StartFromVisitor visitor)
+            {
+                visitor.Visit(this);
             }
         }
 
@@ -199,6 +213,11 @@ namespace Microsoft.Azure.Cosmos
             /// Gets the time the ChangeFeed operation should start reading from.
             /// </summary>
             public DateTime Time { get; }
+
+            public override void Accept(StartFromVisitor visitor)
+            {
+                visitor.Visit(this);
+            }
         }
 
         /// <summary>
@@ -225,6 +244,11 @@ namespace Microsoft.Azure.Cosmos
             /// Gets the continuation to resume from.
             /// </summary>
             public string Continuation { get; }
+
+            internal override void Accept(StartFromVisitor visitor)
+            {
+                visitor.Visit(this);
+            }
         }
     }
 }
