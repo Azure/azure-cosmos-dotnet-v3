@@ -348,14 +348,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
-        public void ValidatePreferredRegionsValues()
-        {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { "NotARegion" }};
-            cosmosClientOptions.GetConnectionPolicy();
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
         public void VerifyApplicationRegionSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
