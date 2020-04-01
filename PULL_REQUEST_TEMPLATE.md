@@ -3,7 +3,7 @@
 ## Pull Request Title
 1. Changelog will be generated from PR titles.
 2. PR titles will be formatted with the following layout.
-   1. Internal is optional and represent changes with no public facing changes such as test only changes
+   1. Internal is optional and represents changes with no public facing changes such as test only changes
    2. Category represents the area of the change like batch, changefeed, point operation, or query
    3. Added or Fixed identifies if a new feature is being added or if a bug is being fixed
    4. Description is a user friendly explanation of the change
