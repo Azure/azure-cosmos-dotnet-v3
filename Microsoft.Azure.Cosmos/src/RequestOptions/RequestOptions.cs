@@ -33,6 +33,14 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
+        /// Gets or sets the Prefer Header associated with the request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// Most commonly used to detect changes to the resource
+        /// </remarks>
+        public string Prefer { get; set; }
+
+        /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
         internal bool IsEffectivePartitionKeyRouting { get; set; }
@@ -79,6 +87,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.IfNoneMatchEtag != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
+            }
+
+            if (this.Prefer != null)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, this.Prefer);
             }
         }
 

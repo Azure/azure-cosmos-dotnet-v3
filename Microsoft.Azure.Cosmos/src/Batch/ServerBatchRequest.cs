@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
@@ -12,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
+    using Microsoft.IO;
 
 #pragma warning disable CA1001 // Types that own disposable fields should be disposable
     internal abstract class ServerBatchRequest
@@ -69,11 +71,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="operations">Operations to be added; read-only.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <param name="ensureContinuousOperationIndexes">Whether to stop adding operations to the request once there is non-continuity in the operation indexes.</param>
+        /// <param name="memoryStreamManager"></param>
         /// <returns>Any pending operations that were not included in the request.</returns>
         protected async Task<ArraySegment<ItemBatchOperation>> CreateBodyStreamAsync(
             ArraySegment<ItemBatchOperation> operations,
             CancellationToken cancellationToken,
-            bool ensureContinuousOperationIndexes = false)
+            bool ensureContinuousOperationIndexes = false,
+            RecyclableMemoryStreamManager memoryStreamManager = null)
         {
             int estimatedMaxOperationLength = 0;
             int approximateTotalLength = 0;
@@ -110,7 +114,23 @@ namespace Microsoft.Azure.Cosmos
             this.operations = new ArraySegment<ItemBatchOperation>(operations.Array, operations.Offset, materializedCount);
 
             const int operationSerializationOverheadOverEstimateInBytes = 200;
-            this.bodyStream = new MemoryStream(approximateTotalLength + (operationSerializationOverheadOverEstimateInBytes * materializedCount));
+            int approxStreamlen = approximateTotalLength + (operationSerializationOverheadOverEstimateInBytes * materializedCount);
+
+            this.bodyStream = null;
+            if (memoryStreamManager != null)
+            {
+                this.bodyStream = memoryStreamManager.GetStream("CreateBodyStreamAsync", approxStreamlen);
+                //this.bodyStream = new CosmosMemoryStream(cosmosMemoryStreamManager);
+                //this.bodyStream = new MemoryStream(approxStreamlen);
+            }
+            else
+            {
+                this.bodyStream = new MemoryStream(approxStreamlen);
+            }
+
+            //this.bodyStream = ReusableCosmosMemoryStream.GetMemoryStream(approxStreamlen);
+            //this.bodyStream = new MemoryStream(approxStreamlen);
+
             this.operationResizableWriteBuffer = new MemorySpanResizer<byte>(estimatedMaxOperationLength + operationSerializationOverheadOverEstimateInBytes);
 
             Result r = await this.bodyStream.WriteRecordIOAsync(default(Segment), this.WriteOperation);

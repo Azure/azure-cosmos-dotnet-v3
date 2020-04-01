@@ -246,6 +246,8 @@ namespace Microsoft.Azure.Cosmos
                     case HttpConstants.HttpHeaders.Prefer:
                     case HttpConstants.HttpHeaders.Query:
                     case HttpConstants.HttpHeaders.A_IM:
+                    case HttpConstants.HttpHeaders.ContentEncoding:
+                    case HttpConstants.HttpHeaders.AcceptEncoding:
                         return true;
 
                     default:
@@ -327,6 +329,11 @@ namespace Microsoft.Azure.Cosmos
                         if (key.Equals(HttpConstants.HttpHeaders.ContentType, StringComparison.OrdinalIgnoreCase))
                         {
                             requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(request.Headers[key]);
+                        }
+                        else if (key.Equals(HttpConstants.HttpHeaders.ContentEncoding, StringComparison.OrdinalIgnoreCase))
+                        {
+                            ICollection<string> contentEncoding = requestMessage.Content.Headers.ContentEncoding;
+                            contentEncoding.Add("gzip");
                         }
                         else
                         {

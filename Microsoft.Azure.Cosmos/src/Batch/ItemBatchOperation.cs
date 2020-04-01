@@ -183,6 +183,23 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
+                if (options.Prefer != null)
+                {
+                    string returnPreferenceStr = options.Prefer as string;
+                    if (!string.IsNullOrEmpty(returnPreferenceStr))
+                    {
+                        // Change it to HttpConstants.HttpHeaderValues.PreferReturnMinimal later
+                        if (returnPreferenceStr.Contains("return=minimal"))
+                        {
+                            r = writer.WriteBool("minimalReturnPreference", true);
+                            if (r != Result.Success)
+                            {
+                                return r;
+                            }
+                        }
+                    }
+                }
+
                 if (options.Properties != null)
                 {
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))

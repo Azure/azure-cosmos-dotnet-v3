@@ -9,7 +9,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.IO.Compression;
     using System.Linq;
+    using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -187,6 +190,9 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.Headers.PartitionKeyRangeId = partitionKeyRangeId;
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
+            //requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentEncoding, "gzip");
+            //requestMessage.Headers.Add(HttpConstants.HttpHeaders.TransferEncoding, "gzip");
+            //requestMessage.Headers.Add(HttpConstants.HttpHeaders.AcceptEncoding, "gzip");
         }
 
         private async Task ReBatchAsync(
@@ -234,8 +240,70 @@ namespace Microsoft.Azure.Cosmos
             using (await limiter.UsingWaitAsync(cancellationToken))
             {
                 limiterScope.Dispose();
-                using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
+                using (MemoryStream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
+                    //Console.WriteLine(
+                    //"Before compression Capacity = {0}, Length = {1}, Position = {2}\n",
+                    //serverRequestPayload.Capacity.ToString(),
+                    //serverRequestPayload.Length.ToString(),
+                    //serverRequestPayload.Position.ToString());
+
+                    //serverRequestPayload.Seek(0, SeekOrigin.Begin);
+
+                    //// Read the first 20 bytes from the stream.
+                    //byte[] byteArray = new byte[serverRequestPayload.Length];
+                    //int count = serverRequestPayload.Read(byteArray, 0, 20);
+
+                    //// Read the remaining bytes, byte by byte.
+                    //while (count < serverRequestPayload.Length)
+                    //{
+                    //    byteArray[count++] =
+                    //        Convert.ToByte(serverRequestPayload.ReadByte());
+                    //}
+
+                    //ASCIIEncoding encoding = new ASCIIEncoding();
+
+                    //char[] charArray = new char[encoding.GetCharCount(
+                    //         byteArray, 0, count)];
+                    //encoding.GetDecoder().GetChars(
+                    //    byteArray, 0, count, charArray, 0);
+                    //Console.WriteLine(charArray);
+
+                    //serverRequestPayload.Seek(0, SeekOrigin.Begin);
+
+                    // Compress now
+                    //MemoryStream outputStream = new MemoryStream();
+                    //GZipStream gZipStream = new GZipStream(outputStream, CompressionMode.Compress, true);
+                    //await serverRequestPayload.CopyToAsync(gZipStream);
+                    //await gZipStream.FlushAsync();
+
+                    //Console.WriteLine(
+                    //"After compression Capacity = {0}, Length = {1}, Position = {2}\n",
+                    //outputStream.Capacity.ToString(),
+                    //outputStream.Length.ToString(),
+                    //outputStream.Position.ToString());
+
+                    //outputStream.Seek(0, SeekOrigin.Begin);
+
+                    //// Read the first 20 bytes from the stream.
+                    //byteArray = new byte[outputStream.Length];
+                    //count = outputStream.Read(byteArray, 0, 20);
+
+                    //// Read the remaining bytes, byte by byte.
+                    //while (count < outputStream.Length)
+                    //{
+                    //    byteArray[count++] =
+                    //        Convert.ToByte(outputStream.ReadByte());
+                    //}
+
+                    //charArray = new char[encoding.GetCharCount(
+                    //         byteArray, 0, count)];
+                    //encoding.GetDecoder().GetChars(
+                    //    byteArray, 0, count, charArray, 0);
+                    //Console.WriteLine(charArray);
+
+                    //outputStream.Seek(0, SeekOrigin.Begin);
+
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
                     ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                         this.cosmosContainer.LinkUri,

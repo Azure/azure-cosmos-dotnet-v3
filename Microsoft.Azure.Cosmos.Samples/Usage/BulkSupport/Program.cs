@@ -13,6 +13,7 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
@@ -37,6 +38,8 @@
         private static bool shouldCleanupOnFinish;
         private static int numWorkers;
 
+        private static bool waitAfterDelete = false;
+
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
         public static async Task Main(string[] args)
@@ -46,6 +49,7 @@
                 // Intialize container or create a new container.
                 Container container = await Program.Initialize();
 
+               // await Program.BatchTestingAsync(container);
                 // Running bulk ingestion on a container.
                 await Program.CreateItemsConcurrentlyAsync(container);
             }
@@ -72,6 +76,106 @@
         }
         // </Main>
 
+        private static async Task BatchTestingAsync(Container container)
+        {
+            Console.WriteLine("Running a test job BatchTestingAsync");
+            string pk = "TBD";
+
+            for (int loop = 0; loop < numWorkers; loop++)
+            {
+                TransactionalBatch cosmosBatch = container.CreateTransactionalBatch(new PartitionKey(pk));
+                DataSource dataSource = new DataSource(itemsToCreate, itemSize, numWorkers);
+                int numberOfOperationsPerBatch = 100;
+
+                for (int i = 0; i < numberOfOperationsPerBatch; i++)
+                {
+                    JObject documentGeneratorOutput = dataSource.CreateTempDocItem(pk);
+                    cosmosBatch.CreateItem(documentGeneratorOutput);
+                }
+
+                TransactionalBatchResponse batchResponse = await cosmosBatch.ExecuteAsync();
+
+                if (batchResponse.StatusCode != HttpStatusCode.OK || batchResponse.Count != numberOfOperationsPerBatch)
+                {
+                    Console.WriteLine($"Batch Create parent failed status code [{batchResponse.StatusCode}] and operation count [{batchResponse.Count}]");
+                }
+
+                // Validate all response status codes
+                List<JObject> listOfObjects = new List<JObject>();
+                for (int index = 0; index < numberOfOperationsPerBatch; index++)
+                {
+                    if (batchResponse[index].StatusCode != HttpStatusCode.Created)
+                    {
+                        Console.WriteLine($"Batch Create  item failed status code [{batchResponse[index].StatusCode}]");
+                    }
+                }
+
+                // Validate by reading all documents
+                for (int i = 0; i < numberOfOperationsPerBatch; i++)
+                {
+                    JObject operation = batchResponse.GetOperationResultAtIndex<JObject>(i).Resource;
+                    listOfObjects.Add(operation);
+                    ResponseMessage response = await container.ReadItemStreamAsync(operation["id"].ToString(), new PartitionKey(pk));
+                    if (response.StatusCode != HttpStatusCode.OK)
+                    {
+                        Console.WriteLine($"Batch response diagnostic: {batchResponse.Diagnostics.ToString()}");
+
+                        Console.WriteLine($"Batch Create item on id: {i} and loop {loop} failed status code {response.StatusCode} and diagnostic: {response.Diagnostics.ToString()}");
+                        for (int j = 0; j <= 10; j++)
+                        {
+                            Console.WriteLine($"Retrying {j}th time");
+                            ResponseMessage response2 = await container.ReadItemStreamAsync(operation["id"].ToString(), new PartitionKey(pk));
+                            if (response2.StatusCode != HttpStatusCode.OK)
+                            {
+                                Console.WriteLine($"Batch Create item on id: {i} and loop {loop} failed status code {response2.StatusCode} and diagnostic: {response2.Diagnostics.ToString()}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Batch Create item on id: {i} and loop {loop} passed with status code {response2.StatusCode} and diagnostic: {response2.Diagnostics.ToString()}");
+                            }
+                        }
+                    }
+                }
+
+                TransactionalBatch cosmosDeleteBatch = container.CreateTransactionalBatch(new PartitionKey(pk));
+                for (int i = 0; i < listOfObjects.Count; i++)
+                {
+                    cosmosDeleteBatch.DeleteItem(listOfObjects[i]["id"].ToString());
+                }
+
+                // Execute batch
+                TransactionalBatchResponse deleteBatchResponse = await cosmosDeleteBatch.ExecuteAsync();
+
+                // Check batch response
+                if (deleteBatchResponse.StatusCode != HttpStatusCode.OK || deleteBatchResponse.Count != listOfObjects.Count)
+                {
+                    Console.WriteLine($"Batch Delete parent failed status code [{deleteBatchResponse.StatusCode}] and operation count [{batchResponse.Count}]");
+                }
+
+                // Validate all response status codes
+                for (int index = 0; index < deleteBatchResponse.Count; index++)
+                {
+                    if (deleteBatchResponse[index].StatusCode != HttpStatusCode.NoContent)
+                    {
+                        Console.WriteLine($"Batch Delete  item failed status code [{deleteBatchResponse[index].StatusCode}]");
+                    }
+                }
+
+                if(Program.waitAfterDelete)
+                {
+                    await Task.Delay(2000);
+                }
+
+                if (loop % 100 == 0)
+                {
+                    Console.WriteLine($"loop {loop} done");
+                }
+            }
+
+
+            Console.WriteLine("Successfull");
+        }
+
         private static async Task CreateItemsConcurrentlyAsync(Container container)
         {
             Console.WriteLine($"Starting creation of {itemsToCreate} items of about {itemSize} bytes each in a limit of {runtimeInSeconds} seconds using {numWorkers} workers.");
@@ -83,6 +187,11 @@
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            requestOptions.Prefer = "return=representational"; //"return=minimal";
+
+            Console.WriteLine("Return preder value and no compression Direct mode: " + requestOptions.Prefer);
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             long startMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -102,7 +211,7 @@
                             docCounter++;
 
                             MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
-                            _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
+                            _ = container.CreateItemStreamAsync(stream, partitionKeyValue, requestOptions, cancellationToken)
                                 .ContinueWith((Task<ResponseMessage> task) =>
                                 {
                                     Interlocked.Increment(ref taskCompleteCounter);
@@ -201,6 +310,7 @@
             Program.itemSize = int.Parse(string.IsNullOrEmpty(configuration["ItemSize"]) ? "1024" : configuration["ItemSize"]);
             Program.runtimeInSeconds = int.Parse(string.IsNullOrEmpty(configuration["RuntimeInSeconds"]) ? "30" : configuration["RuntimeInSeconds"]);
             Program.numWorkers = int.Parse(string.IsNullOrEmpty(configuration["numWorkers"]) ? "1" : configuration["numWorkers"]);
+            Program.waitAfterDelete = bool.Parse(string.IsNullOrEmpty(configuration["waitAfterDelete"]) ? "false" : configuration["waitAfterDelete"]);
 
             Program.shouldCleanupOnFinish = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnFinish"]) ? "false" : configuration["ShouldCleanupOnFinish"]);
             bool shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
@@ -233,7 +343,14 @@
             string endpoint,
             string authKey) =>
         // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true});
+            new CosmosClient(endpoint, authKey, new CosmosClientOptions()
+            {
+                AllowBulkExecution = true,
+                ConnectionMode = ConnectionMode.Direct,
+                MaxRetryAttemptsOnRateLimitedRequests = 100,
+                RequestTimeout = new TimeSpan(0, 5, 0),
+                MaxRetryWaitTimeOnRateLimitedRequests = new TimeSpan(0, 5, 0)
+            });
         // </Initialization>
 
         private static async Task CleanupAsync()
@@ -308,6 +425,14 @@
                 partitionKeyValue = new PartitionKey(partitionKey);
 
                 return new MemoryStream(Encoding.UTF8.GetBytes(value));
+            }
+
+            public JObject CreateTempDocItem(string partitionKey)
+            {
+                string id = Guid.NewGuid().ToString();
+                MyDocument myDocument = new MyDocument() { id = id, pk = partitionKey, other = padding };
+
+                return JObject.FromObject(myDocument);
             }
 
             public MemoryStream GetNextDocItem(out PartitionKey partitionKeyValue)

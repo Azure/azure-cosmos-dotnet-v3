@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
             batchItemRequestOptions.IfNoneMatchEtag = requestOptions.IfNoneMatchEtag;
             batchItemRequestOptions.Properties = requestOptions.Properties;
             batchItemRequestOptions.IsEffectivePartitionKeyRouting = requestOptions.IsEffectivePartitionKeyRouting;
+            batchItemRequestOptions.Prefer = requestOptions.Prefer;
             return batchItemRequestOptions;
         }
     }
