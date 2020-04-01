@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos
 #endif
     class ChangeFeedRequestOptions : RequestOptions
     {
-        internal const string IfNoneMatchAllHeaderValue = "*";
-        internal static readonly DateTime DateTimeStartFromBeginning = DateTime.MinValue.ToUniversalTime();
+        public const string IfNoneMatchAllHeaderValue = "*";
+        public static readonly DateTime DateTimeStartFromBeginning = DateTime.MinValue.ToUniversalTime();
 
         /// <summary>
         /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
@@ -65,7 +65,21 @@ namespace Microsoft.Azure.Cosmos
             base.PopulateRequestOptions(request);
         }
 
-        internal static void FillPartitionKeyRangeId(RequestMessage request, string partitionKeyRangeId)
+        [Obsolete]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public new string IfMatchEtag
+        {
+            get => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfMatchEtag)} property.");
+            set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfMatchEtag)} property.");
+        }
+
+        public new string IfNoneMatchEtag
+        {
+            get => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
+            set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
+        }
+
+        public static void FillPartitionKeyRangeId(RequestMessage request, string partitionKeyRangeId)
         {
             Debug.Assert(request != null);
 
@@ -75,14 +89,14 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static void FillPartitionKey(RequestMessage request, PartitionKey partitionKey)
+        public static void FillPartitionKey(RequestMessage request, PartitionKey partitionKey)
         {
             Debug.Assert(request != null);
 
             request.Headers.PartitionKey = partitionKey.ToJsonString();
         }
 
-        internal static void FillContinuationToken(RequestMessage request, string continuationToken)
+        public static void FillContinuationToken(RequestMessage request, string continuationToken)
         {
             Debug.Assert(request != null);
 
@@ -93,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static void FillMaxItemCount(RequestMessage request, int? maxItemCount)
+        public static void FillMaxItemCount(RequestMessage request, int? maxItemCount)
         {
             Debug.Assert(request != null);
 
