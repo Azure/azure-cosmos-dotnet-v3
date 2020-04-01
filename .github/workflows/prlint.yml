@@ -10,6 +10,6 @@ jobs:
     steps:
     - uses: morrisoncole/pr-lint-action@v1.0.0
       with:
-        title-regex: "(\[Internal\])? (Added|Fixed) .{3}.+: .{3}.+"
+        title-regex: '(\[Internal\])? (Added|Fixed) .{3}.+: .{3}.+'
         on-failed-regex-comment: "Please follow the required format. [Internal] (Added|Fixed) Category: Description"
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
