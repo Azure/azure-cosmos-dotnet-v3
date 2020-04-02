@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             await Task.Delay(1000);
             DateTime now = DateTime.UtcNow;
-            await Task.Delay(1000);
+            //await Task.Delay(1000);
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.Container;
             FeedIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = now });
@@ -133,6 +133,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(totalCount, batchSize);
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_StartTime2()
+        {
+            int totalCount = 0;
+            int batchSize = 25;
+            await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.Container;
+
+            FeedIterator<CosmosObject> readFeedIterator = itemsCore.GetItemQueryIterator<CosmosObject>();
+            List<CosmosObject> documents = new List<CosmosObject>();
+            while (readFeedIterator.HasMoreResults)
+            {
+                FeedResponse<CosmosObject> feedResponse = await readFeedIterator.ReadNextAsync();
+                documents.AddRange(feedResponse);
+            }
+
+            CosmosObject randomDocument = documents[new Random().Next(documents.Count)];
+            Assert.IsTrue(randomDocument.TryGetValue("_ts", out CosmosNumber cosmosSecondsSinceEpoch));
+            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+            long secondsSinceEpoch = Number64.ToLong(cosmosSecondsSinceEpoch.Value);
+            DateTime timeStamp = epoch.AddSeconds(secondsSinceEpoch);
+
+
+            FeedIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = timeStamp });
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+                }
+            }
+
+            int expectedCount = documents.Where(document =>
+            {
+                Assert.IsTrue(document.TryGetValue("_ts", out CosmosNumber localTimeStamp));
+                long localSecondsSinceEpoch = Number64.ToLong(localTimeStamp.Value);
+                return localSecondsSinceEpoch >= secondsSinceEpoch;
+            }).Count();
+
+            Assert.AreEqual(expectedCount, totalCount);
         }
 
         /// <summary>
