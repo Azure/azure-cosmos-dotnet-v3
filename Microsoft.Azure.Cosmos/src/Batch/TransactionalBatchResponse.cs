@@ -315,21 +315,12 @@ namespace Microsoft.Azure.Cosmos
                     for (int index = 0; index < serverRequest.Operations.Count; index++)
                     {
                         ContainerCore containerCore = serverRequest.Operations[index].ContainerCore;
-                        if (containerCore?.ClientContext.ClientOptions.EncryptionKeyWrapProvider == null)
-                        {
-                            break;
-                        }
-
                         TransactionalBatchOperationResult result = response.results[index];
-                        if (result.ResourceStream != null)
-                        {
-                            result.ResourceStream = await containerCore.ClientContext.EncryptionProcessor.DecryptAsync(
-                                result.ResourceStream,
-                                (DatabaseCore)containerCore.Database,
-                                containerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
-                                responseMessage.DiagnosticsContext,
-                                cancellationToken);
-                        }
+                        result.ResourceStream = await containerCore.ClientContext.DecryptItemAsync(
+                            containerCore,
+                            result.ResourceStream,
+                            responseMessage.DiagnosticsContext,
+                            cancellationToken);
                     }
                 }
 

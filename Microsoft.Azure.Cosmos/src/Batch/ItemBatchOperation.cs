@@ -321,18 +321,14 @@ namespace Microsoft.Azure.Cosmos
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
                 Stream stream = this.ResourceStream;
-                if (this.RequestOptions != null && this.RequestOptions.EncryptionOptions != null)
+                if (this.ContainerCore != null)
                 {
-                    using (this.DiagnosticsContext.CreateScope("Encrypt"))
-                    {
-                        stream = await this.ContainerCore.ClientContext.EncryptionProcessor.EncryptAsync(
-                            stream,
-                            this.RequestOptions.EncryptionOptions,
-                            (DatabaseCore)this.ContainerCore.Database,
-                            this.ContainerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
-                            this.DiagnosticsContext,
-                            cancellationToken);
-                    }
+                    stream = await this.ContainerCore.ClientContext.EncryptItemAsync(
+                        this.ContainerCore,
+                        stream,
+                        this.RequestOptions?.EncryptionOptions,
+                        this.DiagnosticsContext,
+                        cancellationToken);
                 }
 
                 this.body = await BatchExecUtils.StreamToMemoryAsync(stream, cancellationToken);

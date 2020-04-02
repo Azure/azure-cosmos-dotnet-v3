@@ -323,6 +323,57 @@ namespace Microsoft.Azure.Cosmos
             return this.batchExecutorCache.GetExecutorForContainer(container, this);
         }
 
+        internal override async Task<Stream> EncryptItemAsync(
+            ContainerCore containerCore,
+            Stream input,
+            EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (encryptionOptions == null)
+            {
+                return input;
+            }
+
+            if (input == null)
+            {
+                throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
+            }
+
+            using (diagnosticsContext.CreateScope("Encrypt"))
+            {
+                return await containerCore.ClientContext.EncryptionProcessor.EncryptAsync(
+                    input,
+                    encryptionOptions,
+                    (DatabaseCore)containerCore.Database,
+                    containerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+        }
+
+        internal override async Task<Stream> DecryptItemAsync(
+            ContainerCore containerCore,
+            Stream input,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null || containerCore?.ClientContext.ClientOptions.EncryptionKeyWrapProvider == null)
+            {
+                return input;
+            }
+
+            using (diagnosticsContext.CreateScope("Decrypt"))
+            {
+                return await containerCore.ClientContext.EncryptionProcessor.DecryptAsync(
+                    input,
+                    (DatabaseCore)containerCore.Database,
+                    containerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+        }
+
         public override void Dispose()
         {
             this.Dispose(true);

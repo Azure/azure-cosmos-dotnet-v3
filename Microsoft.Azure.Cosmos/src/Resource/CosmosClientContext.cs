@@ -112,6 +112,19 @@ namespace Microsoft.Azure.Cosmos
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
 
+        internal abstract Task<Stream> EncryptItemAsync(
+            ContainerCore containerCore,
+            Stream input,
+            EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken);
+
+        internal abstract Task<Stream> DecryptItemAsync(
+            ContainerCore containerCore,
+            Stream input,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken);
+
         public abstract void Dispose();
     }
 }
