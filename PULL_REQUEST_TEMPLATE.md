@@ -4,16 +4,16 @@
 1. Changelog will be generated from PR titles.
 2. PR titles will be formatted with the following layout.
    1. Internal is optional and represents changes with no public facing changes such as test only changes
-   2. Category represents the area of the change like batch, changefeed, point operation, or query
-   3. Added or Fixed identifies if a new feature is being added or if a bug is being fixed
+   2. Added or Fixed identifies if a new feature is being added or if a bug is being fixed
+   3. Category represents the area of the change like batch, changefeed, point operation, or query
    4. Description is a user friendly explanation of the change
 
 ### Format
-`[Internal](Added/Fixed)(Category):(Description)`
+`[Internal][Added|Fixed](Category):(Description)`
 
 ### Example
-Added Diagnostics: GetElapsedClientLatency to CosmosDiagnostics 
-Fixed PartitionKey: null reference when using default(PartitionKey)
+[Added] Diagnostics: GetElapsedClientLatency to CosmosDiagnostics 
+[Fixed] PartitionKey: null reference when using default(PartitionKey)
 [Internal] Added Query: code generator for CosmosNumbers for easy additions in the future.
 
 ## Description
