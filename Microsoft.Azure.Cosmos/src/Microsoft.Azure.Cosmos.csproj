@@ -92,6 +92,7 @@
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
     <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="ref/netstandard2.0" />
+    <None Include="$(OutputPath)\$(AssemblyName).xml" Pack="true" PackagePath="ref/netstandard2.0" />
     <None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
     <None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />

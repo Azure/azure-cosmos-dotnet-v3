@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static readonly ItemRequestOptions RequestOptionDisableDiagnostic = new ItemRequestOptions()
         {
-            DiagnosticContext = EmptyCosmosDiagnosticsContext.Singleton
+            DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
         };
 
         [TestInitialize]
@@ -79,7 +79,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task PointOperationRequestTimeoutDiagnostic(bool disableDiagnostics)
         {
-            ItemRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            if (disableDiagnostics)
+            {
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
+            };
 
             Guid exceptionActivityId = Guid.NewGuid();
             string transportExceptionDescription = "transportExceptionDescription" + Guid.NewGuid();
@@ -123,7 +127,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
-            ItemRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            if (disableDiagnostics)
+            {
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
+            };
 
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -271,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [DataRow(true)]
-        //[DataRow(false)]
+        [DataRow(false)]
         public async Task QueryOperationDiagnostic(bool disableDiagnostics)
         {
             int totalItems = 3;
@@ -323,9 +331,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task NonDataPlaneDiagnosticTest(bool disableDiagnostics)
         {
-            RequestOptions requestOptions = new RequestOptions()
+            RequestOptions requestOptions = new RequestOptions();
+            if (disableDiagnostics)
             {
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseAsync(
@@ -383,28 +392,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }
 
-            Assert.IsNotNull(info);
-            JObject jObject = JObject.Parse(info);
-
-            JArray contextList = jObject["Context"].ToObject<JArray>();
-
-            // Find the PointOperationStatistics object
-            JObject page = GetJObjectInContextList(
-                contextList,
-                "0",
-                "PKRangeId");
-
-            // First page will have a request
-            // Query might use cache pages which don't have the following info. It was returned in the previous call.
-            if(isFirstPage || page != null)
-            {
-                string queryMetrics = page["QueryMetric"].ToString();
-                Assert.IsNotNull(queryMetrics);
-                Assert.IsNotNull(page["IndexUtilization"].ToString());
-                Assert.IsNotNull(page["PKRangeId"].ToString());
-                JArray requestDiagnostics = page["Context"].ToObject<JArray>();
-                Assert.IsNotNull(requestDiagnostics);
-            }
+            DiagnosticValidator.ValidateQueryDiagnostics(diagnosticsContext, isFirstPage);
         }
 
         public static void VerifyPointDiagnostics(
@@ -458,8 +446,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (disableDiagnostics)
             {
-                requestOptions.DiagnosticContext = EmptyCosmosDiagnosticsContext.Singleton;
-            }
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
+            };
 
             // Verify the typed query iterator
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(

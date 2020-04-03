@@ -135,8 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     activityId: null,
                     responseLengthBytes: 0,
                     disallowContinuationTokenMessage: null,
-                    continuationToken: null,
-                    diagnostics: QueryResponseCore.EmptyDiagnostics);
+                    continuationToken: null);
 
                 return response;
             }
@@ -150,8 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     activityId: sourceResponse.ActivityId,
                     responseLengthBytes: sourceResponse.ResponseLengthBytes,
                     disallowContinuationTokenMessage: null,
-                    continuationToken: sourceResponse.ContinuationToken,
-                    diagnostics: sourceResponse.Diagnostics);
+                    continuationToken: sourceResponse.ContinuationToken);
 
                 return response;
             }

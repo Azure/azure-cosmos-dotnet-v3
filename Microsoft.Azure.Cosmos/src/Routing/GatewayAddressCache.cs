@@ -164,12 +164,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
 
             if (partitionKeyRangeIdentity == null)
             {
-                throw new ArgumentNullException("partitionKeyRangeIdentity");
+                throw new ArgumentNullException(nameof(partitionKeyRangeIdentity));
             }
 
             try
@@ -253,6 +253,27 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 throw;
             }
+        }
+
+        public async Task<PartitionAddressInformation> UpdateAsync(
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
+            CancellationToken cancellationToken)
+        {
+            if (partitionKeyRangeIdentity == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyRangeIdentity));
+            }
+
+            return await this.serverPartitionAddressCache.GetAsync(
+                       partitionKeyRangeIdentity,
+                       null,
+                       () => this.GetAddressesForRangeIdAsync(
+                           null,
+                           partitionKeyRangeIdentity.CollectionRid,
+                           partitionKeyRangeIdentity.PartitionKeyRangeId,
+                           forceRefresh: true),
+                       cancellationToken,
+                       forceRefresh: true);
         }
 
         private async Task<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> ResolveMasterAsync(DocumentServiceRequest request, bool forceRefresh)
@@ -407,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
             }
 
-            if (request.ForceCollectionRoutingMapRefresh)
+            if (request != null && request.ForceCollectionRoutingMapRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceCollectionRoutingMapRefresh, bool.TrueString);
             }
@@ -433,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
             }
 
-            if (token == null && request.IsNameBased)
+            if (token == null && request != null && request.IsNameBased)
             {
                 // User doesn't have rid based resource token. Maybe he has name based.
                 string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
@@ -505,13 +526,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                         IsPublic = true
                     }).ToArray();
 
-            return Tuple.Create(new PartitionKeyRangeIdentity(collectionRid, address.PartitionKeyRangeId), new PartitionAddressInformation(addressInfos));
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity = new PartitionKeyRangeIdentity(collectionRid, address.PartitionKeyRangeId);
+
+            return Tuple.Create(
+                partitionKeyRangeIdentity,
+                new PartitionAddressInformation(
+                    addressInfos,
+                    partitionKeyRangeIdentity.PartitionKeyRangeId == PartitionKeyRange.MasterPartitionKeyRangeId ? null : partitionKeyRangeIdentity,
+                    this.serviceEndpoint));
         }
 
         private static string LogAddressResolutionStart(DocumentServiceRequest request, Uri targetEndpoint)
         {
             string identifier = null;
-            if (request.RequestContext.ClientRequestStatistics != null)
+            if (request != null && request.RequestContext.ClientRequestStatistics != null)
             {
                 identifier = request.RequestContext.ClientRequestStatistics.RecordAddressResolutionStart(targetEndpoint);
             }
@@ -521,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static void LogAddressResolutionEnd(DocumentServiceRequest request, string identifier)
         {
-            if (request.RequestContext.ClientRequestStatistics != null)
+            if (request != null && request.RequestContext.ClientRequestStatistics != null)
             {
                 request.RequestContext.ClientRequestStatistics.RecordAddressResolutionEnd(identifier);
             }

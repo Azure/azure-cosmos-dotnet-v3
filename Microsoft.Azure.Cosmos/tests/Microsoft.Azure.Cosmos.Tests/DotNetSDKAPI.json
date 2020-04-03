@@ -1295,11 +1295,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()"
         },
         "Microsoft.Azure.Cosmos.Database GetDatabase(System.String)": {
@@ -1385,12 +1383,24 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Boolean EnableTcpConnectionEndpointRediscovery": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Boolean get_AllowBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_AllowBulkExecution()"
+        },
+        "Boolean get_EnableTcpConnectionEndpointRediscovery()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_EnableTcpConnectionEndpointRediscovery()"
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1631,6 +1641,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+        },
+        "Void set_EnableTcpConnectionEndpointRediscovery(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableTcpConnectionEndpointRediscovery(Boolean)"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
@@ -3640,6 +3657,31 @@
     "PartitionKey": {
       "Subclasses": {},
       "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object)"
+        },
+        "Boolean op_Equality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean op_Equality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Boolean op_Inequality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean op_Inequality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
         "Microsoft.Azure.Cosmos.PartitionKey None": {
           "Type": "Field",
           "Attributes": [],

@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 subStatusCode: (int)SubStatusCodes.Unknown,
                 responseTimeUtc: DateTime.UtcNow,
                 requestCharge: cosmosException.Headers.RequestCharge,
-                errorMessage: cosmosException.Message,
+                errorMessage: documentClientException.ToString(),
                 method: requestMessage?.Method,
                 requestUri: requestMessage?.RequestUri,
                 requestSessionToken: requestMessage?.Headers?.Session,
@@ -123,17 +123,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return responseMessage;
-        }
-
-        internal static Headers ToCosmosHeaders(this StoreResponse storeResponse)
-        {
-            Headers headers = new Headers();
-            for (int i = 0; i < storeResponse.ResponseHeaderNames.Length; i++)
-            {
-                headers.Add(storeResponse.ResponseHeaderNames[i], storeResponse.ResponseHeaderValues[i]);
-            }
-
-            return headers;
         }
 
         internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)

@@ -40,8 +40,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
+            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage, diagnosticsContext: diagnostics);
+            
+            diagnostics.GetOverallScope().Dispose();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         cosmosException: cosmosException,
@@ -58,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         diagnostics: diagnostics);
 
             Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
-            Assert.AreEqual(cosmosException.ToString(includeDiagnostics: false), queryResponse.ErrorMessage);
+            Assert.AreEqual(cosmosException.Message, queryResponse.ErrorMessage);
             Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
             Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
             Assert.AreEqual(diagnostics, queryResponse.DiagnosticsContext);
@@ -276,6 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                diagnosticsContext: new CosmosDiagnosticsContextCore(),
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
             CosmosQueryExecutionContext context = CosmosQueryExecutionContextFactory.Create(
@@ -360,8 +363,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     "0",
                     "SomeQueryMetricText",
                     "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
@@ -380,8 +382,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     error: default,
                     innerException: default),
                 42.89,
-                "TestActivityId",
-                diagnostics);
+                "TestActivityId");
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));

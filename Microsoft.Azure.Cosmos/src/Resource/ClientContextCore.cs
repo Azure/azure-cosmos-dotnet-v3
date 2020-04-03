@@ -6,18 +6,30 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
+    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json.Bson;
 
     internal class ClientContextCore : CosmosClientContext
     {
-        internal ClientContextCore(
+        private readonly BatchAsyncContainerExecutorCache batchExecutorCache;
+        private readonly CosmosClient client;
+        private readonly DocumentClient documentClient;
+        private readonly CosmosSerializerCore serializerCore;
+        private readonly CosmosResponseFactory responseFactory;
+        private readonly RequestInvokerHandler requestHandler;
+        private readonly CosmosClientOptions clientOptions;
+        private readonly string userAgent;
+        private readonly EncryptionProcessor encryptionProcessor;
+        private bool isDisposed = false;
+
+        private ClientContextCore(
             CosmosClient client,
             CosmosClientOptions clientOptions,
             CosmosSerializerCore serializerCore,
@@ -25,36 +37,115 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            EncryptionProcessor encryptionProcessor = null)
+            EncryptionProcessor encryptionProcessor,
+            BatchAsyncContainerExecutorCache batchExecutorCache)
         {
-            this.Client = client;
-            this.ClientOptions = clientOptions;
-            this.SerializerCore = serializerCore;
-            this.ResponseFactory = cosmosResponseFactory;
-            this.RequestHandler = requestHandler;
-            this.DocumentClient = documentClient;
-            this.UserAgent = userAgent;
-            this.EncryptionProcessor = encryptionProcessor;
+            this.client = client;
+            this.clientOptions = clientOptions;
+            this.serializerCore = serializerCore;
+            this.responseFactory = cosmosResponseFactory;
+            this.requestHandler = requestHandler;
+            this.documentClient = documentClient;
+            this.userAgent = userAgent;
+            this.encryptionProcessor = encryptionProcessor;
+            this.batchExecutorCache = batchExecutorCache;
+        }
+
+        internal static CosmosClientContext Create(
+            CosmosClient cosmosClient,
+            CosmosClientOptions clientOptions)
+        {
+            if (cosmosClient == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosClient));
+            }
+
+            clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
+
+            DocumentClient documentClient = new DocumentClient(
+               cosmosClient.Endpoint,
+               cosmosClient.AccountKey,
+               apitype: clientOptions.ApiType,
+               sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
+               transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
+               connectionPolicy: clientOptions.GetConnectionPolicy(),
+               enableCpuMonitor: clientOptions.EnableCpuMonitor,
+               storeClientFactory: clientOptions.StoreClientFactory,
+               desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
+               handler: ClientContextCore.CreateHttpClientHandler(clientOptions),
+               sessionContainer: clientOptions.SessionContainer);
+
+            return ClientContextCore.Create(
+                cosmosClient,
+                documentClient,
+                clientOptions);
+        }
+
+        internal static CosmosClientContext Create(
+            CosmosClient cosmosClient,
+            DocumentClient documentClient,
+            CosmosClientOptions clientOptions,
+            RequestInvokerHandler requestInvokerHandler = null)
+        {
+            if (cosmosClient == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosClient));
+            }
+
+            if (documentClient == null)
+            {
+                throw new ArgumentNullException(nameof(documentClient));
+            }
+
+            clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
+
+            if (requestInvokerHandler == null)
+            {
+                //Request pipeline 
+                ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
+                    cosmosClient,
+                    clientOptions.ConsistencyLevel,
+                    clientOptions.CustomHandlers);
+
+                requestInvokerHandler = clientPipelineBuilder.Build();
+            }
+
+            CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
+                clientOptions.Serializer,
+                clientOptions.SerializerOptions);
+
+            CosmosResponseFactory responseFactory = new CosmosResponseFactory(serializerCore);
+
+            return new ClientContextCore(
+                client: cosmosClient,
+                clientOptions: clientOptions,
+                serializerCore: serializerCore,
+                cosmosResponseFactory: responseFactory,
+                requestHandler: requestInvokerHandler,
+                documentClient: documentClient,
+                userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
+                encryptionProcessor: new EncryptionProcessor(),
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
         /// <summary>
         /// The Cosmos client that is used for the request
         /// </summary>
-        internal override CosmosClient Client { get; }
+        internal override CosmosClient Client => this.ThrowIfDisposed(this.client);
 
-        internal override DocumentClient DocumentClient { get; }
+        internal override DocumentClient DocumentClient => this.ThrowIfDisposed(this.documentClient);
 
-        internal override CosmosSerializerCore SerializerCore { get; }
+        internal override CosmosSerializerCore SerializerCore => this.ThrowIfDisposed(this.serializerCore);
 
-        internal override CosmosResponseFactory ResponseFactory { get; }
+        internal override CosmosResponseFactory ResponseFactory => this.ThrowIfDisposed(this.responseFactory);
 
-        internal override RequestInvokerHandler RequestHandler { get; }
+        internal override RequestInvokerHandler RequestHandler => this.ThrowIfDisposed(this.requestHandler);
 
-        internal override CosmosClientOptions ClientOptions { get; }
+        internal override CosmosClientOptions ClientOptions => this.ThrowIfDisposed(this.clientOptions);
 
-        internal override string UserAgent { get; }
+        internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
 
-        internal override EncryptionProcessor EncryptionProcessor { get; }
+        internal override EncryptionProcessor EncryptionProcessor => this.ThrowIfDisposed(this.encryptionProcessor);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -68,6 +159,7 @@ namespace Microsoft.Azure.Cosmos
             string uriPathSegment,
             string id)
         {
+            this.ThrowIfDisposed();
             int parentLinkLength = parentLink?.Length ?? 0;
             string idUriEscaped = Uri.EscapeUriString(id);
 
@@ -86,6 +178,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override void ValidateResource(string resourceId)
         {
+            this.ThrowIfDisposed();
             this.DocumentClient.ValidateResource(resourceId);
         }
 
@@ -102,6 +195,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
             if (this.IsBulkOperationSupported(resourceType, operationType))
             {
                 if (!partitionKey.HasValue)
@@ -152,6 +246,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
             return this.RequestHandler.SendAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -178,6 +273,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
             return this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -194,8 +290,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             string containerUri,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
             CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore();
             ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
             try
@@ -214,6 +311,35 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerCore container)
+        {
+            this.ThrowIfDisposed();
+            return this.batchExecutorCache.GetExecutorForContainer(container, this);
+        }
+
+        public override void Dispose()
+        {
+            this.Dispose(true);
+        }
+
+        /// <summary>
+        /// Dispose of cosmos client
+        /// </summary>
+        /// <param name="disposing">True if disposing</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    this.batchExecutorCache.Dispose();
+                    this.DocumentClient.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
+        }
+
         private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
@@ -226,6 +352,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
             ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             ItemBatchOperation itemBatchOperation = new ItemBatchOperation(
@@ -245,6 +372,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType)
         {
+            this.ThrowIfDisposed();
             if (!this.ClientOptions.AllowBulkExecution)
             {
                 return false;
@@ -256,6 +384,46 @@ namespace Microsoft.Azure.Cosmos
                 || operationType == OperationType.Read
                 || operationType == OperationType.Delete
                 || operationType == OperationType.Replace);
+        }
+
+        private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
+        {
+            if (clientOptions == null || (clientOptions.WebProxy == null))
+            {
+                return null;
+            }
+
+            HttpClientHandler httpClientHandler = new HttpClientHandler
+            {
+                Proxy = clientOptions.WebProxy
+            };
+
+            return httpClientHandler;
+        }
+
+        private static CosmosClientOptions CreateOrCloneClientOptions(CosmosClientOptions clientOptions)
+        {
+            if (clientOptions == null)
+            {
+                return new CosmosClientOptions();
+            }
+
+            return clientOptions.Clone();
+        }
+
+        internal T ThrowIfDisposed<T>(T input)
+        {
+            this.ThrowIfDisposed();
+
+            return input;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
+            }
         }
     }
 }

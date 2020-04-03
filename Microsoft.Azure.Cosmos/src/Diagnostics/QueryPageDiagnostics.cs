@@ -12,14 +12,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             string partitionKeyRangeId,
             string queryMetricText,
             string indexUtilizationText,
-            CosmosDiagnosticsContext diagnosticsContext,
-            SchedulingStopwatch schedulingStopwatch)
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.QueryMetricText = queryMetricText ?? string.Empty;
             this.IndexUtilizationText = indexUtilizationText ?? string.Empty;
             this.DiagnosticsContext = diagnosticsContext;
-            this.SchedulingTimeSpan = schedulingStopwatch.Elapsed;
         }
 
         public string PartitionKeyRangeId { get; }
@@ -29,8 +27,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public string IndexUtilizationText { get; }
 
         public CosmosDiagnosticsContext DiagnosticsContext { get; }
-
-        public SchedulingTimeSpan SchedulingTimeSpan { get; }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor visitor)
         {

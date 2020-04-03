@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// This class is used to get access to different client level operations without directly referencing the client object.
     /// This makes it easy to pass a reference to the client, and it makes it easy to mock for unit tests.
     /// </summary>
-    internal abstract class CosmosClientContext
+    internal abstract class CosmosClientContext : IDisposable
     {
         /// <summary>
         /// The Cosmos client that is used for the request
@@ -38,6 +38,9 @@ namespace Microsoft.Azure.Cosmos
         internal abstract string UserAgent { get; }
 
         internal abstract EncryptionProcessor EncryptionProcessor { get; }
+
+        internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
+            ContainerCore container);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -106,5 +109,7 @@ namespace Microsoft.Azure.Cosmos
            Func<ResponseMessage, T> responseCreator,
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
+
+        public abstract void Dispose();
     }
 }
