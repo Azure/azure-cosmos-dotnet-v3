@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
-            byte[] rawDek = this.GenerateKey(encryptionAlgorithm);
+            byte[] rawDek = DataEncryptionKey.Generate(encryptionAlgorithm);
 
             (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await this.WrapAsync(
                 id,
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await this.DekProvider.Container.CreateItemAsync(dekProperties, new PartitionKey(dekProperties.Id), cancellationToken: cancellationToken);
             this.DekProvider.DekCache.SetDekProperties(id, dekResponse.Resource);
-            this.DekProvider.DekCache.SetRawDek(dekResponse.Resource.SelfLink, inMemoryRawDek);
+            this.DekProvider.DekCache.SetRawDek(id, inMemoryRawDek);
             return dekResponse;
         }
 
@@ -212,14 +212,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             return (dekProperties, inMemoryRawDek);
         }
 
-        internal virtual byte[] GenerateKey(CosmosEncryptionAlgorithm encryptionAlgorithm)
-        {
-            Debug.Assert(encryptionAlgorithm == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
-            byte[] rawDek = new byte[32];
-            SecurityUtility.GenerateRandomBytes(rawDek);
-            return rawDek;
-        }
-
         internal async Task<(byte[], EncryptionKeyWrapMetadata, InMemoryRawDek)> WrapAsync(
             string id,
             byte[] key,
@@ -239,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
             if (!roundTripResponse.DataEncryptionKey.RawKey.SequenceEqual(key))
             {
-                throw new InvalidOperationException(ClientResources.KeyWrappingDidNotRoundtrip);
+                throw new InvalidOperationException("The key wrapping provider configured was unable to unwrap the wrapped key correctly.");
             }
 
             return (keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, roundTripResponse);

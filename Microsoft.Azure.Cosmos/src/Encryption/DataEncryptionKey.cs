@@ -42,6 +42,23 @@ namespace Microsoft.Azure.Cosmos
         public abstract byte[] DecryptData(byte[] cipherText);
 
         /// <summary>
+        /// Generates raw data encryption key bytes suitable for use with the provided encryption algorithm.
+        /// </summary>
+        /// <param name="encryptionAlgorithm">Encryption algorithm the returned key is intended to be used with.</param>
+        /// <returns>New instance of data encryption key.</returns>
+        public static byte[] Generate(CosmosEncryptionAlgorithm encryptionAlgorithm)
+        {
+            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
+            {
+                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
+            }
+
+            byte[] rawKey = new byte[32];
+            SecurityUtility.GenerateRandomBytes(rawKey);
+            return rawKey;
+        }
+
+        /// <summary>
         /// Creates a new instance of data encryption key given the raw key bytes
         /// suitable for use with the provided encryption algorithm.
         /// </summary>

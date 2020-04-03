@@ -294,9 +294,6 @@
   <data name="UnsupportedBulkRequestOptions" xml:space="preserve">
     <value>Consistency, Session, and Triggers are not allowed when AllowBulkExecution is set to true.</value>
   </data>
-  <data name="KeyWrappingDidNotRoundtrip" xml:space="preserve">
-    <value>The key wrapping provider configured was unable to unwrap the wrapped key correctly.</value>
-  </data>
   <data name="DataEncryptionKeyNotFound" xml:space="preserve">
     <value>A data encryption key with the provided name was not found - please ensure it has been created.</value>
   </data>
