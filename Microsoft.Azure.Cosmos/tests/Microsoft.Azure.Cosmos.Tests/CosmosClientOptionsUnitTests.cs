@@ -141,12 +141,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 maxRequestsPerTcpConnection,
                 maxTcpConnectionsPerEndpoint,
                 portReuseMode,
-                enableTcpConnectionEndpointRediscovery)
-                .WithPreferredRegions(preferredLocations);
+                enableTcpConnectionEndpointRediscovery);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
-
+            clientOptions.ApplicationPreferredRegions = preferredLocations;
             //Verify all the values are updated
             Assert.AreEqual(idleTcpConnectionTimeout, clientOptions.IdleTcpConnectionTimeout);
             Assert.AreEqual(openTcpConnectionTimeout, clientOptions.OpenTcpConnectionTimeout);

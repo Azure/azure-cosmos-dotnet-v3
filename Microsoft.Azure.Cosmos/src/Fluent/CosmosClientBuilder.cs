@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
-    using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
