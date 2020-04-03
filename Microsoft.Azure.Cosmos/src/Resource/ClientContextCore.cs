@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
     using System.Text;
@@ -340,6 +341,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
             }
 
+            Debug.Assert(containerCore != null);
+            Debug.Assert(diagnosticsContext != null);
+
             using (diagnosticsContext.CreateScope("Encrypt"))
             {
                 return await containerCore.ClientContext.EncryptionProcessor.EncryptAsync(
@@ -362,6 +366,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 return input;
             }
+
+            Debug.Assert(diagnosticsContext != null);
 
             using (diagnosticsContext.CreateScope("Decrypt"))
             {
@@ -445,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
         {
-            if (clientOptions == null || (clientOptions.WebProxy == null))
+            if (clientOptions == null || clientOptions.WebProxy == null)
             {
                 return null;
             }
