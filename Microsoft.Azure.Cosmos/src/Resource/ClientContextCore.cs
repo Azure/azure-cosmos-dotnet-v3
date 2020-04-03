@@ -325,9 +325,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal override async Task<Stream> EncryptItemAsync(
-            ContainerCore containerCore,
             Stream input,
             EncryptionOptions encryptionOptions,
+            DatabaseCore database,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -341,40 +341,41 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
             }
 
-            Debug.Assert(containerCore != null);
+            Debug.Assert(database != null);
             Debug.Assert(diagnosticsContext != null);
 
             using (diagnosticsContext.CreateScope("Encrypt"))
             {
-                return await containerCore.ClientContext.EncryptionProcessor.EncryptAsync(
+                return await this.EncryptionProcessor.EncryptAsync(
                     input,
                     encryptionOptions,
-                    (DatabaseCore)containerCore.Database,
-                    containerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
+                    database,
+                    this.ClientOptions.EncryptionKeyWrapProvider,
                     diagnosticsContext,
                     cancellationToken);
             }
         }
 
         internal override async Task<Stream> DecryptItemAsync(
-            ContainerCore containerCore,
             Stream input,
+            DatabaseCore database,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (input == null || containerCore?.ClientContext.ClientOptions.EncryptionKeyWrapProvider == null)
+            if (input == null || this.ClientOptions.EncryptionKeyWrapProvider == null)
             {
                 return input;
             }
 
+            Debug.Assert(database != null);
             Debug.Assert(diagnosticsContext != null);
 
             using (diagnosticsContext.CreateScope("Decrypt"))
             {
-                return await containerCore.ClientContext.EncryptionProcessor.DecryptAsync(
+                return await this.EncryptionProcessor.DecryptAsync(
                     input,
-                    (DatabaseCore)containerCore.Database,
-                    containerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
+                    database,
+                    this.ClientOptions.EncryptionKeyWrapProvider,
                     diagnosticsContext,
                     cancellationToken);
             }

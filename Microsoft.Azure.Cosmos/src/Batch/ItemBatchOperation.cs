@@ -324,9 +324,9 @@ namespace Microsoft.Azure.Cosmos
                 if (this.ContainerCore != null)
                 {
                     stream = await this.ContainerCore.ClientContext.EncryptItemAsync(
-                        this.ContainerCore,
                         stream,
                         this.RequestOptions?.EncryptionOptions,
+                        (DatabaseCore)this.ContainerCore.Database,
                         this.DiagnosticsContext,
                         cancellationToken);
                 }

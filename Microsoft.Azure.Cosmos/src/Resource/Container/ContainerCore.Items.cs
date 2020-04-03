@@ -756,9 +756,9 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             streamPayload = await this.ClientContext.EncryptItemAsync(
-                this,
                 streamPayload,
                 requestOptions?.EncryptionOptions,
+                (DatabaseCore)this.Database,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -778,8 +778,8 @@ namespace Microsoft.Azure.Cosmos
             if (responseMessage.Content != null && this.ClientContext.ClientOptions.EncryptionKeyWrapProvider != null)
             {
                 responseMessage.Content = await this.ClientContext.DecryptItemAsync(
-                    this,
                     responseMessage.Content,
+                    (DatabaseCore)this.Database,
                     diagnosticsContext,
                     cancellationToken);
             }

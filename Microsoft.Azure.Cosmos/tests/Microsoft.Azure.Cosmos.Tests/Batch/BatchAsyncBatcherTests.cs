@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = new ItemBatchOperation(
                 operationType: OperationType.Create,
                 operationIndex: 0,
-                partitionKey: new Cosmos.PartitionKey(),
+                partitionKey: Cosmos.PartitionKey.Null,
                 id: string.Empty,
                 resourceStream: new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
             if (withContext)
@@ -70,6 +70,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     },
                     batchRequest,
                     MockCosmosUtil.Serializer,
+                    true,
+                    false,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
@@ -111,6 +113,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     responseMessage,
                     batchRequest,
                     MockCosmosUtil.Serializer,
+                    true,
+                    false,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
@@ -148,6 +152,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
                     MockCosmosUtil.Serializer,
+                    true,
+                    false,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
@@ -287,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<ItemBatchOperation> operations = new List<ItemBatchOperation>(10);
             for (int i = 0; i < 10; i++)
             {
-                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, new Cosmos.PartitionKey(), i.ToString());
+                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, Cosmos.PartitionKey.Null, i.ToString());
                 ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
                 operation.AttachContext(context);
                 operations.Add(operation);

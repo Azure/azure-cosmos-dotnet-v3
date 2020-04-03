@@ -100,6 +100,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
                 batchRequest,
                 MockCosmosUtil.Serializer,
+                true,
+                false,
                 CancellationToken.None);
 
             Assert.IsNotNull(batchRequest);
