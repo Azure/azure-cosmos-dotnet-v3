@@ -54,7 +54,7 @@ namespace Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="ContainerProperties"/>
-    public sealed class DatabaseProperties
+    public class DatabaseProperties
     {
         private string id;
 

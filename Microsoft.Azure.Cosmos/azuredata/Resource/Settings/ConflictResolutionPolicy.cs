@@ -8,7 +8,7 @@ namespace Azure.Cosmos
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
     /// in case writes from different regions result in conflicts on items in the container in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class ConflictResolutionPolicy
+    public class ConflictResolutionPolicy
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConflictResolutionPolicy"/> class for the Azure Cosmos DB service.
