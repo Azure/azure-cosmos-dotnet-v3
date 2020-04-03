@@ -53,6 +53,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="location">The current region that this client is running in. E.g. "East US" </param>
         public void SetCurrentLocation(string location)
         {
+            if (!RegionProximityUtil.SourceRegionToTargetRegionsRTTInMs.ContainsKey(location))
+            {
+                throw new ArgumentException("Current location is not a valid Azure region.");
+            }
+
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
 
             if (proximityBasedPreferredLocations != null)
