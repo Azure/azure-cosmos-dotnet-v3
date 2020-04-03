@@ -12,4 +12,4 @@ Microsoft.Azure.Cosmos/src/Query @bchong95 @j82w @sboshra
 Microsoft.Azure.Cosmos/src/CosmosElements @bchong95 @j82w @sboshra
 Microsoft.Azure.Cosmos/src/SqlObjects @bchong95 @j82w @sboshra
 Microsoft.Azure.Cosmos/src/Linq @khdang @j82w @sboshra @bchong95
-Microsoft.Azure.Cosmos/src/Spatial @lalithamv @j82w
+Microsoft.Azure.Cosmos/src/Spatial @lalithamv @sboshra @j82w
