@@ -7,8 +7,7 @@ pr:
     - v4
   paths:
     include:
-    - Microsoft.Azure.Cosmos/*
-    - NuGet.config
+    - /*
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
