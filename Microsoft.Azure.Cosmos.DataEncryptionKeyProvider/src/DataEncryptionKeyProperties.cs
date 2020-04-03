@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         /// Gets the creation time of the resource from the Azure Cosmos DB service.
         /// </summary>
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = "_cts", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "createdTime", NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? CreatedTime { get; internal set; }
 
         /// <summary>
