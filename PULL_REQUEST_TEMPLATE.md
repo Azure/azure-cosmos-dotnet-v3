@@ -12,9 +12,9 @@
 `[Internal] Category: (Add|Fix) Description`
 
 ### Example
-[Added] Diagnostics: GetElapsedClientLatency to CosmosDiagnostics 
-[Fixed] PartitionKey: null reference when using default(PartitionKey)
-[Internal] Added Query: code generator for CosmosNumbers for easy additions in the future.
+[Added] Diagnostics: Add GetElapsedClientLatency to CosmosDiagnostics<br/>
+[Fixed] PartitionKey: Fix null reference when using default(PartitionKey)<br/>
+[Internal] Added Query: Add code generator for CosmosNumbers for easy additions in the future.<br/>
 
 ## Description
 
