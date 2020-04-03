@@ -114,7 +114,7 @@
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
     <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
 </Project>
