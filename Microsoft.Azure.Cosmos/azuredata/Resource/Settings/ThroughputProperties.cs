@@ -23,7 +23,7 @@ namespace Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    public sealed class ThroughputProperties
+    public class ThroughputProperties
     {
         internal ThroughputProperties()
         {

@@ -10,7 +10,7 @@ namespace Azure.Cosmos
     /// <summary> 
     /// Represents a permission in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class PermissionProperties
+    public class PermissionProperties
     {
         /// <summary>
         /// Initialize a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="CosmosContainer"/>.

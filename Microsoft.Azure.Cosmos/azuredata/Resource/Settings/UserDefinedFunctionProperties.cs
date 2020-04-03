@@ -39,7 +39,7 @@ namespace Azure.Cosmos.Scripts
     /// ]]>
     /// </code>
     /// </example>
-    public sealed class UserDefinedFunctionProperties
+    public class UserDefinedFunctionProperties
     {
         /// <summary>
         /// Gets or sets the body of the user defined function for the Azure Cosmos DB service.

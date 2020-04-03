@@ -52,7 +52,7 @@ namespace Azure.Cosmos
     /// </example>
     /// <seealso cref="IndexingPolicy"/>
     /// <seealso cref="UniqueKeyPolicy"/>
-    public sealed class ContainerProperties
+    public class ContainerProperties
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 

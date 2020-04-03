@@ -6,7 +6,7 @@ namespace Azure.Cosmos
     /// <summary>
     /// Represents the consistency policy of a database account of the Azure Cosmos DB service.
     /// </summary>
-    public sealed class AccountConsistency
+    public class AccountConsistency
     {
         internal AccountConsistency()
         {

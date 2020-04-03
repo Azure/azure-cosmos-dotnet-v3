@@ -15,7 +15,7 @@ namespace Azure.Cosmos
     /// Inspecting Conflict resources will allow you to determine which operations and resources resulted in conflicts.
     /// This is not related to operations returning a Conflict status code.
     /// </remarks>
-    public sealed class ConflictProperties
+    public class ConflictProperties
     {
         internal ConflictProperties()
         {

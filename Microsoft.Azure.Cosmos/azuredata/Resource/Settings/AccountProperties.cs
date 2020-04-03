@@ -12,7 +12,7 @@ namespace Azure.Cosmos
     /// <summary> 
     /// Represents a <see cref="AccountProperties"/>. A AccountProperties is the container for databases in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class AccountProperties
+    public class AccountProperties
     {
         private Collection<AccountRegion> readRegions;
         private Collection<AccountRegion> writeRegions;
