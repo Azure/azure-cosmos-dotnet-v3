@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsTrue(document.TryGetValue("_ts", out CosmosNumber localTimeStamp));
                 long localSecondsSinceEpoch = Number64.ToLong(localTimeStamp.Value);
-                return localSecondsSinceEpoch >= secondsSinceEpoch;
+                return localSecondsSinceEpoch > secondsSinceEpoch;
             }).Count();
 
             Assert.AreEqual(expectedCount, totalCount);
