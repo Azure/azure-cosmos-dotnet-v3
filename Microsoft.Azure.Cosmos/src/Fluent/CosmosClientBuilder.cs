@@ -147,35 +147,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set the preferred geo-replicated regions to be used in the Azure Cosmos DB service. 
-        /// </summary>
-        /// <param name="preferredRegions">List of preferred regions. <see cref="Regions"/> lists valid Cosmos DB regions.</param>
-        /// <example>
-        /// The example below creates a new <see cref="CosmosClientBuilder"/> with a list of preferred regions.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// List<string> preferredRegions = new List<string>(
-        ///     "East US 2",
-        ///     "East US",
-        ///     "Central US"
-        /// );
-        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-        ///     authKeyOrResourceToken: "SuperSecretKey")
-        /// .WithPreferredRegions(preferredRegions);
-        /// CosmosClient client = cosmosClientBuilder.Build();
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="CosmosClientOptions.ApplicationPreferredRegions"/>
-        public CosmosClientBuilder WithPreferredRegions(IReadOnlyList<string> preferredRegions)
-        {
-            this.clientOptions.ApplicationPreferredRegions = preferredRegions ?? throw new ArgumentNullException(nameof(preferredRegions));
-            return this;
-        }
-
-        /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClientBuilder constructor.
         /// </summary>
         /// <param name="limitToEndpoint">Whether operations are limited to the endpoint or not.</param>
