@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> CreateDataEncryptionKeyAsync(
                 string id,
-                CosmosEncryptionAlgorithm encryptionAlgorithmId,
+                CosmosEncryptionAlgorithm encryptionAlgorithm,
                 EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
@@ -93,9 +93,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (encryptionAlgorithmId != CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
+            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
             {
-                throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithmId), nameof(encryptionAlgorithmId));
+                throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithm), nameof(encryptionAlgorithm));
             }
 
             if (encryptionKeyWrapMetadata == null)
@@ -105,17 +105,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
-            byte[] rawDek = this.GenerateKey(encryptionAlgorithmId);
+            byte[] rawDek = this.GenerateKey(encryptionAlgorithm);
 
             (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await this.WrapAsync(
                 id,
                 rawDek,
-                encryptionAlgorithmId,
+                encryptionAlgorithm,
                 encryptionKeyWrapMetadata,
                 diagnosticsContext,
                 cancellationToken);
 
-            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithmId, wrappedDek, updatedMetadata);
+            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithm, wrappedDek, updatedMetadata, DateTime.UtcNow);
 
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await this.DekProvider.Container.CreateItemAsync(dekProperties, new PartitionKey(dekProperties.Id), cancellationToken: cancellationToken);
             this.DekProvider.DekCache.SetDekProperties(id, dekResponse.Resource);
@@ -161,8 +161,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 
             (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek updatedRawDek) = await this.WrapAsync(
                     id,
-                    inMemoryRawDek.RawDek,
-                    dekProperties.EncryptionAlgorithmId,
+                    inMemoryRawDek.DataEncryptionKey.RawKey,
+                    dekProperties.EncryptionAlgorithm,
                     newWrapMetadata,
                     diagnosticsContext,
                     cancellationToken);
@@ -212,18 +212,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             return (dekProperties, inMemoryRawDek);
         }
 
-        internal virtual EncryptionAlgorithm GetEncryptionAlgorithm(
-            byte[] rawDek,
-            CosmosEncryptionAlgorithm encryptionAlgorithmId)
+        internal virtual byte[] GenerateKey(CosmosEncryptionAlgorithm encryptionAlgorithm)
         {
-            Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
-            AeadAes256CbcHmac256EncryptionKey key = new AeadAes256CbcHmac256EncryptionKey(rawDek, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
-            return new AeadAes256CbcHmac256Algorithm(key, EncryptionType.Randomized, algorithmVersion: 1);
-        }
-
-        internal virtual byte[] GenerateKey(CosmosEncryptionAlgorithm encryptionAlgorithmId)
-        {
-            Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
+            Debug.Assert(encryptionAlgorithm == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
             byte[] rawDek = new byte[32];
             SecurityUtility.GenerateRandomBytes(rawDek);
             return rawDek;
@@ -232,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         internal async Task<(byte[], EncryptionKeyWrapMetadata, InMemoryRawDek)> WrapAsync(
             string id,
             byte[] key,
-            CosmosEncryptionAlgorithm encryptionAlgorithmId,
+            CosmosEncryptionAlgorithm encryptionAlgorithm,
             EncryptionKeyWrapMetadata metadata,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -244,9 +235,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             }
 
             // Verify
-            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithmId, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata);
+            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithm, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, DateTime.UtcNow);
             InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
-            if (!roundTripResponse.RawDek.SequenceEqual(key))
+            if (!roundTripResponse.DataEncryptionKey.RawKey.SequenceEqual(key))
             {
                 throw new InvalidOperationException(ClientResources.KeyWrappingDidNotRoundtrip);
             }
@@ -268,9 +259,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
                         cancellationToken);
             }
 
-            EncryptionAlgorithm encryptionAlgorithm = this.GetEncryptionAlgorithm(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithmId);
+            DataEncryptionKey dek = DataEncryptionKey.Create(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithm);
 
-            return new InMemoryRawDek(unwrapResult.DataEncryptionKey, encryptionAlgorithm, unwrapResult.ClientCacheTimeToLive);
+            return new InMemoryRawDek(dek, unwrapResult.ClientCacheTimeToLive);
         }
 
         private async Task<DataEncryptionKeyProperties> ReadResourceAsync(

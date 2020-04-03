@@ -14,11 +14,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
     /// </summary>
     public class CosmosDataEncryptionKeyProvider : Cosmos.DataEncryptionKeyProvider
     {
+        private const string ContainerPartitionKeyPath = "/id";
+
+        private const int KeyContainerThroughput = 400;
+
         private DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
+
+        private Container container;
 
         internal DekCache DekCache { get; }
 
-        internal Container Container { get; private set; }
+        internal Container Container
+        {
+            get
+            {
+                if (this.container != null)
+                {
+                    return this.container;
+                }
+
+                throw new InvalidOperationException($"The {nameof(CosmosDataEncryptionKeyProvider)} was not initialized.");
+            }
+        }
 
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
 
@@ -33,31 +50,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
         }
 
-        public void Initialize(Container container)
+        public async Task InitializeAsync(
+            Database database, 
+            string containerId,
+            CancellationToken cancellationToken = default)
         {
-            if(this.Container != null)
+            if(this.container != null)
             {
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
             }
 
-            this.Container = container;
-        }
+            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(
+                containerId,
+                partitionKeyPath: CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath,
+                throughput: CosmosDataEncryptionKeyProvider.KeyContainerThroughput);
 
-        public override async Task<byte[]> FetchDataEncryptionKeyAsync(
-            string id,
-            CancellationToken cancellationToken)
-        {
-            if(this.Container == null)
+            if(containerResponse.Resource.PartitionKeyPath != CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath)
             {
-                throw new InvalidOperationException($"The {nameof(CosmosDataEncryptionKeyProvider)} was not initialized.");
+                throw new ArgumentException($"Provided container {containerId} did not have the appropriate partition key definition. " +
+                    $"The container needs to be created with PartitionKeyPath set to {CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath}.",
+                    nameof(containerId));
             }
 
+            this.container = containerResponse.Container;
+        }
+
+        public override async Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
+            string id,
+            CosmosEncryptionAlgorithm encryptionAlgorithm,
+            CancellationToken cancellationToken)
+        {
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
                 id, 
-                diagnosticsContext: null, 
+                diagnosticsContext: CosmosDiagnosticsContext.Create(null), // todo: should this be in the interface or removed
                 cancellationToken: cancellationToken);
 
-            return inMemoryRawDek.RawDek;
+            return inMemoryRawDek.DataEncryptionKey;
         }
     }
 }

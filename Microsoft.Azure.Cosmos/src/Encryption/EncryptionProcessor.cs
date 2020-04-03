@@ -67,8 +67,11 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            byte[] dataEncryptionKey = await dataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, cancellationToken);
-            EncryptionAlgorithm algorithm = EncryptionProcessor.GetEncryptionAlgorithm(dataEncryptionKey, encryptionOptions.EncryptionAlgorithm);
+            DataEncryptionKey dataEncryptionKey = await EncryptionProcessor.FetchDataEncryptionKeyAsync(
+                encryptionOptions.DataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
+                dataEncryptionKeyProvider,
+                cancellationToken);
 
             JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
 
@@ -96,8 +99,8 @@ namespace Microsoft.Azure.Cosmos
             EncryptionProperties encryptionProperties = new EncryptionProperties(
                 dataEncryptionKeyId: encryptionOptions.DataEncryptionKeyId,
                 encryptionFormatVersion: 2,
-                encryptionAlgorithmId: encryptionOptions.EncryptionAlgorithm,
-                encryptedData: algorithm.EncryptData(plainText));
+                encryptionAlgorithm: encryptionOptions.EncryptionAlgorithm,
+                encryptedData: dataEncryptionKey.EncryptData(plainText));
 
             itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
@@ -144,10 +147,13 @@ namespace Microsoft.Azure.Cosmos
                 throw CosmosExceptionFactory.CreateInternalServerErrorException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            byte[] dataEncryptionKey = await dataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, cancellationToken);
-            EncryptionAlgorithm algorithm = EncryptionProcessor.GetEncryptionAlgorithm(dataEncryptionKey, encryptionProperties.EncryptionAlgorithmId);
+            DataEncryptionKey dataEncryptionKey = await EncryptionProcessor.FetchDataEncryptionKeyAsync(
+                encryptionProperties.DataEncryptionKeyId,
+                encryptionProperties.EncryptionAlgorithm,
+                dataEncryptionKeyProvider,
+                cancellationToken);
 
-            byte[] plainText = algorithm.DecryptData(encryptionProperties.EncryptedData);
+            byte[] plainText = dataEncryptionKey.DecryptData(encryptionProperties.EncryptedData);
 
             JObject plainTextJObj = null;
             using (MemoryStream memoryStream = new MemoryStream(plainText))
@@ -166,15 +172,23 @@ namespace Microsoft.Azure.Cosmos
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
 
-        private static EncryptionAlgorithm GetEncryptionAlgorithm(
-            byte[] dataEncryptionKey,
-            CosmosEncryptionAlgorithm encryptionAlgorithmId)
+        private static async Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
+            string dataEncryptionKeyId,
+            CosmosEncryptionAlgorithm encryptionAlgorithm,
+            DataEncryptionKeyProvider dataEncryptionKeyProvider,
+            CancellationToken cancellationToken)
         {
-            Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED);
-            return new AeadAes256CbcHmac256Algorithm(
-                new AeadAes256CbcHmac256EncryptionKey(dataEncryptionKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant),
-                EncryptionType.Randomized,
-                algorithmVersion: 1);
+            DataEncryptionKey dataEncryptionKey = await dataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
+                dataEncryptionKeyId,
+                encryptionAlgorithm,
+                cancellationToken);
+
+            if (dataEncryptionKey.EncryptionAlgorithm != encryptionAlgorithm)
+            {
+                throw new InvalidOperationException($"Data encryption key returned was not suitable for use with encryption algorithm {encryptionAlgorithm.ToString()}");
+            }
+
+            return dataEncryptionKey;
         }
     }
 }

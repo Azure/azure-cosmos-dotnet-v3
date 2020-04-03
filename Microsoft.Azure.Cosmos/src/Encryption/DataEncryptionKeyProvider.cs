@@ -22,10 +22,12 @@ namespace Microsoft.Azure.Cosmos
         /// Retrieves the data encryption key for the given id.
         /// </summary>
         /// <param name="id">Identifier of the data encryption key.</param>
+        /// <param name="encryptionAlgorithm">Encryption algorithm that the retrieved key will be used with.</param>
         /// <param name="cancellationToken">Token for request cancellation.</param>
         /// <returns>Data encryption key bytes.</returns>
-        public abstract Task<byte[]> FetchDataEncryptionKeyAsync(
+        public abstract Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
             string id,
+            CosmosEncryptionAlgorithm encryptionAlgorithm,
             CancellationToken cancellationToken);
     }
 }

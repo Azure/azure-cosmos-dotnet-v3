@@ -44,8 +44,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             EncryptionTests.client = EncryptionTests.GetClient(EncryptionTests.dekProvider);
             EncryptionTests.databaseCore = (DatabaseInlineCore)await EncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
-            EncryptionTests.keyContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "", 400);
-            EncryptionTests.dekProvider.Initialize(EncryptionTests.keyContainer);
+            EncryptionTests.keyContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
+            await EncryptionTests.dekProvider.InitializeAsync(EncryptionTests.databaseCore, EncryptionTests.keyContainer.Id);
 
             EncryptionTests.itemContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
             EncryptionTests.itemContainerCore = (ContainerInlineCore)EncryptionTests.itemContainer;
@@ -85,20 +85,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Use different DEK provider to avoid (unintentional) cache impact
             CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            dekProvider.Initialize(EncryptionTests.keyContainer);
+            await dekProvider.InitializeAsync(EncryptionTests.databaseCore, EncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
         }
 
         [TestMethod]
+        [Ignore] // todo
         public async Task EncryptionDekReadFeed()
         {
             try
             {
 
-                Container newKeyContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "", 400);
+                Container newKeyContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
                 CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-                dekProvider.Initialize(newKeyContainer);
+                await dekProvider.InitializeAsync(EncryptionTests.databaseCore, newKeyContainer.Id);
 
                 string contosoV1 = "Contoso_v001";
                 string contosoV2 = "Contoso_v002";
@@ -291,33 +292,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionResourceTokenAuth()
+        public async Task EncryptionResourceTokenAuthRestricted()
         {
-            User user = EncryptionTests.databaseCore.GetUser(Guid.NewGuid().ToString());
-            await EncryptionTests.databaseCore.CreateUserAsync(user.Id);
-
-            PermissionProperties permission = await user.CreatePermissionAsync(
-                new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, EncryptionTests.itemContainer));
-
             TestDoc testDoc = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
+
+            User restrictedUser = EncryptionTests.databaseCore.GetUser(Guid.NewGuid().ToString());
+            await EncryptionTests.databaseCore.CreateUserAsync(restrictedUser.Id);
+
+            PermissionProperties restrictedUserPermission = await restrictedUser.CreatePermissionAsync(
+                new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, EncryptionTests.itemContainer));
 
             CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
             (string endpoint, string _) = TestCommon.GetAccountInfo();
-            CosmosClient resourceTokenBasedClient = new CosmosClientBuilder(endpoint, permission.Token)
+            CosmosClient clientForRestrictedUser = new CosmosClientBuilder(endpoint, restrictedUserPermission.Token)
                 .WithDataEncryptionKeyProvider(dekProvider)
                 .Build();
 
-            DatabaseCore databaseForTokenClient = (DatabaseInlineCore)resourceTokenBasedClient.GetDatabase(EncryptionTests.databaseCore.Id);
-            Container containerForTokenClient = databaseForTokenClient.GetContainer(EncryptionTests.itemContainer.Id);
+            Database databaseForRestrictedUser = clientForRestrictedUser.GetDatabase(EncryptionTests.databaseCore.Id);
+            Container containerForRestrictedUser = databaseForRestrictedUser.GetContainer(EncryptionTests.itemContainer.Id);
 
             await EncryptionTests.PerformForbiddenOperationAsync(() =>
+                dekProvider.InitializeAsync(databaseForRestrictedUser, EncryptionTests.keyContainer.Id), "CosmosDekProvider.InitializeAsync");
+
+            await EncryptionTests.PerformOperationOnUninitializedDekProviderAsync(() =>
                 dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(EncryptionTests.dekId), "DEK.ReadAsync");
 
-            await EncryptionTests.PerformForbiddenOperationAsync(() =>
-                containerForTokenClient.ReadItemAsync<TestDoc>(testDoc.Id, new PartitionKey(testDoc.PK)), "ReadItemAsync");
+            await EncryptionTests.PerformOperationOnUninitializedDekProviderAsync(() =>
+                containerForRestrictedUser.ReadItemAsync<TestDoc>(testDoc.Id, new PartitionKey(testDoc.PK)), "ReadItemAsync");
 
-            await EncryptionTests.PerformForbiddenOperationAsync(() =>
-                containerForTokenClient.ReadItemStreamAsync(testDoc.Id, new PartitionKey(testDoc.PK)), "ReadItemStreamAsync");
+            await EncryptionTests.PerformOperationOnUninitializedDekProviderAsync(() =>
+                containerForRestrictedUser.ReadItemStreamAsync(testDoc.Id, new PartitionKey(testDoc.PK)), "ReadItemStreamAsync");
+        }
+
+        [TestMethod]
+        public async Task EncryptionResourceTokenAuthAllowed()
+        { 
+            User keyManagerUser = EncryptionTests.databaseCore.GetUser(Guid.NewGuid().ToString());
+            await EncryptionTests.databaseCore.CreateUserAsync(keyManagerUser.Id);
+
+            PermissionProperties keyManagerUserPermission = await keyManagerUser.CreatePermissionAsync(
+                new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, EncryptionTests.keyContainer));
+
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+            (string endpoint, string _) = TestCommon.GetAccountInfo();
+            CosmosClient clientForKeyManagerUser = new CosmosClientBuilder(endpoint, keyManagerUserPermission.Token)
+                .WithDataEncryptionKeyProvider(dekProvider)
+                .Build();
+
+            Database databaseForKeyManagerUser = clientForKeyManagerUser.GetDatabase(EncryptionTests.databaseCore.Id);
+
+            await dekProvider.InitializeAsync(databaseForKeyManagerUser, EncryptionTests.keyContainer.Id);
+
+            DataEncryptionKeyProperties readDekProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(EncryptionTests.dekId);
+            Assert.AreEqual(EncryptionTests.dekProperties, readDekProperties);
         }
 
         [TestMethod]
@@ -357,10 +384,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             TestDoc docToDelete = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
 
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             CosmosClient clientWithBulk = new CosmosClientBuilder(endpoint, authKey)
-                .WithDataEncryptionKeyProvider(dekProvider)
+                .WithDataEncryptionKeyProvider(EncryptionTests.dekProvider)
                 .WithBulkExecution(true)
                 .Build();
 
@@ -585,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EncryptionOptions = new EncryptionOptions
                 {
                     DataEncryptionKeyId = dekId,
-
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED,
                     PathsToEncrypt = pathsToEncrypt
                 },
                 IfMatchEtag = ifMatchEtag
@@ -625,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return dekProperties;
         }
 
-        private static async Task PerformForbiddenOperationAsync<T>(Func<Task<T>> func, string operationName)
+        private static async Task PerformForbiddenOperationAsync(Func<Task> func, string operationName)
         {
             try
             {
@@ -634,6 +660,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
             {
+            }
+        }
+
+        private static async Task PerformOperationOnUninitializedDekProviderAsync(Func<Task> func, string operationName)
+        {
+            try
+            {
+                await func();
+                Assert.Fail($"Expected {operationName} to not work on uninitialized CosmosDataEncryptionKeyProvider.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("The CosmosDataEncryptionKeyProvider was not initialized."));
             }
         }
 
