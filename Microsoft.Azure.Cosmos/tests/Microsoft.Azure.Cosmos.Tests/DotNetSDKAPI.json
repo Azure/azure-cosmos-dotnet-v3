@@ -2645,11 +2645,6 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)"
         },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])"
-        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)": {
           "Type": "Method",
           "Attributes": [],

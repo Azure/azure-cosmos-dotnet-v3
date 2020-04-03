@@ -112,7 +112,6 @@ namespace Microsoft.Azure.Cosmos
         /// When this property is specified, the SDK will use the region list in the provided order to define the endpoint failover order.
         /// This configuration is an alternative to <see cref="ApplicationRegion"/>, either one can be set but not both.
         /// </remarks>
-        /// <seealso cref="CosmosClientBuilder.WithPreferredRegions(IReadOnlyList{string})"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
         public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
 
