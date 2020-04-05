@@ -255,8 +255,8 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage,
                             serverRequest,
                             this.cosmosClientContext.SerializerCore,
-                            true,
-                            false,
+                            shouldPromoteOperationStatus: true,
+                            shouldPerformDecryption: false,
                             cancellationToken).ConfigureAwait(false);
 
                         return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);

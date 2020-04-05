@@ -331,16 +331,12 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (encryptionOptions == null)
-            {
-                return input;
-            }
-
             if (input == null)
             {
                 throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
             }
 
+            Debug.Assert(encryptionOptions != null);
             Debug.Assert(database != null);
             Debug.Assert(diagnosticsContext != null);
 

@@ -755,12 +755,15 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            streamPayload = await this.ClientContext.EncryptItemAsync(
-                streamPayload,
-                requestOptions?.EncryptionOptions,
-                (DatabaseCore)this.Database,
-                diagnosticsContext,
-                cancellationToken);
+            if (requestOptions?.EncryptionOptions != null)
+            {
+                streamPayload = await this.ClientContext.EncryptItemAsync(
+                    streamPayload,
+                    requestOptions.EncryptionOptions,
+                    (DatabaseCore)this.Database,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,

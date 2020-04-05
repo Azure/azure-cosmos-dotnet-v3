@@ -109,8 +109,8 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage,
                         serverRequest,
                         this.clientContext.SerializerCore,
-                        true,
-                        true,
+                        shouldPromoteOperationStatus: true,
+                        shouldPerformDecryption: true,
                         cancellationToken);
                 }
             }

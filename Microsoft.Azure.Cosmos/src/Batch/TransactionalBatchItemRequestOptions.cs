@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-            EncryptionOptions EncryptionOptions { get; set; }
+        EncryptionOptions EncryptionOptions { get; set; }
 
         internal static TransactionalBatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
