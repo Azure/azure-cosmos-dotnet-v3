@@ -1456,6 +1456,18 @@
           ],
           "MethodInfo": null
         },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] ApplicationPreferredRegions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] get_ApplicationPreferredRegions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_ApplicationPreferredRegions()"
+        },
         "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] CustomHandlers[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
           "Type": "Property",
           "Attributes": [
@@ -1622,6 +1634,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ApplicationName(System.String)"
+        },
+        "Void set_ApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])"
         },
         "Void set_ApplicationRegion(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

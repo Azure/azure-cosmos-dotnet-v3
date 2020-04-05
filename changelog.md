@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#1314](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1314) Added configuration for proactive TCP end-of-connection detection
+- [#1305](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1305) Added support for preferred region customization
 
 ### Fixed
 
