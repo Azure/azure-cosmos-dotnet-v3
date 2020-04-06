@@ -48,6 +48,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
 
+                foreach (ItemBatchOperation operation in this.inputOperations)
+                {
+                    operation.DiagnosticsContext = this.diagnosticsContext;
+                }
+
                 PartitionKey? serverRequestPartitionKey = this.partitionKey;
                 if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
                 {
@@ -103,7 +108,10 @@ namespace Microsoft.Azure.Cosmos
                     return await TransactionalBatchResponse.FromResponseMessageAsync(
                         responseMessage,
                         serverRequest,
-                        this.clientContext.SerializerCore);
+                        this.clientContext.SerializerCore,
+                        shouldPromoteOperationStatus: true,
+                        shouldPerformDecryption: true,
+                        cancellationToken);
                 }
             }
         }
