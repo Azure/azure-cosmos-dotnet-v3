@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Fixed
+
+## <a name="3.8.0"/> [3.8.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0) - 2020-04-06
+
+### Added
+
 - [#1314](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1314) Added configuration for proactive TCP end-of-connection detection
 - [#1305](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1305) Added support for preferred region customization
 
@@ -17,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1312) Fixed null reference when using default(PartitionKey)
 - [#1296](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1296) Decrypt the encrypted properties before returning query result
 
-## <a name="3.7.1-preview"/> [3.7.0-preview2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.1-preview) - 2020-03-30
+## <a name="3.7.1-preview"/> [3.7.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.1-preview) - 2020-03-30
 
 - [#1210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1210) Change Feed pull model
 - [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties
