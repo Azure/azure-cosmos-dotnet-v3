@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                     break;
                 }
 
-                await operation.MaterializeResourceAsync(this.serializerCore, cancellationToken);
+                await operation.EncryptAndMaterializeResourceAsync(this.serializerCore, cancellationToken);
                 materializedCount++;
 
                 previousOperationIndex = operation.OperationIndex;
