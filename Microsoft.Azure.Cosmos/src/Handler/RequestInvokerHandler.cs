@@ -20,15 +20,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class RequestInvokerHandler : RequestHandler
     {
         private static (bool, ResponseMessage) clientIsValid = (false, null);
-        private readonly CosmosClient client;
+        private readonly DocumentClient documentClient;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
         public RequestInvokerHandler(
-            CosmosClient client,
+            DocumentClient client,
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
         {
-            this.client = client;
+            this.documentClient = client;
             this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
         }
 
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return errorResponse;
             }
 
-            await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
+            await request.AssertPartitioningDetailsAsync(this.documentClient, cancellationToken);
             this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
         }
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             try
             {
-                await this.client.DocumentClient.EnsureValidClientAsync();
+                await this.documentClient.EnsureValidClientAsync();
                 return RequestInvokerHandler.clientIsValid;
             }
             catch (DocumentClientException dce)
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private void FillMultiMasterContext(RequestMessage request)
         {
-            if (this.client.DocumentClient.UseMultipleWriteLocations)
+            if (this.documentClient.UseMultipleWriteLocations)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
             }
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 if (!this.AccountConsistencyLevel.HasValue)
                 {
-                    this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
+                    this.AccountConsistencyLevel = await this.documentClient.GetDefaultConsistencyLevelAsync();
                 }
 
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))

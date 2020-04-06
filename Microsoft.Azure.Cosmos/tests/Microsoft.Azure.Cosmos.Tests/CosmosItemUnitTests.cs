@@ -480,7 +480,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             return ClientContextCore.Create(
-               cosmosClient,
+               cosmosClient.Endpoint,
                new MockDocumentClient(),
                new CosmosClientOptions() { AllowBulkExecution = true });
         }

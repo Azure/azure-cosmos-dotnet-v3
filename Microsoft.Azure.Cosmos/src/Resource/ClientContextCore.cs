@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ClientContextCore : CosmosClientContext
     {
+        private readonly Uri endpoint;
         private readonly BatchAsyncContainerExecutorCache batchExecutorCache;
-        private readonly CosmosClient client;
         private readonly DocumentClient documentClient;
         private readonly CosmosSerializerCore serializerCore;
         private readonly CosmosResponseFactory responseFactory;
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed = false;
 
         private ClientContextCore(
-            CosmosClient client,
+            Uri endpoint,
             CosmosClientOptions clientOptions,
             CosmosSerializerCore serializerCore,
             CosmosResponseFactory cosmosResponseFactory,
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             DekCache dekCache,
             BatchAsyncContainerExecutorCache batchExecutorCache)
         {
-            this.client = client;
+            this.endpoint = endpoint;
             this.clientOptions = clientOptions;
             this.serializerCore = serializerCore;
             this.responseFactory = cosmosResponseFactory;
@@ -55,19 +55,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static CosmosClientContext Create(
-            CosmosClient cosmosClient,
+            Uri endpoint,
+            string accountKey,
             CosmosClientOptions clientOptions)
         {
-            if (cosmosClient == null)
+            if (endpoint == null)
             {
-                throw new ArgumentNullException(nameof(cosmosClient));
+                throw new ArgumentNullException(nameof(endpoint));
             }
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
 
             DocumentClient documentClient = new DocumentClient(
-               cosmosClient.Endpoint,
-               cosmosClient.AccountKey,
+               endpoint,
+               accountKey,
                apitype: clientOptions.ApiType,
                sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
@@ -79,20 +80,20 @@ namespace Microsoft.Azure.Cosmos
                sessionContainer: clientOptions.SessionContainer);
 
             return ClientContextCore.Create(
-                cosmosClient,
+                endpoint,
                 documentClient,
                 clientOptions);
         }
 
         internal static CosmosClientContext Create(
-            CosmosClient cosmosClient,
+            Uri endpoint,
             DocumentClient documentClient,
             CosmosClientOptions clientOptions,
             RequestInvokerHandler requestInvokerHandler = null)
         {
-            if (cosmosClient == null)
+            if (endpoint == null)
             {
-                throw new ArgumentNullException(nameof(cosmosClient));
+                throw new ArgumentNullException(nameof(endpoint));
             }
 
             if (documentClient == null)
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 //Request pipeline 
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
-                    cosmosClient,
+                    documentClient,
                     clientOptions.ConsistencyLevel,
                     clientOptions.CustomHandlers);
 
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosResponseFactory responseFactory = new CosmosResponseFactory(serializerCore);
 
             return new ClientContextCore(
-                client: cosmosClient,
+                endpoint: endpoint,
                 clientOptions: clientOptions,
                 serializerCore: serializerCore,
                 cosmosResponseFactory: responseFactory,
@@ -132,10 +133,7 @@ namespace Microsoft.Azure.Cosmos
                 batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
-        /// <summary>
-        /// The Cosmos client that is used for the request
-        /// </summary>
-        internal override CosmosClient Client => this.ThrowIfDisposed(this.client);
+        internal override Uri Endpoint => this.ThrowIfDisposed(this.endpoint);
 
         internal override DocumentClient DocumentClient => this.ThrowIfDisposed(this.documentClient);
 

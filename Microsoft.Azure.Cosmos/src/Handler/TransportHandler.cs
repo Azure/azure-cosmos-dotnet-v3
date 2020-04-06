@@ -13,16 +13,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
     //TODO: write unit test for this handler
     internal class TransportHandler : RequestHandler
     {
-        private readonly CosmosClient client;
+        private readonly DocumentClient documentClient;
 
-        public TransportHandler(CosmosClient client)
+        public TransportHandler(DocumentClient client)
         {
             if (client == null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
 
-            this.client = client;
+            this.documentClient = client;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler
-            string authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
+            string authorization = ((IAuthorizationTokenProvider)this.documentClient).GetUserAuthorizationToken(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 request.Method.ToString(),
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
-            IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
+            IStoreModel storeProxy = this.documentClient.GetStoreProxy(serviceRequest);
             if (request.OperationType == OperationType.Upsert)
             {
                 return this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellationToken)
         {
             DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
-            this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
+            this.documentClient.CaptureSessionToken(serviceRequest, response);
             return response;
         }
     }

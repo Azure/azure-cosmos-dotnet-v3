@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ClientPipelineBuilder
     {
-        private readonly CosmosClient client;
+        private readonly DocumentClient client;
         private readonly ConsistencyLevel? requestedClientConsistencyLevel;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
-            CosmosClient client,
+            DocumentClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
             IReadOnlyCollection<RequestHandler> customHandlers)
         {

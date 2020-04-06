@@ -20,10 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal abstract class CosmosClientContext : IDisposable
     {
-        /// <summary>
-        /// The Cosmos client that is used for the request
-        /// </summary>
-        internal abstract CosmosClient Client { get; }
+        internal abstract Uri Endpoint { get; }
 
         internal abstract DocumentClient DocumentClient { get; }
 

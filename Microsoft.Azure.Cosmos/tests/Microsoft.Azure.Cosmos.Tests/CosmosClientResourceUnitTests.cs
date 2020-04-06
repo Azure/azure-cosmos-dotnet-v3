@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
 
             return ClientContextCore.Create(
-                mockClient.Object,
+                new Uri("http://localhost"),
                 new MockDocumentClient(),
                 new CosmosClientOptions() { AllowBulkExecution = allowBulkExecution });
         }

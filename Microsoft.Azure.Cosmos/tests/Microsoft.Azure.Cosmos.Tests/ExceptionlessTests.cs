@@ -220,8 +220,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             internalClient.DocumentClient.StoreModel = MockServerStoreModel(internalClient.DocumentClient.Session, sendDirectFunc);
 
 
-            RetryHandler retryHandler = new RetryHandler(internalClient);
-            MockTransportHandler transportHandler = new MockTransportHandler(internalClient);
+            RetryHandler retryHandler = new RetryHandler(internalClient.DocumentClient);
+            MockTransportHandler transportHandler = new MockTransportHandler(internalClient.DocumentClient);
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => {
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             public bool ProcessMessagesAsyncThrew { get; private set; }
             public int SendAsyncCalls { get; private set; }
 
-            public MockTransportHandler(CosmosClient client): base(client)
+            public MockTransportHandler(DocumentClient client): base(client)
             {
             }
 

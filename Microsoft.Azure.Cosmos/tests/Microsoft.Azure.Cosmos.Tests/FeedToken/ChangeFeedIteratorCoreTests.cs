@@ -356,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             CosmosClientContext clientContext = ClientContextCore.Create(
-               client,
+               client.Endpoint,
                new MockDocumentClient(),
                new CosmosClientOptions());
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = MockCosmosUtil.GetPartitionRoutingHelperMock("0");
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestHandler[] feedPipeline = new RequestHandler[]
                 {
                     new NamedCacheRetryHandler(),
-                    new PartitionKeyRangeHandler(client),
+                    new PartitionKeyRangeHandler(client.DocumentClient),
                     testHandler,
                 };
 

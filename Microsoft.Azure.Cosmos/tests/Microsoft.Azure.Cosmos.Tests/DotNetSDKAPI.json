@@ -1350,11 +1350,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Uri get_Endpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Uri get_Endpoint()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Uri get_Endpoint()"
         },
         "Void .ctor(System.String, Microsoft.Azure.Cosmos.CosmosClientOptions)": {

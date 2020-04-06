@@ -161,13 +161,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static CosmosClientContext GetMockedClientContext()
         {
-            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
-
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
-            mockContext.Setup(x => x.Client).Returns(mockClient.Object);
-            //mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            mockContext.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
             return mockContext.Object;
         }
     }

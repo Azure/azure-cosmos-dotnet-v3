@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos
                 .ContinueWith(ridTask =>
                 {
                     collectionRID = ridTask.Result;
-                    return this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                    return this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 })
                 .Unwrap()
                 .ContinueWith(partitionKeyRangeCachetask =>

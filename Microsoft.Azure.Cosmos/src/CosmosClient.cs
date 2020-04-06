@@ -95,6 +95,18 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosClientCore cosmosClientCore;
 
+        static CosmosClient()
+        {
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
+            HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
+
+            // V3 always assumes assemblies exists
+            // Shall revisit on feedback
+            // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
+            // Revert of this depends on handling such in direct assembly
+            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+        }
+
         /// <summary>
         /// Create a new CosmosClient used for mock testing
         /// </summary>
@@ -248,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The Cosmos database id</param>
         /// <remarks>
         /// <see cref="Database"/> proxy reference doesn't guarantee existence.
-        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/> 
+        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(string, int?, RequestOptions, CancellationToken)"/> 
         /// or <see cref="CosmosClient.CreateDatabaseIfNotExistsAsync(string, int?, RequestOptions, CancellationToken)"/>, before
         /// operating on it.
         /// </remarks>
@@ -499,7 +511,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new FeedIteratorInlineCore<T>(
-                this.cosmosClientCore.GetDatabaseQueryIterator< T>(
+                this.cosmosClientCore.GetDatabaseQueryIterator<T>(
                     queryDefinition,
                     continuationToken,
                     requestOptions));
@@ -547,7 +559,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedIteratorInlineCore(
                 this.cosmosClientCore.GetDatabaseQueryStreamIterator(
-                    queryDefinition,
+                    queryText,
                     continuationToken,
                     requestOptions));
         }
@@ -581,6 +593,7 @@ namespace Microsoft.Azure.Cosmos
                     databaseProperties,
                     throughput,
                     requestOptions,
+                    diagnostics,
                     cancellationToken));
         }
 

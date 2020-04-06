@@ -19,18 +19,6 @@ namespace Microsoft.Azure.Cosmos
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
 
-        static CosmosClientCore()
-        {
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
-            HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
-
-            // V3 always assumes assemblies exists
-            // Shall revisit on feedback
-            // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
-            // Revert of this depends on handling such in direct assembly
-            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
-        }
-
         public CosmosClientCore(
             string accountEndpoint,
             string authKeyOrResourceToken,
@@ -50,7 +38,8 @@ namespace Microsoft.Azure.Cosmos
             this.AccountKey = authKeyOrResourceToken;
 
             this.ClientContext = ClientContextCore.Create(
-                this,
+                this.Endpoint,
+                this.AccountKey,
                 clientOptions);
         }
 
@@ -84,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             this.AccountKey = authKeyOrResourceToken;
 
             this.ClientContext = ClientContextCore.Create(
-                 this,
+                 this.Endpoint,
                  documentClient,
                  cosmosClientOptions);
         }

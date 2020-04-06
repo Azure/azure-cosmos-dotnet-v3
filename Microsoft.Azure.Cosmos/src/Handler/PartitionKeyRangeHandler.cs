@@ -28,15 +28,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeHandler : RequestHandler
     {
-        private readonly CosmosClient client;
+        private readonly DocumentClient documentClient;
         private PartitionRoutingHelper partitionRoutingHelper;
-        public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
+        public PartitionKeyRangeHandler(DocumentClient client, PartitionRoutingHelper partitionRoutingHelper = null)
         {
             if (client == null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
-            this.client = client;
+            this.documentClient = client;
             this.partitionRoutingHelper = partitionRoutingHelper ?? new PartitionRoutingHelper();
         }
 
@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-                PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
+                PartitionKeyRangeCache routingMapProvider = await this.documentClient.GetPartitionKeyRangeCacheAsync();
+                CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
