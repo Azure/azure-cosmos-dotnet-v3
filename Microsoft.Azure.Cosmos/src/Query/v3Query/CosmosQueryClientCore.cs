@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
                     CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
                         documentObject,
-                        (DatabaseCore)this.cosmosContainerCore.Database,
+                        this.cosmosContainerCore.Database,
                         this.clientContext.ClientOptions.EncryptionKeyWrapProvider,
                         message.DiagnosticsContext,
                         cancellationToken);

@@ -28,7 +28,9 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.conflicts.DeleteAsync(conflict, partitionKey, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: null,
+                (diagnostics) => this.conflicts.DeleteAsync(conflict, partitionKey, diagnostics, cancellationToken));
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
@@ -80,7 +82,9 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.conflicts.ReadCurrentAsync<T>(cosmosConflict, partitionKey, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: null,
+                (diagnostics) => this.conflicts.ReadCurrentAsync<T>(cosmosConflict, partitionKey, diagnostics, cancellationToken));
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)

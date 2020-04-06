@@ -56,12 +56,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             return mockContainer;
         }
 
-        public static Mock<DatabaseCore> CreateMockDatabase(string dbName = "myDb")
+        public static Mock<DatabaseInlineCore> CreateMockDatabase(string dbName = "myDb")
         {
             Uri link = new Uri($"/dbs/{dbName}", UriKind.Relative);
-            Mock<DatabaseCore> mockDB = new Mock<DatabaseCore>();
+            Mock<DatabaseInlineCore> mockDB = new Mock<DatabaseInlineCore>();
             mockDB.Setup(x => x.LinkUri).Returns(link);
-            mockDB.Setup(x => x.GetRIDAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(dbName));
+            mockDB.Setup(x => x.GetRIDAsync(It.IsAny<CosmosDiagnosticsContext>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult(dbName));
             return mockDB;
         }
 

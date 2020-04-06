@@ -15,21 +15,38 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id => this.user.Id;
 
-        internal UserInlineCore(UserCore database)
+        public DatabaseInlineCore Database { get; }
+
+        internal Uri LinkUri => this.user.LinkUri;
+
+        internal CosmosClientContext ClientContext => this.user.ClientContext;
+
+        internal UserInlineCore(
+            CosmosClientContext clientContext,
+            DatabaseInlineCore database,
+            string userId)
         {
-            if (database == null)
+            if (clientContext == null)
             {
-                throw new ArgumentNullException(nameof(database));
+                throw new ArgumentNullException(nameof(clientContext));
             }
 
-            this.user = database;
+            this.Database = database;
+
+            this.user = new UserCore(
+                this,
+                clientContext,
+                database,
+                userId);
         }
 
         public override Task<UserResponse> ReadAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.user.ReadAsync(requestOptions, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: requestOptions,
+                (diagnostics) => this.user.ReadAsync(requestOptions, diagnostics, cancellationToken));
         }
 
         public override Task<UserResponse> ReplaceAsync(
@@ -37,14 +54,18 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.user.ReplaceAsync(userProperties, requestOptions, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: requestOptions,
+                (diagnostics) => this.user.ReplaceAsync(userProperties, requestOptions, diagnostics, cancellationToken));
         }
 
         public override Task<UserResponse> DeleteAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.user.DeleteAsync(requestOptions, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: requestOptions,
+                (diagnostics) => this.user.DeleteAsync(requestOptions, diagnostics, cancellationToken));
         }
 
         public override Permission GetPermission(string id)
@@ -58,7 +79,9 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.user.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: requestOptions,
+                (diagnostics) => this.user.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, diagnostics, cancellationToken));
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(
@@ -67,7 +90,9 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.user.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: requestOptions,
+                (diagnostics) => this.user.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, diagnostics, cancellationToken));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(
@@ -92,6 +117,26 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions));
         }
 
-        public static implicit operator UserCore(UserInlineCore userInlineCore) => userInlineCore.user;
+        public FeedIterator GetPermissionQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
+        {
+            return new FeedIteratorInlineCore(this.user.GetPermissionQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
+        }
+
+        public FeedIterator GetPermissionQueryStreamIterator(
+            string queryText,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
+        {
+            return new FeedIteratorInlineCore(this.user.GetPermissionQueryStreamIterator(
+                queryText,
+                continuationToken,
+                requestOptions));
+        }
     }
 }

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal ContainerCore(
             CosmosClientContext clientContext,
-            DatabaseCore database,
+            DatabaseInlineCore database,
             string containerId,
             CosmosQueryClient cosmosQueryClient = null)
         {
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id { get; }
 
-        public Database Database { get; }
+        public DatabaseInlineCore Database { get; }
 
         internal virtual Uri LinkUri { get; }
 

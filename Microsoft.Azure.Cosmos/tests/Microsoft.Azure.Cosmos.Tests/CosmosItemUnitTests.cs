@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            DatabaseInlineCore db = new DatabaseInlineCore(cosmosClientContext, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
@@ -653,7 +653,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             public readonly Mock<BatchAsyncContainerExecutor> MockedExecutor = new Mock<BatchAsyncContainerExecutor>();
             public ExecutorContainerCore(
                 CosmosClientContext clientContext,
-                DatabaseCore database,
+                DatabaseInlineCore database,
                 string containerId) : base (clientContext, database, containerId)
             {
                 this.MockedExecutor
@@ -672,7 +672,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             public readonly Mock<BatchAsyncContainerExecutor> MockedExecutor = new Mock<BatchAsyncContainerExecutor>();
             public ExecutorWithThrottlingContainerCore(
                 CosmosClientContext clientContext,
-                DatabaseCore database,
+                DatabaseInlineCore database,
                 string containerId) : base(clientContext, database, containerId)
             {
                 this.MockedExecutor

@@ -15,14 +15,21 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id => this.permission.Id;
 
-        internal PermissionInlineCore(PermissionCore database)
+        internal PermissionInlineCore(
+            CosmosClientContext clientContext,
+            UserInlineCore user,
+            string userId)
         {
-            if (database == null)
+            if (clientContext == null)
             {
-                throw new ArgumentNullException(nameof(database));
+                throw new ArgumentNullException(nameof(clientContext));
             }
 
-            this.permission = database;
+            this.permission = new PermissionCore(
+                this,
+                clientContext,
+                user,
+                userId);
         }
 
         public override Task<PermissionResponse> ReadAsync(
@@ -30,7 +37,9 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.permission.ReadAsync(tokenExpiryInSeconds, requestOptions, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: requestOptions,
+                (diagnostics) => this.permission.ReadAsync(tokenExpiryInSeconds, requestOptions, diagnostics, cancellationToken));
         }
 
         public override Task<PermissionResponse> ReplaceAsync(
@@ -39,14 +48,18 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.permission.ReplaceAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: requestOptions,
+                (diagnostics) => this.permission.ReplaceAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, diagnostics, cancellationToken));
         }
 
         public override Task<PermissionResponse> DeleteAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.permission.DeleteAsync(requestOptions, cancellationToken));
+            return CosmosClientContext.ProcessHelperAsync(
+                requestOptions: requestOptions,
+                (diagnostics) => this.permission.DeleteAsync(requestOptions, diagnostics, cancellationToken));
         }
     }
 }

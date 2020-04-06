@@ -15,18 +15,14 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="Cosmos.User"/> for creating new users, and reading/querying all user;
     /// </summary>
-    internal class UserCore : User
+    internal sealed class UserCore
     {
-        /// <summary>
-        /// Only used for unit testing
-        /// </summary>
-        internal UserCore()
-        {
-        }
+        private readonly UserInlineCore user;
 
         internal UserCore(
+            UserInlineCore user,
             CosmosClientContext clientContext,
-            DatabaseCore database,
+            DatabaseInlineCore database,
             string userId)
         {
             this.Id = userId;
@@ -36,46 +32,45 @@ namespace Microsoft.Azure.Cosmos
                 uriPathSegment: Paths.UsersPathSegment,
                 id: userId);
 
-            this.Database = database;
+            this.user = user;
         }
 
-        /// <inheritdoc/>
-        public override string Id { get; }
+        internal string Id { get; }
 
-        /// <summary>
-        /// Returns a reference to a database object. 
-        /// </summary>
-        public Database Database { get; }
+        internal Uri LinkUri { get; }
 
-        internal virtual Uri LinkUri { get; }
+        internal CosmosClientContext ClientContext { get; }
 
-        internal virtual CosmosClientContext ClientContext { get; }
-
-        /// <inheritdoc/>
-        public override Task<UserResponse> ReadAsync(RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public Task<UserResponse> ReadAsync(
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             Task<ResponseMessage> response = this.ReadStreamAsync(
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.user, response);
         }
 
-        public Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResponseMessage> ReadStreamAsync(
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
-        /// <inheritdoc/>
-        public override Task<UserResponse> ReplaceAsync(UserProperties userProperties,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public Task<UserResponse> ReplaceAsync(UserProperties userProperties,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             if (userProperties == null)
             {
@@ -86,14 +81,16 @@ namespace Microsoft.Azure.Cosmos
             Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties),
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.user, response);
         }
 
         public Task<ResponseMessage> ReplaceStreamAsync(UserProperties userProperties,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             if (userProperties == null)
             {
@@ -104,49 +101,54 @@ namespace Microsoft.Azure.Cosmos
             return this.ReplaceStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties),
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
-        /// <inheritdoc/>
-        public override Task<UserResponse> DeleteAsync(RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public Task<UserResponse> DeleteAsync(
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             Task<ResponseMessage> response = this.DeleteStreamAsync(
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.user, response);
         }
 
-        public Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResponseMessage> DeleteStreamAsync(
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
                 streamPayload: null,
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
-        /// <inheritdoc/>
-        public override Permission GetPermission(string id)
+        public Permission GetPermission(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new PermissionInlineCore(new PermissionCore(
+            return new PermissionInlineCore(
                     this.ClientContext,
-                    this,
-                    id));
+                    this.user,
+                    id);
         }
 
-        /// <inheritdoc/>
-        public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties,
-            int? tokenExpiryInSeconds = null,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties,
+            int? tokenExpiryInSeconds,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             if (permissionProperties == null)
             {
@@ -159,15 +161,18 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
         }
 
-        public Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties,
+        public Task<ResponseMessage> CreatePermissionStreamAsync(
+            PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             if (permissionProperties == null)
             {
@@ -180,13 +185,16 @@ namespace Microsoft.Azure.Cosmos
             return this.CreatePermissionStreamInternalAsync(streamPayload,
                 tokenExpiryInSeconds,
                 requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken);
         }
 
-        public override Task<PermissionResponse> UpsertPermissionAsync(PermissionProperties permissionProperties,
-            int? tokenExpiryInSeconds = null,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public Task<PermissionResponse> UpsertPermissionAsync(
+            PermissionProperties permissionProperties,
+            int? tokenExpiryInSeconds,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             if (permissionProperties == null)
             {
@@ -199,15 +207,16 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
         }
 
-        /// <inheritdoc/>
-        public override FeedIterator<T> GetPermissionQueryIterator<T>(QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+        public FeedIterator<T> GetPermissionQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
         {
             if (!(this.GetPermissionQueryStreamIterator(
                 queryDefinition,
@@ -224,9 +233,10 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.Permission));
         }
 
-        public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+        public FeedIterator GetPermissionQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
         {
             return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.ClientContext,
@@ -237,9 +247,10 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        public override FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+        public FeedIterator<T> GetPermissionQueryIterator<T>(
+            string queryText,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -253,9 +264,10 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public FeedIterator GetPermissionQueryStreamIterator(string queryText = null,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+        public FeedIterator GetPermissionQueryStreamIterator(
+            string queryText,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -271,9 +283,10 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<ResponseMessage> ProcessPermissionCreateAsync(
             Stream streamPayload,
-            int? tokenExpiryInSeconds = null,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            int? tokenExpiryInSeconds,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.LinkUri,
@@ -290,15 +303,16 @@ namespace Microsoft.Azure.Cosmos
                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                    }
                },
-               diagnosticsContext: null,
+               diagnosticsContext: diagnosticsContext,
                cancellationToken: cancellationToken);
         }
 
         internal Task<ResponseMessage> ProcessPermissionUpsertAsync(
             Stream streamPayload,
-            int? tokenExpiryInSeconds = null,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            int? tokenExpiryInSeconds,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.LinkUri,
@@ -315,27 +329,30 @@ namespace Microsoft.Azure.Cosmos
                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                    }
                },
-               diagnosticsContext: null,
+               diagnosticsContext: diagnosticsContext,
                cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
             Stream streamPayload,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
                 streamPayload: streamPayload,
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> ProcessStreamAsync(
             Stream streamPayload,
             OperationType operationType,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
@@ -343,6 +360,7 @@ namespace Microsoft.Azure.Cosmos
                 linkUri: this.LinkUri,
                 resourceType: ResourceType.User,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
@@ -351,8 +369,9 @@ namespace Microsoft.Azure.Cosmos
            OperationType operationType,
            Uri linkUri,
            ResourceType resourceType,
-           RequestOptions requestOptions = null,
-           CancellationToken cancellationToken = default(CancellationToken))
+           RequestOptions requestOptions,
+           CosmosDiagnosticsContext diagnosticsContext,
+           CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: linkUri,
@@ -363,33 +382,37 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
-              diagnosticsContext: null,
+              diagnosticsContext: diagnosticsContext,
               cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> CreatePermissionStreamInternalAsync(
             Stream streamPayload,
-            int? tokenExpiryInSeconds = null,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            int? tokenExpiryInSeconds,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             return this.ProcessPermissionCreateAsync(
                 streamPayload: streamPayload,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> UpsertPermissionStreamInternalAsync(
             Stream streamPayload,
-            int? tokenExpiryInSeconds = null,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            int? tokenExpiryInSeconds,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             return this.ProcessPermissionUpsertAsync(
                 streamPayload: streamPayload,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
     }

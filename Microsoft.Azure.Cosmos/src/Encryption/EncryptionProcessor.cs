@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<Stream> EncryptAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
-            DatabaseCore database,
+            DatabaseInlineCore database,
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<Stream> DecryptAsync(
             Stream input,
-            DatabaseCore database,
+            DatabaseInlineCore database,
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<CosmosObject> DecryptAsync(
             CosmosObject document,
-            DatabaseCore database,
+            DatabaseInlineCore database,
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<JObject> DecryptContentAsync(
             EncryptionProperties encryptionProperties,
-            DatabaseCore database,
+            DatabaseInlineCore database,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {

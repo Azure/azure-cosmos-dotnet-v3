@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal DataEncryptionKeyCore(
             CosmosClientContext clientContext,
-            DatabaseCore database,
+            DatabaseInlineCore database,
             string keyId)
         {
             this.Id = keyId;
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns a reference to a database object that contains this encryption key. 
         /// </summary>
-        public Database Database { get; }
+        public DatabaseInlineCore Database { get; }
 
         internal virtual Uri LinkUri { get; }
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal static Uri CreateLinkUri(CosmosClientContext clientContext, DatabaseCore database, string keyId)
+        internal static Uri CreateLinkUri(CosmosClientContext clientContext, DatabaseInlineCore database, string keyId)
         {
             return clientContext.CreateLink(
                 parentLink: database.LinkUri.OriginalString,

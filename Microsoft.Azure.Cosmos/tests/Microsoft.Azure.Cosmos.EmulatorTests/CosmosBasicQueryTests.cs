@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task UserTests(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            DatabaseCore database = (DatabaseInlineCore)client.GetDatabase(DatabaseId);
+            DatabaseInlineCore database = (DatabaseInlineCore)client.GetDatabase(DatabaseId);
             List<string> createdIds = new List<string>();
 
             try
@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> createdPermissionIds = new List<string>();
             List<string> createdContainerIds = new List<string>();
             string userId = Guid.NewGuid().ToString();
-            UserCore user = null;
+            UserInlineCore user = null;
 
             try
             {

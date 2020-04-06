@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal Uri LinkUri => this.container.LinkUri;
 
+        internal DatabaseInlineCore DatabaseInlineCore => this.container.Database;
+
         internal ContainerInlineCore(ContainerCore container)
         {
             if (container == null)

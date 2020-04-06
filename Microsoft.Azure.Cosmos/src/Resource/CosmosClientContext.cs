@@ -113,5 +113,16 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken);
 
         public abstract void Dispose();
+
+        public static async Task<TResult> ProcessHelperAsync<TResult>(
+            RequestOptions requestOptions,
+            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+        {
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
+            {
+                return await TaskHelper.RunInlineIfNeededAsync(() => task(diagnosticsContext));
+            }
+        }
     }
 }
