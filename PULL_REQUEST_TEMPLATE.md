@@ -14,7 +14,7 @@
 ### Example
 `Diagnostics: Add GetElapsedClientLatency to CosmosDiagnostics`<br/>
 `PartitionKey: Fix null reference when using default(PartitionKey)`<br/>
-`[Internal] Added Query: code generator for CosmosNumbers for easy additions in the future.`<br/>
+`[Internal] Query: Add code generator for CosmosNumbers for easy additions in the future.`<br/>
 
 ## Description
 
