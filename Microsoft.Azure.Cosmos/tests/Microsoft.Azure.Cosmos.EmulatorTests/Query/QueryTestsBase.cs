@@ -622,77 +622,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             return resultsFromCosmosElementContinuationToken;
         }
 
-        internal static async Task<List<T>> QueryWithTryGetFeedToken<T>(
-            Container container,
-            string query,
-            QueryRequestOptions queryRequestOptions = null)
-        {
-            if (queryRequestOptions == null)
-            {
-                queryRequestOptions = new QueryRequestOptions();
-            }
-
-            ContainerCore containerCore;
-            if (container is ContainerInlineCore containerInlineCore)
-            {
-                containerCore = (ContainerCore)containerInlineCore;
-            }
-            else
-            {
-                containerCore = (ContainerCore)container;
-            }
-
-            List<T> resultsFromTryGetContinuationToken = new List<T>();
-            FeedToken feedToken = null;
-            do
-            {
-                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
-                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
-
-                FeedIteratorInternal itemQuery = feedToken == null ? containerCore.GetItemQueryStreamIterator(
-                   queryText: query,
-                   requestOptions: computeRequestOptions) as FeedIteratorInternal
-                   : containerCore.GetItemQueryStreamIterator(
-                   queryText: query,
-                   requestOptions: computeRequestOptions,
-                   feedToken: feedToken) as FeedIteratorInternal;
-                try
-                {
-                    ResponseMessage cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                    if (cosmosQueryResponse.Content == null)
-                    {
-                        await Task.Delay(0);
-                    }
-
-                    Collection<T> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<T>>(cosmosQueryResponse.Content).Data;
-
-                    if (queryRequestOptions.MaxItemCount.HasValue)
-                    {
-                        Assert.IsTrue(
-                            response.Count <= queryRequestOptions.MaxItemCount.Value,
-                            "Max Item Count is not being honored");
-                    }
-
-                    resultsFromTryGetContinuationToken.AddRange(response);
-                    Assert.IsTrue(
-                        itemQuery.TryGetFeedToken(out feedToken),
-                        "Failed to get state for query");
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
-                {
-                    itemQuery = feedToken == null ? containerCore.GetItemQueryStreamIterator(
-                       queryText: query,
-                       requestOptions: computeRequestOptions) as FeedIteratorInternal
-                       : containerCore.GetItemQueryStreamIterator(
-                       queryText: query,
-                       requestOptions: computeRequestOptions,
-                       feedToken: feedToken) as FeedIteratorInternal;
-                }
-            } while (feedToken != null);
-
-            return resultsFromTryGetContinuationToken;
-        }
-
         internal static async Task<List<T>> QueryWithContinuationTokensAsync<T>(
             Container container,
             string query,
@@ -812,7 +741,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 container,
                 query,
                 queryRequestOptions,
-                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken | QueryDrainingMode.FeedToken);
+                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
         }
 
         [Flags]
@@ -821,8 +750,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             None = 0,
             HoldState = 1,
             ContinuationToken = 2,
-            CosmosElementContinuationToken = 4,
-            FeedToken = 8
+            CosmosElementContinuationToken = 4
         }
 
         internal static async Task<List<CosmosElement>> RunQueryCombinationsAsync(
@@ -866,16 +794,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     queryRequestOptions);
 
                 queryExecutionResults[QueryDrainingMode.CosmosElementContinuationToken] = queryResultsWithCosmosElementContinuationToken;
-            }
-
-            if (queryDrainingMode.HasFlag(QueryDrainingMode.FeedToken))
-            {
-                List<CosmosElement> queryResultsWithFeedToken = await QueryWithTryGetFeedToken<CosmosElement>(
-                    container,
-                    query,
-                    queryRequestOptions);
-
-                queryExecutionResults[QueryDrainingMode.FeedToken] = queryResultsWithFeedToken;
             }
 
             foreach (QueryDrainingMode queryDrainingMode1 in queryExecutionResults.Keys)

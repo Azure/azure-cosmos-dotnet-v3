@@ -264,7 +264,7 @@
                             MaxConcurrency = 10,
                             MaxItemCount = 100,
                         },
-                        QueryDrainingMode.HoldState | QueryDrainingMode.FeedToken);
+                        QueryDrainingMode.HoldState);
                     documentsFromWithoutDistinct = documentsFromWithoutDistinct
                         .Where(document => documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
                         .ToList();
@@ -280,7 +280,7 @@
                                 MaxConcurrency = 10,
                                 MaxItemCount = pageSize
                             },
-                            QueryDrainingMode.HoldState | QueryDrainingMode.FeedToken);
+                            QueryDrainingMode.HoldState);
 
                         Assert.AreEqual(
                             expected: CosmosArray.Create(documentsFromWithDistinct),

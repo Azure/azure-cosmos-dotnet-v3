@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public class QueryFeedTokenTests : BaseCosmosClientHelper
+    public class QueryFeedRangeTests : BaseCosmosClientHelper
     {
         [TestInitialize]
         public async Task TestInitialize()
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
-        public async Task GetTargetPartitionKeyRangesAsyncWithFeedToken()
+        public async Task GetTargetPartitionKeyRangesAsyncWithFeedRange()
         {
             ContainerCore container = null;
             try
@@ -54,12 +54,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     null,
                     containerResponse.Resource.PartitionKey);
 
-                IReadOnlyList<FeedToken> feedTokens = await container.GetFeedTokensAsync();
+                IReadOnlyList<FeedRange> feedTokens = await container.GetFeedRangesAsync();
 
                 Assert.IsTrue(feedTokens.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
-                // There should only be one range since we get 1 FeedToken per range
-                foreach (FeedToken feedToken in feedTokens)
+                // There should only be one range since we get 1 FeedRange per range
+                foreach (FeedRange feedToken in feedTokens)
                 {
                     List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                         queryClient: new CosmosQueryClientCore(container.ClientContext, container),
@@ -67,9 +67,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         partitionedQueryExecutionInfo: null,
                         containerQueryProperties: containerQueryProperties,
                         properties: null,
-                        feedTokenInternal: feedToken as FeedTokenInternal);
+                        feedRangeInternal: feedToken as FeedRangeInternal);
 
-                    Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the FeedToken represents a single range.");
+                    Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the FeedRange represents a single range.");
                 }
             }
             finally
@@ -100,21 +100,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }}";
 
                     using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
-                            QueryFeedTokenTests.GenerateStreamFromString(item),
+                            QueryFeedRangeTests.GenerateStreamFromString(item),
                             new Cosmos.PartitionKey(id)))
                     {
                         Assert.IsTrue(createResponse.IsSuccessStatusCode);
                     }
                 }
 
-                IReadOnlyList<FeedToken> feedTokens = await container.GetFeedTokensAsync();
+                IReadOnlyList<FeedRange> feedTokens = await container.GetFeedRangesAsync();
 
                 Assert.IsTrue(feedTokens.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
                 List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
                 {
                     List<string> results = new List<string>();
-                    FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
+                    FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
                     while (feedIterator.HasMoreResults)
                     {
                         using (ResponseMessage responseMessage =
@@ -132,13 +132,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                     }
                                 }
                             }
-
-                            Assert.IsTrue(feedIterator.TryGetFeedToken(out FeedToken finalFeedToken));
-                            if (finalFeedToken != null)
-                            {
-                                // Since we are using FeedTokens for each PKRange, they shouldn't be able to scale
-                                Assert.AreEqual(0, finalFeedToken.Scale().Count);
-                            }
                         }
                     }
 
@@ -148,136 +141,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 await Task.WhenAll(tasks);
 
                 CollectionAssert.AreEquivalent(generatedIds, tasks.SelectMany(t => t.Result).ToList());
-            }
-            finally
-            {
-                await container?.DeleteContainerAsync();
-            }
-        }
-
-        [TestMethod]
-        public async Task CannotMixTokensFromOtherContainers()
-        {
-            ContainerCore container = null;
-            ContainerCore container2 = null;
-            try
-            {
-                // Create a container large enough to have at least 2 partitions
-                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/id");
-                container = (ContainerInlineCore)containerResponse;
-
-                containerResponse = await this.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/id");
-                container2 = (ContainerInlineCore)containerResponse;
-
-                List<string> generatedIds = Enumerable.Range(0, 30).Select(n => $"BasicItem{n}").ToList();
-                foreach (string id in generatedIds)
-                {
-                    string item = $@"
-                    {{    
-                        ""id"": ""{id}""
-                    }}";
-
-                    using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
-                            QueryFeedTokenTests.GenerateStreamFromString(item),
-                            new Cosmos.PartitionKey(id)))
-                    {
-                        Assert.IsTrue(createResponse.IsSuccessStatusCode);
-                    }
-                }
-
-                IReadOnlyList<FeedToken> feedTokens = await container.GetFeedTokensAsync();
-                FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedTokens[0], requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
-                FeedToken feedTokenFromContainer1 = null;
-                while (feedIterator.HasMoreResults)
-                {
-                    using (ResponseMessage responseMessage =
-                        await feedIterator.ReadNextAsync(this.cancellationToken))
-                    {
-                        Assert.IsTrue(feedIterator.TryGetFeedToken(out feedTokenFromContainer1));
-                    }
-
-                    break;
-                }
-
-                FeedIteratorInternal feedIterator2 = container2.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedTokenFromContainer1, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
-                while (feedIterator2.HasMoreResults)
-                {
-                    ResponseMessage responseMessage = await feedIterator2.ReadNextAsync(this.cancellationToken);
-                    Assert.IsNotNull(responseMessage.CosmosException);
-                    Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
-                    break;
-                }
-            }
-            finally
-            {
-                await container?.DeleteContainerAsync();
-                await container2?.DeleteContainerAsync();
-            }
-        }
-
-        /// <summary>
-        /// This test will execute a query once over a multiple partition collection, get the FeedToken, call Scale, and see if the resulting FeedToken produces more.
-        /// </summary>
-        [TestMethod]
-        public async Task CanScale()
-        {
-            ContainerCore container = null;
-            try
-            {
-                // Create a container large enough to have at least 2 partitions
-                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/id",
-                    throughput: 15000);
-                container = (ContainerInlineCore)containerResponse;
-
-                List<string> generatedIds = Enumerable.Range(0, 1000).Select(n => $"BasicItem{n}").ToList();
-                foreach (string id in generatedIds)
-                {
-                    string item = $@"
-                    {{    
-                        ""id"": ""{id}""
-                    }}";
-
-                    using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
-                            QueryFeedTokenTests.GenerateStreamFromString(item),
-                            new Cosmos.PartitionKey(id)))
-                    {
-                        Assert.IsTrue(createResponse.IsSuccessStatusCode);
-                    }
-                }
-
-                List<string> results = new List<string>();
-                FeedIteratorInternal initialIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")") as FeedIteratorInternal;
-                while (initialIterator.HasMoreResults)
-                {
-                    using (ResponseMessage responseMessage =
-                        await initialIterator.ReadNextAsync(this.cancellationToken))
-                    {
-                        if (responseMessage.IsSuccessStatusCode)
-                        {
-                            using (StreamReader reader = new StreamReader(responseMessage.Content))
-                            {
-                                string json = await reader.ReadToEndAsync();
-                                JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
-                                foreach (JObject document in documents)
-                                {
-                                    results.Add(document.SelectToken("id").ToString());
-                                }
-                            }
-                        }
-
-                        break;
-                    }
-                }
-
-                Assert.IsTrue(initialIterator.TryGetFeedToken(out FeedToken baseFeedToken));
-                IReadOnlyList<FeedToken> feedTokens = baseFeedToken.Scale();
-                Assert.IsTrue(feedTokens.Count > 0, "Should be able to scale");
             }
             finally
             {

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class FeedTokenTests : BaseCosmosClientHelper
+    public class FeedRangeTests : BaseCosmosClientHelper
     {
         private ContainerCore Container = null;
 
@@ -36,21 +36,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task FeedToken_EPKRange_Serialization()
+        public async Task FeedRange_EPK_Serialization()
         {
             string continuation = "TBD";
-            List<FeedToken> tokens = (await this.Container.GetFeedTokensAsync()).ToList();
+            string containerRid = Guid.NewGuid().ToString();
+            List<FeedRange> ranges = (await this.Container.GetFeedRangesAsync()).ToList();
             List<string> serializations = new List<string>();
-            foreach(FeedToken token in tokens)
+            List<FeedRangeCompositeContinuation> tokens = new List<FeedRangeCompositeContinuation>();
+            foreach (FeedRange range in ranges)
             {
-                (token as FeedTokenInternal).UpdateContinuation(continuation);
-                serializations.Add(token.ToString());
+                FeedRangeEPK feedRangeEPK = range as FeedRangeEPK;
+                FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(containerRid, feedRangeEPK, new List<Documents.Routing.Range<string>>() { feedRangeEPK.Range }, continuation);
+                tokens.Add(feedRangeCompositeContinuation);
+                serializations.Add(feedRangeCompositeContinuation.ToString());
             }
 
-            List<FeedToken> deserialized = new List<FeedToken>();
+            List<FeedRangeContinuation> deserialized = new List<FeedRangeContinuation>();
             foreach(string serialized in serializations)
             {
-                FeedToken token = FeedToken.FromString(serialized);
+                Assert.IsTrue(FeedRangeContinuation.TryCreateFromString(serialized, out FeedRangeContinuation token));
                 deserialized.Add(token);
             }
 
@@ -58,13 +62,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             for (int i = 0; i < tokens.Count; i++)
             {
-                FeedTokenEPKRange originalToken = tokens[i] as FeedTokenEPKRange;
-                FeedTokenEPKRange deserializedToken = deserialized[i] as FeedTokenEPKRange;
+                FeedRangeCompositeContinuation originalToken = tokens[i] as FeedRangeCompositeContinuation;
+                FeedRangeCompositeContinuation deserializedToken = deserialized[i] as FeedRangeCompositeContinuation;
                 Assert.AreEqual(originalToken.GetContinuation(), deserializedToken.GetContinuation());
                 Assert.AreEqual(originalToken.ContainerRid, deserializedToken.ContainerRid);
                 Assert.AreEqual(originalToken.CompositeContinuationTokens.Count, deserializedToken.CompositeContinuationTokens.Count);
-                Assert.AreEqual(originalToken.CompleteRange.Min, deserializedToken.CompleteRange.Min);
-                Assert.AreEqual(originalToken.CompleteRange.Max, deserializedToken.CompleteRange.Max);
                 Assert.AreEqual(originalToken.CompositeContinuationTokens.Peek().Token, deserializedToken.CompositeContinuationTokens.Peek().Token);
                 Assert.AreEqual(originalToken.CompositeContinuationTokens.Peek().Range.Min, deserializedToken.CompositeContinuationTokens.Peek().Range.Min);
                 Assert.AreEqual(originalToken.CompositeContinuationTokens.Peek().Range.Max, deserializedToken.CompositeContinuationTokens.Peek().Range.Max);
@@ -74,35 +76,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void FeedToken_PartitionKey_Serialization()
+        public void FeedRange_PartitionKey_Serialization()
         {
-            this.FeedToken_PartitionKey_Validate(new PartitionKey("TBD"));
-            this.FeedToken_PartitionKey_Validate(new PartitionKey(10));
-            this.FeedToken_PartitionKey_Validate(new PartitionKey(15.6));
-            this.FeedToken_PartitionKey_Validate(new PartitionKey(true));
+            this.FeedRange_PartitionKey_Validate(new PartitionKey("TBD"));
+            this.FeedRange_PartitionKey_Validate(new PartitionKey(10));
+            this.FeedRange_PartitionKey_Validate(new PartitionKey(15.6));
+            this.FeedRange_PartitionKey_Validate(new PartitionKey(true));
+            this.FeedRange_PartitionKey_Validate(PartitionKey.None);
+            this.FeedRange_PartitionKey_Validate(PartitionKey.Null);
         }
 
         [TestMethod]
-        public async Task FeedToken_PKRangeId_Serialization()
+        public async Task FeedRange_PKRangeId_Serialization()
         {
             string continuationToken = "TBD";
+            string containerRid = Guid.NewGuid().ToString();
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
             Documents.PartitionKeyRange oneRange = ranges.First();
 
-            FeedTokenPartitionKeyRange original = new FeedTokenPartitionKeyRange(oneRange.Id);
-            original.UpdateContinuation(continuationToken);
-            string serialized = original.ToString();
-            FeedToken deserialized = FeedToken.FromString(serialized);
-            FeedTokenPartitionKeyRange deserializedFeedToken = deserialized as FeedTokenPartitionKeyRange;
-            Assert.IsNotNull(deserialized, "Error deserializing to FeedTokenPartitionKeyRange");
-            Assert.AreEqual(original.PartitionKeyRangeId, deserializedFeedToken.PartitionKeyRangeId);
-            Assert.AreEqual(continuationToken, deserializedFeedToken.GetContinuation());
-
-            // Verify that the backward compatible way works too
-            FeedToken deserializedFromBackwardcompatible = FeedToken.FromString(oneRange.Id);
-            FeedTokenPartitionKeyRange deserializedFromBackwardcompatibleToken = deserializedFromBackwardcompatible as FeedTokenPartitionKeyRange;
-            Assert.IsNotNull(deserializedFromBackwardcompatibleToken, "Error deserializing to FeedTokenPartitionKeyRange");
-            Assert.AreEqual(deserializedFromBackwardcompatibleToken.PartitionKeyRangeId, deserializedFeedToken.PartitionKeyRangeId);
+            FeedRangePartitionKeyRange original = new FeedRangePartitionKeyRange(oneRange.Id);
+            FeedRangeSimpleContinuation feedRangeSimpleContinuation = new FeedRangeSimpleContinuation(containerRid, original, continuationToken);
+            string serialized = feedRangeSimpleContinuation.ToString();
+            Assert.IsTrue(FeedRangeContinuation.TryCreateFromString(serialized, out FeedRangeContinuation feedRangeContinuation));
+            FeedRangeSimpleContinuation deserialized = feedRangeContinuation as FeedRangeSimpleContinuation;
+            FeedRangePartitionKeyRange deserializedFeedRange = deserialized.FeedRange as FeedRangePartitionKeyRange;
+            Assert.IsNotNull(deserialized, "Error deserializing to FeedRangePartitionKeyRange");
+            Assert.AreEqual(original.PartitionKeyRangeId, deserializedFeedRange.PartitionKeyRangeId);
+            Assert.AreEqual(continuationToken, deserialized.GetContinuation());
         }
 
         [TestMethod]
@@ -110,9 +110,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
             int pkRangesCount = ranges.Count;
-            List<FeedToken> tokens = (await this.Container.GetFeedTokensAsync()).ToList();
+            List<FeedRange> tokens = (await this.Container.GetFeedRangesAsync()).ToList();
             List<string> resolvedRanges = new List<string>();
-            foreach(FeedToken token in tokens)
+            foreach(FeedRange token in tokens)
             {
                 resolvedRanges.AddRange(await this.Container.GetPartitionKeyRangesAsync(token));
             }
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
 
-            FeedToken feedToken = new FeedTokenPartitionKey(new PartitionKey("TBD"));
+            FeedRange feedToken = new FeedRangePartitionKey(new PartitionKey("TBD"));
             List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
 
             Assert.AreEqual(1, resolvedRanges.Count, "PK value should resolve to a single range");
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
 
-            FeedToken feedToken = new FeedTokenPartitionKeyRange(ranges.First().Id);
+            FeedRange feedToken = new FeedRangePartitionKeyRange(ranges.First().Id);
             List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
 
             Assert.AreEqual(1, resolvedRanges.Count);
@@ -161,17 +161,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private void FeedToken_PartitionKey_Validate(PartitionKey partitionKey)
+        private void FeedRange_PartitionKey_Validate(PartitionKey partitionKey)
         {
             string continuationToken = "TBD";
-            FeedTokenPartitionKey feedTokenPartitionKey = new FeedTokenPartitionKey(partitionKey);
-            feedTokenPartitionKey.UpdateContinuation(continuationToken);
-            string serialized = feedTokenPartitionKey.ToString();
-            FeedToken deserialized = FeedToken.FromString(serialized);
-            FeedTokenPartitionKey deserializedFeedToken = deserialized as FeedTokenPartitionKey;
-            Assert.IsNotNull(deserialized, "Error deserializing to FeedTokenPartitionKey");
-            Assert.AreEqual(feedTokenPartitionKey.PartitionKey.ToJsonString(), deserializedFeedToken.PartitionKey.ToJsonString());
-            Assert.AreEqual(continuationToken, deserializedFeedToken.GetContinuation());
+            string containerRid = Guid.NewGuid().ToString();
+            FeedRangePartitionKey feedTokenPartitionKey = new FeedRangePartitionKey(partitionKey);
+            FeedRangeSimpleContinuation feedRangeSimpleContinuation = new FeedRangeSimpleContinuation(containerRid, feedTokenPartitionKey, continuationToken);
+            string serialized = feedRangeSimpleContinuation.ToString();
+            Assert.IsTrue(FeedRangeContinuation.TryCreateFromString(serialized, out FeedRangeContinuation deserialized));
+            FeedRangeSimpleContinuation deserializedContinuation = deserialized as FeedRangeSimpleContinuation;
+            FeedRangePartitionKey deserializedFeedRange = deserializedContinuation.FeedRange as FeedRangePartitionKey;
+            Assert.AreEqual(feedTokenPartitionKey.PartitionKey.ToJsonString(), deserializedFeedRange.PartitionKey.ToJsonString());
+            Assert.AreEqual(continuationToken, deserializedContinuation.GetContinuation());
         }
     }
 }
