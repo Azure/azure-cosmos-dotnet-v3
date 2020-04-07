@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
                 return input;
             }
 
-            JObject itemJObj = null;
+            JObject itemJObj;
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             {
                 using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
 
             byte[] plainText = inMemoryRawDek.AlgorithmUsingRawDek.DecryptData(encryptionProperties.EncryptedData);
 
-            JObject plainTextJObj = null;
+            JObject plainTextJObj;
             using (MemoryStream plainTextStream = new MemoryStream(plainText))
             {
                 plainTextJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(plainTextStream);
