@@ -7,7 +7,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
-    <BaseVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientVersion)</BaseVersion>
+    <BaseVersion Condition=" '$(IsPreview)' != 'true'  ">$(ClientVersion)</BaseVersion>
     <BaseVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</BaseVersion>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
     <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
