@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     internal sealed class BackendMetricsExtractor : CosmosDiagnosticsInternalVisitor<(ParseFailureReason, BackendMetrics)>
     {
         public static readonly BackendMetricsExtractor Singleton = new BackendMetricsExtractor();
+        private static readonly (ParseFailureReason, BackendMetrics) MetricsNotFound = (ParseFailureReason.MetricsNotFound, default);
 
         private BackendMetricsExtractor()
         {
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override (ParseFailureReason, BackendMetrics) Visit(PointOperationStatistics pointOperationStatistics)
         {
-            return (ParseFailureReason.MetricsNotFound, default);
+            return BackendMetricsExtractor.MetricsNotFound;
         }
 
         public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
         {
-            return (ParseFailureReason.MetricsNotFound, default);
+            return BackendMetricsExtractor.MetricsNotFound;
         }
 
         public override (ParseFailureReason, BackendMetrics) Visit(QueryPageDiagnostics queryPageDiagnostics)
@@ -72,6 +73,21 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             return (ParseFailureReason.None, backendMetrics);
+        }
+
+        public override (ParseFailureReason, BackendMetrics) Visit(AddressResolutionStatistics addressResolutionStatistics)
+        {
+            return BackendMetricsExtractor.MetricsNotFound;
+        }
+
+        public override (ParseFailureReason, BackendMetrics) Visit(StoreResponseStatistics storeResponseStatistics)
+        {
+            return BackendMetricsExtractor.MetricsNotFound;
+        }
+
+        public override (ParseFailureReason, BackendMetrics) Visit(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        {
+            return BackendMetricsExtractor.MetricsNotFound;
         }
 
         public enum ParseFailureReason

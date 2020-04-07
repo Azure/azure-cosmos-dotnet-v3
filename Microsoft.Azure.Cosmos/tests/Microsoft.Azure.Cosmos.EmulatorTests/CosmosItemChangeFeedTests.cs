@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private class CosmosChangeFeedResultSetIteratorCoreMock : ChangeFeedResultSetIteratorCore
+        private class CosmosChangeFeedResultSetIteratorCoreMock : StandByFeedIteratorCore
         {
             public int Iteration = 0;
             public bool HasCalledForceRefresh = false;
@@ -476,7 +476,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return Task.FromResult(new ResponseMessage(System.Net.HttpStatusCode.NotModified));
             }
         }
-
 
         public class ToDoActivity
         {

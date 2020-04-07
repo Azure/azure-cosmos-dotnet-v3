@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static unsafe int GetChars(this Encoding encoding, ReadOnlySpan<byte> src, Span<char> dest)
         {
-            if (src.Length == 0)
+            if (src.IsEmpty)
             {
                 return 0;
             }
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> src)
         {
-            if (src.Length == 0)
+            if (src.IsEmpty)
             {
                 return 0;
             }

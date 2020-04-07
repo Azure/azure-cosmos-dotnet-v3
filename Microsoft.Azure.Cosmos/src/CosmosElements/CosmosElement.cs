@@ -33,6 +33,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return Utf8StringHelpers.ToString(jsonWriter.GetResult());
         }
 
+        public override bool Equals(object obj)
+        {
+            if (!(obj is CosmosElement cosmosElement))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosElement);
+        }
+
+        public bool Equals(CosmosElement cosmosElement)
+        {
+            return CosmosElementEqualityComparer.Value.Equals(this, cosmosElement);
+        }
+
+        public override int GetHashCode()
+        {
+            return CosmosElementEqualityComparer.Value.GetHashCode(this);
+        }
+
         public abstract void WriteTo(IJsonWriter jsonWriter);
 
         public abstract void Accept(ICosmosElementVisitor cosmosElementVisitor);
@@ -40,6 +60,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor);
 
         public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
+
+        public static bool TryCreateFromBuffer<TCosmosElement>(ReadOnlyMemory<byte> buffer, out TCosmosElement cosmosElement)
+            where TCosmosElement : CosmosElement
+        {
+            CosmosElement unTypedCosmosElement;
+            try
+            {
+                unTypedCosmosElement = CreateFromBuffer(buffer);
+            }
+            catch (JsonParseException)
+            {
+                cosmosElement = default;
+                return false;
+            }
+
+            if (!(unTypedCosmosElement is TCosmosElement typedCosmosElement))
+            {
+                cosmosElement = default;
+                return false;
+            }
+
+            cosmosElement = typedCosmosElement;
+            return true;
+        }
 
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
@@ -133,9 +177,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string serializedCosmosElement,
             out CosmosElement cosmosElement)
         {
-            if (serializedCosmosElement == null)
+            if (string.IsNullOrWhiteSpace(serializedCosmosElement))
             {
-                throw new ArgumentNullException(nameof(serializedCosmosElement));
+                cosmosElement = default;
+                return false;
             }
 
             try
@@ -173,6 +218,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public static CosmosElement Parse(string json)
         {
             if (!CosmosElement.TryParse(json, out CosmosElement cosmosElement))
+            {
+                throw new ArgumentException($"Failed to parse json: {json}.");
+            }
+
+            return cosmosElement;
+        }
+
+        public static TCosmosElement Parse<TCosmosElement>(string json)
+            where TCosmosElement : CosmosElement
+        {
+            if (!CosmosElement.TryParse(json, out TCosmosElement cosmosElement))
             {
                 throw new ArgumentException($"Failed to parse json: {json}.");
             }

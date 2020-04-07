@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, "0");
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, Cosmos.PartitionKey.Null, "0");
 
             results.Add(
                     new TransactionalBatchOperationResult(HttpStatusCode.OK)
@@ -61,7 +61,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
-                MockCosmosUtil.Serializer);
+                MockCosmosUtil.Serializer,
+                true,
+                false,
+                CancellationToken.None);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(
                 arrayOperations.Length,
@@ -77,15 +80,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
-            CosmosDiagnosticsContext scope = CosmosDiagnosticsContext.Create();
-            scope.AddDiagnosticsInternal(pointOperationStatistics);
+                responseSessionToken: null);
+            CosmosDiagnosticsContext context = new CosmosDiagnosticsContextCore();
+            context.AddDiagnosticsInternal(pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
@@ -94,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
                 RequestCharge = 4.3,
-                DiagnosticsContext = scope
+                DiagnosticsContext = context
             };
 
             ResponseMessage response = result.ToResponseMessage();
@@ -114,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, "0");
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, Cosmos.PartitionKey.Null, "0");
 
             results.Add(
                     new TransactionalBatchOperationResult(HttpStatusCode.OK)
@@ -139,7 +142,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 response,
                 batchRequest,
-                MockCosmosUtil.Serializer);
+                MockCosmosUtil.Serializer,
+                true,
+                false,
+                CancellationToken.None);
 
             PartitionKeyRangeBatchExecutionResult result = new PartitionKeyRangeBatchExecutionResult("0", arrayOperations, batchresponse);
 

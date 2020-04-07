@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
 
-    internal struct JsonExecutionTimes
+    internal readonly struct JsonExecutionTimes
     {
         public JsonExecutionTimes(
             TimeSpan readTime, 

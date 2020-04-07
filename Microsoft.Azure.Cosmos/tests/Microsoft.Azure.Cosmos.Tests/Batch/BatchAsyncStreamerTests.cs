@@ -18,9 +18,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private const int DispatchTimerInSeconds = 5;
         private const int MaxBatchByteSize = 100000;
+        private const int defaultMaxDegreeOfConcurrency = 10;
         private static Exception expectedException = new Exception();
-        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, "0");
+        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null, "0");
         private TimerPool TimerPool = new TimerPool(1);
+        private SemaphoreSlim limiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
 
         // Executor just returns a reponse matching the Id with Etag
         private BatchAsyncBatcherExecuteDelegate Executor
@@ -49,10 +51,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializerCore: MockCosmosUtil.Serializer,
                 cancellationToken: cancellationToken);
 
+                await Task.Delay(20);
+
                 TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
-                    MockCosmosUtil.Serializer);
+                    MockCosmosUtil.Serializer,
+                    true,
+                    false,
+                    CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
@@ -73,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesSize(int size)
         {
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(size, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(size, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, this.limiter, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
         }
 
         [DataTestMethod]
@@ -82,34 +89,41 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesDispatchTimer(int dispatchTimerInSeconds)
         {
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, dispatchTimerInSeconds, this.TimerPool, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, dispatchTimerInSeconds, this.TimerPool, this.limiter, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesExecutor()
         {
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, MockCosmosUtil.Serializer, null, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, this.limiter, 1, MockCosmosUtil.Serializer, null, this.Retrier);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesRetrier()
         {
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, MockCosmosUtil.Serializer, this.Executor, null);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, this.limiter, 1, MockCosmosUtil.Serializer, this.Executor, null);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesSerializer()
         {
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, null, this.Executor, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, this.limiter, 1, null, this.Executor, this.Retrier);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ValidatesLimiter()
+        {
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, null, 1, null, this.Executor, this.Retrier);
         }
 
         [TestMethod]
         public async Task ExceptionsOnBatchBubbleUpAsync()
         {
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, MockCosmosUtil.Serializer, this.ExecutorWithFailure, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, this.limiter, 1, MockCosmosUtil.Serializer, this.ExecutorWithFailure, this.Retrier);
             ItemBatchOperationContext context = AttachContext(this.ItemBatchOperation);
             batchAsyncStreamer.Add(this.ItemBatchOperation);
             Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => context.OperationTask);
@@ -120,12 +134,37 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TimerDispatchesAsync()
         {
             // Bigger batch size than the amount of operations, timer should dispatch
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, this.limiter, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
             ItemBatchOperationContext context = AttachContext(this.ItemBatchOperation);
             batchAsyncStreamer.Add(this.ItemBatchOperation);
             TransactionalBatchOperationResult result = await context.OperationTask;
 
             Assert.AreEqual(this.ItemBatchOperation.Id, result.ETag);
+        }
+
+        [TestMethod]
+        public async Task ValidatesCongestionControlAsync()
+        {
+            SemaphoreSlim newLimiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, 1, this.TimerPool, newLimiter, defaultMaxDegreeOfConcurrency, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+
+            Assert.AreEqual(newLimiter.CurrentCount, 1);
+
+            List<Task<TransactionalBatchOperationResult>> contexts = new List<Task<TransactionalBatchOperationResult>>(100);
+            for (int i = 0; i < 600; i++)
+            {
+                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, Cosmos.PartitionKey.Null, i.ToString());
+                ItemBatchOperationContext context = AttachContext(operation);
+                batchAsyncStreamer.Add(operation);
+                contexts.Add(context.OperationTask);
+            }
+
+            // 300 batch request should atleast sum up to 1000 ms barrier with wait time of 20ms in executor
+            await Task.WhenAll(contexts);
+
+            await Task.Delay(2000);
+
+            Assert.IsTrue(newLimiter.CurrentCount >= 2, "Count of threads that can enter into semaphore should increase atleast by 1");
         }
 
         [TestMethod]
@@ -137,13 +176,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 MaxBatchByteSize,
                 DispatchTimerInSeconds,
                 this.TimerPool,
+                this.limiter,
+                1,
                 MockCosmosUtil.Serializer,
                 this.Executor,
                 this.Retrier);
             List<Task<TransactionalBatchOperationResult>> contexts = new List<Task<TransactionalBatchOperationResult>>(10);
             for (int i = 0; i < 10; i++)
             {
-                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
+                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, Cosmos.PartitionKey.Null, i.ToString());
                 ItemBatchOperationContext context = AttachContext(operation);
                 batchAsyncStreamer.Add(operation);
                 contexts.Add(context.OperationTask);

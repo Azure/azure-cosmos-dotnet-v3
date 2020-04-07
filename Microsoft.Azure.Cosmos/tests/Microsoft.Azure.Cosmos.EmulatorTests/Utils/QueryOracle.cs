@@ -9,11 +9,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -52,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public int IndexAndValidate(int pageSize = 1000)
         {
-            Trace.TraceInformation("Using collection {0}", collectionLink);
+            Trace.TraceInformation("Using collection {0}", this.collectionLink);
 
             DateTime startTime = DateTime.Now;
             this.ReadAllDocsAndBuildInvertedIndex();
@@ -97,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             string cont = null;
             do
             {
-                DocumentFeedResponse<dynamic> response = AsyncRetryRateLimiting(() => client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuationToken = cont, MaxItemCount = 1000 , EnableCrossPartitionQuery = true})).Result;
+                DocumentFeedResponse<dynamic> response = AsyncRetryRateLimiting(() => this.client.ReadDocumentFeedAsync(this.collectionLink, new FeedOptions { RequestContinuationToken = cont, MaxItemCount = 1000 , EnableCrossPartitionQuery = true})).Result;
 
                 Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + ": Indexing {0} documents", response.Count);
 
@@ -122,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                     }
 
                     string indexKey = pathSoFar + "[\"" + kv.Key + "\"]";
-                    BuildInvertedIndex(kv.Value, id, indexKey);
+                    this.BuildInvertedIndex(kv.Value, id, indexKey);
                 }
             }
             else if (token.Type == JTokenType.Array)
@@ -134,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                     foreach (JToken elem in array)
                     {
                         string indexKey = pathSoFar + "[" + index + "]";
-                        BuildInvertedIndex(elem, id, indexKey);
+                        this.BuildInvertedIndex(elem, id, indexKey);
                         index++;
                     }
                 }
@@ -143,16 +141,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 token.Type == JTokenType.Float ||
                 token.Type == JTokenType.Boolean)
             {
-                AddToInvertedIndex(new SqlKeyValueQueryBuilder(pathSoFar, token.ToString().ToLower()), id);
+                this.AddToInvertedIndex(new SqlKeyValueQueryBuilder(pathSoFar, token.ToString().ToLower()), id);
             }
             else if (token.Type == JTokenType.String)
             {
                 string tokenStr = token.ToString().Replace("\"", "\\\"");
-                AddToInvertedIndex(new SqlKeyValueQueryBuilder(pathSoFar, "\"" + tokenStr + "\""), id);
+                this.AddToInvertedIndex(new SqlKeyValueQueryBuilder(pathSoFar, "\"" + tokenStr + "\""), id);
             }
             else if (token.Type == JTokenType.Null)
             {
-                AddToInvertedIndex(new SqlKeyValueQueryBuilder(pathSoFar, "/null"), id);
+                this.AddToInvertedIndex(new SqlKeyValueQueryBuilder(pathSoFar, "/null"), id);
             }
             else if (token.Type == JTokenType.Date)
             {
@@ -160,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 // We need to make it to "/Date(13234820394)/
                 JavaScriptDateTimeConverter dateTimeConverter = new JavaScriptDateTimeConverter();
                 string jsonString = JsonConvert.SerializeObject(token, dateTimeConverter);
-                AddToInvertedIndex(new SqlKeyValueQueryBuilder(pathSoFar, "/\"/" + jsonString.Substring(4) + "/\""), id);
+                this.AddToInvertedIndex(new SqlKeyValueQueryBuilder(pathSoFar, "/\"/" + jsonString.Substring(4) + "/\""), id);
             }
             else
             {
@@ -187,9 +185,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 List<string> activityIDsAllQueryPages = new List<string>();
                 string query = keyVal.Key.GetQuery();
 
-                if (this.invertedIndex.Count > targetNumberOfQueriesToValidate)
+                if (this.invertedIndex.Count > this.targetNumberOfQueriesToValidate)
                 {
-                    double percentageOfQueriesToExecute = targetNumberOfQueriesToValidate / (1.0 * this.invertedIndex.Count);
+                    double percentageOfQueriesToExecute = this.targetNumberOfQueriesToValidate / (1.0 * this.invertedIndex.Count);
                     if (rnd.NextDouble() > percentageOfQueriesToExecute)
                     {
                         continue;
@@ -199,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 if (numberOfQueries > 0 && numberOfQueries % 100 == 0)
                 {
                     Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + @": Executing query {0} of {1}",
-                                           (numberOfQueries + 1), this.invertedIndex.Count);
+                                           numberOfQueries + 1, this.invertedIndex.Count);
                     Trace.TraceInformation(@"    Query latency per page (avg ms) {0} after {1} pages",
                                            totalQueryLatencyAllPages.TotalMilliseconds / numberOfPages, numberOfPages);
                     Trace.TraceInformation(@"    Query latency per query (avg ms) {0} after {1} queries",
@@ -210,13 +208,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                                            resultCount / (double)numberOfQueries, numberOfQueries);
                 }
 
-                IDocumentQuery<dynamic> docQuery = client.CreateDocumentQuery(collectionLink, query, feedOptions: new FeedOptions { MaxItemCount = pageSize , EnableCrossPartitionQuery = true}).AsDocumentQuery();
+                IDocumentQuery<dynamic> docQuery = this.client.CreateDocumentQuery(this.collectionLink, query, feedOptions: new FeedOptions { MaxItemCount = pageSize , EnableCrossPartitionQuery = true}).AsDocumentQuery();
                 while (docQuery.HasMoreResults)
                 {
                     DateTime startTime = DateTime.Now;
                     DocumentFeedResponse<dynamic> queryResultsPage = await QueryOnePageWithRetry(docQuery, query);
                     activityIDsAllQueryPages.Add(queryResultsPage.ActivityId);
-                    totalQueryLatencyAllPages += (DateTime.Now - startTime);
+                    totalQueryLatencyAllPages += DateTime.Now - startTime;
                     numberOfPages++;
                     foreach (JObject result in queryResultsPage)
                     {
@@ -257,9 +255,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                             DateTime.Now.ToString("HH:mm:ss.ffff") +
                             @": The doc id {0} was expected for query {1} but was not obtained, query all pages activitiIDs: ({2})", queryOracleId, query, String.Join(",", activityIDsAllQueryPages));
 
-                        if (!failedQueries.ContainsKey(keyVal.Key))
+                        if (!this.failedQueries.ContainsKey(keyVal.Key))
                         {
-                            failedQueries.Add(keyVal.Key, keyVal.Value);
+                            this.failedQueries.Add(keyVal.Key, keyVal.Value);
                         }
 
                         anyFailures = true;
@@ -279,9 +277,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 int result = -1;
 
                 //In case of a failure, retry only failed queries after sleeping for couple of minutes.
-                if (enableRetries && this.retryCount < 10)
+                if (this.enableRetries && this.retryCount < 10)
                 {
-                    Trace.TraceInformation(String.Format(CultureInfo.InvariantCulture, @"*** Retrying {0} Failed queries ***", failedQueries.Count));
+                    Trace.TraceInformation(String.Format(CultureInfo.InvariantCulture, @"*** Retrying {0} Failed queries ***", this.failedQueries.Count));
                     this.retryCount++;
                     Thread.Sleep(120 * 1000);
                     result = await this.RetryFailedQueries(pageSize);
@@ -359,12 +357,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
             public string GetQuery()
             {
-                return String.Format(CultureInfo.InvariantCulture, @"SELECT r._rid FROM root r WHERE {0} = {1}", strKey, strValue);
+                return String.Format(CultureInfo.InvariantCulture, @"SELECT r._rid FROM root r WHERE {0} = {1}", this.strKey, this.strValue);
             }
 
             public override int GetHashCode()
             {
-                return strKey.GetHashCode() * 31 + strValue.GetHashCode();
+                return (this.strKey.GetHashCode() * 31) + this.strValue.GetHashCode();
             }
 
             public override bool Equals(object operandObj)

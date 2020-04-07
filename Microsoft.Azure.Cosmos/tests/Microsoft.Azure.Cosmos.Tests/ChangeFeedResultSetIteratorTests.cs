@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -34,9 +35,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
-            ResponseMessage secondResponse = new ResponseMessage(HttpStatusCode.NotFound);
-            secondResponse.Headers.ETag = "ShouldNotContainThis";
-            secondResponse.ErrorMessage = "something";
+            ResponseMessage secondResponse = new ResponseMessage(
+                statusCode: HttpStatusCode.NotFound,
+                requestMessage: null,
+                headers: new Headers()
+                {
+                    ETag = "ShouldNotContainThis"
+                },
+                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"),
+                diagnostics: new CosmosDiagnosticsContextCore());
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
                 It.IsAny<Uri>(),
@@ -55,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
-            ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
+            StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -111,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
-            ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
+            StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -170,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
-            ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
+            StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -224,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
-            ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
+            StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ClientVersion>3.7.0</ClientVersion>
-    <DirectVersion>3.7.0</DirectVersion>
+    <ClientVersion>3.7.1</ClientVersion>
+    <DirectVersion>3.7.1</DirectVersion>
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
     <AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
   </PropertyGroup>

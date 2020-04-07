@@ -5,8 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
@@ -75,22 +79,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return queryResponseCore;
         }
 
-        public override bool TryGetContinuationToken(out string state)
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             if (!this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
             {
-                state = null;
-                return false;
+                throw new InvalidOperationException();
             }
 
             TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result;
             if (!tryCreateCosmosQueryExecutionContext.Succeeded)
             {
-                state = null;
-                return false;
+                throw tryCreateCosmosQueryExecutionContext.Exception;
             }
 
-            return tryCreateCosmosQueryExecutionContext.Result.TryGetContinuationToken(out state);
+            return tryCreateCosmosQueryExecutionContext.Result.GetCosmosElementContinuationToken();
         }
     }
 }

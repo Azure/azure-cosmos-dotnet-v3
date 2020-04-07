@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
@@ -17,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
+        private readonly FeedTokenInternal feedToken;
         private string continuationToken;
         private string partitionKeyRangeId;
         private bool hasMoreResultsInternal;
@@ -45,6 +48,8 @@ namespace Microsoft.Azure.Cosmos
             this.MaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
             this.partitionKeyRangeId = partitionKeyRangeId;
+            this.feedToken = new FeedTokenPartitionKeyRange(this.partitionKeyRangeId);
+            this.feedToken.UpdateContinuation(this.continuationToken);
         }
 
         /// <summary>
@@ -53,6 +58,18 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxItemCount { get; set; }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
+
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            throw new NotImplementedException();
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedToken FeedToken => this.feedToken;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -69,16 +86,11 @@ namespace Microsoft.Azure.Cosmos
                     ResponseMessage response = task.Result;
                     // Change Feed uses ETAG
                     this.continuationToken = response.Headers.ETag;
+                    this.feedToken.UpdateContinuation(this.continuationToken);
                     this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
                     response.Headers.ContinuationToken = this.continuationToken;
                     return response;
                 }, cancellationToken);
-        }
-
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            continuationToken = this.continuationToken;
-            return true;
         }
 
         private Task<ResponseMessage> NextResultSetDelegateAsync(
@@ -103,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
                },
                partitionKey: null,
                streamPayload: null,
-               diagnosticsScope: null,
+               diagnosticsContext: null,
                cancellationToken: cancellationToken);
 
         }

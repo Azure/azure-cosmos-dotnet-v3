@@ -7,8 +7,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal class TestHandler : RequestHandler
@@ -18,19 +16,19 @@
 
         public TestHandler()
         {
-            _handlerFunc = (r, c) => ReturnSuccess();
+            this._handlerFunc = (r, c) => ReturnSuccess();
         }
 
         public TestHandler(Func<RequestMessage,
             CancellationToken, Task<ResponseMessage>> handlerFunc)
         {
-            _handlerFunc = handlerFunc;
+            this._handlerFunc = handlerFunc;
         }
 
         public override Task<ResponseMessage> SendAsync(
             RequestMessage request, CancellationToken cancellationToken)
         {
-            return _handlerFunc(request, cancellationToken);
+            return this._handlerFunc(request, cancellationToken);
         }
 
         public static Task<ResponseMessage> ReturnSuccess()

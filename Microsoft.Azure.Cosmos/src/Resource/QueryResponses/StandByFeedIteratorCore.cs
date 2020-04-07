@@ -6,8 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
@@ -15,7 +17,11 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class ChangeFeedResultSetIteratorCore : FeedIteratorInternal
+    /// <remarks>
+    /// Legacy, see <see cref="ChangeFeedIteratorCore"/>.
+    /// </remarks>
+    /// <seealso cref="ChangeFeedIteratorCore"/>
+    internal class StandByFeedIteratorCore : FeedIteratorInternal
     {
         internal StandByFeedContinuationToken compositeContinuationToken;
 
@@ -25,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         private string continuationToken;
         private int? maxItemCount;
 
-        internal ChangeFeedResultSetIteratorCore(
+        internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
             string continuationToken,
@@ -47,6 +53,13 @@ namespace Microsoft.Azure.Cosmos
         protected readonly ChangeFeedRequestOptions changeFeedOptions;
 
         public override bool HasMoreResults => true;
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedToken FeedToken => throw new NotImplementedException();
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -83,12 +96,6 @@ namespace Microsoft.Azure.Cosmos
             // Send to the user the composite state for all ranges
             response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
             return response;
-        }
-
-        public override bool TryGetContinuationToken(out string state)
-        {
-            state = this.continuationToken;
-            return true;
         }
 
         internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
@@ -168,8 +175,13 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
-                diagnosticsScope: null,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
+        }
+
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            throw new NotImplementedException();
         }
     }
 }

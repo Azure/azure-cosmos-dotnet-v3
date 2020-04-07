@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// This class is used to get access to different client level operations without directly referencing the client object.
     /// This makes it easy to pass a reference to the client, and it makes it easy to mock for unit tests.
     /// </summary>
-    internal abstract class CosmosClientContext
+    internal abstract class CosmosClientContext : IDisposable
     {
         /// <summary>
         /// The Cosmos client that is used for the request
@@ -40,6 +40,9 @@ namespace Microsoft.Azure.Cosmos
         internal abstract EncryptionProcessor EncryptionProcessor { get; }
 
         internal abstract DekCache DekCache { get; }
+
+        internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
+            ContainerCore container);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -73,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsScope,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -89,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsScope,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -106,7 +109,22 @@ namespace Microsoft.Azure.Cosmos
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,
-           CosmosDiagnosticsContext diagnosticsScope,
+           CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
+
+        internal abstract Task<Stream> EncryptItemAsync(
+            Stream input,
+            EncryptionOptions encryptionOptions,
+            DatabaseCore database,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken);
+
+        internal abstract Task<Stream> DecryptItemAsync(
+            Stream input,
+            DatabaseCore database,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken);
+
+        public abstract void Dispose();
     }
 }

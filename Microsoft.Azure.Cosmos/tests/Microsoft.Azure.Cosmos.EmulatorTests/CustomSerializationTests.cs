@@ -58,20 +58,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestSetup()
         {
-            databaseName = ConfigurationManager.AppSettings["DatabaseAccountId"];
-            collectionName = Guid.NewGuid().ToString();
-            partitionedCollectionName = Guid.NewGuid().ToString();
+            this.databaseName = ConfigurationManager.AppSettings["DatabaseAccountId"];
+            this.collectionName = Guid.NewGuid().ToString();
+            this.partitionedCollectionName = Guid.NewGuid().ToString();
 
-            databaseUri = UriFactory.CreateDatabaseUri(databaseName);
-            collectionUri = UriFactory.CreateDocumentCollectionUri(databaseName, collectionName);
-            partitionedCollectionUri = UriFactory.CreateDocumentCollectionUri(databaseName, partitionedCollectionName);
+            this.databaseUri = UriFactory.CreateDatabaseUri(this.databaseName);
+            this.collectionUri = UriFactory.CreateDocumentCollectionUri(this.databaseName, this.collectionName);
+            this.partitionedCollectionUri = UriFactory.CreateDocumentCollectionUri(this.databaseName, this.partitionedCollectionName);
 
-            Database database = documentClient.CreateDatabaseIfNotExistsAsync(new Database() { Id = databaseName }).Result.Resource;
+            Database database = this.documentClient.CreateDatabaseIfNotExistsAsync(new Database() { Id = databaseName }).Result.Resource;
 
             DocumentCollection newCollection = new DocumentCollection() { Id = collectionName, PartitionKey = defaultPartitionKeyDefinition };
             try
             {
-                documentClient.CreateDocumentCollectionAsync(databaseUri, newCollection, new RequestOptions { OfferThroughput = 400 }).Wait();
+                this.documentClient.CreateDocumentCollectionAsync(this.databaseUri, newCollection, new RequestOptions { OfferThroughput = 400 }).Wait();
             }
             catch (DocumentClientException ex)
             {
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     // Emulator con sometimes fail under load, so we retry
                     Task.Delay(1000);
-                    documentClient.CreateDocumentCollectionAsync(databaseUri, newCollection, new RequestOptions { OfferThroughput = 400 }).Wait();
+                    this.documentClient.CreateDocumentCollectionAsync(this.databaseUri, newCollection, new RequestOptions { OfferThroughput = 400 }).Wait();
                 }
             }
 
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                documentClient.CreateDocumentCollectionAsync(databaseUri, partitionedCollection, new RequestOptions { OfferThroughput = 10000 }).Wait();
+                this.documentClient.CreateDocumentCollectionAsync(this.databaseUri, partitionedCollection, new RequestOptions { OfferThroughput = 10000 }).Wait();
             }
             catch (DocumentClientException ex)
             {
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     // Emulator con sometimes fail under load, so we retry
                     Task.Delay(1000);
-                    documentClient.CreateDocumentCollectionAsync(databaseUri, partitionedCollection, new RequestOptions { OfferThroughput = 10000 }).Wait();
+                    this.documentClient.CreateDocumentCollectionAsync(this.databaseUri, partitionedCollection, new RequestOptions { OfferThroughput = 10000 }).Wait();
                 }
             }
         }
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void TestOrderByQuery()
         {
-            TestOrderyByQueryAsync().GetAwaiter().GetResult();
+            this.TestOrderyByQueryAsync().GetAwaiter().GetResult();
         }
 
         [TestMethod]
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DateParseHandling = DateParseHandling.None
             };
 
-            SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
 
             // Verify round-trip create and read document
             RequestOptions applyRequestOptions = this.ApplyRequestOptions(new RequestOptions(), serializerSettings);
@@ -168,9 +168,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DateParseHandling = DateParseHandling.None
             };
 
-            SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
 
-            var options = ApplyFeedOptions(new FeedOptions() { EnableCrossPartitionQuery = true }, serializerSettings);
+            FeedOptions options = this.ApplyFeedOptions(new FeedOptions() { EnableCrossPartitionQuery = true }, serializerSettings);
 
             // Verify with query 
             string selectFromCOrderByCTs = "select * from c order by c._ts";
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DateParseHandling = DateParseHandling.None
             };
 
-            SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
 
             // Verify with stored procedure
             StoredProcedure storedProcedure = new StoredProcedure();
@@ -275,30 +275,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 }
             });
-            Container container = cosmosClient.GetContainer(databaseName, partitionedCollectionName);
+            Container container = cosmosClient.GetContainer(this.databaseName, this.partitionedCollectionName);
 
-            var rnd = new Random();
-            var bytes = new byte[100];
+            Random rnd = new Random();
+            byte[] bytes = new byte[100];
             rnd.NextBytes(bytes);
-            var testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
+            TestDocument testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
 
             //create and read
             ItemResponse<TestDocument> createResponse = await container.CreateItemAsync<TestDocument>(testDocument);
             ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Id, new Cosmos.PartitionKey(testDocument.Name));
-            AssertEqual(testDocument, readResponse.Resource);
-            AssertEqual(testDocument, createResponse.Resource);
+            this.AssertEqual(testDocument, readResponse.Resource);
+            this.AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
             ItemResponse<TestDocument> upsertResponse = await container.UpsertItemAsync<TestDocument>(testDocument);
             readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Id, new Cosmos.PartitionKey(testDocument.Name));
-            AssertEqual(testDocument, readResponse.Resource);
-            AssertEqual(testDocument, upsertResponse.Resource);
+            this.AssertEqual(testDocument, readResponse.Resource);
+            this.AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
             ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument, testDocument.Id);
             readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Id, new Cosmos.PartitionKey(testDocument.Name));
-            AssertEqual(testDocument, readResponse.Resource);
-            AssertEqual(testDocument, replacedResponse.Resource);
+            this.AssertEqual(testDocument, readResponse.Resource);
+            this.AssertEqual(testDocument, replacedResponse.Resource);
 
             QueryDefinition sql = new QueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 allDocuments.AddRange(await feedIterator.ReadNextAsync());
             }
 
-            AssertEqual(testDocument, allDocuments.First());
+            this.AssertEqual(testDocument, allDocuments.First());
 
             //Will add LINQ test once it is available with new V3 OM 
             // // LINQ Lambda
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             serializerSettings.Converters.Add(new ObjectStringJsonConverter<SerializedObject>(_ => _.Name, _ => SerializedObject.Parse(_)));
             ConnectionPolicy connectionPolicy = new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway };
             ConsistencyLevel defaultConsistencyLevel = ConsistencyLevel.Session;
-            DocumentClient client = CreateDocumentClient(
+            DocumentClient client = this.CreateDocumentClient(
                 this.hostUri,
                 this.masterKey,
                 serializerSettings,
@@ -349,8 +349,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 defaultConsistencyLevel);
 
             // Create a simple stored procedure
-            var scriptId = "bulkImportScript";
-            var sproc = new StoredProcedure
+            string scriptId = "bulkImportScript";
+            StoredProcedure sproc = new StoredProcedure
             {
                 Id = scriptId,
                 Body = @"
@@ -424,28 +424,28 @@ function bulkImport(docs) {
 "
             };
 
-            sproc = client.CreateStoredProcedureAsync(collectionUri, sproc).Result.Resource;
+            sproc = client.CreateStoredProcedureAsync(this.collectionUri, sproc).Result.Resource;
 
-            var doc = new MyObject(1);
+            MyObject doc = new MyObject(1);
 
-            var args = new dynamic[] { new dynamic[] { doc } };
+            dynamic[] args = new dynamic[] { new dynamic[] { doc } };
 
-            RequestOptions requestOptions = ApplyRequestOptions(new RequestOptions { PartitionKey = new PartitionKey("value") }, serializerSettings);
+            RequestOptions requestOptions = this.ApplyRequestOptions(new RequestOptions { PartitionKey = new PartitionKey("value") }, serializerSettings);
 
             StoredProcedureResponse<int> scriptResult = client.ExecuteStoredProcedureAsync<int>(
                 sproc.SelfLink,
                 requestOptions,
                 args).Result;
 
-            var docUri = UriFactory.CreateDocumentUri(databaseName, collectionName, doc.id);
-            var readDoc = client.ReadDocumentAsync<MyObject>(docUri, requestOptions).Result.Document;
+            Uri docUri = UriFactory.CreateDocumentUri(this.databaseName, this.collectionName, doc.id);
+            MyObject readDoc = client.ReadDocumentAsync<MyObject>(docUri, requestOptions).Result.Document;
             Assert.IsNotNull(readDoc.SerializedObject);
             Assert.AreEqual(doc.SerializedObject.Name, readDoc.SerializedObject.Name);
         }
 
         private async Task TestOrderyByQueryAsync()
         {
-            var jsonSerializerSettings = new JsonSerializerSettings
+            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings
             {
                 ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                 Converters =
@@ -455,15 +455,15 @@ function bulkImport(docs) {
             };
 
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(jsonSerializerSettings)));
-            Container container = cosmosClient.GetContainer(databaseName, partitionedCollectionName);
+            Container container = cosmosClient.GetContainer(this.databaseName, this.partitionedCollectionName);
 
             // Create a few test documents
             int documentCount = 3;
-            var numberFieldName = "NumberField";
+            string numberFieldName = "NumberField";
             for (int i = 0; i < documentCount; ++i)
             {
-                var newDocument = new MyObject(i);
-                var createdDocument = await container.CreateItemAsync<MyObject>(newDocument);
+                MyObject newDocument = new MyObject(i);
+                ItemResponse<MyObject> createdDocument = await container.CreateItemAsync<MyObject>(newDocument);
             }
 
             QueryDefinition cosmosSqlQueryDefinition1 = new QueryDefinition("SELECT * FROM root");
@@ -511,24 +511,24 @@ function bulkImport(docs) {
 
             StoredProcedure sproc = client.CreateStoredProcedureAsync(targetCollectionUri, storedProcedure).Result;
 
-            var spResult = client.ExecuteStoredProcedureAsync<Document>(sproc.SelfLink, requestOptions)
+            IEnumerable<Document> spResult = client.ExecuteStoredProcedureAsync<Document>(sproc.SelfLink, requestOptions)
                 .Result.Response.GetPropertyValue<IEnumerable<Document>>("createdDocuments");
 
             foreach (Document d in spResult)
             {
-                var playDoc = (PlayDocument)(dynamic)d;
+                PlayDocument playDoc = (PlayDocument)(dynamic)d;
                 Assert.AreEqual(originalDocument.GetValue<string>(jsonProperty), playDoc.jsonString);
             }
         }
 
         private void AssertDocumentPropertyOnQuery(DocumentClient client, Uri targetCollectionUri, string selectFromCOrderByCTs, FeedOptions options, Document originalDocument, string jsonProperty)
         {
-            var iQueryable = client.CreateDocumentQuery<PlayDocument>(
+            IQueryable<PlayDocument> iQueryable = client.CreateDocumentQuery<PlayDocument>(
                 targetCollectionUri,
                 selectFromCOrderByCTs,
                 options);
 
-            var queryResult = iQueryable.ToList();
+            List<PlayDocument> queryResult = iQueryable.ToList();
             Assert.AreEqual(1, queryResult.Count);
             Assert.AreEqual(originalDocument.GetValue<string>(jsonProperty), queryResult[0].jsonString);
         }
@@ -549,7 +549,7 @@ function bulkImport(docs) {
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway };
             ConsistencyLevel defaultConsistencyLevel = ConsistencyLevel.Session;
-            client = CreateDocumentClient(
+            client = this.CreateDocumentClient(
                 this.hostUri,
                 this.masterKey,
                 serializerSettings,
@@ -558,14 +558,14 @@ function bulkImport(docs) {
             originalDocument = new Document();
             originalDocument.SetPropertyValue(jsonPropertyName, "2017-05-18T17:17:32.7514920Z");
             originalDocument.SetPropertyValue(PartitionKeyProperty, "value");
-            outputDocument = client.CreateDocumentAsync(this.collectionUri, originalDocument, ApplyRequestOptions(new RequestOptions(), serializerSettings), disableAutomaticIdGeneration: false).Result.Resource;
-            outputPartitionedDocument = client.CreateDocumentAsync(this.partitionedCollectionUri, originalDocument, ApplyRequestOptions(new RequestOptions(), serializerSettings), disableAutomaticIdGeneration: false).Result.Resource;
+            outputDocument = client.CreateDocumentAsync(this.collectionUri, originalDocument, this.ApplyRequestOptions(new RequestOptions(), serializerSettings), disableAutomaticIdGeneration: false).Result.Resource;
+            outputPartitionedDocument = client.CreateDocumentAsync(this.partitionedCollectionUri, originalDocument, this.ApplyRequestOptions(new RequestOptions(), serializerSettings), disableAutomaticIdGeneration: false).Result.Resource;
         }
 
 #pragma warning disable CS0618 
         public static JsonSerializerSettings GetSerializerWithCustomConverterAndBinder()
         {
-            var serializerSettings = new JsonSerializerSettings
+            JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                 MissingMemberHandling = MissingMemberHandling.Ignore
@@ -591,7 +591,7 @@ function bulkImport(docs) {
             private JsonSerializer serializer;
             public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
-                serializer = JsonSerializer.Create(jsonSerializerSettings);
+                this.serializer = JsonSerializer.Create(jsonSerializerSettings);
             }
             public override T FromStream<T>(Stream stream)
             {
@@ -599,14 +599,14 @@ function bulkImport(docs) {
                 {
                     if (typeof(Stream).IsAssignableFrom(typeof(T)))
                     {
-                        return (T)(object)(stream);
+                        return (T)(object)stream;
                     }
 
                     using (StreamReader sr = new StreamReader(stream))
                     {
                         using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
                         {
-                            return serializer.Deserialize<T>(jsonTextReader);
+                            return this.serializer.Deserialize<T>(jsonTextReader);
                         }
                     }
                 }
@@ -620,7 +620,7 @@ function bulkImport(docs) {
                     using (JsonWriter writer = new JsonTextWriter(streamWriter))
                     {
                         writer.Formatting = Newtonsoft.Json.Formatting.None;
-                        serializer.Serialize(writer, input);
+                        this.serializer.Serialize(writer, input);
                         writer.Flush();
                         streamWriter.Flush();
                     }
@@ -742,8 +742,8 @@ function bulkImport(docs) {
 
             public CommonSerializationBinder()
             {
-                _typeToNameMapping = new ConcurrentDictionary<Type, string>();
-                _nameToTypeMapping = new ConcurrentDictionary<string, Type>();
+                this._typeToNameMapping = new ConcurrentDictionary<Type, string>();
+                this._nameToTypeMapping = new ConcurrentDictionary<string, Type>();
             }
 
             public override Type BindToType(string assemblyName, string typeName)
@@ -774,12 +774,12 @@ function bulkImport(docs) {
             public override void BindToName(Type serializedType, out string assemblyName, out string typeName)
             {
                 assemblyName = null;
-                typeName = _typeToNameMapping.GetOrAdd(serializedType, _ =>
+                typeName = this._typeToNameMapping.GetOrAdd(serializedType, _ =>
                 {
                     return string.Format(CultureInfo.InvariantCulture, "{0}|{1}", _.FullName, _.GetAssembly().GetName().Name);
                 });
 
-                _nameToTypeMapping.TryAdd(typeName, serializedType);
+                this._nameToTypeMapping.TryAdd(typeName, serializedType);
             }
         }
 
@@ -803,10 +803,10 @@ function bulkImport(docs) {
 
             public TestDocument(KerberosTicketHashKey kerberosTicketHashKey)
             {
-                KerberosTicketHashKey = kerberosTicketHashKey;
-                Dic1 = new Dictionary<int, KerberosTicketHashKey> { { 1, kerberosTicketHashKey } };
-                Id = Guid.NewGuid().ToString();
-                Name = Id;
+                this.KerberosTicketHashKey = kerberosTicketHashKey;
+                this.Dic1 = new Dictionary<int, KerberosTicketHashKey> { { 1, kerberosTicketHashKey } };
+                this.Id = Guid.NewGuid().ToString();
+                this.Name = this.Id;
             }
 
             private TestDocument()
@@ -814,21 +814,21 @@ function bulkImport(docs) {
             }
         }
 
-        struct KerberosTicketHashKey : IEquatable<KerberosTicketHashKey>
+        readonly struct KerberosTicketHashKey : IEquatable<KerberosTicketHashKey>
         {
             private readonly int _hashCode;
 
-            public byte[] KerberosTicketHash;
+            public readonly byte[] KerberosTicketHash;
 
             public KerberosTicketHashKey(byte[] kerberosTicketHash)
             {
-                KerberosTicketHash = kerberosTicketHash;
-                _hashCode = ToInt32(kerberosTicketHash);
+                this.KerberosTicketHash = kerberosTicketHash;
+                this._hashCode = ToInt32(kerberosTicketHash);
             }
 
             public override int GetHashCode()
             {
-                return _hashCode;
+                return this._hashCode;
             }
 
             public override bool Equals(object obj)
@@ -837,12 +837,12 @@ function bulkImport(docs) {
                 {
                     return false;
                 }
-                return Equals((KerberosTicketHashKey)obj);
+                return this.Equals((KerberosTicketHashKey)obj);
             }
 
             public bool Equals(KerberosTicketHashKey other)
             {
-                return ByteArrayComparer.Comparer.Equals(KerberosTicketHash, other.KerberosTicketHash);
+                return ByteArrayComparer.Comparer.Equals(this.KerberosTicketHash, other.KerberosTicketHash);
             }
 
             public static int ToInt32(byte[] bytes, uint offset = 0, bool isLittleEndian = false)
@@ -862,12 +862,12 @@ function bulkImport(docs) {
                 byte fourthByte,
                 bool isLittleEndian = false)
             {
-                var firstShort = (int)ToUInt16(firstByte, secondByte, isLittleEndian);
-                var secondShort = (int)ToUInt16(thirdByte, fourthByte, isLittleEndian);
+                int firstShort = (int)ToUInt16(firstByte, secondByte, isLittleEndian);
+                int secondShort = (int)ToUInt16(thirdByte, fourthByte, isLittleEndian);
 
                 return isLittleEndian
-                    ? secondShort << 16 | firstShort
-                    : firstShort << 16 | secondShort;
+                    ? (secondShort << 16) | firstShort
+                    : (firstShort << 16) | secondShort;
             }
 
             public static ushort ToUInt16(
@@ -884,8 +884,8 @@ function bulkImport(docs) {
                 bool isLittleEndian = false)
             {
                 return isLittleEndian
-                    ? (short)(secondByte << 8 | firstByte)
-                    : (short)(firstByte << 8 | secondByte);
+                    ? (short)((secondByte << 8) | firstByte)
+                    : (short)((firstByte << 8) | secondByte);
             }
         }
 
@@ -914,7 +914,7 @@ function bulkImport(docs) {
                     return false;
                 }
 
-                for (var i = 0; i < firstByteArray.Length; i++)
+                for (int i = 0; i < firstByteArray.Length; i++)
                 {
                     if (firstByteArray[i] != secondByteArray[i])
                     {
@@ -942,16 +942,16 @@ function bulkImport(docs) {
 
             public MyObject(int i)
             {
-                id = i.ToString();
-                pk = "value";
-                Guid = Guid.NewGuid();
-                IsTrue = i < 5;
-                NumberField = i;
-                SerializedObject = new SerializedObject { Name = "Name: " + i };
+                this.id = i.ToString();
+                this.pk = "value";
+                this.Guid = Guid.NewGuid();
+                this.IsTrue = i < 5;
+                this.NumberField = i;
+                this.SerializedObject = new SerializedObject { Name = "Name: " + i };
 
             }
 
-            public override string ToString() { return Guid + " - " + SerializedObject; }
+            public override string ToString() { return this.Guid + " - " + this.SerializedObject; }
         }
 
         class SerializedObject
@@ -962,7 +962,7 @@ function bulkImport(docs) {
             {
             }
 
-            public override string ToString() { return Name; }
+            public override string ToString() { return this.Name; }
 
             public static SerializedObject Parse(string name) { return new SerializedObject() { Name = name }; }
         }
@@ -994,7 +994,7 @@ function bulkImport(docs) {
                 }
                 else
                 {
-                    jsonWriter.WriteValue(Serializer((TSource)value));
+                    jsonWriter.WriteValue(this.Serializer((TSource)value));
                 }
             }
 
@@ -1006,7 +1006,7 @@ function bulkImport(docs) {
             {
                 return jsonReader.Value == null
                     ? default(TSource)
-                    : Deserializer((string)jsonReader.Value);
+                    : this.Deserializer((string)jsonReader.Value);
             }
         }
     }

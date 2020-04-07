@@ -322,6 +322,60 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot parse &apos;{0}&apos; as a valid FeedToken..
+        /// </summary>
+        internal static string FeedToken_CannotParse {
+            get {
+                return ResourceManager.GetString("FeedToken_CannotParse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot define EffectivePartitionKeyRouting and FeedToken simultaneously..
+        /// </summary>
+        internal static string FeedToken_EffectivePartitionKeyRouting {
+            get {
+                return ResourceManager.GetString("FeedToken_EffectivePartitionKeyRouting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expected FeedTokenInternal instance..
+        /// </summary>
+        internal static string FeedToken_InvalidImplementation {
+            get {
+                return ResourceManager.GetString("FeedToken_InvalidImplementation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provide a value greater than zero..
+        /// </summary>
+        internal static string FeedToken_MaxTokensOutOfRange {
+            get {
+                return ResourceManager.GetString("FeedToken_MaxTokensOutOfRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The provided string does not represent any known FeedToken format..
+        /// </summary>
+        internal static string FeedToken_UnknownFormat {
+            get {
+                return ResourceManager.GetString("FeedToken_UnknownFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unrecognized Feed Token type..
+        /// </summary>
+        internal static string FeedToken_UnrecognizedFeedToken {
+            get {
+                return ResourceManager.GetString("FeedToken_UnrecognizedFeedToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Input is not of type IDocumentQuery..
         /// </summary>
         internal static string InputIsNotIDocumentQuery {
