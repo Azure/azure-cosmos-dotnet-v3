@@ -1137,7 +1137,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
+        /// ChangeFeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1153,7 +1153,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
+        public abstract ChangeFeedIterator GetChangeFeedStreamIterator(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1168,7 +1168,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
         /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedRanges[0]);
+        /// ChangeFeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedRanges[0]);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1185,7 +1185,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
+        public abstract ChangeFeedIterator GetChangeFeedStreamIterator(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1197,7 +1197,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(new PartitionKey("myPartitionKey"));
+        /// ChangeFeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(new PartitionKey("myPartitionKey"));
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1214,7 +1214,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular Partition Key.</returns>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
+        public abstract ChangeFeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1227,7 +1227,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
+        /// ChangeFeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
@@ -1239,7 +1239,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+        public abstract ChangeFeedIterator<T> GetChangeFeedIterator<T>(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1254,7 +1254,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
         /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedRanges[0]);
+        /// ChangeFeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedRanges[0]);
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
@@ -1267,7 +1267,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+        public abstract ChangeFeedIterator<T> GetChangeFeedIterator<T>(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1279,7 +1279,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(new PartitionKey("myPartitionKey"));
+        /// ChangeFeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(new PartitionKey("myPartitionKey"));
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
@@ -1292,7 +1292,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a Partition Key.</returns>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+        public abstract ChangeFeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 

@@ -269,42 +269,42 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedRangesAsync(cancellationToken));
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            string continuation = null,
+        public override ChangeFeedIterator GetChangeFeedStreamIterator(
+            string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(continuation, changeFeedRequestOptions);
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
+        public override ChangeFeedIterator GetChangeFeedStreamIterator(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(feedRange, changeFeedRequestOptions);
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
+        public override ChangeFeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
         }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            string continuation = null,
+        public override ChangeFeedIterator<T> GetChangeFeedIterator<T>(
+            string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedIterator<T>(continuation, changeFeedRequestOptions);
         }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
+        public override ChangeFeedIterator<T> GetChangeFeedIterator<T>(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedIterator<T>(feedRange, changeFeedRequestOptions);
         }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
+        public override ChangeFeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {

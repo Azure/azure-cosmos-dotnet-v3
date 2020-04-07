@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -18,14 +17,14 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
     /// </summary>
-    internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
+    internal sealed class ChangeFeedIteratorCore : ChangeFeedIterator
     {
+        internal FeedRangeContinuation FeedRangeContinuation;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private FeedRangeInternal feedRangeInternal;
-        private FeedRangeContinuation feedRangeContinuation;
         private bool hasMoreResults = true;
 
         public static ChangeFeedIteratorCore Create(
@@ -50,13 +49,16 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedIteratorCore(container, feedRangeInternal, changeFeedRequestOptions);
         }
 
-        private ChangeFeedIteratorCore(
+        /// <summary>
+        /// For unit testing
+        /// </summary>
+        internal ChangeFeedIteratorCore(
             ContainerCore container,
             FeedRangeContinuation feedRangeContinuation,
             ChangeFeedRequestOptions changeFeedRequestOptions)
             : this(container, feedRangeContinuation.FeedRange, changeFeedRequestOptions)
         {
-            this.feedRangeContinuation = feedRangeContinuation ?? throw new ArgumentNullException(nameof(feedRangeContinuation));
+            this.FeedRangeContinuation = feedRangeContinuation ?? throw new ArgumentNullException(nameof(feedRangeContinuation));
         }
 
         private ChangeFeedIteratorCore(
@@ -90,6 +92,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResults;
 
+        public override string Continuation => this.FeedRangeContinuation?.ToString();
+
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -121,9 +125,9 @@ namespace Microsoft.Azure.Cosmos
 
                     using (diagnostics.CreateScope("InitializeContinuation"))
                     {
-                        if (this.feedRangeContinuation != null)
+                        if (this.FeedRangeContinuation != null)
                         {
-                            TryCatch validateContainer = this.feedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
+                            TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
                             if (!validateContainer.Succeeded)
                             {
                                 return CosmosExceptionFactory.CreateBadRequestException(
@@ -158,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
                     this.feedRangeInternal.Accept(feedRangeVisitor);
-                    this.feedRangeContinuation.Accept(feedRangeVisitor, ChangeFeedRequestOptions.FillContinuationToken);
+                    this.FeedRangeContinuation.Accept(feedRangeVisitor, ChangeFeedRequestOptions.FillContinuationToken);
                 },
                 partitionKey: null,
                 streamPayload: null,
@@ -166,13 +170,13 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Retry in case of splits or other scenarios
-            if (await this.feedRangeContinuation.ShouldRetryAsync(this.container, responseMessage, cancellationToken))
+            if (await this.FeedRangeContinuation.ShouldRetryAsync(this.container, responseMessage, cancellationToken))
             {
                 if (responseMessage.IsSuccessStatusCode
                     || responseMessage.StatusCode == HttpStatusCode.NotModified)
                 {
                     // Change Feed read uses Etag for continuation
-                    this.feedRangeContinuation.UpdateContinuation(responseMessage.Headers.ETag);
+                    this.FeedRangeContinuation.UpdateContinuation(responseMessage.Headers.ETag);
                 }
 
                 return await this.ReadNextInternalAsync(diagnosticsScope, cancellationToken);
@@ -182,13 +186,13 @@ namespace Microsoft.Azure.Cosmos
                 || responseMessage.StatusCode == HttpStatusCode.NotModified)
             {
                 // Change Feed read uses Etag for continuation
-                this.feedRangeContinuation.UpdateContinuation(responseMessage.Headers.ETag);
+                this.FeedRangeContinuation.UpdateContinuation(responseMessage.Headers.ETag);
             }
 
             this.hasMoreResults = responseMessage.IsSuccessStatusCode;
             return new FeedRangeResponse(
                 responseMessage,
-                this.feedRangeContinuation);
+                this.FeedRangeContinuation);
         }
 
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
@@ -206,11 +210,11 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
         {
-            if (this.feedRangeContinuation == null)
+            if (this.FeedRangeContinuation == null)
             {
                 if (this.feedRangeInternal is FeedRangePartitionKey)
                 {
-                    this.feedRangeContinuation = new FeedRangeSimpleContinuation(
+                    this.FeedRangeContinuation = new FeedRangeSimpleContinuation(
                         containerRid: this.lazyContainerRid.Result.Result,
                         feedRange: this.feedRangeInternal);
                 }
@@ -222,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
                         range: (this.feedRangeInternal as FeedRangeEPK).Range,
                         forceRefresh: false);
 
-                    this.feedRangeContinuation = new FeedRangeCompositeContinuation(
+                    this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                         containerRid: this.lazyContainerRid.Result.Result,
                         feedRange: this.feedRangeInternal,
                         ranges: pkRanges.Select(pkRange => pkRange.ToRange()).ToList());
@@ -239,17 +243,43 @@ namespace Microsoft.Azure.Cosmos
 
                 // Override the original PKRangeId based FeedRange
                 this.feedRangeInternal = new FeedRangeEPK(effectiveRanges[0]);
-                this.feedRangeContinuation = new FeedRangeCompositeContinuation(
+                this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                     containerRid: this.lazyContainerRid.Result.Result,
                     feedRange: this.feedRangeInternal,
                     ranges: effectiveRanges,
-                    continuation: this.feedRangeContinuation.GetContinuation());
+                    continuation: this.FeedRangeContinuation.GetContinuation());
             }
         }
+    }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+    internal sealed class ChangeFeedIteratorCore<T> : ChangeFeedIterator<T>
+    {
+        private readonly ChangeFeedIteratorCore feedIterator;
+        private readonly Func<ResponseMessage, FeedResponse<T>> responseCreator;
+
+        internal ChangeFeedIteratorCore(
+            ChangeFeedIteratorCore feedIterator,
+            Func<ResponseMessage, FeedResponse<T>> responseCreator)
         {
-            throw new NotImplementedException();
+            this.responseCreator = responseCreator;
+            this.feedIterator = feedIterator;
+        }
+
+        public override bool HasMoreResults => this.feedIterator.HasMoreResults;
+
+        public override string Continuation => this.feedIterator.Continuation;
+
+        /// <summary>
+        /// Get the next set of results from the cosmos service
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A query response from cosmos service</returns>
+        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
+            return this.responseCreator(response);
         }
     }
 }
