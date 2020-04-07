@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        async Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRId = await this.GetRIDAsync(cancellationToken);
@@ -219,10 +219,10 @@ namespace Microsoft.Azure.Cosmos
                             isMinInclusive: true,
                             isMaxInclusive: false),
                         forceRefresh: true);
-            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(partitionKeyRanges.Count);
+            List<FeedRangeEPK> feedTokens = new List<FeedRangeEPK>(partitionKeyRanges.Count);
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
-                feedTokens.Add(new FeedTokenEPKRange(containerRId, partitionKeyRange.ToRange(), continuationToken: null));
+                feedTokens.Add(new FeedRangeEPK(partitionKeyRange.ToRange()));
             }
 
             return feedTokens;
@@ -233,11 +233,15 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        FeedIterator GetChangeFeedStreamIterator(
+            string continuation = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return new ChangeFeedIteratorCore(
-                this,
-                changeFeedRequestOptions);
+            return ChangeFeedIteratorCore.Create(
+                container: this,
+                feedRangeInternal: null,
+                continuation: continuation,
+                changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
 #if PREVIEW
@@ -246,14 +250,15 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         FeedIterator GetChangeFeedStreamIterator(
-            FeedToken feedToken,
+            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
-            return new ChangeFeedIteratorCore(
-                this,
-                feedTokenInternal,
-                changeFeedRequestOptions);
+            FeedRangeInternal feedRangeInternal = feedRange as FeedRangeInternal;
+            return ChangeFeedIteratorCore.Create(
+                container: this,
+                feedRangeInternal: feedRangeInternal,
+                continuation: null,
+                changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
 #if PREVIEW
@@ -265,10 +270,11 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return new ChangeFeedIteratorCore(
-                this,
-                new FeedTokenPartitionKey(partitionKey),
-                changeFeedRequestOptions);
+            return ChangeFeedIteratorCore.Create(
+                container: this,
+                feedRangeInternal: new FeedRangePartitionKey(partitionKey),
+                continuation: null,
+                changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
 #if PREVIEW
@@ -276,11 +282,15 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        FeedIterator<T> GetChangeFeedIterator<T>(
+            string continuation = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this,
-                changeFeedRequestOptions);
+            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
+                container: this,
+                feedRangeInternal: null,
+                continuation: continuation,
+                changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
@@ -291,14 +301,15 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedToken feedToken,
+            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this,
-                feedTokenInternal,
-                changeFeedRequestOptions);
+            FeedRangeInternal feedRangeInternal = feedRange as FeedRangeInternal;
+            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
+                container: this,
+                feedRangeInternal: feedRangeInternal,
+                continuation: null,
+                changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
@@ -312,10 +323,11 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this,
-                new FeedTokenPartitionKey(partitionKey),
-                changeFeedRequestOptions);
+            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
+                container: this,
+                feedRangeInternal: new FeedRangePartitionKey(partitionKey),
+                continuation: null,
+                changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
@@ -326,23 +338,17 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedToken feedToken,
+            FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRid = await this.GetRIDAsync(cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            FeedRangeInternal feedTokenInternal = feedRange as FeedRangeInternal;
             if (feedTokenInternal == null)
             {
-                throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_UnrecognizedFeedToken);
-            }
-
-            TryCatch validateContainer = feedTokenInternal.ValidateContainer(containerRid);
-            if (!validateContainer.Succeeded)
-            {
-                throw validateContainer.Exception.InnerException;
+                throw new ArgumentException(nameof(feedRange), ClientResources.FeedToken_UnrecognizedFeedToken);
             }
 
             return await feedTokenInternal.GetPartitionKeyRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition, cancellationToken);

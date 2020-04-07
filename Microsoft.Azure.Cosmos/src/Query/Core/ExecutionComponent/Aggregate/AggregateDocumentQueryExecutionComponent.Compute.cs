@@ -166,37 +166,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 return AggregateContinuationToken.ToCosmosElement(aggregateContinuationToken);
             }
 
-            public override bool TryGetFeedToken(
-                string containerResourceId,
-                out FeedToken feedToken)
-            {
-                if (this.IsDone)
-                {
-                    feedToken = null;
-                    return true;
-                }
-
-                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
-                {
-                    feedToken = null;
-                    return false;
-                }
-
-                if (feedToken is FeedTokenEPKRange feedTokenInternal)
-                {
-                    AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
-                        singleGroupAggregatorContinuationToken: this.singleGroupAggregator.GetCosmosElementContinuationToken(),
-                        sourceContinuationToken: this.Source.GetCosmosElementContinuationToken());
-
-                    feedToken = FeedTokenEPKRange.Copy(
-                        feedTokenInternal,
-                        AggregateContinuationToken.ToCosmosElement(aggregateContinuationToken).ToString());
-                    return true;
-                }
-
-                return false;
-            }
-
             private readonly struct AggregateContinuationToken
             {
                 private const string SourceTokenName = "SourceToken";

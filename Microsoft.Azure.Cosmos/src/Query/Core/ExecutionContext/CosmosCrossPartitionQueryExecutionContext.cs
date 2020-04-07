@@ -265,22 +265,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                foreach (ItemProducer itemProducer in this.GetAllItemProducers())
+                foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
                 {
-                    yield return itemProducer;
-                }
-            }
-        }
-
-        public IEnumerable<ItemProducer> GetAllItemProducers()
-        {
-            foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
-            {
-                foreach (ItemProducerTree leaf in itemProducerTree)
-                {
-                    if (leaf.HasMoreResults)
+                    foreach (ItemProducerTree leaf in itemProducerTree)
                     {
-                        yield return leaf.Root;
+                        if (leaf.HasMoreResults)
+                        {
+                            yield return leaf.Root;
+                        }
                     }
                 }
             }
@@ -629,10 +621,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         }
 
         public abstract CosmosElement GetCosmosElementContinuationToken();
-
-        public abstract bool TryGetFeedToken(
-            string containerResourceId,
-            out FeedToken feedToken);
 
         public readonly struct InitInfo<TContinuationToken>
         {

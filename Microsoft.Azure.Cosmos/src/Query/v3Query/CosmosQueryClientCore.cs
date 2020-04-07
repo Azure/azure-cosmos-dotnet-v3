@@ -210,14 +210,14 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedTokenAsync(
+        internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
             PartitionKeyDefinition partitionKeyDefinition,
-            FeedTokenInternal feedTokenInternal)
+            FeedRangeInternal feedRangeInternal)
         {
             IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-            List<Range<string>> ranges = await feedTokenInternal.GetAffectedRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
+            List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
 
             return await this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,

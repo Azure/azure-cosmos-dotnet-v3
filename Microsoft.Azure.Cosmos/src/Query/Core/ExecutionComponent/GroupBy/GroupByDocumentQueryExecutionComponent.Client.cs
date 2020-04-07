@@ -100,14 +100,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             {
                 throw new NotImplementedException();
             }
-
-            public override bool TryGetFeedToken(
-                string containerResourceId,
-                out FeedToken feedToken)
-            {
-                feedToken = null;
-                return false;
-            }
         }
     }
 }

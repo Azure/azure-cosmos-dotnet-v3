@@ -12,57 +12,38 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
-    [JsonConverter(typeof(FeedTokenInternalConverter))]
-    internal sealed class FeedTokenEPKRange : FeedTokenInternal
+    [JsonConverter(typeof(FeedRangeCompositeContinuationConverter))]
+    internal sealed class FeedRangeCompositeContinuation : FeedRangeContinuation
     {
-        internal readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
-        internal readonly Documents.Routing.Range<string> CompleteRange;
+        public readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
+        public CompositeContinuationToken CurrentToken { get; private set; }
         private readonly HashSet<string> doneRanges;
-        private CompositeContinuationToken currentToken;
         private string initialNoResultsRange;
 
-        private FeedTokenEPKRange(
-            string containerRid)
-            : base(containerRid)
+        private FeedRangeCompositeContinuation(
+            string containerRid,
+            FeedRangeInternal feedRange)
+            : base(containerRid, feedRange)
         {
             this.CompositeContinuationTokens = new Queue<CompositeContinuationToken>();
             this.doneRanges = new HashSet<string>();
         }
 
-        private FeedTokenEPKRange(
-            string containerRid,
-            CompositeContinuationToken compositeContinuationTokenByPartitionKeyRangeId)
-        : this(containerRid)
+        public override void Accept(
+            FeedRangeVisitor visitor,
+            Action<RequestMessage, string> fillContinuation)
         {
-            if (compositeContinuationTokenByPartitionKeyRangeId == null)
-            {
-                throw new ArgumentNullException(nameof(compositeContinuationTokenByPartitionKeyRangeId));
-            }
-
-            this.CompleteRange = compositeContinuationTokenByPartitionKeyRangeId.Range;
-            this.CompositeContinuationTokens.Enqueue(compositeContinuationTokenByPartitionKeyRangeId);
-
-            this.currentToken = this.CompositeContinuationTokens.Peek();
+            visitor.Visit(this, fillContinuation);
         }
 
-        public static FeedTokenEPKRange Copy(
-            FeedTokenEPKRange feedTokenEPKRange,
-            string continuationToken)
-        {
-            return new FeedTokenEPKRange(
-                feedTokenEPKRange.ContainerRid,
-                feedTokenEPKRange.CompleteRange,
-                continuationToken);
-        }
-
-        public FeedTokenEPKRange(
+        public FeedRangeCompositeContinuation(
             string containerRid,
+            FeedRangeInternal feedRange,
             IReadOnlyList<Documents.Routing.Range<string>> ranges,
-            string continuationToken)
-            : this(containerRid)
+            string continuation = null)
+            : this(containerRid, feedRange)
         {
             if (ranges == null)
             {
@@ -74,49 +55,26 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(ranges));
             }
 
-            this.CompleteRange = new Documents.Routing.Range<string>(ranges[0].Min, ranges[ranges.Count - 1].Max, true, false);
             foreach (Documents.Routing.Range<string> range in ranges)
             {
-                this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(range.Min, range.Max, continuationToken));
+                this.CompositeContinuationTokens.Enqueue(FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(range.Min, range.Max, continuation));
             }
 
-            this.currentToken = this.CompositeContinuationTokens.Peek();
-        }
-
-        public FeedTokenEPKRange(
-            string containerRid,
-            Documents.Routing.Range<string> completeRange,
-            string continuationToken)
-            : this(containerRid)
-        {
-            if (completeRange == null)
-            {
-                throw new ArgumentNullException(nameof(completeRange));
-            }
-
-            this.CompleteRange = completeRange;
-            this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(completeRange.Min, completeRange.Max, continuationToken));
-
-            this.currentToken = this.CompositeContinuationTokens.Peek();
+            this.CurrentToken = this.CompositeContinuationTokens.Peek();
         }
 
         /// <summary>
         /// Used for deserialization only
         /// </summary>
-        public FeedTokenEPKRange(
+        public FeedRangeCompositeContinuation(
             string containerRid,
-            Documents.Routing.Range<string> completeRange,
+            FeedRangeInternal feedRange,
             IReadOnlyList<CompositeContinuationToken> deserializedTokens)
-            : this(containerRid)
+            : this(containerRid, feedRange)
         {
             if (deserializedTokens == null)
             {
                 throw new ArgumentNullException(nameof(deserializedTokens));
-            }
-
-            if (completeRange == null)
-            {
-                throw new ArgumentNullException(nameof(completeRange));
             }
 
             if (deserializedTokens.Count == 0)
@@ -124,32 +82,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(deserializedTokens));
             }
 
-            this.CompleteRange = completeRange;
-
             foreach (CompositeContinuationToken token in deserializedTokens)
             {
                 this.CompositeContinuationTokens.Enqueue(token);
             }
 
-            this.currentToken = this.CompositeContinuationTokens.Peek();
+            this.CurrentToken = this.CompositeContinuationTokens.Peek();
         }
 
-        public override void EnrichRequest(RequestMessage request)
-        {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            // in case EPK has already been set
-            if (!request.Properties.ContainsKey(HandlerConstants.StartEpkString))
-            {
-                request.Properties[HandlerConstants.StartEpkString] = this.currentToken.Range.Min;
-                request.Properties[HandlerConstants.EndEpkString] = this.currentToken.Range.Max;
-            }
-        }
-
-        public override string GetContinuation() => this.currentToken.Token;
+        public override string GetContinuation() => this.CurrentToken.Token;
 
         public override string ToString()
         {
@@ -163,29 +104,11 @@ namespace Microsoft.Azure.Cosmos
                 // Queries and normal ReadFeed can signal termination by CT null, not NotModified
                 // Change Feed never lands here, as it always provides a CT
                 // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
-                this.doneRanges.Add(this.currentToken.Range.Min);
+                this.doneRanges.Add(this.CurrentToken.Range.Min);
             }
 
-            this.currentToken.Token = continuationToken;
+            this.CurrentToken.Token = continuationToken;
             this.MoveToNextToken();
-        }
-
-        public override Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
-            IRoutingMapProvider routingMapProvider,
-            string containerRid,
-            Documents.PartitionKeyDefinition partitionKeyDefinition)
-        {
-            return Task.FromResult(this.CompositeContinuationTokens.Select(token => token.Range).ToList());
-        }
-
-        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            IRoutingMapProvider routingMapProvider,
-            string containerRid,
-            Documents.PartitionKeyDefinition partitionKeyDefinition,
-            CancellationToken cancellationToken)
-        {
-            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(containerRid, this.CompleteRange, forceRefresh: false);
-            return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
         }
 
         public override TryCatch ValidateContainer(string containerRid)
@@ -200,14 +123,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The concept of Done is only for Query and ReadFeed. Change Feed is never done, it is an infinite stream.
+        /// The concept of Done is only for ReadFeed. Change Feed is never done, it is an infinite stream.
         /// </summary>
         public override bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
 
         public override async Task<bool> ShouldRetryAsync(
             ContainerCore containerCore,
             ResponseMessage responseMessage,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
             if (responseMessage.IsSuccessStatusCode)
             {
@@ -221,11 +144,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.initialNoResultsRange == null)
                 {
-                    this.initialNoResultsRange = this.currentToken.Range.Min;
+                    this.initialNoResultsRange = this.CurrentToken.Range.Min;
                     return true;
                 }
 
-                return !this.initialNoResultsRange.Equals(this.currentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
+                return !this.initialNoResultsRange.Equals(this.CurrentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
             }
 
             // Split handling
@@ -234,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionSplit)
             {
                 Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.currentToken.Range.Min, this.currentToken.Range.Max, forceRefresh: true);
+                IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.CurrentToken.Range.Min, this.CurrentToken.Range.Max, forceRefresh: true);
                 if (resolvedRanges.Count > 0)
                 {
                     this.HandleSplit(resolvedRanges);
@@ -246,21 +169,11 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override IReadOnlyList<FeedToken> Scale()
-        {
-            if (this.CompositeContinuationTokens.Count <= 1)
-            {
-                return new List<FeedToken>();
-            }
-
-            return this.CompositeContinuationTokens.Select(token => new FeedTokenEPKRange(this.ContainerRid, token)).ToList();
-        }
-
-        public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)
+        public static bool TryParse(string toStringValue, out FeedRangeContinuation feedToken)
         {
             try
             {
-                feedToken = JsonConvert.DeserializeObject<FeedTokenEPKRange>(toStringValue);
+                feedToken = JsonConvert.DeserializeObject<FeedRangeCompositeContinuation>(toStringValue);
                 return true;
             }
             catch
@@ -286,11 +199,11 @@ namespace Microsoft.Azure.Cosmos
         {
             CompositeContinuationToken recentToken = this.CompositeContinuationTokens.Dequeue();
             this.CompositeContinuationTokens.Enqueue(recentToken);
-            this.currentToken = this.CompositeContinuationTokens.Peek();
+            this.CurrentToken = this.CompositeContinuationTokens.Peek();
 
             // In a Query / ReadFeed not Change Feed, skip ranges that are done to avoid requests
             while (!this.IsDone &&
-                this.doneRanges.Contains(this.currentToken.Range.Min))
+                this.doneRanges.Contains(this.CurrentToken.Range.Min))
             {
                 this.MoveToNextToken();
             }
@@ -302,11 +215,11 @@ namespace Microsoft.Azure.Cosmos
 
             // Update current
             Documents.PartitionKeyRange firstRange = keyRanges[0];
-            this.currentToken.Range = new Documents.Routing.Range<string>(firstRange.MinInclusive, firstRange.MaxExclusive, true, false);
+            this.CurrentToken.Range = new Documents.Routing.Range<string>(firstRange.MinInclusive, firstRange.MaxExclusive, true, false);
             // Add children
             foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
             {
-                this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, this.currentToken.Token));
+                this.CompositeContinuationTokens.Enqueue(FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, this.CurrentToken.Token));
             }
         }
 

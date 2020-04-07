@@ -4,13 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    /// <summary>
-    /// Used to future-proof token versions
-    /// </summary>
-    internal enum FeedTokenType
+    internal enum FeedRangeContinuationType
     {
-        EPKRange = 0,
-        PartitionKeyValue = 1,
-        PartitionKeyRangeId = 2 // For backward compatibility
+        Simple = 0,
+        Composite = 1
     }
 }

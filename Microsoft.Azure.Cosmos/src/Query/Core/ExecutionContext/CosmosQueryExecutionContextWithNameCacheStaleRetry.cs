@@ -65,12 +65,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             return this.currentCosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }
-
-        public override bool TryGetFeedToken(
-            string containerResourceId,
-            out FeedToken feedToken)
-        {
-            return this.currentCosmosQueryExecutionContext.TryGetFeedToken(containerResourceId, out feedToken);
-        }
     }
 }

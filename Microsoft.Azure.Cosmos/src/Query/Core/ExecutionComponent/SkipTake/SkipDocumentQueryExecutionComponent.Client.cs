@@ -116,14 +116,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 throw new NotImplementedException();
             }
 
-            public override bool TryGetFeedToken(
-                string containerResourceId,
-                out FeedToken feedToken)
-            {
-                feedToken = null;
-                return false;
-            }
-
             /// <summary>
             /// A OffsetContinuationToken is a composition of a source continuation token and how many items to skip from that source.
             /// </summary>

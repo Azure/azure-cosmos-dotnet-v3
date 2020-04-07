@@ -250,40 +250,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     return JsonConvert.SerializeObject(this);
                 }
             }
-
-            public override bool TryGetFeedToken(
-                string containerResourceId,
-                out FeedToken feedToken)
-            {
-                if (this.distinctQueryType != DistinctQueryType.Ordered)
-                {
-                    feedToken = null;
-                    return false;
-                }
-
-                if (this.IsDone)
-                {
-                    feedToken = null;
-                    return true;
-                }
-
-                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
-                {
-                    feedToken = null;
-                    return false;
-                }
-
-                if (feedToken is FeedTokenEPKRange feedTokenInternal)
-                {
-                    feedToken = FeedTokenEPKRange.Copy(
-                        feedTokenInternal,
-                        new DistinctContinuationToken(
-                            feedTokenInternal.GetContinuation(),
-                            this.distinctMap.GetContinuationToken()).ToString());
-                }
-
-                return true;
-            }
         }
     }
 }

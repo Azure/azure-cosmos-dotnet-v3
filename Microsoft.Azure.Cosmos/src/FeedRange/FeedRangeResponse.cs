@@ -1,0 +1,44 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos
+{
+    using System.IO;
+
+    internal sealed class FeedRangeResponse : ResponseMessage
+    {
+        private readonly ResponseMessage responseMessage;
+        private readonly FeedRangeContinuation feedRangeContinuation;
+
+        /// <summary>
+        /// Used for unit testing only
+        /// </summary>
+        internal FeedRangeResponse()
+        {
+        }
+
+        internal FeedRangeResponse(
+            ResponseMessage responseMessage,
+            FeedRangeContinuation feedRangeContinuation)
+            : base(
+                statusCode: responseMessage.StatusCode,
+                requestMessage: responseMessage.RequestMessage,
+                cosmosException: responseMessage.CosmosException,
+                headers: responseMessage.Headers,
+                diagnostics: responseMessage.DiagnosticsContext)
+        {
+            this.responseMessage = responseMessage;
+            this.feedRangeContinuation = feedRangeContinuation;
+        }
+
+        public override Stream Content
+        {
+            get
+            {
+                return this.responseMessage.Content;
+            }
+        }
+
+        public override string ContinuationToken => this.feedRangeContinuation.ToString();
+    }
+}

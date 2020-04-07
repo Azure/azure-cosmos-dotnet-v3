@@ -42,12 +42,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             throw new NotImplementedException();
         }
-
-        public override bool TryGetFeedToken(
-            string containerResourceId,
-            out FeedToken feedToken)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

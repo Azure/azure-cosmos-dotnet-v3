@@ -103,34 +103,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 return OffsetContinuationToken.ToCosmosElement(offsetContinuationToken);
             }
 
-            public override bool TryGetFeedToken(
-                string containerResourceId,
-                out FeedToken feedToken)
-            {
-                if (this.IsDone)
-                {
-                    feedToken = null;
-                    return true;
-                }
-
-                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
-                {
-                    feedToken = null;
-                    return false;
-                }
-
-                if (feedToken is FeedTokenEPKRange feedTokenInternal)
-                {
-                    feedToken = FeedTokenEPKRange.Copy(
-                            feedTokenInternal,
-                            OffsetContinuationToken.ToCosmosElement(new OffsetContinuationToken(
-                                this.skipCount,
-                                this.Source.GetCosmosElementContinuationToken())).ToString());
-                }
-
-                return true;
-            }
-
             /// <summary>
             /// A OffsetContinuationToken is a composition of a source continuation token and how many items to skip from that source.
             /// </summary>

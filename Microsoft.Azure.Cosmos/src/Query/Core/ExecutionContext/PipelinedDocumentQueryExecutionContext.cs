@@ -120,13 +120,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        public override bool TryGetFeedToken(
-            string containerResourceId,
-            out FeedToken feedToken)
-        {
-            return this.component.TryGetFeedToken(containerResourceId, out feedToken);
-        }
-
         public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,

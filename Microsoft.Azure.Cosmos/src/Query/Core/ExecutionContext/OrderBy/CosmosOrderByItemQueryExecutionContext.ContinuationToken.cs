@@ -66,31 +66,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
         }
 
-        /// <summary>
-        /// Gets the FeedToken for an order by query
-        /// </summary>
-        public override bool TryGetFeedToken(
-            string containerResourceId,
-            out FeedToken feedToken)
-        {
-            // FeedToken will represent the range of the active and pending Producers
-            IEnumerable<ItemProducer> allProducers = this.GetAllItemProducers();
-            if (!allProducers.Any())
-            {
-                feedToken = null;
-                return true;
-            }
-
-            List<Documents.Routing.Range<string>> rangesList = allProducers.Select(producer => producer.PartitionKeyRange.ToRange()).ToList();
-            rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
-            // Single FeedToken with the completeRange and continuation
-            feedToken = new FeedTokenEPKRange(
-                containerResourceId,
-                rangesList,
-                this.ContinuationToken);
-            return true;
-        }
-
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();

@@ -189,35 +189,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     return true;
                 }
             }
-
-            public override bool TryGetFeedToken(
-                string containerResourceId,
-                out FeedToken feedToken)
-            {
-                if (this.IsDone)
-                {
-                    feedToken = null;
-                    return true;
-                }
-
-                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
-                {
-                    feedToken = null;
-                    return false;
-                }
-
-                if (feedToken is FeedTokenEPKRange feedTokenInternal)
-                {
-                    DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
-                    sourceToken: this.Source.GetCosmosElementContinuationToken(),
-                    distinctMapToken: this.distinctMap.GetCosmosElementContinuationToken());
-                    feedToken = FeedTokenEPKRange.Copy(
-                        feedTokenInternal,
-                        DistinctContinuationToken.ToCosmosElement(distinctContinuationToken).ToString());
-                }
-
-                return true;
-            }
         }
     }
 }
