@@ -236,6 +236,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             operation = new ItemBatchOperation(
                 operationType: operationType,
                 operationIndex: operationIndex,
+                partitionKey: Cosmos.PartitionKey.Null, // ParsedPartitionKey is used for validation
                 id: id,
                 requestOptions: requestOptions)
             {

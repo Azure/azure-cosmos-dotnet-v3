@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#1331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1331) Enable client encryption / decryption for transactional batch requests
+
 ### Fixed
 
 ## <a name="3.8.0"/> [3.8.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0) - 2020-04-07
