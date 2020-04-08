@@ -322,16 +322,7 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Cannot parse &apos;{0}&apos; as a valid FeedToken..
-        /// </summary>
-        internal static string FeedToken_CannotParse {
-            get {
-                return ResourceManager.GetString("FeedToken_CannotParse", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot define EffectivePartitionKeyRouting and FeedToken simultaneously..
+        ///   Looks up a localized string similar to Cannot define EffectivePartitionKeyRouting and FeedRange simultaneously..
         /// </summary>
         internal static string FeedToken_EffectivePartitionKeyRouting {
             get {
@@ -340,36 +331,16 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected FeedTokenInternal instance..
+        ///   Looks up a localized string similar to The continuation was generated for container {0} but current container is {1}..
         /// </summary>
-        internal static string FeedToken_InvalidImplementation {
+        internal static string FeedToken_InvalidFeedTokenForContainer {
             get {
-                return ResourceManager.GetString("FeedToken_InvalidImplementation", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The FeedToken was generated for container {0} but current container is {1}..
-        /// </summary>
-        internal static string FeedToken_InvalidFeedTokenForContainer
-        {
-            get
-            {
                 return ResourceManager.GetString("FeedToken_InvalidFeedTokenForContainer", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Provide a value greater than zero..
-        /// </summary>
-        internal static string FeedToken_MaxTokensOutOfRange {
-            get {
-                return ResourceManager.GetString("FeedToken_MaxTokensOutOfRange", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The provided string does not represent any known FeedToken format..
+        ///   Looks up a localized string similar to The provided string &apos;{0}&apos; does not represent any known format..
         /// </summary>
         internal static string FeedToken_UnknownFormat {
             get {

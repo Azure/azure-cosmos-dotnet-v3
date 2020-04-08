@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    throw new ArgumentException(ClientResources.FeedToken_UnknownFormat);
+                    throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, continuation));
                 }
             }
 

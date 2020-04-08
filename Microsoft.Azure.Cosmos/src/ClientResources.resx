@@ -307,24 +307,15 @@
     <value>Encryption options may not be specified on this request.</value>
   </data>
   <data name="FeedToken_UnknownFormat" xml:space="preserve">
-    <value>The provided string does not represent any known FeedToken format.</value>
-  </data>
-  <data name="FeedToken_MaxTokensOutOfRange" xml:space="preserve">
-    <value>Provide a value greater than zero.</value>
+    <value>The provided string '{0}' does not represent any known format.</value>
   </data>
   <data name="FeedToken_UnrecognizedFeedToken" xml:space="preserve">
     <value>Unrecognized Feed Token type.</value>
   </data>
-  <data name="FeedToken_CannotParse" xml:space="preserve">
-    <value>Cannot parse '{0}' as a valid FeedToken.</value>
-  </data>
   <data name="FeedToken_EffectivePartitionKeyRouting" xml:space="preserve">
-    <value>Cannot define EffectivePartitionKeyRouting and FeedToken simultaneously.</value>
-  </data>
-  <data name="FeedToken_InvalidImplementation" xml:space="preserve">
-    <value>Expected FeedTokenInternal instance.</value>
+    <value>Cannot define EffectivePartitionKeyRouting and FeedRange simultaneously.</value>
   </data>
   <data name="FeedToken_InvalidFeedTokenForContainer" xml:space="preserve">
-    <value>The FeedToken was generated for container {0} but current container is {1}.</value>
+    <value>The continuation was generated for container {0} but current container is {1}.</value>
   </data>
 </root>

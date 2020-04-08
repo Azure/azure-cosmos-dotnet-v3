@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (reader.TokenType != JsonToken.StartObject)
             {
-                throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
+                throw new JsonReaderException();
             }
 
             JObject jObject = JObject.Load(reader);
@@ -44,17 +44,17 @@ namespace Microsoft.Azure.Cosmos
                 || !Enum.TryParse(typeJtoken.Value<int>().ToString(), ignoreCase: true, out FeedRangeContinuationType tokenType)
                 || !FeedRangeContinuationType.Simple.Equals(tokenType))
             {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
+                throw new JsonReaderException();
             }
 
             if (!jObject.TryGetValue(FeedRangeSimpleContinuationConverter.ContinuationPropertyName, out JToken continuationJToken))
             {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
+                throw new JsonReaderException();
             }
 
             if (!FeedRangeInternal.TryParse(jObject, serializer, out FeedRangeInternal feedRangeInternal))
             {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
+                throw new JsonReaderException();
             }
 
             string containerRid = null;

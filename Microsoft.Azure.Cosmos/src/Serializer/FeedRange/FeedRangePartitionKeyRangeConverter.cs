@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (reader.TokenType != JsonToken.StartObject)
             {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
+                throw new JsonReaderException();
             }
 
             JObject jObject = JObject.Load(reader);
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!jObject.TryGetValue(FeedRangePartitionKeyRangeConverter.PartitionKeyRangeIdPropertyName, out JToken pkRangeJToken))
             {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
+                throw new JsonReaderException();
             }
 
             return new FeedRangePartitionKeyRange(pkRangeJToken.Value<string>());
