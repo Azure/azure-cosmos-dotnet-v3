@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -51,39 +50,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             request2.OperationType = OperationType.ReadFeed;
             request2.ResourceType = ResourceType.Database;
             Assert.IsFalse(request2.IsPartitionKeyRangeHandlerRequired);
-        }
-
-        [TestMethod]
-        public void IsFeedOperation_ForFeedTokenEPKRange()
-        {
-            RequestMessage request = new RequestMessage();
-            request.OperationType = OperationType.ReadFeed;
-            request.ResourceType = ResourceType.Document;
-            FeedTokenInternal feedTokenEPKRange = new FeedTokenEPKRange(Guid.NewGuid().ToString(), new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
-            feedTokenEPKRange.EnrichRequest(request);
-            Assert.IsTrue(request.IsPartitionKeyRangeHandlerRequired);
-        }
-
-        [TestMethod]
-        public void IsFeedOperation_ForFeedTokenPartitionKeyRange()
-        {
-            RequestMessage request = new RequestMessage();
-            request.OperationType = OperationType.ReadFeed;
-            request.ResourceType = ResourceType.Document;
-            FeedTokenInternal feedTokenEPKRange = new FeedTokenPartitionKeyRange("0");
-            feedTokenEPKRange.EnrichRequest(request);
-            Assert.IsFalse(request.IsPartitionKeyRangeHandlerRequired);
-        }
-
-        [TestMethod]
-        public void IsFeedOperation_ForFeedTokenPartitionKey()
-        {
-            RequestMessage request = new RequestMessage();
-            request.OperationType = OperationType.ReadFeed;
-            request.ResourceType = ResourceType.Document;
-            FeedTokenInternal feedTokenEPKRange = new FeedTokenPartitionKey(new Cosmos.PartitionKey("0"));
-            feedTokenEPKRange.EnrichRequest(request);
-            Assert.IsFalse(request.IsPartitionKeyRangeHandlerRequired);
         }
     }
 }

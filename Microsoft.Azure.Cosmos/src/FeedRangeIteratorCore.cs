@@ -66,7 +66,10 @@ namespace Microsoft.Azure.Cosmos
             return new FeedRangeIteratorCore(containerCore, feedRangeInternal, options);
         }
 
-        private FeedRangeIteratorCore(
+        /// <summary>
+        /// For unit tests
+        /// </summary>
+        internal FeedRangeIteratorCore(
             ContainerCore containerCore,
             FeedRangeContinuation feedRangeContinuation,
             QueryRequestOptions options)

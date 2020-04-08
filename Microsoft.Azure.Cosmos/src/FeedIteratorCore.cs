@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
-    /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
+    /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content for non-partitioned results
     /// </summary>
     internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
