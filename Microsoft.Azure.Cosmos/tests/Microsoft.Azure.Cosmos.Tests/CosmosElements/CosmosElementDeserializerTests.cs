@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -16,26 +17,48 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         [TestMethod]
         public void ArrayTest()
         {
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-            object[] arrayValue = new object[] { (Number64)1, (Number64)2, (Number64)3 };
-            jsonWriter.WriteArrayStart();
-            jsonWriter.WriteNumberValue(1);
-            jsonWriter.WriteNumberValue(2);
-            jsonWriter.WriteNumberValue(3);
-            jsonWriter.WriteArrayEnd();
-            ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
-
             {
-                // positive
-                TryCatch<object[]> tryDeserialize = CosmosElementDeserializer.TryDeserialize<object[]>(buffer);
-                Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.IsTrue(tryDeserialize.Result.SequenceEqual(arrayValue));
+                // Schemaless array
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                object[] arrayValue = new object[] { (Number64)1, (Number64)2, (Number64)3 };
+                jsonWriter.WriteArrayStart();
+                jsonWriter.WriteNumberValue(1);
+                jsonWriter.WriteNumberValue(2);
+                jsonWriter.WriteNumberValue(3);
+                jsonWriter.WriteArrayEnd();
+                ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
+
+                {
+                    // positive
+                    TryCatch<IReadOnlyList<object>> tryDeserialize = CosmosElementDeserializer.TryDeserialize<IReadOnlyList<object>>(buffer);
+                    Assert.IsTrue(tryDeserialize.Succeeded);
+                    Assert.IsTrue(tryDeserialize.Result.SequenceEqual(arrayValue));
+                }
+
+                {
+                    // negative
+                    TryCatch<int> tryDeserialize = CosmosElementDeserializer.TryDeserialize<int>(buffer);
+                    Assert.IsFalse(tryDeserialize.Succeeded);
+                }
             }
 
             {
-                // negative
-                TryCatch<int> tryDeserialize = CosmosElementDeserializer.TryDeserialize<int>(buffer);
-                Assert.IsFalse(tryDeserialize.Succeeded);
+                // Array with schema
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                Person[] arrayValue = new Person[] { new Person("John", 24) };
+                jsonWriter.WriteArrayStart();
+                jsonWriter.WriteObjectStart();
+                jsonWriter.WriteFieldName("name");
+                jsonWriter.WriteStringValue("John");
+                jsonWriter.WriteFieldName("age");
+                jsonWriter.WriteNumberValue(24);
+                jsonWriter.WriteObjectEnd();
+                jsonWriter.WriteArrayEnd();
+                ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
+
+                TryCatch<IReadOnlyList<Person>> tryDeserialize = CosmosElementDeserializer.TryDeserialize<IReadOnlyList<Person>>(buffer);
+                Assert.IsTrue(tryDeserialize.Succeeded);
+                Assert.IsTrue(tryDeserialize.Result.SequenceEqual(arrayValue));
             }
         }
 
@@ -266,18 +289,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
 
-        private sealed class Person
-        {
-            public Person(string name, int age)
-            {
-                this.Name = name;
-                this.Age = age;
-            }
-
-            public string Name { get; }
-            public int Age { get; }
-        }
-
         [TestMethod]
         public void ObjectTest()
         {
@@ -326,6 +337,38 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 // Negative
                 TryCatch<int> tryDeserialize = CosmosElementDeserializer.TryDeserialize<int>(buffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
+            }
+        }
+
+        private sealed class Person
+        {
+            public Person(string name, int age)
+            {
+                this.Name = name;
+                this.Age = age;
+            }
+
+            public string Name { get; }
+            public int Age { get; }
+
+            public override bool Equals(object obj)
+            {
+                if (!(obj is Person person))
+                {
+                    return false;
+                }
+
+                return this.Equals(person);
+            }
+
+            public bool Equals(Person other)
+            {
+                return (this.Name == other.Name) && (this.Age == other.Age);
+            }
+
+            public override int GetHashCode()
+            {
+                return 0;
             }
         }
     }

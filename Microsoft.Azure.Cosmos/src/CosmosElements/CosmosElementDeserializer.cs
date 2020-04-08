@@ -72,57 +72,40 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public TryCatch<object> Visit(CosmosArray cosmosArray, Type type)
             {
-                bool acceptableType = type
-                    .GetInterfaces()
-                    .Any(i => i.IsGenericType && ((i.GetGenericTypeDefinition() == typeof(IList<>)) || (i.GetGenericTypeDefinition() == typeof(IReadOnlyList<>))));
-                if (!acceptableType)
+                bool isReadOnlyList = type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>));
+                if (!isReadOnlyList)
                 {
                     return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedArray);
                 }
 
-                IList<object> list;
-                if (type == typeof(IReadOnlyList<object>))
-                {
-                    // We need to have a mutable list of building.
-                    // We can later convert this to readonly to match the user's request.
-                    list = new List<object>();
-                }
-                else
-                {
-                    if (type == typeof(object[]))
-                    {
-                        list = new object[cosmosArray.Count];
-                    }
-                    else
-                    {
-                        list = (IList<object>)Activator.CreateInstance(type);
-                    }
-                }
+                Type genericArgumentType = type.GenericTypeArguments.First();
 
-                int index = 0;
+                Type listType = typeof(List<>).MakeGenericType(genericArgumentType);
+                IList list = (IList)Activator.CreateInstance(listType);
+
                 foreach (CosmosElement arrayItem in cosmosArray)
                 {
-                    Type dotNetType = arrayItem.Type switch
-                    {
-                        CosmosElementType.Array => typeof(IReadOnlyList<object>),
-                        CosmosElementType.Boolean => typeof(bool),
-                        CosmosElementType.Null => typeof(object),
-                        CosmosElementType.Number => typeof(Number64),
-                        CosmosElementType.Object => typeof(object),
-                        CosmosElementType.String => typeof(string),
-                        CosmosElementType.Guid => typeof(Guid),
-                        CosmosElementType.Binary => typeof(ReadOnlyMemory<byte>),
-                        _ => throw new ArgumentOutOfRangeException($"Unknown cosmos element type."),
-                    };
-
                     TryCatch<object> tryGetMaterializedArrayItem;
-                    if (arrayItem is CosmosObject)
+                    if (genericArgumentType == typeof(object))
                     {
-                        tryGetMaterializedArrayItem = TryCatch<object>.FromResult(arrayItem);
+                        Type dotNetType = arrayItem.Type switch
+                        {
+                            CosmosElementType.Array => typeof(IReadOnlyList<object>),
+                            CosmosElementType.Boolean => typeof(bool),
+                            CosmosElementType.Null => typeof(object),
+                            CosmosElementType.Number => typeof(Number64),
+                            CosmosElementType.Object => typeof(object),
+                            CosmosElementType.String => typeof(string),
+                            CosmosElementType.Guid => typeof(Guid),
+                            CosmosElementType.Binary => typeof(ReadOnlyMemory<byte>),
+                            _ => throw new ArgumentOutOfRangeException($"Unknown cosmos element type."),
+                        };
+
+                        tryGetMaterializedArrayItem = arrayItem.Accept(this, dotNetType);
                     }
                     else
                     {
-                        tryGetMaterializedArrayItem = arrayItem.Accept(this, dotNetType);
+                        tryGetMaterializedArrayItem = arrayItem.Accept(this, genericArgumentType);
                     }
 
                     if (tryGetMaterializedArrayItem.Faulted)
@@ -130,20 +113,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                         return tryGetMaterializedArrayItem;
                     }
 
-                    list[index++] = tryGetMaterializedArrayItem.Result;
+                    list.Add(tryGetMaterializedArrayItem.Result);
                 }
 
-                TryCatch<object> tryCatch;
-                if (type == typeof(IReadOnlyList<object>))
-                {
-                    tryCatch = TryCatch<object>.FromResult(new ReadOnlyListWrapper<object>(list));
-                }
-                else
-                {
-                    tryCatch = TryCatch<object>.FromResult(list);
-                }
-
-                return tryCatch;
+                return TryCatch<object>.FromResult(list);
             }
 
             public TryCatch<object> Visit(CosmosBinary cosmosBinary, Type type)
