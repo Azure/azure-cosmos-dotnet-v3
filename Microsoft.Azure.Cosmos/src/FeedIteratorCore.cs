@@ -114,9 +114,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)
         {
-            // this logic might not be sufficient composite continuation token https://msdata.visualstudio.com/CosmosDB/SDK/_workitems/edit/269099
-            // in the case where this is a result set iterator for a change feed, not modified indicates that
-            // the enumeration is done for now.
             return continuationToken != null && statusCode != HttpStatusCode.NotModified;
         }
     }
