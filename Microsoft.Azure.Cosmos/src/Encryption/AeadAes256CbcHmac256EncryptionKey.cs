@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class AeadAes256CbcHmac256EncryptionKey : SymmetricKey
     {
+        private bool isDisposed = false;
+
         /// <summary>
         /// Key size in bits
         /// </summary>
@@ -119,6 +121,22 @@ namespace Microsoft.Azure.Cosmos
         internal byte[] IVKey
         {
             get { return this.ivKey.RootKey; }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    this.encryptionKey.Dispose();
+                    this.macKey.Dispose();
+                    this.ivKey.Dispose();
+                }
+
+                base.Dispose(disposing);
+                this.isDisposed = true;
+            }
         }
     }
 }

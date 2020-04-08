@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract DekCache DekCache { get; }
 
+        internal abstract CleanupExpiredRawDekFromMemory CleanupExpiredRawDekFromMemory { get; }
+
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerCore container);
 

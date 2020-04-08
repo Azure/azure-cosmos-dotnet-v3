@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// Options around encryption / decryption of data.
-    /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
+    /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
 #if PREVIEW
     public

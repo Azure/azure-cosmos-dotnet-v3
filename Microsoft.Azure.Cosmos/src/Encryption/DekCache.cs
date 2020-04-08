@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             Func<CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
-        { 
+        {
             CachedDekProperties cachedDekProperties = await this.DekPropertiesByNameLinkUriCache.GetAsync(
                     dekNameLinkUri,
                     null,
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                    () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken);
 
-            if (inMemoryRawDek.RawDekExpiry <= DateTime.UtcNow)
+            if (inMemoryRawDek.ExpiryTime <= DateTime.UtcNow)
             {
                 inMemoryRawDek = await this.RawDekByRidSelfLinkCache.GetAsync(
                    dekProperties.SelfLink,

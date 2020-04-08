@@ -5,20 +5,21 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
 
     internal class InMemoryRawDek
     {
-        public byte[] RawDek { get; }
-
         public EncryptionAlgorithm AlgorithmUsingRawDek { get; }
 
-        public DateTime RawDekExpiry { get; }
+        public DateTime ExpiryTime { get; }
 
-        public InMemoryRawDek(byte[] rawDek, EncryptionAlgorithm algorithmUsingRawDek, TimeSpan clientCacheTimeToLive)
+        public InMemoryRawDek(EncryptionAlgorithm algorithmUsingRawDek, TimeSpan clientCacheTimeToLive)
         {
-            this.RawDek = rawDek;
+            Debug.Assert(algorithmUsingRawDek != null);
             this.AlgorithmUsingRawDek = algorithmUsingRawDek;
-            this.RawDekExpiry = DateTime.UtcNow + clientCacheTimeToLive;
+            DateTime current = DateTime.UtcNow;
+            this.ExpiryTime = current + clientCacheTimeToLive;
         }
     }
 }

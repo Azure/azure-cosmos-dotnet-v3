@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Bson;
 
     internal class ClientContextCore : CosmosClientContext
     {
@@ -29,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly string userAgent;
         private readonly EncryptionProcessor encryptionProcessor;
         private readonly DekCache dekCache;
+        private readonly CleanupExpiredRawDekFromMemory cleanupExpiredRawDekFromMemory;
         private bool isDisposed = false;
 
         private ClientContextCore(
@@ -41,7 +41,8 @@ namespace Microsoft.Azure.Cosmos
             string userAgent,
             EncryptionProcessor encryptionProcessor,
             DekCache dekCache,
-            BatchAsyncContainerExecutorCache batchExecutorCache)
+            BatchAsyncContainerExecutorCache batchExecutorCache,
+            CleanupExpiredRawDekFromMemory cleanupExpiredRawDekFromMemory)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.Cosmos
             this.encryptionProcessor = encryptionProcessor;
             this.dekCache = dekCache;
             this.batchExecutorCache = batchExecutorCache;
+            this.cleanupExpiredRawDekFromMemory = cleanupExpiredRawDekFromMemory;
         }
 
         internal static CosmosClientContext Create(
@@ -120,6 +122,8 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosResponseFactory responseFactory = new CosmosResponseFactory(serializerCore);
 
+            CleanupExpiredRawDekFromMemory cleanupExpiredRawDekFromMemory = new CleanupExpiredRawDekFromMemory(startProcess: clientOptions.EncryptionKeyWrapProvider != null);
+
             return new ClientContextCore(
                 client: cosmosClient,
                 clientOptions: clientOptions,
@@ -130,7 +134,8 @@ namespace Microsoft.Azure.Cosmos
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
                 encryptionProcessor: new EncryptionProcessor(),
                 dekCache: new DekCache(),
-                batchExecutorCache: new BatchAsyncContainerExecutorCache());
+                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
+                cleanupExpiredRawDekFromMemory: cleanupExpiredRawDekFromMemory);
         }
 
         /// <summary>
@@ -153,6 +158,8 @@ namespace Microsoft.Azure.Cosmos
         internal override EncryptionProcessor EncryptionProcessor => this.ThrowIfDisposed(this.encryptionProcessor);
 
         internal override DekCache DekCache => this.ThrowIfDisposed(this.dekCache);
+
+        internal override CleanupExpiredRawDekFromMemory CleanupExpiredRawDekFromMemory => this.ThrowIfDisposed(this.cleanupExpiredRawDekFromMemory);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -394,6 +401,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
+                    this.cleanupExpiredRawDekFromMemory.Dispose();
                 }
 
                 this.isDisposed = true;

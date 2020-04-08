@@ -4,11 +4,17 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+
     /// <summary>
     /// Abstract base class for all encryption algorithms.
     /// </summary>
-    internal abstract class EncryptionAlgorithm
+    internal abstract class EncryptionAlgorithm : IDisposable
     {
+        private bool isDisposed = false;
+
+        internal abstract SymmetricKey Key { get; }
+
         internal abstract string AlgorithmName { get; }
 
         /// <summary>
@@ -24,5 +30,24 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cipherText">Ciphertext value to be decrypted.</param>
         /// <returns>Plain text.</returns>
         internal abstract byte[] DecryptData(byte[] cipherText);
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    this.Key.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
+        }
     }
 }

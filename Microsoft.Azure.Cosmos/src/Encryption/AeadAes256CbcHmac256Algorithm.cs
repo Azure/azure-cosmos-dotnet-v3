@@ -19,12 +19,16 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class AeadAes256CbcHmac256Algorithm : EncryptionAlgorithm
     {
+        private bool isDisposed = false;
+
         internal const string AlgorithmNameConstant = @"AEAD_AES_256_CBC_HMAC_SHA256";
 
         /// <summary>
         /// Algorithm Name
         /// </summary>
         internal override string AlgorithmName { get; } = AlgorithmNameConstant;
+
+        internal override SymmetricKey Key => this.dataEncryptionKey;
 
         /// <summary>
         /// Key size in bytes
@@ -420,6 +424,25 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    while (this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesCryptoServiceProvider))
+                    {
+                        // This disposes the Key and IV values held by the AesCryptoServiceProvider instance
+                        aesCryptoServiceProvider.Dispose();
+                    }
+
+                    this.dataEncryptionKey.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
         }
     }
 }

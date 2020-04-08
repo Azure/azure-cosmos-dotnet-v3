@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
 
         private TimeSpan cacheTTL = TimeSpan.FromDays(1);
-        private byte[] dek = new byte[] { 1, 2, 3, 4 };
+        private byte[] dek = new byte[32];
         private EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
         private EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
         private string metadataUpdateSuffix = "updated";
@@ -254,13 +254,46 @@ namespace Microsoft.Azure.Cosmos
             Container container = this.GetContainerWithMockSetup();
             DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
+            await this.CreateAndReadItemAsync(container, database);
+        }
+
+        [TestMethod]
+        public async Task EncryptionUTCleanupRawDekOnExpiry()
+        {
+            Container container = this.GetContainerWithMockSetup(clientCacheTimeToLive:TimeSpan.FromSeconds(45));
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
+            
+            MyItem item = await this.CreateAndReadItemAsync(container, database);
+
+            Thread.Sleep(TimeSpan.FromSeconds(30));
+            ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new PartitionKey(item.PK));
+            Assert.AreEqual(item, readResponse.Resource);
+            this.VerifyUnwrapCallCount(1); // Raw DEK exists in cache, hence no new Unwrap call is needed
+
+            Thread.Sleep(TimeSpan.FromSeconds(40)); // allow cleanup process to run and delete raw DEK from memory
+
+            readResponse = await container.ReadItemAsync<MyItem>(item.Id, new PartitionKey(item.PK));
+            Assert.AreEqual(item, readResponse.Resource);
+            this.VerifyUnwrapCallCount(2); // Raw DEK should have been cleaned up, hence another Unwrap call is needed now for read request
+        }
+
+        private async Task<MyItem> CreateAndReadItemAsync(Container container, DatabaseCore database)
+        {
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
             MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId, MyItem.PathsToEncrypt);
 
+            // added raw DEK to cache as part of Wrap / Unwrap call
+            this.VerifyUnwrapCallCount(1);
+
             ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new PartitionKey(item.PK));
             Assert.AreEqual(item, readResponse.Resource);
+
+            // no new Unwrap call for read request since raw DEK existed in cache
+            this.VerifyUnwrapCallCount(1);
+
+            return item;
         }
 
         private static async Task<MyItem> CreateItemAsync(Container container, string dekId, List<string> pathsToEncrypt)
@@ -315,7 +348,6 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<byte> expectedWrappedKey = null;
             if (inputMetadata == this.metadata1)
             {
-
                 expectedWrappedKey = dek.Select(b => (byte)(b + 1));
             }
             else if (inputMetadata == this.metadata2)
@@ -343,6 +375,15 @@ namespace Microsoft.Azure.Cosmos
             Times.Exactly(1));
         }
 
+        private void VerifyUnwrapCallCount(int expected)
+        {
+            this.mockKeyWrapProvider.Verify(m => m.UnwrapKeyAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<EncryptionKeyWrapMetadata>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Exactly(expected));
+        }
+
         private Container GetContainer(EncryptionTestHandler encryptionTestHandler = null)
         {
             this.testHandler = encryptionTestHandler ?? new EncryptionTestHandler();
@@ -351,9 +392,12 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerInlineCore(new ContainerCore(client.ClientContext, database, EncryptionUnitTests.ContainerId));
         }
 
-        private Container GetContainerWithMockSetup(EncryptionTestHandler encryptionTestHandler = null)
+        private Container GetContainerWithMockSetup(EncryptionTestHandler encryptionTestHandler = null, TimeSpan? clientCacheTimeToLive = null)
         {
             this.testHandler = encryptionTestHandler ?? new EncryptionTestHandler();
+
+            Random random = new Random();
+            random.NextBytes(this.dek);
 
             this.mockKeyWrapProvider = new Mock<EncryptionKeyWrapProvider>();
             this.mockKeyWrapProvider.Setup(m => m.WrapKeyAsync(It.IsAny<byte[]>(), It.IsAny<EncryptionKeyWrapMetadata>(), It.IsAny<CancellationToken>()))
@@ -367,7 +411,7 @@ namespace Microsoft.Azure.Cosmos
                 .ReturnsAsync((byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken) =>
                 {
                     int moveBy = metadata.Value == this.metadata1.Value + this.metadataUpdateSuffix ? 1 : 2;
-                    return new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), this.cacheTTL);
+                    return new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), clientCacheTimeToLive ?? this.cacheTTL);
                 });
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder
@@ -380,6 +424,8 @@ namespace Microsoft.Azure.Cosmos
             this.mockEncryptionAlgorithm.Setup(m => m.DecryptData(It.IsAny<byte[]>()))
                 .Returns((byte[] cipherText) => cipherText.Reverse().ToArray());
             this.mockEncryptionAlgorithm.SetupGet(m => m.AlgorithmName).Returns(AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+            this.mockEncryptionAlgorithm.SetupGet(m => m.Key).
+                Returns(new AeadAes256CbcHmac256EncryptionKey(this.dek, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant));
 
             this.mockDatabaseCore = new Mock<DatabaseCore>(client.ClientContext, EncryptionUnitTests.DatabaseId);
             this.mockDatabaseCore.CallBase = true;
@@ -461,15 +507,13 @@ namespace Microsoft.Azure.Cosmos
             private readonly Func<RequestMessage, Task<ResponseMessage>> func;
 
             private readonly CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
-
-
+            
             public EncryptionTestHandler(Func<RequestMessage, Task<ResponseMessage>> func = null)
             {
                 this.func = func;
             }
 
             public ConcurrentDictionary<string, DataEncryptionKeyProperties> Deks { get; } = new ConcurrentDictionary<string, DataEncryptionKeyProperties>();
-
 
             public ConcurrentDictionary<string, JObject> Items { get; } = new ConcurrentDictionary<string, JObject>();
 
