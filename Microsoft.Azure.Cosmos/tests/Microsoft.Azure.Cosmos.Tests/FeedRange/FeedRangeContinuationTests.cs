@@ -2,11 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -64,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(range.Min, requestMessage.Properties[HandlerConstants.StartEpkString]);
             Assert.AreEqual(range.Max, requestMessage.Properties[HandlerConstants.EndEpkString]);
             Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
+            Assert.IsTrue(requestMessage.IsPartitionKeyRangeHandlerRequired);
         }
 
         [TestMethod]

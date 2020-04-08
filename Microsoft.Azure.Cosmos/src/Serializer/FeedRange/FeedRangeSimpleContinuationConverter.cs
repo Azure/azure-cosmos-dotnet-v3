@@ -47,12 +47,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
             }
 
-            if (!jObject.TryGetValue(FeedRangeSimpleContinuationConverter.RidPropertyName, out JToken ridJToken)
-                || string.IsNullOrEmpty(ridJToken.Value<string>()))
-            {
-                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
-            }
-
             if (!jObject.TryGetValue(FeedRangeSimpleContinuationConverter.ContinuationPropertyName, out JToken continuationJToken))
             {
                 throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
@@ -63,8 +57,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
             }
 
+            string containerRid = null;
+            if (jObject.TryGetValue(FeedRangeSimpleContinuationConverter.RidPropertyName, out JToken ridJToken))
+            {
+                containerRid = ridJToken.Value<string>();
+            }
+
             return new FeedRangeSimpleContinuation(
-                containerRid: ridJToken.Value<string>(),
+                containerRid: containerRid,
                 feedRange: feedRangeInternal,
                 continuation: continuationJToken.Value<string>());
         }
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName(FeedRangeSimpleContinuationConverter.TypePropertyName);
-                writer.WriteValue(FeedRangeContinuationType.Composite);
+                writer.WriteValue(FeedRangeContinuationType.Simple);
                 writer.WritePropertyName(FeedRangeSimpleContinuationConverter.VersionPropertyName);
                 writer.WriteValue(FeedRangeContinuationVersion.V1);
                 writer.WritePropertyName(FeedRangeSimpleContinuationConverter.RidPropertyName);

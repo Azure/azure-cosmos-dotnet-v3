@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             FeedRangeInternal feedToken = Mock.Of<FeedRangeInternal>();
             ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(Mock.Of<ContainerCore>(), feedToken, null, null);
-            Assert.AreEqual(feedToken, changeFeedIteratorCore.FeedRangeContinuation.FeedRange);
+            Assert.AreEqual(feedToken, changeFeedIteratorCore.FeedRangeInternal);
         }
 
         [TestMethod]

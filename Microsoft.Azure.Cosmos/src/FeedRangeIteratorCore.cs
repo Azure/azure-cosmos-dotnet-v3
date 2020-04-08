@@ -6,9 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -22,8 +19,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class FeedRangeIteratorCore : FeedIteratorInternal
     {
-        internal FeedRangeInternal FeedRangeInternal;
-        internal FeedRangeContinuation FeedRangeContinuation;
+        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
+        internal FeedRangeInternal FeedRangeInternal { get; private set; }
         private readonly ContainerCore containerCore;
         private readonly CosmosClientContext clientContext;
         private readonly QueryRequestOptions queryRequestOptions;

@@ -2,9 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -104,6 +105,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
+               .Setup(f => f.FeedRange)
+               .Returns(range);
+            Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
@@ -160,6 +164,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(range)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
+            Mock.Get(feedToken)
+               .Setup(f => f.FeedRange)
+               .Returns(range);
             Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
@@ -227,6 +234,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
+               .Setup(f => f.FeedRange)
+               .Returns(range);
+            Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
@@ -284,6 +294,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
+                .Setup(f => f.FeedRange)
+                .Returns(range);
+            Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
@@ -316,8 +329,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             responseMessage.Headers.ContinuationToken = continuation;
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
+
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();            
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<Uri>(),
@@ -336,6 +352,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
+            Mock.Get(containerCore)
+                .Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Guid.NewGuid().ToString());
 
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(containerCore, null, null, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
@@ -377,6 +396,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(range)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
+            Mock.Get(feedToken)
+                .Setup(f => f.FeedRange)
+                .Returns(range);
             Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
@@ -426,6 +448,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             return clientContext;
+        }
+
+        private class MultiRangeMockDocumentClient : MockDocumentClient
+        {
+            private List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
+                new Documents.PartitionKeyRange() { MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, Id = "0" }
+            };
+
+            internal override IReadOnlyList<Documents.PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
+            {
+                return this.availablePartitionKeyRanges;
+            }
         }
     }
 }

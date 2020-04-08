@@ -13,7 +13,14 @@ namespace Microsoft.Azure.Cosmos
     {
         public string ContainerRid { get; }
 
-        public FeedRangeInternal FeedRange { get; }
+        public virtual FeedRangeInternal FeedRange { get; }
+
+        /// <summary>
+        /// For unit tests
+        /// </summary>
+        protected FeedRangeContinuation()
+        {
+        }
 
         public FeedRangeContinuation(
             string containerRid,

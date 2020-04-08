@@ -2,15 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -106,11 +104,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKey partitionKey = new PartitionKey("test");
             Routing.IRoutingMapProvider routingProvider = Mock.Of<Routing.IRoutingMapProvider>();
             Mock.Get(routingProvider)
-                .Setup(f => f.TryGetRangeByEffectivePartitionKeyAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition, true))))
-                .ReturnsAsync(partitionKeyRange);
+                .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<bool>()))
+                .ReturnsAsync(new List<Documents.PartitionKeyRange>() { partitionKeyRange });
 
             FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
-            IEnumerable<string> pkRanges = await feedRangePartitionKey.GetPartitionKeyRangesAsync(routingProvider, null, null, default(CancellationToken));
+            IEnumerable<string> pkRanges = await feedRangePartitionKey.GetPartitionKeyRangesAsync(routingProvider, null, partitionKeyDefinition, default(CancellationToken));
             Assert.AreEqual(1, pkRanges.Count());
             Assert.AreEqual(partitionKeyRange.Id, pkRanges.First());
         }
@@ -134,7 +132,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
             feedRange.Accept(feedRangeVisitor);
             Assert.AreEqual(0, requestMessage.Properties.Count);
-            Assert.IsTrue(requestMessage.IsPartitionKeyRangeHandlerRequired);
         }
 
         [TestMethod]

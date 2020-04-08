@@ -19,12 +19,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ChangeFeedIteratorCore : ChangeFeedIterator
     {
-        internal FeedRangeContinuation FeedRangeContinuation;
+        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
+        internal FeedRangeInternal FeedRangeInternal { get; private set; }
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
-        private FeedRangeInternal feedRangeInternal;
         private bool hasMoreResults = true;
 
         public static ChangeFeedIteratorCore Create(
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions)
             : this(container, changeFeedRequestOptions)
         {
-            this.feedRangeInternal = feedRangeInternal ?? throw new ArgumentNullException(nameof(feedRangeInternal));
+            this.FeedRangeInternal = feedRangeInternal ?? throw new ArgumentNullException(nameof(feedRangeInternal));
         }
 
         private ChangeFeedIteratorCore(
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: request =>
                 {
                     FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
-                    this.feedRangeInternal.Accept(feedRangeVisitor);
+                    this.FeedRangeInternal.Accept(feedRangeVisitor);
                     this.FeedRangeContinuation.Accept(feedRangeVisitor, ChangeFeedRequestOptions.FillContinuationToken);
                 },
                 partitionKey: null,
@@ -212,40 +212,40 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.FeedRangeContinuation == null)
             {
-                if (this.feedRangeInternal is FeedRangePartitionKey)
+                if (this.FeedRangeInternal is FeedRangePartitionKey)
                 {
                     this.FeedRangeContinuation = new FeedRangeSimpleContinuation(
                         containerRid: this.lazyContainerRid.Result.Result,
-                        feedRange: this.feedRangeInternal);
+                        feedRange: this.FeedRangeInternal);
                 }
                 else
                 {
                     Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                     IReadOnlyList<Documents.PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                         collectionRid: this.lazyContainerRid.Result.Result,
-                        range: (this.feedRangeInternal as FeedRangeEPK).Range,
+                        range: (this.FeedRangeInternal as FeedRangeEPK).Range,
                         forceRefresh: false);
 
                     this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                         containerRid: this.lazyContainerRid.Result.Result,
-                        feedRange: this.feedRangeInternal,
+                        feedRange: this.FeedRangeInternal,
                         ranges: pkRanges.Select(pkRange => pkRange.ToRange()).ToList());
                 }
             }
-            else if (this.feedRangeInternal is FeedRangePartitionKeyRange)
+            else if (this.FeedRangeInternal is FeedRangePartitionKeyRange)
             {
                 // Migration from PKRangeId scenario
                 Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                List<Documents.Routing.Range<string>> effectiveRanges = await this.feedRangeInternal.GetEffectiveRangesAsync(
+                List<Documents.Routing.Range<string>> effectiveRanges = await this.FeedRangeInternal.GetEffectiveRangesAsync(
                     routingMapProvider: partitionKeyRangeCache,
                     containerRid: this.lazyContainerRid.Result.Result,
                     partitionKeyDefinition: null);
 
                 // Override the original PKRangeId based FeedRange
-                this.feedRangeInternal = new FeedRangeEPK(effectiveRanges[0]);
+                this.FeedRangeInternal = new FeedRangeEPK(effectiveRanges[0]);
                 this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                     containerRid: this.lazyContainerRid.Result.Result,
-                    feedRange: this.feedRangeInternal,
+                    feedRange: this.FeedRangeInternal,
                     ranges: effectiveRanges,
                     continuation: this.FeedRangeContinuation.GetContinuation());
             }
