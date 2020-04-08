@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class FeedRangeIteratorCore : FeedIteratorInternal
     {
-        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
-        internal FeedRangeInternal FeedRangeInternal { get; private set; }
+        internal readonly FeedRangeInternal FeedRangeInternal;
+        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }        
         private readonly ContainerCore containerCore;
         private readonly CosmosClientContext clientContext;
         private readonly QueryRequestOptions queryRequestOptions;
