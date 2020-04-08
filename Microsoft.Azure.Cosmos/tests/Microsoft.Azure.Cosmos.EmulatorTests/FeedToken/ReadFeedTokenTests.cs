@@ -256,8 +256,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         [TestMethod]
         public async Task CannotMixTokensFromOtherContainers()
         {
+            await this.CreateRandomItems(this.LargerContainer, 2, randomPartitionKey: true);
             IReadOnlyList<FeedRange> tokens = await this.LargerContainer.GetFeedRangesAsync();
-            FeedIterator iterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, feedRange: tokens[0]);
+            FeedIterator iterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, feedRange: tokens[0], requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
             ResponseMessage responseMessage = await iterator.ReadNextAsync();
             iterator = this.Container.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: responseMessage.ContinuationToken);
             responseMessage = await iterator.ReadNextAsync();
