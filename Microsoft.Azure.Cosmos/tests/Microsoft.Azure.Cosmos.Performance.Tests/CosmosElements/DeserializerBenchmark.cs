@@ -7,7 +7,6 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Performance.Tests.Models;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
     [MemoryDiagnoser]
@@ -39,15 +38,13 @@
         [Benchmark]
         public void CosmosElementDeserializer_TryDeserialize_Text()
         {
-            TryCatch<IReadOnlyList<Person>> tryCatch = CosmosElementDeserializer.TryDeserialize<IReadOnlyList<Person>>(this.textBuffer);
-            tryCatch.ThrowIfFailed();
+            IReadOnlyList<Person> deserializedPeople = CosmosElementDeserializer.Deserialize<IReadOnlyList<Person>>(this.textBuffer);
         }
 
         [Benchmark]
         public void CosmosElementDeserializer_TryDeserialize_Binary()
         {
-            TryCatch<IReadOnlyList<Person>> tryCatch = CosmosElementDeserializer.TryDeserialize<IReadOnlyList<Person>>(this.binaryBuffer);
-            tryCatch.ThrowIfFailed();
+            IReadOnlyList<Person> deserializedPeople = CosmosElementDeserializer.Deserialize<IReadOnlyList<Person>>(this.binaryBuffer);
         }
 
         [Benchmark]

@@ -13,6 +13,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
     internal static class CosmosElementDeserializer
     {
+        public static T Deserialize<T>(ReadOnlyMemory<byte> buffer)
+        {
+            TryCatch<T> tryDeserialize = CosmosElementDeserializer.TryDeserialize<T>(buffer);
+            tryDeserialize.ThrowIfFailed();
+            return tryDeserialize.Result;
+        }
+
         public static TryCatch<T> TryDeserialize<T>(ReadOnlyMemory<byte> buffer)
         {
             TryCatch<CosmosElement> tryCreateFromBuffer = CosmosElement.TryCreateFromBuffer(buffer);
