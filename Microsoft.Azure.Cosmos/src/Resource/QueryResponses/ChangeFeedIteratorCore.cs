@@ -49,9 +49,6 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedIteratorCore(container, feedRangeInternal, changeFeedRequestOptions);
         }
 
-        /// <summary>
-        /// For unit testing
-        /// </summary>
         internal ChangeFeedIteratorCore(
             ContainerCore container,
             FeedRangeContinuation feedRangeContinuation,
@@ -234,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (this.FeedRangeInternal is FeedRangePartitionKeyRange)
             {
-                // Migration from PKRangeId scenario
+                // Migration from PKRangeId scenario from V2 SDK
                 Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 List<Documents.Routing.Range<string>> effectiveRanges = await this.FeedRangeInternal.GetEffectiveRangesAsync(
                     routingMapProvider: partitionKeyRangeCache,

@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
 
+    /// <summary>
+    /// Visitor to populate RequestMessage headers and properties based on FeedRange and Continuation.
+    /// </summary>
     internal sealed class FeedRangeVisitor
     {
         private readonly RequestMessage request;
@@ -26,13 +29,14 @@ namespace Microsoft.Azure.Cosmos
 
         public void Visit(FeedRangeEPK feedRange)
         {
+            // No-op since the range is defined by the composite continuation token
         }
 
         public void Visit(
             FeedRangeCompositeContinuation continuation,
             Action<RequestMessage, string> fillContinuation)
         {
-            // in case EPK has already been set
+            // In case EPK has already been set by compute
             if (!this.request.Properties.ContainsKey(HandlerConstants.StartEpkString))
             {
                 this.request.Properties[HandlerConstants.StartEpkString] = continuation.CurrentToken.Range.Min;

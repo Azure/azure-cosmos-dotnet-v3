@@ -14,6 +14,10 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// FeedRangeContinuation using Composite Continuation Tokens and split proof.
+    /// It uses a breath-first approach to transverse Composite Continuation Tokens.
+    /// </summary>
     [JsonConverter(typeof(FeedRangeCompositeContinuationConverter))]
     internal sealed class FeedRangeCompositeContinuation : FeedRangeContinuation
     {
@@ -101,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (continuationToken == null)
             {
-                // Queries and normal ReadFeed can signal termination by CT null, not NotModified
+                // Normal ReadFeed can signal termination by CT null, not NotModified
                 // Change Feed never lands here, as it always provides a CT
                 // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
                 this.doneRanges.Add(this.CurrentToken.Range.Min);

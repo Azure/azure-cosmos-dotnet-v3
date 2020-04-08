@@ -9,6 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
+    /// <summary>
+    /// Represents the continuation for an operation using FeedRange.
+    /// </summary>
     internal abstract class FeedRangeContinuation
     {
         public string ContainerRid { get; }
@@ -16,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual FeedRangeInternal FeedRange { get; }
 
         /// <summary>
-        /// For unit tests
+        /// For mocking
         /// </summary>
         protected FeedRangeContinuation()
         {

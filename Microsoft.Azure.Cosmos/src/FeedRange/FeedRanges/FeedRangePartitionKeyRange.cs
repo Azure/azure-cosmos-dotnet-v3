@@ -13,7 +13,8 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Backward compatibility implementation to transition from V2 SDK queries that were filtering by PKRangeId
+    /// FeedRange that represents a Partition Key Range.
+    /// Backward compatibility implementation to transition from V2 SDK queries that were filtering by PKRangeId.
     /// </summary>
     [JsonConverter(typeof(FeedRangePartitionKeyRangeConverter))]
     internal sealed class FeedRangePartitionKeyRange : FeedRangeInternal

@@ -12,6 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
+    /// <summary>
+    /// FeedRange that represents an effective partition key range.
+    /// </summary>
     [JsonConverter(typeof(FeedRangeEPKConverter))]
     internal sealed class FeedRangeEPK : FeedRangeInternal
     {

@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// FeedRangeContinuation using simple strings for continuation, not split proof.
+    /// </summary>
     [JsonConverter(typeof(FeedRangeSimpleContinuationConverter))]
     internal sealed class FeedRangeSimpleContinuation : FeedRangeContinuation
     {
@@ -45,10 +48,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (continuationToken == null)
             {
-                // Queries and normal ReadFeed can signal termination by CT null, not NotModified
+                // Normal ReadFeed can signal termination by CT null, not NotModified
                 // Change Feed never lands here, as it always provides a CT
-
-                // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
                 this.isDone = true;
             }
 

@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
+    /// <summary>
+    /// FeedRange that represents an exact Partition Key value.
+    /// </summary>
     [JsonConverter(typeof(FeedRangePartitionKeyConverter))]
     internal sealed class FeedRangePartitionKey : FeedRangeInternal
     {

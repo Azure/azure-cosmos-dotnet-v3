@@ -5,6 +5,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.IO;
 
+    /// <summary>
+    /// ResponseMessage to promote the FeedRangeContinuation as Continuation.
+    /// </summary>
     internal sealed class FeedRangeResponse : ResponseMessage
     {
         private readonly ResponseMessage responseMessage;
