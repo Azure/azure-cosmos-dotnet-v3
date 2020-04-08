@@ -14,6 +14,7 @@
     {
         private readonly string json;
         private readonly ReadOnlyMemory<byte> textBuffer;
+        private readonly ReadOnlyMemory<byte> binaryBuffer;
 
         public DeserializerBenchmark()
         {
@@ -24,15 +25,26 @@
             }
 
             this.json = JsonConvert.SerializeObject(people);
+
             IJsonWriter jsonTextWriter = Json.JsonWriter.Create(JsonSerializationFormat.Text);
             CosmosElement.Parse(this.json).WriteTo(jsonTextWriter);
             this.textBuffer = jsonTextWriter.GetResult();
+
+            IJsonWriter jsonBinaryWriter = Json.JsonWriter.Create(JsonSerializationFormat.Binary);
+            CosmosElement.Parse(this.json).WriteTo(jsonBinaryWriter);
+            this.binaryBuffer = jsonBinaryWriter.GetResult();
         }
 
         [Benchmark]
-        public void CosmosElementDeserializer_TryDeserialize()
+        public void CosmosElementDeserializer_TryDeserialize_Text()
         {
             TryCatch<IReadOnlyList<Person>> tryCatch = CosmosElementDeserializer.TryDeserialize<IReadOnlyList<Person>>(this.textBuffer);
+        }
+
+        [Benchmark]
+        public void CosmosElementDeserializer_TryDeserialize_Binary()
+        {
+            TryCatch<IReadOnlyList<Person>> tryCatch = CosmosElementDeserializer.TryDeserialize<IReadOnlyList<Person>>(this.binaryBuffer);
         }
 
         [Benchmark]
