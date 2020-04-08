@@ -2,13 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -82,7 +83,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.FeedRange_PartitionKey_Validate(new PartitionKey(10));
             this.FeedRange_PartitionKey_Validate(new PartitionKey(15.6));
             this.FeedRange_PartitionKey_Validate(new PartitionKey(true));
-            this.FeedRange_PartitionKey_Validate(PartitionKey.None);
             this.FeedRange_PartitionKey_Validate(PartitionKey.Null);
         }
 

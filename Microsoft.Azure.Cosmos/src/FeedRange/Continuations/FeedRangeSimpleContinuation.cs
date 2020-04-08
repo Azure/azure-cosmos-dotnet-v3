@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 feedToken = JsonConvert.DeserializeObject<FeedRangeSimpleContinuation>(toStringValue);
                 return true;
             }
-            catch
+            catch (JsonReaderException)
             {
                 feedToken = null;
                 return false;

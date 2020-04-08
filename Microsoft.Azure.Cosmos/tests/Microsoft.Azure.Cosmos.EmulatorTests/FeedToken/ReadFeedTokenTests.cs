@@ -2,22 +2,17 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -65,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
                 int count = 0;
-                FeedIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition:null, feedRange:token) as FeedIteratorCore;
+                FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition:null, feedRange:token);
                 while (feedIterator.HasMoreResults)
                 {
                     using (ResponseMessage responseMessage =
@@ -102,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.LargerContainer;
-            FeedIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 } ) as FeedIteratorCore;
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 } );
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -172,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (FeedRange range in ranges)
             {
-                FeedIteratorCore initialFeedIterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, feedRange:range, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedIteratorCore;
+                FeedIterator initialFeedIterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, feedRange:range, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
                 string continuation = null;
                 while (initialFeedIterator.HasMoreResults)
                 {
@@ -191,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 // Use the previous iterators continuation to continue
-                FeedIteratorCore feedIterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: continuation) as FeedIteratorCore;
+                FeedIterator feedIterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: continuation);
                 while (feedIterator.HasMoreResults)
                 {
                     using (ResponseMessage responseMessage =
@@ -224,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Do a read without FeedRange and get the older CT from Header
             string olderContinuationToken = null;
-            FeedIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedIteratorCore;
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -241,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // start a new iterator using the older CT and expect it to continue
-            feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: olderContinuationToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedIteratorCore;
+            feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: olderContinuationToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -267,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             iterator = this.Container.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: responseMessage.ContinuationToken);
             responseMessage = await iterator.ReadNextAsync();
             Assert.IsNotNull(responseMessage.CosmosException);
-            Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
+            Assert.AreEqual(HttpStatusCode.BadRequest, responseMessage.StatusCode);
         }
 
         [DataRow(false)]
@@ -310,9 +305,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 string continuation = null;
-                FeedIteratorCore iter = container.GetItemQueryStreamIterator(
+                FeedIterator iter = container.GetItemQueryStreamIterator(
                     continuationToken: continuation,
-                    requestOptions: requestOptions) as FeedIteratorCore;
+                    requestOptions: requestOptions);
 
                 int count = 0;
                 List<string> forwardOrder = new List<string>();
@@ -322,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         iter = container.GetItemQueryStreamIterator(
                             continuationToken: continuation,
-                            requestOptions: requestOptions) as FeedIteratorCore;
+                            requestOptions: requestOptions);
                     }
 
                     using (ResponseMessage response = await iter.ReadNextAsync())
@@ -355,13 +350,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 continuation = null;
                 iter = container
-                        .GetItemQueryStreamIterator(queryDefinition: null, continuationToken: continuation, requestOptions: requestOptions) as FeedIteratorCore;
+                        .GetItemQueryStreamIterator(queryDefinition: null, continuationToken: continuation, requestOptions: requestOptions);
                 while (iter.HasMoreResults)
                 {
                     if (useStatelessIteration)
                     {
                         iter = container
-                                .GetItemQueryStreamIterator(queryDefinition: null, continuationToken: continuation, requestOptions: requestOptions) as FeedIteratorCore;
+                                .GetItemQueryStreamIterator(queryDefinition: null, continuationToken: continuation, requestOptions: requestOptions);
                     }
 
                     using (ResponseMessage response = await iter.ReadNextAsync())

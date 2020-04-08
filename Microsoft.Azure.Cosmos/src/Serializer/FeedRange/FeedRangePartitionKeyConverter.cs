@@ -56,12 +56,12 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!jObject.TryGetValue(FeedRangePartitionKeyConverter.PartitionKeyPropertyName, out JToken pkJToken))
             {
-                throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
+                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
             }
 
             if (!PartitionKey.TryParseJsonString(pkJToken.Value<string>(), out PartitionKey partitionKey))
             {
-                throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
+                throw new JsonReaderException(ClientResources.FeedToken_UnknownFormat);
             }
 
             return new FeedRangePartitionKey(partitionKey);
