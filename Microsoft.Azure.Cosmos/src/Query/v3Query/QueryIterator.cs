@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
@@ -69,16 +70,20 @@ namespace Microsoft.Azure.Cosmos.Query
                 case ExecutionEnvironment.Client:
                     if (continuationToken != null)
                     {
-                        if (!CosmosElement.TryParse(continuationToken, out requestContinuationToken))
+                        TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(continuationToken);
+                        if (tryParse.Faulted)
                         {
                             return new QueryIterator(
                                 cosmosQueryContext,
                                 new QueryExecutionContextWithException(
                                     new MalformedContinuationTokenException(
-                                        $"Malformed Continuation Token: {requestContinuationToken}")),
+                                        message: $"Malformed Continuation Token: {continuationToken}",
+                                        innerException: tryParse.Exception)),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
                                 queryRequestOptions);
                         }
+
+                        requestContinuationToken = tryParse.Result;
                     }
                     else
                     {
@@ -167,8 +172,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     responseHeaders: new CosmosQueryResponseMessageHeaders(
                         responseCore.ContinuationToken,
                         responseCore.DisallowContinuationTokenMessage,
-                        cosmosQueryContext.ResourceTypeEnum,
-                        cosmosQueryContext.ContainerResourceId)
+                        this.cosmosQueryContext.ResourceTypeEnum,
+                        this.cosmosQueryContext.ContainerResourceId)
                     {
                         RequestCharge = responseCore.RequestCharge,
                         ActivityId = responseCore.ActivityId,

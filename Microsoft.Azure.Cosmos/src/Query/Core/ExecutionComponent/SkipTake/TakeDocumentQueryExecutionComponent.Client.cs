@@ -64,11 +64,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 CosmosElement sourceToken;
                 if (limitContinuationToken.SourceToken != null)
                 {
-                    if (!CosmosElement.TryParse(limitContinuationToken.SourceToken, out sourceToken))
+                    TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(limitContinuationToken.SourceToken);
+                    if (tryParse.Faulted)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException($"Malformed {nameof(LimitContinuationToken)}: {requestContinuationToken}."));
+                            new MalformedContinuationTokenException(
+                                message: $"Malformed {nameof(LimitContinuationToken)}: {requestContinuationToken}.",
+                                innerException: tryParse.Exception));
                     }
+
+                    sourceToken = tryParse.Result;
                 }
                 else
                 {
@@ -120,11 +125,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 CosmosElement sourceToken;
                 if (topContinuationToken.SourceToken != null)
                 {
-                    if (!CosmosElement.TryParse(topContinuationToken.SourceToken, out sourceToken))
+                    TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(topContinuationToken.SourceToken);
+                    if (tryParse.Faulted)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException($"{nameof(TopContinuationToken.SourceToken)} in {nameof(TopContinuationToken)}: {requestContinuationToken}: {topContinuationToken.SourceToken} was malformed."));
+                            new MalformedContinuationTokenException(
+                                message: $"{nameof(TopContinuationToken.SourceToken)} in {nameof(TopContinuationToken)}: {requestContinuationToken}: {topContinuationToken.SourceToken ?? "<null>"} was malformed.",
+                                innerException: tryParse.Exception));
                     }
+
+                    sourceToken = tryParse.Result;
                 }
                 else
                 {

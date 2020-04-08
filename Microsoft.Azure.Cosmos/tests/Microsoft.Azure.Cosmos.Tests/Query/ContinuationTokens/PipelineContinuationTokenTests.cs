@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using VisualStudio.TestTools.UnitTesting;
 
@@ -67,13 +68,14 @@ namespace Microsoft.Azure.Cosmos.Query
         public override PipelineContinuationTokenTestsOutput ExecuteTest(
             PipelineContinuationTokenTestsInput input)
         {
-            if (!CosmosElement.TryParse(input.ContinuationToken, out CosmosElement cosmosElementContinuationToken))
+            TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(input.ContinuationToken);
+            if (tryParse.Faulted)
             {
                 return new PipelineContinuationTokenTestsOutputNegative("Failed to parse token.");
             }
 
             if (!PipelineContinuationToken.TryCreateFromCosmosElement(
-                cosmosElementContinuationToken,
+                tryParse.Result,
                 out PipelineContinuationToken pipelineContinuationToken))
             {
                 return new PipelineContinuationTokenTestsOutputNegative("Failed to parse token.");

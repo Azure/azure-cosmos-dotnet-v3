@@ -89,12 +89,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 CosmosElement sourceToken;
                 if (distinctContinuationToken.SourceToken != null)
                 {
-                    if (!CosmosElement.TryParse(distinctContinuationToken.SourceToken, out sourceToken))
+                    TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(distinctContinuationToken.SourceToken);
+                    if (tryParse.Faulted)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException(
-                                $"Invalid Source Token: {distinctContinuationToken.SourceToken}"));
+                                message: $"Invalid Source Token: {distinctContinuationToken.SourceToken}",
+                                innerException: tryParse.Exception));
                     }
+
+                    sourceToken = tryParse.Result;
                 }
                 else
                 {

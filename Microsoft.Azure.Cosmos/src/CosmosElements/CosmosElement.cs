@@ -4,9 +4,11 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using System.Runtime.ExceptionServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
 #if INTERNAL
@@ -61,36 +63,48 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
 
-        public static bool TryCreateFromBuffer<TCosmosElement>(ReadOnlyMemory<byte> buffer, out TCosmosElement cosmosElement)
+        public static TryCatch<TCosmosElement> TryCreateFromBuffer<TCosmosElement>(ReadOnlyMemory<byte> buffer)
             where TCosmosElement : CosmosElement
         {
+            if (buffer.IsEmpty)
+            {
+                TryCatch<TCosmosElement>.FromException(
+                    new ArgumentException($"{nameof(buffer)} must not be empty."));
+            }
+
             CosmosElement unTypedCosmosElement;
             try
             {
-                unTypedCosmosElement = CreateFromBuffer(buffer);
+                IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
+                IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
+                unTypedCosmosElement = CosmosElement.Dispatch(jsonNavigator, jsonNavigatorNode);
             }
-            catch (JsonParseException)
+            catch (JsonParseException jpe)
             {
-                cosmosElement = default;
-                return false;
+                return TryCatch<TCosmosElement>.FromException(jpe);
             }
 
             if (!(unTypedCosmosElement is TCosmosElement typedCosmosElement))
             {
-                cosmosElement = default;
-                return false;
+                return TryCatch<TCosmosElement>.FromException(
+                    new CosmosElementWrongTypeException(
+                        message: $"buffer was incorrect cosmos element type: {unTypedCosmosElement.GetType()} when {typeof(TCosmosElement)} was requested."));
             }
 
-            cosmosElement = typedCosmosElement;
-            return true;
+            return TryCatch<TCosmosElement>.FromResult(typedCosmosElement);
+        }
+
+        public static TryCatch<CosmosElement> TryCreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            return CosmosElement.TryCreateFromBuffer<CosmosElement>(buffer);
         }
 
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
-            IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
-            IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
+            TryCatch<CosmosElement> tryCreateFromBuffer = CosmosElement.TryCreateFromBuffer<CosmosElement>(buffer);
+            tryCreateFromBuffer.ThrowIfFailed();
 
-            return CosmosElement.Dispatch(jsonNavigator, jsonNavigatorNode);
+            return tryCreateFromBuffer.Result;
         }
 
         public static CosmosElement Dispatch(
@@ -173,67 +187,40 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return item;
         }
 
-        public static bool TryParse(
-            string serializedCosmosElement,
-            out CosmosElement cosmosElement)
+        public static TryCatch<CosmosElement> TryParse(string serializedCosmosElement)
+        {
+            return CosmosElement.TryParse<CosmosElement>(serializedCosmosElement);
+        }
+
+        public static TryCatch<TCosmosElement> TryParse<TCosmosElement>(string serializedCosmosElement)
+            where TCosmosElement : CosmosElement
         {
             if (string.IsNullOrWhiteSpace(serializedCosmosElement))
             {
-                cosmosElement = default;
-                return false;
+                TryCatch<CosmosElement>.FromException(
+                    new CosmosElementEmptyBufferException());
             }
 
-            try
-            {
-                byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
-                cosmosElement = CosmosElement.CreateFromBuffer(buffer);
-            }
-            catch (JsonParseException)
-            {
-                cosmosElement = default;
-            }
+            byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
 
-            return cosmosElement != default;
-        }
-
-        public static bool TryParse<TCosmosElement>(string serializedCosmosElement, out TCosmosElement cosmosElement)
-            where TCosmosElement : CosmosElement
-        {
-            if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement rawCosmosElement))
-            {
-                cosmosElement = default(TCosmosElement);
-                return false;
-            }
-
-            if (!(rawCosmosElement is TCosmosElement typedCosmosElement))
-            {
-                cosmosElement = default(TCosmosElement);
-                return false;
-            }
-
-            cosmosElement = typedCosmosElement;
-            return true;
+            return CosmosElement.TryCreateFromBuffer<TCosmosElement>(buffer);
         }
 
         public static CosmosElement Parse(string json)
         {
-            if (!CosmosElement.TryParse(json, out CosmosElement cosmosElement))
-            {
-                throw new ArgumentException($"Failed to parse json: {json}.");
-            }
+            TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(json);
+            tryParse.ThrowIfFailed();
 
-            return cosmosElement;
+            return tryParse.Result;
         }
 
         public static TCosmosElement Parse<TCosmosElement>(string json)
             where TCosmosElement : CosmosElement
         {
-            if (!CosmosElement.TryParse(json, out TCosmosElement cosmosElement))
-            {
-                throw new ArgumentException($"Failed to parse json: {json}.");
-            }
+            TryCatch<TCosmosElement> tryParse = CosmosElement.TryParse<TCosmosElement>(json);
+            tryParse.ThrowIfFailed();
 
-            return cosmosElement;
+            return tryParse.Result;
         }
     }
 #if INTERNAL

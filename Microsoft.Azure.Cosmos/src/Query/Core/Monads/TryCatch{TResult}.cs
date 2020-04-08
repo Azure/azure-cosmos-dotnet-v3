@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.ExceptionServices;
     using System.Threading.Tasks;
 
     internal readonly struct TryCatch<TResult>
@@ -17,10 +18,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             this.either = either;
         }
 
-        public bool Succeeded
-        {
-            get { return this.either.IsRight; }
-        }
+        public bool Succeeded => this.either.IsRight;
+
+        public bool Faulted => !this.Succeeded;
 
         public TResult Result
         {
@@ -146,6 +146,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             }
 
             return this;
+        }
+
+        public void ThrowIfFailed()
+        {
+            if (!this.Succeeded)
+            {
+                ExceptionDispatchInfo.Capture(this.Exception).Throw();
+            }
         }
 
         public override bool Equals(object obj)
