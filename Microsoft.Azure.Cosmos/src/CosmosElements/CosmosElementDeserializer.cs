@@ -46,11 +46,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 public static readonly CosmosElementWrongTypeException ExpectedBinary = new CosmosElementWrongTypeException(
                     message: $"Expected return type of '{typeof(ReadOnlyMemory<byte>)}'.");
 
-                public static readonly CosmosElementWrongTypeException ExpectedNumber = new CosmosElementWrongTypeException(
-                    message: "Expected return type of number.");
-
                 public static readonly CosmosElementWrongTypeException ExpectedGuid = new CosmosElementWrongTypeException(
                     message: $"Expected return type of '{typeof(Guid)}'.");
+
+                public static readonly CosmosElementWrongTypeException ExpectedNumber = new CosmosElementWrongTypeException(
+                    message: "Expected return type of number.");
 
                 public static readonly CosmosElementWrongTypeException ExpectedReferenceOrNullableType = new CosmosElementWrongTypeException(
                     message: "Expected return type to be a reference or nullable type.");
