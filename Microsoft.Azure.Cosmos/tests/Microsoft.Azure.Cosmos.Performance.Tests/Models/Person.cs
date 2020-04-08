@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using Newtonsoft.Json;
 
     public sealed class Person
     {
@@ -67,7 +68,10 @@
             this.Age = age;
         }
 
+        [JsonProperty("name")]
         public string Name { get; }
+
+        [JsonProperty("age")]
         public int Age { get; }
 
         public override bool Equals(object obj)
