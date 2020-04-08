@@ -750,7 +750,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             None = 0,
             HoldState = 1,
             ContinuationToken = 2,
-            CosmosElementContinuationToken = 4
+            CosmosElementContinuationToken = 4,
         }
 
         internal static async Task<List<CosmosElement>> RunQueryCombinationsAsync(
