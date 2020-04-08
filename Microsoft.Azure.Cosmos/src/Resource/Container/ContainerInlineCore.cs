@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return this.container.GetChangeFeedStreamIterator(continuation, changeFeedRequestOptions);
+            return this.container.GetChangeFeedStreamIterator(continuationToken, changeFeedRequestOptions);
         }
 
         public override ChangeFeedIterator GetChangeFeedStreamIterator(
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return this.container.GetChangeFeedIterator<T>(continuation, changeFeedRequestOptions);
+            return this.container.GetChangeFeedIterator<T>(continuationToken, changeFeedRequestOptions);
         }
 
         public override ChangeFeedIterator<T> GetChangeFeedIterator<T>(
