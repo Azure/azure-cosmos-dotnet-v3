@@ -265,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
+                // Just return all item producers that have a continuation token
                 foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
                 {
                     foreach (ItemProducerTree leaf in itemProducerTree)
