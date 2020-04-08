@@ -58,6 +58,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("A", "B", true, false);
             FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, Mock.Of<FeedRangeInternal>(), new List<Documents.Routing.Range<string>>() { range }, continuation);
             RequestMessage requestMessage = new RequestMessage();
+            requestMessage.OperationType = Documents.OperationType.ReadFeed;
+            requestMessage.ResourceType = Documents.ResourceType.Document;
             FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
             token.Accept(feedRangeVisitor, ChangeFeedRequestOptions.FillContinuationToken);
             Assert.AreEqual(range.Min, requestMessage.Properties[HandlerConstants.StartEpkString]);
