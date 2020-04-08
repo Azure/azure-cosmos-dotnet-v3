@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
+        private static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
             string minInclusive,
             string maxExclusive,
             string token)
