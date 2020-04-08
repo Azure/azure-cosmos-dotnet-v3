@@ -10,13 +10,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly ResponseMessage responseMessage;
         private readonly FeedRangeContinuation feedRangeContinuation;
 
-        /// <summary>
-        /// Used for unit testing only
-        /// </summary>
-        internal FeedRangeResponse()
-        {
-        }
-
         internal FeedRangeResponse(
             ResponseMessage responseMessage,
             FeedRangeContinuation feedRangeContinuation)
@@ -39,6 +32,17 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override string ContinuationToken => this.feedRangeContinuation.ToString();
+        public override string ContinuationToken
+        {
+            get
+            {
+                if (this.feedRangeContinuation.IsDone)
+                {
+                    return null;
+                }
+
+                return this.feedRangeContinuation.ToString();
+            }
+        }
     }
 }

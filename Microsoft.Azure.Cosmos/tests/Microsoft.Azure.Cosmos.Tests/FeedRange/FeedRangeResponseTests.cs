@@ -1,0 +1,66 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Tests.FeedRange
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+
+    [TestClass]
+    public class FeedRangeResponseTests
+    {
+        [TestMethod]
+        public void FeedRangeResponse_PromotesContinuation()
+        {
+            string continuation = Guid.NewGuid().ToString();
+            Mock<FeedRangeContinuation> feedContinuation = new Mock<FeedRangeContinuation>();
+            feedContinuation
+                .Setup(f => f.ToString())
+                .Returns(continuation);
+
+            ResponseMessage feedRangeResponse = new FeedRangeResponse(new ResponseMessage(), feedContinuation.Object);
+            Assert.AreEqual(continuation, feedRangeResponse.ContinuationToken);
+        }
+
+        [TestMethod]
+        public void FeedRangeResponse_ContinuationNull_IfDone()
+        {
+            Mock<FeedRangeContinuation> feedContinuation = new Mock<FeedRangeContinuation>();
+            feedContinuation
+                .Setup(f => f.IsDone)
+                .Returns(true);
+
+            ResponseMessage feedRangeResponse = new FeedRangeResponse(new ResponseMessage(), feedContinuation.Object);
+            Assert.IsNull(feedRangeResponse.ContinuationToken);
+        }
+
+        [TestMethod]
+        public void FeedRangeResponse_ResponseIsAccessible()
+        {
+            ResponseMessage original = new ResponseMessage(
+                System.Net.HttpStatusCode.OK,
+                new RequestMessage(),
+                new Headers(),
+                CosmosExceptionFactory.CreateBadRequestException("test"),
+                CosmosDiagnosticsContext.Create(new RequestOptions()));
+            original.Content = Mock.Of<MemoryStream>();
+            Mock<FeedRangeContinuation> feedContinuation = new Mock<FeedRangeContinuation>();
+
+            ResponseMessage feedRangeResponse = new FeedRangeResponse(original, feedContinuation.Object);
+            Assert.AreEqual(original.Content, feedRangeResponse.Content);
+            Assert.AreEqual(original.StatusCode, feedRangeResponse.StatusCode);
+            Assert.AreEqual(original.RequestMessage, feedRangeResponse.RequestMessage);
+            Assert.AreEqual(original.Headers, feedRangeResponse.Headers);
+            Assert.AreEqual(original.CosmosException, feedRangeResponse.CosmosException);
+            Assert.AreEqual(original.DiagnosticsContext, feedRangeResponse.DiagnosticsContext);
+        }
+    }
+}

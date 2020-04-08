@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
-            // Retry in case of splits or other scenarios only on partitioned resources
+            // Retry in case of splits
             if (await this.FeedRangeContinuation.ShouldRetryAsync(this.containerCore, response, cancellationToken))
             {
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
