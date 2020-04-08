@@ -7,13 +7,13 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
-    <BaseVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientVersion)</BaseVersion>
-    <BaseVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</BaseVersion>
+    <ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
+    <ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
     <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
-    <Version Condition=" '$(VersionSuffix)' == '' ">$(BaseVersion)</Version>
-    <Version Condition=" '$(VersionSuffix)' != '' ">$(BaseVersion)-$(VersionSuffix)</Version>
-    <FileVersion>$(BaseVersion)</FileVersion>
+    <Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
+    <Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
+    <FileVersion>$(ClientVersion)</FileVersion>
     <Authors>Microsoft</Authors>
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
