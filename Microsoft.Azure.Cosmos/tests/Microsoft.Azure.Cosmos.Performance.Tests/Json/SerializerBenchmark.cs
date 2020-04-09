@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Performance.Tests.CosmosElements
+﻿namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 {
     using System.Collections.Generic;
     using BenchmarkDotNet.Attributes;
