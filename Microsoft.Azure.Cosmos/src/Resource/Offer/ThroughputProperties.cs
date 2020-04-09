@@ -80,11 +80,5 @@ namespace Microsoft.Azure.Cosmos
 
         [JsonProperty(PropertyName = "content", DefaultValueHandling = DefaultValueHandling.Ignore)]
         internal OfferContentProperties Content { get; set; }
-
-        /// <summary>
-        /// Gets the version of this offer resource in the Azure Cosmos DB service.
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.OfferVersion, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        internal string OfferVersion { get; private set; } = Constants.Offers.OfferVersion_V2;
     }
 }

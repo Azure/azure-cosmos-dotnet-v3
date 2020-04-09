@@ -3,6 +3,7 @@
 // ------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -51,6 +52,7 @@ namespace Microsoft.Azure.Cosmos
                autoUpgradeMaxThroughputIncrementPercentage);
         }
 
+        /// <inheritdoc/>
         [JsonIgnore]
         public override int? Throughput => base.Throughput;
 
@@ -71,5 +73,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.Content?.OfferAutopilotSettings?.AutopilotAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
         }
+
+        /// <summary>
+        /// Gets the version of this offer resource in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.OfferVersion, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal string OfferVersion { get; private set; } = Constants.Offers.OfferVersion_V2;
     }
 }
