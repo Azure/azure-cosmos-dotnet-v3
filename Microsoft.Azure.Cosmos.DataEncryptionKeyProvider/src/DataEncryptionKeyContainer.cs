@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System.Threading;
     using System.Threading.Tasks;
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         /// </example>
         public abstract Task<ItemResponse<DataEncryptionKeyProperties>> CreateDataEncryptionKeyAsync(
             string id,
-            CosmosEncryptionAlgorithm encryptionAlgorithm,
+            string encryptionAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));

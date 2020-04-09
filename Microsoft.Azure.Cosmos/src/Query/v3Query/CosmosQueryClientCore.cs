@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
                 queryPageDiagnostics);
 
             if (queryResponseCore.IsSuccess &&
-                this.clientContext.ClientOptions.DataEncryptionKeyProvider != null)
+                this.clientContext.ClientOptions.Encryptor != null)
             {
                 return await this.GetDecryptedElementResponseAsync(queryResponseCore, message, cancellationToken);
             }
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
                     CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
                         documentObject,
-                        this.clientContext.ClientOptions.DataEncryptionKeyProvider,
+                        this.clientContext.ClientOptions.Encryptor,
                         message.DiagnosticsContext,
                         cancellationToken);
 

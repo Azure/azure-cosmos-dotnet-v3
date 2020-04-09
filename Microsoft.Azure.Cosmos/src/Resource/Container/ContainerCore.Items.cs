@@ -767,7 +767,7 @@ namespace Microsoft.Azure.Cosmos
                     streamPayload = await this.ClientContext.EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         requestOptions.EncryptionOptions,
-                        this.ClientContext.ClientOptions.DataEncryptionKeyProvider,
+                        this.ClientContext.ClientOptions.Encryptor,
                         diagnosticsContext,
                         cancellationToken);
                 }
@@ -786,13 +786,13 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            if (responseMessage.Content != null && this.ClientContext.ClientOptions.DataEncryptionKeyProvider != null)
+            if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
             {
                 using (diagnosticsContext.CreateScope("Decrypt"))
                 {
                     responseMessage.Content = await this.ClientContext.EncryptionProcessor.DecryptAsync(
                         responseMessage.Content,
-                        this.ClientContext.ClientOptions.DataEncryptionKeyProvider,
+                        this.ClientContext.ClientOptions.Encryptor,
                         diagnosticsContext,
                         cancellationToken);
                 }

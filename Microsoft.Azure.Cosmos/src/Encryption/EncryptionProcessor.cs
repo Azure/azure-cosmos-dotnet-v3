@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<Stream> EncryptAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
-            DataEncryptionKeyProvider dataEncryptionKeyProvider,
+            Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(encryptionOptions != null);
             Debug.Assert(diagnosticsContext != null);
 
-            if (dataEncryptionKeyProvider == null)
+            if (encryptor == null)
             {
-                throw new ArgumentException(ClientResources.DataEncryptionKeyProviderNotConfigured);
+                throw new ArgumentException(ClientResources.EncryptorNotConfigured);
             }
 
             if (string.IsNullOrEmpty(encryptionOptions.DataEncryptionKeyId))
@@ -46,13 +46,6 @@ namespace Microsoft.Azure.Cosmos
             if (encryptionOptions.PathsToEncrypt == null)
             {
                 throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
-            }
-
-            if (encryptionOptions.EncryptionAlgorithm != CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
-            {
-                throw new ArgumentException(
-                    $"Unknown encryption algorithm {encryptionOptions.EncryptionAlgorithm.ToString()}",
-                    nameof(encryptionOptions.EncryptionAlgorithm));
             }
 
             if (encryptionOptions.PathsToEncrypt.Count == 0)
@@ -67,12 +60,6 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
                 }
             }
-
-            DataEncryptionKey dataEncryptionKey = await EncryptionProcessor.FetchDataEncryptionKeyAsync(
-                encryptionOptions.DataEncryptionKeyId,
-                encryptionOptions.EncryptionAlgorithm,
-                dataEncryptionKeyProvider,
-                cancellationToken);
 
             JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
 
@@ -96,12 +83,17 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(memoryStream.TryGetBuffer(out _));
 
             byte[] plainText = memoryStream.GetBuffer();
+            byte[] cipherText = await encryptor.EncryptAsync(
+                plainText,
+                encryptionOptions.DataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
+                cancellationToken);
 
             EncryptionProperties encryptionProperties = new EncryptionProperties(
                 dataEncryptionKeyId: encryptionOptions.DataEncryptionKeyId,
                 encryptionFormatVersion: 2,
                 encryptionAlgorithm: encryptionOptions.EncryptionAlgorithm,
-                encryptedData: dataEncryptionKey.EncryptData(plainText));
+                encryptedData: cipherText);
 
             itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
@@ -109,13 +101,13 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<Stream> DecryptAsync(
             Stream input,
-            DataEncryptionKeyProvider dataEncryptionKeyProvider,
+            Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(input.CanSeek);
-            Debug.Assert(dataEncryptionKeyProvider != null);
+            Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
             JObject itemJObj;
@@ -144,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
 
             JObject plainTextJObj = await this.DecryptContentAsync(
                 encryptionProperties,
-                dataEncryptionKeyProvider,
+                encryptor,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -159,12 +151,12 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<CosmosObject> DecryptAsync(
             CosmosObject document,
-            DataEncryptionKeyProvider dataEncryptionKeyProvider,
+            Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(document != null);
-            Debug.Assert(dataEncryptionKeyProvider != null);
+            Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
             if (!document.TryGetValue(Constants.Properties.EncryptedInfo, out CosmosElement encryptedInfo))
@@ -176,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
 
             JObject plainTextJObj = await this.DecryptContentAsync(
                 encryptionProperties,
-                dataEncryptionKeyProvider,
+                encryptor,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -193,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<JObject> DecryptContentAsync(
             EncryptionProperties encryptionProperties,
-            DataEncryptionKeyProvider dataEncryptionKeyProvider,
+            Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -202,15 +194,13 @@ namespace Microsoft.Azure.Cosmos
                 throw CosmosExceptionFactory.CreateInternalServerErrorException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            DataEncryptionKey dataEncryptionKey = await EncryptionProcessor.FetchDataEncryptionKeyAsync(
+            byte[] plainText = await encryptor.DecryptAsync(
+                encryptionProperties.EncryptedData,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
-                dataEncryptionKeyProvider,
                 cancellationToken);
 
-            byte[] plainText = dataEncryptionKey.DecryptData(encryptionProperties.EncryptedData);
-
-            JObject plainTextJObj = null;
+            JObject plainTextJObj;
             using (MemoryStream memoryStream = new MemoryStream(plainText))
             using (StreamReader streamReader = new StreamReader(memoryStream))
             using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
@@ -219,25 +209,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return plainTextJObj;
-        }
-
-        private static async Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
-            string dataEncryptionKeyId,
-            CosmosEncryptionAlgorithm encryptionAlgorithm,
-            DataEncryptionKeyProvider dataEncryptionKeyProvider,
-            CancellationToken cancellationToken)
-        {
-            DataEncryptionKey dataEncryptionKey = await dataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
-                dataEncryptionKeyId,
-                encryptionAlgorithm,
-                cancellationToken);
-
-            if (dataEncryptionKey.EncryptionAlgorithm != encryptionAlgorithm)
-            {
-                throw new InvalidOperationException($"Data encryption key returned was not suitable for use with encryption algorithm {encryptionAlgorithm.ToString()}");
-            }
-
-            return dataEncryptionKey;
         }
     }
 }

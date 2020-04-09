@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Diagnostics;
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> CreateDataEncryptionKeyAsync(
                 string id,
-                CosmosEncryptionAlgorithm encryptionAlgorithm,
+                string encryptionAlgorithm,
                 EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
+            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
             {
                 throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithm), nameof(encryptionAlgorithm));
             }
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         internal async Task<(byte[], EncryptionKeyWrapMetadata, InMemoryRawDek)> WrapAsync(
             string id,
             byte[] key,
-            CosmosEncryptionAlgorithm encryptionAlgorithm,
+            string encryptionAlgorithm,
             EncryptionKeyWrapMetadata metadata,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)

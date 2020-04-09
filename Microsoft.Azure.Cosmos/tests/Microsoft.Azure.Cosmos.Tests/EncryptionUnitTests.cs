@@ -25,11 +25,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
         private const string DatabaseId = "mockDatabase";
         private const string ContainerId = "mockContainer";
         private const string DekId = "mockDek";
-        private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
+        private const string Algo = "testAlgo";
         private const double requestCharge = 0.6;
 
-        private Mock<DataEncryptionKey> mockDataEncryptionKey;
-        private Mock<Cosmos.DataEncryptionKeyProvider> mockDataEncryptionKeyProvider;
+        private Mock<Encryptor> mockEncryptor;
         private EncryptionTestHandler testHandler;
 
         [TestMethod]
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
                         EncryptionOptions = new EncryptionOptions
                         {
                             DataEncryptionKeyId = "random",
-                            EncryptionAlgorithm = CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED,
+                            EncryptionAlgorithm = EncryptionUnitTests.Algo,
                             PathsToEncrypt = MyItem.PathsToEncrypt
                         }
                     });
@@ -137,25 +136,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
         {
             this.testHandler = encryptionTestHandler ?? new EncryptionTestHandler();
 
-            this.mockDataEncryptionKeyProvider = new Mock<Cosmos.DataEncryptionKeyProvider>();
+            this.mockEncryptor = new Mock<Encryptor>();
 
-            this.mockDataEncryptionKey = new Mock<DataEncryptionKey>();
-            this.mockDataEncryptionKey.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] plainText) => EncryptionUnitTests.EncryptData(plainText));
-            this.mockDataEncryptionKey.Setup(m => m.DecryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] plainText) => EncryptionUnitTests.DecryptData(plainText));
-            this.mockDataEncryptionKey.SetupGet(p => p.EncryptionAlgorithm).Returns(EncryptionUnitTests.Algo);
-            this.mockDataEncryptionKey.SetupGet(p => p.RawKey).Returns(new byte[1] { 42 });
-
-            this.mockDataEncryptionKeyProvider.Setup(m => m.FetchDataEncryptionKeyAsync(
-                EncryptionUnitTests.DekId,
-                EncryptionUnitTests.Algo,
-                It.IsAny<CancellationToken>()))
-                .ReturnsAsync(this.mockDataEncryptionKey.Object);
-
+            this.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) => EncryptionUnitTests.EncryptData(plainText));
+            this.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) => EncryptionUnitTests.DecryptData(cipherText));
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder
                 .AddCustomHandlers(this.testHandler)
-                .WithDataEncryptionKeyProvider(this.mockDataEncryptionKeyProvider.Object));
+                .WithEncryptor(this.mockEncryptor.Object));
 
             DatabaseCore database = new DatabaseCore(client.ClientContext, EncryptionUnitTests.DatabaseId);
             return new ContainerInlineCore(new ContainerCore(client.ClientContext, database, EncryptionUnitTests.ContainerId));

@@ -21,14 +21,14 @@ namespace Microsoft.Azure.Cosmos
         /// The data encryption key must be suitable for use with the <see cref="EncryptionAlgorithm"/> provided.
         /// </summary>
         /// <remarks>
-        /// The <see cref="DataEncryptionKeyProvider"/> configured on the client is used to retrieve the actual data encryption key.
+        /// The <see cref="Encryptor"/> configured on the client is used to retrieve the actual data encryption key.
         /// </remarks>
         public string DataEncryptionKeyId { get; set; }
 
         /// <summary>
         /// Algorithm to be used for encrypting the data in the request payload.
         /// </summary>
-        public CosmosEncryptionAlgorithm EncryptionAlgorithm { get; set; }
+        public string EncryptionAlgorithm { get; set; }
 
         /// <summary>
         /// For the request payload, list of JSON paths to encrypt.

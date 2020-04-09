@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
         public DataEncryptionKeyProperties(
             string id,
-            CosmosEncryptionAlgorithm encryptionAlgorithm,
+            string encryptionAlgorithm,
             byte[] wrappedDataEncryptionKey,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             DateTime createdTime)
@@ -77,8 +77,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         /// <summary>
         /// Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
         /// </summary>
-        [JsonProperty(PropertyName = "encryptionAlgorithmId", NullValueHandling = NullValueHandling.Ignore)]
-        public CosmosEncryptionAlgorithm EncryptionAlgorithm { get; internal set; }
+        [JsonProperty(PropertyName = "encryptionAlgorithm", NullValueHandling = NullValueHandling.Ignore)]
+        public string EncryptionAlgorithm { get; internal set; }
 
         /// <summary>
         /// Wrapped form of the data encryption key.
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         {
             int hashCode = -1673632966;
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
-            hashCode = (hashCode * -1521134295) + EqualityComparer<CosmosEncryptionAlgorithm>.Default.GetHashCode(this.EncryptionAlgorithm);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.EncryptionAlgorithm);
             hashCode = (hashCode * -1521134295) + EqualityComparer<EncryptionKeyWrapMetadata>.Default.GetHashCode(this.EncryptionKeyWrapMetadata);
             hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime?>.Default.GetHashCode(this.CreatedTime);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ETag);

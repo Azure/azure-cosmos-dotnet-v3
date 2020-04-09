@@ -1,7 +1,11 @@
-﻿using System;
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
+namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
+
     /// <summary>
     /// This is an empty implementation of CosmosDiagnosticsContext which has been plumbed through the DataEncryptionKeyProvider.
     /// This may help adding diagnostics more easily in future.

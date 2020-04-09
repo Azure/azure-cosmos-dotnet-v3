@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Provider that allows getting a data encryption key based on its id.
+        /// Provider that allows encrypting and decrypting data.
         /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
         [JsonIgnore]
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        DataEncryptionKeyProvider DataEncryptionKeyProvider { get; set; }
+        Encryptor Encryptor { get; set; }
 
         /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClient.

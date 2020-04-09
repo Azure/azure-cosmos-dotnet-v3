@@ -16,14 +16,14 @@ namespace Microsoft.Azure.Cosmos
         public string DataEncryptionKeyId { get; }
 
         [JsonProperty(PropertyName = "_ea")]
-        public CosmosEncryptionAlgorithm EncryptionAlgorithm { get;  }
+        public string EncryptionAlgorithm { get;  }
 
         [JsonProperty(PropertyName = Constants.Properties.EncryptedData)]
         public byte[] EncryptedData { get; }
 
         public EncryptionProperties(
             int encryptionFormatVersion,
-            CosmosEncryptionAlgorithm encryptionAlgorithm,
+            string encryptionAlgorithm,
             string dataEncryptionKeyId,
             byte[] encryptedData)
         {

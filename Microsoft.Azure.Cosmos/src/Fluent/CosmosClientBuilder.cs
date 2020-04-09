@@ -392,19 +392,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Provider that allows getting a data encryption key based on its id.
+        /// Provider that allows encrypting and decrypting data.
         /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
-        /// <param name="dataEncryptionKeyProvider">Provider that allows getting a data encryption key based on its id.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        CosmosClientBuilder WithDataEncryptionKeyProvider(DataEncryptionKeyProvider dataEncryptionKeyProvider)
+        CosmosClientBuilder WithEncryptor(Encryptor encryptor)
         {
-            this.clientOptions.DataEncryptionKeyProvider = dataEncryptionKeyProvider;
+            this.clientOptions.Encryptor = encryptor;
             return this;
         }
 
