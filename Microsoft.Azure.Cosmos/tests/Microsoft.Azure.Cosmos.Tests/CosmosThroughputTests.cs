@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     string output = await reader.ReadToEndAsync();
                     Assert.IsNotNull(output);
-                    Assert.AreEqual("{\"content\":{\"offerAutopilotSettings\":{\"maxThroughput\":1000}},\"offerVersion\":\"V2\"}", output);
+                    Assert.AreEqual("{\"offerVersion\":\"V2\",\"content\":{\"offerAutopilotSettings\":{\"maxThroughput\":1000}}}", output);
                 }
             }
 
