@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -101,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
             using (diagnostics.GetOverallScope())
             {
+                diagnostics.AddDiagnosticsInternal(new FeedRangeStatistics(this.FeedRangeInternal));
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
                     using (diagnostics.CreateScope("InitializeContainerResourceId"))
