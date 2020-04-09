@@ -32,11 +32,5 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Path("/property2")
                 .Attach();
         }
-
-        [TestMethod]
-        public void UniqueKeyUnsealed()
-        {
-            Assert.IsFalse(typeof(UniqueKey).IsSealed);
-        }
     }
 }
