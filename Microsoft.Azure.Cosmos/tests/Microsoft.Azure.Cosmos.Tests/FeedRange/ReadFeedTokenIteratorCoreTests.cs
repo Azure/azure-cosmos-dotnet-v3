@@ -63,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
 
             string continuation = Guid.NewGuid().ToString();
-            FeedRangeSimpleContinuation feedRangeSimpleContinuation = new FeedRangeSimpleContinuation(Guid.NewGuid().ToString(), FeedRangeEPK.ForCompleteRange(), continuation);
+            FeedRangeEPK feedRangeEPK = FeedRangeEPK.ForCompleteRange();
+            FeedRangeCompositeContinuation feedRangeSimpleContinuation = new FeedRangeCompositeContinuation(Guid.NewGuid().ToString(), feedRangeEPK, new List<Documents.Routing.Range<string>>() { feedRangeEPK.Range }, continuation);
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerCore>(), null, feedRangeSimpleContinuation.ToString(), null);
             FeedRangeEPK defaultRange = feedTokenIterator.FeedRangeInternal as FeedRangeEPK;
             Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Min, defaultRange.Range.Min);

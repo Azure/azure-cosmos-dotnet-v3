@@ -86,28 +86,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
-        public void FeedRangeSimpleContinuation_TryParse()
-        {
-            const string containerRid = "containerRid";
-            FeedRangeInternal feedRangeInternal = new FeedRangePartitionKey(new PartitionKey("test"));
-            FeedRangeSimpleContinuation token = new FeedRangeSimpleContinuation(containerRid, feedRangeInternal);
-            Assert.IsTrue(FeedRangeSimpleContinuation.TryCreateFromString(token.ToString(), out _));
-            Assert.IsFalse(FeedRangeSimpleContinuation.TryCreateFromString("whatever", out _));
-        }
-
-        [TestMethod]
-        public void FeedRangeSimpleContinuation_RequestVisitor()
-        {
-            const string containerRid = "containerRid";
-            const string continuation = "continuation";
-            FeedRangeSimpleContinuation token = new FeedRangeSimpleContinuation(containerRid, Mock.Of<FeedRangeInternal>(), continuation);
-            RequestMessage requestMessage = new RequestMessage();
-            FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
-            token.Accept(feedRangeVisitor, ChangeFeedRequestOptions.FillContinuationToken);
-            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
-        }
-
-        [TestMethod]
         public async Task FeedRangeCompositeContinuation_ShouldRetry()
         {
             List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
@@ -176,16 +154,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Assert.AreEqual(compositeContinuationTokens[0].Token, continuationTokens[2].Token);
             Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MinInclusive, continuationTokens[2].Range.Min);
             Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MaxExclusive, continuationTokens[2].Range.Max);
-        }
-
-        [TestMethod]
-        public void FeedRangeSimpleContinuation_IsDone()
-        {
-            FeedRangeSimpleContinuation token = new FeedRangeSimpleContinuation(null, Mock.Of<FeedRangeInternal>());
-            token.UpdateContinuation(Guid.NewGuid().ToString());
-            Assert.IsFalse(token.IsDone);
-            token.UpdateContinuation(null);
-            Assert.IsTrue(token.IsDone);
         }
 
         [TestMethod]

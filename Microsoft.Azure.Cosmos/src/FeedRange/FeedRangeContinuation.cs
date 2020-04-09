@@ -54,18 +54,13 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            if (FeedRangeSimpleContinuation.TryParse(toStringValue, out parsedToken))
-            {
-                return true;
-            }
-
             parsedToken = null;
             return false;
         }
 
-        public virtual Task<bool> ShouldRetryAsync(
+        public abstract Task<bool> ShouldRetryAsync(
             ContainerCore containerCore,
             ResponseMessage responseMessage,
-            CancellationToken cancellationToken) => Task.FromResult(false);
+            CancellationToken cancellationToken);
     }
 }

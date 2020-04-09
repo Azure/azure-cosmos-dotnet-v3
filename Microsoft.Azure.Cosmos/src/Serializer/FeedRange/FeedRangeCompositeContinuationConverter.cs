@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class FeedRangeCompositeContinuationConverter : JsonConverter
     {
-        private const string TypePropertyName = "T";
         private const string VersionPropertyName = "V";
         private const string RidPropertyName = "Rid";
         private const string ContinuationPropertyName = "Continuation";
@@ -39,13 +38,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             JObject jObject = JObject.Load(reader);
-
-            if (!jObject.TryGetValue(FeedRangeCompositeContinuationConverter.TypePropertyName, out JToken typeJtoken)
-                || !Enum.TryParse(typeJtoken.Value<int>().ToString(), ignoreCase: true, out FeedRangeContinuationType tokenType)
-                || !FeedRangeContinuationType.Composite.Equals(tokenType))
-            {
-                throw new JsonReaderException();
-            }
 
             if (!jObject.TryGetValue(FeedRangeCompositeContinuationConverter.ContinuationPropertyName, out JToken continuationJToken))
             {
@@ -75,8 +67,6 @@ namespace Microsoft.Azure.Cosmos
             if (value is FeedRangeCompositeContinuation feedRangeCompositeContinuation)
             {
                 writer.WriteStartObject();
-                writer.WritePropertyName(FeedRangeCompositeContinuationConverter.TypePropertyName);
-                writer.WriteValue(FeedRangeContinuationType.Composite);
                 writer.WritePropertyName(FeedRangeCompositeContinuationConverter.VersionPropertyName);
                 writer.WriteValue(FeedRangeContinuationVersion.V1);
                 writer.WritePropertyName(FeedRangeCompositeContinuationConverter.RidPropertyName);

@@ -45,12 +45,5 @@ namespace Microsoft.Azure.Cosmos
 
             fillContinuation(this.request, continuation.GetContinuation());
         }
-
-        public void Visit(
-            FeedRangeSimpleContinuation continuation,
-            Action<RequestMessage, string> fillContinuation)
-        {
-            fillContinuation(this.request, continuation.GetContinuation());
-        }
     }
 }

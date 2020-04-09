@@ -63,8 +63,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int firstRunTotal = 25;
             int batchSize = 25;
 
-            await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.Container;
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.LargerContainer;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
             while (feedIterator.HasMoreResults)
             {
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int expectedFinalCount = 50;
 
             // Insert another batch of 25 and use the last FeedToken from the first cycle
-            await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ChangeFeedIteratorCore setIteratorNew = itemsCore.GetChangeFeedStreamIterator(continuationToken: continuation, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
 
             while (setIteratorNew.HasMoreResults)
@@ -180,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     }
                 }
             }
+
             string continuation = feedIterator.Continuation;
 
             Assert.AreEqual(firstRunTotal, totalCount);
@@ -463,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 dynamic ctRange = new { min = min, max = max };
                 List<dynamic> ct = new List<dynamic>() { new { min = min, max = max, token = firstResponse.Headers.ETag, range=ctRange} };
                 // Extract Etag and manually construct the continuation
-                dynamic oldContinuation = new { V = 0, T = 1, Range = ctRange, Continuation = ct };
+                dynamic oldContinuation = new { V = 0, Range = ctRange, Continuation = ct };
                 continuations.Add(JsonConvert.SerializeObject(oldContinuation));
             }
 

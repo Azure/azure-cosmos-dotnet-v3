@@ -209,25 +209,26 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
         {
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            List<Documents.Routing.Range<string>> ranges;
             if (this.FeedRangeInternal is FeedRangePartitionKey)
             {
-                this.FeedRangeContinuation = new FeedRangeSimpleContinuation(
-                    containerRid: this.lazyContainerRid.Result.Result,
-                    feedRange: this.FeedRangeInternal);
+                Documents.PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
+                ranges = await this.FeedRangeInternal.GetEffectiveRangesAsync(partitionKeyRangeCache, this.lazyContainerRid.Result.Result, partitionKeyDefinition);
             }
             else
             {
-                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 IReadOnlyList<Documents.PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    collectionRid: this.lazyContainerRid.Result.Result,
-                    range: (this.FeedRangeInternal as FeedRangeEPK).Range,
-                    forceRefresh: false);
-
-                this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
-                    containerRid: this.lazyContainerRid.Result.Result,
-                    feedRange: this.FeedRangeInternal,
-                    ranges: pkRanges.Select(pkRange => pkRange.ToRange()).ToList());
+                        collectionRid: this.lazyContainerRid.Result.Result,
+                        range: (this.FeedRangeInternal as FeedRangeEPK).Range,
+                        forceRefresh: false);
+                ranges = pkRanges.Select(pkRange => pkRange.ToRange()).ToList();
             }
+
+            this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
+                containerRid: this.lazyContainerRid.Result.Result,
+                feedRange: this.FeedRangeInternal,
+                ranges: ranges);
         }
     }
 
