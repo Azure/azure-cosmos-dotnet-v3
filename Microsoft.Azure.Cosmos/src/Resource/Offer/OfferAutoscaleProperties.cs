@@ -7,28 +7,28 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal sealed class OfferAutopilotProperties
+    internal sealed class OfferAutoscaleProperties
     {
         /// <summary>
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private OfferAutopilotProperties()
+        private OfferAutoscaleProperties()
         {
         }
 
-        internal OfferAutopilotProperties(int maxThroughput)
+        internal OfferAutoscaleProperties(int maxThroughput)
         {
             this.MaxThroughput = maxThroughput;
             this.AutopilotAutoUpgradeProperties = null;
         }
 
-        internal OfferAutopilotProperties(
+        internal OfferAutoscaleProperties(
             int startingMaxThroughput,
             int autoUpgradeMaxThroughputIncrementPercentage)
         {
             this.MaxThroughput = startingMaxThroughput;
-            this.AutopilotAutoUpgradeProperties = new OfferAutopilotAutoUpgradeProperties(autoUpgradeMaxThroughputIncrementPercentage);
+            this.AutopilotAutoUpgradeProperties = new OfferAutoscaleAutoUpgradeProperties(autoUpgradeMaxThroughputIncrementPercentage);
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         /// Scales the maximum through put automatically
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.AutopilotAutoUpgradePolicy, NullValueHandling = NullValueHandling.Ignore)]
-        public OfferAutopilotAutoUpgradeProperties AutopilotAutoUpgradeProperties { get; private set; }
+        public OfferAutoscaleAutoUpgradeProperties AutopilotAutoUpgradeProperties { get; private set; }
 
         internal string GetJsonString()
         {

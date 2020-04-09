@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">The options for the throughput request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The throughput response.</returns>
-        public abstract Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(
+        public abstract Task<ThroughputResponse> ReadThroughputPropertiesAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -314,8 +314,8 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// </remarks>
-        public abstract Task<AutopilotThroughputResponse> ReplaceAutopilotThroughputAsync(
-            AutopilotThroughputProperties throughputProperties,
+        public abstract Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 #endif

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
             this.OfferAutopilotSettings = null;
         }
 
-        private OfferContentProperties(OfferAutopilotProperties autopilotProperties)
+        private OfferContentProperties(OfferAutoscaleProperties autopilotProperties)
         {
             this.OfferThroughput = null;
             this.OfferAutopilotSettings = autopilotProperties ?? throw new ArgumentNullException(nameof(autopilotProperties));
@@ -40,16 +40,28 @@ namespace Microsoft.Azure.Cosmos
         /// Represents customizable throughput chosen by user for his collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.AutopilotSettings, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public OfferAutopilotProperties OfferAutopilotSettings { get; private set; }
+        public OfferAutoscaleProperties OfferAutopilotSettings { get; private set; }
+
+        /// <summary>
+        /// Represents Request Units(RU)/Minute throughput is enabled/disabled for collection in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.OfferIsRUPerMinuteThroughputEnabled, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool? OfferIsRUPerMinuteThroughputEnabled { get; private set; }
+
+        /// <summary>
+        /// Represents time stamp when offer was last replaced by user for collection in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.OfferLastReplaceTimestamp, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal long? OfferLastReplaceTimestamp { get; private set; }
 
         public static OfferContentProperties CreateFixedOfferConent(int throughput)
         {
             return new OfferContentProperties(fixedThroughput: throughput);
         }
 
-        public static OfferContentProperties CreateAutoPilotOfferConent(int maxThroughput)
+        public static OfferContentProperties CreateAutoscaleOfferConent(int maxThroughput)
         {
-            OfferAutopilotProperties autopilotProperties = new OfferAutopilotProperties(maxThroughput);
+            OfferAutoscaleProperties autopilotProperties = new OfferAutoscaleProperties(maxThroughput);
             return new OfferContentProperties(autopilotProperties);
         }
 
@@ -57,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             int startingMaxThroughput,
             int autoUpgradeMaxThroughputIncrementPercentage)
         {
-            OfferAutopilotProperties autopilotProperties = new OfferAutopilotProperties(
+            OfferAutoscaleProperties autopilotProperties = new OfferAutoscaleProperties(
                 startingMaxThroughput,
                 autoUpgradeMaxThroughputIncrementPercentage);
             return new OfferContentProperties(autopilotProperties);

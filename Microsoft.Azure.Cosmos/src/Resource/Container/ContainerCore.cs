@@ -167,32 +167,14 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        async Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default)
-        {
-            string rid = await this.GetRIDAsync(cancellationToken);
-
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReadAutopilotThroughputAsync(
-                targetRID: rid,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-#if INTERNAL
-        public override
-#else
-        internal
-#endif
-        async Task<AutopilotThroughputResponse> ReplaceAutopilotThroughputAsync(
-            AutopilotThroughputProperties throughputProperties,
+        async Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReplaceAutoPilotThroughputAsync(
+            return await cosmosOffers.ReplaceThroughputPropertiesAsync(
                 rid,
                 throughputProperties,
                 requestOptions,

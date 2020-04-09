@@ -41,22 +41,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(
-            string targetRID,
-            RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
-
-            return await this.GetAutopilotThroughputResponseAsync(
-                streamPayload: null,
-                operationType: OperationType.Read,
-                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
-                resourceType: ResourceType.Offer,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
         internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             string targetRID,
             RequestOptions requestOptions,
@@ -82,34 +66,16 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<ThroughputResponse> ReplaceThroughputAsync(
+        internal async Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
             string targetRID,
-            int throughput,
-            RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
-            OfferV2 newOffer = new OfferV2(offerV2, throughput);
-
-            return await this.GetThroughputResponseAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(newOffer),
-                operationType: OperationType.Replace,
-                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
-                resourceType: ResourceType.Offer,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<AutopilotThroughputResponse> ReplaceAutoPilotThroughputAsync(
-            string targetRID,
-            AutopilotThroughputProperties userAutopilotProperties,
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            AutopilotThroughputProperties currentProperty = await this.GetOfferV2Async<AutopilotThroughputProperties>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
-            currentProperty.Content = userAutopilotProperties.Content;
+            ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+            currentProperty.Content = throughputProperties.Content;
 
-            return await this.GetAutopilotThroughputResponseAsync(
+            return await this.GetThroughputResponseAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty),
                 operationType: OperationType.Replace,
                 linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
@@ -118,21 +84,21 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+        internal async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
             string targetRID,
-            int throughput,
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {
-                OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
-                OfferV2 newOffer = new OfferV2(offerV2, throughput);
+                ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+                currentProperty.Content = throughputProperties.Content;
 
                 return await this.GetThroughputResponseAsync(
-                    streamPayload: this.ClientContext.SerializerCore.ToStream(newOffer),
+                    streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty),
                     operationType: OperationType.Replace,
-                    linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                    linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
                     resourceType: ResourceType.Offer,
                     requestOptions: requestOptions,
                     cancellationToken: cancellationToken);
@@ -155,6 +121,32 @@ namespace Microsoft.Azure.Cosmos
                     throughputProperties: null,
                     diagnostics: responseMessage.Diagnostics);
             }
+        }
+
+        internal Task<ThroughputResponse> ReplaceThroughputAsync(
+            string targetRID,
+            int throughput,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ReplaceThroughputPropertiesAsync(
+                targetRID,
+                ThroughputProperties.CreateFixedThroughput(throughput),
+                requestOptions,
+                cancellationToken);
+        }
+
+        internal Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+            string targetRID,
+            int throughput,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ReplaceThroughputPropertiesIfExistsAsync(
+                targetRID,
+                ThroughputProperties.CreateFixedThroughput(throughput),
+                requestOptions,
+                cancellationToken);
         }
 
         private async Task<T> GetOfferV2Async<T>(
@@ -260,29 +252,6 @@ namespace Microsoft.Azure.Cosmos
               diagnosticsContext: null,
               cancellationToken: cancellationToken);
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
-        }
-
-        private async Task<AutopilotThroughputResponse> GetAutopilotThroughputResponseAsync(
-          Stream streamPayload,
-          OperationType operationType,
-          Uri linkUri,
-          ResourceType resourceType,
-          RequestOptions requestOptions = null,
-          CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
-              resourceUri: linkUri,
-              resourceType: resourceType,
-              operationType: operationType,
-              cosmosContainerCore: null,
-              partitionKey: null,
-              streamPayload: streamPayload,
-              requestOptions: requestOptions,
-              requestEnricher: null,
-              diagnosticsContext: null,
-              cancellationToken: cancellationToken);
-
-            return await this.ClientContext.ResponseFactory.CreateAutopilotThroughputResponseAsync(responseMessage);
         }
     }
 }

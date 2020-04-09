@@ -169,16 +169,21 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal void AddAutoPilotThroughputHeader(OfferAutopilotProperties offerAutopilotProperties)
+        internal void AddThroughputPropertiesHeader(ThroughputProperties throughputProperties)
         {
-            if (this.Headers.OfferThroughput != null)
+            if (throughputProperties.Throughput.HasValue &&
+                (throughputProperties.MaxThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
             {
-                throw new InvalidOperationException("Autopilot can not be configured with fixed offer");
+                throw new InvalidOperationException("Autoscale provisioned throughput can not be configured with fixed offer");
             }
 
-            if (offerAutopilotProperties != null)
+            if (throughputProperties.Throughput.HasValue)
             {
-                this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, offerAutopilotProperties.GetJsonString());
+                this.AddThroughputHeader(throughputProperties.Throughput);
+            }
+            else if (throughputProperties?.Content?.OfferAutopilotSettings != null)
+            {
+                this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, throughputProperties.Content.OfferAutopilotSettings.GetJsonString());
             }
         }
 

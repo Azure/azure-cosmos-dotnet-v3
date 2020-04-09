@@ -160,46 +160,6 @@ namespace Microsoft.Azure.Cosmos
 
 #if INTERNAL
         /// <summary>
-        /// Gets database throughput in measurement of request units per second in the Azure Cosmos service.
-        /// </summary>
-        /// <param name="requestOptions">The options for the throughput request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>The throughput response.</returns>
-        /// <value>
-        /// The provisioned throughput for this database.
-        /// </value>
-        /// <remarks>
-        /// Null value indicates a database with no throughput provisioned.
-        /// </remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-database">Set throughput on a database</seealso>
-        /// <example>
-        /// The following example shows how to get the throughput
-        /// <code language="c#">
-        /// <![CDATA[
-        ///  RequestOptions requestOptions = new RequestOptions();
-        /// ThroughputProperties throughputProperties = await database.ReadThroughputAsync(requestOptions);
-        /// Console.WriteLine($"Throughput: {throughputProperties?.Throughput}");
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <example>
-        /// The following example shows how to get throughput, MinThroughput and is replace in progress
-        /// <code language="c#">
-        /// <![CDATA[
-        /// RequestOptions requestOptions = new RequestOptions();
-        /// ThroughputResponse response = await database.ReadThroughputAsync(requestOptions);
-        /// Console.WriteLine($"Throughput: {response.Resource?.Throughput}");
-        /// Console.WriteLine($"MinThroughput: {response.MinThroughput}");
-        /// Console.WriteLine($"IsReplacePending: {response.IsReplacePending}");
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
         /// <param name="throughputProperties">The Cosmos database throughput expressed in Request Units per second.</param>
@@ -213,15 +173,15 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// AutopilotThroughputProperties throughput = await this.cosmosDatabase.ReplaceAutopilotThroughputAsync(10000);
+        /// ThroughputProperties throughput = await this.cosmosDatabase.ReplaceThroughputPropertiesAsync(10000);
         /// ]]>
         /// </code>
         /// </example>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// </remarks>
-        public abstract Task<AutopilotThroughputResponse> ReplaceAutopilotThroughputAsync(
-            AutopilotThroughputProperties throughputProperties,
+        public abstract Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

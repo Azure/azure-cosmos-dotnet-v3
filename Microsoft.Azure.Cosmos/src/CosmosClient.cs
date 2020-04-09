@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
         /// <param name="id">The database id.</param>
-        /// <param name="autopilotThroughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughputProperties">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
-                AutopilotThroughputProperties autopilotThroughput,
+                ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -409,9 +409,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateAutopilotDatabaseAsync(
+            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseAsync(
                 databaseProperties: databaseProperties,
-                autopilotThroughput: autopilotThroughput,
+                throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken));
         }
@@ -750,15 +750,15 @@ namespace Microsoft.Azure.Cosmos
             return databaseProperties;
         }
 
-        internal Task<DatabaseResponse> CreateAutopilotDatabaseAsync(
+        internal Task<DatabaseResponse> CreateDatabaseAsync(
                     DatabaseProperties databaseProperties,
-                    AutopilotThroughputProperties autopilotThroughput,
+                    ThroughputProperties throughputProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.CreateAutopilotDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
-                autopilotThroughput: autopilotThroughput,
+                throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -782,7 +782,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<ResponseMessage> CreateAutopilotDatabaseStreamInternalAsync(
                 Stream streamPayload,
-                AutopilotThroughputProperties autopilotThroughput,
+                ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -794,7 +794,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
-                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddAutoPilotThroughputHeader(autopilotThroughput?.Content?.OfferAutopilotSettings),
+                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
         }

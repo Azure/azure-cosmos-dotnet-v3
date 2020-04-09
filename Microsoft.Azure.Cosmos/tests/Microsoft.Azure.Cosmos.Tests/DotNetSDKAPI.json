@@ -7551,9 +7551,11 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Int32] get_Throughput()"
         },
-        "System.Nullable`1[System.Int32] Throughput": {
+        "System.Nullable`1[System.Int32] Throughput[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
           "MethodInfo": null
         },
         "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {

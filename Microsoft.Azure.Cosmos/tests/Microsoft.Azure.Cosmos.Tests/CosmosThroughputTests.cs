@@ -4,39 +4,32 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Newtonsoft.Json.Linq;
     using System.IO;
+    using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosThroughputTests
     {
         [TestMethod]
-        public async Task AutopilotThroughputSerializationTest()
+        public async Task AutoscaleThroughputSerializationTest()
         {
-            AutopilotThroughputProperties autopilotThroughputProperties = new AutopilotThroughputProperties(1000);
-            Assert.AreEqual(1000, autopilotThroughputProperties.MaxThroughput);
-            Assert.IsNull(autopilotThroughputProperties.Throughput);
+            ThroughputProperties autoscaleThroughputProperties = ThroughputProperties.CreateAutoScaleProvionedThroughput(1000);
+            Assert.AreEqual(1000, autoscaleThroughputProperties.MaxThroughput);
+            Assert.IsNull(autoscaleThroughputProperties.Throughput);
 
-            using (Stream stream = MockCosmosUtil.Serializer.ToStream<AutopilotThroughputProperties>(autopilotThroughputProperties))
+            using (Stream stream = MockCosmosUtil.Serializer.ToStream<ThroughputProperties>(autoscaleThroughputProperties))
             {
-                using(StreamReader reader = new StreamReader(stream))
+                using (StreamReader reader = new StreamReader(stream))
                 {
                     string output = await reader.ReadToEndAsync();
                     Assert.IsNotNull(output);
-                    Assert.AreEqual("{\"offerVersion\":\"V2\",\"content\":{\"offerAutopilotSettings\":{\"maxThroughput\":1000}}}", output);
+                    Assert.AreEqual("{\"content\":{\"offerAutopilotSettings\":{\"maxThroughput\":1000}},\"offerVersion\":\"V2\"}", output);
                 }
             }
 
-            OfferAutopilotProperties autopilotProperties = new OfferAutopilotProperties(1000);
-            using (Stream stream = MockCosmosUtil.Serializer.ToStream<OfferAutopilotProperties>(autopilotProperties))
+            OfferAutoscaleProperties autoscaleProperties = new OfferAutoscaleProperties(1000);
+            using (Stream stream = MockCosmosUtil.Serializer.ToStream<OfferAutoscaleProperties>(autoscaleProperties))
             {
                 using (StreamReader reader = new StreamReader(stream))
                 {
@@ -46,14 +39,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            using (Stream stream = MockCosmosUtil.Serializer.ToStream<OfferAutopilotProperties>(autopilotProperties))
+            using (Stream stream = MockCosmosUtil.Serializer.ToStream<OfferAutoscaleProperties>(autoscaleProperties))
             {
-                OfferAutopilotProperties fromStream = MockCosmosUtil.Serializer.FromStream<OfferAutopilotProperties>(stream);
+                OfferAutoscaleProperties fromStream = MockCosmosUtil.Serializer.FromStream<OfferAutoscaleProperties>(stream);
                 Assert.IsNotNull(fromStream);
                 Assert.AreEqual(1000, fromStream.MaxThroughput);
             }
 
-            OfferContentProperties content = OfferContentProperties.CreateAutoPilotOfferConent(1000);
+            OfferContentProperties content = OfferContentProperties.CreateAutoscaleOfferConent(1000);
             using (Stream stream = MockCosmosUtil.Serializer.ToStream<OfferContentProperties>(content))
             {
                 using (StreamReader reader = new StreamReader(stream))
@@ -72,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNull(fromStream.OfferThroughput);
             }
 
-            using (Stream stream = MockCosmosUtil.Serializer.ToStream<AutopilotThroughputProperties>(autopilotThroughputProperties))
+            using (Stream stream = MockCosmosUtil.Serializer.ToStream<ThroughputProperties>(autoscaleThroughputProperties))
             {
-                AutopilotThroughputProperties fromStream = MockCosmosUtil.Serializer.FromStream<AutopilotThroughputProperties>(stream);
+                ThroughputProperties fromStream = MockCosmosUtil.Serializer.FromStream<ThroughputProperties>(stream);
                 Assert.AreEqual(1000, fromStream.MaxThroughput);
                 Assert.IsNull(fromStream.Throughput); ;
             }

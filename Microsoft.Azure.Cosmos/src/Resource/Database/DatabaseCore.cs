@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         Task<ContainerResponse> CreateContainerAsync(
             ContainerProperties containerProperties,
-            AutopilotThroughputProperties autopilotThroughput,
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
 
             Task<ResponseMessage> response = this.ProcessCollectionCreateAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
-                autoPilotThroughput: autopilotThroughput,
+                throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -154,33 +154,30 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        async Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(
+        async Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReadAutopilotThroughputAsync(
+            return await cosmosOffers.ReplaceThroughputPropertiesAsync(
                 targetRID: rid,
+                throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-#if INTERNAL
-        public override
-#else
-        internal
-#endif
-        async Task<AutopilotThroughputResponse> ReplaceAutopilotThroughputAsync(
-            AutopilotThroughputProperties throughputProperties,
+        internal async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReplaceAutoPilotThroughputAsync(
+            return await cosmosOffers.ReplaceThroughputPropertiesIfExistsAsync(
                 targetRID: rid,
-                userAutopilotProperties: throughputProperties,
+                throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -739,7 +736,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<ResponseMessage> ProcessCollectionCreateAsync(
             Stream streamPayload,
-            AutopilotThroughputProperties autoPilotThroughput,
+            ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
@@ -751,7 +748,7 @@ namespace Microsoft.Azure.Cosmos
                partitionKey: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
-               requestEnricher: (httpRequestMessage) => httpRequestMessage.AddAutoPilotThroughputHeader(autoPilotThroughput?.Content?.OfferAutopilotSettings),
+               requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                diagnosticsContext: null,
                cancellationToken: cancellationToken);
         }

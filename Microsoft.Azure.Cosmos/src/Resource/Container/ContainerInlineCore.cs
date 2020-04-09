@@ -105,9 +105,9 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken = default)
+        Task<ThroughputResponse> ReadAutopilotThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadAutopilotThroughputAsync(requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadThroughputAsync(requestOptions, cancellationToken));
         }
 
 #if INTERNAL
@@ -115,9 +115,9 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        Task<AutopilotThroughputResponse> ReplaceAutopilotThroughputAsync(AutopilotThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        Task<ThroughputResponse> ReplaceAutopilotThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceAutopilotThroughputAsync(throughputProperties, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceThroughputPropertiesAsync(throughputProperties, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> CreateItemStreamAsync(

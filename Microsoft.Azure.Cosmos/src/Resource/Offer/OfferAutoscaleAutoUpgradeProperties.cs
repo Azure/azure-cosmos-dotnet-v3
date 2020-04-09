@@ -7,17 +7,17 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal sealed class OfferAutopilotAutoUpgradeProperties
+    internal sealed class OfferAutoscaleAutoUpgradeProperties
     {
         /// <summary>
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private OfferAutopilotAutoUpgradeProperties()
+        private OfferAutoscaleAutoUpgradeProperties()
         {
         }
 
-        internal OfferAutopilotAutoUpgradeProperties(int incrementPercent)
+        internal OfferAutoscaleAutoUpgradeProperties(int incrementPercent)
         {
             this.ThroughputProperties = new AutoPilotThroughputProperties(incrementPercent);
         }
