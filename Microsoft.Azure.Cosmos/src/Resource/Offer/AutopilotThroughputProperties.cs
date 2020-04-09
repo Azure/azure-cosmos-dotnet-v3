@@ -37,6 +37,9 @@ namespace Microsoft.Azure.Cosmos
             this.MaxThroughput = maxThroughput;
         }
 
+        [JsonIgnore]
+        public override int? Throughput => base.Throughput;
+
         /// <summary>
         /// The maximum throughput the autopilot will scale to.
         /// </summary>

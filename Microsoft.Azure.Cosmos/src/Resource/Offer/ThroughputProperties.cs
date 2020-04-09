@@ -49,8 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the provisioned throughput for a resource in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
-        [JsonIgnore]
-        public int? Throughput
+        public virtual int? Throughput
         {
             get => this.Content?.OfferThroughput;
             private set => this.Content = OfferContentProperties.CreateFixedOfferConent(value.Value);

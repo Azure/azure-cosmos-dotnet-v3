@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] // Not currently working with emulator
         public async Task CreateDropAutopilotContainer()
         {
             DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
@@ -73,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] // Not currently working with emulator
         public async Task ReadFixedWithAutopilotTests()
         {
             DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
