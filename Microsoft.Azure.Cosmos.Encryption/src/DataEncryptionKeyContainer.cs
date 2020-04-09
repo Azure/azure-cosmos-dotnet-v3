@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// This create the type feed iterator for containers with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<DataEncryptionKeyProperties> resultSet = this.cosmosDatabase.GetDataEncryptionKeyIterator();
+        /// FeedIterator<DataEncryptionKeyProperties> resultSet = this.cosmosDatabase.GetDataEncryptionKeyQueryIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach (DataEncryptionKeyProperties properties in await feedIterator.ReadNextAsync())
@@ -133,10 +133,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <remarks>
         /// <see cref="DataEncryptionKey.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
         /// </remarks>
-        public abstract FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
-            string startId = null,
-            string endId = null,
-            bool isDescending = false,
+        public abstract FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
+            string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 

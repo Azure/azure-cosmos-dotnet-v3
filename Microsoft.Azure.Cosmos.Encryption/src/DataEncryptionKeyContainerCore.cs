@@ -19,66 +19,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.DekProvider = dekProvider;
         }
 
-        public override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
-                string startId = null,
-                string endId = null,
-                bool isDescending = false,
-                string continuationToken = null,
-                QueryRequestOptions requestOptions = null)
-        {
-            return null; // todo
-            //if (!(this.GetDataEncryptionKeyStreamIterator(
-            //    startId,
-            //    endId,
-            //    isDescending,
-            //    continuationToken,
-            //    requestOptions) is FeedIteratorInternal dekStreamIterator))
-            //{
-            //    throw new InvalidOperationException($"Expected FeedIteratorInternal.");
-            //}
-
-            //return new FeedIteratorCore<DataEncryptionKeyProperties>(
-            //    dekStreamIterator,
-            //    (responseMessage) =>
-            //    {
-            //        FeedResponse<DataEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DataEncryptionKeyProperties>(responseMessage, ResourceType.ClientEncryptionKey);
-            //        foreach (DataEncryptionKeyProperties result in results)
-            //        {
-            //            Uri dekUri = DataEncryptionKeyCore.CreateLinkUri(this.ClientContext, this, result.Id);
-            //            this.ClientContext.DekCache.Set(this.Id, dekUri, result);
-            //        }
-
-            //        return results;
-            //    });
-        }
-
-        internal FeedIterator GetDataEncryptionKeyStreamIterator(
-            string startId = null,
-            string endId = null,
-            bool isDescending = false,
+        public override FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
+            string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return null; // todo
-            //if (startId != null || endId != null)
-            //{
-            //    if (requestOptions == null)
-            //    {
-            //        requestOptions = new QueryRequestOptions();
-            //    }
-
-            //    requestOptions.StartId = startId;
-            //    requestOptions.EndId = endId;
-            //    requestOptions.EnumerationDirection = isDescending ? EnumerationDirection.Reverse : EnumerationDirection.Forward;
-            //}
-
-            //return FeedIteratorCore.CreateForNonPartitionedResource(
-            //   clientContext: this.ClientContext,
-            //   resourceLink: this.LinkUri,
-            //   resourceType: ResourceType.ClientEncryptionKey,
-            //   queryDefinition: null,
-            //   continuationToken: continuationToken,
-            //   options: requestOptions);
+            return this.DekProvider.Container.GetItemQueryIterator<T>(queryText, continuationToken, requestOptions);
         }
 
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> CreateDataEncryptionKeyAsync(

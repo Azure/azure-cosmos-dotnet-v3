@@ -43,6 +43,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
             }
 
+            if (string.IsNullOrEmpty(encryptionOptions.EncryptionAlgorithm))
+            {
+                throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
+            }
+
             if (encryptionOptions.PathsToEncrypt == null)
             {
                 throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
@@ -90,8 +95,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
 
             EncryptionProperties encryptionProperties = new EncryptionProperties(
-                dataEncryptionKeyId: encryptionOptions.DataEncryptionKeyId,
                 encryptionFormatVersion: 2,
+                dataEncryptionKeyId: encryptionOptions.DataEncryptionKeyId,
                 encryptionAlgorithm: encryptionOptions.EncryptionAlgorithm,
                 encryptedData: cipherText);
 

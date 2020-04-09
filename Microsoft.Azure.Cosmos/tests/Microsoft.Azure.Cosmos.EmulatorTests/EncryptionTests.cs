@@ -99,12 +99,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore] // todo
         public async Task EncryptionDekReadFeed()
         {
             try
             {
-
                 Container newKeyContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
                 CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
                 await dekProvider.InitializeAsync(EncryptionTests.databaseCore, newKeyContainer.Id);
@@ -124,7 +122,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     dekProvider,
                     new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
                     isExpectedDeksCompleteSetForRequest: true,
-                    isResultOrderExpected: false);
+                    isResultOrderExpected: false,
+                    "SELECT * from c");
 
                 // Test getting specific subset of keys
                 await EncryptionTests.IterateDekFeedAsync(
@@ -132,50 +131,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new List<string> { contosoV2 },
                     isExpectedDeksCompleteSetForRequest: false,
                     isResultOrderExpected: true,
-                    startId: "Contoso_v000",
-                    endId: "Contoso_v999",
-                    isDescending: true,
-                    itemCountInPage: 1);
+                    "SELECT TOP 1 * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id DESC");
 
-                // Ensure only required results are returned (ascending)
+                // Ensure only required results are returned
                 await EncryptionTests.IterateDekFeedAsync(
                     dekProvider,
                     new List<string> { contosoV1, contosoV2 },
                     isExpectedDeksCompleteSetForRequest: true,
                     isResultOrderExpected: true,
-                    startId: "Contoso_v000",
-                    endId: "Contoso_v999",
-                    isDescending: false);
-
-                // Test startId inclusive and endId inclusive (ascending)
-                await EncryptionTests.IterateDekFeedAsync(
-                    dekProvider,
-                    new List<string> { contosoV1, contosoV2 },
-                    isExpectedDeksCompleteSetForRequest: true,
-                    isResultOrderExpected: true,
-                    startId: "Contoso_v001",
-                    endId: "Contoso_v002",
-                    isDescending: false);
-
-                // Ensure only required results are returned (descending)
-                await EncryptionTests.IterateDekFeedAsync(
-                    dekProvider,
-                    new List<string> { contosoV2, contosoV1 },
-                    isExpectedDeksCompleteSetForRequest: true,
-                    isResultOrderExpected: true,
-                    startId: "Contoso_v000",
-                    endId: "Contoso_v999",
-                    isDescending: true);
-
-                // Test startId inclusive and endId inclusive (descending)
-                await EncryptionTests.IterateDekFeedAsync(
-                    dekProvider,
-                    new List<string> { contosoV2, contosoV1 },
-                    isExpectedDeksCompleteSetForRequest: true,
-                    isResultOrderExpected: true,
-                    startId: "Contoso_v001",
-                    endId: "Contoso_v002",
-                    isDescending: true);
+                    "SELECT * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id ASC");
 
                 // Test pagination
                 await EncryptionTests.IterateDekFeedAsync(
@@ -183,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
                     isExpectedDeksCompleteSetForRequest: true,
                     isResultOrderExpected: false,
+                    "SELECT * from c",
                     itemCountInPage: 3);
             }
             finally
@@ -604,23 +569,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> expectedDekIds,
             bool isExpectedDeksCompleteSetForRequest,
             bool isResultOrderExpected,
-            string startId = null,
-            string endId = null,
-            bool isDescending = false,
+            string query,
             int? itemCountInPage = null)
         {
             int remainingItemCount = expectedDekIds.Count;
-            QueryRequestOptions options = null;
+            QueryRequestOptions requestOptions = null;
             if (itemCountInPage.HasValue)
             {
-                options = new QueryRequestOptions()
+                requestOptions = new QueryRequestOptions()
                 {
                     MaxItemCount = itemCountInPage
                 };
             }
 
-            FeedIterator<DataEncryptionKeyProperties> dekIterator = dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKeyIterator(
-                startId, endId, isDescending, requestOptions: options);
+            FeedIterator<DataEncryptionKeyProperties> dekIterator = dekProvider.DataEncryptionKeyContainer
+                .GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
+                    query,
+                    requestOptions: requestOptions);
 
             Assert.IsTrue(dekIterator.HasMoreResults);
 
