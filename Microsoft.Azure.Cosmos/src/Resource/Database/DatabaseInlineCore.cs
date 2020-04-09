@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        Task<ThroughputResponse> ReplaceAutopilotThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReplaceThroughputPropertiesAsync(throughputProperties, requestOptions, cancellationToken));
         }

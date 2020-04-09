@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
-        /// <param name="autopilotThroughput">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughputProperties">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.</returns>
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public abstract Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
-                    AutopilotThroughputProperties autopilotThroughput,
+                    ThroughputProperties throughputProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 #endif
