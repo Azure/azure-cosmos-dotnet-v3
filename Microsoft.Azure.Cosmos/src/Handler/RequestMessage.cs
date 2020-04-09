@@ -169,6 +169,19 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal void AddAutoPilotThroughputHeader(OfferAutopilotProperties offerAutopilotProperties)
+        {
+            if (this.Headers.OfferThroughput != null)
+            {
+                throw new InvalidOperationException("Autopilot can not be configured with fixed offer");
+            }
+
+            if (offerAutopilotProperties != null)
+            {
+                this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, offerAutopilotProperties.GetJsonString());
+            }
+        }
+
         internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
         {
             if (this.IsMasterOperation())

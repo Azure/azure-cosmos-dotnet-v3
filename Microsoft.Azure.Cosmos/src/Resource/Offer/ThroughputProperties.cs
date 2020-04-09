@@ -49,10 +49,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the provisioned throughput for a resource in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
+        [JsonIgnore]
         public int? Throughput
         {
             get => this.Content?.OfferThroughput;
-            private set => this.Content = new OfferContentV2(value.Value);
+            private set => this.Content = OfferContentProperties.CreateFixedOfferConent(value.Value);
         }
 
         /// <summary>
@@ -79,6 +80,12 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceRID { get; private set; }
 
         [JsonProperty(PropertyName = "content", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        private OfferContentV2 Content { get; set; }
+        internal OfferContentProperties Content { get; set; }
+
+        /// <summary>
+        /// Gets the version of this offer resource in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.OfferVersion, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal string OfferVersion { get; private set; } = Constants.Offers.OfferVersion_V2;
     }
 }

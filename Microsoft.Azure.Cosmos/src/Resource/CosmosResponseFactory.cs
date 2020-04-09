@@ -196,6 +196,21 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        internal Task<AutopilotThroughputResponse> CreateAutopilotThroughputResponseAsync(
+           Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                cosmosResponseMessage.Content.Position = 0;
+                AutopilotThroughputProperties throughputProperties = this.ToObjectInternal<AutopilotThroughputProperties>(cosmosResponseMessage);
+                return new AutopilotThroughputResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    throughputProperties,
+                    cosmosResponseMessage.Diagnostics);
+            });
+        }
+
         internal Task<StoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponseAsync<T>(Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>

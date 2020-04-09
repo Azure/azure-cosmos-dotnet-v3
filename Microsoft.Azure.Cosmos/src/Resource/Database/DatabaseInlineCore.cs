@@ -208,6 +208,36 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
         }
 
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReadAutopilotThroughputAsync(requestOptions, cancellationToken));
+        }
+
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<AutopilotThroughputResponse> ReplaceAutopilotThroughputAsync(AutopilotThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReplaceAutopilotThroughputAsync(throughputProperties, requestOptions, cancellationToken));
+        }
+
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, AutopilotThroughputProperties autopilotThroughput, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerAsync(containerProperties, autopilotThroughput, requestOptions, cancellationToken));
+        }
+
         public override Task<UserResponse> UpsertUserAsync(
             string id,
             RequestOptions requestOptions = null,

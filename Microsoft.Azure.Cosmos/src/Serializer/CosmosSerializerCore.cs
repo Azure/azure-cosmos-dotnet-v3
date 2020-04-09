@@ -125,7 +125,8 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(ConflictProperties) ||
                 inputType == typeof(ThroughputProperties) ||
                 inputType == typeof(OfferV2) ||
-                inputType == typeof(PartitionedQueryExecutionInfo))
+                inputType == typeof(PartitionedQueryExecutionInfo) ||
+                inputType == typeof(AutopilotThroughputProperties))
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }

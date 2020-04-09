@@ -376,6 +376,47 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Sends a request for creating a database.
+        ///
+        /// A database manages users, permissions and a set of containers.
+        /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
+        /// with the database being the logical container for data.
+        ///
+        /// Each Database consists of one or more containers, each of which in turn contain one or more
+        /// documents. Since databases are an administrative resource, the Service Master Key will be
+        /// required in order to access and successfully complete any action using the User APIs.
+        /// </summary>
+        /// <param name="id">The database id.</param>
+        /// <param name="autopilotThroughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+#if INTERNAL
+        public
+#else
+        internal
+#endif
+        virtual Task<DatabaseResponse> CreateDatabaseAsync(
+                string id,
+                AutopilotThroughputProperties autopilotThroughput,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateAutopilotDatabaseAsync(
+                databaseProperties: databaseProperties,
+                autopilotThroughput: autopilotThroughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken));
+        }
+
+        /// <summary>
         /// <para>Check if a database exists, and if it doesn't, create it.
         /// Only the database id is used to verify if there is an existing database. Other database properties 
         /// such as throughput are not validated and can be different then the passed properties.</para>
@@ -709,6 +750,21 @@ namespace Microsoft.Azure.Cosmos
             return databaseProperties;
         }
 
+        internal Task<DatabaseResponse> CreateAutopilotDatabaseAsync(
+                    DatabaseProperties databaseProperties,
+                    AutopilotThroughputProperties autopilotThroughput,
+                    RequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Task<ResponseMessage> response = this.CreateAutopilotDatabaseStreamInternalAsync(
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
+                autopilotThroughput: autopilotThroughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
+        }
+
         internal Task<DatabaseResponse> CreateDatabaseAsync(
                     DatabaseProperties databaseProperties,
                     int? throughput = null,
@@ -722,6 +778,25 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
+        }
+
+        private Task<ResponseMessage> CreateAutopilotDatabaseStreamInternalAsync(
+                Stream streamPayload,
+                AutopilotThroughputProperties autopilotThroughput,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.DatabaseRootUri,
+                resourceType: ResourceType.Database,
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                cosmosContainerCore: null,
+                partitionKey: null,
+                streamPayload: streamPayload,
+                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddAutoPilotThroughputHeader(autopilotThroughput?.Content?.OfferAutopilotSettings),
+                diagnosticsContext: null,
+                cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(

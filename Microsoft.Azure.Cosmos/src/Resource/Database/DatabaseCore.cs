@@ -122,6 +122,68 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<ContainerResponse> CreateContainerAsync(
+            ContainerProperties containerProperties,
+            AutopilotThroughputProperties autopilotThroughput,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (containerProperties == null)
+            {
+                throw new ArgumentNullException(nameof(containerProperties));
+            }
+
+            this.ValidateContainerProperties(containerProperties);
+
+            Task<ResponseMessage> response = this.ProcessCollectionCreateAsync(
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                autoPilotThroughput: autopilotThroughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response);
+        }
+
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        async Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReadAutopilotThroughputAsync(
+                targetRID: rid,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        async Task<AutopilotThroughputResponse> ReplaceAutopilotThroughputAsync(
+            AutopilotThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceAutoPilotThroughputAsync(
+                targetRID: rid,
+                userAutopilotProperties: throughputProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
 
         public override Task<ResponseMessage> ReadStreamAsync(
             RequestOptions requestOptions = null,
@@ -673,6 +735,25 @@ namespace Microsoft.Azure.Cosmos
         {
             containerProperties.ValidateRequiredProperties();
             this.ClientContext.ValidateResource(containerProperties.Id);
+        }
+
+        internal Task<ResponseMessage> ProcessCollectionCreateAsync(
+            Stream streamPayload,
+            AutopilotThroughputProperties autoPilotThroughput,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
+               resourceType: ResourceType.Collection,
+               operationType: OperationType.Create,
+               cosmosContainerCore: null,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: (httpRequestMessage) => httpRequestMessage.AddAutoPilotThroughputHeader(autoPilotThroughput?.Content?.OfferAutopilotSettings),
+               diagnosticsContext: null,
+               cancellationToken: cancellationToken);
         }
 
         internal Task<ResponseMessage> ProcessCollectionCreateAsync(

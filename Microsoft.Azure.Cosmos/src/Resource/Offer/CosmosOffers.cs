@@ -30,9 +30,25 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+            OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
 
             return await this.GetThroughputResponseAsync(
+                streamPayload: null,
+                operationType: OperationType.Read,
+                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                resourceType: ResourceType.Offer,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        internal async Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(
+            string targetRID,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+
+            return await this.GetAutopilotThroughputResponseAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
@@ -46,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+            OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
 
             if (offerV2 == null)
             {
@@ -72,13 +88,31 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+            OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
             return await this.GetThroughputResponseAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(newOffer),
                 operationType: OperationType.Replace,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                resourceType: ResourceType.Offer,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        internal async Task<AutopilotThroughputResponse> ReplaceAutoPilotThroughputAsync(
+            string targetRID,
+            AutopilotThroughputProperties userAutopilotProperties,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            AutopilotThroughputProperties currentProperty = await this.GetOfferV2Async<AutopilotThroughputProperties>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+            currentProperty.Content = userAutopilotProperties.Content;
+
+            return await this.GetAutopilotThroughputResponseAsync(
+                streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty),
+                operationType: OperationType.Replace,
+                linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -92,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+                OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
                 OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
                 return await this.GetThroughputResponseAsync(
@@ -123,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<OfferV2> GetOfferV2Async(
+        private async Task<T> GetOfferV2Async<T>(
             string targetRID,
             bool failIfNotConfigured,
             CancellationToken cancellationToken)
@@ -136,12 +170,12 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition = new QueryDefinition("select * from root r where r.offerResourceId= @targetRID");
             queryDefinition.WithParameter("@targetRID", targetRID);
 
-            FeedIterator<OfferV2> databaseStreamIterator = this.GetOfferQueryIterator<OfferV2>(
+            FeedIterator<T> databaseStreamIterator = this.GetOfferQueryIterator<T>(
                  queryDefinition: queryDefinition,
                  continuationToken: null,
                  requestOptions: null,
                  cancellationToken: cancellationToken);
-            OfferV2 offerV2 = await this.SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
+            T offerV2 = await this.SingleOrDefaultAsync<T>(databaseStreamIterator);
 
             if (offerV2 == null &&
                 failIfNotConfigured)
@@ -228,5 +262,27 @@ namespace Microsoft.Azure.Cosmos
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
         }
 
+        private async Task<AutopilotThroughputResponse> GetAutopilotThroughputResponseAsync(
+          Stream streamPayload,
+          OperationType operationType,
+          Uri linkUri,
+          ResourceType resourceType,
+          RequestOptions requestOptions = null,
+          CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
+              resourceUri: linkUri,
+              resourceType: resourceType,
+              operationType: operationType,
+              cosmosContainerCore: null,
+              partitionKey: null,
+              streamPayload: streamPayload,
+              requestOptions: requestOptions,
+              requestEnricher: null,
+              diagnosticsContext: null,
+              cancellationToken: cancellationToken);
+
+            return await this.ClientContext.ResponseFactory.CreateAutopilotThroughputResponseAsync(responseMessage);
+        }
     }
 }

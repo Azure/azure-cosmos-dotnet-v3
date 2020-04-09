@@ -293,6 +293,33 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
+#if INTERNAL
+        /// <summary>
+        /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="requestOptions">The options for the throughput request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The throughput response.</returns>
+        public abstract Task<AutopilotThroughputResponse> ReadAutopilotThroughputAsync(
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Sets throughput provisioned for a container in measurement of request units per second in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="throughputProperties">The Cosmos container throughput expressed in Request Units per second.</param>
+        /// <param name="requestOptions">(Optional) The options for the throughput request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The throughput response.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// </remarks>
+        public abstract Task<AutopilotThroughputResponse> ReplaceAutopilotThroughputAsync(
+            AutopilotThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
