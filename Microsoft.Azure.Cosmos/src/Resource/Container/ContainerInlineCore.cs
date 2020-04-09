@@ -105,17 +105,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        Task<ThroughputResponse> ReadAutopilotThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken = default)
-        {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadThroughputAsync(requestOptions, cancellationToken));
-        }
-
-#if INTERNAL
-        public override
-#else
-        internal
-#endif
-        Task<ThroughputResponse> ReplaceAutopilotThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceThroughputPropertiesAsync(throughputProperties, requestOptions, cancellationToken));
         }
