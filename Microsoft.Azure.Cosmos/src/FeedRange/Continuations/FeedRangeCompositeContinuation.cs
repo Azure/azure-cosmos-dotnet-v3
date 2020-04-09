@@ -61,7 +61,11 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (Documents.Routing.Range<string> range in ranges)
             {
-                this.CompositeContinuationTokens.Enqueue(FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(range.Min, range.Max, continuation));
+                this.CompositeContinuationTokens.Enqueue(
+                    FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
+                        range.Min,
+                        range.Max,
+                        continuation));
             }
 
             this.CurrentToken = this.CompositeContinuationTokens.Peek();
@@ -120,7 +124,12 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(this.ContainerRid) &&
                 !this.ContainerRid.Equals(containerRid, StringComparison.Ordinal))
             {
-                return TryCatch.FromException(new ArgumentException(string.Format(ClientResources.FeedToken_InvalidFeedTokenForContainer, this.ContainerRid, containerRid)));
+                return TryCatch.FromException(
+                    new ArgumentException(
+                        string.Format(
+                            ClientResources.FeedToken_InvalidFeedTokenForContainer,
+                            this.ContainerRid,
+                            containerRid)));
             }
 
             return TryCatch.FromResult();
@@ -223,7 +232,11 @@ namespace Microsoft.Azure.Cosmos
             // Add children
             foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
             {
-                this.CompositeContinuationTokens.Enqueue(FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, this.CurrentToken.Token));
+                this.CompositeContinuationTokens.Enqueue(
+                    FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
+                        keyRange.MinInclusive,
+                        keyRange.MaxExclusive,
+                        this.CurrentToken.Token));
             }
         }
 
