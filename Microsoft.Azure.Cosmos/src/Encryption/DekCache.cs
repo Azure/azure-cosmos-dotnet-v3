@@ -20,7 +20,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal AsyncCache<string, InMemoryRawDek> RawDekByRidSelfLinkCache { get; } = new AsyncCache<string, InMemoryRawDek>();
 
-        public DekCache(TimeSpan? dekPropertiesTimeToLive = null)
+        internal CleanupExpiredRawDekFromMemory CleanupExpiredRawDekFromMemory { get; set; }
+
+        public DekCache(TimeSpan? dekPropertiesTimeToLive, bool startCleanupProcess)
         {
             if (dekPropertiesTimeToLive.HasValue)
             {
@@ -30,6 +32,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
             }
+
+            this.CleanupExpiredRawDekFromMemory = new CleanupExpiredRawDekFromMemory(startProcess: startCleanupProcess);
         }
 
         public async Task<DataEncryptionKeyProperties> GetOrAddByRidSelfLinkAsync(
