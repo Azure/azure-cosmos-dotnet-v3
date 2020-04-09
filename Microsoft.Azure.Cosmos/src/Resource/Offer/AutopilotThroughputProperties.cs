@@ -34,7 +34,21 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxThroughput">The maximum throughput the resource can scale to.</param>
         public AutopilotThroughputProperties(int maxThroughput)
         {
-            this.MaxThroughput = maxThroughput;
+            this.Content = OfferContentProperties.CreateAutoPilotOfferConent(maxThroughput);
+        }
+
+        /// <summary>
+        /// The AutopilotThroughputProperties constructor
+        /// </summary>
+        /// <param name="startingMaxThroughput">The maximum throughput the resource can scale to.</param>
+        /// <param name="autoUpgradeMaxThroughputIncrementPercentage">This scales the maximum throughput by the percentage if maximum throughput is not enough</param>
+        public AutopilotThroughputProperties(
+            int startingMaxThroughput,
+            int autoUpgradeMaxThroughputIncrementPercentage)
+        {
+           this.Content = OfferContentProperties.CreateAutoPilotOfferConent(
+               startingMaxThroughput,
+               autoUpgradeMaxThroughputIncrementPercentage);
         }
 
         [JsonIgnore]
@@ -47,7 +61,15 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxThroughput
         {
             get => this.Content?.OfferAutopilotSettings?.MaxThroughput;
-            private set => this.Content = OfferContentProperties.CreateAutoPilotOfferConent(value.Value);
+        }
+
+        /// <summary>
+        /// The amount to increment if the maximum RUs is getting throttled.
+        /// </summary>
+        [JsonIgnore]
+        public int? AutoUpgradeMaxThroughputIncrementPercentage
+        {
+            get => this.Content?.OfferAutopilotSettings?.AutopilotAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
         }
     }
 }

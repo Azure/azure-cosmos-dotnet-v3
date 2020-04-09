@@ -20,6 +20,15 @@ namespace Microsoft.Azure.Cosmos
         internal OfferAutopilotProperties(int maxThroughput)
         {
             this.MaxThroughput = maxThroughput;
+            this.AutopilotAutoUpgradeProperties = null;
+        }
+
+        internal OfferAutopilotProperties(
+            int startingMaxThroughput,
+            int autoUpgradeMaxThroughputIncrementPercentage)
+        {
+            this.MaxThroughput = startingMaxThroughput;
+            this.AutopilotAutoUpgradeProperties = new OfferAutopilotAutoUpgradeProperties(autoUpgradeMaxThroughputIncrementPercentage);
         }
 
         /// <summary>
@@ -27,6 +36,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.AutopilotMaxThroughput, NullValueHandling = NullValueHandling.Ignore)]
         public int? MaxThroughput { get; private set; }
+
+        /// <summary>
+        /// Scales the maximum through put automatically
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.AutopilotAutoUpgradePolicy, NullValueHandling = NullValueHandling.Ignore)]
+        public OfferAutopilotAutoUpgradeProperties AutopilotAutoUpgradeProperties { get; private set; }
 
         internal string GetJsonString()
         {

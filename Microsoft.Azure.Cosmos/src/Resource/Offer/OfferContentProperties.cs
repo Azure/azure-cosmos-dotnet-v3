@@ -52,5 +52,15 @@ namespace Microsoft.Azure.Cosmos
             OfferAutopilotProperties autopilotProperties = new OfferAutopilotProperties(maxThroughput);
             return new OfferContentProperties(autopilotProperties);
         }
+
+        public static OfferContentProperties CreateAutoPilotOfferConent(
+            int startingMaxThroughput,
+            int autoUpgradeMaxThroughputIncrementPercentage)
+        {
+            OfferAutopilotProperties autopilotProperties = new OfferAutopilotProperties(
+                startingMaxThroughput,
+                autoUpgradeMaxThroughputIncrementPercentage);
+            return new OfferContentProperties(autopilotProperties);
+        }
     }
 }
