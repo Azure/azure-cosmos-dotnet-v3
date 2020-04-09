@@ -14,11 +14,6 @@ namespace Microsoft.Azure.Cosmos.Json
             object poco,
             JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
         {
-            if (poco == null)
-            {
-                throw new ArgumentNullException(nameof(poco));
-            }
-
             IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: false);
             Serializer.SerializeInternal(poco, jsonWriter);
             return jsonWriter.GetResult();
@@ -28,11 +23,6 @@ namespace Microsoft.Azure.Cosmos.Json
             object poco,
             IJsonWriter jsonWriter)
         {
-            if (poco == null)
-            {
-                throw new ArgumentNullException(nameof(poco));
-            }
-
             if (jsonWriter == null)
             {
                 throw new ArgumentNullException(nameof(jsonWriter));
