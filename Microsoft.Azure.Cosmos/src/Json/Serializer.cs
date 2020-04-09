@@ -6,7 +6,10 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal static class Serializer
     {
@@ -91,6 +94,10 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     jsonWriter.WriteArrayEnd();
+                    break;
+
+                case CosmosElement value:
+                    value.WriteTo(jsonWriter);
                     break;
 
                 case ValueType valueType:
@@ -224,6 +231,15 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
             jsonWriter.WriteGuidValue(value);
+            return jsonWriter.GetResult();
+        }
+
+        public static ReadOnlyMemory<byte> Serialize(
+            CosmosElement value,
+            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
+            value.WriteTo(jsonWriter);
             return jsonWriter.GetResult();
         }
     }

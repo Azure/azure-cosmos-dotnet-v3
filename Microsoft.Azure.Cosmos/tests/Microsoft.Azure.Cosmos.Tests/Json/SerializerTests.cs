@@ -150,6 +150,15 @@
         }
 
         [TestMethod]
+        public void TestCosmosElement()
+        {
+            CosmosNumber64 cosmosElement = CosmosNumber64.Create(42);
+            ReadOnlyMemory<byte> result = Serializer.Serialize(cosmosElement);
+            CosmosNumber64 readValue = (CosmosNumber64)CosmosElement.CreateFromBuffer(result);
+            Assert.AreEqual(expected: cosmosElement.Value, actual: readValue.Value);
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public void TestUnknownStruct()
         {

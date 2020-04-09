@@ -8,11 +8,11 @@
     using Newtonsoft.Json;
 
     [MemoryDiagnoser]
-    public class ToStringBenchmark
+    public class SerializerBenchmark
     {
         private readonly IReadOnlyList<Person> people;
 
-        public ToStringBenchmark()
+        public SerializerBenchmark()
         {
             List<Person> people = new List<Person>();
             for (int i = 0; i < 1000; i++)
