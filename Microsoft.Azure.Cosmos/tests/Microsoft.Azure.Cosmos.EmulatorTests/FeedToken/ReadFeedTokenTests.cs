@@ -115,6 +115,33 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         [TestMethod]
+        public async Task ReadFeedIteratorCore_MigrateFromOlder()
+        {
+            int totalCount = 0;
+            int batchSize = 1000;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.LargerContainer;
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            ResponseMessage firstResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
+            feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: firstResponse.Headers.ContinuationToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+                }
+            }
+
+            Assert.AreEqual(batchSize - 1 /* from first request */, totalCount);
+        }
+
+        [TestMethod]
         public async Task ReadFeedIteratorCore_ReadOnlyPartitionKey()
         {
             int totalCount = 0;
