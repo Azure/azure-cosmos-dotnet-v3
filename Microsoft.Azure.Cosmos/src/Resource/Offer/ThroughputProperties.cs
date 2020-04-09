@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -82,10 +81,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        int? MaxThroughput
-        {
-            get => this.Content?.OfferAutopilotSettings?.MaxThroughput;
-        }
+        int? MaxThroughput => this.Content?.OfferAutopilotSettings?.MaxThroughput;
 
         /// <summary>
         /// The amount to increment if the maximum RUs is getting throttled.
@@ -96,15 +92,13 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        int? AutoUpgradeMaxThroughputIncrementPercentage
-        {
-            get => this.Content?.OfferAutopilotSettings?.AutopilotAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
-        }
+        int? AutoUpgradeMaxThroughputIncrementPercentage => this.Content?.OfferAutopilotSettings?.AutopilotAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
 
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
         /// <param name="maxThroughput">The maximum throughput the resource can scale to.</param>
+        /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
 #if INTERNAL
         public
 #else
@@ -112,13 +106,14 @@ namespace Microsoft.Azure.Cosmos
 #endif
         static ThroughputProperties CreateAutoScaleProvionedThroughput(int maxThroughput)
         {
-           return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(maxThroughput));
+            return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(maxThroughput));
         }
 
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
         /// <param name="throughput">The current provisioned throughput for the resource.</param>
+        /// <returns>Returns a ThroughputProperties for fixed throughput</returns>
 #if INTERNAL
         public
 #else
@@ -134,6 +129,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="startingMaxThroughput">The maximum throughput the resource can scale to.</param>
         /// <param name="autoUpgradeMaxThroughputIncrementPercentage">The percentage to increase the maximum value if the maximum is being throttled.</param>
+        /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
 #if INTERNAL
         public
 #else
@@ -192,6 +188,6 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the version of this offer resource in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.OfferVersion, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        internal string OfferVersion { get; private set; } 
+        internal string OfferVersion { get; private set; }
     }
 }
