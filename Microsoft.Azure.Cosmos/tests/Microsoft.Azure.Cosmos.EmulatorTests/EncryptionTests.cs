@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static Container itemContainer;
         private static Container keyContainer;
         private static CosmosDataEncryptionKeyProvider dekProvider;
-        private static CosmosEncryptor encryptor;
+        private static TestEncryptor encryptor;
 
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context)
         {
             EncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            EncryptionTests.encryptor = new CosmosEncryptor(EncryptionTests.dekProvider);
+            EncryptionTests.encryptor = new TestEncryptor(EncryptionTests.dekProvider);
 
             EncryptionTests.client = EncryptionTests.GetClient(EncryptionTests.encryptor);
             EncryptionTests.databaseCore = (DatabaseInlineCore)await EncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc = await EncryptionTests.CreateItemAsync(
                 EncryptionTests.itemContainerCore,
                 EncryptionTests.dekId,
-                new List<string>(){ "/Sensitive", "/NonSensitive" });
+                new List<string>() { "/Sensitive", "/NonSensitive" });
 
             TestDoc expectedDoc = new TestDoc(testDoc);
 
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, EncryptionTests.itemContainer));
 
             CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            CosmosEncryptor encryptor = new CosmosEncryptor(dekProvider);
+            TestEncryptor encryptor = new TestEncryptor(dekProvider);
 
             (string endpoint, string _) = TestCommon.GetAccountInfo();
             CosmosClient clientForRestrictedUser = new CosmosClientBuilder(endpoint, restrictedUserPermission.Token)
@@ -400,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         public async Task EncryptionResourceTokenAuthAllowed()
-        { 
+        {
             User keyManagerUser = EncryptionTests.databaseCore.GetUser(Guid.NewGuid().ToString());
             await EncryptionTests.databaseCore.CreateUserAsync(keyManagerUser.Id);
 
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, EncryptionTests.keyContainer));
 
             CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            CosmosEncryptor encryptor = new CosmosEncryptor(dekProvider);
+            TestEncryptor encryptor = new TestEncryptor(dekProvider);
             (string endpoint, string _) = TestCommon.GetAccountInfo();
             CosmosClient clientForKeyManagerUser = new CosmosClientBuilder(endpoint, keyManagerUserPermission.Token)
                 .WithEncryptor(encryptor)
@@ -916,6 +916,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + EncryptionTests.metadataUpdateSuffix);
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value ? 1 : 2;
                 return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
+            }
+        }
+
+        // This class is same as CosmosEncryptor but copied since the emulator tests don't
+        // have internal visibility into Cosmos.Encryption assembly.
+        private class TestEncryptor : Encryptor
+        {
+            public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
+
+            public TestEncryptor(DataEncryptionKeyProvider dataEncryptionKeyProvider)
+            {
+                this.DataEncryptionKeyProvider = dataEncryptionKeyProvider;
+            }
+
+            public override async Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
+                    dataEncryptionKeyId,
+                    encryptionAlgorithm,
+                    cancellationToken);
+
+                if (dek == null)
+                {
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
+                }
+
+                return dek.DecryptData(cipherText);
+            }
+
+            public override async Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
+                    dataEncryptionKeyId,
+                    encryptionAlgorithm,
+                    cancellationToken);
+
+                return dek.EncryptData(plainText);
             }
         }
     }
