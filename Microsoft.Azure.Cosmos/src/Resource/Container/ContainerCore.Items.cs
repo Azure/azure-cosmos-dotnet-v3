@@ -755,22 +755,14 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            if (requestOptions != null && requestOptions.EncryptionOptions != null)
+            if (requestOptions?.EncryptionOptions != null)
             {
-                if (streamPayload == null)
-                {
-                    throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
-                }
-
-                using (diagnosticsContext.CreateScope("Encrypt"))
-                {
-                    streamPayload = await this.ClientContext.EncryptionProcessor.EncryptAsync(
-                        streamPayload,
-                        requestOptions.EncryptionOptions,
-                        this.ClientContext.ClientOptions.Encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                }
+                streamPayload = await this.ClientContext.EncryptItemAsync(
+                    streamPayload,
+                    requestOptions.EncryptionOptions,
+                    (DatabaseCore)this.Database,
+                    diagnosticsContext,
+                    cancellationToken);
             }
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -788,14 +780,11 @@ namespace Microsoft.Azure.Cosmos
 
             if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
             {
-                using (diagnosticsContext.CreateScope("Decrypt"))
-                {
-                    responseMessage.Content = await this.ClientContext.EncryptionProcessor.DecryptAsync(
-                        responseMessage.Content,
-                        this.ClientContext.ClientOptions.Encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                }
+                responseMessage.Content = await this.ClientContext.DecryptItemAsync(
+                    responseMessage.Content,
+                    (DatabaseCore)this.Database,
+                    diagnosticsContext,
+                    cancellationToken);
             }
 
             return responseMessage;

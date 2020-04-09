@@ -29,6 +29,14 @@ namespace Microsoft.Azure.Cosmos
             validator.Validate(isFirstPage);
         }
 
+        public static void ValidateQueryGatewayPlanDiagnostics(CosmosDiagnosticsContext diagnosticsContext, bool isFirstPage)
+        {
+            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            QueryGatewayPlanDiagnosticValidatorHelper validator = new QueryGatewayPlanDiagnosticValidatorHelper();
+            validator.Visit(diagnosticsContext);
+            validator.Validate(isFirstPage);
+        }
+
         internal static void ValidateCosmosDiagnosticsContext(
             CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
@@ -160,7 +168,39 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["RequestUri"].ToString());
         }
 
-        private sealed class QueryDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor
+        /// <summary>
+        /// Getting the query plan from the gateway should have a point operation.
+        /// The normal service interop query plan generation does not have any network calls.
+        /// </summary>
+        private sealed class QueryGatewayPlanDiagnosticValidatorHelper : QueryDiagnosticValidatorHelper
+        {
+            private bool isPointOperationStatisticsVisited = false;
+            private bool isClientSideRequestStatisticsVisited = false;
+
+            public override void Visit(PointOperationStatistics pointOperationStatistics)
+            {
+                Assert.IsFalse(this.isPointOperationStatisticsVisited, $"Should only be a single {nameof(PointOperationStatistics)}");
+                this.isPointOperationStatisticsVisited = true;
+            }
+
+            public override void Visit(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+            {
+                Assert.IsFalse(this.isClientSideRequestStatisticsVisited, $"Should only be a single {nameof(CosmosClientSideRequestStatistics)}");
+                this.isClientSideRequestStatisticsVisited = true;
+            }
+
+            public override void Validate(bool isFirstPage)
+            {
+                base.Validate(isFirstPage);
+                if (isFirstPage)
+                {
+                    Assert.IsTrue(this.isPointOperationStatisticsVisited);
+                    Assert.IsTrue(this.isClientSideRequestStatisticsVisited);
+                }
+            }
+        }
+
+        private class QueryDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor
         {
             private DateTime? StartTimeUtc = null;
             private TimeSpan? TotalElapsedTime = null;
@@ -218,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"Point Operation should not have {nameof(clientSideRequestStatistics)}");
             }
 
-            public void Validate(bool isFirstPage)
+            public virtual void Validate(bool isFirstPage)
             {
                 Assert.IsTrue(this.isContextVisited);
                 Assert.IsNotNull(this.StartTimeUtc);

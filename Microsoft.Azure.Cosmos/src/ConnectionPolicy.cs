@@ -70,6 +70,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public void SetPreferredLocations(IReadOnlyList<string> regions)
+        {
+            if (regions == null)
+            {
+                throw new ArgumentNullException(nameof(regions));
+            }
+
+            this.preferredLocations.Clear();
+            foreach (string preferredLocation in regions)
+            {
+                this.preferredLocations.Add(preferredLocation);
+            }
+        }
+
         /// <summary>
         /// Gets or sets the maximum number of concurrent fanout requests sent to the Azure Cosmos DB service.
         /// </summary>
