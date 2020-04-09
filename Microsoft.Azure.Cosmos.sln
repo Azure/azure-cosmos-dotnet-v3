@@ -11,9 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Emul
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Performance.Tests", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\Microsoft.Azure.Cosmos.Performance.Tests.csproj", "{0392A590-68EF-4283-94D8-33F350BEC9BF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption", "Microsoft.Azure.Cosmos.DataEncryptionKeyProvider\src\Microsoft.Azure.Cosmos.Encryption.csproj", "{4D0FBC91-268E-44DD-AC10-6851A69C52FB}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests", "Microsoft.Azure.Cosmos.DataEncryptionKeyProvider\tests\Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests.csproj", "{346CFAAB-D069-41F5-8A64-1177126F2EEC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption", "Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj", "{4D0FBC91-268E-44DD-AC10-6851A69C52FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -85,18 +83,6 @@ Global
 		{4D0FBC91-268E-44DD-AC10-6851A69C52FB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4D0FBC91-268E-44DD-AC10-6851A69C52FB}.Release|x64.ActiveCfg = Release|Any CPU
 		{4D0FBC91-268E-44DD-AC10-6851A69C52FB}.Release|x64.Build.0 = Release|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Cover|Any CPU.Build.0 = Debug|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Cover|x64.ActiveCfg = Debug|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Cover|x64.Build.0 = Debug|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Debug|x64.Build.0 = Debug|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Release|x64.ActiveCfg = Release|Any CPU
-		{346CFAAB-D069-41F5-8A64-1177126F2EEC}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
