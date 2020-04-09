@@ -47,15 +47,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new JsonReaderException();
             }
 
-            if (!jObject.TryGetValue(FeedRangeCompositeContinuationConverter.RidPropertyName, out JToken ridJToken)
-                || string.IsNullOrEmpty(ridJToken.Value<string>()))
+            if (!jObject.TryGetValue(FeedRangeCompositeContinuationConverter.ContinuationPropertyName, out JToken continuationJToken))
             {
                 throw new JsonReaderException();
             }
 
-            if (!jObject.TryGetValue(FeedRangeCompositeContinuationConverter.ContinuationPropertyName, out JToken continuationJToken))
+            string containerRid = null;
+            if (jObject.TryGetValue(FeedRangeCompositeContinuationConverter.RidPropertyName, out JToken ridJToken))
             {
-                throw new JsonReaderException();
+                containerRid = ridJToken.Value<string>();
             }
 
             List<CompositeContinuationToken> ranges = serializer.Deserialize<List<CompositeContinuationToken>>(continuationJToken.CreateReader());
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new FeedRangeCompositeContinuation(
-                containerRid: ridJToken.Value<string>(),
+                containerRid: containerRid,
                 feedRange: feedRangeInternal,
                 deserializedTokens: ranges);
         }

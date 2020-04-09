@@ -5,12 +5,14 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     internal sealed class FeedRangeEPKConverter : JsonConverter
     {
         private const string RangePropertyName = "Range";
+        private static RangeJsonConverter rangeJsonConverter = new RangeJsonConverter();
 
         public override bool CanConvert(Type objectType)
         {
@@ -43,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             if (value is FeedRangeEPK feedRangeEPK)
             {
                 writer.WritePropertyName(FeedRangeEPKConverter.RangePropertyName);
-                serializer.Serialize(writer, feedRangeEPK.Range);
+                rangeJsonConverter.WriteJson(writer, feedRangeEPK.Range, serializer);
                 return;
             }
 
@@ -59,8 +61,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new JsonReaderException();
             }
 
-            Documents.Routing.Range<string> completeRange = serializer.Deserialize<Documents.Routing.Range<string>>(rangeJToken.CreateReader());
-            return new FeedRangeEPK(completeRange);
+            try
+            {
+                Documents.Routing.Range<string> completeRange = (Documents.Routing.Range<string>)rangeJsonConverter.ReadJson(rangeJToken.CreateReader(), typeof(Documents.Routing.Range<string>), null, serializer);
+                return new FeedRangeEPK(completeRange);
+            }
+            catch (JsonSerializationException)
+            {
+                throw new JsonReaderException();
+            }
         }
     }
 }
