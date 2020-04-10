@@ -1,0 +1,464 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<#
+Dictionary<TokenType, string> tokenTypeToWriteFunction = new Dictionary<TokenType, string>()
+{
+    { TokenType.Null, "{ jsonWriter.WriteNullValue(); }" },
+    { TokenType.True, "{ jsonWriter.WriteBoolValue(true); }" },
+    { TokenType.False, "{ jsonWriter.WriteBoolValue(false); }" },
+    { TokenType.Number64Integer, "{ jsonWriter.WriteNumberValue(123); }" },
+    { TokenType.Number64Double, "{ jsonWriter.WriteNumberValue(6.0221409e+23); }" },
+    { TokenType.String, "{ jsonWriter.WriteStringValue(\"Hello World\"); }" },
+    { TokenType.Array, "{ jsonWriter.WriteArrayStart(); jsonWriter.WriteArrayEnd(); }" },
+    { TokenType.Object, "{ jsonWriter.WriteObjectStart(); jsonWriter.WriteObjectEnd(); }" },
+};
+HashSet<TokenType> tokenTypesToMaterialize = new HashSet<TokenType>() { TokenType.Number64Integer, TokenType.Number64Double, TokenType.String };
+#>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    using System;
+    using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
+
+    [MemoryDiagnoser]
+    public class JsonMicroBenchmarks
+    {
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
+        private static readonly Payload <#= tokenType #>Payload = new Payload((jsonWriter) => <#= writeFunction #>);
+<# } #>
+
+        public JsonMicroBenchmarks()
+        {
+        }
+
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key;#>
+<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+<# foreach (bool materialize in new bool[] { true, false }) { if(materialize && !tokenTypesToMaterialize.Contains(tokenType)) { continue; } #>
+        [Benchmark]
+        public void Read_<#= tokenType #>_<#= benchmarkSerializationFormat #><#= materialize ? "_Materialize" : string.Empty #>()
+        {
+            JsonMicroBenchmarks.ExecuteReadMicroBenchmark(
+                payload: JsonMicroBenchmarks.<#= tokenType #>Payload,
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>,
+                materializeValue: <#= materialize.ToString().ToLower() #>);
+        }
+
+<# } #>
+<# } #>
+<# } #>
+
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
+<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+        [Benchmark]
+        public void Write_<#= tokenType #>_<#= benchmarkSerializationFormat #>()
+        {
+            JsonMicroBenchmarks.ExecuteWriteMicroBenchmark(
+                writeTokens: (jsonWriter) => <#= writeFunction #>,
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>);
+        }
+
+<# } #>
+<# } #>
+
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key;#>
+<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+<# foreach (bool materialize in new bool[] { true, false }) { #>
+        [Benchmark]
+        public void Navigate_<#= tokenType #>_<#= benchmarkSerializationFormat #><#= materialize ? "_Materialize" : string.Empty #>()
+        {
+            JsonMicroBenchmarks.ExecuteNavigateMicroBenchmark(
+                payload: JsonMicroBenchmarks.<#= tokenType #>Payload,
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>,
+                materialize: <#= materialize.ToString().ToLower() #>);
+        }
+
+<# } #>
+<# } #>
+<# } #>
+        private static void ExecuteReadMicroBenchmark(
+            Payload payload,
+            BenchmarkSerializationFormat benchmarkSerializationFormat,
+            bool materializeValue)
+        {
+            IJsonReader jsonReader = benchmarkSerializationFormat switch
+            {
+                BenchmarkSerializationFormat.Text => JsonReader.Create(payload.Text),
+                BenchmarkSerializationFormat.Binary => JsonReader.Create(payload.Binary),
+                BenchmarkSerializationFormat.Newtonsoft => NewtonsoftToCosmosDBReader.CreateFromBuffer(payload.Newtonsoft),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'."),
+            };
+
+            while (jsonReader.Read())
+            {
+                // Materialize the value
+                switch (jsonReader.CurrentTokenType)
+                {
+                    case JsonTokenType.BeginArray:
+                    case JsonTokenType.EndArray:
+                    case JsonTokenType.BeginObject:
+                    case JsonTokenType.EndObject:
+                    case JsonTokenType.Null:
+                    case JsonTokenType.True:
+                    case JsonTokenType.False:
+                        // Single byte tokens
+                        break;
+
+                    case JsonTokenType.String:
+                    case JsonTokenType.FieldName:
+                        if (materializeValue)
+                        {
+                            string stringValue = jsonReader.GetStringValue();
+                        }
+                        break;
+
+                    case JsonTokenType.Number:
+                        if (materializeValue)
+                        {
+                            Number64 number64Value = jsonReader.GetNumberValue();
+                        }
+                        break;
+
+                    case JsonTokenType.Int8:
+                        if (materializeValue)
+                        {
+                            sbyte int8Value = jsonReader.GetInt8Value();
+                        }
+                        break;
+
+                    case JsonTokenType.Int16:
+                        if (materializeValue)
+                        {
+                            short int16Value = jsonReader.GetInt16Value();
+                        }
+                        break;
+
+                    case JsonTokenType.Int32:
+                        if (materializeValue)
+                        {
+                            int int32Value = jsonReader.GetInt32Value();
+                        }
+                        break;
+
+                    case JsonTokenType.Int64:
+                        if (materializeValue)
+                        {
+                            long int64Value = jsonReader.GetInt64Value();
+                        }
+                        break;
+
+                    case JsonTokenType.UInt32:
+                        if (materializeValue)
+                        {
+                            uint uInt32Value = jsonReader.GetUInt32Value();
+                        }
+                        break;
+
+                    case JsonTokenType.Float32:
+                        if (materializeValue)
+                        {
+                            float float32Value = jsonReader.GetFloat32Value();
+                        }
+                        break;
+
+                    case JsonTokenType.Float64:
+                        if (materializeValue)
+                        {
+                            double doubleValue = jsonReader.GetFloat64Value();
+                        }
+                        break;
+
+                    case JsonTokenType.Guid:
+                        if (materializeValue)
+                        {
+                            Guid guidValue = jsonReader.GetGuidValue();
+                        }
+                        break;
+
+                    case JsonTokenType.Binary:
+                        if (materializeValue)
+                        {
+                            ReadOnlyMemory<byte> binaryValue = jsonReader.GetBinaryValue();
+                        }
+                        break;
+
+                    default:
+                        throw new ArgumentException("$Unknown token type.");
+                }
+            }
+        }
+
+        private static void ExecuteWriteMicroBenchmark(
+            Action<IJsonWriter> writeTokens,
+            BenchmarkSerializationFormat benchmarkSerializationFormat)
+        {
+            if (writeTokens == null)
+            {
+                throw new ArgumentNullException(nameof(writeTokens));
+            }
+
+            IJsonWriter jsonWriter;
+            switch (benchmarkSerializationFormat)
+            {
+                case BenchmarkSerializationFormat.Text:
+                    jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                    break;
+
+                case BenchmarkSerializationFormat.Binary:
+                    jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                    break;
+
+                case BenchmarkSerializationFormat.Newtonsoft:
+                    jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'.");
+            }
+
+            jsonWriter.WriteArrayStart();
+
+            for (int i = 0; i < 2000000; i++)
+            {
+                writeTokens(jsonWriter);
+            }
+
+            jsonWriter.WriteArrayEnd();
+        }
+
+        private static void ExecuteNavigateMicroBenchmark(
+            Payload payload,
+            BenchmarkSerializationFormat benchmarkSerializationFormat,
+            bool materialize)
+        {
+            ReadOnlyMemory<byte> buffer = benchmarkSerializationFormat switch
+            {
+                BenchmarkSerializationFormat.Text => payload.Text,
+                BenchmarkSerializationFormat.Binary => payload.Binary,
+                BenchmarkSerializationFormat.Newtonsoft => payload.Newtonsoft,
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'."),
+            };
+
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
+
+            void Navigate(IJsonNavigator navigator, IJsonNavigatorNode node, bool materialize)
+            {
+                switch (navigator.GetNodeType(node))
+                {
+                    case JsonNodeType.Null:
+                    case JsonNodeType.False:
+                    case JsonNodeType.True:
+                        // no value to materialize.
+                        break;
+
+                    case JsonNodeType.Number:
+                        if (materialize)
+                        {
+                            Number64 value = navigator.GetNumberValue(node);
+                        }
+                        break;
+
+                    case JsonNodeType.String:
+                        if (materialize)
+                        {
+                            string value = navigator.GetStringValue(node);
+                        }
+                        break;
+
+                    case JsonNodeType.Array:
+                        foreach (IJsonNavigatorNode arrayItem in navigator.GetArrayItems(node))
+                        {
+                            Navigate(navigator, arrayItem, materialize);
+                        }
+                        break;
+
+                    case JsonNodeType.Object:
+                        foreach (ObjectProperty objectProperty in navigator.GetObjectProperties(node))
+                        {
+                            IJsonNavigatorNode nameNode = objectProperty.NameNode;
+                            IJsonNavigatorNode valueNode = objectProperty.ValueNode;
+                            if (materialize)
+                            {
+                                string name = jsonNavigator.GetStringValue(nameNode);
+                            }
+
+                            Navigate(navigator, valueNode, materialize);
+                        }
+                        break;
+
+                    case JsonNodeType.Int8:
+                        if (materialize)
+                        {
+                            sbyte value = navigator.GetInt8Value(node);
+                        }
+                        break;
+
+                    case JsonNodeType.Int16:
+                        if (materialize)
+                        {
+                            short value = navigator.GetInt16Value(node);
+                        }
+                        break;
+
+                    case JsonNodeType.Int32:
+                        if (materialize)
+                        {
+                            short value = navigator.GetInt16Value(node);
+                        }
+                        break;
+
+                    case JsonNodeType.Int64:
+                        if (materialize)
+                        {
+                            long value = navigator.GetInt64Value(node);
+                        }
+                        break;
+
+                    case JsonNodeType.UInt32:
+                        if (materialize)
+                        {
+                            uint value = navigator.GetUInt32Value(node);
+                        }
+                        break;
+
+                    case JsonNodeType.Float32:
+                        if (materialize)
+                        {
+                            float value = navigator.GetFloat32Value(node);
+                        }
+                        break;
+
+                    case JsonNodeType.Float64:
+                        if (materialize)
+                        {
+                            double value = navigator.GetFloat64Value(node);
+                        }
+                        break;
+
+                    case JsonNodeType.Binary:
+                        if (materialize)
+                        {
+                            ReadOnlyMemory<byte> value = navigator.GetBinaryValue(node);
+                        }
+                        break;
+
+                    case JsonNodeType.Guid:
+                        if (materialize)
+                        {
+                            Guid value = navigator.GetGuidValue(node);
+                        }
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonNodeType)}: '{navigator.GetNodeType(node)}.'");
+                }
+            }
+
+            Navigate(jsonNavigator, jsonNavigator.GetRootNode(), materialize);
+        }
+
+        private enum BenchmarkSerializationFormat
+        {
+<#  foreach (var value in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+            <#= value #>,
+<# } #>
+        }
+
+        private readonly struct Payload
+        {
+            public Payload(Action<IJsonWriter> writeToken)
+            {
+                if (writeToken == null)
+                {
+                    throw new ArgumentNullException(nameof(writeToken));
+                }
+
+                IJsonWriter jsonTextWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                IJsonWriter jsonBinaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                IJsonWriter jsonNewtonsoftWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+
+                jsonTextWriter.WriteArrayStart();
+                jsonBinaryWriter.WriteArrayStart();
+                jsonNewtonsoftWriter.WriteArrayStart();
+
+                for (int i = 0; i < 1000000; i++)
+                {
+                    writeToken(jsonTextWriter);
+                    writeToken(jsonBinaryWriter);
+                    writeToken(jsonNewtonsoftWriter);
+                }
+
+                jsonTextWriter.WriteArrayEnd();
+                jsonBinaryWriter.WriteArrayEnd();
+                jsonNewtonsoftWriter.WriteArrayEnd();
+
+                this.Text = jsonTextWriter.GetResult();
+                this.Binary = jsonTextWriter.GetResult();
+                this.Newtonsoft = jsonNewtonsoftWriter.GetResult();
+            }
+
+            public ReadOnlyMemory<byte> Text { get; }
+            public ReadOnlyMemory<byte> Binary { get; }
+            public ReadOnlyMemory<byte> Newtonsoft { get; }
+        }
+    }
+}
+<#+
+enum BenchmarkSerializationFormat
+{
+    Text,
+    Binary,
+    Newtonsoft,
+}
+#>
+<#+
+enum TokenType
+{
+    Null,
+    True,
+    False,
+    Number64Integer,
+    Number64Double,
+    String,
+    Array,
+    Object
+}
+#>
+<#+
+private void SaveOutput(string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string outputFilePath = Path.Combine(templateDirectory, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+
+private void SaveOutputToSubFolder(string folderName, string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string newDirectoryName = Path.Combine(templateDirectory,folderName);
+  if(!Directory.Exists(newDirectoryName))
+    Directory.CreateDirectory(newDirectoryName);
+  string outputFilePath = Path.Combine(newDirectoryName, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+private static string ModificationInstructions(
+                        [CallerFilePath] string file = "",
+                        [CallerLineNumber] int line = 0)
+{
+    return $"This is auto-generated code. Modify: {Path.GetFileName(file)}: {line}";
+}
+#>

@@ -26,9 +26,25 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Json\JsonMicroBenchmarks.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>JsonMicroBenchmarks.cs</LastGenOutput>
+    </None>
     <None Update="samplepayload.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Json\JsonMicroBenchmarks.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>JsonMicroBenchmarks.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <PropertyGroup>
