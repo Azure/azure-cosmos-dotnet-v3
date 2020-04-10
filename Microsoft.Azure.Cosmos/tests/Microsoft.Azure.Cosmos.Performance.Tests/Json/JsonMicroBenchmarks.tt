@@ -268,7 +268,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     using System;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
 
     [MemoryDiagnoser]
     public class JsonNavigateMicroBenchmarks
@@ -276,65 +275,55 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 <# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
         private static readonly BenchmarkPayload <#= tokenType #>Payload = new BenchmarkPayload((jsonWriter) => <#= writeFunction #>);
 <# } #>
+
 <# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key;#>
 <# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
-<# foreach (bool materialize in new bool[] { true, false }) { #>
         [Benchmark]
-        public void Navigate_<#= tokenType #>_<#= benchmarkSerializationFormat #><#= materialize ? "_Materialize" : string.Empty #>()
+        public void Navigate_<#= tokenType #>_<#= benchmarkSerializationFormat #>()
         {
             JsonNavigateMicroBenchmarks.ExecuteNavigateMicroBenchmark(
                 payload: JsonNavigateMicroBenchmarks.<#= tokenType #>Payload,
-                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>,
-                materialize: <#= materialize.ToString().ToLower() #>);
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>);
         }
 
-<# } #>
 <# } #>
 <# } #>
 
         private static void ExecuteNavigateMicroBenchmark(
             BenchmarkPayload payload,
-            BenchmarkSerializationFormat benchmarkSerializationFormat,
-            bool materialize)
+            BenchmarkSerializationFormat benchmarkSerializationFormat)
         {
-            ReadOnlyMemory<byte> buffer = benchmarkSerializationFormat switch
+            IJsonNavigator jsonNavigator = benchmarkSerializationFormat switch
             {
-                BenchmarkSerializationFormat.Text => payload.Text,
-                BenchmarkSerializationFormat.Binary => payload.Binary,
-                BenchmarkSerializationFormat.Newtonsoft => payload.Newtonsoft,
+                BenchmarkSerializationFormat.Text => JsonNavigator.Create(payload.Text),
+                BenchmarkSerializationFormat.Binary => JsonNavigator.Create(payload.Binary),
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'."),
             };
 
-            IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
-
-            void Navigate(IJsonNavigator navigator, IJsonNavigatorNode node, bool materialize)
+            static void Navigate(IJsonNavigator navigator, IJsonNavigatorNode node)
             {
                 switch (navigator.GetNodeType(node))
                 {
                     case JsonNodeType.Null:
                     case JsonNodeType.False:
                     case JsonNodeType.True:
-                        // no value to materialize.
-                        break;
-
                     case JsonNodeType.Number:
-                        if (materialize)
-                        {
-                            Number64 value = navigator.GetNumberValue(node);
-                        }
-                        break;
-
+                    case JsonNodeType.Int8:
+                    case JsonNodeType.Int16:
+                    case JsonNodeType.Int32:
+                    case JsonNodeType.Int64:
+                    case JsonNodeType.UInt32:
+                    case JsonNodeType.Float32:
+                    case JsonNodeType.Float64:
                     case JsonNodeType.String:
-                        if (materialize)
-                        {
-                            string value = navigator.GetStringValue(node);
-                        }
+                    case JsonNodeType.Binary:
+                    case JsonNodeType.Guid:
                         break;
 
                     case JsonNodeType.Array:
                         foreach (IJsonNavigatorNode arrayItem in navigator.GetArrayItems(node))
                         {
-                            Navigate(navigator, arrayItem, materialize);
+                            Navigate(navigator, arrayItem);
                         }
                         break;
 
@@ -343,75 +332,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                         {
                             IJsonNavigatorNode nameNode = objectProperty.NameNode;
                             IJsonNavigatorNode valueNode = objectProperty.ValueNode;
-                            if (materialize)
-                            {
-                                string name = jsonNavigator.GetStringValue(nameNode);
-                            }
-
-                            Navigate(navigator, valueNode, materialize);
-                        }
-                        break;
-
-                    case JsonNodeType.Int8:
-                        if (materialize)
-                        {
-                            sbyte value = navigator.GetInt8Value(node);
-                        }
-                        break;
-
-                    case JsonNodeType.Int16:
-                        if (materialize)
-                        {
-                            short value = navigator.GetInt16Value(node);
-                        }
-                        break;
-
-                    case JsonNodeType.Int32:
-                        if (materialize)
-                        {
-                            short value = navigator.GetInt16Value(node);
-                        }
-                        break;
-
-                    case JsonNodeType.Int64:
-                        if (materialize)
-                        {
-                            long value = navigator.GetInt64Value(node);
-                        }
-                        break;
-
-                    case JsonNodeType.UInt32:
-                        if (materialize)
-                        {
-                            uint value = navigator.GetUInt32Value(node);
-                        }
-                        break;
-
-                    case JsonNodeType.Float32:
-                        if (materialize)
-                        {
-                            float value = navigator.GetFloat32Value(node);
-                        }
-                        break;
-
-                    case JsonNodeType.Float64:
-                        if (materialize)
-                        {
-                            double value = navigator.GetFloat64Value(node);
-                        }
-                        break;
-
-                    case JsonNodeType.Binary:
-                        if (materialize)
-                        {
-                            ReadOnlyMemory<byte> value = navigator.GetBinaryValue(node);
-                        }
-                        break;
-
-                    case JsonNodeType.Guid:
-                        if (materialize)
-                        {
-                            Guid value = navigator.GetGuidValue(node);
+                            Navigate(navigator, valueNode);
                         }
                         break;
 
@@ -420,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                 }
             }
 
-            Navigate(jsonNavigator, jsonNavigator.GetRootNode(), materialize);
+            Navigate(jsonNavigator, jsonNavigator.GetRootNode());
         }
     }
 }
