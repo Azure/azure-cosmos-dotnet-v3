@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public static class State
     {
         public static int Iteration = 0;
+        public static int IterationForSuccess = 0;
         public static int IterationForMax = 0;
     }
 
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void RetriableTestClassAttribute_DontRetryOnSuccess()
         {
-            if (State.Iteration++ > 0)
+            if (State.IterationForSuccess++ > 0)
             {
                 throw new Exception();
             }
