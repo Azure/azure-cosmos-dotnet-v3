@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"Point Operation should not have {nameof(feedRangeStatistics)}");
             }
 
-            public void Validate(bool isFirstPage)
+            public virtual void Validate(bool isFirstPage)
             {
                 Assert.IsTrue(this.isContextVisited);
                 Assert.IsNotNull(this.StartTimeUtc);
