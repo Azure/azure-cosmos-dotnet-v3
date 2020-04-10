@@ -2,12 +2,7 @@ name: Validate Pull Request Title
 
 # Controls when the action will run. Triggers the workflow on pull request
 # events where the pull request's base is set to `master`.
-on:
-  push:
-    branches:
-      - /*
-  pull_request:
-    types: [ opened, reopened, edited ]
+on: [push, pull_request]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
