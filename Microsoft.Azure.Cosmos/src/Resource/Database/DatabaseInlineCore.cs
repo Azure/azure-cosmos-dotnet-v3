@@ -208,6 +208,40 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
         }
 
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReplaceThroughputPropertiesAsync(throughputProperties, requestOptions, cancellationToken));
+        }
+
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerAsync(containerProperties, throughputProperties, requestOptions, cancellationToken));
+        }
+
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<ResponseMessage> CreateContainerStreamAsync(
+            ContainerProperties containerProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerStreamAsync(containerProperties, throughputProperties, requestOptions, cancellationToken));
+        }
+
         public override Task<UserResponse> UpsertUserAsync(
             string id,
             RequestOptions requestOptions = null,
