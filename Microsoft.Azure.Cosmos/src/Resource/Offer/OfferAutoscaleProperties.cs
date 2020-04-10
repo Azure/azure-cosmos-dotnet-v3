@@ -17,18 +17,19 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal OfferAutoscaleProperties(int maxThroughput)
-        {
-            this.MaxThroughput = maxThroughput;
-            this.AutopilotAutoUpgradeProperties = null;
-        }
-
         internal OfferAutoscaleProperties(
             int startingMaxThroughput,
-            int autoUpgradeMaxThroughputIncrementPercentage)
+            int? autoUpgradeMaxThroughputIncrementPercentage)
         {
             this.MaxThroughput = startingMaxThroughput;
-            this.AutopilotAutoUpgradeProperties = new OfferAutoscaleAutoUpgradeProperties(autoUpgradeMaxThroughputIncrementPercentage);
+            if (autoUpgradeMaxThroughputIncrementPercentage.HasValue)
+            {
+                this.AutopilotAutoUpgradeProperties = new OfferAutoscaleAutoUpgradeProperties(autoUpgradeMaxThroughputIncrementPercentage.Value);
+            }
+            else
+            {
+                this.AutopilotAutoUpgradeProperties = null;
+            }
         }
 
         /// <summary>

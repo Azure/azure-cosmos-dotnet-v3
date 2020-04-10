@@ -36,16 +36,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 nameof(CreateDropAutoscaleDatabase) + Guid.NewGuid().ToString(),
-                ThroughputProperties.CreateAutoScaleProvionedThroughput(5000));
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(5000));
 
             ThroughputResponse autoscale = await database.ReadThroughputAsync(requestOptions: null);
             Assert.IsNotNull(autoscale);
-            Assert.AreEqual(5000, autoscale.Resource.MaxThroughput);
+            Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
 
             ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputPropertiesAsync(
-                ThroughputProperties.CreateAutoScaleProvionedThroughput(10000));
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
             Assert.IsNotNull(autoscaleReplaced);
-            Assert.AreEqual(10000, autoscaleReplaced.Resource.MaxThroughput);
+            Assert.AreEqual(10000, autoscaleReplaced.Resource.MaxAutoscaleThroughput);
 
             await database.DeleteAsync();
         }
@@ -60,21 +60,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ThroughputResponse fixedDatabaseThroughput = await database.ReadThroughputAsync(requestOptions: null);
             Assert.IsNotNull(fixedDatabaseThroughput);
             Assert.AreEqual(5000, fixedDatabaseThroughput.Resource.Throughput);
-            Assert.IsNull(fixedDatabaseThroughput.Resource.MaxThroughput);
+            Assert.IsNull(fixedDatabaseThroughput.Resource.MaxAutoscaleThroughput);
             Assert.IsNull(fixedDatabaseThroughput.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
             ThroughputResponse fixedReplaced = await database.ReplaceThroughputPropertiesAsync(
                 ThroughputProperties.CreateFixedThroughput(6000));
             Assert.IsNotNull(fixedReplaced);
             Assert.AreEqual(6000, fixedReplaced.Resource.Throughput);
-            Assert.IsNull(fixedReplaced.Resource.MaxThroughput);
+            Assert.IsNull(fixedReplaced.Resource.MaxAutoscaleThroughput);
             Assert.IsNull(fixedReplaced.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
             ThroughputResponse fixedReplacedIfExists = await database.ReplaceThroughputPropertiesIfExistsAsync(
                 ThroughputProperties.CreateFixedThroughput(7000));
             Assert.IsNotNull(fixedReplacedIfExists);
             Assert.AreEqual(7000, fixedReplacedIfExists.Resource.Throughput);
-            Assert.IsNull(fixedReplacedIfExists.Resource.MaxThroughput);
+            Assert.IsNull(fixedReplacedIfExists.Resource.MaxAutoscaleThroughput);
             Assert.IsNull(fixedReplacedIfExists.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
             await database.DeleteAsync();
@@ -85,8 +85,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 nameof(CreateDropAutoscaleAutoUpgradeDatabase) + Guid.NewGuid(),
-                ThroughputProperties.CreateAutoScaleProvionedThroughput(
-                    startingMaxThroughput: 5000,
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(
+                    maxAutoscaleThroughput: 5000,
                     autoUpgradeMaxThroughputIncrementPercentage: 10));
 
             // Container is required to validate database throughput upgrade scenarios
@@ -94,21 +94,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ThroughputResponse autoscale = await database.ReadThroughputAsync(requestOptions: null);
             Assert.IsNotNull(autoscale);
-            Assert.AreEqual(5000, autoscale.Resource.MaxThroughput);
+            Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
             Assert.AreEqual(10, autoscale.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
             ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputPropertiesAsync(
-                ThroughputProperties.CreateAutoScaleProvionedThroughput(6000));
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(6000));
             Assert.IsNotNull(autoscaleReplaced);
-            Assert.AreEqual(6000, autoscaleReplaced.Resource.MaxThroughput);
+            Assert.AreEqual(6000, autoscaleReplaced.Resource.MaxAutoscaleThroughput);
             Assert.IsNull(autoscaleReplaced.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
             ThroughputResponse autoUpgradeReplace = await database.ReplaceThroughputPropertiesAsync(
-                ThroughputProperties.CreateAutoScaleProvionedThroughput(
-                    startingMaxThroughput: 7000,
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(
+                    maxAutoscaleThroughput: 7000,
                     autoUpgradeMaxThroughputIncrementPercentage: 20));
             Assert.IsNotNull(autoUpgradeReplace);
-            Assert.AreEqual(7000, autoUpgradeReplace.Resource.MaxThroughput);
+            Assert.AreEqual(7000, autoUpgradeReplace.Resource.MaxAutoscaleThroughput);
             Assert.AreEqual(20, autoUpgradeReplace.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
             await database.DeleteAsync();
@@ -127,21 +127,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ContainerCore container = (ContainerInlineCore)await database.CreateContainerAsync(
                 new ContainerProperties(Guid.NewGuid().ToString(), "/pk"),
-                ThroughputProperties.CreateAutoScaleProvionedThroughput(5000));
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(5000));
             Assert.IsNotNull(container);
 
             ThroughputResponse autoscale = await container.ReadThroughputAsync(requestOptions: null);
             Assert.IsNotNull(autoscale);
-            Assert.AreEqual(5000, autoscale.Resource.MaxThroughput);
+            Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
 
             ThroughputResponse autoscaleIfExists = await container.ReadThroughputIfExistsAsync(requestOptions: null);
             Assert.IsNotNull(autoscaleIfExists);
-            Assert.AreEqual(5000, autoscaleIfExists.Resource.MaxThroughput);
+            Assert.AreEqual(5000, autoscaleIfExists.Resource.MaxAutoscaleThroughput);
 
             ThroughputResponse autoscaleReplaced = await container.ReplaceThroughputPropertiesAsync(
-                ThroughputProperties.CreateAutoScaleProvionedThroughput(10000));
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
             Assert.IsNotNull(autoscaleReplaced);
-            Assert.AreEqual(10000, autoscaleReplaced.Resource.MaxThroughput);
+            Assert.AreEqual(10000, autoscaleReplaced.Resource.MaxAutoscaleThroughput);
 
             await database.DeleteAsync();
         }
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ContainerCore autoscaleContainer = (ContainerInlineCore)await database.CreateContainerAsync(
                 new ContainerProperties(Guid.NewGuid().ToString(), "/pk"),
-                ThroughputProperties.CreateAutoScaleProvionedThroughput(5000));
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(5000));
             Assert.IsNotNull(autoscaleContainer);
 
             // Reading a autoscale container with fixed results 
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(autoscale);
             Assert.IsNotNull(autoscale.Resource.Throughput);
             Assert.AreEqual(1000, autoscale.Resource.Throughput);
-            Assert.IsNull(autoscale.Resource.MaxThroughput);
+            Assert.IsNull(autoscale.Resource.MaxAutoscaleThroughput);
 
             await database.DeleteAsync();
         }

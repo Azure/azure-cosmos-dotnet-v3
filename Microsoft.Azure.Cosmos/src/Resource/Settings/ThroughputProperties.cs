@@ -27,9 +27,10 @@ namespace Microsoft.Azure.Cosmos
     public class ThroughputProperties
     {
         /// <summary>
-        /// Default constructor used for serialization and unit tests
+        /// Default constructor for serialization
         /// </summary>
-        public ThroughputProperties()
+        [JsonConstructor]
+        private ThroughputProperties()
         {
         }
 
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        int? MaxThroughput => this.Content?.OfferAutopilotSettings?.MaxThroughput;
+        int? MaxAutoscaleThroughput => this.Content?.OfferAutopilotSettings?.MaxThroughput;
 
         /// <summary>
         /// The amount to increment if the maximum RUs is getting throttled.
@@ -93,21 +94,6 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         int? AutoUpgradeMaxThroughputIncrementPercentage => this.Content?.OfferAutopilotSettings?.AutopilotAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
-
-        /// <summary>
-        /// The Throughput properties for autoscale provisioned throughput offering
-        /// </summary>
-        /// <param name="maxThroughput">The maximum throughput the resource can scale to.</param>
-        /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
-#if INTERNAL
-        public
-#else
-        internal
-#endif
-        static ThroughputProperties CreateAutoScaleProvionedThroughput(int maxThroughput)
-        {
-            return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(maxThroughput));
-        }
 
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
@@ -127,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
-        /// <param name="startingMaxThroughput">The maximum throughput the resource can scale to.</param>
+        /// <param name="maxAutoscaleThroughput">The staring maximum throughput the resource can scale to.</param>
         /// <param name="autoUpgradeMaxThroughputIncrementPercentage">The percentage to increase the maximum value if the maximum is being throttled.</param>
         /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
 #if INTERNAL
@@ -135,27 +121,13 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        static ThroughputProperties CreateAutoScaleProvionedThroughput(
-            int startingMaxThroughput,
-            int autoUpgradeMaxThroughputIncrementPercentage)
+        static ThroughputProperties CreateAutoscaleProvionedThroughput(
+            int maxAutoscaleThroughput,
+            int? autoUpgradeMaxThroughputIncrementPercentage = null)
         {
-            return new ThroughputProperties(OfferContentProperties.CreateAutoPilotOfferConent(
-                startingMaxThroughput,
+            return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
+                maxAutoscaleThroughput,
                 autoUpgradeMaxThroughputIncrementPercentage));
-        }
-
-        /// <summary>
-        /// The AutopilotThroughputProperties constructor
-        /// </summary>
-        /// <param name="startingMaxThroughput">The maximum throughput the resource can scale to.</param>
-        /// <param name="autoUpgradeMaxThroughputIncrementPercentage">This scales the maximum throughput by the percentage if maximum throughput is not enough</param>
-        private ThroughputProperties(
-            int startingMaxThroughput,
-            int autoUpgradeMaxThroughputIncrementPercentage)
-        {
-            this.Content = OfferContentProperties.CreateAutoPilotOfferConent(
-                startingMaxThroughput,
-                autoUpgradeMaxThroughputIncrementPercentage);
         }
 
         /// <summary>

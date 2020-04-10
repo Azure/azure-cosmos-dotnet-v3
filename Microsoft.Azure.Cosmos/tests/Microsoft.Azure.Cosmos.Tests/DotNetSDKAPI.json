@@ -7585,11 +7585,6 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}

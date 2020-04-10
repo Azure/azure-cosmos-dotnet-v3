@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
         internal void AddThroughputPropertiesHeader(ThroughputProperties throughputProperties)
         {
             if (throughputProperties.Throughput.HasValue &&
-                (throughputProperties.MaxThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
+                (throughputProperties.MaxAutoscaleThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
             {
                 throw new InvalidOperationException("Autoscale provisioned throughput can not be configured with fixed offer");
             }
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (throughputProperties?.Content?.OfferAutopilotSettings != null)
             {
-                this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, throughputProperties.Content.OfferAutopilotSettings.GetJsonString());
+                this.Headers.OfferAutoscaleThroughput = throughputProperties.Content.OfferAutopilotSettings.GetJsonString();
             }
         }
 
