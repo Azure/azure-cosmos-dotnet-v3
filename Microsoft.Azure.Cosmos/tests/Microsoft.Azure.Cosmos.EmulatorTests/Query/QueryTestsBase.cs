@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     /// <summary>
     /// Tests for CrossPartitionQueryTests.
     /// </summary>
-    [TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     [TestCategory("Query")]
     public abstract class QueryTestsBase
     {

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static int IterationForMax = 0;
     }
 
-    [RetriableTestClassAttribute]
+    [TestClass]
     public class RetriableTestClassAttributeTests
     {
         [TestMethod]
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
     }
 
-    [RetriableTestClassAttribute(3)]
+    [TestClass(3)]
     public class RetriableTestClassAttributeTestsWithMax
     {
         [TestMethod]

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
 
-    [TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqTranslationBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static CosmosClient cosmosClient;

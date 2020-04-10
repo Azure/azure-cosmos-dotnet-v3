@@ -6,16 +6,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System.Linq;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    public sealed class RetriableTestClassAttribute : TestClassAttribute
+
+    public sealed class TestClassAttribute : VisualStudio.TestTools.UnitTesting.TestClassAttribute
     {
         private readonly int maxRetry;
 
         /// <summary>
         /// Creates a TestClass that retries TestMethods once upon failure.
         /// </summary>
-        public RetriableTestClassAttribute()
+        public TestClassAttribute()
         {
             this.maxRetry = 1;
         }
@@ -23,38 +23,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// Creates a TestClass that retries TestMethods up to <paramref name="maxRetry"/> times.
         /// </summary>
-        public RetriableTestClassAttribute(int maxRetry)
+        public TestClassAttribute(int maxRetry)
         {
             this.maxRetry = maxRetry;
         }
 
-        public override TestMethodAttribute GetTestMethodAttribute(TestMethodAttribute testMethodAttribute)
+        public override VisualStudio.TestTools.UnitTesting.TestMethodAttribute GetTestMethodAttribute(VisualStudio.TestTools.UnitTesting.TestMethodAttribute testMethodAttribute)
         {
-            TestMethodAttribute baseTestmethod = base.GetTestMethodAttribute(testMethodAttribute);
+            VisualStudio.TestTools.UnitTesting.TestMethodAttribute baseTestmethod = base.GetTestMethodAttribute(testMethodAttribute);
             return new RetriableTestMethod(this.maxRetry, baseTestmethod);
         }
     }
 
-    public class RetriableTestMethod : TestMethodAttribute
+    public class RetriableTestMethod : VisualStudio.TestTools.UnitTesting.TestMethodAttribute
     {
-        private readonly TestMethodAttribute testMethod;
+        private readonly VisualStudio.TestTools.UnitTesting.TestMethodAttribute testMethod;
         private int maxRetry;
         public RetriableTestMethod(
             int maxRetry,
-            TestMethodAttribute testMethod)
+            VisualStudio.TestTools.UnitTesting.TestMethodAttribute testMethod)
         {
             this.maxRetry = maxRetry;
             this.testMethod = testMethod;
         }
 
-        public override TestResult[] Execute(ITestMethod testMethod) => this.ExecuteWithRetry(this.maxRetry, testMethod);
+        public override VisualStudio.TestTools.UnitTesting.TestResult[] Execute(VisualStudio.TestTools.UnitTesting.ITestMethod testMethod) => this.ExecuteWithRetry(this.maxRetry, testMethod);
 
-        private TestResult[] ExecuteWithRetry(
+        private VisualStudio.TestTools.UnitTesting.TestResult[] ExecuteWithRetry(
             int retryCount,
-            ITestMethod testMethod)
+            VisualStudio.TestTools.UnitTesting.ITestMethod testMethod)
         {
-            TestResult[] testResults = base.Execute(testMethod);
-            if (testResults.Any((tr) => tr.Outcome == UnitTestOutcome.Failed))
+            VisualStudio.TestTools.UnitTesting.TestResult[] testResults = base.Execute(testMethod);
+            if (testResults.Any((tr) => tr.Outcome == VisualStudio.TestTools.UnitTesting.UnitTestOutcome.Failed))
             {
                 if (retryCount > 0)
                 {
