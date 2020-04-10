@@ -122,6 +122,33 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
+
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<ResponseMessage> CreateContainerStreamAsync(
+            ContainerProperties containerProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (containerProperties == null)
+            {
+                throw new ArgumentNullException(nameof(containerProperties));
+            }
+
+            this.ValidateContainerProperties(containerProperties);
+
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(containerProperties);
+            return this.ProcessCollectionCreateAsync(
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                throughputProperties: throughputProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
 #if INTERNAL
         public override
 #else

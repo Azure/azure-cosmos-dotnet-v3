@@ -171,6 +171,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal void AddThroughputPropertiesHeader(ThroughputProperties throughputProperties)
         {
+            if (throughputProperties == null)
+            {
+                return;
+            }
+
             if (throughputProperties.Throughput.HasValue &&
                 (throughputProperties.MaxAutoscaleThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
             {
@@ -183,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (throughputProperties?.Content?.OfferAutoscaleSettings != null)
             {
-                this.Headers.OfferAutoscaleThroughput = throughputProperties.Content.OfferAutoscaleSettings.GetJsonString();
+                this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, throughputProperties.Content.OfferAutoscaleSettings.GetJsonString());
             }
         }
 

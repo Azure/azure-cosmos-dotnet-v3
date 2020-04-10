@@ -170,9 +170,6 @@ namespace Microsoft.Azure.Cosmos
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.OfferThroughput)]
         internal string OfferThroughput { get; set; }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.OfferAutopilotSettings)]
-        internal string OfferAutoscaleThroughput { get; set; }
-
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IfNoneMatch)]
         internal string IfNoneMatch { get; set; }
 

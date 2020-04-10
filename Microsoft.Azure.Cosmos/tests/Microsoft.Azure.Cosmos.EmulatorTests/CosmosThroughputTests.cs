@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.IO;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -29,6 +30,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             this.cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        public async Task CreateDropAutoscaleDatabaseStreamApi()
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            using (ResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(
+                new DatabaseProperties(databaseId),
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(5000)))
+            {
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            }
+
+            DatabaseCore database = (DatabaseInlineCore)this.cosmosClient.GetDatabase(databaseId);
+            ThroughputResponse autoscale = await database.ReadThroughputAsync(requestOptions: null);
+            Assert.IsNotNull(autoscale);
+            Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
+
+            ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputPropertiesAsync(
+                ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
+            Assert.IsNotNull(autoscaleReplaced);
+            Assert.AreEqual(10000, autoscaleReplaced.Resource.MaxAutoscaleThroughput);
+
+            await database.DeleteAsync();
         }
 
         [TestMethod]
@@ -116,14 +141,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Ignore] // Not currently working with emulator
+        public async Task CreateDropAutoscaleContainerStreamApi()
+        {
+            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+                Guid.NewGuid().ToString());
+
+            ThroughputResponse databaseThroughput = await database.ReadThroughputIfExistsAsync(requestOptions: null);
+            Assert.IsNotNull(databaseThroughput);
+            Assert.AreEqual(HttpStatusCode.NotFound, databaseThroughput.StatusCode);
+
+            string streamContainerId = Guid.NewGuid().ToString();
+
+            using (ResponseMessage response = await database.CreateContainerStreamAsync(
+                 new ContainerProperties(streamContainerId, "/pk"),
+                 ThroughputProperties.CreateAutoscaleProvionedThroughput(5000)))
+            {
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+
+                ContainerCore streamContainer = (ContainerInlineCore)database.GetContainer(streamContainerId);
+                ThroughputResponse autoscaleIfExists = await streamContainer.ReadThroughputIfExistsAsync(requestOptions: null);
+                Assert.IsNotNull(autoscaleIfExists);
+                Assert.AreEqual(5000, autoscaleIfExists.Resource.MaxAutoscaleThroughput);
+            }
+        }
+
+        [TestMethod]
+        [Ignore] // Not currently working with emulator
         public async Task CreateDropAutoscaleContainer()
         {
             DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString());
- 
-           ThroughputResponse databaseThroughput = await database.ReadThroughputIfExistsAsync(requestOptions: null);
-           Assert.IsNotNull(databaseThroughput);
-           Assert.AreEqual(HttpStatusCode.NotFound, databaseThroughput.StatusCode);
+
+            ThroughputResponse databaseThroughput = await database.ReadThroughputIfExistsAsync(requestOptions: null);
+            Assert.IsNotNull(databaseThroughput);
+            Assert.AreEqual(HttpStatusCode.NotFound, databaseThroughput.StatusCode);
 
             ContainerCore container = (ContainerInlineCore)await database.CreateContainerAsync(
                 new ContainerProperties(Guid.NewGuid().ToString(), "/pk"),
@@ -133,10 +184,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ThroughputResponse autoscale = await container.ReadThroughputAsync(requestOptions: null);
             Assert.IsNotNull(autoscale);
             Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
-
-            ThroughputResponse autoscaleIfExists = await container.ReadThroughputIfExistsAsync(requestOptions: null);
-            Assert.IsNotNull(autoscaleIfExists);
-            Assert.AreEqual(5000, autoscaleIfExists.Resource.MaxAutoscaleThroughput);
 
             ThroughputResponse autoscaleReplaced = await container.ReplaceThroughputPropertiesAsync(
                 ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));

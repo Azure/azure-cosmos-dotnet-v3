@@ -750,6 +750,44 @@ namespace Microsoft.Azure.Cosmos
             return databaseProperties;
         }
 
+        /// <summary>
+        /// Send a request for creating a database.
+        ///
+        /// A database manages users, permissions and a set of containers.
+        /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
+        /// with the database being the logical container for data.
+        ///
+        /// Each Database consists of one or more containers, each of which in turn contain one or more
+        /// documents. Since databases are an administrative resource, the Service Master Key will be
+        /// required in order to access and successfully complete any action using the User APIs.
+        /// </summary>
+        /// <param name="databaseProperties">The database properties</param>
+        /// <param name="throughputProperties">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        internal virtual Task<ResponseMessage> CreateDatabaseStreamAsync(
+                DatabaseProperties databaseProperties,
+                ThroughputProperties throughputProperties,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (databaseProperties == null)
+            {
+                throw new ArgumentNullException(nameof(databaseProperties));
+            }
+
+            this.ClientContext.ValidateResource(databaseProperties.Id);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties);
+
+            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseStreamInternalAsync(
+                streamPayload,
+                throughputProperties,
+                requestOptions,
+                cancellationToken));
+        }
+
         internal Task<DatabaseResponse> CreateDatabaseAsync(
                     DatabaseProperties databaseProperties,
                     ThroughputProperties throughputProperties,
@@ -787,10 +825,30 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
+               Stream streamPayload,
+               int? throughput,
+               RequestOptions requestOptions,
+               CancellationToken cancellationToken)
+        {
+            ThroughputProperties throughputProperties = null;
+            if (throughput.HasValue)
+            {
+                throughputProperties = ThroughputProperties.CreateFixedThroughput(throughput.Value);
+            }
+
+            return this.CreateDatabaseStreamInternalAsync(
+                streamPayload,
+                throughputProperties,
+                requestOptions,
+                cancellationToken);
+
+        }
+
+        private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
                 Stream streamPayload,
-                int? throughput = null,
-                RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                ThroughputProperties throughputProperties,
+                RequestOptions requestOptions,
+                CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.DatabaseRootUri,
@@ -800,7 +858,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
-                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
         }
