@@ -1,0 +1,11 @@
+﻿|                                         Method |     Mean |    Error |   StdDev |        Gen 0 |      Gen 1 |     Gen 2 |   Allocated |
+|----------------------------------------------- |---------:|---------:|---------:|-------------:|-----------:|----------:|------------:|
+|                     NutritionData_Text_To_Text |  1.026 s | 0.0079 s | 0.0061 s |            - |          - |         - |   134.73 MB |
+|                   NutritionData_Text_To_Binary | 23.420 s | 0.2589 s | 0.2295 s |   51000.0000 |  1000.0000 |         - |   337.88 MB |
+|           NutritionData_Text_To_NewtonsoftText |  3.569 s | 0.0280 s | 0.0248 s | 3088000.0000 | 43000.0000 | 5000.0000 | 12642.89 MB |
+|                   NutritionData_Binary_To_Text |  2.410 s | 0.0265 s | 0.0235 s |   43000.0000 |          - |         - |   308.09 MB |
+|                 NutritionData_Binary_To_Binary |  2.851 s | 0.0354 s | 0.0331 s |    5000.0000 |          - |         - |   155.82 MB |
+|         NutritionData_Binary_To_NewtonsoftText |  1.291 s | 0.0147 s | 0.0137 s |   49000.0000 | 15000.0000 | 3000.0000 |   275.22 MB |
+|           NutritionData_NewtonsoftText_To_Text |  2.465 s | 0.0202 s | 0.0189 s |   61000.0000 |          - |         - |   381.95 MB |
+|         NutritionData_NewtonsoftText_To_Binary | 24.139 s | 0.1585 s | 0.1405 s |   62000.0000 |  2000.0000 |         - |   382.53 MB |
+| NutritionData_NewtonsoftText_To_NewtonsoftText |  1.369 s | 0.0139 s | 0.0130 s |   63000.0000 | 15000.0000 | 3000.0000 |   357.59 MB |

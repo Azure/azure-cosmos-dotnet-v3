@@ -9,19 +9,31 @@
     {
         public static string ReadMultipartFile(string path)
         {
-            FileAttributes attr = File.GetAttributes(path);
-            if (!attr.HasFlag(FileAttributes.Directory))
+            if (!path.EndsWith(".json"))
             {
-                return File.ReadAllText(path);
+                path += ".json";
+            }
+
+            try
+            {
+                // Try as a file
+                FileAttributes attr = File.GetAttributes(path);
+                if (!attr.HasFlag(FileAttributes.Directory))
+                {
+                    return File.ReadAllText(path);
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                // try as a directory
+                path = path.Replace(".json", string.Empty);
             }
 
             DirectoryInfo dir = new DirectoryInfo(path);
             IEnumerable<FileInfo> files = dir.GetFiles().OrderBy(x => x.Name);
 
-            string text = string.Empty;
-
-            
-            using(MemoryStream dest = new MemoryStream())
+            string text;
+            using (MemoryStream dest = new MemoryStream())
             {
                 foreach (FileInfo file in files)
                 {
