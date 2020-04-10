@@ -756,10 +756,16 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.CreateAutoscaleDatabaseStreamInternalAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
-                throughputProperties: throughputProperties,
+            Task<ResponseMessage> response = this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.DatabaseRootUri,
+                resourceType: ResourceType.Database,
+                operationType: OperationType.Create,
                 requestOptions: requestOptions,
+                cosmosContainerCore: null,
+                partitionKey: null,
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
+                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
@@ -778,25 +784,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
-        }
-
-        private Task<ResponseMessage> CreateAutoscaleDatabaseStreamInternalAsync(
-                Stream streamPayload,
-                ThroughputProperties throughputProperties,
-                RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.DatabaseRootUri,
-                resourceType: ResourceType.Database,
-                operationType: OperationType.Create,
-                requestOptions: requestOptions,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
-                diagnosticsContext: null,
-                cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
