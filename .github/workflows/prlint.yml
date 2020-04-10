@@ -26,6 +26,7 @@ jobs:
           // Cache metadata
           const owner = context.repo.owner
           const repo = context.repo.repo
+          console.log(context.payload)
           const pr = context.payload.pull_request
           const headSha = pr.head.sha
           const headBranch = pr.head.ref
