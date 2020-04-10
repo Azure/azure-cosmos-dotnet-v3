@@ -50,7 +50,7 @@ jobs:
             // https://developer.github.com/v3/pulls/#response-1
             title = fullPr.title
           }
-          
+
           // Create a check run that will determine the status of the title, not this run.
           // Automatically create a variable called `checkRun` based on the `data` returned from Octokit (aliased as `github` here).
           const { data: checkRun } = await github.checks.create({
@@ -69,7 +69,7 @@ jobs:
           
           console.log(checkRun) // <= Is `id` defined in this payload?
           // https://github.com/angular/angular/blob/master/CONTRIBUTING.md#-commit-message-guidelines
-          const ANGULAR_REGEX = '(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\\([a-z0-9\\s]+\\))?(:\\s)([a-z0-9\\s]+)'
+          const ANGULAR_REGEX = '(\[Internal\] )?.{3}.+: (Add|Fix) .{3}.+'
           const regex = new RegExp(ANGULAR_REGEX, 'i')
           
           let titleValidity = false
