@@ -24,16 +24,16 @@ namespace Microsoft.Azure.Cosmos
             this.MaxThroughput = startingMaxThroughput;
             if (autoUpgradeMaxThroughputIncrementPercentage.HasValue)
             {
-                this.AutopilotAutoUpgradeProperties = new OfferAutoscaleAutoUpgradeProperties(autoUpgradeMaxThroughputIncrementPercentage.Value);
+                this.AutoscaleAutoUpgradeProperties = new OfferAutoscaleAutoUpgradeProperties(autoUpgradeMaxThroughputIncrementPercentage.Value);
             }
             else
             {
-                this.AutopilotAutoUpgradeProperties = null;
+                this.AutoscaleAutoUpgradeProperties = null;
             }
         }
 
         /// <summary>
-        /// The maximum throughput the autopilot will scale to.
+        /// The maximum throughput the autoscale will scale to.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.AutopilotMaxThroughput, NullValueHandling = NullValueHandling.Ignore)]
         public int? MaxThroughput { get; private set; }
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// Scales the maximum through put automatically
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.AutopilotAutoUpgradePolicy, NullValueHandling = NullValueHandling.Ignore)]
-        public OfferAutoscaleAutoUpgradeProperties AutopilotAutoUpgradeProperties { get; private set; }
+        public OfferAutoscaleAutoUpgradeProperties AutoscaleAutoUpgradeProperties { get; private set; }
 
         internal string GetJsonString()
         {

@@ -21,13 +21,13 @@ namespace Microsoft.Azure.Cosmos
         private OfferContentProperties(int fixedThroughput)
         {
             this.OfferThroughput = fixedThroughput;
-            this.OfferAutopilotSettings = null;
+            this.OfferAutoscaleSettings = null;
         }
 
-        private OfferContentProperties(OfferAutoscaleProperties autopilotProperties)
+        private OfferContentProperties(OfferAutoscaleProperties autoscaleProperties)
         {
             this.OfferThroughput = null;
-            this.OfferAutopilotSettings = autopilotProperties ?? throw new ArgumentNullException(nameof(autopilotProperties));
+            this.OfferAutoscaleSettings = autoscaleProperties ?? throw new ArgumentNullException(nameof(autoscaleProperties));
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// Represents customizable throughput chosen by user for his collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.AutopilotSettings, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public OfferAutoscaleProperties OfferAutopilotSettings { get; private set; }
+        public OfferAutoscaleProperties OfferAutoscaleSettings { get; private set; }
 
         /// <summary>
         /// Represents Request Units(RU)/Minute throughput is enabled/disabled for collection in the Azure Cosmos DB service.
@@ -63,10 +63,10 @@ namespace Microsoft.Azure.Cosmos
             int startingMaxThroughput,
             int? autoUpgradeMaxThroughputIncrementPercentage)
         {
-            OfferAutoscaleProperties autopilotProperties = new OfferAutoscaleProperties(
+            OfferAutoscaleProperties autoscaleProperties = new OfferAutoscaleProperties(
                 startingMaxThroughput,
                 autoUpgradeMaxThroughputIncrementPercentage);
-            return new OfferContentProperties(autopilotProperties);
+            return new OfferContentProperties(autoscaleProperties);
         }
     }
 }

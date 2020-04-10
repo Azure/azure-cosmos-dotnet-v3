@@ -756,7 +756,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.CreateAutopilotDatabaseStreamInternalAsync(
+            Task<ResponseMessage> response = this.CreateAutoscaleDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
@@ -780,7 +780,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
         }
 
-        private Task<ResponseMessage> CreateAutopilotDatabaseStreamInternalAsync(
+        private Task<ResponseMessage> CreateAutoscaleDatabaseStreamInternalAsync(
                 Stream streamPayload,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,

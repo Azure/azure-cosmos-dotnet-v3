@@ -181,9 +181,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.AddThroughputHeader(throughputProperties.Throughput);
             }
-            else if (throughputProperties?.Content?.OfferAutopilotSettings != null)
+            else if (throughputProperties?.Content?.OfferAutoscaleSettings != null)
             {
-                this.Headers.OfferAutoscaleThroughput = throughputProperties.Content.OfferAutopilotSettings.GetJsonString();
+                this.Headers.OfferAutoscaleThroughput = throughputProperties.Content.OfferAutoscaleSettings.GetJsonString();
             }
         }
 

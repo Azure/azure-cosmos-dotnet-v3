@@ -64,8 +64,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (Stream stream = MockCosmosUtil.Serializer.ToStream<OfferContentProperties>(content))
             {
                 OfferContentProperties fromStream = MockCosmosUtil.Serializer.FromStream<OfferContentProperties>(stream);
-                Assert.IsNotNull(fromStream.OfferAutopilotSettings);
-                Assert.AreEqual(1000, fromStream.OfferAutopilotSettings.MaxThroughput);
+                Assert.IsNotNull(fromStream.OfferAutoscaleSettings);
+                Assert.AreEqual(1000, fromStream.OfferAutoscaleSettings.MaxThroughput);
                 Assert.IsNull(fromStream.OfferThroughput);
             }
 

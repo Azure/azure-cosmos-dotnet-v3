@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The maximum throughput the autopilot will scale to.
+        /// The maximum throughput the autoscale will scale to.
         /// </summary>
         [JsonIgnore]
 #if INTERNAL
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        int? MaxAutoscaleThroughput => this.Content?.OfferAutopilotSettings?.MaxThroughput;
+        int? MaxAutoscaleThroughput => this.Content?.OfferAutoscaleSettings?.MaxThroughput;
 
         /// <summary>
         /// The amount to increment if the maximum RUs is getting throttled.
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        int? AutoUpgradeMaxThroughputIncrementPercentage => this.Content?.OfferAutopilotSettings?.AutopilotAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
+        int? AutoUpgradeMaxThroughputIncrementPercentage => this.Content?.OfferAutoscaleSettings?.AutoscaleAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
 
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering

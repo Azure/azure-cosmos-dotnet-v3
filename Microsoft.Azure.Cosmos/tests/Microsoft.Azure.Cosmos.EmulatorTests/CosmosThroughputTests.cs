@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReadAutoPilotWithFixedTests()
+        public async Task ReadAutoscaleWithFixedTests()
         {
             Database database = await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString());
