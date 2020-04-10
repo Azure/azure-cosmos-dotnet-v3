@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -150,12 +149,56 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
-            return this.GetCosmosElementResponse(
+            QueryResponseCore queryResponseCore = this.GetCosmosElementResponse(
                 requestOptions,
                 resourceType,
                 message,
                 partitionKeyRange,
                 queryPageDiagnostics);
+
+            if (queryResponseCore.IsSuccess &&
+                this.clientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+            {
+                return await this.GetDecryptedElementResponseAsync(queryResponseCore, message, cancellationToken);
+            }
+
+            return queryResponseCore;
+        }
+
+        private async Task<QueryResponseCore> GetDecryptedElementResponseAsync(
+            QueryResponseCore queryResponseCore,
+            ResponseMessage message,
+            CancellationToken cancellationToken)
+        {
+            List<CosmosElement> documents = new List<CosmosElement>();
+            using (message.DiagnosticsContext.CreateScope("Decrypt"))
+            {
+                foreach (CosmosElement document in queryResponseCore.CosmosElements)
+                {
+                    if (!(document is CosmosObject documentObject))
+                    {
+                        documents.Add(document);
+                        continue;
+                    }
+
+                    CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
+                        documentObject,
+                        (DatabaseCore)this.cosmosContainerCore.Database,
+                        this.clientContext.ClientOptions.EncryptionKeyWrapProvider,
+                        message.DiagnosticsContext,
+                        cancellationToken);
+
+                    documents.Add(decryptedDocument);
+                }
+            }
+
+            return QueryResponseCore.CreateSuccess(
+                result: documents,
+                requestCharge: queryResponseCore.RequestCharge,
+                activityId: queryResponseCore.ActivityId,
+                responseLengthBytes: queryResponseCore.ResponseLengthBytes,
+                disallowContinuationTokenMessage: queryResponseCore.DisallowContinuationTokenMessage,
+                continuationToken: queryResponseCore.ContinuationToken);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -165,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
-            CosmosDiagnosticsContext diagnosticsContextFactory,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -185,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
                     requestMessage.UseGatewayMode = true;
                 },
-                diagnosticsContext: null,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.

@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
-    internal struct AggregateItem
+    internal readonly struct AggregateItem
     {
         private const string ItemName1 = "item";
         private const string ItemName2 = "item2";

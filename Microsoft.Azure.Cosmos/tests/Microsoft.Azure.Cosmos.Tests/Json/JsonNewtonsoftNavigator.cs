@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
     internal sealed class JsonNewtonsoftNavigator : IJsonNavigator
     {
-        private struct NewtonsoftNode : IJsonNavigatorNode
+        private readonly struct NewtonsoftNode : IJsonNavigatorNode
         {
             public NewtonsoftNode(JToken jToken, JsonNodeType jsonNodeType)
             {

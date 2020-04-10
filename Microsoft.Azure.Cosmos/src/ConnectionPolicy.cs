@@ -70,6 +70,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public void SetPreferredLocations(IReadOnlyList<string> regions)
+        {
+            if (regions == null)
+            {
+                throw new ArgumentNullException(nameof(regions));
+            }
+
+            this.preferredLocations.Clear();
+            foreach (string preferredLocation in regions)
+            {
+                this.preferredLocations.Add(preferredLocation);
+            }
+        }
+
         /// <summary>
         /// Gets or sets the maximum number of concurrent fanout requests sent to the Azure Cosmos DB service.
         /// </summary>
@@ -174,6 +188,18 @@ namespace Microsoft.Azure.Cosmos
         /// 2. the Azure Cosmos DB account has more than one region
         /// </remarks>
         public bool? EnableReadRequestsFallback
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the flag to enable address cache refresh on connection reset notification.
+        /// </summary>
+        /// <value>
+        /// The default value is false
+        /// </value>
+        public bool EnableTcpConnectionEndpointRediscovery
         {
             get;
             set;

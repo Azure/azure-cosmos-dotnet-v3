@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Diagnostics;
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -64,13 +65,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 this.ValidateTransportException(ce);
             }
+
+            using (ResponseMessage responseMessage = await container.CreateItemStreamAsync(
+                TestCommon.SerializerCore.ToStream(new TestPayload { id = "bad" }),
+                new Cosmos.PartitionKey("bad")))
+            {
+                this.ValidateTransportException(responseMessage);
+            }
+
+            FeedIterator streamIterator = container.GetItemQueryStreamIterator("select * from T where T.Random = 19827 ");
+            using (ResponseMessage responseMessage = await streamIterator.ReadNextAsync())
+            {
+                this.ValidateTransportException(responseMessage);
+            }   
         }
 
         private void ValidateTransportException(CosmosException cosmosException)
         {
+            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, cosmosException.StatusCode);
             string message = cosmosException.ToString();
             Assert.IsTrue(message.Contains("TransportException: A client transport error occurred: The connection failed"), "StoreResult Exception is missing");
             string diagnostics = cosmosException.Diagnostics.ToString();
+            Assert.IsNotNull(diagnostics);
+            Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
+        }
+
+        private void ValidateTransportException(ResponseMessage responseMessage)
+        {
+            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, responseMessage.StatusCode);
+            string message = responseMessage.ErrorMessage;
+            Assert.AreEqual(responseMessage.ErrorMessage, responseMessage.CosmosException.Message);
+            Assert.IsTrue(message.Contains("TransportException: A client transport error occurred: The connection failed"), "StoreResult Exception is missing");
+            string diagnostics = responseMessage.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
             Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
         }

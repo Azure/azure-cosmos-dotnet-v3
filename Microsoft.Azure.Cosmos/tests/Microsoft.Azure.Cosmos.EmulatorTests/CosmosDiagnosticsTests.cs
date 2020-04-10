@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -107,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                   requestOptions: requestOptions);
                 Assert.Fail("Should have thrown a request timeout exception");
             }
-            catch(CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+            catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
             {
                 string exception = ce.ToString();
                 Assert.IsNotNull(exception);
@@ -234,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TransactionalBatch batch = this.Container.CreateTransactionalBatch(new PartitionKey(pkValue));
 
             List<ToDoActivity> createItems = new List<ToDoActivity>();
-            for(int i = 0; i < 50; i++)
+            for (int i = 0; i < 50; i++)
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                 createItems.Add(item);
@@ -248,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
             TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
-            
+
             Assert.IsNotNull(response);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 diagnostics: response.Diagnostics,
@@ -310,6 +312,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosDiagnosticsTests.VerifyPointDiagnostics(
                     diagnostics: itemResponse.Diagnostics,
                     disableDiagnostics: false);
+            }
+        }
+
+        [TestMethod]
+        public async Task GatewayQueryPlanDiagnostic()
+        {
+            int totalItems = 3;
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(
+                this.Container,
+                pkCount: totalItems,
+                perPKItemCount: 1,
+                randomPartitionKey: true);
+
+            ContainerCore containerCore = (ContainerInlineCore)this.Container;
+            MockCosmosQueryClient gatewayQueryPlanClient = new MockCosmosQueryClient(
+                   clientContext: containerCore.ClientContext,
+                   cosmosContainerCore: containerCore,
+                   forceQueryPlanGatewayElseServiceInterop: true);
+
+            Container gatewayQueryPlanContainer = new ContainerCore(
+                containerCore.ClientContext,
+                (DatabaseCore)containerCore.Database,
+                containerCore.Id,
+                gatewayQueryPlanClient);
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1,
+                MaxBufferedItemCount = 0
+            };
+
+            FeedIterator<ToDoActivity> feedIterator = gatewayQueryPlanContainer.GetItemQueryIterator<ToDoActivity>(
+                    "select * from ToDoActivity t ORDER BY t.cost",
+                    requestOptions: queryRequestOptions);
+
+            List<ToDoActivity> results = new List<ToDoActivity>();
+            bool isFirstPage = true;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                results.AddRange(response);
+                CosmosDiagnosticsContext diagnosticsContext = (response.Diagnostics as CosmosDiagnosticsCore).Context;
+                DiagnosticValidator.ValidateQueryGatewayPlanDiagnostics(diagnosticsContext, isFirstPage);
+                isFirstPage = false;
             }
         }
 
@@ -419,11 +465,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return;
             }
 
-   
             CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
 
             // If all the pages are buffered then several of the normal summary validation will fail.
-            if(diagnosticsContext.TotalRequestCount > 0)
+            if (diagnosticsContext.TotalRequestCount > 0)
             {
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }
@@ -513,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                if(queryText == null)
+                if (queryText == null)
                 {
                     CosmosDiagnosticsTests.VerifyPointDiagnostics(
                         response.Diagnostics,
@@ -526,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                        isFirst,
                        disableDiagnostics);
                 }
-               
+
                 isFirst = false;
             }
 

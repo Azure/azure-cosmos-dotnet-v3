@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .ReturnsAsync(sendDirectFunc);
 
             AddressInformation[] addressInformation = GetMockAddressInformation();
-            var mockAddressCache = GetMockAddressCache(addressInformation);
+            Mock<IAddressResolver> mockAddressCache = GetMockAddressCache(addressInformation);
 
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();
             replicationPolicy.MaxReplicaSetSize = 1;

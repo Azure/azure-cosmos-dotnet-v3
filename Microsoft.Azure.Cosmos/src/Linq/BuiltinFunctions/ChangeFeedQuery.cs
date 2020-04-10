@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (feedOptions.StartTime.HasValue)
             {
-                this.ifModifiedSince = ConvertToHttpTime(feedOptions.StartTime.Value);
+                this.ifModifiedSince = this.ConvertToHttpTime(feedOptions.StartTime.Value);
                 canUseStartFromBeginning = false;
             }
 
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private async Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, resourceType, retryPolicyInstance, cancellationToken))
+            using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, this.resourceType, retryPolicyInstance, cancellationToken))
             {
                 this.lastStatusCode = response.StatusCode;
                 this.nextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (this.feedOptions.PartitionKey != null)
             {
-                PartitionKeyInternal partitionKey = feedOptions.PartitionKey.InternalKey;
+                PartitionKeyInternal partitionKey = this.feedOptions.PartitionKey.InternalKey;
                 headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.ToJsonString());
             }
 
