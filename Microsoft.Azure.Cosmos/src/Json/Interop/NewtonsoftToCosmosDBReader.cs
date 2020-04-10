@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Text;

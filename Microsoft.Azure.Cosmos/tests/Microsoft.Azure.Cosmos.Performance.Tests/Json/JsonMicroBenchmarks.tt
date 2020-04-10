@@ -30,30 +30,42 @@ HashSet<TokenType> tokenTypesToMaterialize = new HashSet<TokenType>() { TokenTyp
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 {
+    public enum BenchmarkSerializationFormat
+    {
+<#  foreach (var value in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+        <#= value #>,
+<# } #>
+    }
+}
+<# SaveOutput("BenchmarkSerializationFormat.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
     using System;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
 
     [MemoryDiagnoser]
-    public class JsonMicroBenchmarks
+    public class JsonReadMicroBenchmarks
     {
 <# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
-        private static readonly Payload <#= tokenType #>Payload = new Payload((jsonWriter) => <#= writeFunction #>);
+        private static readonly BenchmarkPayload <#= tokenType #>Payload = new BenchmarkPayload((jsonWriter) => <#= writeFunction #>);
 <# } #>
-
-        public JsonMicroBenchmarks()
-        {
-        }
 
 <# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key;#>
 <# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
 <# foreach (bool materialize in new bool[] { true, false }) { if(materialize && !tokenTypesToMaterialize.Contains(tokenType)) { continue; } #>
         [Benchmark]
-        public void Read_<#= tokenType #>_<#= benchmarkSerializationFormat #><#= materialize ? "_Materialize" : string.Empty #>()
+        public void <#= tokenType #>_<#= benchmarkSerializationFormat #><#= materialize ? "_Materialize" : string.Empty #>()
         {
-            JsonMicroBenchmarks.ExecuteReadMicroBenchmark(
-                payload: JsonMicroBenchmarks.<#= tokenType #>Payload,
+            JsonReadMicroBenchmarks.ExecuteReadMicroBenchmark(
+                payload: JsonReadMicroBenchmarks.<#= tokenType #>Payload,
                 benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>,
                 materializeValue: <#= materialize.ToString().ToLower() #>);
         }
@@ -62,36 +74,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 <# } #>
 <# } #>
 
-<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
-<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
-        [Benchmark]
-        public void Write_<#= tokenType #>_<#= benchmarkSerializationFormat #>()
-        {
-            JsonMicroBenchmarks.ExecuteWriteMicroBenchmark(
-                writeTokens: (jsonWriter) => <#= writeFunction #>,
-                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>);
-        }
-
-<# } #>
-<# } #>
-
-<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key;#>
-<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
-<# foreach (bool materialize in new bool[] { true, false }) { #>
-        [Benchmark]
-        public void Navigate_<#= tokenType #>_<#= benchmarkSerializationFormat #><#= materialize ? "_Materialize" : string.Empty #>()
-        {
-            JsonMicroBenchmarks.ExecuteNavigateMicroBenchmark(
-                payload: JsonMicroBenchmarks.<#= tokenType #>Payload,
-                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>,
-                materialize: <#= materialize.ToString().ToLower() #>);
-        }
-
-<# } #>
-<# } #>
-<# } #>
         private static void ExecuteReadMicroBenchmark(
-            Payload payload,
+            BenchmarkPayload payload,
             BenchmarkSerializationFormat benchmarkSerializationFormat,
             bool materializeValue)
         {
@@ -201,6 +185,37 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                 }
             }
         }
+    }
+}
+<# SaveOutput("ReadMicroBenchmarks.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    using System;
+    using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
+
+    [MemoryDiagnoser]
+    public class JsonWriteMicroBenchmarks
+    {
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
+<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+        [Benchmark]
+        public void <#= tokenType #>_<#= benchmarkSerializationFormat #>()
+        {
+            JsonWriteMicroBenchmarks.ExecuteWriteMicroBenchmark(
+                writeTokens: (jsonWriter) => <#= writeFunction #>,
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>);
+        }
+
+<# } #>
+<# } #>
 
         private static void ExecuteWriteMicroBenchmark(
             Action<IJsonWriter> writeTokens,
@@ -239,9 +254,46 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 
             jsonWriter.WriteArrayEnd();
         }
+    }
+}
+<# SaveOutput("WriteMicroBenchmarks.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    using System;
+    using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
+
+    [MemoryDiagnoser]
+    public class JsonNavigateMicroBenchmarks
+    {
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
+        private static readonly BenchmarkPayload <#= tokenType #>Payload = new BenchmarkPayload((jsonWriter) => <#= writeFunction #>);
+<# } #>
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key;#>
+<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+<# foreach (bool materialize in new bool[] { true, false }) { #>
+        [Benchmark]
+        public void Navigate_<#= tokenType #>_<#= benchmarkSerializationFormat #><#= materialize ? "_Materialize" : string.Empty #>()
+        {
+            JsonNavigateMicroBenchmarks.ExecuteNavigateMicroBenchmark(
+                payload: JsonNavigateMicroBenchmarks.<#= tokenType #>Payload,
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>,
+                materialize: <#= materialize.ToString().ToLower() #>);
+        }
+
+<# } #>
+<# } #>
+<# } #>
 
         private static void ExecuteNavigateMicroBenchmark(
-            Payload payload,
+            BenchmarkPayload payload,
             BenchmarkSerializationFormat benchmarkSerializationFormat,
             bool materialize)
         {
@@ -370,53 +422,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 
             Navigate(jsonNavigator, jsonNavigator.GetRootNode(), materialize);
         }
-
-        private enum BenchmarkSerializationFormat
-        {
-<#  foreach (var value in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
-            <#= value #>,
-<# } #>
-        }
-
-        private readonly struct Payload
-        {
-            public Payload(Action<IJsonWriter> writeToken)
-            {
-                if (writeToken == null)
-                {
-                    throw new ArgumentNullException(nameof(writeToken));
-                }
-
-                IJsonWriter jsonTextWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                IJsonWriter jsonBinaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-                IJsonWriter jsonNewtonsoftWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-
-                jsonTextWriter.WriteArrayStart();
-                jsonBinaryWriter.WriteArrayStart();
-                jsonNewtonsoftWriter.WriteArrayStart();
-
-                for (int i = 0; i < 1000000; i++)
-                {
-                    writeToken(jsonTextWriter);
-                    writeToken(jsonBinaryWriter);
-                    writeToken(jsonNewtonsoftWriter);
-                }
-
-                jsonTextWriter.WriteArrayEnd();
-                jsonBinaryWriter.WriteArrayEnd();
-                jsonNewtonsoftWriter.WriteArrayEnd();
-
-                this.Text = jsonTextWriter.GetResult();
-                this.Binary = jsonTextWriter.GetResult();
-                this.Newtonsoft = jsonNewtonsoftWriter.GetResult();
-            }
-
-            public ReadOnlyMemory<byte> Text { get; }
-            public ReadOnlyMemory<byte> Binary { get; }
-            public ReadOnlyMemory<byte> Newtonsoft { get; }
-        }
     }
 }
+<# SaveOutput("NavigateMicroBenchmarks.cs"); #>
 <#+
 enum BenchmarkSerializationFormat
 {
