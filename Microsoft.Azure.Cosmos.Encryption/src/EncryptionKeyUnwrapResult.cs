@@ -37,12 +37,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Raw form of the data encryption key.
         /// </summary>
-        internal byte[] DataEncryptionKey { get; }
+        public byte[] DataEncryptionKey { get; }
 
         /// <summary>
         /// Amount of time after which the raw data encryption key must not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </summary>
-        internal TimeSpan ClientCacheTimeToLive { get; }
+        public TimeSpan ClientCacheTimeToLive { get; }
     }
 }

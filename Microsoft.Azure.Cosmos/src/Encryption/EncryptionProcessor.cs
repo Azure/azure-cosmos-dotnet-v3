@@ -94,6 +94,11 @@ namespace Microsoft.Azure.Cosmos
                 encryptionOptions.EncryptionAlgorithm,
                 cancellationToken);
 
+            if (cipherText == null)
+            {
+                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
+            }
+
             EncryptionProperties encryptionProperties = new EncryptionProperties(
                 encryptionFormatVersion: 2,
                 dataEncryptionKeyId: encryptionOptions.DataEncryptionKeyId,
@@ -204,6 +209,11 @@ namespace Microsoft.Azure.Cosmos
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
                 cancellationToken);
+
+            if (plainText == null)
+            {
+                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
+            }
 
             JObject plainTextJObj;
             using (MemoryStream memoryStream = new MemoryStream(plainText))
