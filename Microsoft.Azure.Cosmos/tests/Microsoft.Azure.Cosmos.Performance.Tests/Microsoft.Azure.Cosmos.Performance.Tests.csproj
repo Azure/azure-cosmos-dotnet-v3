@@ -209,9 +209,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Json\CurratedDocsBenchmark.tt">
+    <None Update="Json\CuratedDocsBenchmark.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>CurratedDocsBenchmark.cs</LastGenOutput>
+      <LastGenOutput>CuratedDocsBenchmark.cs</LastGenOutput>
     </None>
     <None Update="Json\JsonMicroBenchmarks.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -220,6 +220,10 @@
     <None Update="Json\JsonRoundtripBenchmark.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>JsonRoundtripBenchmark.cs</LastGenOutput>
+    </None>
+    <None Update="Json\Utf8vsUtf16StringBenchmarkGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Utf8vsUtf16StringBenchmarkGenerator.cs</LastGenOutput>
     </None>
     <None Update="samplepayload.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -231,10 +235,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Json\CurratedDocsBenchmark.cs">
+    <Compile Update="Json\CuratedDocsBenchmark.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>CurratedDocsBenchmark.tt</DependentUpon>
+      <DependentUpon>CuratedDocsBenchmark.tt</DependentUpon>
     </Compile>
     <Compile Update="Json\JsonMicroBenchmarks.cs">
       <DesignTime>True</DesignTime>
@@ -245,6 +249,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>JsonRoundtripBenchmark.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\Utf8vsUtf16StringBenchmarkGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Utf8vsUtf16StringBenchmarkGenerator.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 
