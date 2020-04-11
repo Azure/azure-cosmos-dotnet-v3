@@ -778,7 +778,7 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            if (responseMessage.Content != null && this.ClientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+            if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
             {
                 responseMessage.Content = await this.ClientContext.DecryptItemAsync(
                     responseMessage.Content,

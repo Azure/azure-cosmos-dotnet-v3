@@ -2,22 +2,19 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
 
     internal class InMemoryRawDek
     {
-        public byte[] RawDek { get; }
-
-        public EncryptionAlgorithm AlgorithmUsingRawDek { get; }
+        public DataEncryptionKey DataEncryptionKey { get; }
 
         public DateTime RawDekExpiry { get; }
 
-        public InMemoryRawDek(byte[] rawDek, EncryptionAlgorithm algorithmUsingRawDek, TimeSpan clientCacheTimeToLive)
+        public InMemoryRawDek(DataEncryptionKey dataEncryptionKey, TimeSpan clientCacheTimeToLive)
         {
-            this.RawDek = rawDek;
-            this.AlgorithmUsingRawDek = algorithmUsingRawDek;
+            this.DataEncryptionKey = dataEncryptionKey;
             this.RawDekExpiry = DateTime.UtcNow + clientCacheTimeToLive;
         }
     }

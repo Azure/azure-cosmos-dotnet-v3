@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Concurrent;
@@ -17,14 +17,9 @@ namespace Microsoft.Azure.Cosmos
     /// This (and AeadAes256CbcHmac256EncryptionKey) implementation for Cosmos DB is same as the existing
     /// SQL client implementation with StyleCop related changes - also, we restrict to randomized encryption to start with.
     /// </summary>
-    internal class AeadAes256CbcHmac256Algorithm : EncryptionAlgorithm
+    internal class AeadAes256CbcHmac256Algorithm : DataEncryptionKey
     {
         internal const string AlgorithmNameConstant = @"AEAD_AES_256_CBC_HMAC_SHA256";
-
-        /// <summary>
-        /// Algorithm Name
-        /// </summary>
-        internal override string AlgorithmName { get; } = AlgorithmNameConstant;
 
         /// <summary>
         /// Key size in bytes
@@ -88,6 +83,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static readonly byte[] versionSize = new byte[] { sizeof(byte) };
 
+        public override byte[] RawKey => this.dataEncryptionKey.RootKey;
+
+        public override string EncryptionAlgorithm => CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized;
+
         /// <summary>
         /// Initializes a new instance of AeadAes256CbcHmac256Algorithm algorithm with a given key and encryption type
         /// </summary>
@@ -129,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="plainText">Plaintext data to be encrypted</param>
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
-        internal override byte[] EncryptData(byte[] plainText)
+        public override byte[] EncryptData(byte[] plainText)
         {
             return this.EncryptData(plainText, hasAuthenticationTag: true);
         }
@@ -258,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
         /// 2. Validate Authentication tag
         /// 3. Decrypt the message
         /// </summary>
-        internal override byte[] DecryptData(byte[] cipherText)
+        public override byte[] DecryptData(byte[] cipherText)
         {
             return this.DecryptData(cipherText, hasAuthenticationTag: true);
         }
