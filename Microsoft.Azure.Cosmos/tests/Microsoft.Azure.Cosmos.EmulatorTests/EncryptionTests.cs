@@ -254,6 +254,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
 
+            // ORDER BY query
             await ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.containerCore, testDoc1, testDoc2);
         }
 
@@ -340,13 +341,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             string query = "SELECT VALUE COUNT(1) FROM c";
 
-            FeedIterator feedIterator = EncryptionTests.containerCore.GetItemQueryStreamIterator(query);
-            while (feedIterator.HasMoreResults)
-            {
-                ResponseMessage response = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(response.IsSuccessStatusCode);
-                Assert.IsNull(response.ErrorMessage);
-            }
+            await ValidateQueryResponseAsync(query);
+        }
+
+        [TestMethod]
+        public async Task DecryptGroupByQueryResultTest()
+        {
+            string partitionKey = Guid.NewGuid().ToString();
+
+            TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt, partitionKey);
+
+            string query = $"SELECT COUNT(c.Id), c.PK " +
+                           $"FROM c WHERE c.PK = '{partitionKey}' " +
+                           $"GROUP BY c.PK ";
+
+            await ValidateQueryResponseAsync(query);
         }
 
         [TestMethod]
@@ -594,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc1,
             TestDoc testDoc2)
         {
-            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
+            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}') ORDER BY c._ts";
             FeedIterator<TestDoc> queryResponseIterator = containerCore.GetItemQueryIterator<TestDoc>(query);
             FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             Assert.AreEqual(null, readDocs.ContinuationToken);
@@ -602,6 +612,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (TestDoc readDoc in readDocs)
             {
                 Assert.AreEqual(readDoc, readDoc.Id.Equals(testDoc1.Id) ? testDoc1 : testDoc2);
+            }
+        }
+
+        private static async Task ValidateQueryResponseAsync(string query)
+        {
+            FeedIterator feedIterator = EncryptionTests.containerCore.GetItemQueryStreamIterator(query);
+            while (feedIterator.HasMoreResults)
+            {
+                ResponseMessage response = await feedIterator.ReadNextAsync();
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.IsNull(response.ErrorMessage);
             }
         }
 
