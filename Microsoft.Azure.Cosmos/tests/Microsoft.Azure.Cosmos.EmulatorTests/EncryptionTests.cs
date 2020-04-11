@@ -254,8 +254,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
 
+            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
+            await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.containerCore, testDoc1, testDoc2, query);
+
             // ORDER BY query
-            await ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.containerCore, testDoc1, testDoc2);
+            query = query + " ORDER BY c._ts";
+            await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.containerCore, testDoc1, testDoc2, query);
         }
 
         [TestMethod]
@@ -266,8 +270,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, dekId1, TestDoc.PathsToEncrypt);
+            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
 
-            await ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.containerCore, testDoc1, testDoc2);
+            await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.containerCore, testDoc1, testDoc2, query);
         }
 
         [TestMethod]
@@ -341,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             string query = "SELECT VALUE COUNT(1) FROM c";
 
-            await ValidateQueryResponseAsync(query);
+            await EncryptionTests.ValidateQueryResponseAsync(EncryptionTests.containerCore, query);
         }
 
         [TestMethod]
@@ -356,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                            $"FROM c WHERE c.PK = '{partitionKey}' " +
                            $"GROUP BY c.PK ";
 
-            await ValidateQueryResponseAsync(query);
+            await EncryptionTests.ValidateQueryResponseAsync(EncryptionTests.containerCore, query);
         }
 
         [TestMethod]
@@ -602,9 +607,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
             ContainerCore containerCore,
             TestDoc testDoc1,
-            TestDoc testDoc2)
+            TestDoc testDoc2,
+            string query)
         {
-            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}') ORDER BY c._ts";
             FeedIterator<TestDoc> queryResponseIterator = containerCore.GetItemQueryIterator<TestDoc>(query);
             FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             Assert.AreEqual(null, readDocs.ContinuationToken);
@@ -615,9 +620,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static async Task ValidateQueryResponseAsync(string query)
+        private static async Task ValidateQueryResponseAsync(ContainerCore containerCore, string query)
         {
-            FeedIterator feedIterator = EncryptionTests.containerCore.GetItemQueryStreamIterator(query);
+            FeedIterator feedIterator = containerCore.GetItemQueryStreamIterator(query);
             while (feedIterator.HasMoreResults)
             {
                 ResponseMessage response = await feedIterator.ReadNextAsync();
