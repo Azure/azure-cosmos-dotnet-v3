@@ -9,14 +9,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Json;
-    using System.IO;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    [TestCategory("Functional")]
     public class JsonNavigatorTests
     {
         [TestInitialize]

@@ -6,7 +6,6 @@
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Reflection;
     using System.Globalization;
 
     [TestClass]

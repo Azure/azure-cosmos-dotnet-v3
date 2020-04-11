@@ -1,0 +1,180 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<#
+List<string> curatedDocs = new List<string>()
+{
+    //"CombinedScriptsData",
+    //"countries",
+    //"devtestcoll",
+    //"lastfm",
+    //"LogData",
+    //"MillionSong1KDocuments",
+    //"MsnCollection",
+    "NutritionData",
+    //"runsCollection",
+    //"states_committees",
+    //"states_legislators",
+    //"store01C",
+    //"TicinoErrorBuckets",
+    //"twitter_data",
+    //"ups1",
+    //"XpertEvents",
+};
+#>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tests.Json;
+
+    [MemoryDiagnoser]
+    public class CuratedDocsBenchmark
+    {
+<#  foreach (string curatedDoc in curatedDocs) { #>
+        private static readonly CurratedDocsPayload <#= curatedDoc #>Payload = CurratedDocsPayload.CreateFromCurratedDocs("<#= curatedDoc #>");
+<# } #>
+
+<#  foreach (string curatedDoc in curatedDocs) { #>
+<#  foreach (var serializationFormat in Enum.GetValues(typeof(SerializationFormat))) { #>
+        [Benchmark]
+        public void Read<#= curatedDoc #>_<#= serializationFormat #>()
+        {
+            CuratedDocsBenchmark.ExecuteReadBenchmark(
+                payload: CuratedDocsBenchmark.<#= curatedDoc #>Payload,
+                serializationFormat: SerializationFormat.<#= serializationFormat #>);
+        }
+
+<# } #>
+<# } #>
+
+<#  foreach (string curatedDoc in curatedDocs) { #>
+<#  foreach (var serializationFormat in Enum.GetValues(typeof(SerializationFormat))) { #>
+        [Benchmark]
+        public void Write<#= curatedDoc #>_<#= serializationFormat #>()
+        {
+            CuratedDocsBenchmark.ExecuteWriteBenchmark(
+                payload: CuratedDocsBenchmark.<#= curatedDoc #>Payload,
+                serializationFormat: SerializationFormat.<#= serializationFormat #>);
+        }
+
+<# } #>
+<# } #>
+
+        private static void ExecuteReadBenchmark(
+            CurratedDocsPayload payload,
+            SerializationFormat serializationFormat)
+        {
+            IJsonReader jsonReader = serializationFormat switch
+            {
+                SerializationFormat.Text => JsonReader.Create(payload.Text),
+                SerializationFormat.Binary => JsonReader.Create(payload.Binary),
+                SerializationFormat.Newtonsoft => NewtonsoftToCosmosDBReader.CreateFromBuffer(payload.Text),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(SerializationFormat)}: '{serializationFormat}'."),
+            };
+
+            Utils.DrainReader(jsonReader, materializeValue: true);
+        }
+
+        private static void ExecuteWriteBenchmark(
+            CurratedDocsPayload payload,
+            SerializationFormat serializationFormat)
+        {
+            IJsonWriter jsonWriter = serializationFormat switch
+            {
+                SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
+                SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
+                SerializationFormat.Newtonsoft => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(SerializationFormat)}: '{serializationFormat}'."),
+            };
+
+            Utils.FlushToWriter(jsonWriter, payload.TokensToWrite);
+        }
+
+        private enum SerializationFormat
+        {
+<#  foreach (var value in Enum.GetValues(typeof(SerializationFormat))) { #>
+            <#= value #>,
+<# } #>
+        }
+
+        private readonly struct CurratedDocsPayload
+        {
+            private CurratedDocsPayload(
+                ReadOnlyMemory<byte> text,
+                ReadOnlyMemory<byte> binary,
+                IReadOnlyList<JsonToken> tokensToWrite)
+            {
+                if (tokensToWrite == null)
+                {
+                    throw new ArgumentNullException(nameof(tokensToWrite));
+                }
+
+                this.Text = text;
+                this.Binary = binary;
+                this.TokensToWrite = new List<JsonToken>(tokensToWrite);
+            }
+
+            public ReadOnlyMemory<byte> Text { get; }
+
+            public ReadOnlyMemory<byte> Binary { get; }
+
+            public IReadOnlyList<JsonToken> TokensToWrite { get; }
+
+            public static CurratedDocsPayload CreateFromCurratedDocs(string name)
+            {
+                if (name == null)
+                {
+                    throw new ArgumentNullException(nameof(name));
+                }
+
+                string path = $"TestJsons/{name}.json";
+                string json = TextFileConcatenation.ReadMultipartFile(path);
+                json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 50);
+
+                ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
+                ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
+                IReadOnlyList<JsonToken> tokensToWrite = Utils.Tokenize(text);
+
+                return new CurratedDocsPayload(
+                    text: text,
+                    binary: binary,
+                    tokensToWrite: tokensToWrite);
+            }
+        }
+    }
+}
+<#+
+enum SerializationFormat
+{
+    Text,
+    Binary,
+    Newtonsoft,
+}
+#>
+<#+
+private static string ModificationInstructions(
+                        [CallerFilePath] string file = "",
+                        [CallerLineNumber] int line = 0)
+{
+    return $"This is auto-generated code. Modify: {Path.GetFileName(file)}: {line}";
+}
+#>

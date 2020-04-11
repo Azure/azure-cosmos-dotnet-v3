@@ -202,8 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         public static TimeSpan MeasureWritePerformance(IJsonWriter jsonWriter, string json, int numberOfIterations = 1)
         {
-            JsonToken[] tokens = JsonPerfMeasurement.Tokenize(json);
-            return JsonPerfMeasurement.MeasureWritePerformance(tokens, jsonWriter, numberOfIterations);
+            return default;
         }
 
         public static TimeSpan MeasureWritePerformance(JsonToken[] tokensToWrite, IJsonWriter jsonWriter, int numberOfIterations = 1)
@@ -212,139 +211,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             GC.WaitForPendingFinalizers();
 
             Stopwatch stopwatch = new Stopwatch();
-            foreach (JsonToken token in tokensToWrite)
-            {
-                switch (token.JsonTokenType)
-                {
-                    case JsonTokenType.BeginArray:
-                        stopwatch.Start();
-                        jsonWriter.WriteArrayStart();
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.EndArray:
-                        stopwatch.Start();
-                        jsonWriter.WriteArrayEnd();
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.BeginObject:
-                        stopwatch.Start();
-                        jsonWriter.WriteObjectStart();
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.EndObject:
-                        stopwatch.Start();
-                        jsonWriter.WriteObjectEnd();
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.String:
-                        string stringValue = (token as JsonStringToken).Value;
-                        stopwatch.Start();
-                        jsonWriter.WriteStringValue(stringValue);
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.Number:
-                        Number64 numberValue = (token as JsonNumberToken).Value;
-                        stopwatch.Start();
-                        jsonWriter.WriteNumberValue(numberValue);
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.True:
-                        stopwatch.Start();
-                        jsonWriter.WriteBoolValue(true);
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.False:
-                        stopwatch.Start();
-                        jsonWriter.WriteBoolValue(false);
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.Null:
-                        stopwatch.Start();
-                        jsonWriter.WriteNullValue();
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.FieldName:
-                        string fieldNameValue = (token as JsonFieldNameToken).Value;
-                        stopwatch.Start();
-                        jsonWriter.WriteFieldName(fieldNameValue);
-                        stopwatch.Stop();
-                        break;
-                    case JsonTokenType.NotStarted:
-                    default:
-                        throw new ArgumentException("invalid jsontoken");
-                }
-            }
+            
 
             return stopwatch.Elapsed;
-        }
-
-        public static JsonToken[] Tokenize(string json)
-        {
-            IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(json));
-            return JsonPerfMeasurement.Tokenize(jsonReader, json);
-        }
-
-        public static JsonToken[] Tokenize(IJsonReader jsonReader, string json)
-        {
-            List<JsonToken> tokensFromReader = new List<JsonToken>();
-            while (jsonReader.Read())
-            {
-                switch (jsonReader.CurrentTokenType)
-                {
-                    case JsonTokenType.NotStarted:
-                        throw new ArgumentException(string.Format("Got an unexpected JsonTokenType: {0} as an expected token type", jsonReader.CurrentTokenType));
-                    case JsonTokenType.BeginArray:
-                        tokensFromReader.Add(JsonToken.ArrayStart());
-                        break;
-                    case JsonTokenType.EndArray:
-                        tokensFromReader.Add(JsonToken.ArrayEnd());
-                        break;
-                    case JsonTokenType.BeginObject:
-                        tokensFromReader.Add(JsonToken.ObjectStart());
-                        break;
-                    case JsonTokenType.EndObject:
-                        tokensFromReader.Add(JsonToken.ObjectEnd());
-                        break;
-                    case JsonTokenType.String:
-                        tokensFromReader.Add(JsonToken.String(jsonReader.GetStringValue()));
-                        break;
-                    case JsonTokenType.Number:
-                        tokensFromReader.Add(JsonToken.Number(jsonReader.GetNumberValue()));
-                        break;
-                    case JsonTokenType.True:
-                        tokensFromReader.Add(JsonToken.Boolean(true));
-                        break;
-                    case JsonTokenType.False:
-                        tokensFromReader.Add(JsonToken.Boolean(false));
-                        break;
-                    case JsonTokenType.Null:
-                        tokensFromReader.Add(JsonToken.Null());
-                        break;
-                    case JsonTokenType.FieldName:
-                        tokensFromReader.Add(JsonToken.FieldName(jsonReader.GetStringValue()));
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            return tokensFromReader.ToArray();
-        }
-
-        public static ReadOnlyMemory<byte> ConvertTextToBinary(string text)
-        {
-            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-            IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
-            binaryWriter.WriteAll(textReader);
-            return binaryWriter.GetResult();
-        }
-
-        public static string ConvertBinaryToText(byte[] binary)
-        {
-            IJsonReader binaryReader = JsonReader.Create(binary);
-            IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            textWriter.WriteAll(binaryReader);
-            return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
         }
 
         public static void PrintStatisticsTable(string inputFileName, JsonExecutionTimes text, JsonExecutionTimes newtonsoft, JsonExecutionTimes binary)

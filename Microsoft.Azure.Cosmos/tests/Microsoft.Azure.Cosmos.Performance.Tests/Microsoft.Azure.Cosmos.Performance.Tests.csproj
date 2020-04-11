@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTestUtils.cs" Link="JsonTestUtils.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTokenInfo.cs" Link="Json\JsonTokenInfo.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Utils\TextFileConcatenation.cs" Link="TextFileConcatenation.cs" />
   </ItemGroup>
 
@@ -208,6 +209,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Json\CurratedDocsBenchmark.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CurratedDocsBenchmark.cs</LastGenOutput>
+    </None>
     <None Update="Json\JsonMicroBenchmarks.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>JsonMicroBenchmarks.cs</LastGenOutput>
@@ -226,6 +231,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Json\CurratedDocsBenchmark.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CurratedDocsBenchmark.tt</DependentUpon>
+    </Compile>
     <Compile Update="Json\JsonMicroBenchmarks.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

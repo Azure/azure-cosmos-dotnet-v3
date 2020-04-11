@@ -7,9 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Diagnostics;
-    using System.Linq;
     using System.Text;
-    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Tests;

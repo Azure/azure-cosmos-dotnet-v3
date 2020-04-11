@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: JsonMicroBenchmarks.tt: 195
+// This is auto-generated code. Modify: JsonMicroBenchmarks.tt: 99
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 {
