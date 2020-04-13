@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: morrisoncole/pr-lint-action@master
       with:
-        title-regex: '(\[Internal\]|\[v4\] )?.{3}.+: (Add|Fix) .{3}.+'
+        title-regex: '(\[Internal\]|\[v4\] )?.{3}.+: (Add|Fix|Refactor) .{3}.+'
         on-failed-regex-comment: >
          Please follow the required format: \"[Internal] Category: (Add|Fix) Description\"<br /><br />
          Examples:<br />
