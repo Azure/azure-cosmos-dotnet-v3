@@ -22,21 +22,25 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
         private readonly RequestOptions requestOptions;
+        private readonly CosmosClientContext clientContext;
 
         private QueryIterator(
             CosmosQueryContextCore cosmosQueryContext,
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
-            RequestOptions requestOptions)
+            RequestOptions requestOptions,
+            CosmosClientContext clientContext)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
             this.requestOptions = requestOptions;
+            this.clientContext = clientContext;
         }
 
         public static QueryIterator Create(
             CosmosQueryClient client,
+            CosmosClientContext clientContext,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             QueryRequestOptions queryRequestOptions,
@@ -78,7 +82,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                     new MalformedContinuationTokenException(
                                         $"Malformed Continuation Token: {requestContinuationToken}")),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
-                                queryRequestOptions);
+                                queryRequestOptions,
+                                clientContext);
                         }
                     }
                     else
@@ -112,7 +117,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 cosmosQueryContext,
                 CosmosQueryExecutionContextFactory.Create(cosmosQueryContext, inputParameters),
                 queryRequestOptions.CosmosSerializationFormatOptions,
-                queryRequestOptions);
+                queryRequestOptions,
+                clientContext);
         }
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
@@ -138,8 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (responseCore.IsSuccess)
                 {
                     List<CosmosElement> decryptedCosmosElements = null;
-                    CosmosQueryClientCore cosmosQueryClientCore = (CosmosQueryClientCore)this.cosmosQueryContext.QueryClient;
-                    if (cosmosQueryClientCore?.clientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+                    if (this.clientContext.ClientOptions.Encryptor != null)
                     {
                         decryptedCosmosElements = await this.GetDecryptedElementResponseAsync(responseCore.CosmosElements, diagnostics, cancellationToken);
                     }
@@ -196,7 +201,6 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken)
         {
             List<CosmosElement> decryptedCosmosElements = new List<CosmosElement>();
-            CosmosQueryClientCore cosmosQueryClientCore = (CosmosQueryClientCore)this.cosmosQueryContext.QueryClient;
             using (diagnosticsContext.CreateScope("Decrypt"))
             {
                 foreach (CosmosElement document in encryptedCosmosElements)
@@ -207,10 +211,9 @@ namespace Microsoft.Azure.Cosmos.Query
                         continue;
                     }
 
-                    CosmosObject decryptedDocument = await cosmosQueryClientCore.clientContext.EncryptionProcessor.DecryptAsync(
+                    CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
                         documentObject,
-                        (DatabaseCore)cosmosQueryClientCore.cosmosContainerCore.Database,
-                        cosmosQueryClientCore.clientContext.ClientOptions.EncryptionKeyWrapProvider,
+                        this.clientContext.ClientOptions.Encryptor,
                         diagnosticsContext,
                         cancellationToken);
 

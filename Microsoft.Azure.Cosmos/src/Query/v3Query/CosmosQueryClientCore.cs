@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
-        internal readonly CosmosClientContext clientContext;
-        internal readonly ContainerCore cosmosContainerCore;
+        private readonly CosmosClientContext clientContext;
+        private readonly ContainerCore cosmosContainerCore;
         private readonly DocumentClient documentClient;
         private readonly SemaphoreSlim semaphore;
         private QueryPartitionProvider queryPartitionProvider;
