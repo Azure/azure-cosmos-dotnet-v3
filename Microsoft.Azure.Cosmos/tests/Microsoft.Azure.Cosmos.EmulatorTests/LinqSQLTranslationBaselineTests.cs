@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Net;
     using Microsoft.Azure.Cosmos.Query.Core;
 
-    [TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         static Expression Lambda<T, S>(Expression<Func<T, S>> func)

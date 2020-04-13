@@ -2,23 +2,17 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary> 
     /// Details of an encryption key for use with the Azure Cosmos DB service.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class DataEncryptionKeyProperties : IEquatable<DataEncryptionKeyProperties>
+    public class DataEncryptionKeyProperties : IEquatable<DataEncryptionKeyProperties>
     {
         /// <summary>
         /// Initializes a new instance of <see cref="DataEncryptionKeyProperties"/>.
@@ -29,14 +23,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
         public DataEncryptionKeyProperties(
             string id,
-            CosmosEncryptionAlgorithm encryptionAlgorithm,
+            string encryptionAlgorithm,
             byte[] wrappedDataEncryptionKey,
-            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
+            DateTime createdTime)
         {
             this.Id = !string.IsNullOrEmpty(id) ? id : throw new ArgumentNullException(nameof(id));
-            this.EncryptionAlgorithmId = encryptionAlgorithm;
+            this.EncryptionAlgorithm = encryptionAlgorithm;
             this.WrappedDataEncryptionKey = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
             this.EncryptionKeyWrapMetadata = encryptionKeyWrapMetadata ?? throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
+            this.CreatedTime = createdTime;
         }
 
         /// <summary>
@@ -51,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
             this.CreatedTime = source.CreatedTime;
             this.ETag = source.ETag;
             this.Id = source.Id;
-            this.EncryptionAlgorithmId = source.EncryptionAlgorithmId;
+            this.EncryptionAlgorithm = source.EncryptionAlgorithm;
             this.EncryptionKeyWrapMetadata = new EncryptionKeyWrapMetadata(source.EncryptionKeyWrapMetadata);
             this.LastModified = source.LastModified;
             this.ResourceId = source.ResourceId;
@@ -75,32 +71,32 @@ namespace Microsoft.Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
+        [JsonProperty(PropertyName = "id")]
         public string Id { get; internal set; }
 
         /// <summary>
         /// Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithmId, NullValueHandling = NullValueHandling.Ignore)]
-        public CosmosEncryptionAlgorithm EncryptionAlgorithmId { get; internal set; }
+        [JsonProperty(PropertyName = "encryptionAlgorithm", NullValueHandling = NullValueHandling.Ignore)]
+        public string EncryptionAlgorithm { get; internal set; }
 
         /// <summary>
         /// Wrapped form of the data encryption key.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.WrappedDataEncryptionKey, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "wrappedDataEncryptionKey", NullValueHandling = NullValueHandling.Ignore)]
         public byte[] WrappedDataEncryptionKey { get; internal set; }
 
         /// <summary>
         /// Metadata for the wrapping provider that can be used to unwrap the wrapped data encryption key.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.KeyWrapMetadata, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "keyWrapMetadata", NullValueHandling = NullValueHandling.Ignore)]
         public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; internal set; }
 
         /// <summary>
         /// Gets the creation time of the resource from the Azure Cosmos DB service.
         /// </summary>
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.CreatedTime, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "createTime", NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? CreatedTime { get; internal set; }
 
         /// <summary>
@@ -112,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "_etag", NullValueHandling = NullValueHandling.Ignore)]
         public string ETag { get; internal set; }
 
         /// <summary>
@@ -120,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "_ts", NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? LastModified { get; internal set; }
 
         /// <summary>
@@ -131,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "_self", NullValueHandling = NullValueHandling.Ignore)]
         public virtual string SelfLink { get; internal set; }
 
         /// <summary>
@@ -145,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "_rid", NullValueHandling = NullValueHandling.Ignore)]
         internal string ResourceId { get; set; }
 
         /// <summary>
@@ -167,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return other != null &&
                    this.Id == other.Id &&
-                   this.EncryptionAlgorithmId == other.EncryptionAlgorithmId &&
+                   this.EncryptionAlgorithm == other.EncryptionAlgorithm &&
                    DataEncryptionKeyProperties.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
                    EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
                    this.CreatedTime == other.CreatedTime &&
@@ -185,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
         {
             int hashCode = -1673632966;
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
-            hashCode = (hashCode * -1521134295) + EqualityComparer<CosmosEncryptionAlgorithm>.Default.GetHashCode(this.EncryptionAlgorithmId);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.EncryptionAlgorithm);
             hashCode = (hashCode * -1521134295) + EqualityComparer<EncryptionKeyWrapMetadata>.Default.GetHashCode(this.EncryptionKeyWrapMetadata);
             hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime?>.Default.GetHashCode(this.CreatedTime);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ETag);
