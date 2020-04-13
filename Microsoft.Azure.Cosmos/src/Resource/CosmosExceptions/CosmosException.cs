@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
         private string ToStringHelper(bool includeDiagnostics)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(this.GetType().FullName);
+            stringBuilder.Append("Cosmos Exception");
             if (this.Message != null)
             {
                 stringBuilder.Append(" : ");
