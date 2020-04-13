@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException ex)
                 {
-                    Assert.AreEqual(HttpStatusCode.Conflict, ex.StatusCode, ex.ToString());
+                    Assert.AreEqual(HttpStatusCode.Conflict, ex.StatusCode, $"Expected:Conflict, Actual:{ex.StatusCode}; Exception:ex.ToString()");
                 }
 
                 try
