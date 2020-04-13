@@ -11,5 +11,9 @@ jobs:
     - uses: morrisoncole/pr-lint-action@master
       with:
         title-regex: '(\[Internal\]|\[v4\] )?.{3}.+: (Add|Fix) .{3}.+'
-        on-failed-regex-comment: "Please follow the required format. [Internal] Category: (Add|Fix) Description"
+        on-failed-regex-comment: |
+         Please follow the required format. \"[Internal] Category: (Add|Fix) Description\" <br />
+        \`Diagnostics: Add GetElapsedClientLatency to CosmosDiagnostics`<br/> 
+        \`PartitionKey: Fix null reference when using default(PartitionKey)`<br/> 
+        \`[Internal] Query: Add code generator for CosmosNumbers for easy additions in the future.`<br/>"
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
