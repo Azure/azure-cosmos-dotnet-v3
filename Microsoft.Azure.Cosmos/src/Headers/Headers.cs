@@ -42,8 +42,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal TimeSpan? RetryAfter;
-
         internal SubStatusCodes SubStatusCode
         {
             get
@@ -130,6 +128,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Location)]
         public virtual string Location { get; internal set; }
+        
+        /// <summary>
+        /// Gets the amount of time to wait to retry the operation after an initial operation received HTTP status code 429 and was throttled.
+        /// </summary>
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.RetryAfter)]
+        public virtual TimeSpan? RetryAfter { get; internal set; }
 
         [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.SubStatus)]
         internal string SubStatusCodeLiteral
