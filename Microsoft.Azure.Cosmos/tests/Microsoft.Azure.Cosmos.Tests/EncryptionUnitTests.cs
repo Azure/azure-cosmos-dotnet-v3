@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
 {
     using System;
     using System.Collections.Concurrent;
@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tests;
@@ -25,190 +24,39 @@ namespace Microsoft.Azure.Cosmos
     {
         private const string DatabaseId = "mockDatabase";
         private const string ContainerId = "mockContainer";
+        private const string DekId = "mockDek";
+        private const string Algo = "testAlgo";
         private const double requestCharge = 0.6;
-        private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
 
-        private TimeSpan cacheTTL = TimeSpan.FromDays(1);
-        private byte[] dek = new byte[32];
-        private EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
-        private EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
-        private string metadataUpdateSuffix = "updated";
-
+        private Mock<Encryptor> mockEncryptor;
         private EncryptionTestHandler testHandler;
-        private Mock<EncryptionKeyWrapProvider> mockKeyWrapProvider;
-        private Mock<EncryptionAlgorithm> mockEncryptionAlgorithm;
-        private Mock<DatabaseCore> mockDatabaseCore;
-
-        [TestMethod]
-        public async Task EncryptionUTCreateDekWithoutEncryptionSerializer()
-        {
-            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)this.GetContainer()).Database;
-
-            try
-            {
-                await database.CreateDataEncryptionKeyAsync("mydek", EncryptionUnitTests.Algo, this.metadata1);
-                Assert.Fail();
-            }
-            catch (ArgumentException ex)
-            {
-                Assert.AreEqual(ClientResources.EncryptionKeyWrapProviderNotConfigured, ex.Message);
-            }
-
-        }
-
-        [TestMethod]
-        public async Task EncryptionUTRewrapDekWithoutEncryptionSerializer()
-        {
-            string dekId = "mydek";
-            EncryptionTestHandler testHandler = new EncryptionTestHandler();
-
-            // Create a DEK using a properly setup client first
-            Container container = this.GetContainerWithMockSetup(testHandler);
-            DatabaseCore databaseWithSerializer = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
-
-            DataEncryptionKeyResponse dekResponse = await databaseWithSerializer.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
-            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-
-            // Clear the handler pipeline that would have got setup
-            testHandler.InnerHandler = null;
-
-            // Ensure rewrap for this key fails on improperly configured client
-            try
-            {
-                DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)this.GetContainer(testHandler)).Database;
-                DataEncryptionKey dek = database.GetDataEncryptionKey(dekId);
-                await dek.RewrapAsync(this.metadata2);
-                Assert.Fail();
-            }
-            catch (ArgumentException ex)
-            {
-                Assert.AreEqual(ClientResources.EncryptionKeyWrapProviderNotConfigured, ex.Message);
-            }
-        }
-
-        [TestMethod]
-        public async Task EncryptionUTCreateDek()
-        {
-            Container container = this.GetContainerWithMockSetup();
-            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
-
-            string dekId = "mydek";
-            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
-            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-            Assert.AreEqual(requestCharge, dekResponse.RequestCharge);
-            Assert.IsNotNull(dekResponse.ETag);
-
-            DataEncryptionKeyProperties dekProperties = dekResponse.Resource;
-            Assert.IsNotNull(dekProperties);
-            Assert.AreEqual(dekResponse.ETag, dekProperties.ETag);
-            Assert.AreEqual(dekId, dekProperties.Id);
-
-            Assert.AreEqual(1, this.testHandler.Received.Count);
-            RequestMessage createDekRequestMessage = this.testHandler.Received[0];
-            Assert.AreEqual(ResourceType.ClientEncryptionKey, createDekRequestMessage.ResourceType);
-            Assert.AreEqual(OperationType.Create, createDekRequestMessage.OperationType);
-
-            Assert.IsTrue(this.testHandler.Deks.ContainsKey(dekId));
-            DataEncryptionKeyProperties serverDekProperties = this.testHandler.Deks[dekId];
-            Assert.IsTrue(serverDekProperties.Equals(dekProperties));
-
-            // Make sure we didn't push anything else in the JSON (such as raw DEK) by comparing JSON properties
-            // to properties exposed in DataEncryptionKeyProperties.
-            createDekRequestMessage.Content.Position = 0; // it is a test assumption that the client uses MemoryStream
-            JObject jObj = JObject.Parse(await new StreamReader(createDekRequestMessage.Content).ReadToEndAsync());
-            IEnumerable<string> dekPropertiesPropertyNames = GetJsonPropertyNamesForType(typeof(DataEncryptionKeyProperties));
-
-            foreach (JProperty property in jObj.Properties())
-            {
-                Assert.IsTrue(dekPropertiesPropertyNames.Contains(property.Name));
-            }
-
-            // Key wrap metadata should be the only "object" child in the JSON (given current properties in DataEncryptionKeyProperties)
-            IEnumerable<JToken> objectChildren = jObj.PropertyValues().Where(v => v.Type == JTokenType.Object);
-            Assert.AreEqual(1, objectChildren.Count());
-            JObject keyWrapMetadataJObj = (JObject)objectChildren.First();
-            Assert.AreEqual(Constants.Properties.KeyWrapMetadata, ((JProperty)keyWrapMetadataJObj.Parent).Name);
-
-            IEnumerable<string> keyWrapMetadataPropertyNames = GetJsonPropertyNamesForType(typeof(EncryptionKeyWrapMetadata));
-            foreach (JProperty property in keyWrapMetadataJObj.Properties())
-            {
-                Assert.IsTrue(keyWrapMetadataPropertyNames.Contains(property.Name));
-            }
-
-            IEnumerable<byte> expectedWrappedKey = this.VerifyWrap(this.dek, this.metadata1);
-            this.mockKeyWrapProvider.VerifyNoOtherCalls();
-
-            Assert.IsTrue(expectedWrappedKey.SequenceEqual(dekProperties.WrappedDataEncryptionKey));
-        }
-
-        [TestMethod]
-        public async Task EncryptionUTRewrapDek()
-        {
-            Container container = this.GetContainerWithMockSetup();
-            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
-
-            string dekId = "mydek";
-            DataEncryptionKeyResponse createResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
-            DataEncryptionKeyProperties createdProperties = createResponse.Resource;
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-            this.VerifyWrap(this.dek, this.metadata1);
-
-            DataEncryptionKey dek = database.GetDataEncryptionKey(dekId);
-            DataEncryptionKeyResponse rewrapResponse = await dek.RewrapAsync(this.metadata2);
-            DataEncryptionKeyProperties rewrappedProperties = rewrapResponse.Resource;
-            Assert.IsNotNull(rewrappedProperties);
-
-            Assert.AreEqual(dekId, rewrappedProperties.Id);
-            Assert.AreEqual(createdProperties.CreatedTime, rewrappedProperties.CreatedTime);
-            Assert.IsNotNull(rewrappedProperties.LastModified);
-            Assert.AreEqual(createdProperties.ResourceId, rewrappedProperties.ResourceId);
-            Assert.AreEqual(createdProperties.SelfLink, rewrappedProperties.SelfLink);
-
-            IEnumerable<byte> expectedRewrappedKey = this.dek.Select(b => (byte)(b + 2));
-            Assert.IsTrue(expectedRewrappedKey.SequenceEqual(rewrappedProperties.WrappedDataEncryptionKey));
-
-            Assert.AreEqual(new EncryptionKeyWrapMetadata(this.metadata2.Value + this.metadataUpdateSuffix), rewrappedProperties.EncryptionKeyWrapMetadata);
-
-            Assert.AreEqual(2, this.testHandler.Received.Count);
-            RequestMessage rewrapRequestMessage = this.testHandler.Received[1];
-            Assert.AreEqual(ResourceType.ClientEncryptionKey, rewrapRequestMessage.ResourceType);
-            Assert.AreEqual(OperationType.Replace, rewrapRequestMessage.OperationType);
-            Assert.AreEqual(createResponse.ETag, rewrapRequestMessage.Headers[HttpConstants.HttpHeaders.IfMatch]);
-
-            Assert.IsTrue(this.testHandler.Deks.ContainsKey(dekId));
-            DataEncryptionKeyProperties serverDekProperties = this.testHandler.Deks[dekId];
-            Assert.IsTrue(serverDekProperties.Equals(rewrappedProperties));
-
-            this.VerifyWrap(this.dek, this.metadata2);
-            this.mockKeyWrapProvider.VerifyNoOtherCalls();
-        }
 
         [TestMethod]
         public async Task EncryptionUTCreateItemWithUnknownDek()
         {
             Container container = this.GetContainerWithMockSetup();
-            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
-
             MyItem item = EncryptionUnitTests.GetNewItem();
+
             try
             {
                 await container.CreateItemAsync(
                     item,
-                    new PartitionKey(item.PK),
+                    new Cosmos.PartitionKey(item.PK),
                     new ItemRequestOptions
                     {
                         EncryptionOptions = new EncryptionOptions
                         {
-                            DataEncryptionKey = database.GetDataEncryptionKey("random"),
+                            DataEncryptionKeyId = "random",
+                            EncryptionAlgorithm = EncryptionUnitTests.Algo,
                             PathsToEncrypt = MyItem.PathsToEncrypt
                         }
                     });
 
-                Assert.Fail();
+                Assert.Fail("Expected CreateItemAsync with unknown data encryption key to fail");
             }
-            catch(CosmosException ex)
+            catch(Exception)
             {
-                Assert.IsTrue(ex.Message.Contains(ClientResources.DataEncryptionKeyNotFound));
+                // todo: Should we expose a exception class in the contract too
             }
         }
 
@@ -216,12 +64,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task EncryptionUTCreateItem()
         {
             Container container = this.GetContainerWithMockSetup();
-            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
-
-            string dekId = "mydek";
-            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
-            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId, MyItem.PathsToEncrypt);
+            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, EncryptionUnitTests.DekId, MyItem.PathsToEncrypt);
 
             // Validate server state
             Assert.IsTrue(this.testHandler.Items.TryGetValue(item.Id, out JObject serverItem));
@@ -238,11 +81,11 @@ namespace Microsoft.Azure.Cosmos
             EncryptionProperties encryptionPropertiesAtServer = ((JObject)eiJProp.Value).ToObject<EncryptionProperties>();
 
             Assert.IsNotNull(encryptionPropertiesAtServer);
-            Assert.AreEqual(dekResponse.Resource.ResourceId, encryptionPropertiesAtServer.DataEncryptionKeyRid);
-            Assert.AreEqual(1, encryptionPropertiesAtServer.EncryptionFormatVersion);
+            Assert.AreEqual(EncryptionUnitTests.DekId, encryptionPropertiesAtServer.DataEncryptionKeyId);
+            Assert.AreEqual(2, encryptionPropertiesAtServer.EncryptionFormatVersion);
             Assert.IsNotNull(encryptionPropertiesAtServer.EncryptedData);
 
-            JObject decryptedJObj = EncryptionUnitTests.ParseStream(new MemoryStream(encryptionPropertiesAtServer.EncryptedData.Reverse().ToArray()));
+            JObject decryptedJObj = EncryptionUnitTests.ParseStream(new MemoryStream(EncryptionUnitTests.DecryptData(encryptionPropertiesAtServer.EncryptedData)));
             Assert.AreEqual(2, decryptedJObj.Properties().Count());
             Assert.AreEqual(item.EncStr1, decryptedJObj.Property(nameof(MyItem.EncStr1)).Value.Value<string>());
             Assert.AreEqual(item.EncInt, decryptedJObj.Property(nameof(MyItem.EncInt)).Value.Value<int>());
@@ -252,63 +95,23 @@ namespace Microsoft.Azure.Cosmos
         public async Task EncryptionUTReadItem()
         {
             Container container = this.GetContainerWithMockSetup();
-            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
+            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, EncryptionUnitTests.DekId, MyItem.PathsToEncrypt);
 
-            await this.CreateAndReadItemAsync(container, database);
-        }
-
-        [TestMethod]
-        public async Task EncryptionUTCleanupRawDekOnExpiry()
-        {
-            Container container = this.GetContainerWithMockSetup(clientCacheTimeToLive:TimeSpan.FromSeconds(45));
-            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
-            
-            MyItem item = await this.CreateAndReadItemAsync(container, database);
-
-            Thread.Sleep(TimeSpan.FromSeconds(30));
-            ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new PartitionKey(item.PK));
+            ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new Cosmos.PartitionKey(item.PK));
             Assert.AreEqual(item, readResponse.Resource);
-            this.VerifyUnwrapCallCount(1); // Raw DEK exists in cache, hence no new Unwrap call is needed
-
-            Thread.Sleep(TimeSpan.FromSeconds(40)); // allow cleanup process to run and delete raw DEK from memory
-
-            readResponse = await container.ReadItemAsync<MyItem>(item.Id, new PartitionKey(item.PK));
-            Assert.AreEqual(item, readResponse.Resource);
-            this.VerifyUnwrapCallCount(2); // Raw DEK should have been cleaned up, hence another Unwrap call is needed now for read request
-        }
-
-        private async Task<MyItem> CreateAndReadItemAsync(Container container, DatabaseCore database)
-        {
-            string dekId = "mydek";
-            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
-            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId, MyItem.PathsToEncrypt);
-
-            // added raw DEK to cache as part of Wrap / Unwrap call
-            this.VerifyUnwrapCallCount(1);
-
-            ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new PartitionKey(item.PK));
-            Assert.AreEqual(item, readResponse.Resource);
-
-            // no new Unwrap call for read request since raw DEK existed in cache
-            this.VerifyUnwrapCallCount(1);
-
-            return item;
         }
 
         private static async Task<MyItem> CreateItemAsync(Container container, string dekId, List<string> pathsToEncrypt)
         {
-            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
-
             MyItem item = EncryptionUnitTests.GetNewItem();
-
             ItemResponse<MyItem> response = await container.CreateItemAsync<MyItem>(
                 item,
                 requestOptions: new ItemRequestOptions
                 {
                     EncryptionOptions = new EncryptionOptions
                     {
-                        DataEncryptionKey = database.GetDataEncryptionKey(dekId),
+                        DataEncryptionKeyId = dekId,
+                        EncryptionAlgorithm = EncryptionUnitTests.Algo,
                         PathsToEncrypt = pathsToEncrypt
                     }
                 });
@@ -329,123 +132,37 @@ namespace Microsoft.Azure.Cosmos
             };
         }
 
-        private static IEnumerable<string> GetJsonPropertyNamesForType(Type type)
-        {
-            return type
-                .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(p => Attribute.GetCustomAttribute(p, typeof(JsonPropertyAttribute)) != null)
-                .Select(p => ((JsonPropertyAttribute)Attribute.GetCustomAttribute(p, typeof(JsonPropertyAttribute))).PropertyName);
-        }
-
-        private IEnumerable<byte> VerifyWrap(IEnumerable<byte> dek, EncryptionKeyWrapMetadata inputMetadata)
-        {
-            this.mockKeyWrapProvider.Verify(m => m.WrapKeyAsync(
-                It.Is<byte[]>(key => key.SequenceEqual(dek)),
-                inputMetadata,
-                It.IsAny<CancellationToken>()),
-            Times.Exactly(1));
-
-            IEnumerable<byte> expectedWrappedKey = null;
-            if (inputMetadata == this.metadata1)
-            {
-                expectedWrappedKey = dek.Select(b => (byte)(b + 1));
-            }
-            else if (inputMetadata == this.metadata2)
-            {
-                expectedWrappedKey = dek.Select(b => (byte)(b + 2));
-            }
-            else
-            {
-                Assert.Fail();
-            }
-
-            // Verify we did unwrap to check on the wrapping
-            EncryptionKeyWrapMetadata expectedUpdatedMetadata = new EncryptionKeyWrapMetadata(inputMetadata.Value + this.metadataUpdateSuffix);
-            this.VerifyUnwrap(expectedWrappedKey, expectedUpdatedMetadata);
-
-            return expectedWrappedKey;
-        }
-
-        private void VerifyUnwrap(IEnumerable<byte> wrappedDek, EncryptionKeyWrapMetadata inputMetadata)
-        {
-            this.mockKeyWrapProvider.Verify(m => m.UnwrapKeyAsync(
-                It.Is<byte[]>(wrappedKey => wrappedKey.SequenceEqual(wrappedDek)),
-                inputMetadata,
-                It.IsAny<CancellationToken>()),
-            Times.Exactly(1));
-        }
-
-        private void VerifyUnwrapCallCount(int expected)
-        {
-            this.mockKeyWrapProvider.Verify(m => m.UnwrapKeyAsync(
-                    It.IsAny<byte[]>(),
-                    It.IsAny<EncryptionKeyWrapMetadata>(),
-                    It.IsAny<CancellationToken>()),
-                Times.Exactly(expected));
-        }
-
-        private Container GetContainer(EncryptionTestHandler encryptionTestHandler = null)
-        {
-            this.testHandler = encryptionTestHandler ?? new EncryptionTestHandler();
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(this.testHandler));
-            DatabaseCore database = new DatabaseCore(client.ClientContext, EncryptionUnitTests.DatabaseId);
-            return new ContainerInlineCore(new ContainerCore(client.ClientContext, database, EncryptionUnitTests.ContainerId));
-        }
-
-        private Container GetContainerWithMockSetup(EncryptionTestHandler encryptionTestHandler = null, TimeSpan? clientCacheTimeToLive = null)
+        private Container GetContainerWithMockSetup(EncryptionTestHandler encryptionTestHandler = null)
         {
             this.testHandler = encryptionTestHandler ?? new EncryptionTestHandler();
 
-            Random random = new Random();
-            random.NextBytes(this.dek);
+            this.mockEncryptor = new Mock<Encryptor>();
 
-            this.mockKeyWrapProvider = new Mock<EncryptionKeyWrapProvider>();
-            this.mockKeyWrapProvider.Setup(m => m.WrapKeyAsync(It.IsAny<byte[]>(), It.IsAny<EncryptionKeyWrapMetadata>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken) =>
-                {
-                    EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + this.metadataUpdateSuffix);
-                    int moveBy = metadata.Value == this.metadata1.Value ? 1 : 2;
-                    return new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata);
-                });
-            this.mockKeyWrapProvider.Setup(m => m.UnwrapKeyAsync(It.IsAny<byte[]>(), It.IsAny<EncryptionKeyWrapMetadata>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken) =>
-                {
-                    int moveBy = metadata.Value == this.metadata1.Value + this.metadataUpdateSuffix ? 1 : 2;
-                    return new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), clientCacheTimeToLive ?? this.cacheTTL);
-                });
-
+            this.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) => EncryptionUnitTests.EncryptData(plainText));
+            this.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) => EncryptionUnitTests.DecryptData(cipherText));
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder
                 .AddCustomHandlers(this.testHandler)
-                .WithEncryptionKeyWrapProvider(this.mockKeyWrapProvider.Object));
+                .WithEncryptor(this.mockEncryptor.Object));
 
-            this.mockEncryptionAlgorithm = new Mock<EncryptionAlgorithm>();
-            this.mockEncryptionAlgorithm.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] plainText) => plainText.Reverse().ToArray());
-            this.mockEncryptionAlgorithm.Setup(m => m.DecryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] cipherText) => cipherText.Reverse().ToArray());
-            this.mockEncryptionAlgorithm.SetupGet(m => m.AlgorithmName).Returns(AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
-            this.mockEncryptionAlgorithm.SetupGet(m => m.Key).
-                Returns(new AeadAes256CbcHmac256EncryptionKey(this.dek, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant));
-
-            this.mockDatabaseCore = new Mock<DatabaseCore>(client.ClientContext, EncryptionUnitTests.DatabaseId);
-            this.mockDatabaseCore.CallBase = true;
-            this.mockDatabaseCore.Setup(m => m.GetDataEncryptionKey(It.IsAny<string>()))
-             .Returns((string id) =>
-             {
-                 Mock<DataEncryptionKeyCore> mockDekCore = new Mock<DataEncryptionKeyCore>(client.ClientContext, this.mockDatabaseCore.Object, id);
-                 mockDekCore.CallBase = true;
-                 mockDekCore.Setup(m => m.GenerateKey(EncryptionUnitTests.Algo)).Returns(this.dek);
-                 mockDekCore.Setup(m => m.GetEncryptionAlgorithm(It.IsAny<byte[]>(), EncryptionUnitTests.Algo))
-                    .Returns(this.mockEncryptionAlgorithm.Object);
-                 return new DataEncryptionKeyInlineCore(mockDekCore.Object);
-             });
-
-            return new ContainerInlineCore(new ContainerCore(client.ClientContext, this.mockDatabaseCore.Object, EncryptionUnitTests.ContainerId));
+            DatabaseCore database = new DatabaseCore(client.ClientContext, EncryptionUnitTests.DatabaseId);
+            return new ContainerInlineCore(new ContainerCore(client.ClientContext, database, EncryptionUnitTests.ContainerId));
         }
 
         private static JObject ParseStream(Stream stream)
         {
             return JObject.Load(new JsonTextReader(new StreamReader(stream)));
+        }
+
+        private static byte[] EncryptData(byte[] plainText)
+        {
+            return plainText.Select(b => (byte)(b + 1)).ToArray();
+        }
+
+        private static byte[] DecryptData(byte[] plainText)
+        {
+            return plainText.Select(b => (byte)(b - 1)).ToArray();
         }
 
         private class MyItem
@@ -491,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
                 if (x == null && y == null) return true;
                 if (x == null || y == null) return false;
                 return x.EncryptionFormatVersion == y.EncryptionFormatVersion
-                    && x.DataEncryptionKeyRid == y.DataEncryptionKeyRid
+                    && x.DataEncryptionKeyId == y.DataEncryptionKeyId
                     && x.EncryptedData.SequenceEqual(y.EncryptedData);
             }
 
@@ -507,13 +224,12 @@ namespace Microsoft.Azure.Cosmos
             private readonly Func<RequestMessage, Task<ResponseMessage>> func;
 
             private readonly CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
-            
+
+
             public EncryptionTestHandler(Func<RequestMessage, Task<ResponseMessage>> func = null)
             {
                 this.func = func;
             }
-
-            public ConcurrentDictionary<string, DataEncryptionKeyProperties> Deks { get; } = new ConcurrentDictionary<string, DataEncryptionKeyProperties>();
 
             public ConcurrentDictionary<string, JObject> Items { get; } = new ConcurrentDictionary<string, JObject>();
 
@@ -533,73 +249,7 @@ namespace Microsoft.Azure.Cosmos
 
                 HttpStatusCode httpStatusCode = HttpStatusCode.InternalServerError;
 
-                if (request.ResourceType == ResourceType.ClientEncryptionKey)
-                {
-                    DataEncryptionKeyProperties dekProperties = null;
-                    if (request.OperationType == OperationType.Create)
-                    {
-                        dekProperties = this.serializer.FromStream<DataEncryptionKeyProperties>(request.Content);
-                        string databaseRid = ResourceId.NewDatabaseId(1).ToString();
-                        dekProperties.ResourceId = ResourceId.NewClientEncryptionKeyId(databaseRid, (uint)this.Received.Count).ToString();
-                        dekProperties.CreatedTime = EncryptionTestHandler.ReducePrecisionToSeconds(DateTime.UtcNow);
-                        dekProperties.LastModified = dekProperties.CreatedTime;
-                        dekProperties.ETag = Guid.NewGuid().ToString();
-                        dekProperties.SelfLink = string.Format(
-                            "dbs/{0}/{1}/{2}/",
-                           databaseRid,
-                            Paths.ClientEncryptionKeysPathSegment,
-                            dekProperties.ResourceId);
-
-                        httpStatusCode = HttpStatusCode.Created;
-                        if (!this.Deks.TryAdd(dekProperties.Id, dekProperties))
-                        {
-                            httpStatusCode = HttpStatusCode.Conflict;
-                        }
-                    }
-                    else if (request.OperationType == OperationType.Read)
-                    {
-                        string dekId = EncryptionTestHandler.ParseDekUri(request.RequestUri);
-                        httpStatusCode = HttpStatusCode.OK;
-                        if (!this.Deks.TryGetValue(dekId, out dekProperties))
-                        {
-                            httpStatusCode = HttpStatusCode.NotFound;
-                        }
-                    }
-                    else if(request.OperationType == OperationType.Replace)
-                    {
-                        string dekId = EncryptionTestHandler.ParseDekUri(request.RequestUri);
-                        dekProperties = this.serializer.FromStream<DataEncryptionKeyProperties>(request.Content);
-                        dekProperties.LastModified = EncryptionTestHandler.ReducePrecisionToSeconds(DateTime.UtcNow);
-                        dekProperties.ETag = Guid.NewGuid().ToString();
-
-                        httpStatusCode = HttpStatusCode.OK;
-                        if (!this.Deks.TryGetValue(dekId, out DataEncryptionKeyProperties existingDekProperties))
-                        {
-                            httpStatusCode = HttpStatusCode.NotFound;
-                        }
-
-                        if(!this.Deks.TryUpdate(dekId, dekProperties, existingDekProperties)) { throw new InvalidOperationException("Concurrency not handled in tests."); }
-                    }
-                    else if (request.OperationType == OperationType.Delete)
-                    {
-                        string dekId = EncryptionTestHandler.ParseDekUri(request.RequestUri);
-                        httpStatusCode = HttpStatusCode.NoContent;
-                        if (!this.Deks.TryRemove(dekId, out _))
-                        {
-                            httpStatusCode = HttpStatusCode.NotFound;
-                        }
-                    }
-
-                    ResponseMessage responseMessage = new ResponseMessage(httpStatusCode, request)
-                    {
-                        Content = dekProperties != null ? this.serializer.ToStream(dekProperties) : null,
-                    };
-
-                    responseMessage.Headers.RequestCharge = EncryptionUnitTests.requestCharge;
-                    responseMessage.Headers.ETag = dekProperties?.ETag;
-                    return responseMessage;
-                }
-                else if(request.ResourceType == ResourceType.Document)
+                if(request.ResourceType == ResourceType.Document)
                 {
                     JObject item = null;
                     if (request.OperationType == OperationType.Create)
@@ -677,9 +327,9 @@ namespace Microsoft.Azure.Cosmos
                     Content = contentClone
                 };
 
-                foreach (string x in request.Headers)
+                foreach (string headerName in request.Headers)
                 {
-                    clone.Headers.Set(x, request.Headers[x]);
+                    clone.Headers.Set(headerName, request.Headers[headerName]);
                 }
 
                 return clone;
@@ -695,21 +345,6 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(EncryptionUnitTests.ContainerId, segments[3]);
                 Assert.AreEqual(Paths.DocumentsPathSegment, segments[4]);
                 return segments[5];
-            }
-
-            private static string ParseDekUri(Uri requestUri)
-            {
-                string[] segments = requestUri.OriginalString.Split("/", StringSplitOptions.RemoveEmptyEntries);
-                Assert.AreEqual(4, segments.Length);
-                Assert.AreEqual(Paths.DatabasesPathSegment, segments[0]);
-                Assert.AreEqual(EncryptionUnitTests.DatabaseId, segments[1]);
-                Assert.AreEqual(Paths.ClientEncryptionKeysPathSegment, segments[2]);
-                return segments[3];
-            }
-
-            private static DateTime ReducePrecisionToSeconds(DateTime input)
-            {
-                return new DateTime(input.Year, input.Month, input.Day, input.Hour, input.Minute, input.Second, DateTimeKind.Utc);
             }
         }
     }

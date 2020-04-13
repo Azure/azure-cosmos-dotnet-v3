@@ -100,6 +100,16 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
         }
 
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceThroughputPropertiesAsync(throughputProperties, requestOptions, cancellationToken));
+        }
+
         public override Task<ResponseMessage> CreateItemStreamAsync(
             Stream streamPayload,
             PartitionKey partitionKey,
@@ -262,6 +272,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.container.CreateTransactionalBatch(partitionKey);
         }
+
 #if PREVIEW
         public override Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {

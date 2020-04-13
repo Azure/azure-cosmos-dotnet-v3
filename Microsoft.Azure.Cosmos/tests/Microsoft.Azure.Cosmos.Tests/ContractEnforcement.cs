@@ -28,6 +28,12 @@
             );
         }
 
+        [TestMethod]
+        public void UniqueKeyUnsealed()
+        {
+            Assert.IsFalse(typeof(UniqueKey).IsSealed);
+        }
+
         private static Assembly GetAssemblyLocally(string name)
         {
             Assembly.Load(name);
