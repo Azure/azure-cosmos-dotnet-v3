@@ -109,6 +109,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                                 break;
                             }
                         }
+
+                        // If we failed to move to the next document within a page
+                        // then just preempt here, which gives the user a preemption point if they want to stop the query.
+                        // If they want to drain more, then they are free to do so.
+                        break;
                     }
                 }
                 finally
