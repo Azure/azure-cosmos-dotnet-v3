@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
-    [TestClass]
+    [SDK.EmulatorTests.TestClass]
     public class ChangeFeedIteratorCoreTests : BaseCosmosClientHelper
     {
         private ContainerCore Container = null;

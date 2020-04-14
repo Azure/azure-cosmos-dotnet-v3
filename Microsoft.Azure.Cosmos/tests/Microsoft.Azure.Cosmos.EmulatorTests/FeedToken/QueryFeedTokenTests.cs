@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
-    [TestClass]
+    [SDK.EmulatorTests.TestClass]
     public class QueryFeedRangeTests : BaseCosmosClientHelper
     {
         [TestInitialize]

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [TestClass]
+    [SDK.EmulatorTests.TestClass]
     public class FeedRangeTests : BaseCosmosClientHelper
     {
         private ContainerCore Container = null;

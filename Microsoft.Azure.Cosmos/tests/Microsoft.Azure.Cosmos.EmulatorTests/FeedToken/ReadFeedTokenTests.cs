@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
-    [TestClass]
+    [SDK.EmulatorTests.TestClass]
     public class ReadFeedRangeTests : BaseCosmosClientHelper
     {
         private ContainerCore Container = null;
