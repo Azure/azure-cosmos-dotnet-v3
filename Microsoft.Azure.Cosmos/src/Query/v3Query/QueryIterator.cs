@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
             this.requestOptions = requestOptions;
-            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));;
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
         }
 
         public static QueryIterator Create(
