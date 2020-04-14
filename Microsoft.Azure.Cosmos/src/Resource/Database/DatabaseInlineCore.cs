@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
         }
 
-#if INTERNAL
+#if PREVIEW
         public override
 #else
         internal
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReplaceThroughputPropertiesAsync(throughputProperties, requestOptions, cancellationToken));
         }
 
-#if INTERNAL
+#if PREVIEW
         public override
 #else
         internal
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerAsync(containerProperties, throughputProperties, requestOptions, cancellationToken));
         }
 
-#if INTERNAL
+#if PREVIEW
         public override
 #else
         internal

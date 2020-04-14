@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         /// The maximum throughput the autoscale will scale to.
         /// </summary>
         [JsonIgnore]
-#if INTERNAL
+#if PREVIEW
         public
 #else
         internal
@@ -88,19 +88,14 @@ namespace Microsoft.Azure.Cosmos
         /// The amount to increment if the maximum RUs is getting throttled.
         /// </summary>
         [JsonIgnore]
-#if INTERNAL
-        public
-#else
-        internal
-#endif
-        int? AutoUpgradeMaxThroughputIncrementPercentage => this.Content?.OfferAutoscaleSettings?.AutoscaleAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
+        internal int? AutoUpgradeMaxThroughputIncrementPercentage => this.Content?.OfferAutoscaleSettings?.AutoscaleAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
 
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
         /// <param name="throughput">The current provisioned throughput for the resource.</param>
         /// <returns>Returns a ThroughputProperties for fixed throughput</returns>
-#if INTERNAL
+#if PREVIEW
         public
 #else
         internal
@@ -114,14 +109,21 @@ namespace Microsoft.Azure.Cosmos
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
         /// <param name="maxAutoscaleThroughput">The staring maximum throughput the resource can scale to.</param>
-        /// <param name="autoUpgradeMaxThroughputIncrementPercentage">The percentage to increase the maximum value if the maximum is being throttled.</param>
         /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
-#if INTERNAL
+#if PREVIEW
         public
 #else
         internal
 #endif
         static ThroughputProperties CreateAutoscaleProvionedThroughput(
+            int maxAutoscaleThroughput)
+        {
+            return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
+                startingMaxThroughput: maxAutoscaleThroughput,
+                autoUpgradeMaxThroughputIncrementPercentage: null));
+        }
+
+        internal static ThroughputProperties CreateAutoscaleProvionedThroughput(
             int maxAutoscaleThroughput,
             int? autoUpgradeMaxThroughputIncrementPercentage = null)
         {

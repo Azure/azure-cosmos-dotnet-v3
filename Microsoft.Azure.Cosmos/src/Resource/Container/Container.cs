@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
-#if INTERNAL
+#if PREVIEW
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
