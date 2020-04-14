@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 cosmosQueryContext,
                                 new QueryExecutionContextWithException(
                                     new MalformedContinuationTokenException(
-                                        $"Malformed Continuation Token: {requestContinuationToken}")),
+                                        $"Malformed Continuation Token: {continuationToken}")),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
                                 queryRequestOptions);
                         }

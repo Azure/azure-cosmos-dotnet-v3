@@ -294,14 +294,8 @@
   <data name="UnsupportedBulkRequestOptions" xml:space="preserve">
     <value>Consistency, Session, and Triggers are not allowed when AllowBulkExecution is set to true.</value>
   </data>
-  <data name="KeyWrappingDidNotRoundtrip" xml:space="preserve">
-    <value>The key wrapping provider configured was unable to unwrap the wrapped key correctly.</value>
-  </data>
-  <data name="DataEncryptionKeyNotFound" xml:space="preserve">
-    <value>A data encryption key with the provided name was not found - please ensure it has been created.</value>
-  </data>
-  <data name="EncryptionKeyWrapProviderNotConfigured" xml:space="preserve">
-    <value>The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptionKeyWrapProvider.</value>
+  <data name="EncryptorNotConfigured" xml:space="preserve">
+    <value>The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptor.</value>
   </data>
   <data name="InvalidRequestWithEncryptionOptions" xml:space="preserve">
     <value>Encryption options may not be specified on this request.</value>

@@ -2,19 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
 
     /// <summary>
     /// Result from a <see cref="EncryptionKeyWrapProvider"/> on unwrapping a wrapped data encryption key.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class EncryptionKeyUnwrapResult
+    public class EncryptionKeyUnwrapResult
     {
         /// <summary>
         /// Initializes a new instance of the result of unwrapping a wrapped data encryption key.
@@ -42,12 +37,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Raw form of the data encryption key.
         /// </summary>
-        internal byte[] DataEncryptionKey { get; }
+        public byte[] DataEncryptionKey { get; }
 
         /// <summary>
         /// Amount of time after which the raw data encryption key must not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </summary>
-        internal TimeSpan ClientCacheTimeToLive { get; }
+        public TimeSpan ClientCacheTimeToLive { get; }
     }
 }

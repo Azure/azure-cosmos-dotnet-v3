@@ -163,6 +163,25 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+        async Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputPropertiesAsync(
+                rid,
+                throughputProperties,
+                requestOptions,
+                cancellationToken);
+        }
+
         public override Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
