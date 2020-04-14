@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-#if INTERNAL
+#if PREVIEW
         public override
 #else
         internal
