@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        internal static CosmosArray ToCosmosElements(
+        public static CosmosArray ToCosmosElements(
             Stream stream,
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
@@ -43,9 +43,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return CosmosElementSerializer.ToCosmosElements(
-                    memoryStream,
-                    resourceType,
-                    cosmosSerializationOptions);
+                memoryStream,
+                resourceType,
+                cosmosSerializationOptions);
         }
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        internal static CosmosArray ToCosmosElements(
+        public static CosmosArray ToCosmosElements(
             MemoryStream memoryStream,
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        internal static MemoryStream ToStream(
+        public static MemoryStream ToStream(
             string containerRid,
             IEnumerable<CosmosElement> cosmosElements,
             ResourceType resourceType,
@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count);
         }
 
-        internal static IEnumerable<T> GetResources<T>(
+        public static IEnumerable<T> GetResources<T>(
             IReadOnlyList<CosmosElement> cosmosArray,
             CosmosSerializerCore serializerCore)
         {
@@ -277,40 +277,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Converts a list of CosmosElements into a list of objects.
-        /// </summary>
-        /// <param name="containerRid">Container Rid</param>
-        /// <param name="cosmosElements">The cosmos elements</param>
-        /// <param name="resourceType">The resource type</param>
-        /// <param name="jsonSerializer">The JSON </param>
-        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
-        /// <returns>Returns a list of deserialized objects</returns>
-        internal static IEnumerable<T> Deserialize<T>(
-            string containerRid,
-            IEnumerable<CosmosElement> cosmosElements,
-            ResourceType resourceType,
-            CosmosSerializerCore jsonSerializer,
-            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
-        {
-            if (!cosmosElements.Any())
-            {
-                return Enumerable.Empty<T>();
-            }
-
-            Stream stream = CosmosElementSerializer.ToStream(
-                containerRid,
-                cosmosElements,
-                resourceType,
-                cosmosSerializationOptions);
-
-            IEnumerable<T> typedResults = jsonSerializer.FromFeedResponseStream<T>(
-                stream,
-                resourceType);
-
-            return typedResults;
         }
 
         /// <summary>

@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }

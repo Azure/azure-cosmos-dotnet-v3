@@ -204,44 +204,6 @@ namespace Microsoft.Azure.Cosmos
                 this.hasMoreResultsInternal = false;
             }
 
-            // Rewrite the payload to be text. If it's already text, then the following will be a memcpy.
-            MemoryStream memoryStream;
-            if (response.Content is MemoryStream responseContentAsMemoryStream)
-            {
-                memoryStream = responseContentAsMemoryStream;
-            }
-            else
-            {
-                memoryStream = new MemoryStream();
-                await response.Content.CopyToAsync(memoryStream);
-            }
-
-            ReadOnlyMemory<byte> buffer;
-            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
-            {
-                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
-            }
-            else
-            {
-                buffer = memoryStream.ToArray();
-            }
-
-            IJsonReader jsonReader = JsonReader.Create(buffer);
-            IJsonWriter jsonTextWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-            jsonTextWriter.WriteAll(jsonReader);
-
-            ReadOnlyMemory<byte> result = jsonTextWriter.GetResult();
-            MemoryStream rewrittenMemoryStream;
-            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
-            {
-                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count);
-            }
-            else
-            {
-                rewrittenMemoryStream = new MemoryStream(result.ToArray());
-            }
-
-            response.Content = rewrittenMemoryStream;
             return response;
         }
 
@@ -277,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
             return TryCatch<FeedTokenInternal>.FromResult(feedTokenInternal);
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }
@@ -304,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
-            return this.feedIterator.GetCosmsoElementContinuationToken();
+            return this.feedIterator.GetCosmosElementContinuationToken();
         }
 
 #if PREVIEW

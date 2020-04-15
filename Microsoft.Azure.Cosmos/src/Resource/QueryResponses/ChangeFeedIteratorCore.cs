@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
             return TryCatch<FeedTokenInternal>.FromResult(new FeedTokenEPKRange(containerRId, partitionKeyRanges));
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }
