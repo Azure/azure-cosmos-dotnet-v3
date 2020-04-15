@@ -73,5 +73,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionAlgorithm,
                 cancellationToken);
         }
+
+        public override void Dispose()
+        {
+            this.cosmosEncryptor.Dispose();
+        }
     }
 }

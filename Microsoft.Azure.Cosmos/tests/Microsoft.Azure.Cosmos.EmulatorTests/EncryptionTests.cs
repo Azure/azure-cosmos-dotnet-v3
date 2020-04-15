@@ -28,8 +28,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
         private static EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
         private const string metadataUpdateSuffix = "updated";
-        private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
-
 
         private const string dekId = "mydek";
 
@@ -42,11 +40,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static Container keyContainer;
         private static CosmosDataEncryptionKeyProvider dekProvider;
         private static TestEncryptor encryptor;
+        private static TestKeyWrapProvider testKeyWrapProvider;
 
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context)
         {
-            EncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+            EncryptionTests.testKeyWrapProvider = new TestKeyWrapProvider();
+            EncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(EncryptionTests.testKeyWrapProvider);
             EncryptionTests.encryptor = new TestEncryptor(EncryptionTests.dekProvider);
 
             EncryptionTests.client = EncryptionTests.GetClient(EncryptionTests.encryptor);
@@ -171,7 +171,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task EncryptionCreateItem()
         {
+            EncryptionTests.testKeyWrapProvider.UnwrapCallCount = 0;
             TestDoc testDoc = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
+
+            Assert.IsTrue(EncryptionTests.testKeyWrapProvider.UnwrapCallCount.Equals(0));
 
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainerCore, testDoc);
 
@@ -221,6 +224,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await EncryptionTests.ValidateSprocResultsAsync(
                 EncryptionTests.itemContainerCore,
                 expectedDoc);
+
+            // Raw DEK expiry time was set to 1 day and hasn't been cleaned up from memory, so haven't had to unwrap the wrapped DEK again
+            Assert.IsTrue(EncryptionTests.testKeyWrapProvider.UnwrapCallCount.Equals(0));
+        }
+
+        [TestMethod]
+        public async Task EncryptionCleanupRawDekOnExpiry()
+        {
+            TestKeyWrapProvider testKeyWrapProviderWithCacheTTLSpecified = new TestKeyWrapProvider(TimeSpan.FromSeconds(45));
+            CosmosDataEncryptionKeyProvider testDekProvider = new CosmosDataEncryptionKeyProvider(testKeyWrapProviderWithCacheTTLSpecified);
+            TestEncryptor testEncryptor = new TestEncryptor(testDekProvider);
+            CosmosClient testClient = EncryptionTests.GetClient(testEncryptor);
+            DatabaseCore testDatabaseCore = (DatabaseInlineCore)await testClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container testKeyContainer = await testDatabaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
+            await testDekProvider.InitializeAsync(testDatabaseCore, testKeyContainer.Id);
+            Container testItemContainer = await testDatabaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            ContainerCore testItemContainerCore = (ContainerInlineCore)testItemContainer;
+            DataEncryptionKeyProperties testDekProperties = await EncryptionTests.CreateDekAsync(testDekProvider, EncryptionTests.dekId);
+
+            TestDoc testDoc = await EncryptionTests.CreateItemAsync(testItemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            Assert.IsTrue(testKeyWrapProviderWithCacheTTLSpecified.UnwrapCallCount.Equals(1));
+
+            Thread.Sleep(TimeSpan.FromSeconds(30));
+
+            await EncryptionTests.VerifyItemByReadAsync(testItemContainerCore, testDoc);
+            Assert.IsTrue(testKeyWrapProviderWithCacheTTLSpecified.UnwrapCallCount.Equals(1)); // Raw DEK exists in cache, hence no new Unwrap call is needed
+
+            Thread.Sleep(TimeSpan.FromSeconds(40)); // allow cleanup process to run and delete raw DEK from memory
+
+            // Raw DEK should have been cleaned up, hence another Unwrap call is needed now for read request
+            await EncryptionTests.VerifyItemByReadAsync(testItemContainerCore, testDoc);
+            Assert.IsTrue(testKeyWrapProviderWithCacheTTLSpecified.UnwrapCallCount.Equals(2)); 
         }
 
         [TestMethod]
@@ -906,10 +941,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class TestKeyWrapProvider : EncryptionKeyWrapProvider
         {
+            public int UnwrapCallCount { get; set; }
+            private readonly TimeSpan cacheTTL;
+
+            public TestKeyWrapProvider(TimeSpan? cacheTTL = null)
+            {
+                this.cacheTTL = cacheTTL ?? TimeSpan.FromDays(1);
+            }
+
             public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
+                this.UnwrapCallCount++;
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix ? 1 : 2;
-                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), EncryptionTests.cacheTTL));
+                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), this.cacheTTL));
             }
 
             public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
@@ -944,7 +988,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (dek == null)
                 {
-                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
                 }
 
                 return dek.DecryptData(cipherText);

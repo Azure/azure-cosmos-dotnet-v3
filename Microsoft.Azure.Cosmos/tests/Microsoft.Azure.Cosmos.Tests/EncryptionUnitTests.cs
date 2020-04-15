@@ -54,7 +54,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
 
                 Assert.Fail("Expected CreateItemAsync with unknown data encryption key to fail");
             }
-            catch(Exception)
+            catch (AssertFailedException assertFailedException)
+            {
+                throw assertFailedException;
+            }
+            catch (Exception)
             {
                 // todo: Should we expose a exception class in the contract too
             }
@@ -139,7 +143,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
             this.mockEncryptor = new Mock<Encryptor>();
 
             this.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) => EncryptionUnitTests.EncryptData(plainText));
+                .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) =>
+                    dekId == DekId ? EncryptionUnitTests.EncryptData(plainText) : throw new InvalidOperationException("DEK not found."));
             this.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) => EncryptionUnitTests.DecryptData(cipherText));
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder

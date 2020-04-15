@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Abstraction for a data encryption key for use in client-side encryption.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public abstract class DataEncryptionKey
+    public abstract class DataEncryptionKey : IDisposable
     {
         /// <summary>
         /// Raw key bytes of the data encryption key.
@@ -77,6 +77,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
             return new AeadAes256CbcHmac256Algorithm(aeKey, EncryptionType.Randomized, algorithmVersion: 1);
+        }
+
+        protected abstract void Dispose(bool disposing);
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }

@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return authenticationTag;
         }
 
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (!this.isDisposed)
             {
@@ -440,12 +440,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 this.isDisposed = true;
             }
-        }
-
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            this.Dispose(true);
         }
     }
 }

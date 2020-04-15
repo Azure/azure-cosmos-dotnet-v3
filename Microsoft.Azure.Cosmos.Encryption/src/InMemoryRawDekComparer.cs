@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         public int Compare(InMemoryRawDek dek1, InMemoryRawDek dek2)
         {
-            return dek1.ExpiryTime.CompareTo(dek2.ExpiryTime);
+            return dek1.RawDekExpiry.CompareTo(dek2.RawDekExpiry);
         }
     }
 }

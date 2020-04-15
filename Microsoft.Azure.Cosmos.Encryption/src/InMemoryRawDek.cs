@@ -12,12 +12,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         public DataEncryptionKey DataEncryptionKey { get; }
 
-        public DateTime ExpiryTime { get; }
+        public DateTime RawDekExpiry { get; }
 
         public InMemoryRawDek(DataEncryptionKey dataEncryptionKey, TimeSpan clientCacheTimeToLive)
         {
             this.DataEncryptionKey = dataEncryptionKey;
-            this.ExpiryTime = DateTime.UtcNow + clientCacheTimeToLive;
+            this.RawDekExpiry = DateTime.UtcNow + clientCacheTimeToLive;
         }
     }
 }

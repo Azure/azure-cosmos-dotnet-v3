@@ -44,10 +44,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 while (this.InMemoryRawDeks.TryPeek(out InMemoryRawDek inMemoryRawDek))
                 {
-                    if (inMemoryRawDek.ExpiryTime <= DateTime.UtcNow)
+                    if (inMemoryRawDek.RawDekExpiry <= DateTime.UtcNow)
                     {
-                        //inMemoryRawDek.DataEncryptionKey.RawKey.
-                        //inMemoryRawDek.AlgorithmUsingRawDek.Dispose();
+                        inMemoryRawDek.DataEncryptionKey.Dispose();
                         this.InMemoryRawDeks.Dequeue();
                     }
                 }
