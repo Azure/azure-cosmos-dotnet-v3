@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class NewtonsoftToCosmosDBWriter : Microsoft.Azure.Cosmos.Json.JsonWriter
@@ -174,14 +175,14 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return new NewtonsoftToCosmosDBWriter(writer, () => throw new NotSupportedException());
         }
 
-        public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
+        public override void WriteFieldName(Utf8Span utf8FieldName)
         {
-            this.WriteFieldName(Encoding.UTF8.GetString(utf8FieldName));
+            this.WriteFieldName(Encoding.UTF8.GetString(utf8FieldName.Span));
         }
 
-        public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
+        public override void WriteStringValue(Utf8Span utf8StringValue)
         {
-            this.WriteStringValue(Encoding.UTF8.GetString(utf8StringValue));
+            this.WriteStringValue(Encoding.UTF8.GetString(utf8StringValue.Span));
         }
     }
 }

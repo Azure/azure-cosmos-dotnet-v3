@@ -72,7 +72,7 @@
             Assert.AreEqual(expectedIndex, actualIndex);
 
             // Try to read the string back by index
-            if (!jsonStringDictionary.TryGetStringAtIndex(expectedIndex, out string actualString))
+            if (!jsonStringDictionary.TryGetStringAtIndex(expectedIndex, out UtfAllString actualString))
             {
                 throw new AssertFailedException($"{nameof(JsonStringDictionary.TryGetStringAtIndex)}({expectedIndex}, out string {actualString}) failed.");
             }

@@ -96,9 +96,9 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryGetBufferedUtf8StringValue(
+            public override bool TryGetBufferedStringValue(
                 IJsonNavigatorNode navigatorNode,
-                out ReadOnlyMemory<byte> bufferedStringValue)
+                out Utf8Memory bufferedStringValue)
             {
                 if (navigatorNode == null)
                 {

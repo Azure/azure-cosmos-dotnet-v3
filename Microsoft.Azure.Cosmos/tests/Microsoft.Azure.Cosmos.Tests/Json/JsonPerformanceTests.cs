@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System;
     using System.Diagnostics;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -196,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             void RunPerf(string utf16String, JsonSerializationFormat jsonSerializationFormat, bool useUtf8)
             {
-                ReadOnlySpan<byte> utf8String = Encoding.UTF8.GetBytes(utf16String);
+                Utf8Span utf8String = Utf8Span.TranscodeUtf16(utf16String);
 
                 Stopwatch stopWatch = new Stopwatch();
                 for (int i = 0; i < 1000000; i++)
@@ -247,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     stopWatch.Start();
                     if (useUtf8)
                     {
-                        reader.TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue);
+                        reader.TryGetBufferedStringValue(out Utf8Memory bufferedUtf8StringValue);
                     }
                     else
                     {

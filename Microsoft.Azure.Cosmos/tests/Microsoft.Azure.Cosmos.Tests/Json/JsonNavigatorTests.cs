@@ -528,10 +528,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     // Test binary + user string encoding
                     JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 4096);
                     byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
-                    if (jsonStringDictionary.TryGetStringAtIndex(index: 0, value: out string temp))
+                    if (jsonStringDictionary.TryGetStringAtIndex(index: 0, value: out _))
                     {
                         Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be different with user string encoding");
                     }
+
                     IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
                     IJsonNavigatorNode binaryRootNodeWithUserStringEncoding = binaryNavigatorWithUserStringEncoding.GetRootNode();
                     JsonToken[] tokensFromBinaryNavigatorWithUserStringEncoding = JsonNavigatorTests.GetTokensFromNode(binaryRootNode, binaryNavigator, performExtraChecks);

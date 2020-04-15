@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json.Linq;
 
@@ -181,9 +182,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             throw new NotImplementedException();
         }
 
-        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedStringValue)
+        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Memory bufferedStringValue)
         {
-            bufferedStringValue = null;
+            bufferedStringValue = default;
             return false;
         }
 
@@ -209,9 +210,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return false;
         }
 
-        public bool TryGetBufferedUtf8StringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Span bufferedUtf8StringValue)
         {
-            bufferedUtf8StringValue = null;
+            bufferedUtf8StringValue = default;
             return false;
         }
     }

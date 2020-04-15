@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Globalization;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.
@@ -163,11 +164,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 Span<byte> utf8FieldName = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
                 Encoding.UTF8.GetBytes(fieldName, utf8FieldName);
 
-                this.WriteFieldName(utf8FieldName);
+                this.WriteFieldName(Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8FieldName));
             }
 
             /// <inheritdoc />
-            public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
+            public override void WriteFieldName(Utf8Span utf8FieldName)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
                 this.PrefixMemberSeparator();
@@ -189,11 +190,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 Span<byte> utf8String = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
                 Encoding.UTF8.GetBytes(value, utf8String);
 
-                this.WriteStringValue(utf8String);
+                this.WriteStringValue(Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8String));
             }
 
             /// <inheritdoc />
-            public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
+            public override void WriteStringValue(Utf8Span utf8StringValue)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.String);
                 this.PrefixMemberSeparator();
@@ -425,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = false;
             }
 
-            private void WriteEscapedString(ReadOnlySpan<byte> unescapedString)
+            private void WriteEscapedString(Utf8Span unescapedString)
             {
                 while (!unescapedString.IsEmpty)
                 {
@@ -438,16 +439,16 @@ namespace Microsoft.Azure.Cosmos.Json
 
                     // Write as much of the string as possible
                     this.jsonTextMemoryWriter.Write(
-                        unescapedString.Slice(
+                        unescapedString.Span.Slice(
                             start: 0,
                             length: indexOfFirstCharacterThatNeedsEscaping.Value));
-                    unescapedString = unescapedString.Slice(start: indexOfFirstCharacterThatNeedsEscaping.Value);
+                    unescapedString = Utf8Span.UnsafeFromUtf8BytesNoValidation(unescapedString.Span.Slice(start: indexOfFirstCharacterThatNeedsEscaping.Value));
 
                     // Escape the next character if it exists
                     if (!unescapedString.IsEmpty)
                     {
-                        byte character = unescapedString[0];
-                        unescapedString = unescapedString.Slice(start: 1);
+                        byte character = unescapedString.Span[0];
+                        unescapedString = Utf8Span.UnsafeFromUtf8BytesNoValidation(unescapedString.Span.Slice(start: 1));
 
                         switch (character)
                         {
@@ -506,11 +507,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private static int? IndexOfCharacterThatNeedsEscaping(ReadOnlySpan<byte> span)
+            private static int? IndexOfCharacterThatNeedsEscaping(Utf8Span utf8Span)
             {
                 int? index = null;
 
-                int indexOfAny = span.IndexOfAny(JsonTextWriter.CharactersThatNeedEscaping.AsSpan());
+                int indexOfAny = utf8Span.Span.IndexOfAny(JsonTextWriter.CharactersThatNeedEscaping.AsSpan());
                 if (indexOfAny != -1)
                 {
                     index = indexOfAny;

@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+            public override bool TryGetBufferedStringValue(out Utf8Memory bufferedUtf8StringValue)
             {
                 if (this.token.JsonTextTokenType.HasFlag(JsonTextTokenType.EscapedFlag))
                 {
@@ -311,9 +311,10 @@ namespace Microsoft.Azure.Cosmos.Json
                     return false;
                 }
 
-                bufferedUtf8StringValue = this.jsonTextBuffer.GetBufferedRawJsonToken(
-                    this.token.Start,
-                    this.token.End);
+                bufferedUtf8StringValue = Utf8Memory.UnsafeCreateNoValidation(
+                    this.jsonTextBuffer.GetBufferedRawJsonToken(
+                        this.token.Start,
+                        this.token.End));
                 return true;
             }
 

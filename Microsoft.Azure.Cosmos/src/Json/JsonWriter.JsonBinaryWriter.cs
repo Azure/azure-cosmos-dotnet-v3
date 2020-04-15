@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.
@@ -106,25 +107,25 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override void WriteObjectStart()
             {
-                this.WriterArrayOrObjectStart(false);
+                this.WriterArrayOrObjectStart(isArray: false);
             }
 
             /// <inheritdoc />
             public override void WriteObjectEnd()
             {
-                this.WriteArrayOrObjectEnd(false);
+                this.WriteArrayOrObjectEnd(isArray: false);
             }
 
             /// <inheritdoc />
             public override void WriteArrayStart()
             {
-                this.WriterArrayOrObjectStart(true);
+                this.WriterArrayOrObjectStart(isArray: true);
             }
 
             /// <inheritdoc />
             public override void WriteArrayEnd()
             {
-                this.WriteArrayOrObjectEnd(true);
+                this.WriteArrayOrObjectEnd(isArray: true);
             }
 
             /// <inheritdoc />
@@ -134,13 +135,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 Span<byte> utf8FieldName = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
                 Encoding.UTF8.GetBytes(fieldName, utf8FieldName);
 
-                this.WriteFieldNameOrString(true, utf8FieldName);
+                this.WriteFieldNameOrString(isFieldName: true, Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8FieldName));
             }
 
             /// <inheritdoc />
-            public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
+            public override void WriteFieldName(Utf8Span utf8FieldName)
             {
-                this.WriteFieldNameOrString(true, utf8FieldName);
+                this.WriteFieldNameOrString(isFieldName: true, utf8FieldName);
             }
 
             /// <inheritdoc />
@@ -150,13 +151,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 Span<byte> utf8String = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
                 Encoding.UTF8.GetBytes(value, utf8String);
 
-                this.WriteFieldNameOrString(false, utf8String);
+                this.WriteFieldNameOrString(isFieldName: false, Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8String));
             }
 
             /// <inheritdoc />
-            public override void WriteStringValue(ReadOnlySpan<byte> utf8String)
+            public override void WriteStringValue(Utf8Span value)
             {
-                this.WriteFieldNameOrString(false, utf8String);
+                this.WriteFieldNameOrString(isFieldName: false, value);
             }
 
             /// <inheritdoc />
@@ -525,13 +526,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.bufferedContexts.Peek().Count++;
             }
 
-            private void WriteFieldNameOrString(bool isFieldName, ReadOnlySpan<byte> utf8String)
+            private void WriteFieldNameOrString(bool isFieldName, Utf8Span utf8Span)
             {
                 // String dictionary encoding is currently performed only for field names. 
                 // This would be changed later, so that the writer can control which strings need to be encoded.
                 this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
                 if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(
-                    utf8String,
+                    utf8Span,
                     this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName ? this.jsonStringDictionary : null,
                     out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
                 {
@@ -553,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 else
                 {
                     // See if the string length can be encoded into a single type marker
-                    byte typeMarker = JsonBinaryEncoding.TypeMarker.GetEncodedStringLengthTypeMarker(utf8String.Length);
+                    byte typeMarker = JsonBinaryEncoding.TypeMarker.GetEncodedStringLengthTypeMarker(utf8Span.Length);
                     if (JsonBinaryEncoding.TypeMarker.IsValid(typeMarker))
                     {
                         this.binaryWriter.Write(typeMarker);
@@ -561,26 +562,26 @@ namespace Microsoft.Azure.Cosmos.Json
                     else
                     {
                         // Just write the type marker and the corresponding length
-                        if (utf8String.Length < byte.MaxValue)
+                        if (utf8Span.Length < byte.MaxValue)
                         {
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.String1ByteLength);
-                            this.binaryWriter.Write((byte)utf8String.Length);
+                            this.binaryWriter.Write((byte)utf8Span.Length);
                         }
-                        else if (utf8String.Length < ushort.MaxValue)
+                        else if (utf8Span.Length < ushort.MaxValue)
                         {
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.String2ByteLength);
-                            this.binaryWriter.Write((ushort)utf8String.Length);
+                            this.binaryWriter.Write((ushort)utf8Span.Length);
                         }
                         else
                         {
                             // (utf8String.Length < uint.MaxValue)
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.String4ByteLength);
-                            this.binaryWriter.Write((uint)utf8String.Length);
+                            this.binaryWriter.Write((uint)utf8Span.Length);
                         }
                     }
 
                     // Finally write the string itself.
-                    this.binaryWriter.Write(utf8String);
+                    this.binaryWriter.Write(utf8Span.Span);
                 }
 
                 if (!isFieldName)
