@@ -92,7 +92,19 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+                ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+
+                if (currentProperty == null)
+                {
+                    CosmosException notFound = CosmosExceptionFactory.CreateNotFoundException(
+                         $"Throughput is not configured for {targetRID}");
+                    return new ThroughputResponse(
+                        httpStatusCode: notFound.StatusCode,
+                        headers: notFound.Headers,
+                        throughputProperties: null,
+                        diagnostics: notFound.Diagnostics);
+                }
+
                 currentProperty.Content = throughputProperties.Content;
 
                 return await this.GetThroughputResponseAsync(
