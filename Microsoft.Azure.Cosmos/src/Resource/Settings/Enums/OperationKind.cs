@@ -8,8 +8,6 @@ namespace Azure.Cosmos
 namespace Microsoft.Azure.Cosmos
 #endif
 {
-    using System;
-
     /// <summary>
     /// These are the operation types resulted in a version conflict on a resource. 
     /// </summary>
@@ -37,12 +35,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// A delete operation.
         /// </summary>
-        Delete,
-
-        /// <summary>
-        /// This operation does not apply to Conflict.
-        /// </summary>
-        [ObsoleteAttribute("This item is obsolete as it does not apply to Conflict.")]
-        Read
+        Delete
     }
 }

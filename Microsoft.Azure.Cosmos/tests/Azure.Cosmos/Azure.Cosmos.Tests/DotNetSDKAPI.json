@@ -2245,13 +2245,6 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Azure.Cosmos.OperationKind Read[System.ObsoleteAttribute(\"This item is obsolete as it does not apply to Conflict.\")]": {
-          "Type": "Field",
-          "Attributes": [
-            "ObsoleteAttribute"
-          ],
-          "MethodInfo": null
-        },
         "Azure.Cosmos.OperationKind Replace": {
           "Type": "Field",
           "Attributes": [],
