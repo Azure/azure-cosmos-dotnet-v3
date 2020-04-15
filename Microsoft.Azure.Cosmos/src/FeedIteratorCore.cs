@@ -7,10 +7,13 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -30,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private bool hasMoreResultsInternal;
         private FeedTokenInternal feedTokenInternal;
 
-        internal static FeedIteratorCore CreateForNonPartitionedResource( 
+        internal static FeedIteratorCore CreateForNonPartitionedResource(
             CosmosClientContext clientContext,
             Uri resourceLink,
             ResourceType resourceType,
@@ -201,6 +204,44 @@ namespace Microsoft.Azure.Cosmos
                 this.hasMoreResultsInternal = false;
             }
 
+            // Rewrite the payload to be text. If it's already text, then the following will be a memcpy.
+            MemoryStream memoryStream;
+            if (response.Content is MemoryStream responseContentAsMemoryStream)
+            {
+                memoryStream = responseContentAsMemoryStream;
+            }
+            else
+            {
+                memoryStream = new MemoryStream();
+                await response.Content.CopyToAsync(memoryStream);
+            }
+
+            ReadOnlyMemory<byte> buffer;
+            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+            {
+                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
+            }
+            else
+            {
+                buffer = memoryStream.ToArray();
+            }
+
+            IJsonReader jsonReader = JsonReader.Create(buffer);
+            IJsonWriter jsonTextWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+            jsonTextWriter.WriteAll(jsonReader);
+
+            ReadOnlyMemory<byte> result = jsonTextWriter.GetResult();
+            MemoryStream rewrittenMemoryStream;
+            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
+            {
+                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count);
+            }
+            else
+            {
+                rewrittenMemoryStream = new MemoryStream(result.ToArray());
+            }
+
+            response.Content = rewrittenMemoryStream;
             return response;
         }
 
