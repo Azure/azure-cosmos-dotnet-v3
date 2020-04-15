@@ -592,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             int systemStringId = 0;
             while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
-                string input = "\"" + systemString + "\"";
+                string input = "\"" + systemString.Utf16String + "\"";
                 byte[] binaryInput =
                 {
                     BinaryFormat,

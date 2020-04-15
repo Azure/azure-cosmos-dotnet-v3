@@ -77,7 +77,7 @@
                 throw new AssertFailedException($"{nameof(JsonStringDictionary.TryGetStringAtIndex)}({expectedIndex}, out string {actualString}) failed.");
             }
 
-            Assert.AreEqual(expectedString, actualString);
+            Assert.AreEqual(expectedString, actualString.Utf16String);
         }
     }
 }

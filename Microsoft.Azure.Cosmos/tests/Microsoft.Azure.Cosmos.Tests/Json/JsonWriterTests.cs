@@ -404,7 +404,7 @@
             int systemStringId = 0;
             while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
-                string expectedString = "\"" + systemString + "\"";
+                string expectedString = "\"" + systemString.Utf16String + "\"";
                 // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
                 expectedString = Newtonsoft.Json.Linq.JToken
                     .Parse(expectedString)

@@ -4,13 +4,18 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
-    internal sealed class NewtonsoftToCosmosDBWriter : Microsoft.Azure.Cosmos.Json.JsonWriter
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class NewtonsoftToCosmosDBWriter : Microsoft.Azure.Cosmos.Json.JsonWriter
     {
         private readonly Newtonsoft.Json.JsonWriter writer;
         private readonly Func<byte[]> getResultCallback;
