@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-    using System.Net;
     using System.Runtime.InteropServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -164,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
                 this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
             }
 
-            ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
                operationType: operation,
@@ -188,14 +186,14 @@ namespace Microsoft.Azure.Cosmos
 
             // Retry in case of splits or other scenarios only on partitioned resources
             if (this.containerCore != null
-                && await this.feedTokenInternal.ShouldRetryAsync(this.containerCore, response, cancellationToken))
+                && await this.feedTokenInternal.ShouldRetryAsync(this.containerCore, responseMessage, cancellationToken))
             {
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
-            if (response.IsSuccessStatusCode)
+            if (responseMessage.IsSuccessStatusCode)
             {
-                this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
+                this.feedTokenInternal.UpdateContinuation(responseMessage.Headers.ContinuationToken);
                 this.ContinuationToken = this.feedTokenInternal.GetContinuation();
                 this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone;
             }
@@ -204,7 +202,55 @@ namespace Microsoft.Azure.Cosmos
                 this.hasMoreResultsInternal = false;
             }
 
-            return response;
+            // Rewrite the payload to be in the specified format.
+            // If it's already in the correct format, then the following will be a memcpy.
+            MemoryStream memoryStream;
+            if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
+            {
+                memoryStream = responseContentAsMemoryStream;
+            }
+            else
+            {
+                memoryStream = new MemoryStream();
+                await responseMessage.Content.CopyToAsync(memoryStream);
+            }
+
+            ReadOnlyMemory<byte> buffer;
+            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+            {
+                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
+            }
+            else
+            {
+                buffer = memoryStream.ToArray();
+            }
+
+            IJsonReader jsonReader = JsonReader.Create(buffer);
+            IJsonWriter jsonWriter;
+            if (this.requestOptions.CosmosSerializationFormatOptions != null)
+            {
+                jsonWriter = this.requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
+            }
+            else
+            {
+                jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+            }
+
+            jsonWriter.WriteAll(jsonReader);
+
+            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+            MemoryStream rewrittenMemoryStream;
+            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
+            {
+                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count);
+            }
+            else
+            {
+                rewrittenMemoryStream = new MemoryStream(result.ToArray());
+            }
+
+            responseMessage.Content = rewrittenMemoryStream;
+            return responseMessage;
         }
 
         private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
