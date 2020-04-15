@@ -5,6 +5,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -118,6 +119,8 @@
         // <RunItemsDemo>
         private static async Task RunItemsDemo()
         {
+            await Program.ThrottleItemsAsync();
+
             await Program.RunBasicOperationsOnStronglyTypedObjects();
 
             await Program.RunBasicOperationsOnDynamicObjects();
@@ -198,6 +201,50 @@
             return salesOrder;
         }
         // </CreateItemsAsync>
+
+        private static async Task ThrottleItemsAsync()
+        {
+            Console.WriteLine("\n1.1 - Throttle items");
+            string accountNumber = "ThrottleTest";
+
+            List<SalesOrder> salesOrders = new List<SalesOrder>();
+            TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(accountNumber));
+            for(int i = 1; i <= 1000; i++)
+            {
+                SalesOrder saleOrder = GetSalesOrderSample(Guid.NewGuid().ToString(), accountNumber);
+                salesOrders.Add(saleOrder);
+                batch.CreateItemStream(Program.ToStream<SalesOrder>(saleOrder));
+
+                if(i%100 == 0)
+                {
+                    await batch.ExecuteAsync();
+                }
+            }
+
+            List<Task<ResponseMessage>> deleteTasks = new List<Task<ResponseMessage>>();
+            foreach(SalesOrder order in salesOrders)
+            {
+                deleteTasks.Add(container.DeleteItemStreamAsync(order.Id, new PartitionKey(order.AccountNumber)));
+            }
+
+            await Task.WhenAll(deleteTasks);
+
+            foreach(Task<ResponseMessage> taskMessage in deleteTasks)
+            {
+                ResponseMessage response = await taskMessage;
+                if(response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    if (response.Headers.TryGetValue("x-ms-retry-after-ms", out string retryAfterStringValue))
+                    {
+                        Console.WriteLine($"RetryAfterTime: {retryAfterStringValue}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed!!!! No retry after value");
+                    }
+                }
+            }
+        }
 
         // <ReadItemAsync>
         private static async Task ReadItemAsync()
@@ -465,12 +512,14 @@
             return streamPayload;
         }
 
-        private static SalesOrder GetSalesOrderSample(string itemId)
+        private static SalesOrder GetSalesOrderSample(
+            string itemId, 
+            string accountNumber = "Account1")
         {
             SalesOrder salesOrder = new SalesOrder
             {
                 Id = itemId,
-                AccountNumber = "Account1",
+                AccountNumber = accountNumber,
                 PurchaseOrderNumber = "PO18009186470",
                 OrderDate = new DateTime(2005, 7, 1),
                 SubTotal = 419.4589m,
