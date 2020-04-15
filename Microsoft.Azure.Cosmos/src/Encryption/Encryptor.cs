@@ -47,8 +47,14 @@ namespace Microsoft.Azure.Cosmos
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default);
 
-        public virtual void Dispose()
+        protected virtual void Dispose(bool disposing)
         {
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }

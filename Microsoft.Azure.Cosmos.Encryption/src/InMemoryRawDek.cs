@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
 
     internal class InMemoryRawDek
     {

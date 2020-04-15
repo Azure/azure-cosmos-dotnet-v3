@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal CleanupExpiredRawDekFromMemory CleanupExpiredRawDekFromMemory { get; set; }
 
-        public DekCache(TimeSpan? dekPropertiesTimeToLive)
+        public DekCache(TimeSpan? dekPropertiesTimeToLive = null)
         {
             if (dekPropertiesTimeToLive.HasValue)
             {

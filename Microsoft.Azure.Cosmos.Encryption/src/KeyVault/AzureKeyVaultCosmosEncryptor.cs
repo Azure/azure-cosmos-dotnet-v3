@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 #endif
     class AzureKeyVaultCosmosEncryptor : Encryptor
     {
+        private bool isDisposed = false;
+
         private CosmosEncryptor cosmosEncryptor;
 
         private CosmosDataEncryptionKeyProvider cosmosDekProvider;
@@ -74,9 +76,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            this.cosmosEncryptor.Dispose();
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    this.cosmosEncryptor.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
         }
     }
 }

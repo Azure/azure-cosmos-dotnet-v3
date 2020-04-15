@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 #endif
     class CosmosEncryptor : Encryptor
     {
+        private bool isDisposed = false;
+
         public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
 
         /// <summary>
@@ -70,10 +72,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return dek.EncryptData(plainText);
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            CosmosDataEncryptionKeyProvider cosmosDataEncryptionKeyProvider = (CosmosDataEncryptionKeyProvider)this.DataEncryptionKeyProvider;
-            cosmosDataEncryptionKeyProvider.DekCache.CleanupExpiredRawDekFromMemory.Dispose();
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    CosmosDataEncryptionKeyProvider cosmosDataEncryptionKeyProvider = (CosmosDataEncryptionKeyProvider)this.DataEncryptionKeyProvider;
+                    cosmosDataEncryptionKeyProvider.DekCache.CleanupExpiredRawDekFromMemory.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
         }
     }
 }

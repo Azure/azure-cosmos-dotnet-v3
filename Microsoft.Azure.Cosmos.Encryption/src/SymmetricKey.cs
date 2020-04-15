@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// The underlying key material
         /// </summary>
-        private readonly byte[] rootKey;
+        protected readonly byte[] rootKey;
 
         private bool isDisposed = false;
 
