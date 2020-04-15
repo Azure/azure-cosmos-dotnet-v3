@@ -149,56 +149,12 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
-            QueryResponseCore queryResponseCore = this.GetCosmosElementResponse(
+            return this.GetCosmosElementResponse(
                 requestOptions,
                 resourceType,
                 message,
                 partitionKeyRange,
                 queryPageDiagnostics);
-
-            if (queryResponseCore.IsSuccess &&
-                this.clientContext.ClientOptions.EncryptionKeyWrapProvider != null)
-            {
-                return await this.GetDecryptedElementResponseAsync(queryResponseCore, message, cancellationToken);
-            }
-
-            return queryResponseCore;
-        }
-
-        private async Task<QueryResponseCore> GetDecryptedElementResponseAsync(
-            QueryResponseCore queryResponseCore,
-            ResponseMessage message,
-            CancellationToken cancellationToken)
-        {
-            List<CosmosElement> documents = new List<CosmosElement>();
-            using (message.DiagnosticsContext.CreateScope("Decrypt"))
-            {
-                foreach (CosmosElement document in queryResponseCore.CosmosElements)
-                {
-                    if (!(document is CosmosObject documentObject))
-                    {
-                        documents.Add(document);
-                        continue;
-                    }
-
-                    CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
-                        documentObject,
-                        (DatabaseCore)this.cosmosContainerCore.Database,
-                        this.clientContext.ClientOptions.EncryptionKeyWrapProvider,
-                        message.DiagnosticsContext,
-                        cancellationToken);
-
-                    documents.Add(decryptedDocument);
-                }
-            }
-
-            return QueryResponseCore.CreateSuccess(
-                result: documents,
-                requestCharge: queryResponseCore.RequestCharge,
-                activityId: queryResponseCore.ActivityId,
-                responseLengthBytes: queryResponseCore.ResponseLengthBytes,
-                disallowContinuationTokenMessage: queryResponseCore.DisallowContinuationTokenMessage,
-                continuationToken: queryResponseCore.ContinuationToken);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(

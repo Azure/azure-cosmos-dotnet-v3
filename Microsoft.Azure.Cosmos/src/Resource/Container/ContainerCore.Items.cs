@@ -365,6 +365,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 queryIterator = QueryIterator.Create(
                     client: this.queryClient,
+                    clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                     continuationToken: continuationToken,
                     queryRequestOptions: requestOptions,
@@ -653,6 +654,7 @@ namespace Microsoft.Azure.Cosmos
 
             return QueryIterator.Create(
                 client: this.queryClient,
+                clientContext: this.ClientContext,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
@@ -778,7 +780,7 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            if (responseMessage.Content != null && this.ClientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+            if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
             {
                 responseMessage.Content = await this.ClientContext.DecryptItemAsync(
                     responseMessage.Content,

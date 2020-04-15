@@ -169,6 +169,29 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal void AddThroughputPropertiesHeader(ThroughputProperties throughputProperties)
+        {
+            if (throughputProperties == null)
+            {
+                return;
+            }
+
+            if (throughputProperties.Throughput.HasValue &&
+                (throughputProperties.MaxAutoscaleThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
+            {
+                throw new InvalidOperationException("Autoscale provisioned throughput can not be configured with fixed offer");
+            }
+
+            if (throughputProperties.Throughput.HasValue)
+            {
+                this.AddThroughputHeader(throughputProperties.Throughput);
+            }
+            else if (throughputProperties?.Content?.OfferAutoscaleSettings != null)
+            {
+                this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, throughputProperties.Content.OfferAutoscaleSettings.GetJsonString());
+            }
+        }
+
         internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
         {
             if (this.IsMasterOperation())
