@@ -191,20 +191,15 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
         {
-            string containerRId = string.Empty;
-            if (this.containerCore != null)
+            try
             {
-                try
-                {
-                    containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
-                }
-                catch (CosmosException cosmosException)
-                {
-                    return TryCatch<string>.FromException(cosmosException);
-                }
+                string containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
+                return TryCatch<string>.FromResult(containerRId);
             }
-
-            return TryCatch<string>.FromResult(containerRId);
+            catch (CosmosException cosmosException)
+            {
+                return TryCatch<string>.FromException(cosmosException);
+            }
         }
 
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)

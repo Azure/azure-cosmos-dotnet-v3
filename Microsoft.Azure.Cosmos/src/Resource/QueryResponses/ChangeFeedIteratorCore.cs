@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ChangeFeedIteratorCore : ChangeFeedIterator
     {
         internal readonly FeedRangeInternal FeedRangeInternal;
-        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }        
+        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
-        private readonly AsyncLazy<string> lazyContainerRid;
+        private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private bool hasMoreResults = true;
 
         public static ChangeFeedIteratorCore Create(
@@ -82,9 +82,9 @@ namespace Microsoft.Azure.Cosmos
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.clientContext = container.ClientContext;
             this.changeFeedOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
-            this.lazyContainerRid = new AsyncLazy<string>(valueFactory: (innerCancellationToken) =>
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
             {
-                return this.InitializeContainerRIdAsync(innerCancellationToken);
+                return this.TryInitializeContainerRIdAsync(innerCancellationToken);
             });
         }
 
@@ -107,14 +107,19 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (diagnostics.CreateScope("InitializeContainerResourceId"))
                     {
-                        await this.lazyContainerRid.GetValueAsync(cancellationToken);
+                        TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
+                        if (!tryInitializeContainerRId.Succeeded)
+                        {
+                            CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
+                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                        }
                     }
 
                     using (diagnostics.CreateScope("InitializeContinuation"))
                     {
                         if (this.FeedRangeContinuation != null)
                         {
-                            TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result);
+                            TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
                             if (!validateContainer.Succeeded)
                             {
                                 return CosmosExceptionFactory.CreateBadRequestException(
@@ -184,9 +189,17 @@ namespace Microsoft.Azure.Cosmos
                 this.FeedRangeContinuation);
         }
 
-        private Task<string> InitializeContainerRIdAsync(CancellationToken cancellationToken)
+        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
         {
-            return this.container.GetRIDAsync(cancellationToken);
+            try
+            {
+                string containerRId = await this.container.GetRIDAsync(cancellationToken);
+                return TryCatch<string>.FromResult(containerRId);
+            }
+            catch (CosmosException cosmosException)
+            {
+                return TryCatch<string>.FromException(cosmosException);
+            }
         }
 
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
@@ -196,19 +209,19 @@ namespace Microsoft.Azure.Cosmos
             if (this.FeedRangeInternal is FeedRangePartitionKey)
             {
                 Documents.PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
-                ranges = await this.FeedRangeInternal.GetEffectiveRangesAsync(partitionKeyRangeCache, this.lazyContainerRid.Result, partitionKeyDefinition);
+                ranges = await this.FeedRangeInternal.GetEffectiveRangesAsync(partitionKeyRangeCache, this.lazyContainerRid.Result.Result, partitionKeyDefinition);
             }
             else
             {
                 IReadOnlyList<Documents.PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        collectionRid: this.lazyContainerRid.Result,
+                        collectionRid: this.lazyContainerRid.Result.Result,
                         range: (this.FeedRangeInternal as FeedRangeEPK).Range,
                         forceRefresh: false);
                 ranges = pkRanges.Select(pkRange => pkRange.ToRange()).ToList();
             }
 
             this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
-                containerRid: this.lazyContainerRid.Result,
+                containerRid: this.lazyContainerRid.Result.Result,
                 feedRange: this.FeedRangeInternal,
                 ranges: ranges);
         }
