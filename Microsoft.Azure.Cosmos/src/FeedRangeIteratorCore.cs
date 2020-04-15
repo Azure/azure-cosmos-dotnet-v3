@@ -20,11 +20,11 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class FeedRangeIteratorCore : FeedIteratorInternal
     {
         internal readonly FeedRangeInternal FeedRangeInternal;
-        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }        
+        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
         private readonly ContainerCore containerCore;
         private readonly CosmosClientContext clientContext;
         private readonly QueryRequestOptions queryRequestOptions;
-        private readonly AsyncLazy<string> lazyContainerRid;
+        private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private bool hasMoreResultsInternal;
 
         public static FeedRangeIteratorCore Create(
@@ -92,9 +92,9 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = containerCore.ClientContext;
             this.queryRequestOptions = options;
             this.hasMoreResultsInternal = true;
-            this.lazyContainerRid = new AsyncLazy<string>(valueFactory: (innerCancellationToken) =>
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
             {
-                return this.InitializeContainerRIdAsync(innerCancellationToken);
+                return this.TryInitializeContainerRIdAsync(innerCancellationToken);
             });
         }
 
@@ -114,14 +114,19 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (diagnostics.CreateScope("InitializeContainerResourceId"))
                     {
-                        await this.lazyContainerRid.GetValueAsync(cancellationToken);
+                        TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
+                        if (!tryInitializeContainerRId.Succeeded)
+                        {
+                            CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
+                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                        }
                     }
 
                     using (diagnostics.CreateScope("InitializeContinuation"))
                     {
                         if (this.FeedRangeContinuation != null)
                         {
-                            TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result);
+                            TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
                             if (!validateContainer.Succeeded)
                             {
                                 return CosmosExceptionFactory.CreateBadRequestException(
@@ -184,9 +189,22 @@ namespace Microsoft.Azure.Cosmos
             return new FeedRangeResponse(response, this.FeedRangeContinuation);
         }
 
-        private Task<string> InitializeContainerRIdAsync(CancellationToken cancellationToken)
+        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
         {
-            return this.containerCore.GetRIDAsync(cancellationToken);
+            string containerRId = string.Empty;
+            if (this.containerCore != null)
+            {
+                try
+                {
+                    containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
+                }
+                catch (CosmosException cosmosException)
+                {
+                    return TryCatch<string>.FromException(cosmosException);
+                }
+            }
+
+            return TryCatch<string>.FromResult(containerRId);
         }
 
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
@@ -194,11 +212,11 @@ namespace Microsoft.Azure.Cosmos
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             List<Documents.Routing.Range<string>> effectiveRanges = await this.FeedRangeInternal.GetEffectiveRangesAsync(
                 routingMapProvider: partitionKeyRangeCache,
-                containerRid: this.lazyContainerRid.Result,
+                containerRid: this.lazyContainerRid.Result.Result,
                 partitionKeyDefinition: null);
 
             this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
-                containerRid: this.lazyContainerRid.Result,
+                containerRid: this.lazyContainerRid.Result.Result,
                 feedRange: this.FeedRangeInternal,
                 effectiveRanges);
         }
