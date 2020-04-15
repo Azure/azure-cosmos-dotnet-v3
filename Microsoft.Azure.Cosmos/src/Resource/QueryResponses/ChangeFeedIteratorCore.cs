@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override string Continuation => this.FeedRangeContinuation?.ToString();
+        public override string GetContinuationToken() => this.FeedRangeContinuation?.ToString();
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
 
-        public override string Continuation => this.feedIterator.Continuation;
+        public override string GetContinuationToken() => this.feedIterator.GetContinuationToken();
 
         /// <summary>
         /// Get the next set of results from the cosmos service

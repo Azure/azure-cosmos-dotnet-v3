@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 }
             }
 
-            string continuation = feedIterator.Continuation;
+            string continuation = feedIterator.GetContinuationToken();
             Assert.AreEqual(firstRunTotal, totalCount);
 
             int expectedFinalCount = 50;
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 }
             }
 
-            string continuation = feedIterator.Continuation;
+            string continuation = feedIterator.GetContinuationToken();
 
             Assert.AreEqual(firstRunTotal, totalCount);
 
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 }
             }
 
-            string continuation = feedIterator.Continuation;
+            string continuation = feedIterator.GetContinuationToken();
             Assert.AreEqual(firstRunTotal, totalCount);
 
             int expectedFinalCount = 50;
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 totalCount += feedResponse.Count;
             }
 
-            string continuation = feedIterator.Continuation;
+            string continuation = feedIterator.GetContinuationToken();
 
             Assert.AreEqual(firstRunTotal, totalCount);
 

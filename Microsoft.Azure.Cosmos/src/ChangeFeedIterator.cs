@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     ///     }
     /// }
     ///
-    /// string previousContinuation = feedIterator.Continuation;
+    /// string previousContinuation = feedIterator.GetContinuationToken();
     /// ]]>
     /// </code>
     /// </example>
@@ -38,6 +38,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Continuation that represents the last point read from the change feed.
         /// </summary>
-        public abstract string Continuation { get; }
+        public abstract string GetContinuationToken();
     }
 }
