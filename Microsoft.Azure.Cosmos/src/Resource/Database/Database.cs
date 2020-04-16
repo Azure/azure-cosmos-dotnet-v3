@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// The following example shows how to get the throughput.
+        /// The following example shows how to replace the throughput.
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
