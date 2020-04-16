@@ -7,12 +7,10 @@
     <IsPreview>true</IsPreview>
 	
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
-    <ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
-    <ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
     <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
-    <Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
-    <Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
+    <Version Condition=" '$(VersionSuffix)' == '' ">$(EncryptionPreviewVersion)</Version>
+    <Version Condition=" '$(VersionSuffix)' != '' ">$(EncryptionPreviewVersion)-$(VersionSuffix)</Version>
     <Description>This library provides an implementation for client-side encryption for Azure Cosmos's SQL API. For more information, refer to https://aka.ms/CosmosClientEncryption</Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
@@ -20,11 +18,10 @@
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
     <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard;client;encryption;byok</PackageTags>
-
   </PropertyGroup>
 
   <ItemGroup>
-     <PackageReference Include="Microsoft.Azure.Cosmos" Version="$(Version)" />  
+     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*-preview" />  
   </ItemGroup>
 
   <PropertyGroup>
