@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
         }
 
-#if INTERNAL
+#if PREVIEW
         public override
 #else
         internal

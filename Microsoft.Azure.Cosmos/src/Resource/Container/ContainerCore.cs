@@ -162,7 +162,21 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-#if INTERNAL
+        internal async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputPropertiesIfExistsAsync(
+                targetRID: rid,
+                throughputProperties: throughputProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+#if PREVIEW
         public override
 #else
         internal

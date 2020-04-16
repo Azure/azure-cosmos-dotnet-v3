@@ -365,6 +365,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 queryIterator = QueryIterator.Create(
                     client: this.queryClient,
+                    clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                     continuationToken: continuationToken,
                     queryRequestOptions: requestOptions,
@@ -653,6 +654,7 @@ namespace Microsoft.Azure.Cosmos
 
             return QueryIterator.Create(
                 client: this.queryClient,
+                clientContext: this.ClientContext,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
