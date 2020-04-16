@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && serverStreamingQuery;
 
             bool clientStreamingQuery =
-                !serverStreamingQuery
+                serverStreamingQuery
                 && !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy
                 && !partitionedQueryExecutionInfo.QueryInfo.HasTop
                 && !partitionedQueryExecutionInfo.QueryInfo.HasLimit
