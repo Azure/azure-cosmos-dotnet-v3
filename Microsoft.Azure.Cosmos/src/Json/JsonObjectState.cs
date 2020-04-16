@@ -37,11 +37,6 @@ namespace Microsoft.Azure.Cosmos.Json
         private int nestingStackIndex;
 
         /// <summary>
-        /// The current JsonTokenType.
-        /// </summary>
-        private JsonTokenType currentTokenType;
-
-        /// <summary>
         /// The current JsonObjectContext.
         /// </summary>
         private JsonObjectContext currentContext;
@@ -58,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Json
             this.readMode = readMode;
             this.nestingStackBitmap = new byte[JsonMaxNestingDepth / 8];
             this.nestingStackIndex = -1;
-            this.currentTokenType = JsonTokenType.NotStarted;
+            this.CurrentTokenType = JsonTokenType.NotStarted;
             this.currentContext = JsonObjectContext.None;
         }
 
@@ -97,13 +92,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets the current JsonTokenType.
         /// </summary>
-        public JsonTokenType CurrentTokenType
-        {
-            get
-            {
-                return this.currentTokenType;
-            }
-        }
+        public JsonTokenType CurrentTokenType { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether a property is expected.
@@ -112,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             get
             {
-                return (this.currentTokenType != JsonTokenType.FieldName) && (this.currentContext == JsonObjectContext.Object);
+                return (this.CurrentTokenType != JsonTokenType.FieldName) && (this.currentContext == JsonObjectContext.Object);
             }
         }
 
@@ -240,17 +229,17 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="jsonTokenType">The jsonTokenType to register</param>
         private void RegisterValue(JsonTokenType jsonTokenType)
         {
-            if ((this.currentContext == JsonObjectContext.Object) && (this.currentTokenType != JsonTokenType.FieldName))
+            if ((this.currentContext == JsonObjectContext.Object) && (this.CurrentTokenType != JsonTokenType.FieldName))
             {
                 throw new JsonMissingPropertyException();
             }
 
-            if ((this.currentContext == JsonObjectContext.None) && (this.currentTokenType != JsonTokenType.NotStarted))
+            if ((this.currentContext == JsonObjectContext.None) && (this.CurrentTokenType != JsonTokenType.NotStarted))
             {
                 throw new JsonPropertyArrayOrObjectNotStartedException();
             }
 
-            this.currentTokenType = jsonTokenType;
+            this.CurrentTokenType = jsonTokenType;
         }
 
         /// <summary>
@@ -281,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             this.nestingStackIndex--;
-            this.currentTokenType = JsonTokenType.EndArray;
+            this.CurrentTokenType = JsonTokenType.EndArray;
             this.currentContext = this.RetrieveCurrentContext;
         }
 
@@ -313,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             // check if we have a property name but not a value
-            if (this.currentTokenType == JsonTokenType.FieldName)
+            if (this.CurrentTokenType == JsonTokenType.FieldName)
             {
                 if (this.readMode)
                 {
@@ -326,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             this.nestingStackIndex--;
-            this.currentTokenType = JsonTokenType.EndObject;
+            this.CurrentTokenType = JsonTokenType.EndObject;
             this.currentContext = this.RetrieveCurrentContext;
         }
 
@@ -340,12 +329,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new JsonObjectNotStartedException();
             }
 
-            if (this.currentTokenType == JsonTokenType.FieldName)
+            if (this.CurrentTokenType == JsonTokenType.FieldName)
             {
                 throw new JsonPropertyAlreadyAddedException();
             }
 
-            this.currentTokenType = JsonTokenType.FieldName;
+            this.CurrentTokenType = JsonTokenType.FieldName;
         }
     }
 }
