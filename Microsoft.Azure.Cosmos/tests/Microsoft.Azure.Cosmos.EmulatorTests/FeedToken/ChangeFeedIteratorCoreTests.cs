@@ -66,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.LargerContainer;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
+            string continuation = null;
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -78,10 +79,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     }
 
                     Assert.IsTrue(responseMessage is FeedRangeResponse);
+                    continuation = responseMessage.ContinuationToken;
                 }
             }
 
-            string continuation = feedIterator.GetContinuationToken();
             Assert.AreEqual(firstRunTotal, totalCount);
 
             int expectedFinalCount = 50;
@@ -163,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             ContainerCore itemsCore = this.Container;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
-            
+            string continuation = null;
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -178,10 +179,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                             Assert.AreEqual(pkToRead, toDoActivity.status);
                         }
                     }
+
+                    continuation = responseMessage.ContinuationToken;
                 }
             }
-
-            string continuation = feedIterator.GetContinuationToken();
 
             Assert.AreEqual(firstRunTotal, totalCount);
 
@@ -240,7 +241,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             ContainerCore itemsCore = this.Container;
-            ChangeFeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            string continuation = null;
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
@@ -249,9 +251,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 {
                     Assert.AreEqual(pkToRead, toDoActivity.status);
                 }
+
+                continuation = feedResponse.ContinuationToken;
             }
 
-            string continuation = feedIterator.GetContinuationToken();
             Assert.AreEqual(firstRunTotal, totalCount);
 
             int expectedFinalCount = 50;
@@ -290,14 +293,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.Container;
-            ChangeFeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            string continuation = null;
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
                 totalCount += feedResponse.Count;
+                continuation = feedResponse.ContinuationToken;
             }
-
-            string continuation = feedIterator.GetContinuationToken();
 
             Assert.AreEqual(firstRunTotal, totalCount);
 

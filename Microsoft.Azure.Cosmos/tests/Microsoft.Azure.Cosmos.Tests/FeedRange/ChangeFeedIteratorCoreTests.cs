@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 return Mock.Of<FeedResponse<dynamic>>();
             };
 
-            ChangeFeedIteratorCore<dynamic> changeFeedIteratorCoreOfT = new ChangeFeedIteratorCore<dynamic>(changeFeedIteratorCore, creator);
+            FeedIteratorCore<dynamic> changeFeedIteratorCoreOfT = new FeedIteratorCore<dynamic>(changeFeedIteratorCore, creator);
             FeedResponse<dynamic> response = await changeFeedIteratorCoreOfT.ReadNextAsync();
 
             Mock.Get(feedToken)

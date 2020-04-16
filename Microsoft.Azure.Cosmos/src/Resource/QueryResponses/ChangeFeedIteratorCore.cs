@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
     /// </summary>
-    internal sealed class ChangeFeedIteratorCore : ChangeFeedIterator
+    internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
     {
         internal readonly FeedRangeInternal FeedRangeInternal;
         internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
@@ -90,8 +91,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override string GetContinuationToken() => this.FeedRangeContinuation?.ToString();
-
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -138,6 +137,8 @@ namespace Microsoft.Azure.Cosmos
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
         }
+
+        public override CosmosElement GetCosmsoElementContinuationToken() => CosmosElement.Parse(this.FeedRangeContinuation.ToString());
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsScope,
@@ -224,37 +225,6 @@ namespace Microsoft.Azure.Cosmos
                 containerRid: this.lazyContainerRid.Result.Result,
                 feedRange: this.FeedRangeInternal,
                 ranges: ranges);
-        }
-    }
-
-    internal sealed class ChangeFeedIteratorCore<T> : ChangeFeedIterator<T>
-    {
-        private readonly ChangeFeedIteratorCore feedIterator;
-        private readonly Func<ResponseMessage, FeedResponse<T>> responseCreator;
-
-        internal ChangeFeedIteratorCore(
-            ChangeFeedIteratorCore feedIterator,
-            Func<ResponseMessage, FeedResponse<T>> responseCreator)
-        {
-            this.responseCreator = responseCreator;
-            this.feedIterator = feedIterator;
-        }
-
-        public override bool HasMoreResults => this.feedIterator.HasMoreResults;
-
-        public override string GetContinuationToken() => this.feedIterator.GetContinuationToken();
-
-        /// <summary>
-        /// Get the next set of results from the cosmos service
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A query response from cosmos service</returns>
-        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
-            return this.responseCreator(response);
         }
     }
 }

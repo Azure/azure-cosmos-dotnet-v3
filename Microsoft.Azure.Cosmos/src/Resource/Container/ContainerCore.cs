@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        ChangeFeedIterator GetChangeFeedStreamIterator(
+        FeedIterator GetChangeFeedStreamIterator(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        ChangeFeedIterator GetChangeFeedStreamIterator(
+        FeedIterator GetChangeFeedStreamIterator(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        ChangeFeedIterator GetChangeFeedStreamIterator(
+        FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        ChangeFeedIterator<T> GetChangeFeedIterator<T>(
+        FeedIterator<T> GetChangeFeedIterator<T>(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos
                 continuation: continuationToken,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
-            return new ChangeFeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+            return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
 #if PREVIEW
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        ChangeFeedIterator<T> GetChangeFeedIterator<T>(
+        FeedIterator<T> GetChangeFeedIterator<T>(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
                 continuation: null,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
-            return new ChangeFeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+            return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
 #if PREVIEW
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        ChangeFeedIterator<T> GetChangeFeedIterator<T>(
+        FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos
                 continuation: null,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
-            return new ChangeFeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+            return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
 #if PREVIEW
