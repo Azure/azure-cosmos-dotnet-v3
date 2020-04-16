@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 
-## <a name="3.8.1-preview"/> [3.8.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.1-preview) - 2020-04-16
+## <a name="3.9.0-preview"/> [3.9.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.0-preview) - 2020-04-17
 
 ### Added
 

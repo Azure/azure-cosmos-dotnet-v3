@@ -301,6 +301,24 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the throughput request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The throughput response.</returns>
+        /// <example>
+        /// The following example shows how to get the throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(
+        ///     ThroughputProperties.CreateFixedThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The following example shows how to get the throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(
+        ///     ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// </remarks>

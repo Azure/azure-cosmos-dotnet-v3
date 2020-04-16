@@ -173,7 +173,17 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputProperties throughput = await this.cosmosDatabase.ReplaceThroughputPropertiesAsync(10000);
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
+        ///     ThroughputProperties.CreateFixedThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The following example shows how to get the throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
+        ///     ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>
