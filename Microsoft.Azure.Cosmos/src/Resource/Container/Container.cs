@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// </remarks>
-        public abstract Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));

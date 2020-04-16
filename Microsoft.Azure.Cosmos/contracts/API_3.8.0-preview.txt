@@ -147,7 +147,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> ReplaceContainerStreamAsync(ContainerProperties containerProperties, ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(T item, string id, Nullable<PartitionKey> partitionKey=default(Nullable<PartitionKey>), ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> ReplaceItemStreamAsync(Stream streamPayload, string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
-        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(int throughput, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(T item, Nullable<PartitionKey> partitionKey=default(Nullable<PartitionKey>), ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> UpsertItemStreamAsync(Stream streamPayload, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -196,7 +195,6 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClient(string accountEndpoint, string authKeyOrResourceToken, CosmosClientOptions clientOptions=null);
         public virtual CosmosClientOptions ClientOptions { get; }
         public virtual Uri Endpoint { get; }
-        public virtual Task<DatabaseResponse> CreateDatabaseAsync(string id, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public virtual Task<DatabaseResponse> CreateDatabaseAsync(string id, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(string id, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public virtual Task<ResponseMessage> CreateDatabaseStreamAsync(DatabaseProperties databaseProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -279,12 +277,10 @@ namespace Microsoft.Azure.Cosmos
     {
         protected Database();
         public abstract string Id { get; }
-        public abstract Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> CreateContainerAsync(string id, string partitionKeyPath, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(ContainerProperties containerProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(string id, string partitionKeyPath, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
-        public abstract Task<ResponseMessage> CreateContainerStreamAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> CreateContainerStreamAsync(ContainerProperties containerProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<UserResponse> CreateUserAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract ContainerBuilder DefineContainer(string name, string partitionKeyPath);
@@ -302,7 +298,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ThroughputResponse> ReadThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<Nullable<int>> ReadThroughputAsync(CancellationToken cancellationToken=default(CancellationToken));
-        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(int throughput, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<UserResponse> UpsertUserAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
     }
@@ -698,11 +693,8 @@ namespace Microsoft.Azure.Cosmos
     {
         public string ETag { get; }
         public Nullable<DateTime> LastModified { get; }
-        public Nullable<int> MaxAutoscaleThroughput { get; }
         public string SelfLink { get; }
         public Nullable<int> Throughput { get; }
-        public static ThroughputProperties CreateAutoscaleProvionedThroughput(int maxAutoscaleThroughput);
-        public static ThroughputProperties CreateFixedThroughput(int throughput);
     }
     public class ThroughputResponse : Response<ThroughputProperties>
     {
