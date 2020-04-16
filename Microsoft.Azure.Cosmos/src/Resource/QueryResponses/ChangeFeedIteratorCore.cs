@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedToken FeedToken => this.feedTokenInternal; 
+        FeedToken FeedToken => this.feedTokenInternal;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -99,7 +99,10 @@ namespace Microsoft.Azure.Cosmos
                 this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
             }
 
-            this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.feedTokenInternal.GetContinuation());
+            if (this.feedTokenInternal.GetContinuation() != null)
+            {
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.feedTokenInternal.GetContinuation());
+            }
 
             Uri resourceUri = this.container.LinkUri;
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxItemCount { get; set; }
 
         /// <summary>
-        /// Gets or sets where the ChangeFeed operation should start from. If not set then the ChangeFeed operation will start from the begining.
+        /// Gets or sets where the ChangeFeed operation should start from. If not set then the ChangeFeed operation will start from now.
         /// </summary>
         /// <remarks>
         /// Only applies in the case where no FeedToken is provided or the FeedToken was never used in a previous iterator.
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
             base.PopulateRequestOptions(request);
 
-            PopulateStartFromRequstOptionVisitor visitor = new PopulateStartFromRequstOptionVisitor(request);
+            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
             if (this.From == null)
             {
                 throw new InvalidOperationException($"{nameof(ChangeFeedRequestOptions)}.{nameof(ChangeFeedRequestOptions.StartFrom)} needs to be set to a value.");
@@ -151,20 +151,20 @@ namespace Microsoft.Azure.Cosmos
             public abstract void Visit(StartFromBeginning startFromBeginning);
         }
 
-        internal sealed class PopulateStartFromRequstOptionVisitor : StartFromVisitor
+        internal sealed class PopulateStartFromRequestOptionVisitor : StartFromVisitor
         {
             private const string IfNoneMatchAllHeaderValue = "*";
 
             private readonly RequestMessage requestMessage;
 
-            public PopulateStartFromRequstOptionVisitor(RequestMessage requestMessage)
+            public PopulateStartFromRequestOptionVisitor(RequestMessage requestMessage)
             {
                 this.requestMessage = requestMessage ?? throw new ArgumentNullException(nameof(requestMessage));
             }
 
             public override void Visit(StartFromNow startFromNow)
             {
-                this.requestMessage.Headers.IfNoneMatch = PopulateStartFromRequstOptionVisitor.IfNoneMatchAllHeaderValue;
+                this.requestMessage.Headers.IfNoneMatch = PopulateStartFromRequestOptionVisitor.IfNoneMatchAllHeaderValue;
             }
 
             public override void Visit(StartFromTime startFromTime)
