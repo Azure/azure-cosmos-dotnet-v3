@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.IO;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.ContinuationToken = continuation;
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
@@ -105,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.ContinuationToken = continuation;
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
@@ -168,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.ContinuationToken = continuation;
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
@@ -222,6 +226,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone);
             responseMessage.Headers.ContinuationToken = continuation;
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
@@ -276,6 +281,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.ContinuationToken = continuation;
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
@@ -319,6 +325,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.ContinuationToken = continuation;
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());

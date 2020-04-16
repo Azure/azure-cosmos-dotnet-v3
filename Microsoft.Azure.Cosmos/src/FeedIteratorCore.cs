@@ -202,6 +202,11 @@ namespace Microsoft.Azure.Cosmos
                 this.hasMoreResultsInternal = false;
             }
 
+            if ((responseMessage.Content == null) || (responseMessage.Content.Length == 0))
+            {
+                return responseMessage;
+            }
+
             // Rewrite the payload to be in the specified format.
             // If it's already in the correct format, then the following will be a memcpy.
             MemoryStream memoryStream;
@@ -227,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
 
             IJsonReader jsonReader = JsonReader.Create(buffer);
             IJsonWriter jsonWriter;
-            if (this.requestOptions.CosmosSerializationFormatOptions != null)
+            if (this.requestOptions?.CosmosSerializationFormatOptions != null)
             {
                 jsonWriter = this.requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
             }
