@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 case ExecutionEnvironment.Client:
                     if (continuationToken != null)
                     {
-                        TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(continuationToken);
+                        TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(continuationToken);
                         if (tryParse.Faulted)
                         {
                             return new QueryIterator(

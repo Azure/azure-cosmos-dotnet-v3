@@ -9,7 +9,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
     using System.Runtime.ExceptionServices;
     using System.Threading.Tasks;
 
-    internal readonly struct TryCatch<TResult>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    readonly struct TryCatch<TResult>
     {
         private readonly Either<Exception, TResult> either;
 

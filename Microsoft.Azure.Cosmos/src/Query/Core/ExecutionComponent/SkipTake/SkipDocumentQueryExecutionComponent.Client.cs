@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 CosmosElement sourceToken;
                 if (offsetContinuationToken.SourceToken != null)
                 {
-                    TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(offsetContinuationToken.SourceToken);
+                    TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(offsetContinuationToken.SourceToken);
                     if (tryParse.Faulted)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(

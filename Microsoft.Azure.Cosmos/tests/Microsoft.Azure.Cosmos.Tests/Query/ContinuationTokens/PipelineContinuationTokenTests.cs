@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public override PipelineContinuationTokenTestsOutput ExecuteTest(
             PipelineContinuationTokenTestsInput input)
         {
-            TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(input.ContinuationToken);
+            TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(input.ContinuationToken);
             if (tryParse.Faulted)
             {
                 return new PipelineContinuationTokenTestsOutputNegative("Failed to parse token.");

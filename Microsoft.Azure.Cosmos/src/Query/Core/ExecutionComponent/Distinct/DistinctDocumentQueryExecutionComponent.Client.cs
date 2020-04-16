@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 CosmosElement sourceToken;
                 if (distinctContinuationToken.SourceToken != null)
                 {
-                    TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(distinctContinuationToken.SourceToken);
+                    TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(distinctContinuationToken.SourceToken);
                     if (tryParse.Faulted)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(

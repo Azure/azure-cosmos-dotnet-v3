@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static TryCatch<T> TryDeserialize<T>(ReadOnlyMemory<byte> buffer)
         {
-            TryCatch<CosmosElement> tryCreateFromBuffer = CosmosElement.TryCreateFromBuffer(buffer);
+            TryCatch<CosmosElement> tryCreateFromBuffer = CosmosElement.Monadic.CreateFromBuffer(buffer);
             if (tryCreateFromBuffer.Faulted)
             {
                 return TryCatch<T>.FromException(tryCreateFromBuffer.Exception);
