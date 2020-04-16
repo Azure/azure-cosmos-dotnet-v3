@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 collectionRid: initParams.CollectionRid,
                 partitionedQueryExecutionInfo: passThroughQueryInfo,
                 partitionKeyRanges: initParams.PartitionKeyRanges,
-                initialPageSize: (int)initParams.MaxItemCount,
+                initialPageSize: initParams.MaxItemCount.GetValueOrDefault(1000),
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
