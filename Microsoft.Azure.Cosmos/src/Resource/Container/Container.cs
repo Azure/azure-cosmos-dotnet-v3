@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The throughput response.</returns>
         /// <example>
-        /// The following example shows how to get the throughput.
+        /// The following example shows how to replace the throughput.
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(
