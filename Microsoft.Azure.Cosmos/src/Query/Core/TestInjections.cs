@@ -6,6 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     internal sealed class TestInjections
     {
+        public enum PipelineType
+        {
+            Passthrough,
+            Specialized,
+        }
+
         public TestInjections(bool simulate429s, bool simulateEmptyPages, ResponseStats responseStats = null)
         {
             this.SimulateThrottles = simulate429s;
@@ -22,12 +28,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         public sealed class ResponseStats
         {
             public PipelineType? PipelineType { get; set; }
-        }
-
-        public enum PipelineType
-        {
-            Passthrough,
-            Specialized,
         }
     }
 }

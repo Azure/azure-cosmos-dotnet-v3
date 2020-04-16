@@ -195,22 +195,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
                 || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
                     && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
-            bool queryHasPartialResults = partitionedQueryExecutionInfo.QueryInfo.HasAggregates
-                || partitionedQueryExecutionInfo.QueryInfo.HasDistinct
-                || partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
+            bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
+                && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
+                && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
+            bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && serverStreamingQuery;
 
-            bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && !queryHasPartialResults;
-            bool crossContinuationNoClientSideAggregationQuery = !singleLogicalPartitionKeyQuery
+            bool clientStreamingQuery =
+                !serverStreamingQuery
                 && !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy
                 && !partitionedQueryExecutionInfo.QueryInfo.HasTop
                 && !partitionedQueryExecutionInfo.QueryInfo.HasLimit
-                && !partitionedQueryExecutionInfo.QueryInfo.HasOffset
-                && !queryHasPartialResults;
+                && !partitionedQueryExecutionInfo.QueryInfo.HasOffset;
+            bool streamingCrossContinuationQuery = !singleLogicalPartitionKeyQuery && clientStreamingQuery;
 
-            bool shouldCreatePassthoughQuery = streamingSinglePartitionQuery || crossContinuationNoClientSideAggregationQuery;
+            bool createPassthoughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
 
             Task<TryCatch<CosmosQueryExecutionContext>> tryCreateContextTask;
-            if (shouldCreatePassthoughQuery)
+            if (createPassthoughQuery)
             {
                 TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
                 if (responseStats != null)
