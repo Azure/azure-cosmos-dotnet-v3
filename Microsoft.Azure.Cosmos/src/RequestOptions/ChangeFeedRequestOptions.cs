@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         /// Only applies in the case where no FeedToken is provided or the FeedToken was never used in a previous iterator.
         /// In order to read the Change Feed from the beginning, set this to DateTime.MinValue.ToUniversalTime().
         /// </remarks>
-        public StartFrom From { get; set; }
+        public StartFrom From { get; set; } = StartFromNow.Singleton;
 
         internal string PartitionKeyRangeId { get; set; }
 
@@ -49,6 +49,11 @@ namespace Microsoft.Azure.Cosmos
             base.PopulateRequestOptions(request);
 
             PopulateStartFromRequstOptionVisitor visitor = new PopulateStartFromRequstOptionVisitor(request);
+            if (this.From == null)
+            {
+                throw new InvalidOperationException($"{nameof(ChangeFeedRequestOptions)}.{nameof(ChangeFeedRequestOptions.StartFrom)} needs to be set to a value.");
+            }
+
             this.From.Accept(visitor);
 
             if (this.MaxItemCount.HasValue)
@@ -76,6 +81,8 @@ namespace Microsoft.Azure.Cosmos
             set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfMatchEtag)} property.");
         }
 
+        [Obsolete]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public new string IfNoneMatchEtag
         {
             get => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
@@ -125,6 +132,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 return new StartFromContinuation(continuation);
             }
+
+            /// <summary>
+            /// Creates a <see cref="StartFrom"/> that tells the ChangeFeed operation to start from the beginning of time.
+            /// </summary>
+            /// <returns>A <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from the beginning of time.</returns>
+            public static StartFrom CreateFromBeginning()
+            {
+                return StartFromBeginning.Singleton;
+            }
         }
 
         internal abstract class StartFromVisitor
@@ -132,6 +148,7 @@ namespace Microsoft.Azure.Cosmos
             public abstract void Visit(StartFromNow startFromNow);
             public abstract void Visit(StartFromTime startFromTime);
             public abstract void Visit(StartFromContinuation startFromContinuation);
+            public abstract void Visit(StartFromBeginning startFromBeginning);
         }
 
         internal sealed class PopulateStartFromRequstOptionVisitor : StartFromVisitor
@@ -142,12 +159,7 @@ namespace Microsoft.Azure.Cosmos
 
             public PopulateStartFromRequstOptionVisitor(RequestMessage requestMessage)
             {
-                if (requestMessage == null)
-                {
-                    throw new ArgumentNullException(nameof(requestMessage));
-                }
-
-                this.requestMessage = requestMessage;
+                this.requestMessage = requestMessage ?? throw new ArgumentNullException(nameof(requestMessage));
             }
 
             public override void Visit(StartFromNow startFromNow)
@@ -166,6 +178,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
                 this.requestMessage.Headers.IfNoneMatch = startFromContinuation.Continuation;
+            }
+
+            public override void Visit(StartFromBeginning startFromBeginning)
+            {
+                // We don't need to set any headers to start from the beginning
             }
         }
 
@@ -245,6 +262,24 @@ namespace Microsoft.Azure.Cosmos
             /// Gets the continuation to resume from.
             /// </summary>
             public string Continuation { get; }
+
+            internal override void Accept(StartFromVisitor visitor)
+            {
+                visitor.Visit(this);
+            }
+        }
+
+        /// <summary>
+        /// Derived instance of <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from the beginning of time.
+        /// </summary>
+        internal sealed class StartFromBeginning : StartFrom
+        {
+            public static readonly StartFromBeginning Singleton = new StartFromBeginning();
+
+            public StartFromBeginning()
+                : base()
+            {
+            }
 
             internal override void Accept(StartFromVisitor visitor)
             {

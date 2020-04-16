@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                From = default,
+                From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
             };
 
             requestOptions.PopulateRequestOptions(request);
