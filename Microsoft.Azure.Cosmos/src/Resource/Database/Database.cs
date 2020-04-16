@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
         /// The provisioned throughput for this database.
         /// </value>
         /// <example>
-        /// The following example shows how to replace the throughput.
+        /// The following example shows how to replace the fixed throughput.
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// The following example shows how to replace the throughput.
+        /// The following example shows how to replace the autoscale throughput.
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
