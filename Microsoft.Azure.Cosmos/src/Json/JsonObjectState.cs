@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// FWIW .Net chose 100
         /// Note: This value needs to be a multiple of 8 and must be less than 2^15 (see asserts in the constructor)
         /// </summary>
-        private const int JsonMaxNestingDepth = 128;
+        private const int JsonMaxNestingDepth = 256;
 
         /// <summary>
         /// Flag for determining whether to throw exceptions that connote a context at the end or not started / complete.
