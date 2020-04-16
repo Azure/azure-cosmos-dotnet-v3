@@ -234,6 +234,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
         /// The default value is PortReuseMode.ReuseUnicastPort.
         /// </param>
+        /// /// <param name="enableTcpConnectionEndpointRediscovery">
+        /// (Direct/TCP) Controls the address cache refresh on TCP connection reset notification.
+        /// The default value is false.
+        /// </param>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
@@ -243,13 +247,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
             TimeSpan? openTcpConnectionTimeout = null,
             int? maxRequestsPerTcpConnection = null,
             int? maxTcpConnectionsPerEndpoint = null,
-            Cosmos.PortReuseMode? portReuseMode = null)
+            Cosmos.PortReuseMode? portReuseMode = null,
+            bool? enableTcpConnectionEndpointRediscovery = null)
         {
             this.clientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout;
             this.clientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout;
             this.clientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection;
             this.clientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint;
             this.clientOptions.PortReuseMode = portReuseMode;
+            if (enableTcpConnectionEndpointRediscovery.HasValue)
+            {
+                this.clientOptions.EnableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery.Value;
+            }
 
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
@@ -383,19 +392,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Provider to wrap/unwrap data encryption keys for client side encryption.
+        /// Provider that allows encrypting and decrypting data.
         /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
-        /// <param name="encryptionKeyWrapProvider">Provider to wrap/unwrap data encryption keys.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        CosmosClientBuilder WithEncryptionKeyWrapProvider(EncryptionKeyWrapProvider encryptionKeyWrapProvider)
+        CosmosClientBuilder WithEncryptor(Encryptor encryptor)
         {
-            this.clientOptions.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
+            this.clientOptions.Encryptor = encryptor;
             return this;
         }
 

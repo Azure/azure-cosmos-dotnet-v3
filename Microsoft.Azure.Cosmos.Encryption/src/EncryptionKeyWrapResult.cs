@@ -2,19 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
 
     /// <summary>
     /// Result from a <see cref="EncryptionKeyWrapProvider"/> on wrapping a data encryption key.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class EncryptionKeyWrapResult
+    public class EncryptionKeyWrapResult
     {
         /// <summary>
         /// Initializes a new instance of the result of wrapping a data encryption key.
@@ -33,11 +28,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Wrapped form of the data encryption key.
         /// </summary>
-        internal byte[] WrappedDataEncryptionKey { get; }
+        public byte[] WrappedDataEncryptionKey { get; }
 
         /// <summary>
         /// Metadata that can be used by the wrap provider to unwrap the key.
         /// </summary>
-        internal EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
+        public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
     }
 }

@@ -39,8 +39,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract EncryptionProcessor EncryptionProcessor { get; }
 
-        internal abstract DekCache DekCache { get; }
-
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerCore container);
 
@@ -111,6 +109,19 @@ namespace Microsoft.Azure.Cosmos
            Func<ResponseMessage, T> responseCreator,
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
+
+        internal abstract Task<Stream> EncryptItemAsync(
+            Stream input,
+            EncryptionOptions encryptionOptions,
+            DatabaseCore database,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken);
+
+        internal abstract Task<Stream> DecryptItemAsync(
+            Stream input,
+            DatabaseCore database,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken);
 
         public abstract void Dispose();
     }

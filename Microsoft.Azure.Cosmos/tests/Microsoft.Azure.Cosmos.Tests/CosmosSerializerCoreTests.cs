@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $@"{{""id"":""{id}"",""operationType"":""Invalid"",""resourceType"":null,""resourceId"":null,""content"":null,""conflict_lsn"":0}}");
 
             // Throughput doesn't have an id.
-            string defaultThroughputJson = @"{""Throughput"":null}";
+            string defaultThroughputJson = @"{}";
             ThroughputProperties property = JsonConvert.DeserializeObject<ThroughputProperties>(defaultThroughputJson);
             Assert.IsNull(property.Throughput);
             string propertyJson = JsonConvert.SerializeObject(property);

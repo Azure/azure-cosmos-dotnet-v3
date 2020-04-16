@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -317,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             queryRequestOptions: feedOptions);
                         Assert.Fail("Expected query to fail due it not being supported.");
                     }
-                    catch (Exception e)
+                    catch (CosmosException e)
                     {
                         Assert.IsTrue(e.Message.Contains("Compositions of aggregates and other expressions are not allowed."),
                             e.Message);
@@ -408,20 +409,56 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
-            string query = "SELECT * FROM c";
+            string notJsonContinuationToken = "is not the continuation token you are looking for";
+            await this.TestMalformedPipelinedContinuationTokenRunner(
+                container: container,
+                queryText: "SELECT * FROM c",
+                continuationToken: notJsonContinuationToken,
+                expectedResponseMessageError: $"Response status code does not indicate success: BadRequest (400); Substatus: 0; ActivityId: ; Reason: (Malformed Continuation Token: {notJsonContinuationToken});");
+
+            string validJsonInvalidFormatContinuationToken = @"{""range"":{""min"":""05C189CD6732"",""max"":""05C18F5D153C""}";
+            await this.TestMalformedPipelinedContinuationTokenRunner(
+                container: container,
+                queryText: "SELECT * FROM c",
+                continuationToken: validJsonInvalidFormatContinuationToken,
+                expectedResponseMessageError: $"Response status code does not indicate success: BadRequest (400); Substatus: 0; ActivityId: ; Reason: (Malformed Continuation Token: {validJsonInvalidFormatContinuationToken});");
+        }
+
+        private async Task TestMalformedPipelinedContinuationTokenRunner(
+            Container container,
+            string queryText,
+            string continuationToken,
+            string expectedResponseMessageError)
+        {
+            {
+                // Malformed continuation token
+                FeedIterator itemStreamQuery = container.GetItemQueryStreamIterator(
+                queryText: queryText,
+                continuationToken: continuationToken);
+                ResponseMessage cosmosQueryResponse = await itemStreamQuery.ReadNextAsync();
+                Assert.AreEqual(HttpStatusCode.BadRequest, cosmosQueryResponse.StatusCode);
+                string errorMessage = cosmosQueryResponse.ErrorMessage;
+                Assert.AreEqual(expectedResponseMessageError, errorMessage);
+            }
 
             // Malformed continuation token
             try
             {
-                FeedIterator itemQuery = container.GetItemQueryStreamIterator(
-                    queryText: query,
-                    continuationToken: "is not the continuation token you are looking for");
-                ResponseMessage cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                FeedIterator<dynamic> itemQuery = container.GetItemQueryIterator<dynamic>(
+                    queryText: queryText,
+                    continuationToken: continuationToken);
+                await itemQuery.ReadNextAsync();
 
                 Assert.Fail("Expected bad request");
             }
-            catch (Exception)
+            catch (CosmosException ce)
             {
+                Assert.IsNotNull(ce);
+                string message = ce.ToString();
+                Assert.IsNotNull(message);
+                Assert.IsTrue(message.StartsWith($"Microsoft.Azure.Cosmos.CosmosException : {expectedResponseMessageError}"));
+                string diagnostics = ce.Diagnostics.ToString();
+                Assert.IsNotNull(diagnostics);
             }
         }
 

@@ -365,6 +365,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 queryIterator = QueryIterator.Create(
                     client: this.queryClient,
+                    clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                     continuationToken: continuationToken,
                     queryRequestOptions: requestOptions,
@@ -653,6 +654,7 @@ namespace Microsoft.Azure.Cosmos
 
             return QueryIterator.Create(
                 client: this.queryClient,
+                clientContext: this.ClientContext,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
@@ -755,23 +757,14 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            if (requestOptions != null && requestOptions.EncryptionOptions != null)
+            if (requestOptions?.EncryptionOptions != null)
             {
-                if (streamPayload == null)
-                {
-                    throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
-                }
-
-                using (diagnosticsContext.CreateScope("Encrypt"))
-                {
-                    streamPayload = await this.ClientContext.EncryptionProcessor.EncryptAsync(
-                        streamPayload,
-                        requestOptions.EncryptionOptions,
-                        (DatabaseCore)this.Database,
-                        this.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
-                        diagnosticsContext,
-                        cancellationToken);
-                }
+                streamPayload = await this.ClientContext.EncryptItemAsync(
+                    streamPayload,
+                    requestOptions.EncryptionOptions,
+                    (DatabaseCore)this.Database,
+                    diagnosticsContext,
+                    cancellationToken);
             }
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -787,17 +780,13 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            if (responseMessage.Content != null && this.ClientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+            if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
             {
-                using (diagnosticsContext.CreateScope("Decrypt"))
-                {
-                    responseMessage.Content = await this.ClientContext.EncryptionProcessor.DecryptAsync(
-                        responseMessage.Content,
-                        (DatabaseCore)this.Database,
-                        this.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
-                        diagnosticsContext,
-                        cancellationToken);
-                }
+                responseMessage.Content = await this.ClientContext.DecryptItemAsync(
+                    responseMessage.Content,
+                    (DatabaseCore)this.Database,
+                    diagnosticsContext,
+                    cancellationToken);
             }
 
             return responseMessage;

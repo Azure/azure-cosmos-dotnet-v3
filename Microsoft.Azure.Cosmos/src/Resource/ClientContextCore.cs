@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
     using System.Text;
@@ -27,7 +28,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientOptions clientOptions;
         private readonly string userAgent;
         private readonly EncryptionProcessor encryptionProcessor;
-        private readonly DekCache dekCache;
         private bool isDisposed = false;
 
         private ClientContextCore(
@@ -39,7 +39,6 @@ namespace Microsoft.Azure.Cosmos
             DocumentClient documentClient,
             string userAgent,
             EncryptionProcessor encryptionProcessor,
-            DekCache dekCache,
             BatchAsyncContainerExecutorCache batchExecutorCache)
         {
             this.client = client;
@@ -50,7 +49,6 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.encryptionProcessor = encryptionProcessor;
-            this.dekCache = dekCache;
             this.batchExecutorCache = batchExecutorCache;
         }
 
@@ -128,7 +126,6 @@ namespace Microsoft.Azure.Cosmos
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
                 encryptionProcessor: new EncryptionProcessor(),
-                dekCache: new DekCache(),
                 batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
@@ -150,8 +147,6 @@ namespace Microsoft.Azure.Cosmos
         internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
 
         internal override EncryptionProcessor EncryptionProcessor => this.ThrowIfDisposed(this.encryptionProcessor);
-
-        internal override DekCache DekCache => this.ThrowIfDisposed(this.dekCache);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -323,6 +318,57 @@ namespace Microsoft.Azure.Cosmos
             return this.batchExecutorCache.GetExecutorForContainer(container, this);
         }
 
+        internal override async Task<Stream> EncryptItemAsync(
+            Stream input,
+            EncryptionOptions encryptionOptions,
+            DatabaseCore database,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
+            }
+
+            Debug.Assert(encryptionOptions != null);
+            Debug.Assert(database != null);
+            Debug.Assert(diagnosticsContext != null);
+
+            using (diagnosticsContext.CreateScope("Encrypt"))
+            {
+                return await this.EncryptionProcessor.EncryptAsync(
+                    input,
+                    encryptionOptions,
+                    this.ClientOptions.Encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+        }
+
+        internal override async Task<Stream> DecryptItemAsync(
+            Stream input,
+            DatabaseCore database,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null || this.ClientOptions.Encryptor == null)
+            {
+                return input;
+            }
+
+            Debug.Assert(database != null);
+            Debug.Assert(diagnosticsContext != null);
+
+            using (diagnosticsContext.CreateScope("Decrypt"))
+            {
+                return await this.EncryptionProcessor.DecryptAsync(
+                    input,
+                    this.ClientOptions.Encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+        }
+
         public override void Dispose()
         {
             this.Dispose(true);
@@ -394,7 +440,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
         {
-            if (clientOptions == null || (clientOptions.WebProxy == null))
+            if (clientOptions == null || clientOptions.WebProxy == null)
             {
                 return null;
             }

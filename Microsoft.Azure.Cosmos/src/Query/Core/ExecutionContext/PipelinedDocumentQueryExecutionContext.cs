@@ -83,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     /// This bubbles down until you reach a component that has a DocumentProducer that fetches a document from the backend.
     /// </para>
     /// </summary>
+#nullable enable
     internal sealed class PipelinedDocumentQueryExecutionContext : CosmosQueryExecutionContext
     {
         /// <summary>
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 };
             }
 
-            if (queryInfo.HasOffset)
+            if (queryInfo.Offset.HasValue)
             {
                 Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
@@ -237,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 };
             }
 
-            if (queryInfo.HasLimit)
+            if (queryInfo.Limit.HasValue)
             {
                 Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
@@ -250,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 };
             }
 
-            if (queryInfo.HasTop)
+            if (queryInfo.Top.HasValue)
             {
                 Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
@@ -368,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     return queryResponse;
                 }
 
-                string updatedContinuationToken;
+                string? updatedContinuationToken;
                 if (queryResponse.DisallowContinuationTokenMessage == null)
                 {
                     if (queryResponse.ContinuationToken != null)
