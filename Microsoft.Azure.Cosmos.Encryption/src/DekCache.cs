@@ -18,9 +18,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal AsyncCache<string, InMemoryRawDek> RawDekCache { get; } = new AsyncCache<string, InMemoryRawDek>();
 
-        internal CleanupExpiredRawDekFromMemory CleanupExpiredRawDekFromMemory { get; set; }
+        internal ExpiredRawDekCleaner ExpiredRawDekCleaner { get; set; }
 
-        public DekCache(TimeSpan? dekPropertiesTimeToLive = null)
+        public DekCache(
+            TimeSpan? dekPropertiesTimeToLive = null,
+            int? cleanupIterationDelayInSeconds = null,
+            TimeSpan? cleanupBufferTimeAfterExpiry = null)
         {
             if (dekPropertiesTimeToLive.HasValue)
             {
@@ -31,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
             }
 
-            this.CleanupExpiredRawDekFromMemory = new CleanupExpiredRawDekFromMemory();
+            this.ExpiredRawDekCleaner = new ExpiredRawDekCleaner(cleanupIterationDelayInSeconds, cleanupBufferTimeAfterExpiry);
         }
 
         public async Task<DataEncryptionKeyProperties> GetOrAddDekPropertiesAsync(
@@ -39,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
-        { 
+        {
             CachedDekProperties cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                     dekId,
                     null,

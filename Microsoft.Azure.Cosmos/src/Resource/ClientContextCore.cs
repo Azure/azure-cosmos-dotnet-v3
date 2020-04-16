@@ -385,7 +385,10 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
-                    this.ClientOptions.Encryptor?.Dispose();
+                    if (this.ClientOptions.Encryptor != null && this.ClientOptions.Encryptor is IDisposable encryptor)
+                    {
+                        encryptor.Dispose();
+                    }
                 }
 
                 this.isDisposed = true;

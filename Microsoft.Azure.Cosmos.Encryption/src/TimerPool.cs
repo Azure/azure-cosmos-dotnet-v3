@@ -31,7 +31,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public void Dispose()
         {
             if (this.isDisposed)
+            {
                 return;
+            }
+
             this.DisposeAllPooledTimers();
             this.isDisposed = true;
         }
@@ -39,7 +42,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private void ThrowIfDisposed()
         {
             if (this.isDisposed)
+            {
                 throw new ObjectDisposedException(nameof(TimerPool));
+            }
         }
 
         private void DisposeAllPooledTimers()
@@ -49,7 +54,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 ConcurrentQueue<PooledTimer> concurrentQueue = keyValuePair.Value;
                 PooledTimer result;
                 while (concurrentQueue.TryDequeue(out result))
+                {
                     result.CancelTimer();
+                }
             }
             this.timer.Dispose();
         }
@@ -59,7 +66,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             lock (this.timerConcurrencyLock)
             {
                 if (this.isRunning)
+                {
                     return;
+                }
+
                 this.isRunning = true;
             }
             try
@@ -86,7 +96,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 }
                             }
                             else
+                            {
                                 break;
+                            }
                         }
                     }
                 }
@@ -97,7 +109,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             finally
             {
                 lock (this.timerConcurrencyLock)
+                {
                     this.isRunning = false;
+                }
             }
         }
 

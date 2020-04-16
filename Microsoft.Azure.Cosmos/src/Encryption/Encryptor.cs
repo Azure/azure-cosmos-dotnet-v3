@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    abstract class Encryptor : IDisposable
+    abstract class Encryptor
     {
         /// <summary>
         /// Encrypts the plainText using the key and algorithm provided.
@@ -46,15 +46,5 @@ namespace Microsoft.Azure.Cosmos
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default);
-
-        protected virtual void Dispose(bool disposing)
-        {
-        }
-
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            this.Dispose(true);
-        }
     }
 }

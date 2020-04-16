@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             DataEncryptionKey dek = DataEncryptionKey.Create(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithm);
 
             InMemoryRawDek inMemoryRawDek = new InMemoryRawDek(dek, unwrapResult.ClientCacheTimeToLive);
-            this.DekProvider.DekCache.CleanupExpiredRawDekFromMemory.InMemoryRawDeks.Enqueue(inMemoryRawDek);
+            this.DekProvider.DekCache.ExpiredRawDekCleaner.EnqueueInMemoryRawDek(inMemoryRawDek);
             return inMemoryRawDek;
         }
 

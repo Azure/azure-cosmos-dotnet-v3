@@ -49,7 +49,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             lock (this.memberLock)
             {
                 if (this.timerStarted)
+                {
                     throw new InvalidOperationException("Timer Already Started");
+                }
+
                 this.beginTicks = this.timerPool.SubscribeForTimeouts(this);
                 this.timerStarted = true;
                 return (Task)this.tcs.Task;

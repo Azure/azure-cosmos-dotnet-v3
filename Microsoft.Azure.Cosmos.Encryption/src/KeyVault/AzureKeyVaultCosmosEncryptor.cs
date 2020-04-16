@@ -4,9 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using Microsoft.Azure.Cosmos.Encryption.KeyVault;
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.KeyVault;
 
     /// <summary>
     /// Provides the default implementation for client-side encryption for Cosmos DB.
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 #else
     internal
 #endif
-    class AzureKeyVaultCosmosEncryptor : Encryptor
+    class AzureKeyVaultCosmosEncryptor : Encryptor, IDisposable
     {
         private bool isDisposed = false;
 
@@ -32,11 +33,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public DataEncryptionKeyContainer DataEncryptionKeyContainer => this.cosmosDekProvider.DataEncryptionKeyContainer;
 
         public AzureKeyVaultCosmosEncryptor(
-            string clientId, 
+            string clientId,
             string certificateThumbprint)
         {
             EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(
-                clientId, 
+                clientId,
                 certificateThumbprint);
 
             this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
@@ -51,9 +52,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override Task<byte[]> EncryptAsync(
-            byte[] plainText, 
-            string dataEncryptionKeyId, 
-            string encryptionAlgorithm, 
+            byte[] plainText,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
             return this.cosmosEncryptor.EncryptAsync(
@@ -64,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override Task<byte[]> DecryptAsync(
-            byte[] cipherText, 
-            string dataEncryptionKeyId, 
-            string encryptionAlgorithm, 
+            byte[] cipherText,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
             return this.cosmosEncryptor.DecryptAsync(
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
         }
 
-        protected override void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (!this.isDisposed)
             {
@@ -87,6 +88,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 this.isDisposed = true;
             }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }

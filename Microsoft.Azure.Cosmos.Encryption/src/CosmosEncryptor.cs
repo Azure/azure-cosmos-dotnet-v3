@@ -2,12 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
+    using System.Threading;
+    using System.Threading.Tasks;
+
     /// <summary>
     /// Provides the default implementation for client-side encryption for Cosmos DB.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 #else
     internal
 #endif
-    class CosmosEncryptor : Encryptor
+    class CosmosEncryptor : Encryptor, IDisposable
     {
         private bool isDisposed = false;
 
@@ -34,9 +34,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <inheritdoc/>
         public override async Task<byte[]> DecryptAsync(
-            byte[] cipherText, 
-            string dataEncryptionKeyId, 
-            string encryptionAlgorithm, 
+            byte[] cipherText,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
@@ -54,36 +54,44 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <inheritdoc/>
         public override async Task<byte[]> EncryptAsync(
-            byte[] plainText, 
-            string dataEncryptionKeyId, 
-            string encryptionAlgorithm, 
+            byte[] plainText,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
-                dataEncryptionKeyId, 
+                dataEncryptionKeyId,
                 encryptionAlgorithm,
                 cancellationToken);
 
-            if(dek == null)
+            if (dek == null)
             {
                 throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
             }
-            
+
             return dek.EncryptData(plainText);
         }
 
-        protected override void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (!this.isDisposed)
             {
                 if (disposing)
                 {
-                    CosmosDataEncryptionKeyProvider cosmosDataEncryptionKeyProvider = (CosmosDataEncryptionKeyProvider)this.DataEncryptionKeyProvider;
-                    cosmosDataEncryptionKeyProvider.DekCache.CleanupExpiredRawDekFromMemory.Dispose();
+                    if (this.DataEncryptionKeyProvider is IDisposable dataEncryptionKeyProvider)
+                    {
+                        dataEncryptionKeyProvider.Dispose();
+                    }
                 }
 
                 this.isDisposed = true;
             }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }

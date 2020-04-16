@@ -12,8 +12,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Default implementation for a provider to get a data encryption key - wrapped keys are stored in a Cosmos DB container.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider
+    public class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider, IDisposable
     {
+        private bool isDisposed = false;
+
         private const string ContainerPartitionKeyPath = "/id";
 
         private DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
@@ -37,23 +39,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
 
-        public DataEncryptionKeyContainer DataEncryptionKeyContainer => dataEncryptionKeyContainerCore;
+        public DataEncryptionKeyContainer DataEncryptionKeyContainer => this.dataEncryptionKeyContainerCore;
 
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            TimeSpan? dekPropertiesTimeToLive = null)
+            TimeSpan? dekPropertiesTimeToLive = null,
+            int? cleanupIterationDelayInSeconds = null,
+            TimeSpan? cleanupBufferTimeAfterExpiry = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = new DekCache(dekPropertiesTimeToLive);
+            this.DekCache = new DekCache(dekPropertiesTimeToLive, cleanupIterationDelayInSeconds, cleanupBufferTimeAfterExpiry);
         }
 
         public async Task InitializeAsync(
-            Database database, 
+            Database database,
             string containerId,
             CancellationToken cancellationToken = default)
         {
-            if(this.container != null)
+            if (this.container != null)
             {
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
             }
@@ -62,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 containerId,
                 partitionKeyPath: CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath);
 
-            if(containerResponse.Resource.PartitionKeyPath != CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath)
+            if (containerResponse.Resource.PartitionKeyPath != CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath)
             {
                 throw new ArgumentException($"Provided container {containerId} did not have the appropriate partition key definition. " +
                     $"The container needs to be created with PartitionKeyPath set to {CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath}.",
@@ -78,11 +82,30 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
-                id, 
+                id,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 
             return inMemoryRawDek.DataEncryptionKey;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    this.DekCache.ExpiredRawDekCleaner.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }
