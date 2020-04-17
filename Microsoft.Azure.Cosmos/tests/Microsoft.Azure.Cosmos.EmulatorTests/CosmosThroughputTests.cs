@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(autoscale);
             Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
 
-            ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputPropertiesAsync(
+            ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputAsync(
                 ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
             Assert.IsNotNull(autoscaleReplaced);
             Assert.AreEqual(10000, autoscaleReplaced.Resource.MaxAutoscaleThroughput);
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(autoscale);
             Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
 
-            ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputPropertiesAsync(
+            ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputAsync(
                 ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
             Assert.IsNotNull(autoscaleReplaced);
             Assert.AreEqual(10000, autoscaleReplaced.Resource.MaxAutoscaleThroughput);
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(fixedDatabaseThroughput.Resource.MaxAutoscaleThroughput);
             Assert.IsNull(fixedDatabaseThroughput.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
-            ThroughputResponse fixedReplaced = await database.ReplaceThroughputPropertiesAsync(
+            ThroughputResponse fixedReplaced = await database.ReplaceThroughputAsync(
                 ThroughputProperties.CreateManualThroughput(6000));
             Assert.IsNotNull(fixedReplaced);
             Assert.AreEqual(6000, fixedReplaced.Resource.Throughput);
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(throughputResponse);
             Assert.AreEqual(5000, throughputResponse.Resource.MaxAutoscaleThroughput);
 
-            throughputResponse = await database.ReplaceThroughputPropertiesAsync(
+            throughputResponse = await database.ReplaceThroughputAsync(
                     ThroughputProperties.CreateAutoscaleProvionedThroughput(6000));
             Assert.IsNotNull(throughputResponse);
             Assert.AreEqual(6000, throughputResponse.Resource.MaxAutoscaleThroughput);
@@ -192,13 +192,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
             Assert.AreEqual(10, autoscale.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
-            ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputPropertiesAsync(
+            ThroughputResponse autoscaleReplaced = await database.ReplaceThroughputAsync(
                 ThroughputProperties.CreateAutoscaleProvionedThroughput(6000));
             Assert.IsNotNull(autoscaleReplaced);
             Assert.AreEqual(6000, autoscaleReplaced.Resource.MaxAutoscaleThroughput);
             Assert.IsNull(autoscaleReplaced.Resource.AutoUpgradeMaxThroughputIncrementPercentage);
 
-            ThroughputResponse autoUpgradeReplace = await database.ReplaceThroughputPropertiesAsync(
+            ThroughputResponse autoUpgradeReplace = await database.ReplaceThroughputAsync(
                 ThroughputProperties.CreateAutoscaleProvionedThroughput(
                     maxAutoscaleThroughput: 7000,
                     autoUpgradeMaxThroughputIncrementPercentage: 20));
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(throughputResponse);
             Assert.AreEqual(5000, throughputResponse.Resource.MaxAutoscaleThroughput);
 
-            throughputResponse = await container.ReplaceThroughputPropertiesAsync(
+            throughputResponse = await container.ReplaceThroughputAsync(
                 ThroughputProperties.CreateAutoscaleProvionedThroughput(6000));
             Assert.IsNotNull(throughputResponse);
             Assert.AreEqual(6000, throughputResponse.Resource.MaxAutoscaleThroughput);

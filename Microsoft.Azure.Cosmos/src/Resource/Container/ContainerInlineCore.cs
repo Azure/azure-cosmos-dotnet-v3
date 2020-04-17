@@ -105,9 +105,9 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceThroughputPropertiesAsync(throughputProperties, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceThroughputAsync(throughputProperties, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> CreateItemStreamAsync(

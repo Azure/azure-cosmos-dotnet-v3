@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override void WriteValue(long value)
         {
             base.WriteValue(value);
-            this.jsonWriter.WriteNumberValue(value);
+            this.jsonWriter.WriteNumber64Value(value);
         }
 
         /// <summary>
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override void WriteValue(double value)
         {
             base.WriteValue(value);
-            this.jsonWriter.WriteNumberValue(value);
+            this.jsonWriter.WriteNumber64Value(value);
         }
 
         /// <summary>

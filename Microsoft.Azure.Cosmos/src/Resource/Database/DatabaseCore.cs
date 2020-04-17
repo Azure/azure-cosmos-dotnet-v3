@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        async Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+        async Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
