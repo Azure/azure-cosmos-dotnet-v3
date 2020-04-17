@@ -298,54 +298,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             Assert.AreEqual(firstRunTotal, totalCount);
         }
 
-        [TestMethod]
-        public async Task ReadFeedIteratorCore_PassingFeedRange_ReadAll()
-        {
-            int totalCount = 0;
-            int batchSize = 1000;
-
-            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            IReadOnlyList<FeedRange> ranges = await this.LargerContainer.GetFeedRangesAsync();
-
-            foreach (FeedRange range in ranges)
-            {
-                FeedIterator initialFeedIterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, feedRange:range, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
-                string continuation = null;
-                while (initialFeedIterator.HasMoreResults)
-                {
-                    using (ResponseMessage responseMessage =
-                        await initialFeedIterator.ReadNextAsync(this.cancellationToken))
-                    {
-                        if (responseMessage.IsSuccessStatusCode)
-                        {
-                            Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                            totalCount += response.Count;
-                        }
-
-                        continuation = responseMessage.ContinuationToken;
-                        break;
-                    }
-                }
-
-                // Use the previous iterators continuation to continue
-                FeedIterator feedIterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: continuation);
-                while (feedIterator.HasMoreResults)
-                {
-                    using (ResponseMessage responseMessage =
-                        await feedIterator.ReadNextAsync(this.cancellationToken))
-                    {
-                        if (responseMessage.IsSuccessStatusCode)
-                        {
-                            Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                            totalCount += response.Count;
-                        }
-                    }
-                }
-            }
-
-            Assert.AreEqual(batchSize, totalCount);
-        }
-
         /// <summary>
         /// Check to see how the older continuation token approach works when mixed with FeedRange
         /// </summary>

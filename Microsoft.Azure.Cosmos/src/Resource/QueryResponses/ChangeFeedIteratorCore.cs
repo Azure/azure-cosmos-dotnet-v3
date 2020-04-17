@@ -182,12 +182,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Change Feed read uses Etag for continuation
                 this.FeedRangeContinuation.UpdateContinuation(responseMessage.Headers.ETag);
+                this.hasMoreResults = responseMessage.IsSuccessStatusCode;
+                return FeedRangeResponse.CreateSuccess(
+                    responseMessage,
+                    this.FeedRangeContinuation);
             }
-
-            this.hasMoreResults = responseMessage.IsSuccessStatusCode;
-            return new FeedRangeResponse(
-                responseMessage,
-                this.FeedRangeContinuation);
+            else
+            {
+                this.hasMoreResults = false;
+                return FeedRangeResponse.CreateFailure(responseMessage);
+            }
         }
 
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)

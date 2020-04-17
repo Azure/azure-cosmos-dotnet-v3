@@ -11,17 +11,17 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
-        private readonly ResponseMessage responseMessage;
         protected ReadFeedResponse(
-            ResponseMessage responseMessage,
+            HttpStatusCode httpStatusCode,
             CosmosArray cosmosArray,
-            CosmosSerializerCore serializerCore)
+            CosmosSerializerCore serializerCore,
+            Headers responseMessageHeaders,
+            CosmosDiagnostics diagnostics)
         {
-            this.responseMessage = responseMessage;
             this.Count = cosmosArray != null ? cosmosArray.Count : 0;
-            this.Headers = responseMessage.Headers;
-            this.StatusCode = responseMessage.StatusCode;
-            this.Diagnostics = responseMessage.Diagnostics;
+            this.Headers = responseMessageHeaders;
+            this.StatusCode = httpStatusCode;
+            this.Diagnostics = diagnostics;
             this.Resource = CosmosElementSerializer.GetResources<T>(
                 cosmosArray: cosmosArray,
                 serializerCore: serializerCore);
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override int Count { get; }
 
-        public override string ContinuationToken => this.responseMessage.ContinuationToken;
+        public override string ContinuationToken => this.Headers?.ContinuationToken;
 
         public override Headers Headers { get; }
 
@@ -67,9 +67,11 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
-                    responseMessage: responseMessage,
+                    httpStatusCode: responseMessage.StatusCode,
                     cosmosArray: cosmosArray,
-                    serializerCore: serializerCore);
+                    serializerCore: serializerCore,
+                    responseMessageHeaders: responseMessage.Headers,
+                    diagnostics: responseMessage.Diagnostics);
 
                 return readFeedResponse;
             }

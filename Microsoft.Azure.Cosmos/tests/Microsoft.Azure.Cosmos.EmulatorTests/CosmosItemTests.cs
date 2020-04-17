@@ -457,6 +457,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastContinuationToken = responseMessage.Headers.ContinuationToken;
+                    Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
                     Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in response)
                     {

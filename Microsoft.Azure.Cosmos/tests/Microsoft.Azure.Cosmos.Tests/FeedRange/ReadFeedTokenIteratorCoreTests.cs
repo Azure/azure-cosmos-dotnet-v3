@@ -128,9 +128,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             Mock.Get(feedToken)
                 .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.IsDone, Times.Once);
         }
 
         [TestMethod]
@@ -197,9 +194,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             Mock.Get(feedToken)
                 .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.IsDone, Times.Once);
         }
 
         [TestMethod]
@@ -258,8 +252,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Mock.Get(feedToken)
                 .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
-            Mock.Get(feedToken)
-                .Verify(f => f.IsDone, Times.Once);
         }
 
         [TestMethod]

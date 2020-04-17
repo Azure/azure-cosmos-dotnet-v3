@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.ToString())
                 .Returns(continuation);
 
-            ResponseMessage feedRangeResponse = new FeedRangeResponse(new ResponseMessage(), feedContinuation.Object);
+            ResponseMessage feedRangeResponse = FeedRangeResponse.CreateSuccess(new ResponseMessage(), feedContinuation.Object);
             Assert.AreEqual(continuation, feedRangeResponse.ContinuationToken);
         }
 
@@ -38,7 +38,16 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            ResponseMessage feedRangeResponse = new FeedRangeResponse(new ResponseMessage(), feedContinuation.Object);
+            ResponseMessage feedRangeResponse = FeedRangeResponse.CreateSuccess(new ResponseMessage(), feedContinuation.Object);
+            Assert.IsNull(feedRangeResponse.ContinuationToken);
+        }
+
+        [TestMethod]
+        public void FeedRangeResponse_ContinuationNull_IfFailure()
+        {
+            ResponseMessage responseMessage = new ResponseMessage();
+            responseMessage.Headers.ContinuationToken = Guid.NewGuid().ToString();
+            ResponseMessage feedRangeResponse = FeedRangeResponse.CreateFailure(responseMessage);
             Assert.IsNull(feedRangeResponse.ContinuationToken);
         }
 
@@ -54,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             original.Content = Mock.Of<MemoryStream>();
             Mock<FeedRangeContinuation> feedContinuation = new Mock<FeedRangeContinuation>();
 
-            ResponseMessage feedRangeResponse = new FeedRangeResponse(original, feedContinuation.Object);
+            ResponseMessage feedRangeResponse = FeedRangeResponse.CreateSuccess(original, feedContinuation.Object);
             Assert.AreEqual(original.Content, feedRangeResponse.Content);
             Assert.AreEqual(original.StatusCode, feedRangeResponse.StatusCode);
             Assert.AreEqual(original.RequestMessage, feedRangeResponse.RequestMessage);

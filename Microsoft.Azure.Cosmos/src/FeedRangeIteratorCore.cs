@@ -180,13 +180,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.FeedRangeContinuation.UpdateContinuation(response.Headers.ContinuationToken);
                 this.hasMoreResultsInternal = !this.FeedRangeContinuation.IsDone;
+                return FeedRangeResponse.CreateSuccess(response, this.FeedRangeContinuation);
             }
             else
             {
                 this.hasMoreResultsInternal = false;
+                return FeedRangeResponse.CreateFailure(response);
             }
-
-            return new FeedRangeResponse(response, this.FeedRangeContinuation);
         }
 
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)

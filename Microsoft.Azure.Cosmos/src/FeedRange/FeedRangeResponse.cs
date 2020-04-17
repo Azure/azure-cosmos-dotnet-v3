@@ -3,49 +3,49 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System.IO;
+    using System;
 
     /// <summary>
     /// ResponseMessage to promote the FeedRangeContinuation as Continuation.
     /// </summary>
-    internal sealed class FeedRangeResponse : ResponseMessage
+    internal sealed class FeedRangeResponse
     {
-        private readonly ResponseMessage responseMessage;
-        private readonly FeedRangeContinuation feedRangeContinuation;
-
-        internal FeedRangeResponse(
+        public static ResponseMessage CreateSuccess(
             ResponseMessage responseMessage,
             FeedRangeContinuation feedRangeContinuation)
-            : base(
-                statusCode: responseMessage.StatusCode,
-                requestMessage: responseMessage.RequestMessage,
-                cosmosException: responseMessage.CosmosException,
-                headers: responseMessage.Headers,
-                diagnostics: responseMessage.DiagnosticsContext)
         {
-            this.responseMessage = responseMessage;
-            this.feedRangeContinuation = feedRangeContinuation;
+            if (responseMessage == null)
+            {
+                throw new ArgumentNullException(nameof(responseMessage));
+            }
+
+            if (feedRangeContinuation == null)
+            {
+                throw new ArgumentNullException(nameof(feedRangeContinuation));
+            }
+
+            if (feedRangeContinuation.IsDone)
+            {
+                responseMessage.Headers.ContinuationToken = null;
+            }
+            else
+            {
+                responseMessage.Headers.ContinuationToken = feedRangeContinuation.ToString();
+            }
+
+            return responseMessage;
         }
 
-        public override Stream Content
+        public static ResponseMessage CreateFailure(ResponseMessage responseMessage)
         {
-            get
+            if (responseMessage == null)
             {
-                return this.responseMessage.Content;
+                throw new ArgumentNullException(nameof(responseMessage));
             }
-        }
 
-        public override string ContinuationToken
-        {
-            get
-            {
-                if (this.feedRangeContinuation.IsDone)
-                {
-                    return null;
-                }
+            responseMessage.Headers.ContinuationToken = null;
 
-                return this.feedRangeContinuation.ToString();
-            }
+            return responseMessage;
         }
     }
 }

@@ -78,7 +78,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         totalCount += response.Count;
                     }
 
-                    Assert.IsTrue(responseMessage is FeedRangeResponse);
                     continuation = responseMessage.ContinuationToken;
                 }
             }
