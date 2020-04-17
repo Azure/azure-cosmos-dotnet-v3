@@ -450,6 +450,7 @@ namespace Microsoft.Azure.Cosmos
         FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
@@ -457,6 +458,7 @@ namespace Microsoft.Azure.Cosmos
             if (!(this.GetItemQueryStreamIterator(
                 feedRange,
                 queryDefinition,
+                continuationToken,
                 requestOptions) is FeedIteratorInternal feedIterator))
             {
                 throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
@@ -475,13 +477,14 @@ namespace Microsoft.Azure.Cosmos
         FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             FeedRangeInternal feedRangeInternal = feedRange as FeedRangeInternal;
             return this.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
-                continuationToken: null,
+                continuationToken: continuationToken,
                 feedRange: feedRangeInternal,
                 requestOptions: requestOptions);
         }

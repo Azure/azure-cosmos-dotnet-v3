@@ -1330,6 +1330,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/></param>
         /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <remarks>
@@ -1349,8 +1350,9 @@ namespace Microsoft.Azure.Cosmos
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
         ///     .WithParameter("@expensive", 9000);
         /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     queryDefinition,
         ///     feedRanges[0],
+        ///     queryDefinition,
+        ///     null,
         ///     new QueryRequestOptions() { });
         ///
         /// while (feedIterator.HasMoreResults)
@@ -1370,6 +1372,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
+            string continuationToken,
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
@@ -1378,6 +1381,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>.</param>
         /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <remarks>
@@ -1399,6 +1403,7 @@ namespace Microsoft.Azure.Cosmos
         /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     feedRanges[0],
         ///     queryDefinition,
+        ///     null,
         ///     new QueryRequestOptions() { });
         ///
         /// while (feedIterator.HasMoreResults)
@@ -1414,6 +1419,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 #endif
     }

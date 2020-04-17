@@ -115,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     List<string> results = new List<string>();
                     FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
+                    string continuation = null;
                     while (feedIterator.HasMoreResults)
                     {
                         using (ResponseMessage responseMessage =
@@ -127,6 +128,30 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                     string json = await reader.ReadToEndAsync();
                                     JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
                                     foreach(JObject document in documents)
+                                    {
+                                        results.Add(document.SelectToken("id").ToString());
+                                    }
+                                }
+                            }
+
+                            continuation = responseMessage.ContinuationToken;
+                            break;
+                        }
+                    }
+
+                    feedIterator = container.GetItemQueryStreamIterator(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, continuationToken: continuation, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
+                    while (feedIterator.HasMoreResults)
+                    {
+                        using (ResponseMessage responseMessage =
+                            await feedIterator.ReadNextAsync(this.cancellationToken))
+                        {
+                            if (responseMessage.IsSuccessStatusCode)
+                            {
+                                using (StreamReader reader = new StreamReader(responseMessage.Content))
+                                {
+                                    string json = await reader.ReadToEndAsync();
+                                    JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
+                                    foreach (JObject document in documents)
                                     {
                                         results.Add(document.SelectToken("id").ToString());
                                     }
@@ -185,6 +210,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     List<string> results = new List<string>();
                     FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+                    string continuation = null;
+                    while (feedIterator.HasMoreResults)
+                    {
+                        FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                        foreach (ToDoActivity toDoActivity in response)
+                        {
+                            results.Add(toDoActivity.id);
+                        }
+
+                        continuation = response.ContinuationToken;
+                        break;
+                    }
+
+                    feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, continuationToken: continuation, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
                     while (feedIterator.HasMoreResults)
                     {
                         FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();

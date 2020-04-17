@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         {
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
             IReadOnlyList<FeedRange> tokens = await this.Container.GetFeedRangesAsync();
-            FeedIterator iterator = this.Container.GetItemQueryStreamIterator(feedRange: tokens[0], queryDefinition: null, new QueryRequestOptions() { MaxItemCount = 1 });
+            FeedIterator iterator = this.Container.GetItemQueryStreamIterator(feedRange: tokens[0], queryDefinition: null, continuationToken: null, new QueryRequestOptions() { MaxItemCount = 1 });
             ResponseMessage responseMessage = await iterator.ReadNextAsync();
             iterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: responseMessage.ContinuationToken);
             responseMessage = await iterator.ReadNextAsync();

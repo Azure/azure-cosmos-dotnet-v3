@@ -331,17 +331,19 @@ namespace Microsoft.Azure.Cosmos
         public override FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemQueryStreamIterator(feedRange, queryDefinition, requestOptions);
+            return this.container.GetItemQueryStreamIterator(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemQueryIterator<T>(feedRange, queryDefinition, requestOptions);
+            return this.container.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
 #endif
