@@ -360,6 +360,18 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
         public int? DefaultTimeToLive { get; set; }
+        /// <summary>
+        /// Gets the analytical storage time to live in seconds for documents in a collection from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// A valid value must be either a nonzero positive integer, '-1', or 0.
+        /// By default, AnalyticalStorageTimeToLive is set to 0 meaning the analytical store is turned off for the collection; -1 means documents
+        /// in analytical store never expire.
+        /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.AnalyticalStorageTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
+        internal int? AnalyticalStorageTimeToLive { get; set; }
 
         /// <summary>
         /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
