@@ -148,6 +148,65 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
         }
 
+        [TestMethod]
+        public async Task ParallelizeQueryThroughTokens_OfT()
+        {
+            ContainerCore container = null;
+            try
+            {
+                // Create a container large enough to have at least 2 partitions
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/id",
+                    throughput: 15000);
+                container = (ContainerInlineCore)containerResponse;
+
+                List<string> generatedIds = Enumerable.Range(0, 1000).Select(n => $"BasicItem{n}").ToList();
+                foreach (string id in generatedIds)
+                {
+                    string item = $@"
+                    {{    
+                        ""id"": ""{id}""
+                    }}";
+
+                    using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
+                            QueryFeedRangeTests.GenerateStreamFromString(item),
+                            new Cosmos.PartitionKey(id)))
+                    {
+                        Assert.IsTrue(createResponse.IsSuccessStatusCode);
+                    }
+                }
+
+                IReadOnlyList<FeedRange> feedTokens = await container.GetFeedRangesAsync();
+
+                Assert.IsTrue(feedTokens.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
+
+                List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
+                {
+                    List<string> results = new List<string>();
+                    FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+                    while (feedIterator.HasMoreResults)
+                    {
+                        FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                        foreach (ToDoActivity toDoActivity in response)
+                        {
+                            results.Add(toDoActivity.id);
+                        }
+                    }
+
+                    return results;
+                }).ToList();
+
+                await Task.WhenAll(tasks);
+
+                CollectionAssert.AreEquivalent(generatedIds, tasks.SelectMany(t => t.Result).ToList());
+            }
+            finally
+            {
+                await container?.DeleteContainerAsync();
+            }
+        }
+
         private static Stream GenerateStreamFromString(string s)
         {
             MemoryStream stream = new MemoryStream();

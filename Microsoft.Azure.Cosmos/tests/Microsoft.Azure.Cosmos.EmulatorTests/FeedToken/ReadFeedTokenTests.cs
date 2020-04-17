@@ -115,6 +115,121 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         [TestMethod]
+        public async Task ReadFeedIteratorCore_ReadAll_StopResume()
+        {
+            int totalCount = 0;
+            int batchSize = 50;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.LargerContainer;
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            string continuation = null;
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+
+                    continuation = responseMessage.ContinuationToken;
+                    break;
+                }
+            }
+
+            feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: continuation, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+                }
+            }
+
+            Assert.AreEqual(batchSize, totalCount);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_OfT_ReadAll_StopResume()
+        {
+            int totalCount = 0;
+            int batchSize = 50;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.LargerContainer;
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            string continuation = null;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                totalCount += response.Count;
+                continuation = response.ContinuationToken;
+                break;
+            }
+
+            feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, continuationToken: continuation, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                totalCount += response.Count;
+            }
+
+            Assert.AreEqual(batchSize, totalCount);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_OfT_WithFeedRange_ReadAll_StopResume()
+        {
+            int batchSize = 1000;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.LargerContainer;
+            IReadOnlyList<FeedRange> tokens = await itemsCore.GetFeedRangesAsync();
+
+            List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
+            {
+                int count = 0;
+                FeedIterator<ToDoActivity> feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, feedRange: token);
+                string continuation = null;
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                    count += response.Count;
+                    continuation = response.ContinuationToken;
+                    break;
+                }
+
+                feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, continuationToken: continuation);
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                    count += response.Count;
+                }
+
+                return count;
+
+            })).ToList();
+
+            await Task.WhenAll(tasks);
+
+            int documentsRead = 0;
+            foreach (Task<int> task in tasks)
+            {
+                documentsRead += task.Result;
+            }
+
+            Assert.AreEqual(batchSize, documentsRead);
+        }
+
+        [TestMethod]
         public async Task ReadFeedIteratorCore_MigrateFromOlder()
         {
             int totalCount = 0;
