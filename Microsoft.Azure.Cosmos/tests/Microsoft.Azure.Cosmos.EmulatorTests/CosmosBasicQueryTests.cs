@@ -707,6 +707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 pagedStreamResults.AddRange(responseResults);
                 continuationToken = response.ContinuationToken;
+                Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
             } while (continuationToken != null);
 
             Assert.AreEqual(pagedStreamResults.Count, streamResults.Count);
