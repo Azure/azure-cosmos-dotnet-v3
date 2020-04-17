@@ -4,11 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
+    using System;
+
     internal sealed class FeedRangeStatistics : CosmosDiagnosticsInternal
     {
         public FeedRangeStatistics(FeedRange feedRange)
         {
-            this.FeedRange = feedRange;
+            this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
         }
 
         public FeedRange FeedRange { get; }

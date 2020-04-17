@@ -39,24 +39,22 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options);
                 }
-                else
-                {
-                    // Backward compatible with old format
-                    feedRangeInternal = FeedRangeEPK.ForCompleteRange();
-                    feedRangeContinuation = new FeedRangeCompositeContinuation(
-                        string.Empty,
-                        feedRangeInternal,
-                        new List<Documents.Routing.Range<string>>()
-                        {
+
+                // Backward compatible with old format
+                feedRangeInternal = FeedRangeEPK.ForCompleteRange();
+                feedRangeContinuation = new FeedRangeCompositeContinuation(
+                    string.Empty,
+                    feedRangeInternal,
+                    new List<Documents.Routing.Range<string>>()
+                    {
                             new Documents.Routing.Range<string>(
                                 Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                                 Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                                 isMinInclusive: true,
                                 isMaxInclusive: false)
-                        },
-                        continuation);
-                    return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options);
-                }
+                    },
+                    continuation);
+                return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options);
             }
 
             feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForCompleteRange();

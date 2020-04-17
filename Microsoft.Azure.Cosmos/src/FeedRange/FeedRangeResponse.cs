@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// ResponseMessage to promote the FeedRangeContinuation as Continuation.
     /// </summary>
-    internal sealed class FeedRangeResponse
+    internal static class FeedRangeResponse
     {
         public static ResponseMessage CreateSuccess(
             ResponseMessage responseMessage,

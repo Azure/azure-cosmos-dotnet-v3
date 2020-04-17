@@ -29,8 +29,8 @@ namespace Microsoft.Azure.Cosmos
             string containerRid,
             FeedRangeInternal feedRange)
         {
+            this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
             this.ContainerRid = containerRid;
-            this.FeedRange = feedRange;
         }
 
         public abstract void Accept(
@@ -49,13 +49,13 @@ namespace Microsoft.Azure.Cosmos
             string toStringValue,
             out FeedRangeContinuation parsedToken)
         {
-            if (FeedRangeCompositeContinuation.TryParse(toStringValue, out parsedToken))
+            if (!FeedRangeCompositeContinuation.TryParse(toStringValue, out parsedToken))
             {
-                return true;
+                parsedToken = null;
+                return false;
             }
 
-            parsedToken = null;
-            return false;
+            return true;
         }
 
         public abstract Task<bool> ShouldRetryAsync(

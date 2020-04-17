@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
@@ -31,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
         {
             return Task.FromResult(new List<Documents.Routing.Range<string>>
                 {
-                    Documents.Routing.Range<string>.GetPointRange(this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition))
+                    Documents.Routing.Range<string>.GetPointRange(
+                        this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition))
                 });
         }
 
