@@ -84,6 +84,36 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+        internal async Task<ThroughputResponse> MigrateThroughputToAutoscaleAsync(
+            string targetRID,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+            return await this.GetThroughputResponseAsync(
+               streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty),
+               operationType: OperationType.Replace,
+               linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
+               resourceType: ResourceType.Offer,
+               requestEnricher: (requestMessage) => requestMessage.Headers.Add("x-ms-cosmos-migrate-offer-to-autopilot", "true"),
+               requestOptions: null,
+               cancellationToken: cancellationToken);
+        }
+
+        internal async Task<ThroughputResponse> MigrateThroughputToManualAsync(
+            string targetRID,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+            return await this.GetThroughputResponseAsync(
+               streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty),
+               operationType: OperationType.Replace,
+               linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
+               resourceType: ResourceType.Offer,
+               requestEnricher: (requestMessage) => requestMessage.Headers.Add("x-ms-cosmos-migrate-offer-to-manual-throughput", "true"),
+               requestOptions: null,
+               cancellationToken: cancellationToken);
+        }
+
         internal async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
             string targetRID,
             ThroughputProperties throughputProperties,
@@ -249,6 +279,7 @@ namespace Microsoft.Azure.Cosmos
            OperationType operationType,
            Uri linkUri,
            ResourceType resourceType,
+           Action<RequestMessage> requestEnricher = null,
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -260,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
               partitionKey: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,
-              requestEnricher: null,
+              requestEnricher: requestEnricher,
               diagnosticsContext: null,
               cancellationToken: cancellationToken);
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);

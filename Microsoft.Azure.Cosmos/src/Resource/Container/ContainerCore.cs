@@ -176,6 +176,26 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+        internal async Task<ThroughputResponse> MigrateThroughputToAutoscaleAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.MigrateThroughputToAutoscaleAsync(
+                targetRID: rid,
+                cancellationToken: cancellationToken);
+        }
+
+        internal async Task<ThroughputResponse> MigrateThroughputToManualAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.MigrateThroughputToManualAsync(
+                targetRID: rid,
+                cancellationToken: cancellationToken);
+        }
+
 #if PREVIEW
         public override
 #else
