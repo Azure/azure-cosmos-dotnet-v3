@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        static ThroughputProperties CreateAutoscaleProvionedThroughput(
+        static ThroughputProperties CreateAutoscaleThroughput(
             int maxAutoscaleThroughput)
         {
             return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
