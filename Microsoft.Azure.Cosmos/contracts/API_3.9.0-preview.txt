@@ -701,8 +701,8 @@ namespace Microsoft.Azure.Cosmos
         public Nullable<int> MaxAutoscaleThroughput { get; }
         public string SelfLink { get; }
         public Nullable<int> Throughput { get; }
-        public static ThroughputProperties CreateAutoscale(int maxAutoscaleThroughput);
-        public static ThroughputProperties CreateManual(int throughput);
+        public static ThroughputProperties CreateAutoscaleThroughput(int maxAutoscaleThroughput);
+        public static ThroughputProperties CreateManualThroughput(int throughput);
     }
     public class ThroughputResponse : Response<ThroughputProperties>
     {
