@@ -18,9 +18,9 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        private OfferContentProperties(int fixedThroughput)
+        private OfferContentProperties(int manualThroughput)
         {
-            this.OfferThroughput = fixedThroughput;
+            this.OfferThroughput = manualThroughput;
             this.OfferAutoscaleSettings = null;
         }
 
@@ -54,9 +54,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.OfferLastReplaceTimestamp, DefaultValueHandling = DefaultValueHandling.Ignore)]
         internal long? OfferLastReplaceTimestamp { get; private set; }
 
-        public static OfferContentProperties CreateFixedOfferConent(int throughput)
+        public static OfferContentProperties CreateManualOfferConent(int throughput)
         {
-            return new OfferContentProperties(fixedThroughput: throughput);
+            return new OfferContentProperties(manualThroughput: throughput);
         }
 
         public static OfferContentProperties CreateAutoscaleOfferConent(
