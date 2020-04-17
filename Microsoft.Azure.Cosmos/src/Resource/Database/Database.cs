@@ -170,20 +170,20 @@ namespace Microsoft.Azure.Cosmos
         /// The provisioned throughput for this database.
         /// </value>
         /// <example>
-        /// The following example shows how to replace the fixed throughput.
+        /// The following example shows how to replace the manual throughput.
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
-        ///     ThroughputProperties.CreateFixedThroughput(10000));
+        ///     ThroughputProperties.CreateManualThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>
         /// <example>
-        /// The following example shows how to replace the autoscale throughput.
+        /// The following example shows how to replace the autoscale provisioned throughput.
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
-        ///     ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>
@@ -221,6 +221,27 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ContainerProperties containerProperties = new ContainerProperties()
+        /// {
+        ///     Id = Guid.NewGuid().ToString(),
+        ///     PartitionKeyPath = "/pk",
+        ///     IndexingPolicy = new IndexingPolicy()
+        ///    {
+        ///         Automatic = false,
+        ///         IndexingMode = IndexingMode.Lazy,
+        ///    };
+        /// };
+        ///
+        /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(
+        ///     containerProperties,
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public abstract Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
@@ -246,7 +267,9 @@ namespace Microsoft.Azure.Cosmos
         ///     PartitionKeyPath = "/pk",
         /// };
         ///
-        /// using(ResponseMessage response = await this.cosmosDatabase.CreateContainerStreamAsync(containerProperties))
+        /// using(ResponseMessage response = await this.cosmosDatabase.CreateContainerStreamAsync(
+        ///     containerProperties,
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000)))
         /// {
         /// }
         /// ]]>
