@@ -306,16 +306,16 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(
-        ///     ThroughputProperties.CreateFixedThroughput(10000));
+        ///     ThroughputProperties.CreateManual(10000));
         /// ]]>
         /// </code>
         /// </example>
         /// <example>
-        /// The following example shows how to replace the autoscale throughput
+        /// The following example shows how to replace the autoscale provisioned throughput
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(
-        ///     ThroughputProperties.CreateAutoscaleProvionedThroughput(10000));
+        ///     ThroughputProperties.CreateAutoscale(10000));
         /// ]]>
         /// </code>
         /// </example>
