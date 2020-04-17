@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(
-        ///     ThroughputProperties.CreateManual(10000));
+        ///     ThroughputProperties.CreateManualThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(
-        ///     ThroughputProperties.CreateAutoscale(10000));
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>

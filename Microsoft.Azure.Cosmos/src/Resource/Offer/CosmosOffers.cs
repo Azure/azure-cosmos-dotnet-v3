@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ReplaceThroughputPropertiesAsync(
                 targetRID,
-                ThroughputProperties.CreateManual(throughput),
+                ThroughputProperties.CreateManualThroughput(throughput),
                 requestOptions,
                 cancellationToken);
         }
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ReplaceThroughputPropertiesIfExistsAsync(
                 targetRID,
-                ThroughputProperties.CreateManual(throughput),
+                ThroughputProperties.CreateManualThroughput(throughput),
                 requestOptions,
                 cancellationToken);
         }

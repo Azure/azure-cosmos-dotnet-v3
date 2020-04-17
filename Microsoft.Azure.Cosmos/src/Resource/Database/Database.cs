@@ -170,11 +170,11 @@ namespace Microsoft.Azure.Cosmos
         /// The provisioned throughput for this database.
         /// </value>
         /// <example>
-        /// The following example shows how to replace the fixed throughput.
+        /// The following example shows how to replace the manual throughput.
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
-        ///     ThroughputProperties.CreateFixed(10000));
+        ///     ThroughputProperties.CreateManualThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
-        ///     ThroughputProperties.CreateAutoscale(10000));
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(
         ///     containerProperties,
-        ///     ThroughputProperties.CreateAutoscale(10000));
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// using(ResponseMessage response = await this.cosmosDatabase.CreateContainerStreamAsync(
         ///     containerProperties,
-        ///     ThroughputProperties.CreateAutoscale(10000)))
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000)))
         /// {
         /// }
         /// ]]>

@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        static ThroughputProperties CreateManual(int throughput)
+        static ThroughputProperties CreateManualThroughput(int throughput)
         {
             return new ThroughputProperties(OfferContentProperties.CreateManualOfferConent(throughput));
         }
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        static ThroughputProperties CreateAutoscale(
+        static ThroughputProperties CreateAutoscaleThroughput(
             int maxAutoscaleThroughput)
         {
             return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 autoUpgradeMaxThroughputIncrementPercentage: null));
         }
 
-        internal static ThroughputProperties CreateAutoscale(
+        internal static ThroughputProperties CreateAutoscaleThroughput(
             int maxAutoscaleThroughput,
             int? autoUpgradeMaxThroughputIncrementPercentage = null)
         {

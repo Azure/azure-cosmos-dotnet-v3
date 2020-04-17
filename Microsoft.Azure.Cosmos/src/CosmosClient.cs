@@ -833,7 +833,7 @@ namespace Microsoft.Azure.Cosmos
             ThroughputProperties throughputProperties = null;
             if (throughput.HasValue)
             {
-                throughputProperties = ThroughputProperties.CreateManual(throughput.Value);
+                throughputProperties = ThroughputProperties.CreateManualThroughput(throughput.Value);
             }
 
             return this.CreateDatabaseStreamInternalAsync(
