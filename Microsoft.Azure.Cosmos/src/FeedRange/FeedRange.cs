@@ -17,5 +17,10 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedRange
     {
+        /// <summary>
+        /// Gets a string representation of the current range.
+        /// </summary>
+        /// <returns>A string representation of the current token.</returns>
+        public abstract override string ToString();
     }
 }

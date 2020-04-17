@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract TryCatch ValidateContainer(string containerRid);
 
-        public static bool TryCreateFromString(
+        public static bool TryParse(
             string toStringValue,
             out FeedRangeContinuation parsedToken)
         {

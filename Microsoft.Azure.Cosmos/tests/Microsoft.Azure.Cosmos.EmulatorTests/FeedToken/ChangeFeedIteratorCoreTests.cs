@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 using (ResponseMessage responseMessage =
                 await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    Assert.IsTrue(FeedRangeCompositeContinuation.TryCreateFromString(responseMessage.ContinuationToken, out FeedRangeContinuation continuation));
+                    Assert.IsTrue(FeedRangeCompositeContinuation.TryParse(responseMessage.ContinuationToken, out FeedRangeContinuation continuation));
                     FeedRangeCompositeContinuation compositeContinuation = continuation as FeedRangeCompositeContinuation;
                     List<CompositeContinuationToken> deserializedToken = compositeContinuation.CompositeContinuationTokens.ToList();
                     if (previousToken != null)

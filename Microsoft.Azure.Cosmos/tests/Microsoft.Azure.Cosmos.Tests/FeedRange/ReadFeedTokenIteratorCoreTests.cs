@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(containerCore, null, null, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
-            Assert.IsTrue(FeedRangeContinuation.TryCreateFromString(response.ContinuationToken, out FeedRangeContinuation parsedToken));
+            Assert.IsTrue(FeedRangeContinuation.TryParse(response.ContinuationToken, out FeedRangeContinuation parsedToken));
             FeedRangeCompositeContinuation feedRangeCompositeContinuation = parsedToken as FeedRangeCompositeContinuation;
             FeedRangeEPK feedTokenEPKRange = feedRangeCompositeContinuation.FeedRange as FeedRangeEPK;
             // Assert that a FeedToken for the entire range is used

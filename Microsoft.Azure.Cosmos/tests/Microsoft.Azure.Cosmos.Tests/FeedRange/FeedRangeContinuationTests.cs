@@ -46,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             };
             FeedRangeInternal feedRangeInternal = new FeedRangeEPK(new Documents.Routing.Range<string>("A", "E", true, false));
             FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, feedRangeInternal, keyRanges);
-            Assert.IsTrue(FeedRangeContinuation.TryCreateFromString(token.ToString(), out _));
-            Assert.IsFalse(FeedRangeContinuation.TryCreateFromString("whatever", out _));
+            Assert.IsTrue(FeedRangeContinuation.TryParse(token.ToString(), out _));
+            Assert.IsFalse(FeedRangeContinuation.TryParse("whatever", out _));
         }
 
         [TestMethod]

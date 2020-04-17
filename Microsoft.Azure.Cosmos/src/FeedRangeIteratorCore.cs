@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(continuation))
             {
-                if (FeedRangeContinuation.TryCreateFromString(continuation, out FeedRangeContinuation feedRangeContinuation))
+                if (FeedRangeContinuation.TryParse(continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
                     return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options);
                 }

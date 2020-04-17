@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public static bool TryParse(string toStringValue, out FeedRangeContinuation feedToken)
+        public static new bool TryParse(string toStringValue, out FeedRangeContinuation feedToken)
         {
             try
             {
