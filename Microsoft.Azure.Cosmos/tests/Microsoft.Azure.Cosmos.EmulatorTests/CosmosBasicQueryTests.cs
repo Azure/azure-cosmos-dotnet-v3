@@ -706,7 +706,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(responseResults.Count() <= 1);
 
                 pagedStreamResults.AddRange(responseResults);
-                continuationToken = response.ContinuationToken;
+                continuationToken = response.Headers.ContinuationToken;
                 Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
             } while (continuationToken != null);
 

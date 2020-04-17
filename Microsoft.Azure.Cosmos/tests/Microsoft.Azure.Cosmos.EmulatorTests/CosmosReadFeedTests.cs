@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     lastKnownContinuationToken = response.Headers.ContinuationToken;
                     Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
-
+                    
                     using (StreamReader reader = new StreamReader(response.Content))
                     {
                         string json = await reader.ReadToEndAsync();
