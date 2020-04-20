@@ -9,14 +9,6 @@ variables:
 
 stages:
 - stage:
-  displayName: Gate 
-  jobs:
-    - template:  templates/static-tools.yml
-      parameters:
-        BuildConfiguration: $(BuildConfiguration)
-        VmImage: $(VmImage)
-
-- stage:
   displayName: Publish 
   jobs:
     - job:
