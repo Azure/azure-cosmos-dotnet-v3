@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
-        private readonly FeedTokenInternal feedToken;
         private bool hasMoreResultsInternal;
 
         public ChangeFeedPartitionKeyResultSetIteratorCore(
@@ -29,11 +28,6 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedOptions = options;
-            this.feedToken = new FeedTokenPartitionKeyRange(options?.PartitionKeyRangeId);
-            if (options?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
-            {
-                this.feedToken.UpdateContinuation(startFromContinuation.Continuation);
-            }
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -42,13 +36,6 @@ namespace Microsoft.Azure.Cosmos
         {
             throw new NotImplementedException();
         }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedToken FeedToken => this.feedToken;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -66,7 +53,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     ResponseMessage response = task.Result;
                     // Change Feed uses ETAG
-                    this.feedToken.UpdateContinuation(response.Headers.ETag);
                     this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
                     response.Headers.ContinuationToken = response.Headers.ETag;
                     return response;

@@ -8,8 +8,7 @@ pr:
     - releases/*
   paths:
     include:
-    - Microsoft.Azure.Cosmos/*
-    - NuGet.config
+    - /*
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
@@ -22,7 +21,7 @@ jobs:
   parameters:
     BuildConfiguration: Release
     VmImage: $(VmImage)
-        
+    
 
 #- template:  templates/build-test.yml
 #  parameters:

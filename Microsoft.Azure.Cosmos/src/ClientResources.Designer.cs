@@ -268,20 +268,11 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to A data encryption key with the provided name was not found - please ensure it has been created..
+        ///   Looks up a localized string similar to The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptor..
         /// </summary>
-        internal static string DataEncryptionKeyNotFound {
+        internal static string EncryptorNotConfigured {
             get {
-                return ResourceManager.GetString("DataEncryptionKeyNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptionKeyWrapProvider..
-        /// </summary>
-        internal static string EncryptionKeyWrapProviderNotConfigured {
-            get {
-                return ResourceManager.GetString("EncryptionKeyWrapProviderNotConfigured", resourceCulture);
+                return ResourceManager.GetString("EncryptorNotConfigured", resourceCulture);
             }
         }
         
@@ -322,16 +313,7 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Cannot parse &apos;{0}&apos; as a valid FeedToken..
-        /// </summary>
-        internal static string FeedToken_CannotParse {
-            get {
-                return ResourceManager.GetString("FeedToken_CannotParse", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot define EffectivePartitionKeyRouting and FeedToken simultaneously..
+        ///   Looks up a localized string similar to Cannot define EffectivePartitionKeyRouting and FeedRange simultaneously..
         /// </summary>
         internal static string FeedToken_EffectivePartitionKeyRouting {
             get {
@@ -340,25 +322,16 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected FeedTokenInternal instance..
+        ///   Looks up a localized string similar to The continuation was generated for container {0} but current container is {1}..
         /// </summary>
-        internal static string FeedToken_InvalidImplementation {
+        internal static string FeedToken_InvalidFeedTokenForContainer {
             get {
-                return ResourceManager.GetString("FeedToken_InvalidImplementation", resourceCulture);
+                return ResourceManager.GetString("FeedToken_InvalidFeedTokenForContainer", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Provide a value greater than zero..
-        /// </summary>
-        internal static string FeedToken_MaxTokensOutOfRange {
-            get {
-                return ResourceManager.GetString("FeedToken_MaxTokensOutOfRange", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The provided string does not represent any known FeedToken format..
+        ///   Looks up a localized string similar to The provided string &apos;{0}&apos; does not represent any known format..
         /// </summary>
         internal static string FeedToken_UnknownFormat {
             get {
@@ -453,15 +426,6 @@ namespace Microsoft.Azure.Cosmos {
         internal static string InvalidTypesForMethod {
             get {
                 return ResourceManager.GetString("InvalidTypesForMethod", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The key wrapping provider configured was unable to unwrap the wrapped key correctly..
-        /// </summary>
-        internal static string KeyWrappingDidNotRoundtrip {
-            get {
-                return ResourceManager.GetString("KeyWrappingDidNotRoundtrip", resourceCulture);
             }
         }
         

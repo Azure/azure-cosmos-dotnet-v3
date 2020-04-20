@@ -19,13 +19,27 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class ChangeFeedRequestOptions : RequestOptions
     {
+        private int? maxItemCount;
+
         /// <summary>
         /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The maximum number of items to be returned in the enumeration operation.
         /// </value> 
-        public int? MaxItemCount { get; set; }
+        public int? MaxItemCount
+        {
+            get => this.maxItemCount;
+            set
+            {
+                if (value.HasValue && (value.Value < 0) && (value.Value != -1))
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(this.MaxItemCount)} must be a positive value or -1.");
+                }
+
+                this.maxItemCount = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets where the ChangeFeed operation should start from. If not set then the ChangeFeed operation will start from now.

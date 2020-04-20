@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
     /// </summary>
-    [TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqAttributeContractBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static Func<bool, IQueryable<Datum>> getQuery;
