@@ -17,12 +17,12 @@ stages:
     
       steps:
       - task: DotNetCoreCLI@2
-        displayName: Build Microsoft.Azure.Encryption
+        displayName: Build Microsoft.Azure.Cosmos.Encryption
         inputs: 
           command: build  
           configuration: $(BuildConfiguration)
           nugetConfigPath: NuGet.config
-          projects: Microsoft.Azure.Encryption/src/Microsoft.Azure.Encryption.csproj 
+          projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj 
           arguments: --configuration $(BuildConfiguration) -p:Optimize=true 
           versioningScheme: OFF
 
@@ -30,23 +30,23 @@ stages:
         displayName: 'Create SDK NuGet Package'
         inputs:
           command: custom
-          projects: 'Microsoft.Azure.Encryption\src\Microsoft.Azure.Encryption.csproj'
+          projects: 'Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj'
           custom: pack
-          arguments: '-v detailed -c $(BuildConfiguration) --no-build --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Microsoft.Azure.Encryption"'
+          arguments: '-v detailed -c $(BuildConfiguration) --no-build --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Microsoft.Azure.Cosmos.Encryption"'
 
       - task: DotNetCoreCLI@2
         displayName: 'Create SDK NuGet Symbols Package'
         inputs: 
           command: custom
-          projects: 'Microsoft.Azure.Encryption\src\Microsoft.Azure.Encryption.csproj'
+          projects: 'Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj'
           custom: pack
-          arguments: '-v detailed -c $(BuildConfiguration) --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Microsoft.Azure.Encryption"'
+          arguments: '-v detailed -c $(BuildConfiguration) --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Microsoft.Azure.Cosmos.Encryption"'
 
       - task: AzureFileCopy@2
         displayName: ' Copy Artifacts to Azure SDK Release blob storage'
         condition: and(succeeded(),ne(variables['BlobVersion'], ''))
         inputs:
-          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Encryption'
+          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.Encryption'
           azureSubscription: azuresdkpartnerdrops
           Destination: AzureBlob
           storage: azuresdkpartnerdrops
@@ -54,7 +54,7 @@ stages:
           BlobPrefix: 'cosmosdb/csharp/encryption/$(BlobVersion)'
 
       - task: PublishBuildArtifacts@1
-        displayName: 'Publish Artifacts: Microsoft.Azure.Encryption'
+        displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos.Encryption'
         inputs:
-          artifactName: Microsoft.Azure.Encryption
+          artifactName: Microsoft.Azure.Cosmos.Encryption
 #
