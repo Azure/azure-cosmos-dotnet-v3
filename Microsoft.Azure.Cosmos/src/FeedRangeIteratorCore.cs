@@ -150,9 +150,8 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            Uri resourceUri = this.containerCore.LinkUri;
             ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: resourceUri,
+               resourceUri: this.containerCore.LinkUri,
                resourceType: ResourceType.Document,
                operationType: OperationType.ReadFeed,
                requestOptions: this.queryRequestOptions,
@@ -168,15 +167,15 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
-            // Retry in case of splits
-            if (await this.FeedRangeContinuation.ShouldRetryAsync(this.containerCore, response, cancellationToken))
+            ShouldRetryResult shouldRetryOnSplit = await this.FeedRangeContinuation.HandleSplitAsync(this.containerCore, response, cancellationToken);
+            if (shouldRetryOnSplit.ShouldRetry)
             {
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
             if (response.IsSuccessStatusCode)
             {
-                this.FeedRangeContinuation.UpdateContinuation(response.Headers.ContinuationToken);
+                this.FeedRangeContinuation.ReplaceContinuation(response.Headers.ContinuationToken);
                 this.hasMoreResultsInternal = !this.FeedRangeContinuation.IsDone;
                 return FeedRangeResponse.CreateSuccess(response, this.FeedRangeContinuation);
             }

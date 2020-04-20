@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
@@ -146,11 +147,10 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            Uri resourceUri = this.container.LinkUri;
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
-                resourceType: Documents.ResourceType.Document,
-                operationType: Documents.OperationType.ReadFeed,
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.Document,
+                operationType: OperationType.ReadFeed,
                 requestOptions: this.changeFeedOptions,
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
@@ -164,16 +164,8 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsScope,
                 cancellationToken: cancellationToken);
 
-            // Retry in case of splits or other scenarios
-            if (await this.FeedRangeContinuation.ShouldRetryAsync(this.container, responseMessage, cancellationToken))
+            if (await this.ShouldRetryAsync(responseMessage, cancellationToken))
             {
-                if (responseMessage.IsSuccessStatusCode
-                    || responseMessage.StatusCode == HttpStatusCode.NotModified)
-                {
-                    // Change Feed read uses Etag for continuation
-                    this.FeedRangeContinuation.UpdateContinuation(responseMessage.Headers.ETag);
-                }
-
                 return await this.ReadNextInternalAsync(diagnosticsScope, cancellationToken);
             }
 
@@ -181,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
                 || responseMessage.StatusCode == HttpStatusCode.NotModified)
             {
                 // Change Feed read uses Etag for continuation
-                this.FeedRangeContinuation.UpdateContinuation(responseMessage.Headers.ETag);
+                this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
                 this.hasMoreResults = responseMessage.IsSuccessStatusCode;
                 return FeedRangeResponse.CreateSuccess(
                     responseMessage,
@@ -192,6 +184,25 @@ namespace Microsoft.Azure.Cosmos
                 this.hasMoreResults = false;
                 return FeedRangeResponse.CreateFailure(responseMessage);
             }
+        }
+
+        private async Task<bool> ShouldRetryAsync(
+            ResponseMessage responseMessage,
+            CancellationToken cancellationToken)
+        {
+            ShouldRetryResult shouldRetryOnNotModified = this.FeedRangeContinuation.HandleChangeFeedNotModified(responseMessage);
+            if (shouldRetryOnNotModified.ShouldRetry)
+            {
+                return true;
+            }
+
+            ShouldRetryResult shouldRetryOnSplit = await this.FeedRangeContinuation.HandleSplitAsync(this.container, responseMessage, cancellationToken);
+            if (shouldRetryOnSplit.ShouldRetry)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)

@@ -27,11 +27,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             };
             FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, Mock.Of<FeedRangeInternal>(), keyRanges);
             Assert.AreEqual(keyRanges[0].Min, token.CompositeContinuationTokens.Peek().Range.Min);
-            token.UpdateContinuation("something");
+            token.ReplaceContinuation("something");
             Assert.AreEqual(keyRanges[1].Min, token.CompositeContinuationTokens.Peek().Range.Min);
-            token.UpdateContinuation("something");
+            token.ReplaceContinuation("something");
             Assert.AreEqual(keyRanges[0].Min, token.CompositeContinuationTokens.Peek().Range.Min);
-            token.UpdateContinuation("something");
+            token.ReplaceContinuation("something");
             Assert.AreEqual(keyRanges[1].Min, token.CompositeContinuationTokens.Peek().Range.Min);
         }
 
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
-        public async Task FeedRangeCompositeContinuation_ShouldRetry()
+        public void FeedRangeCompositeContinuation_ShouldRetry()
         {
             List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
             {
@@ -96,17 +96,14 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(Guid.NewGuid().ToString(), Mock.Of<FeedRangeInternal>(), compositeContinuationTokens);
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
             ResponseMessage okResponse = new ResponseMessage(HttpStatusCode.OK);
             okResponse.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
-            Assert.IsFalse(await feedRangeCompositeContinuation.ShouldRetryAsync(containerCore, okResponse, default(CancellationToken)));
+            Assert.IsFalse(feedRangeCompositeContinuation.HandleChangeFeedNotModified(okResponse).ShouldRetry);
 
             // A 304 on a multi Range token should cycle on all available ranges before stopping retrying
-            Assert.IsTrue(await feedRangeCompositeContinuation.ShouldRetryAsync(containerCore, new ResponseMessage(HttpStatusCode.NotModified), default(CancellationToken)));
-            feedRangeCompositeContinuation.UpdateContinuation(Guid.NewGuid().ToString());
-            Assert.IsTrue(await feedRangeCompositeContinuation.ShouldRetryAsync(containerCore, new ResponseMessage(HttpStatusCode.NotModified), default(CancellationToken)));
-            feedRangeCompositeContinuation.UpdateContinuation(Guid.NewGuid().ToString());
-            Assert.IsFalse(await feedRangeCompositeContinuation.ShouldRetryAsync(containerCore, new ResponseMessage(HttpStatusCode.NotModified), default(CancellationToken)));
+            Assert.IsTrue(feedRangeCompositeContinuation.HandleChangeFeedNotModified(new ResponseMessage(HttpStatusCode.NotModified)).ShouldRetry);
+            Assert.IsTrue(feedRangeCompositeContinuation.HandleChangeFeedNotModified(new ResponseMessage(HttpStatusCode.NotModified)).ShouldRetry);
+            Assert.IsFalse(feedRangeCompositeContinuation.HandleChangeFeedNotModified(new ResponseMessage(HttpStatusCode.NotModified)).ShouldRetry);
         }
 
         [TestMethod]
@@ -134,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ResponseMessage split = new ResponseMessage(HttpStatusCode.Gone);
             split.Headers.SubStatusCode = Documents.SubStatusCodes.PartitionKeyRangeGone;
-            Assert.IsTrue(await feedRangeCompositeContinuation.ShouldRetryAsync(containerCore.Object, split, default(CancellationToken)));
+            Assert.IsTrue((await feedRangeCompositeContinuation.HandleSplitAsync(containerCore.Object, split, default(CancellationToken))).ShouldRetry);
 
             // verify token state
             // Split should have updated initial and created a new token at the end
@@ -168,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 }, continuation: Guid.NewGuid().ToString());
             Assert.IsFalse(token.IsDone);
 
-            token.UpdateContinuation(null);
+            token.ReplaceContinuation(null);
             Assert.IsTrue(token.IsDone);
         }
 
@@ -186,24 +183,24 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 }, continuation: null);
 
             // First range has continuation
-            token.UpdateContinuation(Guid.NewGuid().ToString());
+            token.ReplaceContinuation(Guid.NewGuid().ToString());
             Assert.IsFalse(token.IsDone);
 
             // Second range is done
-            token.UpdateContinuation(null);
+            token.ReplaceContinuation(null);
             Assert.IsFalse(token.IsDone);
 
             // Third range is done
-            token.UpdateContinuation(null);
+            token.ReplaceContinuation(null);
             Assert.IsFalse(token.IsDone);
 
             // First range has continuation
-            token.UpdateContinuation(Guid.NewGuid().ToString());
+            token.ReplaceContinuation(Guid.NewGuid().ToString());
             Assert.IsFalse(token.IsDone);
 
             // MoveNext should skip the second and third
             // Finish first one
-            token.UpdateContinuation(null);
+            token.ReplaceContinuation(null);
             Assert.IsTrue(token.IsDone);
         }
 

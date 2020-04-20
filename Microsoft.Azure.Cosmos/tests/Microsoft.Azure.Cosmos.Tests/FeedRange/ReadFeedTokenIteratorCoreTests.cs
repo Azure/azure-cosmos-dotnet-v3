@@ -111,8 +111,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation())
                 .Returns(continuation);
@@ -124,10 +124,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)
-                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
+                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -168,8 +168,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation())
                 .Returns(continuation);
@@ -190,10 +190,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             Assert.IsTrue(creatorCalled, "Response creator not called");
             Mock.Get(feedToken)
-                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
+                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -234,8 +234,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation())
                 .Returns(continuation);
@@ -247,10 +247,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)
-                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
+                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
         }
 
@@ -292,8 +292,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation())
                 .Returns(continuation);
@@ -305,10 +305,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)
-                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Never);
+                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Never);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
             Mock.Get(feedToken)
                 .Verify(f => f.IsDone, Times.Never);
@@ -395,8 +395,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Mock.Get(feedToken)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
 
             FeedRangeIteratorCore changeFeedIteratorCore = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
 

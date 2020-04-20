@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos
     {
         public readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
         public CompositeContinuationToken CurrentToken { get; private set; }
+        private static Documents.ShouldRetryResult Retry = Documents.ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+        private static Documents.ShouldRetryResult NoRetry = Documents.ShouldRetryResult.NoRetry();
         private readonly HashSet<string> doneRanges;
         private string initialNoResultsRange;
 
@@ -105,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             return JsonConvert.SerializeObject(this);
         }
 
-        public override void UpdateContinuation(string continuationToken)
+        public override void ReplaceContinuation(string continuationToken)
         {
             if (continuationToken == null)
             {
@@ -140,46 +142,56 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public override bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
 
-        public override async Task<bool> ShouldRetryAsync(
-            ContainerCore containerCore,
-            ResponseMessage responseMessage,
-            CancellationToken cancellationToken)
+        public override Documents.ShouldRetryResult HandleChangeFeedNotModified(ResponseMessage responseMessage)
         {
             if (responseMessage.IsSuccessStatusCode)
             {
                 this.initialNoResultsRange = null;
-                return false;
+                return FeedRangeCompositeContinuation.NoRetry;
             }
 
-            // If the current response is NotModified (ChangeFeed), try and skip to a next one
+            // If the current response is NotModified (ChangeFeed), try and skip to a next range in case this continuation contains multiple ranges due to split (Breath-First)
             if (responseMessage.StatusCode == HttpStatusCode.NotModified
                 && this.CompositeContinuationTokens.Count > 1)
             {
                 if (this.initialNoResultsRange == null)
                 {
                     this.initialNoResultsRange = this.CurrentToken.Range.Min;
-                    return true;
+                    this.ReplaceContinuation(responseMessage.Headers.ETag);
+                    return FeedRangeCompositeContinuation.Retry;
                 }
 
-                return !this.initialNoResultsRange.Equals(this.CurrentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
+                if (!this.initialNoResultsRange.Equals(this.CurrentToken.Range.Min, StringComparison.OrdinalIgnoreCase))
+                {
+                    this.ReplaceContinuation(responseMessage.Headers.ETag);
+                    return FeedRangeCompositeContinuation.Retry;
+                }
             }
 
+            return FeedRangeCompositeContinuation.NoRetry;
+        }
+
+        public override async Task<Documents.ShouldRetryResult> HandleSplitAsync(
+            ContainerCore containerCore,
+            ResponseMessage responseMessage,
+            CancellationToken cancellationToken)
+        {
             // Split handling
             bool partitionSplit = responseMessage.StatusCode == HttpStatusCode.Gone
                 && (responseMessage.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || responseMessage.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
-            if (partitionSplit)
+            if (!partitionSplit)
             {
-                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.CurrentToken.Range.Min, this.CurrentToken.Range.Max, forceRefresh: true);
-                if (resolvedRanges.Count > 0)
-                {
-                    this.HandleSplit(resolvedRanges);
-                }
-
-                return true;
+                return FeedRangeCompositeContinuation.NoRetry;
             }
 
-            return false;
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.CurrentToken.Range.Min, this.CurrentToken.Range.Max, forceRefresh: true);
+            if (resolvedRanges.Count > 0)
+            {
+                this.CreateChildRanges(resolvedRanges);
+            }
+
+            return FeedRangeCompositeContinuation.Retry;
         }
 
         public static new bool TryParse(string toStringValue, out FeedRangeContinuation feedToken)
@@ -222,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
+        private void CreateChildRanges(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
 

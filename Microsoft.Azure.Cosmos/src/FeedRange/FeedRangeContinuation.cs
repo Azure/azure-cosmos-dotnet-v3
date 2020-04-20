@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract string GetContinuation();
 
-        public abstract void UpdateContinuation(string continuationToken);
+        public abstract void ReplaceContinuation(string continuationToken);
 
         public abstract bool IsDone { get; }
 
@@ -58,7 +58,9 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public abstract Task<bool> ShouldRetryAsync(
+        public abstract Documents.ShouldRetryResult HandleChangeFeedNotModified(ResponseMessage responseMessage);
+
+        public abstract Task<Documents.ShouldRetryResult> HandleSplitAsync(
             ContainerCore containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken);

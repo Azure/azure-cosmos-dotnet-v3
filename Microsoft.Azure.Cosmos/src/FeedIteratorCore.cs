@@ -103,18 +103,13 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
 
             this.ContinuationToken = response.Headers.ContinuationToken;
-            this.hasMoreResultsInternal = GetHasMoreResults(this.ContinuationToken, response.StatusCode);
+            this.hasMoreResultsInternal = this.ContinuationToken != null && response.StatusCode != HttpStatusCode.NotModified;
             return response;
         }
 
         public override CosmosElement GetCosmsoElementContinuationToken()
         {
             throw new NotImplementedException();
-        }
-
-        internal static bool HasMoreResults(string continuationToken, HttpStatusCode statusCode)
-        {
-            return continuationToken != null && statusCode != HttpStatusCode.NotModified;
         }
     }
 

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (JsonReaderException)
             {
+                DefaultTrace.TraceError("Unable to parse FeedRange for PartitionKey");
                 feedRangeInternal = null;
                 return false;
             }
