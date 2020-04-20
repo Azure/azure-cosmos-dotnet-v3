@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
             throw new NotImplementedException();
         }
 
-        internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)
+        internal static bool HasMoreResults(string continuationToken, HttpStatusCode statusCode)
         {
             return continuationToken != null && statusCode != HttpStatusCode.NotModified;
         }
