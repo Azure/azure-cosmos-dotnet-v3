@@ -104,10 +104,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public static TryCatch<TCosmosElement> Parse<TCosmosElement>(string serializedCosmosElement)
                 where TCosmosElement : CosmosElement
             {
+                if (serializedCosmosElement == null)
+                {
+                    throw new ArgumentNullException(nameof(serializedCosmosElement));
+                }
+
                 if (string.IsNullOrWhiteSpace(serializedCosmosElement))
                 {
-                    TryCatch<CosmosElement>.FromException(
-                        new CosmosElementEmptyBufferException());
+                    return TryCatch<TCosmosElement>.FromException(
+                        new ArgumentException($"'{nameof(serializedCosmosElement)}' must not be null, empty, or whitespace."));
                 }
 
                 byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
@@ -139,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             where TCosmosElement : CosmosElement
         {
             TryCatch<TCosmosElement> tryCreateFromBuffer = CosmosElement.Monadic.CreateFromBuffer<TCosmosElement>(buffer);
-            if (tryCreateFromBuffer.Faulted)
+            if (tryCreateFromBuffer.Failed)
             {
                 cosmosElement = default;
                 return false;
@@ -170,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             where TCosmosElement : CosmosElement
         {
             TryCatch<TCosmosElement> tryParse = CosmosElement.Monadic.Parse<TCosmosElement>(json);
-            if (tryParse.Faulted)
+            if (tryParse.Failed)
             {
                 cosmosElement = default;
                 return false;

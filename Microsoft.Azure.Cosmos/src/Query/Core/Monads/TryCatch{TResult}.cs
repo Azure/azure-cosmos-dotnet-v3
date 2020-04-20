@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public bool Succeeded => this.either.IsRight;
 
-        public bool Faulted => !this.Succeeded;
+        public bool Failed => !this.Succeeded;
 
         public TResult Result
         {
@@ -202,6 +202,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                     message: $"{nameof(TryCatch<TResult>)} resulted in an exception.",
                     innerException: exception,
                     stackTrace: stackTrace));
+        }
+
+        public static bool ConvertToTryGet<T>(TryCatch<T> tryCatch, out T result)
+        {
+            if (tryCatch.Failed)
+            {
+                result = default;
+                return false;
+            }
+
+            result = tryCatch.Result;
+            return true;
         }
     }
 }

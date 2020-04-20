@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PipelineContinuationTokenTestsInput input)
         {
             TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(input.ContinuationToken);
-            if (tryParse.Faulted)
+            if (tryParse.Failed)
             {
                 return new PipelineContinuationTokenTestsOutputNegative("Failed to parse token.");
             }

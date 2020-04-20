@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public bool Succeeded => this.voidTryCatch.Succeeded;
 
+        public bool Failed => this.voidTryCatch.Failed;
+
         public void Match(
             Action onSuccess,
             Action<Exception> onError)

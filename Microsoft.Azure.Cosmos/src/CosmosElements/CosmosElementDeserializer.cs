@@ -15,27 +15,36 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         public static T Deserialize<T>(ReadOnlyMemory<byte> buffer)
         {
-            TryCatch<T> tryDeserialize = CosmosElementDeserializer.TryDeserialize<T>(buffer);
+            TryCatch<T> tryDeserialize = CosmosElementDeserializer.Monadic.Deserialize<T>(buffer);
             tryDeserialize.ThrowIfFailed();
             return tryDeserialize.Result;
         }
 
-        public static TryCatch<T> TryDeserialize<T>(ReadOnlyMemory<byte> buffer)
+        public static class Monadic
         {
-            TryCatch<CosmosElement> tryCreateFromBuffer = CosmosElement.Monadic.CreateFromBuffer(buffer);
-            if (tryCreateFromBuffer.Faulted)
+            public static TryCatch<T> Deserialize<T>(ReadOnlyMemory<byte> buffer)
             {
-                return TryCatch<T>.FromException(tryCreateFromBuffer.Exception);
-            }
+                TryCatch<CosmosElement> tryCreateFromBuffer = CosmosElement.Monadic.CreateFromBuffer(buffer);
+                if (tryCreateFromBuffer.Failed)
+                {
+                    return TryCatch<T>.FromException(tryCreateFromBuffer.Exception);
+                }
 
-            CosmosElement cosmosElement = tryCreateFromBuffer.Result;
-            TryCatch<object> tryAcceptVisitor = cosmosElement.Accept(Visitor.Singleton, typeof(T));
-            if (tryAcceptVisitor.Faulted)
-            {
-                return TryCatch<T>.FromException(tryAcceptVisitor.Exception);
-            }
+                CosmosElement cosmosElement = tryCreateFromBuffer.Result;
+                TryCatch<object> tryAcceptVisitor = cosmosElement.Accept(Visitor.Singleton, typeof(T));
+                if (tryAcceptVisitor.Failed)
+                {
+                    return TryCatch<T>.FromException(tryAcceptVisitor.Exception);
+                }
 
-            return TryCatch<T>.FromResult((T)tryAcceptVisitor.Result);
+                return TryCatch<T>.FromResult((T)tryAcceptVisitor.Result);
+            }
+        }
+
+        public static bool TryDeserialize<T>(ReadOnlyMemory<byte> buffer, out T result)
+        {
+            TryCatch<T> tryDeserialize = CosmosElementDeserializer.Monadic.Deserialize<T>(buffer);
+            return TryCatch<T>.ConvertToTryGet<T>(tryDeserialize, out result);
         }
 
         private sealed class Visitor : ICosmosElementVisitor<Type, TryCatch<object>>
@@ -45,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             private static class Exceptions
             {
                 public static readonly CosmosElementWrongTypeException ExpectedArray = new CosmosElementWrongTypeException(
-                    message: $"Expected return type of array.");
+                    message: $"Expected return type of '{nameof(IReadOnlyList<object>)}'.");
 
                 public static readonly CosmosElementWrongTypeException ExpectedBoolean = new CosmosElementWrongTypeException(
                     message: $"Expected return type of '{typeof(bool)}'.");
@@ -115,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                         tryGetMaterializedArrayItem = arrayItem.Accept(this, genericArgumentType);
                     }
 
-                    if (tryGetMaterializedArrayItem.Faulted)
+                    if (tryGetMaterializedArrayItem.Failed)
                     {
                         return tryGetMaterializedArrayItem;
                     }
@@ -195,14 +204,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                     case TypeCode.Decimal:
                         {
-                            if (!cosmosNumber.Value.IsInteger)
+                            decimal value;
+                            if (cosmosNumber.Value.IsDouble)
                             {
-                                return TryCatch<object>.FromException(
-                                    new CosmosElementWrongTypeException("Expected integral type for decimal."));
+                                value = (decimal)Number64.ToDouble(cosmosNumber.Value);
+                            }
+                            else
+                            {
+                                value = Number64.ToLong(cosmosNumber.Value);
                             }
 
-                            long value = Number64.ToLong(cosmosNumber.Value);
-                            return TryCatch<object>.FromResult((object)(decimal)value);
+                            return TryCatch<object>.FromResult((object)value);
                         }
 
                     case TypeCode.Double:
@@ -364,6 +376,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                             message: $"Could not find publicly accessible constructors for type: {type.FullName}."));
                 }
 
+                if (constructors.Length > 1)
+                {
+                    return TryCatch<object>.FromException(
+                        new CosmosElementCouldNotDetermineWhichConstructorToUseException(
+                            message: $"Could not determine which constructor to use for type: {type.FullName}."));
+                }
+
                 ConstructorInfo constructor = constructors.First();
                 ParameterInfo[] parameters = constructor.GetParameters();
                 List<object> parameterValues = new List<object>();
@@ -377,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     }
 
                     TryCatch<object> tryGetMaterializedParameterValue = rawParameterValue.Accept(this, parameter.ParameterType);
-                    if (tryGetMaterializedParameterValue.Faulted)
+                    if (tryGetMaterializedParameterValue.Failed)
                     {
                         return TryCatch<object>.FromException(tryGetMaterializedParameterValue.Exception);
                     }

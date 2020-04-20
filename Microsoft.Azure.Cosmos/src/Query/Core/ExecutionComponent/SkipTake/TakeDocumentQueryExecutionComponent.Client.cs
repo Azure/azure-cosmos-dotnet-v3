@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 if (limitContinuationToken.SourceToken != null)
                 {
                     TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(limitContinuationToken.SourceToken);
-                    if (tryParse.Faulted)
+                    if (tryParse.Failed)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException(
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 if (topContinuationToken.SourceToken != null)
                 {
                     TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(topContinuationToken.SourceToken);
-                    if (tryParse.Faulted)
+                    if (tryParse.Failed)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException(
