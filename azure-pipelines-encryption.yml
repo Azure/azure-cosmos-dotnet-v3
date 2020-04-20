@@ -27,7 +27,7 @@ stages:
           versioningScheme: OFF
 
       - task: DotNetCoreCLI@2
-        displayName: 'Create SDK NuGet Package'
+        displayName: 'Create Encryption SDK NuGet Package'
         inputs:
           command: custom
           projects: 'Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj'
@@ -35,7 +35,7 @@ stages:
           arguments: '-v detailed -c $(BuildConfiguration) --no-build --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Microsoft.Azure.Cosmos.Encryption"'
 
       - task: DotNetCoreCLI@2
-        displayName: 'Create SDK NuGet Symbols Package'
+        displayName: 'Create Encryption SDK NuGet Symbols Package'
         inputs: 
           command: custom
           projects: 'Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj'
