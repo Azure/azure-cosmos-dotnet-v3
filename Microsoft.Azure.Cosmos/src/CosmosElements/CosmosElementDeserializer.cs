@@ -37,7 +37,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     return TryCatch<T>.FromException(tryAcceptVisitor.Exception);
                 }
 
-                return TryCatch<T>.FromResult((T)tryAcceptVisitor.Result);
+                if (!(tryAcceptVisitor.Result is T typedResult))
+                {
+                    throw new InvalidOperationException("Could not cast to T.");
+                }
+
+                return TryCatch<T>.FromResult(typedResult);
             }
         }
 
