@@ -7,11 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## <a name="3.9.0-preview"/> [3.9.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.0-preview) - 2020-04-17
+
+### Added
+
+- [#1356](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1356) Autoscale Preview: Add to public preview release
+
+## <a name="3.8.0-preview"/> [3.8.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0-preview) - 2020-04-16
+
 ### Added
 
 - [#1331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1331) Enable client encryption / decryption for transactional batch requests
 
 ### Fixed
+
+- [#1369](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1369) Fix decryption for 'order by' query results
 
 ## <a name="3.8.0"/> [3.8.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0) - 2020-04-07
 

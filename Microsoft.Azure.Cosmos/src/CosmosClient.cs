@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-#if INTERNAL
+#if PREVIEW
         public
 #else
         internal
@@ -833,7 +833,7 @@ namespace Microsoft.Azure.Cosmos
             ThroughputProperties throughputProperties = null;
             if (throughput.HasValue)
             {
-                throughputProperties = ThroughputProperties.CreateFixedThroughput(throughput.Value);
+                throughputProperties = ThroughputProperties.CreateManualThroughput(throughput.Value);
             }
 
             return this.CreateDatabaseStreamInternalAsync(

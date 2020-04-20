@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken));
 
-#if INTERNAL
+#if PREVIEW
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
@@ -170,17 +170,27 @@ namespace Microsoft.Azure.Cosmos
         /// The provisioned throughput for this database.
         /// </value>
         /// <example>
-        /// The following example shows how to get the throughput.
+        /// The following example shows how to replace the manual throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputProperties throughput = await this.cosmosDatabase.ReplaceThroughputPropertiesAsync(10000);
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
+        ///     ThroughputProperties.CreateManualThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The following example shows how to replace the autoscale provisioned throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
         /// ]]>
         /// </code>
         /// </example>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// </remarks>
-        public abstract Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -211,6 +221,27 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ContainerProperties containerProperties = new ContainerProperties()
+        /// {
+        ///     Id = Guid.NewGuid().ToString(),
+        ///     PartitionKeyPath = "/pk",
+        ///     IndexingPolicy = new IndexingPolicy()
+        ///    {
+        ///         Automatic = false,
+        ///         IndexingMode = IndexingMode.Lazy,
+        ///    };
+        /// };
+        ///
+        /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(
+        ///     containerProperties,
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public abstract Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
@@ -236,7 +267,9 @@ namespace Microsoft.Azure.Cosmos
         ///     PartitionKeyPath = "/pk",
         /// };
         ///
-        /// using(ResponseMessage response = await this.cosmosDatabase.CreateContainerStreamAsync(containerProperties))
+        /// using(ResponseMessage response = await this.cosmosDatabase.CreateContainerStreamAsync(
+        ///     containerProperties,
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000)))
         /// {
         /// }
         /// ]]>

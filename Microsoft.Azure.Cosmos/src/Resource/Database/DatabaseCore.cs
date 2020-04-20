@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-#if INTERNAL
+#if PREVIEW
         public override
 #else
         internal
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-#if INTERNAL
+#if PREVIEW
         public override
 #else
         internal
@@ -176,12 +176,12 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response);
         }
 
-#if INTERNAL
+#if PREVIEW
         public override
 #else
         internal
 #endif
-        async Task<ThroughputResponse> ReplaceThroughputPropertiesAsync(
+        async Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)

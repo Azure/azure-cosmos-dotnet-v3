@@ -22,21 +22,25 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
         private readonly RequestOptions requestOptions;
+        private readonly CosmosClientContext clientContext;
 
         private QueryIterator(
             CosmosQueryContextCore cosmosQueryContext,
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
-            RequestOptions requestOptions)
+            RequestOptions requestOptions,
+            CosmosClientContext clientContext)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
             this.requestOptions = requestOptions;
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
         }
 
         public static QueryIterator Create(
             CosmosQueryClient client,
+            CosmosClientContext clientContext,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
@@ -79,7 +83,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                     new MalformedContinuationTokenException(
                                         $"Malformed Continuation Token: {continuationToken}")),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
-                                queryRequestOptions);
+                                queryRequestOptions,
+                                clientContext);
                         }
                     }
                     else
@@ -114,7 +119,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 cosmosQueryContext,
                 CosmosQueryExecutionContextFactory.Create(cosmosQueryContext, inputParameters),
                 queryRequestOptions.CosmosSerializationFormatOptions,
-                queryRequestOptions);
+                queryRequestOptions,
+                clientContext);
         }
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
@@ -132,8 +138,14 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (responseCore.IsSuccess)
                 {
+                    List<CosmosElement> decryptedCosmosElements = null;
+                    if (this.clientContext.ClientOptions.Encryptor != null)
+                    {
+                        decryptedCosmosElements = await this.GetDecryptedElementResponseAsync(responseCore.CosmosElements, diagnostics, cancellationToken);
+                    }
+
                     return QueryResponse.CreateSuccess(
-                        result: responseCore.CosmosElements,
+                        result: decryptedCosmosElements ?? responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         diagnostics: diagnostics,
@@ -163,8 +175,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     responseHeaders: new CosmosQueryResponseMessageHeaders(
                         responseCore.ContinuationToken,
                         responseCore.DisallowContinuationTokenMessage,
-                        cosmosQueryContext.ResourceTypeEnum,
-                        cosmosQueryContext.ContainerResourceId)
+                        this.cosmosQueryContext.ResourceTypeEnum,
+                        this.cosmosQueryContext.ContainerResourceId)
                     {
                         RequestCharge = responseCore.RequestCharge,
                         ActivityId = responseCore.ActivityId,
@@ -176,6 +188,35 @@ namespace Microsoft.Azure.Cosmos.Query
         public override CosmosElement GetCosmsoElementContinuationToken()
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
+        }
+
+        private async Task<List<CosmosElement>> GetDecryptedElementResponseAsync(
+            IReadOnlyList<CosmosElement> encryptedCosmosElements,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            List<CosmosElement> decryptedCosmosElements = new List<CosmosElement>();
+            using (diagnosticsContext.CreateScope("Decrypt"))
+            {
+                foreach (CosmosElement document in encryptedCosmosElements)
+                {
+                    if (!(document is CosmosObject documentObject))
+                    {
+                        decryptedCosmosElements.Add(document);
+                        continue;
+                    }
+
+                    CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
+                        documentObject,
+                        this.clientContext.ClientOptions.Encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    decryptedCosmosElements.Add(decryptedDocument);
+                }
+            }
+
+            return decryptedCosmosElements;
         }
     }
 }
