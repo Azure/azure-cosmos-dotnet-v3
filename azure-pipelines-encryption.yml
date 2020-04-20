@@ -1,0 +1,68 @@
+trigger: none
+
+pr: none
+
+variables:
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal ' 
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
+  BuildConfiguration: Release
+
+stages:
+- stage:
+  displayName: Gate 
+  jobs:
+    - template:  templates/static-tools.yml
+      parameters:
+        BuildConfiguration: $(BuildConfiguration)
+        VmImage: $(VmImage)
+
+- stage:
+  displayName: Publish 
+  jobs:
+    - job:
+      pool:
+        vmImage: $(VmImage)
+    
+      steps:
+      - task: DotNetCoreCLI@2
+        displayName: Build Microsoft.Azure.Encryption
+        inputs: 
+          command: build  
+          configuration: $(BuildConfiguration)
+          nugetConfigPath: NuGet.config
+          projects: Microsoft.Azure.Encryption/src/Microsoft.Azure.Encryption.csproj 
+          arguments: --configuration $(BuildConfiguration) -p:Optimize=true 
+          versioningScheme: OFF
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Create SDK NuGet Package'
+        inputs:
+          command: custom
+          projects: 'Microsoft.Azure.Encryption\src\Microsoft.Azure.Encryption.csproj'
+          custom: pack
+          arguments: '-v detailed -c $(BuildConfiguration) --no-build --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Microsoft.Azure.Encryption"'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Create SDK NuGet Symbols Package'
+        inputs: 
+          command: custom
+          projects: 'Microsoft.Azure.Encryption\src\Microsoft.Azure.Encryption.csproj'
+          custom: pack
+          arguments: '-v detailed -c $(BuildConfiguration) --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Microsoft.Azure.Encryption"'
+
+      - task: AzureFileCopy@2
+        displayName: ' Copy Artifacts to Azure SDK Release blob storage'
+        condition: and(succeeded(),ne(variables['BlobVersion'], ''))
+        inputs:
+          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Encryption'
+          azureSubscription: azuresdkpartnerdrops
+          Destination: AzureBlob
+          storage: azuresdkpartnerdrops
+          ContainerName: 'drops'
+          BlobPrefix: 'cosmosdb/csharp/encryption/$(BlobVersion)'
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Artifacts: Microsoft.Azure.Encryption'
+        inputs:
+          artifactName: Microsoft.Azure.Encryption
+#
