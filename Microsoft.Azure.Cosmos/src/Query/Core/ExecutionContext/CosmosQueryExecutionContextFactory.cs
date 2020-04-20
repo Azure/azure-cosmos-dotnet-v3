@@ -190,7 +190,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    cosmosQueryContext.ResourceLink.OriginalString,
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
-                   inputParameters.Properties);
+                   inputParameters.Properties,
+                   inputParameters.InitialFeedRange);
 
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
                 || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
@@ -246,6 +247,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters = new InputParameters(
                         rewrittenQuerySpec,
                         inputParameters.InitialUserContinuationToken,
+                        inputParameters.InitialFeedRange,
                         inputParameters.MaxConcurrency,
                         inputParameters.MaxItemCount,
                         inputParameters.MaxBufferedItemCount,
@@ -360,14 +362,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// 1. Check partition key range id
         /// 2. Check Partition key
         /// 3. Check the effective partition key
-        /// 4. Get the range from the PartitionedQueryExecutionInfo
+        /// 4. Get the range from the FeedToken
+        /// 5. Get the range from the PartitionedQueryExecutionInfo
         /// </summary>
         internal static async Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             CosmosQueryClient queryClient,
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
-            IReadOnlyDictionary<string, object> properties)
+            IReadOnlyDictionary<string, object> properties,
+            FeedRangeInternal feedRangeInternal)
         {
             List<Documents.PartitionKeyRange> targetRanges;
             if (containerQueryProperties.EffectivePartitionKeyString != null)
@@ -383,6 +387,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     effectivePartitionKeyString);
+            }
+            else if (feedRangeInternal != null)
+            {
+                targetRanges = await queryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                    resourceLink,
+                    containerQueryProperties.ResourceId,
+                    containerQueryProperties.PartitionKeyDefinition,
+                    feedRangeInternal);
             }
             else
             {
@@ -428,6 +440,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public InputParameters(
                 SqlQuerySpec sqlQuerySpec,
                 CosmosElement initialUserContinuationToken,
+                FeedRangeInternal initialFeedRange,
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
@@ -440,6 +453,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
+                this.InitialFeedRange = initialFeedRange;
 
                 int resolvedMaxConcurrency = maxConcurrency.GetValueOrDefault(InputParameters.DefaultMaxConcurrency);
                 if (resolvedMaxConcurrency < 0)
@@ -472,6 +486,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             public SqlQuerySpec SqlQuerySpec { get; }
             public CosmosElement InitialUserContinuationToken { get; }
+            public FeedRangeInternal InitialFeedRange { get; }
             public int MaxConcurrency { get; }
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }

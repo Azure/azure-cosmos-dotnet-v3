@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics);
 
+        internal abstract void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics);
+
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 
         internal abstract void SetSdkUserAgent(string userAgent);

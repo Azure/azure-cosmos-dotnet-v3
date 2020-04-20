@@ -109,6 +109,11 @@ namespace Microsoft.Azure.Cosmos
             this.ContextList.Add(clientSideRequestStatistics);
         }
 
+        internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
+        {
+            this.ContextList.Add(feedRangeStatistics);
+        }
+
         internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
         {
             if (queryPageDiagnostics == null)

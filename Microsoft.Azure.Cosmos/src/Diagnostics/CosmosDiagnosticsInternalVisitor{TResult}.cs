@@ -13,5 +13,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public abstract TResult Visit(AddressResolutionStatistics addressResolutionStatistics);
         public abstract TResult Visit(StoreResponseStatistics storeResponseStatistics);
         public abstract TResult Visit(CosmosClientSideRequestStatistics clientSideRequestStatistics);
+        public abstract TResult Visit(FeedRangeStatistics feedRangeStatistics);
     }
 }
