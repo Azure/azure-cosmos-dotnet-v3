@@ -271,6 +271,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
                 MaxItemCount = 10,
+                From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
             };
             requestOptions.PopulateRequestOptions(request);
 
@@ -301,7 +302,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                PartitionKeyRangeId = "randomPk",
+                PartitionKeyRangeId = "randomPK",
             };
             requestOptions.PopulateRequestOptions(request);
 

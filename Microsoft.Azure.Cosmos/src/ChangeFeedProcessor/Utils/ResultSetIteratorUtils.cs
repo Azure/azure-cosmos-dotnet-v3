@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             }
             else
             {
-                startFrom = null;
+                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
             }
 
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()

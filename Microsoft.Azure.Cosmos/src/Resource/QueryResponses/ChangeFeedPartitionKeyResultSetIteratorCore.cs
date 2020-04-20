@@ -26,21 +26,14 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore container,
             ChangeFeedRequestOptions options)
         {
-            if (clientContext == null)
-            {
-                throw new ArgumentNullException(nameof(clientContext));
-            }
-
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            this.clientContext = clientContext;
-            this.container = container;
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedOptions = options;
             this.feedToken = new FeedTokenPartitionKeyRange(options?.PartitionKeyRangeId);
-            this.feedToken.UpdateContinuation((options?.From as ChangeFeedRequestOptions.StartFromContinuation).Continuation);
+            if (options?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+            {
+                this.feedToken.UpdateContinuation(startFromContinuation.Continuation);
+            }
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
