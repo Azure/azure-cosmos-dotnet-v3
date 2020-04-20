@@ -18,16 +18,9 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosClient"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
-    internal class DatabaseCore : Database
+    internal class DatabaseCore : DatabaseInternal
     {
-        /// <summary>
-        /// Only used for unit testing
-        /// </summary>
-        internal DatabaseCore()
-        {
-        }
-
-        internal DatabaseCore(
+        protected DatabaseCore(
             CosmosClientContext clientContext,
             string databaseId)
         {
@@ -41,9 +34,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id { get; }
 
-        internal virtual Uri LinkUri { get; }
+        internal override Uri LinkUri { get; }
 
-        internal CosmosClientContext ClientContext { get; }
+        internal override CosmosClientContext ClientContext { get; }
 
         public override Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
@@ -86,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+        internal override async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -109,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+        internal override async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
             int throughput,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -126,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         public override
 #else
-        internal
+        internal override
 #endif
         Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
@@ -152,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         public override
 #else
-        internal
+        internal override
 #endif
         Task<ContainerResponse> CreateContainerAsync(
             ContainerProperties containerProperties,
@@ -179,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         public override
 #else
-        internal
+        internal override
 #endif
         async Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
@@ -195,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
+        internal override async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -532,7 +525,8 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.Collection));
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition,
+        public override FeedIterator<T> GetUserQueryIterator<T>(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
@@ -552,7 +546,8 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.User));
         }
 
-        public FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition,
+        public override FeedIterator GetUserQueryStreamIterator(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
@@ -565,7 +560,8 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null,
+        public override FeedIterator<T> GetUserQueryIterator<T>(
+            string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
@@ -581,7 +577,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public FeedIterator GetUserQueryStreamIterator(string queryText = null,
+        public override FeedIterator GetUserQueryStreamIterator(
+            string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
@@ -614,13 +611,13 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
-        internal void ValidateContainerProperties(ContainerProperties containerProperties)
+        private void ValidateContainerProperties(ContainerProperties containerProperties)
         {
             containerProperties.ValidateRequiredProperties();
             this.ClientContext.ValidateResource(containerProperties.Id);
         }
 
-        internal Task<ResponseMessage> ProcessCollectionCreateAsync(
+        private Task<ResponseMessage> ProcessCollectionCreateAsync(
             Stream streamPayload,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
@@ -639,7 +636,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal Task<ResponseMessage> ProcessCollectionCreateAsync(
+        private Task<ResponseMessage> ProcessCollectionCreateAsync(
             Stream streamPayload,
             int? throughput,
             RequestOptions requestOptions,
@@ -658,7 +655,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal Task<ResponseMessage> ProcessUserCreateAsync(
+        private Task<ResponseMessage> ProcessUserCreateAsync(
             Stream streamPayload,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
@@ -676,7 +673,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal Task<ResponseMessage> ProcessUserUpsertAsync(
+        private Task<ResponseMessage> ProcessUserUpsertAsync(
             Stream streamPayload,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -694,7 +691,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal override async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
             return databaseResponse?.Resource?.ResourceId;

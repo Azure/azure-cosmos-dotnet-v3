@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos
                         TransactionalBatchOperationResult result = response.results[index];
                         result.ResourceStream = await containerCore.ClientContext.DecryptItemAsync(
                             result.ResourceStream,
-                            (DatabaseCore)containerCore.Database,
+                            (DatabaseInternal)containerCore.Database,
                             responseMessage.DiagnosticsContext,
                             cancellationToken);
                     }

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
 
         protected ContainerCore(
             CosmosClientContext clientContext,
-            DatabaseCore database,
+            DatabaseInternal database,
             string containerId,
             CosmosQueryClient cosmosQueryClient = null)
         {

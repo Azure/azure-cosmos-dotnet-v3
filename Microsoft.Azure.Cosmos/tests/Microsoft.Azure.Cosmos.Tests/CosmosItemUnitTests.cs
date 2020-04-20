@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<BatchAsyncContainerExecutor> mockedExecutor = this.GetMockedBatchExcecutor();
             mockContext.Setup(x => x.GetExecutorForContainer(It.IsAny<ContainerInternal>())).Returns(mockedExecutor.Object);
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
+            DatabaseInternal db = new DatabaseInlineCore(mockContext.Object, "test");
             ContainerInternal container = new ContainerInlineCore(mockContext.Object, db, "test");
 
             return (container, mockedExecutor);

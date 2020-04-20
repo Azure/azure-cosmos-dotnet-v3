@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static CosmosClient client;
 
-        private static DatabaseCore databaseCore;
+        private static DatabaseInternal databaseCore;
         private static DataEncryptionKeyProperties dekProperties;
         private static ContainerInternal itemContainerCore;
         private static Container itemContainer;
@@ -480,7 +480,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithBulkExecution(true)
                 .Build();
 
-            DatabaseCore databaseWithBulk = (DatabaseInlineCore)clientWithBulk.GetDatabase(EncryptionTests.databaseCore.Id);
+            DatabaseInternal databaseWithBulk = (DatabaseInlineCore)clientWithBulk.GetDatabase(EncryptionTests.databaseCore.Id);
             ContainerInternal containerWithBulk = (ContainerInlineCore)databaseWithBulk.GetContainer(EncryptionTests.itemContainer.Id);
 
             List<Task> tasks = new List<Task>();

@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos
                     stream = await this.ContainerInternal.ClientContext.EncryptItemAsync(
                         stream,
                         this.RequestOptions.EncryptionOptions,
-                        (DatabaseCore)this.ContainerInternal.Database,
+                        (DatabaseInternal)this.ContainerInternal.Database,
                         this.DiagnosticsContext,
                         cancellationToken);
                 }

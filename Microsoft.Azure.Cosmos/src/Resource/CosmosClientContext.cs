@@ -113,13 +113,13 @@ namespace Microsoft.Azure.Cosmos
         internal abstract Task<Stream> EncryptItemAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
-            DatabaseCore database,
+            DatabaseInternal database,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         internal abstract Task<Stream> DecryptItemAsync(
             Stream input,
-            DatabaseCore database,
+            DatabaseInternal database,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 

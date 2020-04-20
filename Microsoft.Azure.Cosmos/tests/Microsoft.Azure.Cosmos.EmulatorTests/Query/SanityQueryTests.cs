@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
                         containerCore.ClientContext,
-                        (DatabaseCore)containerCore.Database,
+                        (DatabaseInternal)containerCore.Database,
                         containerCore.Id,
                         cosmosQueryClientCore);
 

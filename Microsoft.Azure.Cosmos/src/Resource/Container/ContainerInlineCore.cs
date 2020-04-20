@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     {
         internal ContainerInlineCore(
             CosmosClientContext clientContext,
-            DatabaseCore database,
+            DatabaseInternal database,
             string containerId,
             CosmosQueryClient cosmosQueryClient = null)
             : base(clientContext,

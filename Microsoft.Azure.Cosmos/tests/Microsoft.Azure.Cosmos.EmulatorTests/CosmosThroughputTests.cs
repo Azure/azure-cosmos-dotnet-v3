@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
 
-            DatabaseCore database = (DatabaseInlineCore)this.cosmosClient.GetDatabase(databaseId);
+            DatabaseInternal database = (DatabaseInlineCore)this.cosmosClient.GetDatabase(databaseId);
             ThroughputResponse autoscale = await database.ReadThroughputAsync(requestOptions: null);
             Assert.IsNotNull(autoscale);
             Assert.AreEqual(5000, autoscale.Resource.MaxAutoscaleThroughput);
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropAutoscaleDatabase()
         {
-            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 nameof(CreateDropAutoscaleDatabase) + Guid.NewGuid().ToString(),
                 ThroughputProperties.CreateAutoscaleThroughput(5000));
 
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropFixedDatabase()
         {
-            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 nameof(CreateDropAutoscaleDatabase) + Guid.NewGuid().ToString(),
                 ThroughputProperties.CreateManualThroughput(5000));
 
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task DatabaseAutoscaleIfExistsTest()
         {
-            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 nameof(CreateDropAutoscaleDatabase) + Guid.NewGuid().ToString(),
                 ThroughputProperties.CreateAutoscaleThroughput(5000));
 
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task ContainerAutoscaleIfExistsTest()
         {
-            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 nameof(CreateDropAutoscaleDatabase) + Guid.NewGuid().ToString());
 
             Container container = await database.CreateContainerAsync(
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropAutoscaleAutoUpgradeDatabase()
         {
-            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 nameof(CreateDropAutoscaleAutoUpgradeDatabase) + Guid.NewGuid(),
                 ThroughputProperties.CreateAutoscaleThroughput(
                     maxAutoscaleThroughput: 5000,
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task CreateDropAutoscaleContainerStreamApi()
         {
-            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString());
 
             ThroughputResponse databaseThroughput = await database.ReadThroughputIfExistsAsync(requestOptions: null);
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task CreateDropAutoscaleContainer()
         {
-            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString());
 
             ContainerInternal container = (ContainerInlineCore)await database.CreateContainerAsync(
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task ReadFixedWithAutoscaleTests()
         {
-            DatabaseCore database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString());
 
             ContainerInternal autoscaleContainer = (ContainerInlineCore)await database.CreateContainerAsync(

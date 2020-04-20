@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
                 .AddCustomHandlers(this.testHandler)
                 .WithEncryptor(this.mockEncryptor.Object));
 
-            DatabaseCore database = new DatabaseCore(client.ClientContext, EncryptionUnitTests.DatabaseId);
+            DatabaseInternal database = new DatabaseInlineCore(client.ClientContext, EncryptionUnitTests.DatabaseId);
             return new ContainerInlineCore(client.ClientContext, database, EncryptionUnitTests.ContainerId);
         }
 

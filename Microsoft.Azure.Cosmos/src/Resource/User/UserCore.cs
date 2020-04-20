@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal UserCore(
             CosmosClientContext clientContext,
-            DatabaseCore database,
+            DatabaseInternal database,
             string userId)
         {
             this.Id = userId;

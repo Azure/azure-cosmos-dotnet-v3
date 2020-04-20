@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos
         internal override async Task<Stream> EncryptItemAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
-            DatabaseCore database,
+            DatabaseInternal database,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override async Task<Stream> DecryptItemAsync(
             Stream input,
-            DatabaseCore database,
+            DatabaseInternal database,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {

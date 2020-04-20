@@ -158,7 +158,6 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken));
 
-#if PREVIEW
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
@@ -190,10 +189,18 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// </remarks>
-        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
+#if PREVIEW
+        public
+#else
+        internal 
+#endif
+        virtual Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -243,11 +250,19 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public abstract Task<ContainerResponse> CreateContainerAsync(
+#if PREVIEW
+        public
+#else
+        internal 
+#endif
+        virtual Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
                     ThroughputProperties throughputProperties,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -277,12 +292,19 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="DefineContainer(string, string)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public abstract Task<ResponseMessage> CreateContainerStreamAsync(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        virtual Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-#endif
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.

@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Container tokenGatewayQueryPlan = new ContainerInlineCore(
                     containerCore.ClientContext,
-                    (DatabaseCore)containerCore.Database,
+                    (DatabaseInternal)containerCore.Database,
                     containerCore.Id,
                     mock);
 

@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
 
-            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+            DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
 
-            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+            DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(secondResponse))
                 .Returns(Task.FromResult(thirdResponse));
 
-            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+            DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
 
-            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+            DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.Client).Returns(client);
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
+            DatabaseInternal db = new DatabaseInlineCore(mockContext.Object, "test");
             ContainerInternal container = new ContainerInlineCore(mockContext.Object, db, "test");
             IEnumerable<string> tokens = await container.GetChangeFeedTokensAsync();
             Assert.AreEqual(3, tokens.Count());

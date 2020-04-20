@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext context = this.MockClientContext();
 
-            DatabaseCore db = new DatabaseCore(context, "test");
+            DatabaseInternal db = new DatabaseInlineCore(context, "test");
 
             List<Task<ContainerInternal>> tasks = new List<Task<ContainerInternal>>();
             for (int i = 0; i < 20; i++)
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext context = this.MockClientContext();
 
-            DatabaseCore db = new DatabaseCore(context, "test");
+            DatabaseInternal db = new DatabaseInlineCore(context, "test");
 
             List<Task<ContainerInternal>> tasks = new List<Task<ContainerInternal>>();
             for (int i = 0; i < 20; i++)
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext context = this.MockClientContext(allowBulkExecution: false);
 
-            DatabaseCore db = new DatabaseCore(context, "test");
+            DatabaseInternal db = new DatabaseInlineCore(context, "test");
             ContainerInternal container = new ContainerInlineCore(context, db, "test");
             Assert.IsNull(container.BatchExecutor);
         }

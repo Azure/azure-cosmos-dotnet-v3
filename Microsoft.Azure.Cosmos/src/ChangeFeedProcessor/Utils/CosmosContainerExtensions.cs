@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             }
 
             string containerRid = await ((ContainerInternal)monitoredContainer).GetRIDAsync(cancellationToken);
-            string databaseRid = await ((DatabaseCore)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
+            string databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
         }
 

@@ -519,7 +519,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 client = MockCosmosUtil.CreateMockCosmosClient();
             }
 
-            DatabaseCore database = new DatabaseCore(client.ClientContext, BatchUnitTests.DatabaseId);
+            DatabaseInternal database = new DatabaseInlineCore(client.ClientContext, BatchUnitTests.DatabaseId);
             ContainerInternal container = new ContainerInlineCore(client.ClientContext, database, BatchUnitTests.ContainerId);
             return container;
         }
