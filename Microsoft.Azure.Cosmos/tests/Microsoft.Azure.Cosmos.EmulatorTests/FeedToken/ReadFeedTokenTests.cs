@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Do a read without FeedToken and get the older CT from Header
             string olderContinuationToken = null;
-            FeedIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedIteratorCore;
+            FeedIteratorInternal feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedIteratorInternal;
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // start a new iterator using the older CT and expect it to continue
-            feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: olderContinuationToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedIteratorCore;
+            feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: olderContinuationToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedIteratorInternal;
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
