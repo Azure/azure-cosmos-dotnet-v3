@@ -41,8 +41,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override FeedToken FeedToken => this.feedIteratorInternal.FeedToken;
+        public
+#else
+        internal
 #endif
+        override FeedToken FeedToken => this.feedIteratorInternal.FeedToken;
 
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
