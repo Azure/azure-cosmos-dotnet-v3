@@ -154,6 +154,7 @@ namespace Microsoft.Azure.Cosmos
         internal sealed class PopulateStartFromRequestOptionVisitor : StartFromVisitor
         {
             private const string IfNoneMatchAllHeaderValue = "*";
+            private static readonly DateTime StartFromBeginningTime = DateTime.MinValue.ToUniversalTime();
 
             private readonly RequestMessage requestMessage;
 
@@ -169,9 +170,17 @@ namespace Microsoft.Azure.Cosmos
 
             public override void Visit(StartFromTime startFromTime)
             {
-                this.requestMessage.Headers.Add(
-                    HttpConstants.HttpHeaders.IfModifiedSince,
-                    startFromTime.Time.ToString("r", CultureInfo.InvariantCulture));
+                // Our current public contract for ChangeFeedProcessor uses DateTime.MinValue.ToUniversalTime as beginning.
+                // We need to add a special case here, otherwise it would send it as normal StartTime.
+                // The problem is Multi master accounts do not support StartTime header on ReadFeed, and thus,
+                // it would break multi master Change Feed Processor users using Start From Beginning semantics.
+                // It's also an optimization, since the backend won't have to binary search for the value.
+                if (startFromTime.Time != PopulateStartFromRequestOptionVisitor.StartFromBeginningTime)
+                {
+                    this.requestMessage.Headers.Add(
+                        HttpConstants.HttpHeaders.IfModifiedSince,
+                        startFromTime.Time.ToString("r", CultureInfo.InvariantCulture));
+                }
             }
 
             public override void Visit(StartFromContinuation startFromContinuation)
