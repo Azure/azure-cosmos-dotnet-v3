@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosLinqQueryProvider queryProvider;
         private readonly Guid correlatedActivityId;
 
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly CosmosQueryClientCore queryClient;
         private readonly CosmosResponseFactory responseFactory;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosSerializationOptions serializationOptions;
 
         public CosmosLinqQuery(
-           ContainerCore container,
+           ContainerInternal container,
            CosmosResponseFactory responseFactory,
            CosmosQueryClientCore queryClient,
            string continuationToken,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         public CosmosLinqQuery(
-          ContainerCore container,
+          ContainerInternal container,
           CosmosResponseFactory responseFactory,
           CosmosQueryClientCore queryClient,
           string continuationToken,

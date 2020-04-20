@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly FeedTokenInternal feedToken;
         private string continuationToken;
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
-            ContainerCore container,
+            ContainerInternal container,
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         public override
 #else
-        internal
+        internal override
 #endif
         FeedToken FeedToken => this.feedToken;
 

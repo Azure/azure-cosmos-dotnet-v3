@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     for (int index = 0; index < serverRequest.Operations.Count; index++)
                     {
-                        ContainerCore containerCore = serverRequest.Operations[index].ContainerCore;
+                        ContainerInternal containerCore = serverRequest.Operations[index].ContainerInternal;
                         TransactionalBatchOperationResult result = response.results[index];
                         result.ResourceStream = await containerCore.ClientContext.DecryptItemAsync(
                             result.ResourceStream,

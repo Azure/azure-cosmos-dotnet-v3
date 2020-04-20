@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
         public override bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
 
         public override async Task<bool> ShouldRetryAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken = default(CancellationToken))
         {

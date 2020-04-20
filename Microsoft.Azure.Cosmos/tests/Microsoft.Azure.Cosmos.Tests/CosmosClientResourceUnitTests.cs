@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             DatabaseCore db = new DatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
 
-            ContainerCore container = new ContainerCore(context, db, crId);
+            ContainerInternal container = new ContainerInlineCore(context, db, crId);
             Assert.AreEqual(container.LinkUri.OriginalString, "dbs/" + databaseId + "/colls/" + crId);
         }
 
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             CosmosClientContext context = this.CreateMockClientContext();
             DatabaseCore db = new DatabaseCore(context, databaseId);
-            ContainerCore container = new ContainerCore(context, db, crId);
+            ContainerInternal container = new ContainerInlineCore(context, db, crId);
             Assert.IsNull(container.BatchExecutor);
         }
 
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             CosmosClientContext context = this.CreateMockClientContext(allowBulkExecution: true);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
-            ContainerCore container = new ContainerCore(context, db, crId);
+            ContainerInternal container = new ContainerInlineCore(context, db, crId);
             Assert.IsNotNull(container.BatchExecutor);
         }
 

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ChangeFeedIteratorCore_Null_Token()
         {
-            new ChangeFeedIteratorCore(Mock.Of<ContainerCore>(), null, new ChangeFeedRequestOptions());
+            new ChangeFeedIteratorCore(Mock.Of<ContainerInternal>(), null, new ChangeFeedRequestOptions());
         }
 
         [DataTestMethod]
@@ -38,13 +38,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(0)]
         public void ChangeFeedIteratorCore_ValidateOptions(int maxItemCount)
         {
-            new ChangeFeedIteratorCore(Mock.Of<ContainerCore>(), new ChangeFeedRequestOptions() { MaxItemCount = maxItemCount });
+            new ChangeFeedIteratorCore(Mock.Of<ContainerInternal>(), new ChangeFeedRequestOptions() { MaxItemCount = maxItemCount });
         }
 
         [TestMethod]
         public void ChangeFeedIteratorCore_HasMoreResultsDefault()
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<ContainerCore>(), null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<ContainerInternal>(), null);
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
         }
 
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ChangeFeedIteratorCore_FeedToken()
         {
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<ContainerCore>(), feedToken, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<ContainerInternal>(), feedToken, null);
             Assert.AreEqual(feedToken, changeFeedIteratorCore.FeedToken);
         }
 
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
             Assert.IsTrue(creatorCalled, "Response creator not called");
         }
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Never);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
-                .SetupSequence(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .SetupSequence(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(true))
                 .Returns(Task.FromResult(false));
 
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(f => f.UpdateContinuation(It.IsAny<string>()), Times.Exactly(2));
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
 
             Mock.Get(cosmosClientContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnStatusCode(HttpStatusCode.OK);
             });
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext);
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(f => f.UpdateContinuation(It.IsAny<string>()), Times.Never);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         private static CosmosClientContext GetMockedClientContext(

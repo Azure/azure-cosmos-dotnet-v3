@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query
 #if PREVIEW
         public override
 #else
-        internal
+        internal override
 #endif
         FeedToken FeedToken => throw new NotImplementedException();
 

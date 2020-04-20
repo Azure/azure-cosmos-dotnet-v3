@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             FeedTokenEPKRange feedTokenEPKRange = new FeedTokenEPKRange(Guid.NewGuid().ToString(), new Documents.Routing.Range<string>(compositeContinuationTokens[0].Range.Min, compositeContinuationTokens[1].Range.Min, true, false), compositeContinuationTokens);
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             ResponseMessage okResponse = new ResponseMessage(HttpStatusCode.OK);
             okResponse.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
             Assert.IsFalse(await feedTokenEPKRange.ShouldRetryAsync(containerCore, okResponse));
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
 
-            Mock<ContainerCore> containerCore = new Mock<ContainerCore>();
+            Mock<ContainerInternal> containerCore = new Mock<ContainerInternal>();
             containerCore
                 .Setup(c => c.ClientContext).Returns(cosmosClientContext.Object);
 
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
 
-            Mock<ContainerCore> containerCore = new Mock<ContainerCore>();
+            Mock<ContainerInternal> containerCore = new Mock<ContainerInternal>();
             containerCore
                 .Setup(c => c.ClientContext).Returns(cosmosClientContext.Object);
 

@@ -20,12 +20,12 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private FeedTokenInternal feedTokenInternal;
         private bool hasMoreResults = true;
 
         internal ChangeFeedIteratorCore(
-            ContainerCore container,
+            ContainerInternal container,
             FeedTokenInternal feedTokenInternal,
             ChangeFeedRequestOptions changeFeedRequestOptions)
             : this(container, changeFeedRequestOptions)
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal ChangeFeedIteratorCore(
-            ContainerCore container,
+            ContainerInternal container,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         public override
 #else
-        internal
+        internal override
 #endif
         FeedToken FeedToken => this.feedTokenInternal; 
 

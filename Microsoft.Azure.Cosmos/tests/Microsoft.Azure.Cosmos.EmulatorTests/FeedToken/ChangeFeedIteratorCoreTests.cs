@@ -20,8 +20,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class ChangeFeedIteratorCoreTests : BaseCosmosClientHelper
     {
-        private ContainerCore Container = null;
-        private ContainerCore LargerContainer = null;
+        private ContainerInternal Container = null;
+        private ContainerInternal LargerContainer = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int batchSize = 25;
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.Container;
+            ContainerInternal itemsCore = this.Container;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
             while (feedIterator.HasMoreResults)
             {
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DateTime now = DateTime.UtcNow;
             await Task.Delay(1000);
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.Container;
+            ContainerInternal itemsCore = this.Container;
             FeedIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = now });
             while (feedIterator.HasMoreResults)
             {
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
             }
 
-            ContainerCore itemsCore = this.Container;
+            ContainerInternal itemsCore = this.Container;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
             while (feedIterator.HasMoreResults)
             {
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
             }
 
-            ContainerCore itemsCore = this.Container;
+            ContainerInternal itemsCore = this.Container;
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
             while (feedIterator.HasMoreResults)
             {
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int batchSize = 25;
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.Container;
+            ContainerInternal itemsCore = this.Container;
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
             while (feedIterator.HasMoreResults)
             {
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expectedDocuments = 5;
             bool createdDocuments = false;
 
-            ContainerCore itemsCore = this.Container;
+            ContainerInternal itemsCore = this.Container;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator() as ChangeFeedIteratorCore;
 
             while (feedIterator.HasMoreResults
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ChangeFeedIteratorCore_WithMaxItemCount()
         {
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
-            ContainerCore itemsCore = this.Container;
+            ContainerInternal itemsCore = this.Container;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { MaxItemCount = 1, StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
 
             while (feedIterator.HasMoreResults)
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 25;
             int iterations = 0;
             await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             FeedToken feedToken = null;
             int count = 0;
             while (true)
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 500;
             List<CompositeContinuationToken> previousToken = null;
             await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime(), MaxItemCount = 1 }) as ChangeFeedIteratorCore;
             while (true)
             {
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task GetFeedTokensAsync_MatchesPkRanges()
         {
             int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             IEnumerable<FeedToken> tokens = await itemsCore.GetFeedTokensAsync();
             Assert.AreEqual(pkRangesCount, tokens.Count());
         }
@@ -474,7 +474,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task GetFeedTokensAsync_AllowsParallelProcessing()
         {
             int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             IEnumerable<FeedToken> tokens = await itemsCore.GetFeedTokensAsync();
             Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
             Assert.AreEqual(pkRangesCount, tokens.Count());
@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 tokens.Add(new FeedTokenPartitionKeyRange(range.Id));
             }
 
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
                 int count = 0;
@@ -579,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 tokens.Add(new FeedTokenPartitionKeyRange(range.Id));
             }
 
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
                 int count = 0;
@@ -606,7 +606,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(totalDocuments, documentsRead);
         }
 
-        private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
+        private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
 
@@ -655,7 +655,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public bool HasCalledForceRefresh = false;
 
             internal CosmosChangeFeedResultSetIteratorCoreMock(
-                ContainerCore container,
+                ContainerInternal container,
                 string continuationToken,
                 int? maxItemCount,
                 ChangeFeedRequestOptions options) : base(

@@ -15,20 +15,20 @@ namespace Microsoft.Azure.Cosmos
     {
         private const string InMemoryDefaultHostName = "InMemory";
 
-        private readonly ContainerCore monitoredContainer;
+        private readonly ContainerInternal monitoredContainer;
         private readonly ChangeFeedProcessor changeFeedProcessor;
         private readonly ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private readonly Action<DocumentServiceLeaseStoreManager,
-                ContainerCore,
+                ContainerInternal,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                ContainerCore> applyBuilderConfiguration;
+                ContainerInternal> applyBuilderConfiguration;
 
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
 
-        private ContainerCore leaseContainer;
+        private ContainerInternal leaseContainer;
         private string InstanceName;
         private DocumentServiceLeaseStoreManager LeaseStoreManager;
         private string monitoredContainerRid;
@@ -36,15 +36,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal ChangeFeedProcessorBuilder(
             string processorName,
-            ContainerCore container,
+            ContainerInternal container,
             ChangeFeedProcessor changeFeedProcessor,
             Action<DocumentServiceLeaseStoreManager,
-                ContainerCore,
+                ContainerInternal,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                ContainerCore> applyBuilderConfiguration)
+                ContainerInternal> applyBuilderConfiguration)
         {
             this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions();
             this.changeFeedLeaseOptions.LeasePrefix = processorName;

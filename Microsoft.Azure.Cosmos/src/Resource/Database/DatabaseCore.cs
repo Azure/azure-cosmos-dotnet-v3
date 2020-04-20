@@ -366,10 +366,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new ContainerInlineCore(new ContainerCore(
+            return new ContainerInlineCore(
                     this.ClientContext,
                     this,
-                    id));
+                    id);
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(

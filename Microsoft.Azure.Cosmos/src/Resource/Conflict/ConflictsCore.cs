@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos
     // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
     internal class ConflictsCore : Conflicts
     {
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly CosmosClientContext clientContext;
 
         public ConflictsCore(
             CosmosClientContext clientContext,
-            ContainerCore container)
+            ContainerInternal container)
         {
             if (clientContext == null)
             {

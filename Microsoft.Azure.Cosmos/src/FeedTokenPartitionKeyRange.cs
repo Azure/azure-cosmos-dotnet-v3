@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<bool> ShouldRetryAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken = default(CancellationToken))
         {

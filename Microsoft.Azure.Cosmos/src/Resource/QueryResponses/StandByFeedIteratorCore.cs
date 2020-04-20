@@ -26,14 +26,14 @@ namespace Microsoft.Azure.Cosmos
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private string containerRid;
         private string continuationToken;
         private int? maxItemCount;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
-            ContainerCore container,
+            ContainerInternal container,
             string continuationToken,
             int? maxItemCount,
             ChangeFeedRequestOptions options)
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         public override
 #else
-        internal
+        internal override
 #endif
         FeedToken FeedToken => throw new NotImplementedException();
 

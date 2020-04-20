@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class FeedTokenTests : BaseCosmosClientHelper
     {
-        private ContainerCore Container = null;
+        private ContainerInternal Container = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -151,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
 
             FeedToken feedToken = new FeedTokenPartitionKeyRange(ranges.First().Id);
-            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
+            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken, default(CancellationToken))).ToList();
 
             Assert.AreEqual(1, resolvedRanges.Count);
 

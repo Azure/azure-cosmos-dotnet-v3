@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
                 .WithEncryptor(this.mockEncryptor.Object));
 
             DatabaseCore database = new DatabaseCore(client.ClientContext, EncryptionUnitTests.DatabaseId);
-            return new ContainerInlineCore(new ContainerCore(client.ClientContext, database, EncryptionUnitTests.ContainerId));
+            return new ContainerInlineCore(client.ClientContext, database, EncryptionUnitTests.ContainerId);
         }
 
         private static JObject ParseStream(Stream stream)

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
-        private readonly ContainerCore containerCore;
+        private readonly ContainerInternal containerCore;
         private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static FeedIteratorCore CreateForPartitionedResource(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             Uri resourceLink,
             ResourceType resourceType,
             QueryDefinition queryDefinition,
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private FeedIteratorCore(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             CosmosClientContext clientContext,
             Uri resourceLink,
             ResourceType resourceType,
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         public override
 #else
-        internal
+        internal override
 #endif
         FeedToken FeedToken => this.feedTokenInternal;
 

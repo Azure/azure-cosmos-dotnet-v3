@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -93,11 +94,17 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default);
 
-#if PREVIEW
         /// <summary>
         /// Current FeedToken for the iterator.
         /// </summary>
-        public abstract FeedToken FeedToken { get; }
+#if PREVIEW
+        public
+#else
+        internal
 #endif
+        virtual FeedToken FeedToken
+        {
+            get => throw new NotImplementedException();
+        }
     }
 }

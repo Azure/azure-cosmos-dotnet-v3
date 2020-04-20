@@ -256,13 +256,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, result.Count);
 
                 // Test query with no service interop via gateway query plan to replicate x32 app
-                ContainerCore containerCore = (ContainerInlineCore)tokenContainer;
+                ContainerInternal containerCore = (ContainerInlineCore)tokenContainer;
                 MockCosmosQueryClient mock = new MockCosmosQueryClient(
                     clientContext: containerCore.ClientContext,
                     cosmosContainerCore: containerCore,
                     forceQueryPlanGatewayElseServiceInterop: true);
 
-                Container tokenGatewayQueryPlan = new ContainerCore(
+                Container tokenGatewayQueryPlan = new ContainerInlineCore(
                     containerCore.ClientContext,
                     (DatabaseCore)containerCore.Database,
                     containerCore.Id,

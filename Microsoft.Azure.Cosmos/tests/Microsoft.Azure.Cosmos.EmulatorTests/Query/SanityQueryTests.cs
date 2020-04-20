@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -233,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                ContainerCore containerCore = (ContainerInlineCore)container;
+                ContainerInternal containerCore = (ContainerInlineCore)container;
 
                 foreach (bool isGatewayQueryPlan in new bool[] { true, false })
                 {
@@ -242,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         containerCore,
                         isGatewayQueryPlan);
 
-                    ContainerCore containerWithForcedPlan = new ContainerCore(
+                    ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
                         containerCore.ClientContext,
                         (DatabaseCore)containerCore.Database,
                         containerCore.Id,
@@ -340,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
-            ContainerCore conatinerCore = (ContainerInlineCore)container;
+            ContainerInternal conatinerCore = (ContainerInlineCore)container;
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
@@ -363,7 +364,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                     MaxConcurrency = maxDegreeOfParallelism,
                                     MaxItemCount = maxItemCount,
                                 },
-                                continuationToken: continuationToken);
+                                continuationToken: continuationToken,
+                                cancellationToken: default(CancellationToken));
 
                             Assert.AreEqual(canSupportExpected, canSupportActual);
                             if (canSupportExpected)
@@ -383,12 +385,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
                                 supportedQueryFeatures: QueryFeatures.None,
                                 queryDefinition: new QueryDefinition("This is not a valid query."),
+                                continuationToken: null,
                                 requestOptions: new QueryRequestOptions()
                                 {
                                     MaxConcurrency = 1,
                                     MaxItemCount = 1,
                                 },
-                                continuationToken: null);
+                                cancellationToken: default(CancellationToken));
 
                 Assert.IsNotNull(exception);
             }

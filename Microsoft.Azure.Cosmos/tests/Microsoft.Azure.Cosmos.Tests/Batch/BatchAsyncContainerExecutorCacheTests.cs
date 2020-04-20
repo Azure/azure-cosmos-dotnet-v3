@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
-            List<Task<ContainerCore>> tasks = new List<Task<ContainerCore>>();
+            List<Task<ContainerInternal>> tasks = new List<Task<ContainerInternal>>();
             for (int i = 0; i < 20; i++)
             {
-                tasks.Add(Task.Run(() => Task.FromResult(new ContainerCore(context, db, "test"))));
+                tasks.Add(Task.Run(() => Task.FromResult((ContainerInternal)new ContainerInlineCore(context, db, "test"))));
             }
 
             await Task.WhenAll(tasks);
@@ -48,11 +48,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
-            List<Task<ContainerCore>> tasks = new List<Task<ContainerCore>>();
+            List<Task<ContainerInternal>> tasks = new List<Task<ContainerInternal>>();
             for (int i = 0; i < 20; i++)
             {
                 tasks.Add(
-                    Task.Factory.StartNew(() => new ContainerCore(context, db, "test"),
+                    Task.Factory.StartNew(() => (ContainerInternal)new ContainerInlineCore(context, db, "test"),
                     CancellationToken.None,
                     TaskCreationOptions.None,
                     new SingleTaskScheduler()));
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientContext context = this.MockClientContext(allowBulkExecution: false);
 
             DatabaseCore db = new DatabaseCore(context, "test");
-            ContainerCore container = new ContainerCore(context, db, "test");
+            ContainerInternal container = new ContainerInlineCore(context, db, "test");
             Assert.IsNull(container.BatchExecutor);
         }
 
