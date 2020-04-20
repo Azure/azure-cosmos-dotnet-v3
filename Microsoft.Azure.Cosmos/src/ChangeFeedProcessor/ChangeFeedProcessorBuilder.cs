@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
 
-            this.leaseContainer = (ContainerInlineCore)leaseContainer;
+            this.leaseContainer = (ContainerInternal)leaseContainer;
             return this;
         }
 

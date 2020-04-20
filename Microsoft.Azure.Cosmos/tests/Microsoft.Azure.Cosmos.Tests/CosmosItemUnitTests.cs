@@ -81,11 +81,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestGetPartitionKeyValueFromStreamAsync()
         {
+            ContainerInternal mockContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             ContainerInternal container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new string[] { "pk" }));
+            containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
 
             DateTime dateTime = new DateTime(2019, 05, 15, 12, 1, 2, 3, DateTimeKind.Utc);
             Guid guid = Guid.NewGuid();
@@ -384,11 +387,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
+            ContainerInternal mockContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
+
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             ContainerInternal container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new string[] { "a", "b", "c" }));
+            containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
 
             List<dynamic> invalidNestedItems = new List<dynamic>
             {
@@ -460,19 +467,38 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientContext context = MockCosmosUtil.CreateMockCosmosClient(
                 builder => builder.WithBulkExecution(true)).ClientContext;
-            Mock<ClientContextCore> mockContext = new Mock<ClientContextCore>(
-                context.Client,
-                context.ClientOptions,
-                context.SerializerCore,
-                context.ResponseFactory,
-                context.RequestHandler,
-                context.DocumentClient,
-                context.UserAgent,
-                context.EncryptionProcessor,
-                null)
-            {
-                CallBase = true
-            };
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns<string, string, string>((x, y, z) => context.CreateLink(x, y, z));
+            mockContext.Setup(x => x.ClientOptions).Returns(context.ClientOptions);
+            mockContext.Setup(x => x.ResponseFactory).Returns(context.ResponseFactory);
+            mockContext.Setup(x => x.SerializerCore).Returns(context.SerializerCore);
+            mockContext.Setup(x => x.DocumentClient).Returns(context.DocumentClient);
+            mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
+                It.IsAny<Uri>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<OperationType>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<ContainerInternal>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<string>(),
+                It.IsAny<Stream>(),
+                It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<CancellationToken>())).Returns<Uri, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, CosmosDiagnosticsContext, CancellationToken>(
+                (uri, resourceType, operationType, requestOptions, containerInternal, pk, itemId, stream, requestEnricher, diagnostics, cancellationToken) =>
+                 context.ProcessResourceOperationStreamAsync(
+                     uri,
+                     resourceType,
+                     operationType,
+                     requestOptions,
+                     containerInternal,
+                     pk,
+                     itemId,
+                     stream,
+                     requestEnricher,
+                     diagnostics,
+                     cancellationToken));
 
             Mock<BatchAsyncContainerExecutor> mockedExecutor = this.GetMockedBatchExcecutor();
             mockContext.Setup(x => x.GetExecutorForContainer(It.IsAny<ContainerInternal>())).Returns(mockedExecutor.Object);
