@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using CpuMonitor = Microsoft.Azure.Documents.Rntbd.CpuMonitor;
+    using CpuLoadHistory = Microsoft.Azure.Documents.Rntbd.CpuLoadHistory;
 
     [TestClass]
     public class TransportWrapperTests
@@ -94,7 +95,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
             if (cpuMonitorInjected)
             {
-                Assert.IsTrue(diagnostics.Contains("CPU history: ("));
+                const string cpuHistoryPrefix = "CPU history: (";
+                int cpuHistoryIndex = diagnostics.IndexOf(cpuHistoryPrefix);
+                Assert.AreNotEqual(-1, cpuHistoryIndex);
+                int indexEndOfFirstCpuHistoryElement = diagnostics.IndexOf(
+                    ")",
+                    cpuHistoryIndex + cpuHistoryPrefix.Length);
+                Assert.AreNotEqual(-1, indexEndOfFirstCpuHistoryElement);
+
+                string firstCpuHistoryElement = diagnostics.Substring(
+                    cpuHistoryIndex + cpuHistoryPrefix.Length,
+                    indexEndOfFirstCpuHistoryElement - cpuHistoryIndex - cpuHistoryPrefix.Length);
+
+                string[] cpuHistoryElementFragments = firstCpuHistoryElement.Split(' ');
+                Assert.AreEqual(2, cpuHistoryElementFragments.Length);
+                Assert.IsTrue(
+                    DateTimeOffset.TryParse(cpuHistoryElementFragments[0], out DateTimeOffset snapshotTime));
+                Assert.IsTrue(snapshotTime > DateTimeOffset.UtcNow - TimeSpan.FromMinutes(2));
+                Assert.IsTrue(float.TryParse(cpuHistoryElementFragments[1], out float cpuPercentage));
+                Assert.IsTrue(cpuPercentage >= 0 && cpuPercentage <= 100);
             }
             else
             {
@@ -190,6 +209,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
             private readonly CpuMonitor cpuMonitor;
+            private const string emptyCpuLoadHistoryText = "empty";
 
             internal TransportClientWrapper(
                 TransportClient client,
@@ -207,8 +227,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Stopwatch watch = Stopwatch.StartNew();
 
                     // Artifically burning some CPU to generate CPU load history
-                    while (watch.Elapsed < TimeSpan.FromMilliseconds(200))
+                    CpuLoadHistory cpuLoadHistory = null;
+                    while ((cpuLoadHistory = this.cpuMonitor.GetCpuLoad()) == null ||
+                        cpuLoadHistory.ToString() == emptyCpuLoadHistoryText)
                     {
+                        Task.Delay(10).Wait();
                     }
                 }
                 this.baseClient = client;
