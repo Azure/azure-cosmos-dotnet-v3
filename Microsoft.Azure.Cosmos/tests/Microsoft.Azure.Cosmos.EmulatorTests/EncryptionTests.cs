@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonReader = Json.JsonReader;
     using Microsoft.Azure.Cosmos.Encryption;
 
-    [TestClass]
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
     public class EncryptionTests
     {
         private static EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
@@ -178,6 +178,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             TestDoc expectedDoc = new TestDoc(testDoc);
 
+            // Read feed
+            await EncryptionTests.ValidateQueryResultsAsync(
+                EncryptionTests.itemContainerCore,
+                query: null,
+                expectedDoc);
+
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.itemContainerCore,
                 "SELECT * FROM c",
@@ -223,6 +229,61 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionChangeFeed()
+        {
+            string dek1 = EncryptionTests.dekId;
+            string dek2 = "dek2ForChangeFeed";
+            await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, dek2);
+
+            TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, dek1, TestDoc.PathsToEncrypt);
+            TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, dek2, TestDoc.PathsToEncrypt);
+
+            //{
+            //    FeedIterator<TestDoc> changeIterator = EncryptionTests.itemContainerCore.GetChangeFeedIterator<TestDoc>(
+            //        new ChangeFeedRequestOptions()
+            //        {
+            //            StartTime = DateTime.MinValue.ToUniversalTime()
+            //        });
+
+            //    List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
+            //    while (changeIterator.HasMoreResults)
+            //    {
+            //        FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
+            //        changeFeedReturnedDocs.AddRange(testDocs);
+            //    }
+
+            //    Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
+
+            //    // Assumes tests don't run in parallel
+            //    Assert.AreEqual(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
+            //    Assert.AreEqual(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+            //}
+
+            {
+                List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
+                ChangeFeedProcessor cfp = EncryptionTests.itemContainer.GetChangeFeedProcessorBuilder(
+                    "testCFP",
+                    (IReadOnlyCollection<TestDoc> changes, CancellationToken cancellationToken)
+                    =>
+                    {
+                        changeFeedReturnedDocs.AddRange(changes);
+                        return Task.CompletedTask;
+                    })
+                    .WithInMemoryLeaseContainer()
+                    .WithStartFromBeginning()
+                    .Build();
+
+                await cfp.StartAsync();
+                await Task.Delay(2000);
+                await cfp.StopAsync();
+
+                Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
+                Assert.AreEqual(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
+                Assert.AreEqual(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+            }
+        }
+
+        [TestMethod]
         public async Task EncryptionDecryptQueryResultMultipleDocs()
         {
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
@@ -247,22 +308,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
 
             await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.itemContainerCore, testDoc1, testDoc2, query);
-        }
-
-        [TestMethod]
-        public async Task EncryptionDecryptQueryResultMultipleEncryptedProperties()
-        {
-            TestDoc testDoc = await EncryptionTests.CreateItemAsync(
-                EncryptionTests.itemContainerCore,
-                EncryptionTests.dekId,
-                new List<string>() { "/Sensitive", "/NonSensitive" });
-
-            TestDoc expectedDoc = new TestDoc(testDoc);
-
-            await EncryptionTests.ValidateQueryResultsAsync(
-                EncryptionTests.itemContainerCore,
-                "SELECT * FROM c",
-                expectedDoc);
         }
 
         [TestMethod]
@@ -324,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task DecryptGroupByQueryResultTest()
+        public async Task EncryptionDecryptGroupByQueryResultTest()
         {
             string partitionKey = Guid.NewGuid().ToString();
 
@@ -493,11 +538,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionTransactionBatchCrud()
+        public async Task EncryptionTransactionalBatchCrud()
         {
             string partitionKey = "thePK";
             string dek1 = EncryptionTests.dekId;
-            string dek2 = "dek2Forbatch";
+            string dek2 = "dek2ForBatch";
             await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, dek2);
 
             TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
