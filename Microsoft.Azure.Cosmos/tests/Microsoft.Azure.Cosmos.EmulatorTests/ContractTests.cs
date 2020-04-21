@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         /// </summary>
         [TestMethod]
         [Timeout(30000)]
-        public async Task ChangeFeedIteratorCore_FromV2SDK()
+        public async Task ChangeFeed_FeedRange_FromV2SDK()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/status"),

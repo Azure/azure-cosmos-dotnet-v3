@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (JsonReaderException)
             {
-                DefaultTrace.TraceError("Unable to parse FeedRange for PartitionKey");
+                DefaultTrace.TraceError("Unable to parse FeedRange from string.");
                 feedRangeInternal = null;
                 return false;
             }
