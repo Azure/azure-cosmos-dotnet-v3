@@ -114,6 +114,8 @@ namespace Microsoft.Azure.Cosmos
                 writer.WriteValue(feedRangePartitionKeyRange.PartitionKeyRangeId);
                 return;
             }
+
+            throw new JsonSerializationException(ClientResources.FeedToken_UnrecognizedFeedToken);
         }
     }
 }
