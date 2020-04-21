@@ -550,8 +550,7 @@ namespace Microsoft.Azure.Cosmos
         internal override FeedIterator GetStandByFeedIterator(
             string continuationToken = null,
             int? maxItemCount = null,
-            ChangeFeedRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            ChangeFeedRequestOptions requestOptions = null)
         {
             ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 
