@@ -119,24 +119,22 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ItemResponse<T>> DeleteItemAsync<T>(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> DeleteItemStreamAsync(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName, Container.ChangesEstimationHandler estimationDelegate, Nullable<TimeSpan> estimationPeriod=default(Nullable<TimeSpan>));
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions=null);
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(FeedToken feedToken, ChangeFeedRequestOptions changeFeedRequestOptions=null);
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(FeedRange feedRange, ChangeFeedRequestOptions changeFeedRequestOptions=null);
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(PartitionKey partitionKey, ChangeFeedRequestOptions changeFeedRequestOptions=null);
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(string continuationToken=null, ChangeFeedRequestOptions changeFeedRequestOptions=null);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(string processorName, Container.ChangesHandler<T> onChangesDelegate);
-        public abstract FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions=null);
-        public abstract FeedIterator GetChangeFeedStreamIterator(FeedToken feedToken, ChangeFeedRequestOptions changeFeedRequestOptions=null);
+        public abstract FeedIterator GetChangeFeedStreamIterator(FeedRange feedRange, ChangeFeedRequestOptions changeFeedRequestOptions=null);
         public abstract FeedIterator GetChangeFeedStreamIterator(PartitionKey partitionKey, ChangeFeedRequestOptions changeFeedRequestOptions=null);
-        public abstract Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken=default(CancellationToken));
+        public abstract FeedIterator GetChangeFeedStreamIterator(string continuationToken=null, ChangeFeedRequestOptions changeFeedRequestOptions=null);
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken=default(CancellationToken));
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution=false, string continuationToken=null, QueryRequestOptions requestOptions=null);
-        public abstract FeedIterator<T> GetItemQueryIterator<T>(FeedToken feedToken, QueryDefinition queryDefinition, QueryRequestOptions requestOptions=null);
-        public abstract FeedIterator<T> GetItemQueryIterator<T>(FeedToken feedToken, string queryText=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(FeedRange feedRange, QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator<T> GetItemQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator<T> GetItemQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
-        public abstract FeedIterator GetItemQueryStreamIterator(FeedToken feedToken, QueryDefinition queryDefinition, QueryRequestOptions requestOptions=null);
-        public abstract FeedIterator GetItemQueryStreamIterator(FeedToken feedToken, string queryText=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetItemQueryStreamIterator(FeedRange feedRange, QueryDefinition queryDefinition, string continuationToken, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetItemQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetItemQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(FeedToken feedToken, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(FeedRange feedRange, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> ReadContainerAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> ReadContainerStreamAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ItemResponse<T>> ReadItemAsync<T>(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -358,16 +356,19 @@ namespace Microsoft.Azure.Cosmos
     public abstract class FeedIterator
     {
         protected FeedIterator();
-        public abstract FeedToken FeedToken { get; }
         public abstract bool HasMoreResults { get; }
         public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken=default(CancellationToken));
     }
     public abstract class FeedIterator<T>
     {
         protected FeedIterator();
-        public abstract FeedToken FeedToken { get; }
         public abstract bool HasMoreResults { get; }
         public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public abstract class FeedRange
+    {
+        protected FeedRange();
+        public abstract override string ToString();
     }
     public abstract class FeedResponse<T> : IEnumerable, IEnumerable<T>
     {
@@ -379,13 +380,6 @@ namespace Microsoft.Azure.Cosmos
         public override double RequestCharge { get; }
         public abstract IEnumerator<T> GetEnumerator();
         IEnumerator System.Collections.IEnumerable.GetEnumerator();
-    }
-    public abstract class FeedToken
-    {
-        protected FeedToken();
-        public static FeedToken FromString(string toStringValue);
-        public abstract IReadOnlyList<FeedToken> Scale();
-        public abstract override string ToString();
     }
     public sealed class GeospatialConfig
     {
