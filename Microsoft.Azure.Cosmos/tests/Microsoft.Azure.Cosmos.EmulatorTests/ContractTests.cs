@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
 {
     using System;
     using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
 
-    [TestClass]
+    [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper
     {
         [TestInitialize]
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Migration test from V2 Continuation model for Change Feed
+        /// Migration test from V2 Continuation model for Query
         /// </summary>
         [TestMethod]
         [Timeout(30000)]
