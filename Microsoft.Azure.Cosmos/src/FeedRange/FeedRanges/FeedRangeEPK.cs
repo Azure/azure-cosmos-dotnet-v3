@@ -8,15 +8,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// FeedRange that represents an effective partition key range.
     /// </summary>
-    [JsonConverter(typeof(FeedRangeEPKConverter))]
     internal sealed class FeedRangeEPK : FeedRangeInternal
     {
         public Documents.Routing.Range<string> Range { get; }
@@ -34,8 +30,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Range = range;
         }
-
-        public override string ToJsonString() => JsonConvert.SerializeObject(this);
 
         public override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
@@ -61,40 +55,5 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override string ToString() => this.Range.ToString();
-
-        public static new bool TryParse(
-            JObject jObject,
-            JsonSerializer serializer,
-            out FeedRangeInternal feedRangeInternal)
-        {
-            try
-            {
-                feedRangeInternal = FeedRangeEPKConverter.ReadJObject(jObject, serializer);
-                return true;
-            }
-            catch (JsonReaderException)
-            {
-                DefaultTrace.TraceError("Unable to parse FeedRange for EPK");
-                feedRangeInternal = null;
-                return false;
-            }
-        }
-
-        public static new bool TryParse(
-            string jsonString,
-            out FeedRangeInternal feedRangeInternal)
-        {
-            try
-            {
-                feedRangeInternal = JsonConvert.DeserializeObject<FeedRangeEPK>(jsonString);
-                return true;
-            }
-            catch (JsonReaderException)
-            {
-                DefaultTrace.TraceError("Unable to parse FeedRange for EPK");
-                feedRangeInternal = null;
-                return false;
-            }
-        }
     }
 }
