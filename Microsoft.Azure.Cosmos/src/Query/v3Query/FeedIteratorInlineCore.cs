@@ -40,13 +40,6 @@ namespace Microsoft.Azure.Cosmos
             return this.feedIteratorInternal.GetCosmsoElementContinuationToken();
         }
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedToken FeedToken => this.feedIteratorInternal.FeedToken;
-
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
@@ -77,10 +70,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
-
-#if PREVIEW
-        public override FeedToken FeedToken => this.feedIteratorInternal.FeedToken;
-#endif
 
         public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {

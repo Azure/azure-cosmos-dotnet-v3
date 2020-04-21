@@ -53,8 +53,9 @@ namespace Microsoft.Azure.Cosmos
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
+            FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken = default(CancellationToken));
 
         internal abstract FeedIterator GetStandByFeedIterator(
             string continuationToken = default,
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
-            FeedTokenInternal feedToken,
+            FeedRangeInternal feedRange,
             QueryRequestOptions requestOptions);
 
         internal abstract Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
@@ -93,5 +94,54 @@ namespace Microsoft.Azure.Cosmos
 
             throw new ArgumentNullException(nameof(partitionKey));
         }
+
+#if !PREVIEW
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            string continuationToken = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            FeedRange feedRange,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+ 
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            string continuationToken = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            FeedRange feedRange,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+      
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract FeedIterator GetItemQueryStreamIterator(
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions = null);
+
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+#endif
     }
 }

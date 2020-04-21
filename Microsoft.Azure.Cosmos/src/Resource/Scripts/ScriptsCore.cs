@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.clientContext,
                this.container.LinkUri,
                resourceType: ResourceType.StoredProcedure,
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.clientContext,
                this.container.LinkUri,
                resourceType: ResourceType.Trigger,
@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.clientContext,
                this.container.LinkUri,
                resourceType: ResourceType.UserDefinedFunction,

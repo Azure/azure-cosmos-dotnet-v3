@@ -262,21 +262,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.GetFeedTokensAsync(cancellationToken));
-        }
-
-        public override FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return base.GetChangeFeedStreamIterator(changeFeedRequestOptions);
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedRangesAsync(cancellationToken));
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
-            FeedToken feedToken,
+            string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedStreamIterator(feedToken, changeFeedRequestOptions);
+            return this.container.GetChangeFeedStreamIterator(continuationToken, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator GetChangeFeedStreamIterator(
+            FeedRange feedRange,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedStreamIterator(feedRange, changeFeedRequestOptions);
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
@@ -286,16 +288,18 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
         }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
+            string continuationToken = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(changeFeedRequestOptions);
+            return this.container.GetChangeFeedIterator<T>(continuationToken, changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedToken feedToken,
+            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(feedToken, changeFeedRequestOptions);
+            return this.container.GetChangeFeedIterator<T>(feedRange, changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -306,43 +310,30 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedToken feedToken,
+            FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.GetPartitionKeyRangesAsync(feedToken, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            string queryText = null,
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryStreamIterator(feedToken, queryText, requestOptions);
+            return this.container.GetItemQueryStreamIterator(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            string queryText = null,
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryIterator<T>(feedToken, queryText, requestOptions);
+            return this.container.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
-        public override FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,
-            QueryRequestOptions requestOptions = null)
-        {
-            return base.GetItemQueryStreamIterator(feedToken, queryDefinition, requestOptions);
-        }
-
-        public override FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,
-            QueryRequestOptions requestOptions = null)
-        {
-            return base.GetItemQueryIterator<T>(feedToken, queryDefinition, requestOptions);
-        }
 #endif
     }
 }

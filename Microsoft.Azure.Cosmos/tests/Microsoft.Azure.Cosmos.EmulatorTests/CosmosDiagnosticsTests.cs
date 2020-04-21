@@ -30,6 +30,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
         };
 
+        private static readonly ChangeFeedRequestOptions ChangeFeedRequestOptionDisableDiagnostic = new ChangeFeedRequestOptions()
+        {
+            DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
+        };
+
         [TestInitialize]
         public async Task TestInitialize()
         {
@@ -253,6 +258,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task ChangeFeedDiagnostics(bool disableDiagnostics)
+        {
+            string pkValue = "ChangeFeedDiagnostics";
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Container container = client.GetContainer(this.database.Id, this.Container.Id);
+            List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
+            for (int i = 0; i < 100; i++)
+            {
+
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+                createItemsTasks.Add(container.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.status)));
+            }
+
+            await Task.WhenAll(createItemsTasks);
+
+            ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
+            FeedIterator changeFeedIterator = ((ContainerInternal)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
+            while (changeFeedIterator.HasMoreResults)
+            {
+                using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())
+                {
+                    CosmosDiagnosticsTests.VerifyChangeFeedDiagnostics(
+                       diagnostics: response.Diagnostics,
+                        disableDiagnostics: disableDiagnostics);
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task BulkOperationDiagnostic()
         {
             string pkValue = "DiagnosticBulkTestPk";
@@ -454,6 +490,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
             DiagnosticValidator.ValidatePointOperationDiagnostics(diagnosticsContext);
+        }
+
+        public static void VerifyChangeFeedDiagnostics(
+            CosmosDiagnostics diagnostics,
+            bool disableDiagnostics)
+        {
+            string info = diagnostics.ToString();
+
+            if (disableDiagnostics)
+            {
+                Assert.AreEqual(string.Empty, info);
+                return;
+            }
+
+            CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
+            DiagnosticValidator.ValidateChangeFeedOperationDiagnostics(diagnosticsContext);
         }
 
         private static JObject GetJObjectInContextList(JArray contextList, string value, string key = "Id")
