@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
             this.Range = range;
         }
 
+        public override string ToJsonString() => JsonConvert.SerializeObject(this);
+
         public override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
@@ -68,6 +70,23 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 feedRangeInternal = FeedRangeEPKConverter.ReadJObject(jObject, serializer);
+                return true;
+            }
+            catch (JsonReaderException)
+            {
+                DefaultTrace.TraceError("Unable to parse FeedRange for EPK");
+                feedRangeInternal = null;
+                return false;
+            }
+        }
+
+        public static new bool TryParse(
+            string jsonString,
+            out FeedRangeInternal feedRangeInternal)
+        {
+            try
+            {
+                feedRangeInternal = JsonConvert.DeserializeObject<FeedRangeEPK>(jsonString);
                 return true;
             }
             catch (JsonReaderException)

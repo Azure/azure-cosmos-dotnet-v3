@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKey = partitionKey;
         }
 
+        public override string ToJsonString() => JsonConvert.SerializeObject(this);
+
         public override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
@@ -64,6 +66,23 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 feedRangeInternal = FeedRangePartitionKeyConverter.ReadJObject(jObject, serializer);
+                return true;
+            }
+            catch (JsonReaderException)
+            {
+                DefaultTrace.TraceError("Unable to parse FeedRange for PartitionKey");
+                feedRangeInternal = null;
+                return false;
+            }
+        }
+
+        public static new bool TryParse(
+            string jsonString,
+            out FeedRangeInternal feedRangeInternal)
+        {
+            try
+            {
+                feedRangeInternal = JsonConvert.DeserializeObject<FeedRangePartitionKey>(jsonString);
                 return true;
             }
             catch (JsonReaderException)

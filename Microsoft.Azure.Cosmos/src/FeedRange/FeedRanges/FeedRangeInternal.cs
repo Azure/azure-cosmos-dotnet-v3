@@ -29,6 +29,29 @@ namespace Microsoft.Azure.Cosmos
         public abstract override string ToString();
 
         public static bool TryParse(
+            string jsonString,
+            out FeedRangeInternal feedRangeInternal)
+        {
+            if (FeedRangeEPK.TryParse(jsonString, out feedRangeInternal))
+            {
+                return true;
+            }
+
+            if (FeedRangePartitionKey.TryParse(jsonString, out feedRangeInternal))
+            {
+                return true;
+            }
+
+            if (FeedRangePartitionKeyRange.TryParse(jsonString, out feedRangeInternal))
+            {
+                return true;
+            }
+
+            feedRangeInternal = null;
+            return false;
+        }
+
+        public static bool TryParse(
             JObject jObject,
             JsonSerializer serializer,
             out FeedRangeInternal feedRangeInternal)
