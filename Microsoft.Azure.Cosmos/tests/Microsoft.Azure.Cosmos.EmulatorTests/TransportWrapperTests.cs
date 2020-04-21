@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using CpuMonitor = Microsoft.Azure.Documents.Rntbd.CpuMonitor;
+    using CpuLoadHistory = Microsoft.Azure.Documents.Rntbd.CpuLoadHistory;
 
     [TestClass]
     public class TransportWrapperTests
@@ -32,14 +34,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TransportExceptionValidationTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task TransportExceptionValidationTest(bool injectCpuMonitor)
         {
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
                     builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                         transportClient,
-                        TransportWrapperTests.ThrowTransportExceptionOnItemOperation));
+                        TransportWrapperTests.ThrowTransportExceptionOnItemOperation,
+                        injectCpuMonitor));
                 });
 
             Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
@@ -52,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ce)
             {
-                this.ValidateTransportException(ce);
+                this.ValidateTransportException(ce, injectCpuMonitor);
             }
 
             try
@@ -63,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ce)
             {
-                this.ValidateTransportException(ce);
+                this.ValidateTransportException(ce, injectCpuMonitor);
             }
 
             using (ResponseMessage responseMessage = await container.CreateItemStreamAsync(
@@ -80,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }   
         }
 
-        private void ValidateTransportException(CosmosException cosmosException)
+        private void ValidateTransportException(CosmosException cosmosException, bool cpuMonitorInjected)
         {
             Assert.AreEqual(HttpStatusCode.ServiceUnavailable, cosmosException.StatusCode);
             string message = cosmosException.ToString();
@@ -88,6 +93,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string diagnostics = cosmosException.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
             Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
+            if (cpuMonitorInjected)
+            {
+                const string cpuHistoryPrefix = "CPU history: (";
+                int cpuHistoryIndex = diagnostics.IndexOf(cpuHistoryPrefix);
+                Assert.AreNotEqual(-1, cpuHistoryIndex);
+                int indexEndOfFirstCpuHistoryElement = diagnostics.IndexOf(
+                    ")",
+                    cpuHistoryIndex + cpuHistoryPrefix.Length);
+                Assert.AreNotEqual(-1, indexEndOfFirstCpuHistoryElement);
+
+                string firstCpuHistoryElement = diagnostics.Substring(
+                    cpuHistoryIndex + cpuHistoryPrefix.Length,
+                    indexEndOfFirstCpuHistoryElement - cpuHistoryIndex - cpuHistoryPrefix.Length);
+
+                string[] cpuHistoryElementFragments = firstCpuHistoryElement.Split(' ');
+                Assert.AreEqual(2, cpuHistoryElementFragments.Length);
+                Assert.IsTrue(
+                    DateTimeOffset.TryParse(cpuHistoryElementFragments[0], out DateTimeOffset snapshotTime));
+                Assert.IsTrue(snapshotTime > DateTimeOffset.UtcNow - TimeSpan.FromMinutes(2));
+                Assert.IsTrue(float.TryParse(cpuHistoryElementFragments[1], out float cpuPercentage));
+                Assert.IsTrue(cpuPercentage >= 0 && cpuPercentage <= 100);
+            }
+            else
+            {
+                Assert.IsTrue(diagnostics.Contains("CPU history: not available"));
+            }
         }
 
         private void ValidateTransportException(ResponseMessage responseMessage)
@@ -177,14 +208,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
+            private readonly CpuMonitor cpuMonitor;
+            private const string emptyCpuLoadHistoryText = "empty";
 
             internal TransportClientWrapper(
                 TransportClient client,
-                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor)
+                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
+                bool injectCpuMonitor = false)
             {
                 Debug.Assert(client != null);
                 Debug.Assert(interceptor != null);
 
+                if (injectCpuMonitor)
+                {
+                    CpuMonitor.OverrideRefreshInterval(TimeSpan.FromMilliseconds(100));
+                    this.cpuMonitor = new CpuMonitor();
+                    this.cpuMonitor.Start();
+                    Stopwatch watch = Stopwatch.StartNew();
+
+                    // Artifically burning some CPU to generate CPU load history
+                    CpuLoadHistory cpuLoadHistory = null;
+                    while ((cpuLoadHistory = this.cpuMonitor.GetCpuLoad()) == null ||
+                        cpuLoadHistory.ToString() == emptyCpuLoadHistoryText)
+                    {
+                        Task.Delay(10).Wait();
+                    }
+                }
                 this.baseClient = client;
                 this.interceptor = interceptor;
             }
@@ -194,10 +243,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResourceOperation resourceOperation,
                 DocumentServiceRequest request)
             {
-                this.interceptor(physicalAddress, resourceOperation, request);
+                try
+                {
+                    this.interceptor(physicalAddress, resourceOperation, request);
+                }
+                catch (DocumentClientException dce)
+                {
+                    if (this.cpuMonitor != null &&
+                        dce.InnerException != null &&
+                        dce.InnerException is TransportException te)
+                    {
+                        te.SetCpuLoad(this.cpuMonitor.GetCpuLoad());
+                    }
+
+                    throw;
+                }
 
                 StoreResponse response = await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
                 return response;
+            }
+
+            public override void Dispose()
+            {
+                if (this.cpuMonitor != null)
+                {
+                    this.cpuMonitor.Stop();
+                    CpuMonitor.OverrideRefreshInterval(
+                        TimeSpan.FromSeconds(CpuMonitor.DefaultRefreshIntervalInSeconds));
+                }
+                base.Dispose();
             }
         }
     }

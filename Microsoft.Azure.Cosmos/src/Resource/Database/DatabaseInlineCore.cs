@@ -228,6 +228,20 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal override
 #endif
+        Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+            ContainerProperties containerProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, cancellationToken));
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
         Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
