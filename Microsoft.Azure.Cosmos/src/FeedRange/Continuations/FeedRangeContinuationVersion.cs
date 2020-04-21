@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Used to future-proof token versions
     /// </summary>
-    internal enum FeedTokenVersion
+    internal enum FeedRangeContinuationVersion
     {
         V1 = 0
     }
