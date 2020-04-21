@@ -202,47 +202,26 @@ namespace Microsoft.Azure.Cosmos
         {
             return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
         }
-
-#if PREVIEW
-        public override
-#else
-        internal override
-#endif
-        Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceThroughputAsync(throughputProperties, requestOptions, cancellationToken));
         }
 
-#if PREVIEW
-        public override
-#else
-        internal override
-#endif
-        Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => base.CreateContainerAsync(containerProperties, throughputProperties, requestOptions, cancellationToken));
         }
 
-#if PREVIEW
-        public override
-#else
-        internal override
-#endif
-        Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, cancellationToken));
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        Task<ResponseMessage> CreateContainerStreamAsync(
+        public override Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,

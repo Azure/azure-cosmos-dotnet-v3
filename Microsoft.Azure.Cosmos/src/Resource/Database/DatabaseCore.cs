@@ -116,12 +116,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal override
-#endif
-        Task<ResponseMessage> CreateContainerStreamAsync(
+        public override Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
@@ -142,12 +137,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal override
-#endif
-        Task<ContainerResponse> CreateContainerAsync(
+        public override Task<ContainerResponse> CreateContainerAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
@@ -168,13 +158,7 @@ namespace Microsoft.Azure.Cosmos
 
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response);
         }
-
-#if PREVIEW
-        public override
-#else
-        internal override
-#endif
-        async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+        public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
@@ -235,12 +219,7 @@ namespace Microsoft.Azure.Cosmos
             return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(readResponseAfterCreate));
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        async Task<ThroughputResponse> ReplaceThroughputAsync(
+        public override async Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
