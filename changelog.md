@@ -7,12 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Reduced memory allocations on query deserialization.
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Diagnostics: Add CPU monitoring for .Net Core
+
 
 ## <a name="3.9.0-preview"/> [3.9.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.0-preview) - 2020-04-17
 
 ### Added
 
 - [#1356](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1356) Autoscale Preview: Add to public preview release
+- [#1355](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1355) Change Feed: Add FeedRange and continuation separate
+
+### Fixed
+
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Reduced memory allocations on query deserialization.
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Diagnostics: Add CPU monitoring for .Net Core
 
 ## <a name="3.8.0-preview"/> [3.8.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0-preview) - 2020-04-16
 

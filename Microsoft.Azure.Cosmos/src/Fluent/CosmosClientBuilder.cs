@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets the minimum time to wait between retry and the max number of times to retry on throttled requests.
+        /// Sets the maximum time to wait between retry and the max number of times to retry on throttled requests.
         /// </summary>
         /// <param name="maxRetryWaitTimeOnThrottledRequests">The maximum retry time in seconds for the Azure Cosmos DB service. Any interval that is smaller than a second will be ignored.</param>
         /// <param name="maxRetryAttemptsOnThrottledRequests">The number specifies the times retry requests for throttled requests.</param>

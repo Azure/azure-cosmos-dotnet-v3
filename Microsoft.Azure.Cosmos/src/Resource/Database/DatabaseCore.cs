@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.ClientContext,
                resourceLink: this.LinkUri,
                resourceType: ResourceType.Collection,
@@ -556,7 +556,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.ClientContext,
                resourceLink: this.LinkUri,
                resourceType: ResourceType.User,
