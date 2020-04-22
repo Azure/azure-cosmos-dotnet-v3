@@ -4,19 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// FeedRange that represents an exact Partition Key value.
     /// </summary>
-    [JsonConverter(typeof(FeedRangePartitionKeyConverter))]
     internal sealed class FeedRangePartitionKey : FeedRangeInternal
     {
         public PartitionKey PartitionKey { get; }
@@ -55,23 +50,5 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override string ToString() => this.PartitionKey.InternalKey.ToJsonString();
-
-        public static new bool TryParse(
-            JObject jObject,
-            JsonSerializer serializer,
-            out FeedRangeInternal feedRangeInternal)
-        {
-            try
-            {
-                feedRangeInternal = FeedRangePartitionKeyConverter.ReadJObject(jObject, serializer);
-                return true;
-            }
-            catch (JsonReaderException)
-            {
-                DefaultTrace.TraceError("Unable to parse FeedRange for PartitionKey");
-                feedRangeInternal = null;
-                return false;
-            }
-        }
     }
 }
