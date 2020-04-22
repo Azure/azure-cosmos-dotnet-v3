@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             bool isDescending)
             : base(SqlObjectKind.OrderByItem)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException("expression");
             this.IsDescending = isDescending;
         }
 

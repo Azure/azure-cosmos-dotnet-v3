@@ -579,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new Cosmos.PartitionKey(testPartitionId),
                 parameters: new dynamic[] { "one", "two", "three" },
                 requestOptions: null,
-                cancellationToken: default(CancellationToken));
+                cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse2.StatusCode);
 
@@ -619,7 +619,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 streamPayload: streamPayload,
                 partitionKey: new Cosmos.PartitionKey(testPartitionId),
                 requestOptions: null,
-                cancellationToken: default(CancellationToken));
+                cancellationToken: default);
 
             using (StreamReader reader = new StreamReader(response.Content))
             {
@@ -670,7 +670,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     streamPayload: streamPayload,
                     partitionKey: new Cosmos.PartitionKey(testPartitionId),
                     requestOptions: null,
-                    cancellationToken: default(CancellationToken));
+                    cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             }
@@ -715,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     streamPayload: streamPayload,
                     partitionKey: new Cosmos.PartitionKey(testPartitionId),
                     requestOptions: null,
-                    cancellationToken: default(CancellationToken));
+                    cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
@@ -770,7 +770,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     streamPayload: streamPayload,
                     partitionKey: new Cosmos.PartitionKey(testPartitionId),
                     requestOptions: null,
-                    cancellationToken: default(CancellationToken));
+                    cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
@@ -819,7 +819,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     streamPayload: streamPayload,
                     partitionKey: new Cosmos.PartitionKey(testPartitionId),
                     requestOptions: null,
-                    cancellationToken: default(CancellationToken));
+                    cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             }

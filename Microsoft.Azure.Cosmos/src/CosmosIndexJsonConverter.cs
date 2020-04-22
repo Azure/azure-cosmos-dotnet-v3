@@ -43,10 +43,10 @@ namespace Microsoft.Azure.Cosmos
                     string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexSpecFormat));
             }
 
-            IndexKind indexKind = IndexKind.Hash;
+            IndexKind indexKind;
             if (Enum.TryParse(indexKindToken.Value<string>(), out indexKind))
             {
-                object index = null;
+                object index;
                 switch (indexKind)
                 {
                     case IndexKind.Hash:

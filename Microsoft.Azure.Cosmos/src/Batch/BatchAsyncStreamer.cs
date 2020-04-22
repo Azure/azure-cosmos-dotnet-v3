@@ -74,26 +74,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(dispatchTimerInSeconds));
             }
 
-            if (executor == null)
-            {
-                throw new ArgumentNullException(nameof(executor));
-            }
-
-            if (retrier == null)
-            {
-                throw new ArgumentNullException(nameof(retrier));
-            }
-
-            if (serializerCore == null)
-            {
-                throw new ArgumentNullException(nameof(serializerCore));
-            }
-
-            if (limiter == null)
-            {
-                throw new ArgumentNullException(nameof(limiter));
-            }
-
             if (maxDegreeOfConcurrency < 1)
             {
                 throw new ArgumentNullException(nameof(maxDegreeOfConcurrency));
@@ -101,15 +81,15 @@ namespace Microsoft.Azure.Cosmos
 
             this.maxBatchOperationCount = maxBatchOperationCount;
             this.maxBatchByteSize = maxBatchByteSize;
-            this.executor = executor;
-            this.retrier = retrier;
+            this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this.retrier = retrier ?? throw new ArgumentNullException(nameof(retrier));
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = timerPool;
-            this.serializerCore = serializerCore;
+            this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
             this.currentBatcher = this.CreateBatchAsyncBatcher();
             this.ResetTimer();
 
-            this.limiter = limiter;
+            this.limiter = limiter ?? throw new ArgumentNullException(nameof(limiter));
             this.oldPartitionMetric = new BatchPartitionMetric();
             this.partitionMetric = new BatchPartitionMetric();
             this.maxDegreeOfConcurrency = maxDegreeOfConcurrency;

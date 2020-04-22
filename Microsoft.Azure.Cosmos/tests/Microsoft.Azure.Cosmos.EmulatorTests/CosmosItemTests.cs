@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRIDAsync(default(CancellationToken));
+                await testContainer.GetRIDAsync(default);
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRoutingMapAsync(default(CancellationToken));
+                await testContainer.GetRoutingMapAsync(default);
                 expected = count;
             }
 
@@ -1646,7 +1646,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataTestMethod]
         public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate, bool isQuery)
         {
-            Func<Container, HttpStatusCode, Task> operation = null;
+            Func<Container, HttpStatusCode, Task> operation;
             if (isQuery)
             {
                 operation = ExecuteQueryAsync;

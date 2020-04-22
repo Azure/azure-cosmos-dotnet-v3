@@ -298,8 +298,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Documents.Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out Documents.Database database);
 
             Logger.LogLine("Listing StoredProcedures");
             DocumentFeedResponse<StoredProcedure> storedProcedureCollection1 = await client.ReadStoredProcedureFeedAsync(collection1.StoredProceduresLink);
@@ -445,8 +444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Documents.Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out Documents.Database database);
 
             Logger.LogLine("Listing Triggers");
             DocumentFeedResponse<Trigger> triggerCollection1 = client.ReadFeed<Trigger>(collection1.GetIdOrFullName());
@@ -611,8 +609,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Documents.Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out Documents.Database database);
 
             Logger.LogLine("Listing UserDefinedFunctions");
             DocumentFeedResponse<UserDefinedFunction> userDefinedFunctionCollection1 = client.ReadFeed<UserDefinedFunction>(collection1.ResourceId);
@@ -2191,7 +2188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient masterClient = TestCommon.CreateClient(useGateway, protocol);
 
-            List<DocumentClient> lockedClients = null;
+            List<DocumentClient> lockedClients;
             if (useGateway)
             {
                 lockedClients = new List<DocumentClient> { masterClient };
@@ -2636,7 +2633,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         response1 = await query1.ExecuteNextAsync<Document>();
                         foreach (Document doc in response1)
                         {
-                            Assert.AreNotEqual(default(int), doc.GetPropertyValue<int>(lsnPropertyName));
+                            Assert.AreNotEqual(default, doc.GetPropertyValue<int>(lsnPropertyName));
                             accumulator += doc.Id + ".";
                         }
                         Assert.IsNotNull(response1.ResponseContinuation);
@@ -2657,7 +2654,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         response2 = await query2.ExecuteNextAsync<Document>();
                         foreach (Document doc in response2)
                         {
-                            Assert.AreNotEqual(default(int), doc.GetPropertyValue<int>(lsnPropertyName));
+                            Assert.AreNotEqual(default, doc.GetPropertyValue<int>(lsnPropertyName));
                             accumulator += doc.Id + ".";
                         }
                     }
@@ -3412,8 +3409,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StringBuilder exceptionMessage = new StringBuilder();
             while (e != null)
             {
-                DocumentClientException docException = e as DocumentClientException;
-                if (docException != null && docException.Error != null)
+                if (e is DocumentClientException docException && docException.Error != null)
                 {
                     exceptionMessage.Append("Code : " + docException.Error.Code);
                     if (docException.Error.ErrorDetails != null)

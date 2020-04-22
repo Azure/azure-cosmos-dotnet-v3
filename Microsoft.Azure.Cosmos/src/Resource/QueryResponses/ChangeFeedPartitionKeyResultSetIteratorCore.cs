@@ -31,22 +31,12 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            if (partitionKeyRangeId == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRangeId));
-            }
-
             this.clientContext = clientContext;
-            this.container = container;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedOptions = options;
             this.MaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
-            this.partitionKeyRangeId = partitionKeyRangeId;
+            this.partitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
         }
 
         /// <summary>
@@ -66,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

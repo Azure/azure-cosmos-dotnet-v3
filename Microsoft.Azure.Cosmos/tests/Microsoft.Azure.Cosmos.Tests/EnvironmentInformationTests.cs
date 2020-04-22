@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ClientVersionIsNotNull()
         {
-            var envInfo = new EnvironmentInformation();
+            EnvironmentInformation envInfo = new EnvironmentInformation();
             Assert.IsNotNull(envInfo.ClientVersion);
 
             Version sdkVersion = Assembly.GetAssembly(typeof(CosmosClient)).GetName().Version;
@@ -24,21 +24,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ProcessArchitectureIsNotNull()
         {
-            var envInfo = new EnvironmentInformation();
+            EnvironmentInformation envInfo = new EnvironmentInformation();
             Assert.IsNotNull(envInfo.ProcessArchitecture);
         }
 
         [TestMethod]
         public void FrameworkIsNotNull()
         {
-            var envInfo = new EnvironmentInformation();
+            EnvironmentInformation envInfo = new EnvironmentInformation();
             Assert.IsNotNull(envInfo.RuntimeFramework);
         }
 
         [TestMethod]
         public void ClientIdIsNotNull()
         {
-            var envInfo = new EnvironmentInformation();
+            EnvironmentInformation envInfo = new EnvironmentInformation();
             Assert.IsNotNull(envInfo.ClientId);
         }
     }

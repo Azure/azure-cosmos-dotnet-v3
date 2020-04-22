@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
         {
             TransactionalBatchOperationResult result = this.results[index];
 
-            T resource = default(T);
+            T resource = default;
             if (result.ResourceStream != null)
             {
                 resource = this.SerializerCore.FromStream<T>(result.ResourceStream);

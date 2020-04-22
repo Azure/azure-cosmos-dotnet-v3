@@ -82,11 +82,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
         private static string GetSessionToken(SessionContainerState self, string collectionLink)
         {
-            bool isNameBased;
-            bool isFeed;
-            string resourceTypeString;
-            string resourceIdOrFullName;
-            bool arePathSegmentsParsed = PathsHelper.TryParsePathSegments(collectionLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased);
+            bool arePathSegmentsParsed = PathsHelper.TryParsePathSegments(collectionLink, out bool isFeed, out string resourceTypeString, out string resourceIdOrFullName, out bool isNameBased);
 
             ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = null;
 
@@ -98,8 +94,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     string collectionName = PathsHelper.GetCollectionPath(resourceIdOrFullName);
 
-                    ulong rid;
-                    if (self.collectionNameByResourceId.TryGetValue(collectionName, out rid))
+                    if (self.collectionNameByResourceId.TryGetValue(collectionName, out ulong rid))
                     {
                         maybeRID = rid;
                     }
@@ -154,14 +149,10 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     if (self.collectionNameByResourceId.ContainsKey(collectionName))
                     {
-                        string ignoreString;
-                        ulong ignoreUlong;
-
                         ulong rid = self.collectionNameByResourceId[collectionName];
-                        ConcurrentDictionary<string, ISessionToken> ignored;
-                        self.sessionTokensRIDBased.TryRemove(rid, out ignored);
-                        self.collectionResourceIdByName.TryRemove(rid, out ignoreString);
-                        self.collectionNameByResourceId.TryRemove(collectionName, out ignoreUlong);
+                        self.sessionTokensRIDBased.TryRemove(rid, out ConcurrentDictionary<string, ISessionToken> ignored);
+                        self.collectionResourceIdByName.TryRemove(rid, out string ignoreString);
+                        self.collectionNameByResourceId.TryRemove(collectionName, out ulong ignoreUlong);
                     }
                 }
                 finally
@@ -185,14 +176,10 @@ namespace Microsoft.Azure.Cosmos.Common
                     {
                         if (self.collectionResourceIdByName.ContainsKey(rid))
                         {
-                            string ignoreString;
-                            ulong ignoreUlong;
-
                             string collectionName = self.collectionResourceIdByName[rid];
-                            ConcurrentDictionary<string, ISessionToken> ignored;
-                            self.sessionTokensRIDBased.TryRemove(rid, out ignored);
-                            self.collectionResourceIdByName.TryRemove(rid, out ignoreString);
-                            self.collectionNameByResourceId.TryRemove(collectionName, out ignoreUlong);
+                            self.sessionTokensRIDBased.TryRemove(rid, out ConcurrentDictionary<string, ISessionToken> ignored);
+                            self.collectionResourceIdByName.TryRemove(rid, out string ignoreString);
+                            self.collectionNameByResourceId.TryRemove(collectionName, out ulong ignoreUlong);
                         }
                     }
                     finally
@@ -220,10 +207,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
             if (!string.IsNullOrEmpty(token))
             {
-                ResourceId resourceId;
-                string collectionName;
-
-                if (SessionContainer.ShouldUpdateSessionToken(request, responseHeaders, out resourceId, out collectionName))
+                if (SessionContainer.ShouldUpdateSessionToken(request, responseHeaders, out ResourceId resourceId, out string collectionName))
                 {
                     SessionContainer.SetSessionToken(self, resourceId, collectionName, token);
                 }
@@ -251,8 +235,7 @@ namespace Microsoft.Azure.Cosmos.Common
             {
                 string collectionName = PathsHelper.GetCollectionPath(request.ResourceAddress);
 
-                ulong rid;
-                if (self.collectionNameByResourceId.TryGetValue(collectionName, out rid))
+                if (self.collectionNameByResourceId.TryGetValue(collectionName, out ulong rid))
                 {
                     maybeRID = rid;
                 }
@@ -303,11 +286,8 @@ namespace Microsoft.Azure.Cosmos.Common
             self.rwlock.EnterReadLock();
             try
             {
-                ulong resolvedCollectionResourceId;
-                string resolvedCollectionName;
-
-                isKnownCollection = self.collectionNameByResourceId.TryGetValue(collectionName, out resolvedCollectionResourceId) &&
-                                    self.collectionResourceIdByName.TryGetValue(resourceId.UniqueDocumentCollectionId, out resolvedCollectionName) &&
+                isKnownCollection = self.collectionNameByResourceId.TryGetValue(collectionName, out ulong resolvedCollectionResourceId) &&
+                                    self.collectionResourceIdByName.TryGetValue(resourceId.UniqueDocumentCollectionId, out string resolvedCollectionName) &&
                                     resolvedCollectionResourceId == resourceId.UniqueDocumentCollectionId &&
                                     resolvedCollectionName == collectionName;
 
@@ -326,15 +306,10 @@ namespace Microsoft.Azure.Cosmos.Common
                 self.rwlock.EnterWriteLock();
                 try
                 {
-                    ulong resolvedCollectionResourceId;
-
-                    if (self.collectionNameByResourceId.TryGetValue(collectionName, out resolvedCollectionResourceId))
+                    if (self.collectionNameByResourceId.TryGetValue(collectionName, out ulong resolvedCollectionResourceId))
                     {
-                        string ignoreString;
-
-                        ConcurrentDictionary<string, ISessionToken> ignored;
-                        self.sessionTokensRIDBased.TryRemove(resolvedCollectionResourceId, out ignored);
-                        self.collectionResourceIdByName.TryRemove(resolvedCollectionResourceId, out ignoreString);
+                        self.sessionTokensRIDBased.TryRemove(resolvedCollectionResourceId, out ConcurrentDictionary<string, ISessionToken> ignored);
+                        self.collectionResourceIdByName.TryRemove(resolvedCollectionResourceId, out string ignoreString);
                     }
 
                     self.collectionNameByResourceId[collectionName] = resourceId.UniqueDocumentCollectionId;
@@ -391,8 +366,7 @@ namespace Microsoft.Azure.Cosmos.Common
             else
             {
                 //todo:elasticcollections remove after first upgrade.
-                ISessionToken lsn;
-                if (partitionKeyRangeIdToTokenMap.TryGetValue("0", out lsn))
+                if (partitionKeyRangeIdToTokenMap.TryGetValue("0", out ISessionToken lsn))
                 {
                     return string.Format(CultureInfo.InvariantCulture, "{0}", lsn);
                 }
@@ -407,8 +381,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
             foreach (KeyValuePair<string, ISessionToken> pair in first)
             {
-                ISessionToken tokenValue;
-                if (second.TryGetValue(pair.Key, out tokenValue))
+                if (second.TryGetValue(pair.Key, out ISessionToken tokenValue))
                 {
                     if (!tokenValue.Equals(pair.Value))
                     {
@@ -507,16 +480,16 @@ namespace Microsoft.Azure.Cosmos.Common
 
             public override bool Equals(object obj)
             {
-                if (obj == null || GetType() != obj.GetType())
+                if (obj == null || this.GetType() != obj.GetType())
                 {
                     return false;
                 }
 
                 SessionContainerSnapshot sibling = (SessionContainerSnapshot)obj;
 
-                if (!AreDictionariesEqual(collectionNameByResourceId, sibling.collectionNameByResourceId, (x, y) => x == y)) return false;
-                if (!AreDictionariesEqual(collectionResourceIdByName, sibling.collectionResourceIdByName, (x, y) => x == y)) return false;
-                if (!AreDictionariesEqual(sessionTokensRIDBased, sibling.sessionTokensRIDBased, (x, y) => AreDictionariesEqual(x, y, (a, b) => a.Equals(b)))) return false;
+                if (!AreDictionariesEqual(this.collectionNameByResourceId, sibling.collectionNameByResourceId, (x, y) => x == y)) return false;
+                if (!AreDictionariesEqual(this.collectionResourceIdByName, sibling.collectionResourceIdByName, (x, y) => x == y)) return false;
+                if (!AreDictionariesEqual(this.sessionTokensRIDBased, sibling.sessionTokensRIDBased, (x, y) => AreDictionariesEqual(x, y, (a, b) => a.Equals(b)))) return false;
 
                 return true;
             }

@@ -191,8 +191,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
                     {
-                        byte[] binaryId = binaryIdObj as byte[];
-                        if (binaryId != null)
+                        if (binaryIdObj is byte[] binaryId)
                         {
                             r = writer.WriteBinary("binaryId", binaryId);
                             if (r != Result.Success)
@@ -204,8 +203,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
                     {
-                        byte[] epk = epkObj as byte[];
-                        if (epk != null)
+                        if (epkObj is byte[] epk)
                         {
                             r = writer.WriteBinary("effectivePartitionKey", epk);
                             if (r != Result.Success)
@@ -219,8 +217,7 @@ namespace Microsoft.Azure.Cosmos
                             HttpConstants.HttpHeaders.PartitionKey,
                             out object pkStrObj))
                     {
-                        string pkString = pkStrObj as string;
-                        if (pkString != null)
+                        if (pkStrObj is string pkString)
                         {
                             r = writer.WriteString("partitionKey", pkString);
                             if (r != Result.Success)
@@ -232,8 +229,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.TimeToLiveInSeconds, out object ttlObj))
                     {
-                        string ttlStr = ttlObj as string;
-                        if (ttlStr != null && int.TryParse(ttlStr, out int ttl))
+                        if (ttlObj is string ttlStr && int.TryParse(ttlStr, out int ttl))
                         {
                             r = writer.WriteInt32("timeToLiveInSeconds", ttl);
                             if (r != Result.Success)
@@ -290,8 +286,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (this.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
                     {
-                        byte[] binaryId = binaryIdObj as byte[];
-                        if (binaryId != null)
+                        if (binaryIdObj is byte[] binaryId)
                         {
                             length += binaryId.Length;
                         }
@@ -299,8 +294,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (this.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
                     {
-                        byte[] epk = epkObj as byte[];
-                        if (epk != null)
+                        if (epkObj is byte[] epk)
                         {
                             length += epk.Length;
                         }

@@ -194,8 +194,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public PartitionKeyRange TryGetRangeByPartitionKeyRangeId(string partitionKeyRangeId)
         {
-            Tuple<PartitionKeyRange, ServiceIdentity> addresses;
-            if (this.rangeById.TryGetValue(partitionKeyRangeId, out addresses))
+            if (this.rangeById.TryGetValue(partitionKeyRangeId, out Tuple<PartitionKeyRange, ServiceIdentity> addresses))
             {
                 return addresses.Item1;
             }
@@ -205,8 +204,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ServiceIdentity TryGetInfoByPartitionKeyRangeId(string partitionKeyRangeId)
         {
-            Tuple<PartitionKeyRange, ServiceIdentity> addresses;
-            if (this.rangeById.TryGetValue(partitionKeyRangeId, out addresses))
+            if (this.rangeById.TryGetValue(partitionKeyRangeId, out Tuple<PartitionKeyRange, ServiceIdentity> addresses))
             {
                 return addresses.Item2;
             }

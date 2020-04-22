@@ -12,18 +12,8 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression rightExpression)
             : base(SqlObjectKind.CoalesceScalarExpression)
         {
-            if (leftExpression == null)
-            {
-                throw new ArgumentNullException("leftExpression");
-            }
-
-            if (rightExpression == null)
-            {
-                throw new ArgumentNullException("rightExpression");
-            }
-
-            this.LeftExpression = leftExpression;
-            this.RightExpression = rightExpression;
+            this.LeftExpression = leftExpression ?? throw new ArgumentNullException("leftExpression");
+            this.RightExpression = rightExpression ?? throw new ArgumentNullException("rightExpression");
         }
 
         public SqlScalarExpression LeftExpression

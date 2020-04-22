@@ -33,8 +33,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(ServiceInteropWrapper.AssembliesExist.Value);
 
             string configJson = "{}";
-            IntPtr provider;
-            uint result = ServiceInteropWrapper.CreateServiceProvider(configJson, out provider);
+            uint result = ServiceInteropWrapper.CreateServiceProvider(configJson, out IntPtr provider);
         }
 
         [TestMethod]

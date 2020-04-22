@@ -111,8 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            Error error = null;
-
+            Error error;
             try
             {
                 return await this.innerExecutionContext.ExecuteNextFeedResponseAsync(token);
@@ -135,10 +134,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             List<PartitionKeyRange> partitionKeyRanges =
                 await
-                    queryExecutionContext.GetTargetPartitionKeyRangesAsync(collection.ResourceId,
+                    queryExecutionContext.GetTargetPartitionKeyRangesAsync(this.collection.ResourceId,
                         partitionedQueryExecutionInfo.QueryRanges);
 
-            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, correlatedActivityId);
+            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, this.correlatedActivityId);
             // Devnote this will get replace by the new v3 to v2 logic
             throw new NotSupportedException("v2 query excution context is currently not supported.");
 

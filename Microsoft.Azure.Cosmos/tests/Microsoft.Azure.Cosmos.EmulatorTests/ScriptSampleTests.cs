@@ -62,14 +62,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
             // 1. Create.
-            var doc = new UidDocument { Id = "TestUniqueConstraintSample_1", Uid = "mic" };
+            UidDocument doc = new UidDocument { Id = "TestUniqueConstraintSample_1", Uid = "mic" };
             doc.SetPropertyValue("pk", "test");
             PartitionKey partitionKey = new PartitionKey("test");
-            var triggerRequestOptions = new RequestOptions { PreTriggerInclude = new List<string> { this.triggerName }, PartitionKey = partitionKey };
+            RequestOptions triggerRequestOptions = new RequestOptions { PreTriggerInclude = new List<string> { this.triggerName }, PartitionKey = partitionKey };
             doc = (dynamic)this.client.CreateDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Result.Resource;
 
             // 2. Create with same uid -- conflict.
-            AssertThrows(
+            this.AssertThrows(
                 () => this.client.CreateDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Wait(),
                 typeof(DocumentClientException),
                 "Create with same email didn't throw");
@@ -77,26 +77,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // 3. Replace, change uid.
             doc.Uid = "nik";
             this.client.ReplaceDocumentAsync(doc, triggerRequestOptions).Wait();
-            ValidateReadMetadoc("nik");
+            this.ValidateReadMetadoc("nik");
 
             // 4. Replace, change other property (id). Metadoc stays the same as unique property is not changed.
             doc.Id = "TestUniqueConstraintSample_2";
             this.client.ReplaceDocumentAsync(doc, triggerRequestOptions).Wait();
-            ValidateReadMetadoc("nik");
+            this.ValidateReadMetadoc("nik");
 
             // 5. Upsert, change uid.
             doc.Uid = "cam";
             this.client.UpsertDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Wait();
-            ValidateReadMetadoc("cam");
+            this.ValidateReadMetadoc("cam");
 
             // 6. Upsert, change other.
             doc.Other = "cam";
             this.client.UpsertDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Wait();
-            ValidateReadMetadoc("cam");
+            this.ValidateReadMetadoc("cam");
 
             // 7. Upsert, new id causes insert which would cause another doc with same value of unique property.
             doc.Id = "TestUniqueConstraintSample_3";
-            AssertThrows(
+            this.AssertThrows(
                 () => this.client.UpsertDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Wait(),
                 typeof(DocumentClientException),
                 "Create with same email didn't throw");
@@ -109,13 +109,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             doc.Id = "TestUniqueConstraintSample_2";
             this.client.DeleteDocumentAsync(doc.SelfLink, triggerRequestOptions).Wait();
 
-            ValidateReadMetadoc("lion");
+            this.ValidateReadMetadoc("lion");
         }
 
         private void ValidateReadMetadoc(string expectedUid)
         {
-            var query = this.client.CreateDocumentQuery<Document>(this.collection.SelfLink, "SELECT * FROM root r WHERE r.isMetadata = true", feedOptions: new FeedOptions { EnableCrossPartitionQuery = true });
-            foreach (var metaDoc in query)
+            System.Linq.IQueryable<Document> query = this.client.CreateDocumentQuery<Document>(this.collection.SelfLink, "SELECT * FROM root r WHERE r.isMetadata = true", feedOptions: new FeedOptions { EnableCrossPartitionQuery = true });
+            foreach (Document metaDoc in query)
             {
                 string id = metaDoc.GetPropertyValue<string>("id");
                 StringAssert.Contains(id, expectedUid);

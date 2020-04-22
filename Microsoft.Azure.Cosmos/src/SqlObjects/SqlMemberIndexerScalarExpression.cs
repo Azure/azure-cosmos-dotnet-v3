@@ -12,18 +12,8 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression indexExpression)
             : base(SqlObjectKind.MemberIndexerScalarExpression)
         {
-            if (memberExpression == null)
-            {
-                throw new ArgumentNullException("memberExpression");
-            }
-
-            if (indexExpression == null)
-            {
-                throw new ArgumentNullException("indexExpression");
-            }
-
-            this.MemberExpression = memberExpression;
-            this.IndexExpression = indexExpression;
+            this.MemberExpression = memberExpression ?? throw new ArgumentNullException("memberExpression");
+            this.IndexExpression = indexExpression ?? throw new ArgumentNullException("indexExpression");
         }
 
         public SqlScalarExpression MemberExpression

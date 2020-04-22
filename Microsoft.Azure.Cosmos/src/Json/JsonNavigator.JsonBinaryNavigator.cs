@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                 }
 
-                objectProperty = default(ObjectProperty);
+                objectProperty = default;
                 return false;
             }
 

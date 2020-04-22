@@ -150,10 +150,8 @@ namespace System.Linq.Dynamic
     {
         public DynamicProperty(string name, Type type)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (type == null) throw new ArgumentNullException("type");
-            this.Name = name;
-            this.Type = type;
+            this.Name = name ?? throw new ArgumentNullException("name");
+            this.Type = type ?? throw new ArgumentNullException("type");
         }
 
         public string Name { get; }
@@ -277,8 +275,7 @@ namespace System.Linq.Dynamic
             try
             {
                 Signature signature = new Signature(properties);
-                Type type;
-                if (!this.classes.TryGetValue(signature, out type))
+                if (!this.classes.TryGetValue(signature, out Type type))
                 {
                     type = this.CreateDynamicClass(signature.properties);
                     this.classes.Add(signature, type);
@@ -626,13 +623,12 @@ namespace System.Linq.Dynamic
 
         public ExpressionParser(ParameterExpression[] parameters, string expression, object[] values)
         {
-            if (expression == null) throw new ArgumentNullException("expression");
             if (keywords == null) keywords = CreateKeywords();
             this.symbols = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             this.literals = new Dictionary<Expression, string>();
             if (parameters != null) this.ProcessParameters(parameters);
             if (values != null) this.ProcessValues(values);
-            this.text = expression;
+            this.text = expression ?? throw new ArgumentNullException("expression");
             this.textLen = this.text.Length;
             this.SetTextPos(0);
             this.NextToken();
@@ -997,8 +993,7 @@ namespace System.Linq.Dynamic
             string text = this.token.text;
             if (text[0] != '-')
             {
-                ulong value;
-                if (!UInt64.TryParse(text, out value))
+                if (!UInt64.TryParse(text, out ulong value))
                     throw this.ParseError(Res.InvalidIntegerLiteral, text);
                 this.NextToken();
                 if (value <= (ulong)Int32.MaxValue) return this.CreateLiteral((int)value, text);
@@ -1008,8 +1003,7 @@ namespace System.Linq.Dynamic
             }
             else
             {
-                long value;
-                if (!Int64.TryParse(text, out value))
+                if (!Int64.TryParse(text, out long value))
                     throw this.ParseError(Res.InvalidIntegerLiteral, text);
                 this.NextToken();
                 if (value >= Int32.MinValue && value <= Int32.MaxValue)
@@ -1026,13 +1020,11 @@ namespace System.Linq.Dynamic
             char last = text[text.Length - 1];
             if (last == 'F' || last == 'f')
             {
-                float f;
-                if (Single.TryParse(text.Substring(0, text.Length - 1), out f)) value = f;
+                if (Single.TryParse(text.Substring(0, text.Length - 1), out float f)) value = f;
             }
             else
             {
-                double d;
-                if (Double.TryParse(text, out d)) value = d;
+                if (Double.TryParse(text, out double d)) value = d;
             }
             if (value == null) throw this.ParseError(Res.InvalidRealLiteral, text);
             this.NextToken();
@@ -1059,8 +1051,7 @@ namespace System.Linq.Dynamic
         Expression ParseIdentifier()
         {
             this.ValidateToken(TokenId.Identifier);
-            object value;
-            if (keywords.TryGetValue(this.token.text, out value))
+            if (keywords.TryGetValue(this.token.text, out object value))
             {
                 if (value is Type) return this.ParseTypeAccess((Type)value);
                 if (value == (object)keywordIt) return this.ParseIt();
@@ -1072,15 +1063,13 @@ namespace System.Linq.Dynamic
             if (this.symbols.TryGetValue(this.token.text, out value) ||
                 (this.externals != null && this.externals.TryGetValue(this.token.text, out value)))
             {
-                Expression expr = value as Expression;
-                if (expr == null)
+                if (!(value is Expression expr))
                 {
                     expr = Expression.Constant(value);
                 }
                 else
                 {
-                    LambdaExpression lambda = expr as LambdaExpression;
-                    if (lambda != null) return this.ParseLambdaInvocation(lambda);
+                    if (expr is LambdaExpression lambda) return this.ParseLambdaInvocation(lambda);
                 }
                 this.NextToken();
                 return expr;
@@ -1155,8 +1144,7 @@ namespace System.Linq.Dynamic
                 }
                 else
                 {
-                    MemberExpression me = expr as MemberExpression;
-                    if (me == null) throw this.ParseError(exprPos, Res.MissingAsClause);
+                    if (!(expr is MemberExpression me)) throw this.ParseError(exprPos, Res.MissingAsClause);
                     propName = me.Member.Name;
                 }
                 expressions.Add(expr);
@@ -1178,8 +1166,7 @@ namespace System.Linq.Dynamic
             int errorPos = this.token.pos;
             this.NextToken();
             Expression[] args = this.ParseArgumentList();
-            MethodBase method;
-            if (this.FindMethod(lambda.Type, "Invoke", false, args, out method) != 1)
+            if (this.FindMethod(lambda.Type, "Invoke", false, args, out MethodBase method) != 1)
                 throw this.ParseError(errorPos, Res.ArgsIncompatibleWithLambda);
             return Expression.Invoke(lambda, args);
         }
@@ -1198,8 +1185,7 @@ namespace System.Linq.Dynamic
             if (this.token.id == TokenId.OpenParen)
             {
                 Expression[] args = this.ParseArgumentList();
-                MethodBase method;
-                switch (this.FindBestMethod(type.GetConstructors(), args, out method))
+                switch (this.FindBestMethod(type.GetConstructors(), args, out MethodBase method))
                 {
                     case 0:
                         if (args.Length == 1)
@@ -1254,8 +1240,7 @@ namespace System.Linq.Dynamic
                     }
                 }
                 Expression[] args = this.ParseArgumentList();
-                MethodBase mb;
-                switch (this.FindMethod(type, id, instance == null, args, out mb))
+                switch (this.FindMethod(type, id, instance == null, args, out MethodBase mb))
                 {
                     case 0:
                         throw this.ParseError(errorPos, Res.NoApplicableMethod,
@@ -1310,8 +1295,7 @@ namespace System.Linq.Dynamic
             this.it = innerIt;
             Expression[] args = this.ParseArgumentList();
             this.it = outerIt;
-            MethodBase signature;
-            if (this.FindMethod(typeof(IEnumerableSignatures), methodName, false, args, out signature) != 1)
+            if (this.FindMethod(typeof(IEnumerableSignatures), methodName, false, args, out MethodBase signature) != 1)
                 throw this.ParseError(errorPos, Res.NoApplicableAggregate, methodName);
             Type[] typeArgs;
             if (signature.Name == "Min" || signature.Name == "Max")
@@ -1374,8 +1358,7 @@ namespace System.Linq.Dynamic
             }
             else
             {
-                MethodBase mb;
-                switch (this.FindIndexer(expr.Type, args, out mb))
+                switch (this.FindIndexer(expr.Type, args, out MethodBase mb))
                 {
                     case 0:
                         throw this.ParseError(errorPos, Res.NoApplicableIndexer,
@@ -1462,8 +1445,7 @@ namespace System.Linq.Dynamic
         void CheckAndPromoteOperand(Type signatures, string opName, ref Expression expr, int errorPos)
         {
             Expression[] args = new Expression[] { expr };
-            MethodBase method;
-            if (this.FindMethod(signatures, "F", false, args, out method) != 1)
+            if (this.FindMethod(signatures, "F", false, args, out MethodBase method) != 1)
                 throw this.ParseError(errorPos, Res.IncompatibleOperand,
                     opName, GetTypeName(args[0].Type));
             expr = args[0];
@@ -1472,8 +1454,7 @@ namespace System.Linq.Dynamic
         void CheckAndPromoteOperands(Type signatures, string opName, ref Expression left, ref Expression right, int errorPos)
         {
             Expression[] args = new Expression[] { left, right };
-            MethodBase method;
-            if (this.FindMethod(signatures, "F", false, args, out method) != 1)
+            if (this.FindMethod(signatures, "F", false, args, out MethodBase method) != 1)
                 throw this.IncompatibleOperandsError(opName, left, right, errorPos);
             left = args[0];
             right = args[1];
@@ -1622,8 +1603,7 @@ namespace System.Linq.Dynamic
                 }
                 else
                 {
-                    string text;
-                    if (this.literals.TryGetValue(ce, out text))
+                    if (this.literals.TryGetValue(ce, out string text))
                     {
                         Type target = GetNonNullableType(type);
                         Object value = null;

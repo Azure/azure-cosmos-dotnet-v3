@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         public WebExceptionRetryPolicy()
         {
-            durationTimer.Start();
+            this.durationTimer.Start();
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Don't penalise first retry with delay.
-            if (attemptCount++ > 1)
+            if (this.attemptCount++ > 1)
             {
                 int remainingSeconds = WebExceptionRetryPolicy.waitTimeInSeconds - this.durationTimer.Elapsed.Seconds;
                 if (remainingSeconds <= 0)

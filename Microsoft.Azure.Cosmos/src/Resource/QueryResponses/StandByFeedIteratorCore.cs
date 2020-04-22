@@ -38,10 +38,8 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
-
             this.clientContext = clientContext;
-            this.container = container;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
@@ -59,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             string firstNotModifiedKeyRangeId = null;
             string currentKeyRangeId;
@@ -126,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal async Task<bool> ShouldRetryFailureAsync(
             ResponseMessage response,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
             {

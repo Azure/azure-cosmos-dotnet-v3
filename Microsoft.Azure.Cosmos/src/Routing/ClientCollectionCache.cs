@@ -23,12 +23,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ClientCollectionCache(ISessionContainer sessionContainer, IStoreModel storeModel, IAuthorizationTokenProvider tokenProvider, IRetryPolicyFactory retryPolicy)
         {
-            if (storeModel == null)
-            {
-                throw new ArgumentNullException("storeModel");
-            }
-
-            this.storeModel = storeModel;
+            this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
@@ -67,14 +62,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
 
-                string payload;
                 string authorizationToken = this.tokenProvider.GetUserAuthorizationToken(
                     request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
                     HttpConstants.HttpMethods.Get,
                     request.Headers,
                     AuthorizationTokenType.PrimaryMasterKey,
-                    out payload);
+                    out string payload);
 
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 

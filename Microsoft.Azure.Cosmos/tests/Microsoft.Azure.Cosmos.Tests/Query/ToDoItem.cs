@@ -83,15 +83,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return 0;
             }
 
-            ToDoItem a = x as ToDoItem;
-            ToDoItem b = y as ToDoItem;
-
-            if(a == null || b == null)
+            if (!(x is ToDoItem a) || !(y is ToDoItem b))
             {
                 throw new ArgumentException("Invalid type");
             }
 
-            if(a.isDone != b.isDone
+            if (a.isDone != b.isDone
                 || a.count != b.count
                 || a.cost != b.cost
                 || !string.Equals(a.id, b.id)

@@ -43,8 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public object GetValue(uint id)
         {
-            object value;
-            if (this.valueDict.TryGetValue(id, out value))
+            if (this.valueDict.TryGetValue(id, out object value))
             {
                 return value;
             }
@@ -104,8 +103,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             IComparable value1 = this.field.GetValue(pair1.Key) as IComparable;
             IComparable value2 = this.field.GetValue(pair2.Key) as IComparable;
 
-            int cmp = 0;
-
+            int cmp;
             if (value1 == null && value2 == null)
                 cmp = 0;
             else if (value1 == null)
@@ -446,8 +444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
             // Get String
             StringBuilder filterBuffer = new StringBuilder(strFilter.Length * 2);
-            uint resultSize;
-            errorCode = NativeMethods.GetString(this.pFilterNode, filterBuffer, (uint)filterBuffer.Capacity, out resultSize);
+            errorCode = NativeMethods.GetString(this.pFilterNode, filterBuffer, (uint)filterBuffer.Capacity, out uint resultSize);
 
             if (errorCode == DISP_E_BUFFERTOOSMALL)
             {
@@ -496,8 +493,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public bool Evaluate(string document)
         {
-            bool result;
-            uint errorCode = NativeMethods.Evaluate(this.pFilterNode, document, out result);
+            uint errorCode = NativeMethods.Evaluate(this.pFilterNode, document, out bool result);
             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
             if (exception != null) throw exception;
 
@@ -611,8 +607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public bool Validate(IEnumerable<string> results, Query query)
         {
-            bool valid;
-            this.Validate(results, query, out valid);
+            this.Validate(results, query, out bool valid);
             return valid;
         }
 
@@ -684,8 +679,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 }
                 numberOfQueries++;
 
-                bool valid;
-                IEnumerable<string> expected = this.Validate(queriedDocuments, query, out valid);
+                IEnumerable<string> expected = this.Validate(queriedDocuments, query, out bool valid);
                 if (!valid)
                 {
                     System.Diagnostics.Trace.TraceInformation(

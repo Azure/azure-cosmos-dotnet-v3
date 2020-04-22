@@ -201,13 +201,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement rawCosmosElement))
             {
-                cosmosElement = default(TCosmosElement);
+                cosmosElement = default;
                 return false;
             }
 
             if (!(rawCosmosElement is TCosmosElement typedCosmosElement))
             {
-                cosmosElement = default(TCosmosElement);
+                cosmosElement = default;
                 return false;
             }
 

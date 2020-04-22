@@ -16,12 +16,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlOffsetLimitClause offsetLimitClause)
             : base(SqlObjectKind.Query)
         {
-            if (selectClause == null)
-            {
-                throw new ArgumentNullException($"{nameof(selectClause)} must not be null.");
-            }
-
-            this.SelectClause = selectClause;
+            this.SelectClause = selectClause ?? throw new ArgumentNullException($"{nameof(selectClause)} must not be null.");
             this.FromClause = fromClause;
             this.WhereClause = whereClause;
             this.GroupByClause = groupByClause;

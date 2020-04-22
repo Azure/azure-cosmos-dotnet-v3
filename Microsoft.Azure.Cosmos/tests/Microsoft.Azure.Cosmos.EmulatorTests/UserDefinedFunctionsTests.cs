@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<string> iterIds = new HashSet<string>();
             while (feedIterator.HasMoreResults)
             {
-                foreach (var response in await feedIterator.ReadNextAsync())
+                foreach (dynamic response in await feedIterator.ReadNextAsync())
                 {
                     Assert.IsTrue(response.cost > 9000);
                     Assert.AreEqual(response.cost * .05, response.total);

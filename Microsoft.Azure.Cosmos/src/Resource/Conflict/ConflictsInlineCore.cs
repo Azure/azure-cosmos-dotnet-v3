@@ -15,18 +15,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal ConflictsInlineCore(ConflictsCore conflicts)
         {
-            if (conflicts == null)
-            {
-                throw new ArgumentNullException(nameof(conflicts));
-            }
-
-            this.conflicts = conflicts;
+            this.conflicts = conflicts ?? throw new ArgumentNullException(nameof(conflicts));
         }
 
         public override Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.conflicts.DeleteAsync(conflict, partitionKey, cancellationToken));
         }
@@ -78,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ItemResponse<T>> ReadCurrentAsync<T>(
             ConflictProperties cosmosConflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.conflicts.ReadCurrentAsync<T>(cosmosConflict, partitionKey, cancellationToken));
         }

@@ -189,10 +189,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         public bool TryGetObjectProperty(IJsonNavigatorNode objectNode, string propertyName, out ObjectProperty objectProperty)
         {
-            objectProperty = default(ObjectProperty);
+            objectProperty = default;
             JObject jObject = ((NewtonsoftNode)objectNode).JToken as JObject;
-            JToken jToken;
-            if (jObject.TryGetValue(propertyName, out jToken))
+            if (jObject.TryGetValue(propertyName, out JToken jToken))
             {
                 objectProperty = new ObjectProperty(
                     new NewtonsoftNode(JToken.FromObject(propertyName), JsonNodeType.FieldName),

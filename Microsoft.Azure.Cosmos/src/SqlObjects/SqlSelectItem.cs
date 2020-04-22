@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos.Sql
            SqlIdentifier alias)
             : base(SqlObjectKind.SelectItem)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException("expression");
             this.Alias = alias;
         }
 

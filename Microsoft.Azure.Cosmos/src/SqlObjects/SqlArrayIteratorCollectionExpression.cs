@@ -13,18 +13,8 @@ namespace Microsoft.Azure.Cosmos.Sql
            SqlCollection collection)
             : base(SqlObjectKind.ArrayIteratorCollectionExpression)
         {
-            if (alias == null)
-            {
-                throw new ArgumentNullException("alias");
-            }
-
-            if (collection == null)
-            {
-                throw new ArgumentNullException("collection");
-            }
-
-            this.Alias = alias;
-            this.Collection = collection;
+            this.Alias = alias ?? throw new ArgumentNullException("alias");
+            this.Collection = collection ?? throw new ArgumentNullException("collection");
         }
 
         public SqlIdentifier Alias

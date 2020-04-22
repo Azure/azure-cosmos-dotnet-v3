@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxPageSize = 50,
             ItemProducer.ProduceAsyncCompleteDelegate completeDelegate = null,
             Action executeCallback = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (responseMessagesPageSize == null)
             {
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IComparer<ItemProducerTree> itemProducerTreeComparer = null,
             ItemProducerTree.ProduceAsyncCompleteDelegate completeDelegate = null,
             Action executeCallback = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (responseMessagesPageSize == null)
             {

@@ -19,12 +19,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlTopSpec(SqlScalarExpression topExpression)
             : base(SqlObjectKind.TopSpec)
         {
-            if (topExpression == null)
-            {
-                throw new ArgumentNullException(nameof(topExpression));
-            }
-
-            this.TopExpresion = topExpression;
+            this.TopExpresion = topExpression ?? throw new ArgumentNullException(nameof(topExpression));
         }
 
         public SqlScalarExpression TopExpresion

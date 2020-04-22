@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //}
 
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            ConnectionPolicy connectionPolicy = null;
+            ConnectionPolicy connectionPolicy;
             if (useGateway)
             {
                 connectionPolicy = new ConnectionPolicy
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<T> result = new List<T>();
 
-            INameValueCollection localHeaders = null;
+            INameValueCollection localHeaders;
             if (headers != null)
             {
                 localHeaders = new DictionaryNameValueCollection(headers);
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string continuationToken = null;
-            DocumentFeedResponse<T> pagedResult = null;
+            DocumentFeedResponse<T> pagedResult;
             do
             {
                 if (!string.IsNullOrEmpty(continuationToken))
@@ -353,10 +353,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  AuthorizationTokenType.PrimaryMasterKey,
                  null))
             {
-                string payload;
                 string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out payload);
+                    HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out string payload);
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
                 RouteToTheOnlyPartition(client, request);
@@ -381,10 +380,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  null,
                  null))
             {
-                string payload;
                 string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Put, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out payload);
+                    HttpConstants.HttpMethods.Put, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out string payload);
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
                 RouteToTheOnlyPartition(client, request);
 
@@ -407,10 +405,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                            null,
                            AuthorizationTokenType.PrimaryMasterKey))
             {
-                string payload;
                 string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Delete, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out payload);
+                    HttpConstants.HttpMethods.Delete, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out string payload);
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
                 RouteToTheOnlyPartition(client, request);
 
@@ -430,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<T> result = new List<T>();
 
-            INameValueCollection localHeaders = null;
+            INameValueCollection localHeaders;
             if (headers != null)
             {
                 localHeaders = new DictionaryNameValueCollection(headers);
@@ -441,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string continuationToken = null;
-            DocumentFeedResponse<T> pagedResult = null;
+            DocumentFeedResponse<T> pagedResult;
             do
             {
                 if (!string.IsNullOrEmpty(continuationToken))
@@ -509,14 +506,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     RouteToTheOnlyPartition(client, request);
 
-                    string payload;
                     string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(
                         request.ResourceAddress,
                         PathsHelper.GetResourcePath(request.ResourceType),
                         HttpConstants.HttpMethods.Get,
                         request.Headers,
                         AuthorizationTokenType.PrimaryMasterKey,
-                        out payload);
+                        out string payload);
                     request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
                     using (new ActivityScope(Guid.NewGuid()))
@@ -1307,7 +1303,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             // There is no federation configuration in the Public Emulator
 
-            await Task.FromResult<bool>(default(bool));
+            await Task.FromResult<bool>(default);
         }
 
         public static void SetStringConfigurationProperty(string propertyName, string value)
@@ -1350,7 +1346,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = TestCommon.CreateCosmosClient(false);
             int numberOfRetry = 3;
-            CosmosException finalException = null;
             do
             {
                 TimeSpan retryAfter = TimeSpan.Zero;
@@ -1379,7 +1374,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException clientException)
                 {
-                    finalException = clientException;
                     if (clientException.StatusCode == (HttpStatusCode)429)
                     {
                         Logger.LogLine("Received request rate too large. ActivityId: {0}, {1}",
@@ -1516,8 +1510,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         e = e.InnerException;
                     }
 
-                    DocumentClientException clientException = e as DocumentClientException;
-                    if (clientException == null)
+                    if (!(e is DocumentClientException clientException))
                     {
                         throw;
                     }

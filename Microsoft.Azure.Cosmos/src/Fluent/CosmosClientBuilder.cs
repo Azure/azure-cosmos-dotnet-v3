@@ -52,18 +52,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string accountEndpoint,
             string authKeyOrResourceToken)
         {
-            if (accountEndpoint == null)
-            {
-                throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
-            }
-
-            if (authKeyOrResourceToken == null)
-            {
-                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
-            }
-
-            this.accountEndpoint = accountEndpoint;
-            this.accountKey = authKeyOrResourceToken;
+            this.accountEndpoint = accountEndpoint ?? throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
+            this.accountKey = authKeyOrResourceToken ?? throw new ArgumentNullException(nameof(authKeyOrResourceToken));
         }
 
         /// <summary>

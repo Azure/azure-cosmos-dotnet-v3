@@ -20,24 +20,14 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientContext clientContext,
             ContainerCore container)
         {
-            if (clientContext == null)
-            {
-                throw new ArgumentNullException(nameof(clientContext));
-            }
-
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            this.container = container;
-            this.clientContext = clientContext;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
         }
 
         public override Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (conflict == null)
             {
@@ -134,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
             ConflictProperties cosmosConflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (cosmosConflict == null)
             {
@@ -198,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return default(T);
+            return default;
         }
     }
 }

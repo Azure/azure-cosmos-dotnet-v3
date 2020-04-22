@@ -23,8 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public EqualPartitionsBalancingStrategy(string hostName, int minPartitionCount, int maxPartitionCount, TimeSpan leaseExpirationInterval)
         {
-            if (hostName == null) throw new ArgumentNullException(nameof(hostName));
-            this.hostName = hostName;
+            this.hostName = hostName ?? throw new ArgumentNullException(nameof(hostName));
             this.minPartitionCount = minPartitionCount;
             this.maxPartitionCount = maxPartitionCount;
             this.leaseExpirationInterval = leaseExpirationInterval;
@@ -32,9 +31,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override IEnumerable<DocumentServiceLease> SelectLeasesToTake(IEnumerable<DocumentServiceLease> allLeases)
         {
-            var workerToPartitionCount = new Dictionary<string, int>();
-            var expiredLeases = new List<DocumentServiceLease>();
-            var allPartitions = new Dictionary<string, DocumentServiceLease>();
+            Dictionary<string, int> workerToPartitionCount = new Dictionary<string, int>();
+            List<DocumentServiceLease> expiredLeases = new List<DocumentServiceLease>();
+            Dictionary<string, DocumentServiceLease> allPartitions = new Dictionary<string, DocumentServiceLease>();
             this.CategorizeLeases(allLeases, allPartitions, expiredLeases, workerToPartitionCount);
 
             int partitionCount = allPartitions.Count;
@@ -87,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         private static KeyValuePair<string, int> FindWorkerWithMostPartitions(Dictionary<string, int> workerToPartitionCount)
         {
-            KeyValuePair<string, int> workerToStealFrom = default(KeyValuePair<string, int>);
+            KeyValuePair<string, int> workerToStealFrom = default;
             foreach (KeyValuePair<string, int> kvp in workerToPartitionCount)
             {
                 if (workerToStealFrom.Value <= kvp.Value)
@@ -101,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         private int CalculateTargetPartitionCount(int partitionCount, int workerCount)
         {
-            var target = 1;
+            int target = 1;
             if (partitionCount > workerCount)
             {
                 target = (int)Math.Ceiling((double)partitionCount / workerCount);
@@ -138,9 +137,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 }
                 else
                 {
-                    var count = 0;
                     string assignedTo = lease.Owner;
-                    if (workerToPartitionCount.TryGetValue(assignedTo, out count))
+                    if (workerToPartitionCount.TryGetValue(assignedTo, out int count))
                     {
                         workerToPartitionCount[assignedTo] = count + 1;
                     }

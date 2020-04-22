@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The response from a single call to ReadFeed for the specified resource.</returns>
-        public Task<DocumentFeedResponse<T>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<T>> ExecuteNextAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.InlineIfPossible(() => this.InternalExecuteNextAsync(cancellationToken), null, cancellationToken);
         }

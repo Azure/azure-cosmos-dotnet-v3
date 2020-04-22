@@ -30,9 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public ChangeFeedProcessorCore(ChangeFeedObserverFactory<T> observerFactory)
         {
-            if (observerFactory == null) throw new ArgumentNullException(nameof(observerFactory));
-
-            this.observerFactory = observerFactory;
+            this.observerFactory = observerFactory ?? throw new ArgumentNullException(nameof(observerFactory));
         }
 
         public void ApplyBuildConfiguration(
@@ -44,17 +42,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             ContainerCore monitoredContainer)
         {
-            if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (customDocumentServiceLeaseStoreManager == null && leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (instanceName == null) throw new ArgumentNullException("InstanceName is required for the processor to initialize.");
-
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
             this.monitoredContainerRid = monitoredContainerRid;
-            this.instanceName = instanceName;
+            this.instanceName = instanceName ?? throw new ArgumentNullException("InstanceName is required for the processor to initialize.");
             this.changeFeedProcessorOptions = changeFeedProcessorOptions;
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
-            this.monitoredContainer = monitoredContainer;
+            this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
         }
 
         public override async Task StartAsync()
@@ -100,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     containerProperties.PartitionKey != null &&
                     containerProperties.PartitionKey.Paths != null &&
                     containerProperties.PartitionKey.Paths.Count > 0;
-                bool isMigratedFixed = (containerProperties.PartitionKey?.IsSystemKey == true);
+                bool isMigratedFixed = containerProperties.PartitionKey?.IsSystemKey == true;
                 if (isPartitioned
                     && !isMigratedFixed
                     && (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))

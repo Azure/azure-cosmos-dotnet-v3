@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlArrayScalarExpression(SqlQuery sqlQuery)
             : base(SqlObjectKind.ArrayScalarExpression)
         {
-            if (sqlQuery == null)
-            {
-                throw new ArgumentNullException($"{nameof(sqlQuery)} can not be null");
-            }
-
-            this.SqlQuery = sqlQuery;
+            this.SqlQuery = sqlQuery ?? throw new ArgumentNullException($"{nameof(sqlQuery)} can not be null");
         }
 
         public static SqlArrayScalarExpression Create(SqlQuery sqlQuery)

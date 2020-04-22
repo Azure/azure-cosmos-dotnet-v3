@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             public override void Post(SendOrPostCallback d, object state)
             {
-                lock (locker)
+                lock (this.locker)
                 {
                     d(state);
                 }

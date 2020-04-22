@@ -12,13 +12,8 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlIdentifier propertyIdentifier)
             : base(SqlObjectKind.PropertyRefScalarExpression)
         {
-            if (propertyIdentifier == null)
-            {
-                throw new ArgumentNullException("propertyIdentifier");
-            }
-
             this.MemberExpression = memberExpression;
-            this.PropertyIdentifier = propertyIdentifier;
+            this.PropertyIdentifier = propertyIdentifier ?? throw new ArgumentNullException("propertyIdentifier");
         }
 
         public SqlIdentifier PropertyIdentifier

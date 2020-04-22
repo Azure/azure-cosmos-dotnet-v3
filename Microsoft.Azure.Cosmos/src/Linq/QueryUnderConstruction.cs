@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             selectClause = SqlSelectClause.Create(selectClause.SelectSpec, selectClause.TopSpec ?? this.topSpec, selectClause.HasDistinct);
             SqlOffsetLimitClause offsetLimitClause = (this.offsetSpec != null) ?
                 SqlOffsetLimitClause.Create(this.offsetSpec, this.limitSpec ?? SqlLimitSpec.Create(SqlNumberLiteral.Create(int.MaxValue))) :
-                offsetLimitClause = default(SqlOffsetLimitClause);
+                offsetLimitClause = default;
             SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, /*GroupBy*/ null, this.orderByClause, offsetLimitClause);
             return result;
         }
@@ -360,8 +360,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlSelectClause.Create(selectSpec, topSpec, inputSelectClause.HasDistinct);
             }
 
-            SqlSelectValueSpec selValue = selectSpec as SqlSelectValueSpec;
-            if (selValue != null)
+            if (selectSpec is SqlSelectValueSpec selValue)
             {
                 SqlSelectSpec intoSpec = selectClause.SelectSpec;
                 if (intoSpec is SqlSelectStarSpec)
@@ -369,8 +368,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return SqlSelectClause.Create(selectSpec, topSpec, selectClause.HasDistinct || inputSelectClause.HasDistinct);
                 }
 
-                SqlSelectValueSpec intoSelValue = intoSpec as SqlSelectValueSpec;
-                if (intoSelValue != null)
+                if (intoSpec is SqlSelectValueSpec intoSelValue)
                 {
                     SqlScalarExpression replacement = SqlExpressionManipulation.Substitute(selValue.Expression, inputParam, intoSelValue.Expression);
                     SqlSelectValueSpec selValueReplacement = SqlSelectValueSpec.Create(replacement);
@@ -396,8 +394,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                SqlSelectValueSpec selValue = spec as SqlSelectValueSpec;
-                if (selValue != null)
+                if (spec is SqlSelectValueSpec selValue)
                 {
                     SqlScalarExpression replaced = selValue.Expression;
                     SqlScalarExpression original = whereClause.FilterExpression;
@@ -422,8 +419,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return orderByClause;
             }
 
-            SqlSelectValueSpec selValue = spec as SqlSelectValueSpec;
-            if (selValue != null)
+            if (spec is SqlSelectValueSpec selValue)
             {
                 SqlScalarExpression replaced = selValue.Expression;
                 SqlOrderByItem[] substitutedItems = new SqlOrderByItem[orderByClause.OrderbyItems.Count];

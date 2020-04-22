@@ -121,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (AddressCacheToken cacheToken in addressCacheTokens)
             {
-                EndpointCache endpointCache;
-                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out endpointCache))
+                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out EndpointCache endpointCache))
                 {
                     tasks.Add(endpointCache.AddressCache.UpdateAsync(cacheToken.PartitionKeyRangeIdentity, cancellationToken));
                 }
@@ -186,8 +185,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (endpoints.Count > 0)
                     {
-                        EndpointCache removedEntry;
-                        this.addressCacheByEndpoint.TryRemove(endpoints.Dequeue(), out removedEntry);
+                        this.addressCacheByEndpoint.TryRemove(endpoints.Dequeue(), out EndpointCache removedEntry);
                     }
                     else
                     {

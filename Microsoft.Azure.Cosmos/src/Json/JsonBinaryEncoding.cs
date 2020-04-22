@@ -513,7 +513,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ReadOnlySpan<byte> stringToken,
             out string encodedSystemString)
         {
-            encodedSystemString = default(string);
+            encodedSystemString = default;
             if (stringToken.IsEmpty)
             {
                 return false;
@@ -791,7 +791,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ReadOnlySpan<byte> utf8String,
             out MultiByteTypeMarker multiByteTypeMarker)
         {
-            multiByteTypeMarker = default(MultiByteTypeMarker);
+            multiByteTypeMarker = default;
             if (JsonBinaryEncoding.TryGetSystemStringId(utf8String, out int systemStringId))
             {
                 multiByteTypeMarker = new MultiByteTypeMarker(
@@ -905,7 +905,7 @@ namespace Microsoft.Azure.Cosmos.Json
             out T fixedWidthValue)
             where T : struct
         {
-            fixedWidthValue = default(T);
+            fixedWidthValue = default;
             int sizeofType = Marshal.SizeOf(fixedWidthValue);
             if (token.Length < 1 + sizeofType)
             {

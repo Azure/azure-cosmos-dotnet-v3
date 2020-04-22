@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static Type GetTypeFromAssembly(Assembly assembly, string typeName)
         {
             string qualifiedName = $"{assembly.GetName().Name}.{typeName}";
-            Type type = assembly.GetTypes().Where((candidateType) => candidateType.Name == (typeName)).FirstOrDefault();
+            Type type = assembly.GetTypes().Where((candidateType) => candidateType.Name == typeName).FirstOrDefault();
             if (type == null)
             {
                 Assert.Fail($"Failed to get the type:{typeName} from assembly:{assembly.GetName().Name}");
@@ -691,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return false;
                 }
 
-                return (excludedPath1.Path == excludedPath2.Path);
+                return excludedPath1.Path == excludedPath2.Path;
             }
 
             public int GetHashCode(ExcludedPath excludedPath1)

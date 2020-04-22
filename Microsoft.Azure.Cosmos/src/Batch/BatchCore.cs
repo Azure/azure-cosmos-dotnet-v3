@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<TransactionalBatchResponse> ExecuteAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ExecuteAsync(
                 requestOptions: null,
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
         public virtual Task<TransactionalBatchResponse> ExecuteAsync(
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             BatchExecutor executor = new BatchExecutor(

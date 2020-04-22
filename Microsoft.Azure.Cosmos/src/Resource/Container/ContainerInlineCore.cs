@@ -28,12 +28,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal ContainerInlineCore(ContainerCore container)
         {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            this.container = container;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
         }
 
         public override Task<ContainerResponse> ReadContainerAsync(

@@ -58,8 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (typeof(T) != typeof(Attachment))
                 {
-                    INameValueCollection responseHeaders;
-                    nonExistingResource = TestCommon.ReadWithRetry<T>(client, resourceId, out responseHeaders);
+                    nonExistingResource = TestCommon.ReadWithRetry<T>(client, resourceId, out INameValueCollection responseHeaders);
                 }
                 else
                 {
@@ -411,7 +410,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             const int minIndexInterval = 5000; // 5 seconds
             while (maxTries-- > 0)
             {
-                DocumentFeedResponse<dynamic> resourceFeed = null;
                 IDocumentQuery<dynamic> queryService = null;
                 string queryString = @"select * from root r where r." + queryProperty + @"=""" + queryPropertyValue + @"""";
                 if (typeof(T) == typeof(Database))
@@ -433,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 while (queryService.HasMoreResults)
                 {
-                    resourceFeed = queryService.ExecuteNextAsync().Result;
+                    DocumentFeedResponse<dynamic> resourceFeed = queryService.ExecuteNextAsync().Result;
 
                     if (resourceFeed.Count > 0)
                     {

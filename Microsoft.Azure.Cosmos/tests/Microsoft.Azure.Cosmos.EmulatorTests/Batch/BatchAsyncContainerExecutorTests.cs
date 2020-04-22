@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<TransactionalBatchOperationResult>> tasks = new List<Task<TransactionalBatchOperationResult>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default(CancellationToken)));
+                tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default));
             }
 
             await Task.WhenAll(tasks);

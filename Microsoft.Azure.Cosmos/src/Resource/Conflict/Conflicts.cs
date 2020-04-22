@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads the item that originated the conflict.
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
             ConflictProperties conflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads the content of the Conflict resource in the Azure Cosmos DB service.

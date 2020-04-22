@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionConsistentResourceType()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
         }
 
@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionInconsistentResourceType()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
         }
 
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenAvailability()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
 
             using (DocumentServiceRequest request =
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
 
         }
@@ -580,8 +580,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    IEnumerable<string> enumerable;
-                    Assert.IsFalse(request.Headers.TryGetValues("x-ms-session-token", out enumerable));
+                    Assert.IsFalse(request.Headers.TryGetValues("x-ms-session-token", out IEnumerable<string> enumerable));
                 }
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
             };

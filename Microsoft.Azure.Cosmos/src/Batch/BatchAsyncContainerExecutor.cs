@@ -55,11 +55,6 @@ namespace Microsoft.Azure.Cosmos
             int maxServerRequestBodyLength,
             int dispatchTimerInSeconds = BatchAsyncContainerExecutor.DefaultDispatchTimerInSeconds)
         {
-            if (cosmosContainer == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosContainer));
-            }
-
             if (maxServerRequestOperationCount < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxServerRequestOperationCount));
@@ -75,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(dispatchTimerInSeconds));
             }
 
-            this.cosmosContainer = cosmosContainer;
+            this.cosmosContainer = cosmosContainer ?? throw new ArgumentNullException(nameof(cosmosContainer));
             this.cosmosClientContext = cosmosClientContext;
             this.maxServerRequestBodyLength = maxServerRequestBodyLength;
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
@@ -87,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (operation == null)
             {
@@ -122,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
         internal virtual async Task ValidateOperationAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (itemRequestOptions != null)
             {
@@ -163,9 +158,8 @@ namespace Microsoft.Azure.Cosmos
                             | itemRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.PartitionKey, out object pkStringObj)))
             {
                 byte[] epk = epkObj as byte[];
-                string epkStr = epkStrObj as string;
                 string pkString = pkStringObj as string;
-                if ((epk == null && pkString == null) || epkStr == null)
+                if ((epk == null && pkString == null) || !(epkStrObj is string epkStr))
                 {
                     throw new InvalidOperationException(string.Format(
                         ClientResources.EpkPropertiesPairingExpected,
@@ -271,6 +265,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return streamer;
             }
+
             SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(partitionKeyRangeId);
             BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(
                 this.maxServerRequestOperationCount,

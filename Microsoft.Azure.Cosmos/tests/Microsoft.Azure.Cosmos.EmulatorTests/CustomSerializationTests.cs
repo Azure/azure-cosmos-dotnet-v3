@@ -123,15 +123,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestDateParseHandlingOnReadDocument()
         {
             const string jsonProperty = "jsonString";
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             // Verify round-trip create and read document
             RequestOptions applyRequestOptions = this.ApplyRequestOptions(new RequestOptions(), serializerSettings);
@@ -160,15 +158,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestDateParseHandlingOnDocumentQuery()
         {
             const string jsonProperty = "jsonString";
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             FeedOptions options = this.ApplyFeedOptions(new FeedOptions() { EnableCrossPartitionQuery = true }, serializerSettings);
 
@@ -184,15 +180,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             const string jsonProperty = "jsonString";
 
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             // Verify with stored procedure
             StoredProcedure storedProcedure = new StoredProcedure();
@@ -728,7 +722,7 @@ function bulkImport(docs) {
                 JsonSerializer serializer)
             {
                 return reader.TokenType == JsonToken.Null
-                    ? default(TSource)
+                    ? default
                     : this.Deserializer(serializer.Deserialize<TDestination>(reader));
             }
         }
@@ -1005,7 +999,7 @@ function bulkImport(docs) {
                 JsonSerializer jsonSerializer)
             {
                 return jsonReader.Value == null
-                    ? default(TSource)
+                    ? default
                     : this.Deserializer((string)jsonReader.Value);
             }
         }

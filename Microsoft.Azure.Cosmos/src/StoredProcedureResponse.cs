@@ -27,7 +27,6 @@ namespace Microsoft.Azure.Cosmos
     internal class StoredProcedureResponse<TValue> : IStoredProcedureResponse<TValue>
     {
         private DocumentServiceResponse response;
-        private TValue responseBody;
         private JsonSerializerSettings serializerSettings;
 
         /// <summary>
@@ -47,11 +46,11 @@ namespace Microsoft.Azure.Cosmos
                 // load resource
                 if (typeof(TValue) == typeof(Document) || typeof(Document).IsAssignableFrom(typeof(TValue)))
                 {
-                    this.responseBody = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Document(), this.serializerSettings);
+                    this.Response = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Document(), this.serializerSettings);
                 }
                 else if (typeof(TValue) == typeof(Attachment) || typeof(Attachment).IsAssignableFrom(typeof(TValue)))
                 {
-                    this.responseBody = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Attachment(), this.serializerSettings);
+                    this.Response = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Attachment(), this.serializerSettings);
                 }
                 else
                 {
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
                     string responseString = responseReader.ReadToEnd();
                     try
                     {
-                        this.responseBody = (TValue)JsonConvert.DeserializeObject(responseString, typeof(TValue), this.serializerSettings);
+                        this.Response = (TValue)JsonConvert.DeserializeObject(responseString, typeof(TValue), this.serializerSettings);
                     }
                     catch (JsonException ex)
                     {
@@ -206,13 +205,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the response of a stored procedure, serialized into the given type from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The response of a stored procedure, serialized into the given type.</value>
-        public TValue Response
-        {
-            get
-            {
-                return this.responseBody;
-            }
-        }
+        public TValue Response { get; }
 
         /// <summary>
         /// Gets the clientside request statics for execution of stored procedure.
@@ -233,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The returned resource.</returns>
         public static implicit operator TValue(StoredProcedureResponse<TValue> source)
         {
-            return source.responseBody;
+            return source.Response;
         }
     }
 }

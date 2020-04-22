@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> response = this.ReadStreamAsync(
                         requestOptions: requestOptions,
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<DatabaseResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> response = this.DeleteStreamAsync(
                         requestOptions: requestOptions,
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async override Task<int?> ReadThroughputAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
             return response.Resource?.Throughput;
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async override Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         public async override Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
             int throughput,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (containerProperties == null)
             {
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (containerProperties == null)
             {
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> ReadStreamAsync(
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ProcessAsync(
                 OperationType.Read,
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> DeleteStreamAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             return this.ProcessAsync(
                 OperationType.Delete,
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos
                     ContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             if (containerProperties == null)
             {
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyPath,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (containerProperties == null)
             {
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyPath,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (containerProperties == null)
             {
@@ -461,7 +461,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<UserResponse> CreateUserAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos
         public Task<ResponseMessage> CreateUserStreamAsync(
             UserProperties userProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (userProperties == null)
             {
@@ -512,7 +512,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<UserResponse> UpsertUserAsync(string id,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -745,7 +745,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<ResponseMessage> ProcessUserUpsertAsync(
             Stream streamPayload,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.LinkUri,
@@ -760,7 +760,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default)
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
             return databaseResponse?.Resource?.ResourceId;

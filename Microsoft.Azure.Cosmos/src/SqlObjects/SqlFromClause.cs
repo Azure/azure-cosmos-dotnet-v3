@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlFromClause(SqlCollectionExpression expression)
             : base(SqlObjectKind.FromClause)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException("expression");
         }
 
         public SqlCollectionExpression Expression

@@ -56,8 +56,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     foreach (ExtractPartitionKeyRangeFromHeadersTestData testData in testSet.Postive)
                     {
                         INameValueCollection headers = getHeadersWithContinuation(testData.CompositeContinuationToken);
-                        List<CompositeContinuationToken> suppliedTokens;
-                        Range<string> range = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
+                        Range<string> range = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
 
                         if (suppliedTokens != null)
                         {
@@ -76,8 +75,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         INameValueCollection headers = getHeadersWithContinuation(testData.CompositeContinuationToken);
                         try
                         {
-                            List<CompositeContinuationToken> suppliedTokens;
-                            Range<string> rangeOrId = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
+                            Range<string> rangeOrId = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
                             Assert.Fail("Expect BadRequestException");
                         }
                         catch (BadRequestException)
@@ -110,11 +108,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     foreach (AddFormattedContinuationToHeaderTestUnit positiveTestData in testData.TestSet.Postive)
                     {
 
-                        INameValueCollection headers;
-                        List<CompositeContinuationToken> resolvedContinuationTokens;
-                        List<PartitionKeyRange> resolvedRanges;
 
-                        this.AddFormattedContinuationHeaderHelper(positiveTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
+                        this.AddFormattedContinuationHeaderHelper(positiveTestData, out INameValueCollection headers, out List<PartitionKeyRange> resolvedRanges, out List<CompositeContinuationToken> resolvedContinuationTokens);
 
                         bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, positiveTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null));
 
@@ -125,11 +120,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         try
                         {
-                            INameValueCollection headers;
-                            List<CompositeContinuationToken> resolvedContinuationTokens;
-                            List<PartitionKeyRange> resolvedRanges;
 
-                            this.AddFormattedContinuationHeaderHelper(negativeTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
+                            this.AddFormattedContinuationHeaderHelper(negativeTestData, out INameValueCollection headers, out List<PartitionKeyRange> resolvedRanges, out List<CompositeContinuationToken> resolvedContinuationTokens);
 
                             bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, negativeTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null));
 
@@ -240,8 +232,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                             await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo);
 
-                            List<CompositeContinuationToken> suppliedTokens;
-                            Range<string> nextRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
+                            Range<string> nextRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
                             currentRange = nextRange.IsEmpty ? null : nextRange;
                         }
 

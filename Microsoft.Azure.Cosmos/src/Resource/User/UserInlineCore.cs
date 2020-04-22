@@ -17,12 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal UserInlineCore(UserCore database)
         {
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-
-            this.user = database;
+            this.user = database ?? throw new ArgumentNullException(nameof(database));
         }
 
         public override Task<UserResponse> ReadAsync(

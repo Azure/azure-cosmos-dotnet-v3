@@ -11,11 +11,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlInScalarExpression(SqlScalarExpression expression, bool not, IReadOnlyList<SqlScalarExpression> items)
             : base(SqlObjectKind.InScalarExpression)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
             if (items == null)
             {
                 throw new ArgumentNullException("items");
@@ -34,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
             }
 
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException("expression");
             this.Items = new List<SqlScalarExpression>(items);
             this.Not = not;
         }

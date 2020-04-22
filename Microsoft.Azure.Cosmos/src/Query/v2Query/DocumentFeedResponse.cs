@@ -29,9 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly IEnumerable<T> inner;
         private readonly Dictionary<string, long> usageHeaders;
         private readonly Dictionary<string, long> quotaHeaders;
-        private readonly bool useETagAsContinuation;
         private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;
-        private INameValueCollection responseHeaders;
 
         /// <summary>
         /// Constructor exposed for mocking purposes.
@@ -62,10 +60,10 @@ namespace Microsoft.Azure.Cosmos
             : this(result)
         {
             this.Count = count;
-            this.responseHeaders = (INameValueCollection)responseHeaders.Clone();
+            this.Headers = (INameValueCollection)responseHeaders.Clone();
             this.usageHeaders = new Dictionary<string, long>();
             this.quotaHeaders = new Dictionary<string, long>();
-            this.useETagAsContinuation = useETagAsContinuation;
+            this.UseETagAsContinuation = useETagAsContinuation;
             this.queryMetrics = queryMetrics;
             this.disallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.ResponseLengthBytes = responseLengthBytes;
@@ -250,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         /// The maximum size limit for this entity. Measured in kilobytes for document resources 
         /// and in counts for other resources.
         /// </value>
-        public string MaxResourceQuota => this.responseHeaders[HttpConstants.HttpHeaders.MaxResourceQuota];
+        public string MaxResourceQuota => this.Headers[HttpConstants.HttpHeaders.MaxResourceQuota];
 
         /// <summary>
         /// Gets the current size of this entity from the Azure Cosmos DB service.
@@ -259,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
         /// The current size for this entity. Measured in kilobytes for document resources 
         /// and in counts for other resources.
         /// </value>
-        public string CurrentResourceQuotaUsage => this.responseHeaders[HttpConstants.HttpHeaders.CurrentResourceQuotaUsage];
+        public string CurrentResourceQuotaUsage => this.Headers[HttpConstants.HttpHeaders.CurrentResourceQuotaUsage];
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
@@ -268,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
         /// The request charge measured in reqest units.
         /// </value>
         public double RequestCharge => Helpers.GetHeaderValueDouble(
-                    this.responseHeaders,
+                    this.Headers,
                     HttpConstants.HttpHeaders.RequestCharge,
                     0);
 
@@ -278,7 +276,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The activity ID for the request.
         /// </value>
-        public string ActivityId => this.responseHeaders[HttpConstants.HttpHeaders.ActivityId];
+        public string ActivityId => this.Headers[HttpConstants.HttpHeaders.ActivityId];
 
         /// <summary>
         /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
@@ -305,8 +303,8 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException(this.disallowContinuationTokenMessage);
                 }
 
-                Debug.Assert(!this.useETagAsContinuation);
-                this.responseHeaders[HttpConstants.HttpHeaders.Continuation] = value;
+                Debug.Assert(!this.UseETagAsContinuation);
+                this.Headers[HttpConstants.HttpHeaders.Continuation] = value;
             }
         }
 
@@ -316,12 +314,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The session token for use in session consistency.
         /// </value>
-        public string SessionToken => this.responseHeaders[HttpConstants.HttpHeaders.SessionToken];
+        public string SessionToken => this.Headers[HttpConstants.HttpHeaders.SessionToken];
 
         /// <summary>
         /// Gets the content parent location, for example, dbs/foo/colls/bar, from the Azure Cosmos DB service.
         /// </summary>
-        public string ContentLocation => this.responseHeaders[HttpConstants.HttpHeaders.OwnerFullName];
+        public string ContentLocation => this.Headers[HttpConstants.HttpHeaders.OwnerFullName];
 
         /// <summary>
         /// Gets the entity tag associated with last transaction in the Azure Cosmos DB service,
@@ -330,13 +328,9 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="DocumentClient.CreateDocumentChangeFeedQuery(string, ChangeFeedOptions)"/> 
         /// to get feed changes since the transaction specified by this entity tag.
         /// </summary>
-        public string ETag => this.responseHeaders[HttpConstants.HttpHeaders.ETag];
+        public string ETag => this.Headers[HttpConstants.HttpHeaders.ETag];
 
-        internal INameValueCollection Headers
-        {
-            get => this.responseHeaders;
-            set => this.responseHeaders = value;
-        }
+        internal INameValueCollection Headers { get; set; }
 
         /// <summary>
         /// Gets the response headers from the Azure Cosmos DB service.
@@ -344,7 +338,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The response headers.
         /// </value>
-        public NameValueCollection ResponseHeaders => this.responseHeaders.ToNameValueCollection();
+        public NameValueCollection ResponseHeaders => this.Headers.ToNameValueCollection();
 
         /// <summary>
         /// Get QueryMetrics for each individual partition in the Azure Cosmos DB service
@@ -357,9 +351,9 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The continuation token to be used for continuing enumeration.
         /// </value>
-        internal string InternalResponseContinuation => this.useETagAsContinuation ?
+        internal string InternalResponseContinuation => this.UseETagAsContinuation ?
                     this.ETag :
-                    this.responseHeaders[HttpConstants.HttpHeaders.Continuation];
+                    this.Headers[HttpConstants.HttpHeaders.Continuation];
 
         /// <summary>
         /// Gets a dump for troubleshooting the request.
@@ -378,7 +372,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // This is used by FeedResponseBinder.
-        internal bool UseETagAsContinuation => this.useETagAsContinuation;
+        internal bool UseETagAsContinuation { get; }
 
         internal string DisallowContinuationTokenMessage => this.disallowContinuationTokenMessage;
 

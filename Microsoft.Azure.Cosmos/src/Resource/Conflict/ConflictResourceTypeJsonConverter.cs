@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos
     {
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            string resourceType = null;
             Type valueAsType = (Type)value;
+            string resourceType;
             if (valueAsType == typeof(CosmosElements.CosmosElement))
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeDocument;

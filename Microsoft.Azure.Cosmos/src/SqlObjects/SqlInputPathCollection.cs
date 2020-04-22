@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlPathExpression relativePath)
             : base(SqlObjectKind.InputPathCollection)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException("input");
-            }
-
-            this.Input = input;
+            this.Input = input ?? throw new ArgumentNullException("input");
             this.RelativePath = relativePath;
         }
 

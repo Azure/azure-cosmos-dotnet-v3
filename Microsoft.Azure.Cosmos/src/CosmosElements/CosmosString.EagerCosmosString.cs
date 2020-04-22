@@ -19,12 +19,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             public EagerCosmosString(string value)
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException($"{nameof(value)}");
-                }
-
-                this.Value = value;
+                this.Value = value ?? throw new ArgumentNullException($"{nameof(value)}");
             }
 
             public override string Value { get; }

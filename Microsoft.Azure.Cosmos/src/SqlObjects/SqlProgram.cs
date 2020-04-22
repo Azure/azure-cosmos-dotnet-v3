@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlProgram(SqlQuery query)
             : base(SqlObjectKind.Program)
         {
-            if (query == null)
-            {
-                throw new ArgumentNullException($"{nameof(query)} must not be null.");
-            }
-
-            this.Query = query;
+            this.Query = query ?? throw new ArgumentNullException($"{nameof(query)} must not be null.");
         }
 
         public SqlQuery Query

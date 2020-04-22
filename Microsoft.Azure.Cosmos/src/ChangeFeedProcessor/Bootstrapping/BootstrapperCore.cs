@@ -22,13 +22,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
         public BootstrapperCore(PartitionSynchronizer synchronizer, DocumentServiceLeaseStore leaseStore, TimeSpan lockTime, TimeSpan sleepTime)
         {
-            if (synchronizer == null) throw new ArgumentNullException(nameof(synchronizer));
-            if (leaseStore == null) throw new ArgumentNullException(nameof(leaseStore));
             if (lockTime <= TimeSpan.Zero) throw new ArgumentException("should be positive", nameof(lockTime));
             if (sleepTime <= TimeSpan.Zero) throw new ArgumentException("should be positive", nameof(sleepTime));
 
-            this.synchronizer = synchronizer;
-            this.leaseStore = leaseStore;
+            this.synchronizer = synchronizer ?? throw new ArgumentNullException(nameof(synchronizer));
+            this.leaseStore = leaseStore ?? throw new ArgumentNullException(nameof(leaseStore));
             this.lockTime = lockTime;
             this.sleepTime = sleepTime;
         }

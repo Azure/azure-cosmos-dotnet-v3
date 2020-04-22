@@ -16,12 +16,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         internal ScriptsInlineCore(ScriptsCore scripts)
         {
-            if (scripts == null)
-            {
-                throw new ArgumentNullException(nameof(scripts));
-            }
-
-            this.scripts = scripts;
+            this.scripts = scripts ?? throw new ArgumentNullException(nameof(scripts));
         }
 
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(

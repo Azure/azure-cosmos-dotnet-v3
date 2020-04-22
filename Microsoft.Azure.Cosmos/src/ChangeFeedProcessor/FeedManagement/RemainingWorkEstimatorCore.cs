@@ -35,23 +35,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             Func<string, string, bool, FeedIterator> feedCreator,
             int degreeOfParallelism)
         {
-            if (leaseContainer == null)
-            {
-                throw new ArgumentNullException(nameof(leaseContainer));
-            }
-
-            if (feedCreator == null)
-            {
-                throw new ArgumentNullException(nameof(feedCreator));
-            }
-
             if (degreeOfParallelism < 1)
             {
                 throw new ArgumentOutOfRangeException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
             }
 
-            this.leaseContainer = leaseContainer;
-            this.feedCreator = feedCreator;
+            this.leaseContainer = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
+            this.feedCreator = feedCreator ?? throw new ArgumentNullException(nameof(feedCreator));
             this.degreeOfParallelism = degreeOfParallelism;
         }
 
@@ -158,8 +148,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         private static long TryConvertToNumber(string number)
         {
-            long parsed = 0;
-            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
+            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out long parsed))
             {
                 DefaultTrace.TraceWarning("Cannot parse number '{0}'.", number);
                 return 0;

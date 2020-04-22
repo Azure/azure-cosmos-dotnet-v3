@@ -26,8 +26,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 case SqlObjectKind.ArrayCreateScalarExpression:
                     {
-                        SqlArrayCreateScalarExpression arrayExp = into as SqlArrayCreateScalarExpression;
-                        if (arrayExp == null)
+                        if (!(into is SqlArrayCreateScalarExpression arrayExp))
                         {
                             throw new DocumentQueryException("Expected a SqlArrayCreateScalarExpression, got a " + into.GetType());
                         }
@@ -44,8 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case SqlObjectKind.BinaryScalarExpression:
                     {
-                        SqlBinaryScalarExpression binaryExp = into as SqlBinaryScalarExpression;
-                        if (binaryExp == null)
+                        if (!(into is SqlBinaryScalarExpression binaryExp))
                         {
                             throw new DocumentQueryException("Expected a BinaryScalarExpression, got a " + into.GetType());
                         }
@@ -56,8 +54,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case SqlObjectKind.UnaryScalarExpression:
                     {
-                        SqlUnaryScalarExpression unaryExp = into as SqlUnaryScalarExpression;
-                        if (unaryExp == null)
+                        if (!(into is SqlUnaryScalarExpression unaryExp))
                         {
                             throw new DocumentQueryException("Expected a SqlUnaryScalarExpression, got a " + into.GetType());
                         }
@@ -71,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case SqlObjectKind.FunctionCallScalarExpression:
                     {
-                        SqlFunctionCallScalarExpression funcExp = into as SqlFunctionCallScalarExpression;
-                        if (funcExp == null)
+                        if (!(into is SqlFunctionCallScalarExpression funcExp))
                         {
                             throw new DocumentQueryException("Expected a SqlFunctionCallScalarExpression, got a " + into.GetType());
                         }
@@ -89,8 +85,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case SqlObjectKind.ObjectCreateScalarExpression:
                     {
-                        SqlObjectCreateScalarExpression objExp = into as SqlObjectCreateScalarExpression;
-                        if (objExp == null)
+                        if (!(into is SqlObjectCreateScalarExpression objExp))
                         {
                             throw new DocumentQueryException("Expected a SqlObjectCreateScalarExpression, got a " + into.GetType());
                         }
@@ -102,8 +97,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case SqlObjectKind.MemberIndexerScalarExpression:
                     {
-                        SqlMemberIndexerScalarExpression memberExp = into as SqlMemberIndexerScalarExpression;
-                        if (memberExp == null)
+                        if (!(into is SqlMemberIndexerScalarExpression memberExp))
                         {
                             throw new DocumentQueryException("Expected a SqlMemberIndexerScalarExpression, got a " + into.GetType());
                         }
@@ -115,8 +109,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case SqlObjectKind.PropertyRefScalarExpression:
                     {
                         // This is the leaf of the recursion
-                        SqlPropertyRefScalarExpression propExp = into as SqlPropertyRefScalarExpression;
-                        if (propExp == null)
+                        if (!(into is SqlPropertyRefScalarExpression propExp))
                         {
                             throw new DocumentQueryException("Expected a SqlPropertyRefScalarExpression, got a " + into.GetType());
                         }

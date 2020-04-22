@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         public void VerifyDocumentClientExceptionToResponseMessage()
         {
             string errorMessage = "Test Exception!";
-            DocumentClientException dce = null;
+            DocumentClientException dce;
             try
             {
                 throw new DocumentClientException(
@@ -118,7 +118,6 @@ namespace Microsoft.Azure.Cosmos
         public void VerifyTransportExceptionToResponseMessage()
         {
             string errorMessage = "Test Exception!";
-            DocumentClientException dce = null;
             TransportException transportException = new TransportException(
                 errorCode: TransportErrorCode.ConnectionBroken,
                 innerException: null,
@@ -128,6 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 userPayload: true,
                 payloadSent: true);
 
+            DocumentClientException dce;
             try
             {
                 throw new ServiceUnavailableException(

@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                     Stream streamPayload,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (item == null)
             {
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
                     Stream streamPayload,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (item == null)
             {
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (id == null)
             {
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (queryDefinition == null)
             {
@@ -541,7 +541,7 @@ namespace Microsoft.Azure.Cosmos
             return new BatchCore(this, partitionKey);
         }
 
-        internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default)
         {
             Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRid = await this.GetRIDAsync(cancellationToken);
@@ -561,7 +561,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             int? maxItemCount = null,
             ChangeFeedRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 
@@ -749,7 +749,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             if (!stream.CanSeek)
             {
@@ -760,8 +760,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 stream.Position = 0;
 
-                MemoryStream memoryStream = stream as MemoryStream;
-                if (memoryStream == null)
+                if (!(stream is MemoryStream memoryStream))
                 {
                     memoryStream = new MemoryStream();
                     stream.CopyTo(memoryStream);

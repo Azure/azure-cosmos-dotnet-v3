@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer()
         {
-            var processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
+            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,

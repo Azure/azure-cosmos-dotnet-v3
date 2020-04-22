@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlIdentifierPathExpression(SqlPathExpression parentPath, SqlIdentifier value)
             : base(SqlObjectKind.IdentifierPathExpression, parentPath)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException("value");
-            }
-
-            this.Value = value;
+            this.Value = value ?? throw new ArgumentNullException("value");
         }
 
         public SqlIdentifier Value

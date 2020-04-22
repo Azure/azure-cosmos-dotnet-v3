@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if geometry collections are equal. <c>false</c> otherwise.</returns>
         public bool Equals(GeometryCollection other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

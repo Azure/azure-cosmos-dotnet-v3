@@ -89,8 +89,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (KeyValuePair<string, JToken> pair in this.propertyBag)
                 {
-                    JValue value = pair.Value as JValue;
-                    if (value != null)
+                    if (pair.Value is JValue value)
                     {
                         collection.Add(pair.Key, value.ToString());
                     }
@@ -107,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
 
         public bool Equals(SerializableNameValueCollection collection)
         {
-            if (Object.ReferenceEquals(null, collection))
+            if (collection is null)
             {
                 return false;
             }

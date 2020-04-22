@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Func<int, CancellationToken, Task<int>> refreshFunc1 = (key, cancellationToken) =>
             {
                 Interlocked.Increment(ref numberOfCacheRefreshes);
-                return Task.FromResult(key * 2 + 1);
+                return Task.FromResult((key * 2) + 1);
             };
 
             List<Task> tasks1 = new List<Task>();

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<ThroughputResponse> ReadThroughputAsync(
             string targetRID,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             string targetRID,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
 
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
             string targetRID,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             try
             {
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
             string targetRID,
             int throughput,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ReplaceThroughputPropertiesAsync(
                 targetRID,
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
             string targetRID,
             int throughput,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ReplaceThroughputPropertiesIfExistsAsync(
                 targetRID,
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<T> SingleOrDefaultAsync<T>(
             FeedIterator<T> offerQuery,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             while (offerQuery.HasMoreResults)
             {
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return default(T);
+            return default;
         }
 
         private async Task<ThroughputResponse> GetThroughputResponseAsync(
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
            Uri linkUri,
            ResourceType resourceType,
            RequestOptions requestOptions = null,
-           CancellationToken cancellationToken = default(CancellationToken))
+           CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: linkUri,

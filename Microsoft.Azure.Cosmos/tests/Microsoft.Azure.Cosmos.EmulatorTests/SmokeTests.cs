@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (documentQuery.HasMoreResults)
             {
                 FeedResponse<Person> feedResponse = await documentQuery.ReadNextAsync();
-                int maxItemCount = options.MaxItemCount ?? default(int);
+                int maxItemCount = options.MaxItemCount ?? default;
                 Assert.IsTrue(feedResponse.Count >= 0 && feedResponse.Count <= maxItemCount);
 
                 personsList.AddRange(feedResponse);

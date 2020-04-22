@@ -199,13 +199,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (authKeyOrResourceToken == null)
-            {
-                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
-            }
-
             this.Endpoint = new Uri(accountEndpoint);
-            this.AccountKey = authKeyOrResourceToken;
+            this.AccountKey = authKeyOrResourceToken ?? throw new ArgumentNullException(nameof(authKeyOrResourceToken));
 
             this.ClientContext = ClientContextCore.Create(
                 this,
@@ -227,11 +222,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (authKeyOrResourceToken == null)
-            {
-                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
-            }
-
             if (cosmosClientOptions == null)
             {
                 throw new ArgumentNullException(nameof(cosmosClientOptions));
@@ -243,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Endpoint = new Uri(accountEndpoint);
-            this.AccountKey = authKeyOrResourceToken;
+            this.AccountKey = authKeyOrResourceToken ?? throw new ArgumentNullException(nameof(authKeyOrResourceToken));
 
             this.ClientContext = ClientContextCore.Create(
                  this,
@@ -360,7 +350,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -401,7 +391,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -456,7 +446,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -531,7 +521,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ThroughputProperties throughputProperties = throughput.HasValue
                 ? ThroughputProperties.CreateManualThroughput(throughput.Value) : null;
@@ -759,7 +749,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (databaseProperties == null)
             {
@@ -823,7 +813,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (databaseProperties == null)
             {
@@ -844,7 +834,7 @@ namespace Microsoft.Azure.Cosmos
                     DatabaseProperties databaseProperties,
                     ThroughputProperties throughputProperties,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> response = this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.DatabaseRootUri,
@@ -865,7 +855,7 @@ namespace Microsoft.Azure.Cosmos
                     DatabaseProperties databaseProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),

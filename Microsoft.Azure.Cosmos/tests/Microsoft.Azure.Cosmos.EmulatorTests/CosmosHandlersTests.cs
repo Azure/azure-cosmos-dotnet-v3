@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient customClient = TestCommon.CreateCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             using (ResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 streamPayload: TestCommon.SerializerCore.ToStream(testItem)))
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 for (int j = 0; j < perPKItemCount; j++)
                 {
-                    ToDoActivity temp = CreateRandomToDoActivity(pk);
+                    ToDoActivity temp = this.CreateRandomToDoActivity(pk);
 
                     createdList.Add(temp);
 

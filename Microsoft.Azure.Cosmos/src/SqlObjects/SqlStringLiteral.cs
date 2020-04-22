@@ -134,12 +134,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlStringLiteral(string value)
             : base(SqlObjectKind.StringLiteral)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException("value");
-            }
-
-            this.Value = value;
+            this.Value = value ?? throw new ArgumentNullException("value");
         }
 
         public string Value
@@ -149,8 +144,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public static SqlStringLiteral Create(string value)
         {
-            SqlStringLiteral sqlStringLiteral;
-            if (!SqlStringLiteral.FrequentlyUsedStrings.TryGetValue(value, out sqlStringLiteral))
+            if (!SqlStringLiteral.FrequentlyUsedStrings.TryGetValue(value, out SqlStringLiteral sqlStringLiteral))
             {
                 sqlStringLiteral = new SqlStringLiteral(value);
             }

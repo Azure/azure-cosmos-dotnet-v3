@@ -25,12 +25,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         internal LinkedCrs(string href, string hrefType = null)
             : base(CrsType.Linked)
         {
-            if (href == null)
-            {
-                throw new ArgumentNullException("href");
-            }
-
-            this.Href = href;
+            this.Href = href ?? throw new ArgumentNullException("href");
             this.HrefType = hrefType;
         }
 
@@ -85,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if CRSs are equal. <c>false</c> otherwise.</returns>
         public bool Equals(LinkedCrs other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

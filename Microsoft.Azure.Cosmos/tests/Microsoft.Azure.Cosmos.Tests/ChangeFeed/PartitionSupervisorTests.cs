@@ -28,48 +28,48 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         public PartitionSupervisorTests()
         {
-            lease = Mock.Of<DocumentServiceLease>();
-            Mock.Get(lease)
+            this.lease = Mock.Of<DocumentServiceLease>();
+            Mock.Get(this.lease)
                 .Setup(l => l.CurrentLeaseToken)
                 .Returns("partitionId");
 
-            leaseRenewer = Mock.Of<LeaseRenewer>();
-            partitionProcessor = Mock.Of<FeedProcessor>();
-            observer = Mock.Of<ChangeFeedObserver<dynamic>>();
+            this.leaseRenewer = Mock.Of<LeaseRenewer>();
+            this.partitionProcessor = Mock.Of<FeedProcessor>();
+            this.observer = Mock.Of<ChangeFeedObserver<dynamic>>();
 
-            sut = new PartitionSupervisorCore<dynamic>(lease, observer, partitionProcessor, leaseRenewer);
+            this.sut = new PartitionSupervisorCore<dynamic>(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer);
         }
 
         [TestMethod]
         public async Task RunObserver_ShouldCancelTasks_WhenTokenCanceled()
         {
             Task renewerTask = Task.FromResult(false);
-            Mock.Get(leaseRenewer)
+            Mock.Get(this.leaseRenewer)
                 .Setup(renewer => renewer.RunAsync(It.IsAny<CancellationToken>()))
                 .Returns<CancellationToken>(token => renewerTask = Task.Delay(TimeSpan.FromMinutes(1), token));
 
             Task processorTask = Task.FromResult(false);
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
                 .Returns<CancellationToken>(token => processorTask = Task.Delay(TimeSpan.FromMinutes(1), token));
 
-            Task supervisorTask = sut.RunAsync(shutdownToken.Token);
+            Task supervisorTask = this.sut.RunAsync(this.shutdownToken.Token);
 
             Task delay = Task.Delay(TimeSpan.FromMilliseconds(100));
             Task finished = await Task.WhenAny(supervisorTask, delay).ConfigureAwait(false);
             Assert.AreEqual(delay, finished);
 
-            shutdownToken.Cancel();
+            this.shutdownToken.Cancel();
             await supervisorTask.ConfigureAwait(false);
 
             Assert.IsTrue(renewerTask.IsCanceled);
             Assert.IsTrue(processorTask.IsCanceled);
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Verify(processor => processor.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
 
-            Mock.Get(observer)
+            Mock.Get(this.observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == this.lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.Shutdown));
         }
 
@@ -77,20 +77,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task RunObserver_ShouldCancelProcessor_IfRenewerFailed()
         {
             Task processorTask = Task.FromResult(false);
-            Mock.Get(leaseRenewer)
+            Mock.Get(this.leaseRenewer)
                 .Setup(renewer => renewer.RunAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new LeaseLostException());
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
                 .Returns<CancellationToken>(token => processorTask = Task.Delay(TimeSpan.FromMinutes(1), token));
 
-            await Assert.ThrowsExceptionAsync<LeaseLostException>(() => sut.RunAsync(shutdownToken.Token)).ConfigureAwait(false);
+            await Assert.ThrowsExceptionAsync<LeaseLostException>(() => this.sut.RunAsync(this.shutdownToken.Token)).ConfigureAwait(false);
             Assert.IsTrue(processorTask.IsCanceled);
 
-            Mock.Get(observer)
+            Mock.Get(this.observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == this.lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.LeaseLost));
         }
 
@@ -98,49 +98,49 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task RunObserver_ShouldCancelRenewer_IfProcessorFailed()
         {
             Task renewerTask = Task.FromResult(false);
-            Mock.Get(leaseRenewer)
+            Mock.Get(this.leaseRenewer)
                 .Setup(renewer => renewer.RunAsync(It.IsAny<CancellationToken>()))
                 .Returns<CancellationToken>(token => renewerTask = Task.Delay(TimeSpan.FromMinutes(1), token));
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("processorException"));
 
-            await Assert.ThrowsExceptionAsync<Exception>(() => sut.RunAsync(shutdownToken.Token)).ConfigureAwait(false);
+            await Assert.ThrowsExceptionAsync<Exception>(() => this.sut.RunAsync(this.shutdownToken.Token)).ConfigureAwait(false);
             Assert.IsTrue(renewerTask.IsCanceled);
 
-            Mock.Get(observer)
+            Mock.Get(this.observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == this.lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.Unknown));
         }
 
         [TestMethod]
         public async Task RunObserver_ShouldCloseWithObserverError_IfObserverFailed()
         {
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new ObserverException(new Exception()));
 
-            await Assert.ThrowsExceptionAsync<ObserverException>(() => sut.RunAsync(shutdownToken.Token)).ConfigureAwait(false);
+            await Assert.ThrowsExceptionAsync<ObserverException>(() => this.sut.RunAsync(this.shutdownToken.Token)).ConfigureAwait(false);
 
-            Mock.Get(observer)
+            Mock.Get(this.observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == this.lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.ObserverError));
         }
 
         [TestMethod]
         public async Task RunObserver_ShouldPassPartitionToObserver_WhenExecuted()
         {
-            Mock.Get(observer)
+            Mock.Get(this.observer)
                 .Setup(feedObserver => feedObserver.ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<dynamic>>(), It.IsAny<CancellationToken>()))
-                .Callback(() => shutdownToken.Cancel());
+                .Callback(() => this.shutdownToken.Cancel());
 
-            await sut.RunAsync(shutdownToken.Token).ConfigureAwait(false);
-            Mock.Get(observer)
+            await this.sut.RunAsync(this.shutdownToken.Token).ConfigureAwait(false);
+            Mock.Get(this.observer)
                 .Verify(feedObserver => feedObserver
-                    .OpenAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken)));
+                    .OpenAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == this.lease.CurrentLeaseToken)));
         }
 
         [TestMethod]
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             try
             {
-                sut.Dispose();
+                this.sut.Dispose();
             }
             catch (Exception)
             {
@@ -158,8 +158,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         public void Dispose()
         {
-            sut.Dispose();
-            shutdownToken.Dispose();
+            this.sut.Dispose();
+            this.shutdownToken.Dispose();
         }
     }
 }

@@ -78,19 +78,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("headers");
             }
 
-            string resourceType = string.Empty;
-            string resourceIdValue = string.Empty;
-            bool isNameBased = false;
+            string resourceType;
+            string resourceIdValue;
+            AuthorizationHelper.GetResourceTypeAndIdOrFullName(uri, out bool isNameBased, out resourceType, out resourceIdValue, clientVersion);
 
-            AuthorizationHelper.GetResourceTypeAndIdOrFullName(uri, out isNameBased, out resourceType, out resourceIdValue, clientVersion);
-
-            string payload;
             return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
                          resourceIdValue,
                          resourceType,
                          headers,
                          stringHMACSHA256Helper,
-                         out payload);
+                         out string payload);
         }
 
         // This is a helper for both system and master keys
@@ -102,13 +99,12 @@ namespace Microsoft.Azure.Cosmos
             string key,
             bool bUseUtcNowForMissingXDate = false)
         {
-            string payload;
             return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
                 resourceId,
                 resourceType,
                 headers,
                 key,
-                out payload,
+                out string payload,
                 bUseUtcNowForMissingXDate);
         }
 
@@ -179,13 +175,12 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             IComputeHash stringHMACSHA256Helper)
         {
-            string payload;
             return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
                 resourceId,
                 resourceType,
                 headers,
                 stringHMACSHA256Helper,
-                out payload);
+                out string payload);
         }
 
         // This is a helper for both system and master keys
@@ -339,14 +334,13 @@ namespace Microsoft.Azure.Cosmos
                INameValueCollection headers,
                string key)
         {
-            string payload;
             string requestBasedToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                 verb,
                 resourceId,
                 resourceType,
                 headers,
                 key,
-                out payload);
+                out string payload);
 
             requestBasedToken = HttpUtility.UrlDecode(requestBasedToken);
             requestBasedToken = requestBasedToken.Substring(requestBasedToken.IndexOf("sig=", StringComparison.OrdinalIgnoreCase) + 4);
@@ -400,8 +394,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new UnauthorizedException(RMResources.MissingDateForAuthorization);
             }
 
-            DateTime utcStartTime;
-            if (!DateTime.TryParse(dateToCompare, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces, out utcStartTime))
+            if (!DateTime.TryParse(dateToCompare, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces, out DateTime utcStartTime))
             {
                 throw new UnauthorizedException(RMResources.InvalidDateHeader);
             }
@@ -475,8 +468,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Authorization code is fine with Uri not having resource id and path. 
             // We will just return empty in that case
-            bool isFeed = false;
-            if (!PathsHelper.TryParsePathSegments(uri.PathAndQuery, out isFeed, out resourceType, out resourceId, out isNameBased, clientVersion))
+            if (!PathsHelper.TryParsePathSegments(uri.PathAndQuery, out bool isFeed, out resourceType, out resourceId, out isNameBased, clientVersion))
             {
                 resourceType = string.Empty;
                 resourceId = string.Empty;
@@ -600,8 +592,7 @@ namespace Microsoft.Azure.Cosmos
                 return string.Empty;
             }
 
-            string value = null;
-            headerValues.TryGetValue(key, out value);
+            headerValues.TryGetValue(key, out string value);
             return value;
         }
 

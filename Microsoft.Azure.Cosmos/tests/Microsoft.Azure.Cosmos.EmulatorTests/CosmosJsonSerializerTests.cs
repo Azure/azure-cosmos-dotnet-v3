@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity document = new ToDoActivity()
             {
                 id = Guid.NewGuid().ToString(),
-                description = default(string),
+                description = default,
                 status = "TBD",
                 taskNum = 42,
                 cost = double.MaxValue

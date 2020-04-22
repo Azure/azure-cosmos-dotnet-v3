@@ -64,14 +64,14 @@ namespace Microsoft.Azure.Cosmos
                 HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
                 HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default(CancellationToken)))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default))
             {
                 return await HttpTransportClient.ProcessHttpResponse(request.ResourceAddress, string.Empty, responseMessage, physicalAddress, request);
             }
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default)
         {
             return this.httpClient.SendHttpAsync(requestMessage, cancellationToken);
         }
@@ -165,13 +165,8 @@ namespace Microsoft.Azure.Cosmos
             // should always come from message headers
             Trace.CorrelationManager.ActivityId = Guid.Empty;
 
-            bool isNameBased = false;
-            bool isFeed = false;
-            string resourceTypeString;
-            string resourceIdOrFullName;
-
             string resourceLink = responseMessage.RequestMessage.RequestUri.LocalPath;
-            if (!PathsHelper.TryParsePathSegments(resourceLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased))
+            if (!PathsHelper.TryParsePathSegments(resourceLink, out bool isFeed, out string resourceTypeString, out string resourceIdOrFullName, out bool isNameBased))
             {
                 // if resourceLink is invalid - we will not set resourceAddress in exception.
             }
@@ -391,9 +386,8 @@ namespace Microsoft.Azure.Cosmos
                         DateTime receivedTimeUtc = DateTime.UtcNow;
                         durationTimeSpan = receivedTimeUtc - sendTimeUtc;
 
-                        IEnumerable<string> headerValues;
                         Guid activityId = Guid.Empty;
-                        if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId, out headerValues) &&
+                        if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId, out IEnumerable<string> headerValues) &&
                             headerValues.Count() != 0)
                         {
                             activityId = new Guid(headerValues.First());

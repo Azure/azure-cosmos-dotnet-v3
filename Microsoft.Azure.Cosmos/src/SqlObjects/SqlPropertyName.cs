@@ -76,8 +76,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public static SqlPropertyName Create(string value)
         {
-            SqlPropertyName sqlPropertyName;
-            if (!SqlPropertyName.SystemProperties.TryGetValue(value, out sqlPropertyName))
+            if (!SqlPropertyName.SystemProperties.TryGetValue(value, out SqlPropertyName sqlPropertyName))
             {
                 sqlPropertyName = new SqlPropertyName(value);
             }

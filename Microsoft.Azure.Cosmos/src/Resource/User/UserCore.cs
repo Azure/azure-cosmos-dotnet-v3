@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override Task<UserResponse> ReadAsync(RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> response = this.ReadStreamAsync(
                 requestOptions: requestOptions,
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ProcessStreamAsync(
                 streamPayload: null,
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override Task<UserResponse> ReplaceAsync(UserProperties userProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (userProperties == null)
             {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<ResponseMessage> ReplaceStreamAsync(UserProperties userProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (userProperties == null)
             {
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override Task<UserResponse> DeleteAsync(RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> response = this.DeleteStreamAsync(
                 requestOptions: requestOptions,
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ProcessStreamAsync(
                 streamPayload: null,
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (permissionProperties == null)
             {
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
         public Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (permissionProperties == null)
             {
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<PermissionResponse> UpsertPermissionAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (permissionProperties == null)
             {
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.LinkUri,
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.LinkUri,
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
             Stream streamPayload,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ProcessStreamAsync(
                 streamPayload: streamPayload,
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos
            Uri linkUri,
            ResourceType resourceType,
            RequestOptions requestOptions = null,
-           CancellationToken cancellationToken = default(CancellationToken))
+           CancellationToken cancellationToken = default)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: linkUri,
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ProcessPermissionCreateAsync(
                 streamPayload: streamPayload,
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ProcessPermissionUpsertAsync(
                 streamPayload: streamPayload,

@@ -185,12 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException($"{nameof(value)}");
-                }
-
-                this.uniqueKeyPolicyInternal = value;
+                this.uniqueKeyPolicyInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
             }
         }
 
@@ -235,12 +230,7 @@ namespace Microsoft.Azure.Cosmos
 
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException($"{nameof(value)}");
-                }
-
-                this.indexingPolicyInternal = value;
+                this.indexingPolicyInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
             }
         }
 

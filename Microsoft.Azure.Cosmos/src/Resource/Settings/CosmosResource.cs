@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
                 return CosmosResource.FromStream<T>(response.ResponseBody);
             }
 
-            return default(T);
+            return default;
         }
 
         internal static Stream ToStream<T>(T input)

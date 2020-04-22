@@ -421,7 +421,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     BatchTestBase.Client.Endpoint.ToString(),
                     BatchTestBase.Client.AccountKey)
                     .WithThrottlingRetryOptions(
-                    maxRetryWaitTimeOnThrottledRequests: default(TimeSpan),
+                    maxRetryWaitTimeOnThrottledRequests: default,
                     maxRetryAttemptsOnThrottledRequests: 0)
                 .Build();
 

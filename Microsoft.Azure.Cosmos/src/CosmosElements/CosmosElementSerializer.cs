@@ -34,8 +34,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {
-            MemoryStream memoryStream = stream as MemoryStream;
-            if (memoryStream == null)
+            if (!(stream is MemoryStream memoryStream))
             {
                 memoryStream = new MemoryStream();
                 stream.CopyTo(memoryStream);

@@ -94,8 +94,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint, IList<string> locations, Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
         {
-            ExceptionDispatchInfo capturedException = null;
-
+            ExceptionDispatchInfo capturedException;
             try
             {
                 AccountProperties databaseAccount = await getDatabaseAccountFn(defaultEndpoint);
@@ -242,8 +241,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.locationCache.OnDatabaseAccountRead(databaseAccount);
             }
 
-            bool canRefreshInBackground = false;
-            if (this.locationCache.ShouldRefreshEndpoints(out canRefreshInBackground))
+            if (this.locationCache.ShouldRefreshEndpoints(out bool canRefreshInBackground))
             {
                 if (databaseAccount == null && !canRefreshInBackground)
                 {
@@ -315,8 +313,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static bool IsNonRetriableException(Exception exception)
         {
-            DocumentClientException dce = exception as DocumentClientException;
-            if (dce != null && dce.StatusCode == HttpStatusCode.Unauthorized)
+            if (exception is DocumentClientException dce && dce.StatusCode == HttpStatusCode.Unauthorized)
             {
                 return true;
             }

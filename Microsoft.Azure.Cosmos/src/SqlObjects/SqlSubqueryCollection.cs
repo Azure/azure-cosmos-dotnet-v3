@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlSubqueryCollection(SqlQuery query)
             : base(SqlObjectKind.SubqueryCollection)
         {
-            if (query == null)
-            {
-                throw new ArgumentNullException("query");
-            }
-
-            this.Query = query;
+            this.Query = query ?? throw new ArgumentNullException("query");
         }
 
         public SqlQuery Query

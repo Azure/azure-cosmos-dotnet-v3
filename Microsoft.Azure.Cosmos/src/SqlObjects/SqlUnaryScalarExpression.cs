@@ -12,13 +12,8 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression expression)
             : base(SqlObjectKind.UnaryScalarExpression)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
             this.OperatorKind = operatorKind;
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException("expression");
         }
 
         public SqlUnaryScalarOperatorKind OperatorKind

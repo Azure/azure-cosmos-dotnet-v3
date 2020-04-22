@@ -73,25 +73,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds}";
 
             BackendMetrics expected = new BackendMetrics(
-                default(long),
-                default(long),
-                default(long),
-                default(long),
-                default(double),
+                default,
+                default,
+                default,
+                default,
+                default,
                 totalExecutionTime,
                 new QueryPreparationTimes(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan),
-                default(TimeSpan),
-                default(TimeSpan),
+                    default,
+                    default,
+                    default,
+                    default),
+                default,
+                default,
+                default,
                 new RuntimeExecutionTimes(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan));
+                    default,
+                    default,
+                    default),
+                default);
 
             BackendMetricsTests.ValidateParse(delimitedString, expected);
         }
@@ -101,25 +101,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         {
             string delimitedString = $"thisIsNotAKnownField=asdf";
             BackendMetrics expected = new BackendMetrics(
-                default(long),
-                default(long),
-                default(long),
-                default(long),
-                default(double),
-                default(TimeSpan),
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
                 new QueryPreparationTimes(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan),
-                default(TimeSpan),
-                default(TimeSpan),
+                    default,
+                    default,
+                    default,
+                    default),
+                default,
+                default,
+                default,
                 new RuntimeExecutionTimes(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan));
+                    default,
+                    default,
+                    default),
+                default);
 
             BackendMetricsTests.ValidateParse(delimitedString, expected);
         }
@@ -138,25 +138,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
             string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};thisIsNotAKnownField={totalExecutionTime.TotalMilliseconds};totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds}";
             BackendMetrics expected = new BackendMetrics(
-                default(long),
-                default(long),
-                default(long),
-                default(long),
-                default(double),
+                default,
+                default,
+                default,
+                default,
+                default,
                 totalExecutionTime,
                 new QueryPreparationTimes(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan),
-                default(TimeSpan),
-                default(TimeSpan),
+                    default,
+                    default,
+                    default,
+                    default),
+                default,
+                default,
+                default,
                 new RuntimeExecutionTimes(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan));
+                    default,
+                    default,
+                    default),
+                default);
 
             BackendMetricsTests.ValidateParse(delimitedString, expected);
         }

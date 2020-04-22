@@ -19,14 +19,12 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class SecureStringHMACSHA256Helper : IComputeHash
     {
         private const uint SHA256HashOutputSizeInBytes = 32; // SHA256 => 256 bits => 32 bytes
-
-        private readonly SecureString key;
         private readonly int keyLength;
         private IntPtr algorithmHandle;
 
         public SecureStringHMACSHA256Helper(SecureString base64EncodedKey)
         {
-            this.key = base64EncodedKey;
+            this.Key = base64EncodedKey;
             // caching the length of SecureString as calling Length method on it everytime causes a performance hit
             this.keyLength = base64EncodedKey.Length;
             this.algorithmHandle = IntPtr.Zero;
@@ -41,14 +39,11 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public SecureString Key
-        {
-            get { return this.key; }
-        }
+        public SecureString Key { get; }
 
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
 
@@ -80,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                this.InitializeBCryptHash(this.key, this.keyLength, out hashHandle);
+                this.InitializeBCryptHash(this.Key, this.keyLength, out hashHandle);
                 this.AddData(hashHandle, bytesToHash);
                 return this.FinishHash(hashHandle);
             }
@@ -89,7 +84,6 @@ namespace Microsoft.Azure.Cosmos
                 if (hashHandle != IntPtr.Zero)
                 {
                     int ignored = NativeMethods.BCryptDestroyHash(hashHandle);
-                    hashHandle = IntPtr.Zero;
                 }
             }
         }
@@ -168,8 +162,6 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     Marshal.FreeCoTaskMem(keyBytes);
-                    keyBytes = IntPtr.Zero;
-                    keyBytesLength = 0;
                 }
             }
         }

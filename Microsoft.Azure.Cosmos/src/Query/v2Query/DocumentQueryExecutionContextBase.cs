@@ -51,36 +51,16 @@ namespace Microsoft.Azure.Cosmos.Query
                 bool getLazyFeedResponse,
                 Guid correlatedActivityId)
             {
-                if (client == null)
-                {
-                    throw new ArgumentNullException($"{nameof(client)} can not be null.");
-                }
-
-                if (resourceType == null)
-                {
-                    throw new ArgumentNullException($"{nameof(resourceType)} can not be null.");
-                }
-
-                if (expression == null)
-                {
-                    throw new ArgumentNullException($"{nameof(expression)} can not be null.");
-                }
-
-                if (feedOptions == null)
-                {
-                    throw new ArgumentNullException($"{nameof(feedOptions)} can not be null.");
-                }
-
                 if (correlatedActivityId == Guid.Empty)
                 {
                     throw new ArgumentException($"{nameof(correlatedActivityId)} can not be empty.");
                 }
 
-                this.Client = client;
+                this.Client = client ?? throw new ArgumentNullException($"{nameof(client)} can not be null.");
                 this.ResourceTypeEnum = resourceTypeEnum;
-                this.ResourceType = resourceType;
-                this.Expression = expression;
-                this.FeedOptions = feedOptions;
+                this.ResourceType = resourceType ?? throw new ArgumentNullException($"{nameof(resourceType)} can not be null.");
+                this.Expression = expression ?? throw new ArgumentNullException($"{nameof(expression)} can not be null.");
+                this.FeedOptions = feedOptions ?? throw new ArgumentNullException($"{nameof(feedOptions)} can not be null.");
                 this.ResourceLink = resourceLink;
                 this.GetLazyFeedResponse = getLazyFeedResponse;
                 this.CorrelatedActivityId = correlatedActivityId;

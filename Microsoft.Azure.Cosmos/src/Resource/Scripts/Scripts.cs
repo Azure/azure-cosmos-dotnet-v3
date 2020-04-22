@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a <see cref="StoredProcedureProperties"/> in the Azure Cosmos service as an asynchronous operation.
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="StoredProcedureProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service.
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream streamPayload,
             PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
@@ -569,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<TriggerResponse> CreateTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
@@ -725,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<TriggerResponse> ReadTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a <see cref="TriggerProperties"/> in the Azure Cosmos service as an asynchronous operation.
@@ -765,7 +765,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<TriggerResponse> ReplaceTriggerAsync(
                     TriggerProperties triggerProperties,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -786,7 +786,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<TriggerResponse> DeleteTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
@@ -850,7 +850,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
@@ -1023,7 +1023,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a <see cref="UserDefinedFunctionProperties"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1053,7 +1053,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1074,6 +1074,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
     }
 }

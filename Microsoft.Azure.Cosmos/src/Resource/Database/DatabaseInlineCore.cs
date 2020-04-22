@@ -18,12 +18,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal DatabaseInlineCore(DatabaseCore database)
         {
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-
-            this.database = database;
+            this.database = database ?? throw new ArgumentNullException(nameof(database));
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -237,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, cancellationToken));
         }

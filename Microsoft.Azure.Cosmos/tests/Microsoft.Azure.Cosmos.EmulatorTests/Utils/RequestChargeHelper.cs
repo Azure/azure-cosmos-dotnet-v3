@@ -31,8 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal void SetOrAddValue(DocumentClientType type, double charge)
         {
-            double curr;
-            if (this.chargeStore.TryGetValue(type, out curr))
+            if (this.chargeStore.TryGetValue(type, out double curr))
             {
                 this.chargeStore[type] = curr + charge;
             }

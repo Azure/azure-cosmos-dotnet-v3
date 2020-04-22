@@ -21,18 +21,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             CollectionCache clientCollectionCache,
             IDocumentClientRetryPolicy nextPolicy)
         {
-            if (clientCollectionCache == null)
-            {
-                throw new ArgumentNullException("clientCollectionCache");
-            }
-
-            if (nextPolicy == null)
-            {
-                throw new ArgumentNullException("nextPolicy");
-            }
-
-            this.clientCollectionCache = clientCollectionCache;
-            this.nextPolicy = nextPolicy;
+            this.clientCollectionCache = clientCollectionCache ?? throw new ArgumentNullException("clientCollectionCache");
+            this.nextPolicy = nextPolicy ?? throw new ArgumentNullException("nextPolicy");
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(

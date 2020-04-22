@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
             {
-                QueryResponseCore response = await component.DrainAsync(1, default(CancellationToken));
+                QueryResponseCore response = await component.DrainAsync(1, default);
                 Assert.AreEqual(setupContext.response, response);
             }
         }

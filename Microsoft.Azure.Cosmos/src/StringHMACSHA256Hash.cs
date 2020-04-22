@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             get
             {
                 if (this.secureString != null) return this.secureString;
-                this.secureString = SecureStringUtility.ConvertToSecureString(base64EncodedKey);
+                this.secureString = SecureStringUtility.ConvertToSecureString(this.base64EncodedKey);
                 return this.secureString;
             }
         }

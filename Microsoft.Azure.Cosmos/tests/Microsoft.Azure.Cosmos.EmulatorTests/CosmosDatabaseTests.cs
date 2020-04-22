@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int? throughput = null,
             bool databaseExists = false)
         {
-            DatabaseResponse response = null;
+            DatabaseResponse response;
             if (databaseExists)
             {
                 response = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(

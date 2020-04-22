@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlSelectClause(SqlSelectSpec selectSpec, SqlTopSpec topSpec = null, bool hasDistinct = false)
             : base(SqlObjectKind.SelectClause)
         {
-            if (selectSpec == null)
-            {
-                throw new ArgumentNullException("selectSpec");
-            }
-
-            this.SelectSpec = selectSpec;
+            this.SelectSpec = selectSpec ?? throw new ArgumentNullException("selectSpec");
             this.TopSpec = topSpec;
             this.HasDistinct = hasDistinct;
         }

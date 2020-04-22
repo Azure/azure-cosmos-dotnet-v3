@@ -16,8 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors
             string valueSubStatus = exception.ResponseHeaders.Get(subStatusHeaderName);
             if (!string.IsNullOrEmpty(valueSubStatus))
             {
-                int subStatusCode;
-                if (int.TryParse(valueSubStatus, NumberStyles.Integer, CultureInfo.InvariantCulture, out subStatusCode))
+                if (int.TryParse(valueSubStatus, NumberStyles.Integer, CultureInfo.InvariantCulture, out int subStatusCode))
                     return (SubStatusCodes)subStatusCode;
             }
 

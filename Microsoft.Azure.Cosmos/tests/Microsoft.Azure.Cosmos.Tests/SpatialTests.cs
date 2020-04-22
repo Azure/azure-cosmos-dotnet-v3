@@ -154,9 +154,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             DataContractSerializer dataContractSerializer = new DataContractSerializer(obj.GetType());
 
 
-            using (var stream = new MemoryStream())
+            using (MemoryStream stream = new MemoryStream())
             {
-                var writer = new StreamWriter(stream);
+                StreamWriter writer = new StreamWriter(stream);
                 writer.Write(serialized);
                 writer.Flush();
                 stream.Position = 0;

@@ -96,11 +96,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             IReadOnlyList<SqlScalarExpression> arguments)
             : base(SqlObjectKind.FunctionCallScalarExpression)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException("name");
-            }
-
             if (arguments == null)
             {
                 throw new ArgumentNullException($"{nameof(arguments)} must not be null.");
@@ -115,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
 
             this.Arguments = new List<SqlScalarExpression>(arguments);
-            this.Name = name;
+            this.Name = name ?? throw new ArgumentNullException("name");
             this.IsUdf = isUdf;
         }
 
@@ -155,8 +150,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             bool isUdf,
             params SqlScalarExpression[] arguments)
         {
-            SqlIdentifier sqlIdentifier;
-            if (!SqlFunctionCallScalarExpression.FunctionIdentifiers.TryGetValue(name, out sqlIdentifier))
+            if (!SqlFunctionCallScalarExpression.FunctionIdentifiers.TryGetValue(name, out SqlIdentifier sqlIdentifier))
             {
                 sqlIdentifier = SqlIdentifier.Create(name);
             }
@@ -169,8 +163,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             bool isUdf,
             IReadOnlyList<SqlScalarExpression> arguments)
         {
-            SqlIdentifier sqlIdentifier;
-            if (!SqlFunctionCallScalarExpression.FunctionIdentifiers.TryGetValue(name, out sqlIdentifier))
+            if (!SqlFunctionCallScalarExpression.FunctionIdentifiers.TryGetValue(name, out SqlIdentifier sqlIdentifier))
             {
                 sqlIdentifier = SqlIdentifier.Create(name);
             }

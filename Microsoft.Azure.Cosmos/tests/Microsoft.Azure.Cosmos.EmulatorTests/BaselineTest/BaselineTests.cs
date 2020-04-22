@@ -164,18 +164,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             /// <param name="output">The output.</param>
             public BaselineTestResult(BaselineTestInput input, BaselineTestOutput output)
             {
-                if (input == null)
-                {
-                    throw new ArgumentNullException($"{nameof(input)} must not be null.");
-                }
-
-                if (output == null)
-                {
-                    throw new ArgumentNullException($"{nameof(output)} must not be null.");
-                }
-
-                this.Input = input;
-                this.Output = output;
+                this.Input = input ?? throw new ArgumentNullException($"{nameof(input)} must not be null.");
+                this.Output = output ?? throw new ArgumentNullException($"{nameof(output)} must not be null.");
             }
 
             /// <summary>

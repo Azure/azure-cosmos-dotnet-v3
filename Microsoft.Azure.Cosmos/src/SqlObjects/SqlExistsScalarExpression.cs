@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlExistsScalarExpression(SqlQuery sqlQuery)
           : base(SqlObjectKind.ExistsScalarExpression)
         {
-            if (sqlQuery == null)
-            {
-                throw new ArgumentNullException($"{nameof(sqlQuery)} can not be null");
-            }
-
-            this.SqlQuery = sqlQuery;
+            this.SqlQuery = sqlQuery ?? throw new ArgumentNullException($"{nameof(sqlQuery)} can not be null");
         }
 
         public SqlQuery SqlQuery { get; }

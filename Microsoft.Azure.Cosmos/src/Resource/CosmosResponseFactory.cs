@@ -63,8 +63,7 @@ namespace Microsoft.Azure.Cosmos
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
 
-            QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
-            if (queryResponse != null)
+            if (cosmosResponseMessage is QueryResponse queryResponse)
             {
                 return QueryResponse<T>.CreateResponse<T>(
                     cosmosQueryResponse: queryResponse,
@@ -247,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (responseMessage.Content == null)
             {
-                return default(T);
+                return default;
             }
 
             return this.serializerCore.FromStream<T>(responseMessage.Content);

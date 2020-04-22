@@ -22,12 +22,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         internal NamedCrs(string name)
             : base(CrsType.Named)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException("name");
-            }
-
-            this.Name = name;
+            this.Name = name ?? throw new ArgumentNullException("name");
         }
 
         /// <summary>
@@ -69,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if CRSs are equal. <c>false</c> otherwise.</returns>
         public bool Equals(NamedCrs other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
             queryMetricText: BackendMetricsTests.MockBackendMetrics.ToString(),
             indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
-            diagnosticsContext: default(CosmosDiagnosticsContext));
+            diagnosticsContext: default);
 
         private static readonly CosmosDiagnosticScope MockCosmosDiagnosticScope = new CosmosDiagnosticScope(name: "asdf");
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
                 queryMetricText: malformedString,
                 indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
-                diagnosticsContext: default(CosmosDiagnosticsContext));
+                diagnosticsContext: default);
             (BackendMetricsExtractor.ParseFailureReason parseFailureReason, BackendMetrics extractedBackendMetrics) = queryPageDiagnostics.Accept(BackendMetricsExtractor.Singleton);
             Assert.AreEqual(BackendMetricsExtractor.ParseFailureReason.MalformedString, parseFailureReason);
         }

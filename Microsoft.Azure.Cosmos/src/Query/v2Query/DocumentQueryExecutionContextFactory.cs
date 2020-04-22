@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ContainerProperties collection,
             FeedOptions feedOptions)
         {
-            List<PartitionKeyRange> targetRanges = null;
+            List<PartitionKeyRange> targetRanges;
             if (!string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId))
             {
                 targetRanges = new List<PartitionKeyRange>()
@@ -189,8 +189,8 @@ namespace Microsoft.Azure.Cosmos.Query
                  (DocumentQueryExecutionContextFactory.IsTopOrderByQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsAggregateQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsOffsetLimitQuery(partitionedQueryExecutionInfo) ||
-                  DocumentQueryExecutionContextFactory.IsParallelQuery(feedOptions)) ||
-                  !string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId)) ||
+                  DocumentQueryExecutionContextFactory.IsParallelQuery(feedOptions))) ||
+                  !string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId) ||
                   // Even if it's single partition query we create a specialized context to aggregate the aggregates and distinct of distinct.
                   DocumentQueryExecutionContextFactory.IsAggregateQueryWithoutContinuation(
                       partitionedQueryExecutionInfo,
@@ -206,14 +206,14 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             return resourceTypeEnum.IsPartitioned()
-                && (feedOptions.PartitionKey == null && feedOptions.EnableCrossPartitionQuery)
+                && feedOptions.PartitionKey == null && feedOptions.EnableCrossPartitionQuery
                 && (partitionKeyDefinition.Paths.Count > 0)
                 && !(partitionedQueryExecutionInfo.QueryRanges.Count == 1 && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
         }
 
         private static bool IsParallelQuery(FeedOptions feedOptions)
         {
-            return (feedOptions.MaxDegreeOfParallelism != 0);
+            return feedOptions.MaxDegreeOfParallelism != 0;
         }
 
         private static bool IsTopOrderByQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private static bool IsAggregateQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             return (partitionedQueryExecutionInfo.QueryInfo != null)
-                && (partitionedQueryExecutionInfo.QueryInfo.HasAggregates);
+                && partitionedQueryExecutionInfo.QueryInfo.HasAggregates;
         }
 
         private static bool IsAggregateQueryWithoutContinuation(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, bool isContinuationExpected)

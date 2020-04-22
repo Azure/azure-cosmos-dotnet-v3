@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class MediaResponse : IMediaResponse
     {
-        private INameValueCollection responseHeaders;
-
         /// <summary>
         /// Constructor exposed for mocking purposes for the Azure Cosmos DB service.
         /// </summary>
@@ -102,13 +100,9 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The headers associated with the response.</value>
         public NameValueCollection ResponseHeaders
         {
-            get { return this.responseHeaders.ToNameValueCollection(); }
+            get { return this.Headers.ToNameValueCollection(); }
         }
 
-        internal INameValueCollection Headers
-        {
-            get { return this.responseHeaders; }
-            set { this.responseHeaders = value; }
-        }
+        internal INameValueCollection Headers { get; set; }
     }
 }

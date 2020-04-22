@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private static string GetToken(string path, ref int currentIndex)
         {
             int newIndex = path.IndexOf(segmentSeparator, currentIndex);
-            string token = null;
+            string token;
             if (newIndex == -1)
             {
                 token = path.Substring(currentIndex);

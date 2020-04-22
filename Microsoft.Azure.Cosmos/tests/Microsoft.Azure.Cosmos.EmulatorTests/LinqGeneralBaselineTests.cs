@@ -2475,8 +2475,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 };
                 client.createDocument(client.getSelfLink(), { id: 'testDoc' + output, title : 'My Book'}, {}, callback); }";
 
-            StoredProcedureExecuteResponse<int> scriptResponse = null;
-            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteCosmosProcedure(collection, script, out scriptResponse, "My Book");
+            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteCosmosProcedure(collection, script, out StoredProcedureExecuteResponse<int> scriptResponse, "My Book");
 
             IOrderedQueryable<Book> linqQueryable = collection.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution : true);
             int totalHit = linqQueryable.Where(book => book.Title == "My Book").Count();

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellationToken = default)
         {
             return this.ProcessStoredProcedureOperationAsync(
                 linkUri: this.container.LinkUri,
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ProcessStoredProcedureOperationAsync(
                 id: storedProcedureProperties.Id,
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Cosmos.PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
                 storedProcedureId: storedProcedureId,
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Cosmos.PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             Stream streamPayload = null;
             if (parameters != null)
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream streamPayload,
             Cosmos.PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(storedProcedureId))
             {
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<TriggerResponse> CreateTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (triggerProperties == null)
             {
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<TriggerResponse> ReadTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -337,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<TriggerResponse> ReplaceTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (triggerProperties == null)
             {
@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<TriggerResponse> DeleteTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (userDefinedFunctionProperties == null)
             {
@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -497,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (userDefinedFunctionProperties == null)
             {
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {

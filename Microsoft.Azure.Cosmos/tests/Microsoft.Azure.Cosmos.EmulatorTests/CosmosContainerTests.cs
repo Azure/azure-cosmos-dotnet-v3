@@ -962,7 +962,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TimeToLivePropertyPath = "/creationDate",
             };
 
-            ContainerResponse containerResponse = null;
+            ContainerResponse containerResponse;
             try
             {
                 containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);

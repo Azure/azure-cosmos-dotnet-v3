@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             Mock<TransactionalBatchOperationResult> mockResult = new Mock<TransactionalBatchOperationResult>();
             TransactionalBatchOperationResult result = mockResult.Object;
 
-            Assert.AreEqual(default(HttpStatusCode), result.StatusCode);
+            Assert.AreEqual(default, result.StatusCode);
         }
 
         [TestMethod]
@@ -100,8 +100,8 @@ namespace Microsoft.Azure.Cosmos
             Mock<TransactionalBatchOperationResult<object>> mockResult = new Mock<TransactionalBatchOperationResult<object>>();
             TransactionalBatchOperationResult<object> result = mockResult.Object;
 
-            Assert.AreEqual(default(HttpStatusCode), result.StatusCode);
-            Assert.AreEqual(default(object), result.Resource);
+            Assert.AreEqual(default, result.StatusCode);
+            Assert.AreEqual(default, result.Resource);
         }
     }
 }

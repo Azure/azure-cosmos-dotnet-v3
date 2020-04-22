@@ -19,13 +19,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public AutoCheckpointer(CheckpointFrequency checkpointFrequency, ChangeFeedObserver<T> observer)
         {
-            if (checkpointFrequency == null)
-                throw new ArgumentNullException(nameof(checkpointFrequency));
-            if (observer == null)
-                throw new ArgumentNullException(nameof(observer));
-
-            this.checkpointFrequency = checkpointFrequency;
-            this.observer = observer;
+            this.checkpointFrequency = checkpointFrequency ?? throw new ArgumentNullException(nameof(checkpointFrequency));
+            this.observer = observer ?? throw new ArgumentNullException(nameof(observer));
         }
 
         public override Task OpenAsync(ChangeFeedObserverContext context)

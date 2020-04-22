@@ -5,12 +5,13 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
 
-    // This class represents a collection expression that is comprised of a collection definition and an 
-    // optional alias.
-    // Examples:
-    //  FROM Person p
-    //  FROM [1, 3, 5, 7] a
-
+    /// <summary>
+    /// This class represents a collection expression that is comprised of a collection definition and an optional alias.
+    /// </summary>
+    /// <example>
+    /// FROM Person p
+    /// FROM [1, 3, 5, 7] a
+    /// </example>
     internal sealed class SqlAliasedCollectionExpression : SqlCollectionExpression
     {
         private SqlAliasedCollectionExpression(
@@ -18,12 +19,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlIdentifier alias)
             : base(SqlObjectKind.AliasedCollectionExpression)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException("collection");
-            }
-
-            this.Collection = collection;
+            this.Collection = collection ?? throw new ArgumentNullException("collection");
             this.Alias = alias;
         }
 

@@ -51,12 +51,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         public Point(Position position, GeometryParams geometryParams)
             : base(GeometryType.Point, geometryParams)
         {
-            if (position == null)
-            {
-                throw new ArgumentNullException("position");
-            }
-
-            this.Position = position;
+            this.Position = position ?? throw new ArgumentNullException("position");
         }
 
         /// <summary>
@@ -87,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(Point other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

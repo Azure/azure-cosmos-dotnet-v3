@@ -12,18 +12,8 @@ namespace Microsoft.Azure.Cosmos.Sql
              SqlScalarExpression expression)
             : base(SqlObjectKind.ObjectProperty)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException("name");
-            }
-
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
-            this.Name = name;
-            this.Expression = expression;
+            this.Name = name ?? throw new ArgumentNullException("name");
+            this.Expression = expression ?? throw new ArgumentNullException("expression");
         }
 
         public SqlPropertyName Name

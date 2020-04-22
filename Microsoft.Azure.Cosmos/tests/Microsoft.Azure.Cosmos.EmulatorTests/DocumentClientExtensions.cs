@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static void LockClient(this DocumentClient client, uint replicaIndex)
         {
             client.initializeTask.Wait();
-            ServerStoreModel serverStoreModel = (client.StoreModel as ServerStoreModel);
+            ServerStoreModel serverStoreModel = client.StoreModel as ServerStoreModel;
             if (serverStoreModel != null)
             {
                 serverStoreModel.DefaultReplicaIndex = replicaIndex;
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static void ForceAddressRefresh(this DocumentClient client, bool forceAddressRefresh)
         {
             client.initializeTask.Wait();
-            ServerStoreModel serverStoreModel = (client.StoreModel as ServerStoreModel);
+            ServerStoreModel serverStoreModel = client.StoreModel as ServerStoreModel;
             if (serverStoreModel != null)
             {
                 serverStoreModel.ForceAddressRefresh = forceAddressRefresh;

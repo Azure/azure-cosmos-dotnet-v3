@@ -725,9 +725,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 tokensFromTryGetProperty.Add(JsonToken.ObjectStart());
                 foreach (ObjectProperty objectProperty in properties)
                 {
-                    ObjectProperty propertyFromTryGetProperty;
                     string fieldname = navigator.GetStringValue(objectProperty.NameNode);
-                    if (navigator.TryGetObjectProperty(node, fieldname, out propertyFromTryGetProperty))
+                    if (navigator.TryGetObjectProperty(node, fieldname, out ObjectProperty propertyFromTryGetProperty))
                     {
                         tokensFromTryGetProperty.Add(JsonToken.FieldName(fieldname));
                         tokensFromTryGetProperty.AddRange(JsonNavigatorTests.GetTokensFromNode(propertyFromTryGetProperty.ValueNode, navigator, performCorrectnessCheck));

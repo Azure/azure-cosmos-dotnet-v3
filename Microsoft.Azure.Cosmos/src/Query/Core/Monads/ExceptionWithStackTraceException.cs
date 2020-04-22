@@ -30,12 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                   message: message,
                   innerException: innerException)
         {
-            if (stackTrace == null)
-            {
-                throw new ArgumentNullException(nameof(stackTrace));
-            }
-
-            this.stackTrace = stackTrace;
+            this.stackTrace = stackTrace ?? throw new ArgumentNullException(nameof(stackTrace));
         }
 
         public override string StackTrace => this.stackTrace.ToString();

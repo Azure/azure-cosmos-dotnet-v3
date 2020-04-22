@@ -17,12 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal PermissionInlineCore(PermissionCore database)
         {
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-
-            this.permission = database;
+            this.permission = database ?? throw new ArgumentNullException(nameof(database));
         }
 
         public override Task<PermissionResponse> ReadAsync(

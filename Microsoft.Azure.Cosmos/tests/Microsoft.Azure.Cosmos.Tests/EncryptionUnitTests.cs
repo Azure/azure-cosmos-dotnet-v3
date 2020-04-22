@@ -182,8 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
 
             public override bool Equals(object obj)
             {
-                MyItem item = obj as MyItem;
-                return item != null &&
+                return obj is MyItem item &&
                        this.Id == item.Id &&
                        this.PK == item.PK &&
                        this.EncStr1 == item.EncStr1 &&

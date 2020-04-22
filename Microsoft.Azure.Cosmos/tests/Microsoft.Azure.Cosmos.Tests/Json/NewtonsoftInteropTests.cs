@@ -354,8 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     throw new Exception(RMResources.DateTimeConverterInvalidReaderValue);
                 }
 
-                double totalSeconds = 0;
-
+                double totalSeconds;
                 try
                 {
                     totalSeconds = Convert.ToDouble(reader.Value, CultureInfo.InvariantCulture);

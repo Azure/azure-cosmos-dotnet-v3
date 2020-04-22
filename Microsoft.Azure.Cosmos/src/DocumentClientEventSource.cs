@@ -167,103 +167,103 @@ namespace Microsoft.Azure.Cosmos
                 const int UnicodeEncodingCharSize = CustomTypeExtensions.UnicodeEncodingCharSize;
 
                 EventData* dataDesc = stackalloc EventData[eventDataCount];
-                dataDesc[0].DataPointer = (IntPtr)(fixedGuidBytes);
+                dataDesc[0].DataPointer = (IntPtr)fixedGuidBytes;
                 dataDesc[0].Size = guidBytes.Length;
 
-                dataDesc[1].DataPointer = (IntPtr)(fixedLocalIdBytes);
+                dataDesc[1].DataPointer = (IntPtr)fixedLocalIdBytes;
                 dataDesc[1].Size = localIdBytes.Length;
 
-                dataDesc[2].DataPointer = (IntPtr)(fixedUri);
+                dataDesc[2].DataPointer = (IntPtr)fixedUri;
                 dataDesc[2].Size = (uri.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[3].DataPointer = (IntPtr)(fixedResourceType);
+                dataDesc[3].DataPointer = (IntPtr)fixedResourceType;
                 dataDesc[3].Size = (resourceType.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[4].DataPointer = (IntPtr)(fixedAccept);
+                dataDesc[4].DataPointer = (IntPtr)fixedAccept;
                 dataDesc[4].Size = (accept.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[5].DataPointer = (IntPtr)(fixedAuthorization);
+                dataDesc[5].DataPointer = (IntPtr)fixedAuthorization;
                 dataDesc[5].Size = (authorization.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[6].DataPointer = (IntPtr)(fixedConsistencyLevel);
+                dataDesc[6].DataPointer = (IntPtr)fixedConsistencyLevel;
                 dataDesc[6].Size = (consistencyLevel.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[7].DataPointer = (IntPtr)(fixedContentType);
+                dataDesc[7].DataPointer = (IntPtr)fixedContentType;
                 dataDesc[7].Size = (contentType.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[8].DataPointer = (IntPtr)(fixedContentEncoding);
+                dataDesc[8].DataPointer = (IntPtr)fixedContentEncoding;
                 dataDesc[8].Size = (contentEncoding.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[9].DataPointer = (IntPtr)(fixedContentLength);
+                dataDesc[9].DataPointer = (IntPtr)fixedContentLength;
                 dataDesc[9].Size = (contentLength.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[10].DataPointer = (IntPtr)(fixedContentLocation);
+                dataDesc[10].DataPointer = (IntPtr)fixedContentLocation;
                 dataDesc[10].Size = (contentLocation.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[11].DataPointer = (IntPtr)(fixedContinuation);
+                dataDesc[11].DataPointer = (IntPtr)fixedContinuation;
                 dataDesc[11].Size = (continuation.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[12].DataPointer = (IntPtr)(fixedEmitVerboseTracesInQuery);
+                dataDesc[12].DataPointer = (IntPtr)fixedEmitVerboseTracesInQuery;
                 dataDesc[12].Size = (emitVerboseTracesInQuery.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[13].DataPointer = (IntPtr)(fixedEnableScanInQuery);
+                dataDesc[13].DataPointer = (IntPtr)fixedEnableScanInQuery;
                 dataDesc[13].Size = (enableScanInQuery.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[14].DataPointer = (IntPtr)(fixedETag);
+                dataDesc[14].DataPointer = (IntPtr)fixedETag;
                 dataDesc[14].Size = (eTag.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[15].DataPointer = (IntPtr)(fixedHttpDate);
+                dataDesc[15].DataPointer = (IntPtr)fixedHttpDate;
                 dataDesc[15].Size = (httpDate.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[16].DataPointer = (IntPtr)(fixedIfMatch);
+                dataDesc[16].DataPointer = (IntPtr)fixedIfMatch;
                 dataDesc[16].Size = (ifMatch.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[17].DataPointer = (IntPtr)(fixedIfNoneMatch);
+                dataDesc[17].DataPointer = (IntPtr)fixedIfNoneMatch;
                 dataDesc[17].Size = (ifNoneMatch.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[18].DataPointer = (IntPtr)(fixedIndexingDirective);
+                dataDesc[18].DataPointer = (IntPtr)fixedIndexingDirective;
                 dataDesc[18].Size = (indexingDirective.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[19].DataPointer = (IntPtr)(fixedKeepAlive);
+                dataDesc[19].DataPointer = (IntPtr)fixedKeepAlive;
                 dataDesc[19].Size = (keepAlive.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[20].DataPointer = (IntPtr)(fixedOfferType);
+                dataDesc[20].DataPointer = (IntPtr)fixedOfferType;
                 dataDesc[20].Size = (offerType.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[21].DataPointer = (IntPtr)(fixedPageSize);
+                dataDesc[21].DataPointer = (IntPtr)fixedPageSize;
                 dataDesc[21].Size = (pageSize.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[22].DataPointer = (IntPtr)(fixedPreTriggerExclude);
+                dataDesc[22].DataPointer = (IntPtr)fixedPreTriggerExclude;
                 dataDesc[22].Size = (preTriggerExclude.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[23].DataPointer = (IntPtr)(fixedPreTriggerInclude);
+                dataDesc[23].DataPointer = (IntPtr)fixedPreTriggerInclude;
                 dataDesc[23].Size = (preTriggerInclude.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[24].DataPointer = (IntPtr)(fixedPostTriggerExclude);
+                dataDesc[24].DataPointer = (IntPtr)fixedPostTriggerExclude;
                 dataDesc[24].Size = (postTriggerExclude.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[25].DataPointer = (IntPtr)(fixedPostTriggerInclude);
+                dataDesc[25].DataPointer = (IntPtr)fixedPostTriggerInclude;
                 dataDesc[25].Size = (postTriggerInclude.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[26].DataPointer = (IntPtr)(fixedProfileRequest);
+                dataDesc[26].DataPointer = (IntPtr)fixedProfileRequest;
                 dataDesc[26].Size = (profileRequest.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[27].DataPointer = (IntPtr)(fixedResourceTokenExpiry);
+                dataDesc[27].DataPointer = (IntPtr)fixedResourceTokenExpiry;
                 dataDesc[27].Size = (resourceTokenExpiry.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[28].DataPointer = (IntPtr)(fixedSessionToken);
+                dataDesc[28].DataPointer = (IntPtr)fixedSessionToken;
                 dataDesc[28].Size = (sessionToken.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[29].DataPointer = (IntPtr)(fixedSetCookie);
+                dataDesc[29].DataPointer = (IntPtr)fixedSetCookie;
                 dataDesc[29].Size = (setCookie.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[30].DataPointer = (IntPtr)(fixedSlug);
+                dataDesc[30].DataPointer = (IntPtr)fixedSlug;
                 dataDesc[30].Size = (slug.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[31].DataPointer = (IntPtr)(fixedUserAgent);
+                dataDesc[31].DataPointer = (IntPtr)fixedUserAgent;
                 dataDesc[31].Size = (userAgent.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[32].DataPointer = (IntPtr)(fixedXDate);
+                dataDesc[32].DataPointer = (IntPtr)fixedXDate;
                 dataDesc[32].Size = (xDate.Length + 1) * UnicodeEncodingCharSize;
 
                 this.WriteEventCoreWithActivityId(activityId, 1, eventDataCount, dataDesc);
@@ -423,10 +423,10 @@ namespace Microsoft.Azure.Cosmos
                 const int UnicodeEncodingCharSize = CustomTypeExtensions.UnicodeEncodingCharSize;
 
                 EventData* dataDesc = stackalloc EventData[eventDataCount];
-                dataDesc[0].DataPointer = (IntPtr)(fixedGuidBytes);
+                dataDesc[0].DataPointer = (IntPtr)fixedGuidBytes;
                 dataDesc[0].Size = guidBytes.Length;
 
-                dataDesc[1].DataPointer = (IntPtr)(fixedLocalIdBytes);
+                dataDesc[1].DataPointer = (IntPtr)fixedLocalIdBytes;
                 dataDesc[1].Size = localIdBytes.Length;
 
                 dataDesc[2].DataPointer = (IntPtr)(&statusCode);
@@ -435,82 +435,82 @@ namespace Microsoft.Azure.Cosmos
                 dataDesc[3].DataPointer = (IntPtr)(&milliseconds);
                 dataDesc[3].Size = 8;
 
-                dataDesc[4].DataPointer = (IntPtr)(fixedContentType);
+                dataDesc[4].DataPointer = (IntPtr)fixedContentType;
                 dataDesc[4].Size = (contentType.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[5].DataPointer = (IntPtr)(fixedContentEncoding);
+                dataDesc[5].DataPointer = (IntPtr)fixedContentEncoding;
                 dataDesc[5].Size = (contentEncoding.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[6].DataPointer = (IntPtr)(fixedContentLength);
+                dataDesc[6].DataPointer = (IntPtr)fixedContentLength;
                 dataDesc[6].Size = (contentLength.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[7].DataPointer = (IntPtr)(fixedContentLocation);
+                dataDesc[7].DataPointer = (IntPtr)fixedContentLocation;
                 dataDesc[7].Size = (contentLocation.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[8].DataPointer = (IntPtr)(fixedCurrentMediaStorageUsageInMB);
+                dataDesc[8].DataPointer = (IntPtr)fixedCurrentMediaStorageUsageInMB;
                 dataDesc[8].Size = (currentMediaStorageUsageInMB.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[9].DataPointer = (IntPtr)(fixedCurrentResourceQuotaUsage);
+                dataDesc[9].DataPointer = (IntPtr)fixedCurrentResourceQuotaUsage;
                 dataDesc[9].Size = (currentResourceQuotaUsage.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[10].DataPointer = (IntPtr)(fixedDatabaseAccountConsumedDocumentStorageInMB);
+                dataDesc[10].DataPointer = (IntPtr)fixedDatabaseAccountConsumedDocumentStorageInMB;
                 dataDesc[10].Size = (databaseAccountConsumedDocumentStorageInMB.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[11].DataPointer = (IntPtr)(fixedDatabaseAccountProvisionedDocumentStorageInMB);
+                dataDesc[11].DataPointer = (IntPtr)fixedDatabaseAccountProvisionedDocumentStorageInMB;
                 dataDesc[11].Size = (databaseAccountProvisionedDocumentStorageInMB.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[12].DataPointer = (IntPtr)(fixedDatabaseAccountReservedDocumentStorageInMB);
+                dataDesc[12].DataPointer = (IntPtr)fixedDatabaseAccountReservedDocumentStorageInMB;
                 dataDesc[12].Size = (databaseAccountReservedDocumentStorageInMB.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[13].DataPointer = (IntPtr)(fixedGatewayVersion);
+                dataDesc[13].DataPointer = (IntPtr)fixedGatewayVersion;
                 dataDesc[13].Size = (gatewayVersion.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[14].DataPointer = (IntPtr)(fixedIndexingDirective);
+                dataDesc[14].DataPointer = (IntPtr)fixedIndexingDirective;
                 dataDesc[14].Size = (indexingDirective.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[15].DataPointer = (IntPtr)(fixedItemCount);
+                dataDesc[15].DataPointer = (IntPtr)fixedItemCount;
                 dataDesc[15].Size = (itemCount.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[16].DataPointer = (IntPtr)(fixedLastStateChangeUtc);
+                dataDesc[16].DataPointer = (IntPtr)fixedLastStateChangeUtc;
                 dataDesc[16].Size = (lastStateChangeUtc.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[17].DataPointer = (IntPtr)(fixedMaxMediaStorageUsageInMB);
+                dataDesc[17].DataPointer = (IntPtr)fixedMaxMediaStorageUsageInMB;
                 dataDesc[17].Size = (maxMediaStorageUsageInMB.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[18].DataPointer = (IntPtr)(fixedMaxResourceQuota);
+                dataDesc[18].DataPointer = (IntPtr)fixedMaxResourceQuota;
                 dataDesc[18].Size = (maxResourceQuota.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[19].DataPointer = (IntPtr)(fixedNewResourceId);
+                dataDesc[19].DataPointer = (IntPtr)fixedNewResourceId;
                 dataDesc[19].Size = (newResourceId.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[20].DataPointer = (IntPtr)(fixedOwnerFullName);
+                dataDesc[20].DataPointer = (IntPtr)fixedOwnerFullName;
                 dataDesc[20].Size = (ownerFullName.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[21].DataPointer = (IntPtr)(fixedOwnerId);
+                dataDesc[21].DataPointer = (IntPtr)fixedOwnerId;
                 dataDesc[21].Size = (ownerId.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[22].DataPointer = (IntPtr)(fixedRequestCharge);
+                dataDesc[22].DataPointer = (IntPtr)fixedRequestCharge;
                 dataDesc[22].Size = (requestCharge.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[23].DataPointer = (IntPtr)(fixedRequestValidationFailure);
+                dataDesc[23].DataPointer = (IntPtr)fixedRequestValidationFailure;
                 dataDesc[23].Size = (requestValidationFailure.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[24].DataPointer = (IntPtr)(fixedRetryAfter);
+                dataDesc[24].DataPointer = (IntPtr)fixedRetryAfter;
                 dataDesc[24].Size = (retryAfter.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[25].DataPointer = (IntPtr)(fixedRetryAfterInMilliseconds);
+                dataDesc[25].DataPointer = (IntPtr)fixedRetryAfterInMilliseconds;
                 dataDesc[25].Size = (retryAfterInMilliseconds.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[26].DataPointer = (IntPtr)(fixedServerVersion);
+                dataDesc[26].DataPointer = (IntPtr)fixedServerVersion;
                 dataDesc[26].Size = (serverVersion.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[27].DataPointer = (IntPtr)(fixedSchemaVersion);
+                dataDesc[27].DataPointer = (IntPtr)fixedSchemaVersion;
                 dataDesc[27].Size = (schemaVersion.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[28].DataPointer = (IntPtr)(fixedSessionToken);
+                dataDesc[28].DataPointer = (IntPtr)fixedSessionToken;
                 dataDesc[28].Size = (sessionToken.Length + 1) * UnicodeEncodingCharSize;
 
-                dataDesc[29].DataPointer = (IntPtr)(fixedVersion);
+                dataDesc[29].DataPointer = (IntPtr)fixedVersion;
                 dataDesc[29].Size = (version.Length + 1) * UnicodeEncodingCharSize;
 
                 this.WriteEventCoreWithActivityId(activityId, 2, eventDataCount, dataDesc);

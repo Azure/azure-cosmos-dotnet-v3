@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <typeparam name="TResult">The type of the object returned in the query result.</typeparam>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default)
         {
             return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellationToken);
         }
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default)
         {
             return this.ExecuteNextAsync<dynamic>(cancellationToken);
         }
@@ -126,8 +126,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (response.ResponseBody != null && response.ResponseBody.Length > 0)
                 {
                     long responseLengthInBytes = response.ResponseBody.Length;
-                    int itemCount = 0;
-                    IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
+                    IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out int itemCount);
                     DocumentFeedResponse<dynamic> feedResponse = new DocumentFeedResponse<dynamic>(
                         feedResource,
                         itemCount,

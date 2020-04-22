@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression expression)
             : base(SqlObjectKind.SelectValueSpec)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException("expression");
         }
 
         public SqlScalarExpression Expression

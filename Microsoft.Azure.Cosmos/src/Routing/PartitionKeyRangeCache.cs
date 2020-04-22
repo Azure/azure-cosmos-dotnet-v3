@@ -44,8 +44,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Range<string> range,
             bool forceRefresh = false)
         {
-            ResourceId collectionRidParsed;
-            Debug.Assert(ResourceId.TryParse(collectionRid, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
+            Debug.Assert(ResourceId.TryParse(collectionRid, out ResourceId collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
             CollectionRoutingMap routingMap =
                 await this.TryLookupAsync(collectionRid, null, null, CancellationToken.None);
@@ -69,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string partitionKeyRangeId,
             bool forceRefresh = false)
         {
-            ResourceId collectionRidParsed;
-            Debug.Assert(ResourceId.TryParse(collectionResourceId, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
+            Debug.Assert(ResourceId.TryParse(collectionResourceId, out ResourceId collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
             CollectionRoutingMap routingMap =
                 await this.TryLookupAsync(collectionResourceId, null, null, CancellationToken.None);
@@ -170,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
                     cancellationToken))
                 {
@@ -237,22 +235,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                 }
 
-                if (authorizationToken == null)
-                {
-                    // User doesn't have rid based resource token. Maybe he has name based.
-                    throw new NotSupportedException("Resoruce tokens are not supported");
-
-                    ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
-                    ////authorizationToken =
-                    ////    this.authorizationTokenProvider.GetUserAuthorizationToken(
-                    ////        collection.AltLink,
-                    ////        PathsHelper.GetResourcePath(request.ResourceType),
-                    ////        HttpConstants.HttpMethods.Get,
-                    ////        request.Headers,
-                    ////        AuthorizationTokenType.PrimaryMasterKey);
-                }
-
-                request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+                request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken ?? throw new NotSupportedException("Resoruce tokens are not supported");
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {

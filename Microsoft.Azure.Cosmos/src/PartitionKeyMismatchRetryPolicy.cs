@@ -25,12 +25,7 @@ namespace Microsoft.Azure.Cosmos
             CollectionCache clientCollectionCache,
             IDocumentClientRetryPolicy nextRetryPolicy)
         {
-            if (clientCollectionCache == null)
-            {
-                throw new ArgumentNullException("clientCollectionCache");
-            }
-
-            this.clientCollectionCache = clientCollectionCache;
+            this.clientCollectionCache = clientCollectionCache ?? throw new ArgumentNullException("clientCollectionCache");
             this.nextRetryPolicy = nextRetryPolicy;
         }
 

@@ -581,8 +581,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public override bool Equals(object obj)
             {
-                TestItem other = obj as TestItem;
-                if (other == null)
+                if (!(obj is TestItem other))
                 {
                     return false;
                 }

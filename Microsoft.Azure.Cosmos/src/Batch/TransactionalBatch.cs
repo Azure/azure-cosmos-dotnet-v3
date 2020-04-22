@@ -222,6 +222,6 @@ namespace Microsoft.Azure.Cosmos
         /// Use <see cref="TransactionalBatchResponse.IsSuccessStatusCode"/> on the response returned to ensure that the transactional batch succeeded.
         /// </remarks>
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
     }
 }

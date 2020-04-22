@@ -20,33 +20,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(Container leaseContainer)
         {
-            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-
-            this.container = leaseContainer;
+            this.container = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
             return this;
         }
 
         public DocumentServiceLeaseStoreManagerBuilder WithLeasePrefix(string leasePrefix)
         {
-            if (leasePrefix == null) throw new ArgumentNullException(nameof(leasePrefix));
-
-            this.options.ContainerNamePrefix = leasePrefix;
+            this.options.ContainerNamePrefix = leasePrefix ?? throw new ArgumentNullException(nameof(leasePrefix));
             return this;
         }
 
         public DocumentServiceLeaseStoreManagerBuilder WithRequestOptionsFactory(RequestOptionsFactory requestOptionsFactory)
         {
-            if (requestOptionsFactory == null) throw new ArgumentNullException(nameof(requestOptionsFactory));
-
-            this.requestOptionsFactory = requestOptionsFactory;
+            this.requestOptionsFactory = requestOptionsFactory ?? throw new ArgumentNullException(nameof(requestOptionsFactory));
             return this;
         }
 
         public DocumentServiceLeaseStoreManagerBuilder WithHostName(string hostName)
         {
-            if (hostName == null) throw new ArgumentNullException(nameof(hostName));
-
-            this.options.HostName = hostName;
+            this.options.HostName = hostName ?? throw new ArgumentNullException(nameof(hostName));
             return this;
         }
 
@@ -57,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (this.requestOptionsFactory == null)
                 throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
 
-            var leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
+            DocumentServiceLeaseStoreManagerCosmos leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
             return Task.FromResult<DocumentServiceLeaseStoreManager>(leaseStoreManager);
         }
     }

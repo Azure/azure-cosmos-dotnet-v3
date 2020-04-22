@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             string containerUri,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 

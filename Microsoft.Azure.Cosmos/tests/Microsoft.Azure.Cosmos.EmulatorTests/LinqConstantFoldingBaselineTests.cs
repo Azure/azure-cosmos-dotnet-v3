@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
         [Owner("khdang")]
         public void TestBinaryOperators()
         {
-            var inputs = new List<LinqExpressionInput>();
+            List<LinqExpressionInput> inputs = new List<LinqExpressionInput>();
             inputs.Add(new LinqExpressionInput("true true equal", Expression.MakeBinary(ExpressionType.Equal, Expression.Constant(true), Expression.Constant(true))));
             inputs.Add(new LinqExpressionInput("true true not equal", Expression.MakeBinary(ExpressionType.NotEqual, Expression.Constant(true), Expression.Constant(true))));
             inputs.Add(new LinqExpressionInput("false true equal", Expression.MakeBinary(ExpressionType.Equal, Expression.Constant(false), Expression.Constant(true))));
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
             inputs.Add(new LinqExpressionInput("RightShift", Expression.MakeBinary(ExpressionType.RightShift, Expression.Constant(100), Expression.Constant(1))));
 
             int constInt = 2;
-            var paramx = Expression.Parameter(typeof(int), "x");
+            ParameterExpression paramx = Expression.Parameter(typeof(int), "x");
             inputs.Add(new LinqExpressionInput("Add constInt", Expression.Add(Expression.Constant(constInt), Expression.Constant(6))));
             inputs.Add(new LinqExpressionInput("Add param", Expression.Add(paramx, Expression.Constant(2))));
             inputs.Add(new LinqExpressionInput("AndAlso", Expression.AndAlso(Expression.Constant(true), Expression.Constant(false))));
@@ -154,12 +154,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
             internal LinqExpressionInput(string description, Expression expr, string errorMsg = null)
                 : base(description)
             {
-                if (expr == null)
-                {
-                    throw new ArgumentNullException($"{nameof(expr)} must not be null.");
-                }
-
-                this.expression = expr;
+                this.expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
                 this.errorMessage = errorMsg;
             }
 

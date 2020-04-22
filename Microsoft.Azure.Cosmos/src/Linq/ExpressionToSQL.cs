@@ -153,8 +153,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // ExpressionToSql is the query input value: a IDocumentQuery
-            IDocumentQuery input = inputExpression.Value as IDocumentQuery;
-            if (input == null)
+            if (!(inputExpression.Value is IDocumentQuery input))
             {
                 throw new DocumentQueryException(ClientResources.InputIsNotIDocumentQuery);
             }
@@ -183,8 +182,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string parameterName = null;
             if (peekMethod.Arguments.Count > 1)
             {
-                LambdaExpression lambda = peekMethod.Arguments[1] as LambdaExpression;
-                if (lambda != null && lambda.Parameters.Count > 0)
+                if (peekMethod.Arguments[1] is LambdaExpression lambda && lambda.Parameters.Count > 0)
                 {
                     parameterName = lambda.Parameters[0].Name;
                 }
@@ -530,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                     Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
 
-                    object value = default(object);
+                    object value = default;
                     // Enum
                     if (memberType.IsEnum())
                     {
@@ -552,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         value = DateTime.Parse(serializedDateTime.Value);
                     }
 
-                    if (value != default(object))
+                    if (value != default)
                     {
                         string serializedValue;
 
@@ -901,8 +899,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (usePropertyRef)
             {
-                SqlPropertyRefScalarExpression propertyRefExpression = scalar as SqlPropertyRefScalarExpression;
-                if (propertyRefExpression == null)
+                if (!(scalar is SqlPropertyRefScalarExpression propertyRefExpression))
                 {
                     throw new DocumentQueryException(ClientResources.PathExpressionsOnly);
                 }
@@ -913,11 +910,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                SqlMemberIndexerScalarExpression memberIndexerExpression = scalar as SqlMemberIndexerScalarExpression;
-                if (memberIndexerExpression == null)
+                if (!(scalar is SqlMemberIndexerScalarExpression memberIndexerExpression))
                 {
-                    SqlPropertyRefScalarExpression propertyRefExpression = scalar as SqlPropertyRefScalarExpression;
-                    if (propertyRefExpression == null)
+                    if (!(scalar is SqlPropertyRefScalarExpression propertyRefExpression))
                     {
                         throw new DocumentQueryException(ClientResources.PathExpressionsOnly);
                     }
@@ -1238,8 +1233,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>True if subquery is needed, otherwise false</returns>
         private static bool IsSubqueryScalarExpression(Expression expression, out SqlObjectKind? expressionObjKind, out bool isMinMaxAvgMethod)
         {
-            MethodCallExpression methodCallExpression = expression as MethodCallExpression;
-            if (methodCallExpression == null)
+            if (!(expression is MethodCallExpression methodCallExpression))
             {
                 expressionObjKind = null;
                 isMinMaxAvgMethod = false;
@@ -1274,11 +1268,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                     else
                     {
-                        SqlObjectKind? objKind;
-                        bool isMinMaxAvg;
                         isSubqueryExpression = ExpressionToSql.IsSubqueryScalarExpression(
                             methodCallExpression.Arguments[0] as MethodCallExpression,
-                            out objKind, out isMinMaxAvg);
+                            out SqlObjectKind? objKind, out bool isMinMaxAvg);
 
                         if (isSubqueryExpression)
                         {
@@ -1356,7 +1348,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         internal static bool TryGetSqlNumberLiteral(object value, out SqlNumberLiteral sqlNumberLiteral)
         {
-            sqlNumberLiteral = default(SqlNumberLiteral);
+            sqlNumberLiteral = default;
             if (value is byte byteValue)
             {
                 sqlNumberLiteral = SqlNumberLiteral.Create(byteValue);
@@ -1427,9 +1419,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             ReadOnlyCollection<ParameterExpression> parameters,
             TranslationContext context)
         {
-            SqlObjectKind? expressionObjKind;
-            bool isMinMaxAvgMethod;
-            bool shouldUseSubquery = ExpressionToSql.IsSubqueryScalarExpression(expression, out expressionObjKind, out isMinMaxAvgMethod);
+            bool shouldUseSubquery = ExpressionToSql.IsSubqueryScalarExpression(expression, out SqlObjectKind? expressionObjKind, out bool isMinMaxAvgMethod);
 
             SqlScalarExpression sqlScalarExpression;
             if (!shouldUseSubquery)
@@ -1623,10 +1613,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             TranslationContext context,
             out SqlNumberLiteral literal)
         {
-            literal = default(SqlNumberLiteral);
+            literal = default;
 
-            SqlLiteralScalarExpression literalScalarExpression = scalarExpression as SqlLiteralScalarExpression;
-            if (literalScalarExpression != null)
+            if (scalarExpression is SqlLiteralScalarExpression literalScalarExpression)
             {
                 if (literalScalarExpression.Literal.Kind == SqlObjectKind.NumberLiteral)
                 {
@@ -1650,9 +1639,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             TranslationContext context,
             out SqlParameter sqlParameter)
         {
-            sqlParameter = default(SqlParameter);
-            SqlParameterRefScalarExpression parameterRefScalarExpression = scalarExpression as SqlParameterRefScalarExpression;
-            if (parameterRefScalarExpression != null)
+            sqlParameter = default;
+            if (scalarExpression is SqlParameterRefScalarExpression parameterRefScalarExpression)
             {
                 sqlParameter = parameterRefScalarExpression.Parameter;
             }
@@ -1674,16 +1662,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             SqlScalarExpression scalarExpression = ExpressionToSql.VisitScalarExpression(expression, context);
-            SqlNumberLiteral offsetNumberLiteral;
-            SqlParameter sqlParameter;
             SqlOffsetSpec offsetSpec;
 
             // skipExpression must be number literal
-            if (TryGetTopSkipTakeLiteral(scalarExpression, context, out offsetNumberLiteral))
+            if (TryGetTopSkipTakeLiteral(scalarExpression, context, out SqlNumberLiteral offsetNumberLiteral))
             {
                 offsetSpec = SqlOffsetSpec.Create(offsetNumberLiteral);
             }
-            else if (TryGetTopSkipTakeParameter(scalarExpression, context, out sqlParameter))
+            else if (TryGetTopSkipTakeParameter(scalarExpression, context, out SqlParameter sqlParameter))
             {
                 offsetSpec = SqlOffsetSpec.Create(sqlParameter);
             }
@@ -1712,16 +1698,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             SqlScalarExpression scalarExpression = ExpressionToSql.VisitScalarExpression(expression, context);
-            SqlNumberLiteral takeNumberLiteral;
-            SqlParameter sqlParameter;
             SqlLimitSpec limitSpec;
 
             // takeExpression must be number literal
-            if (TryGetTopSkipTakeLiteral(scalarExpression, context, out takeNumberLiteral))
+            if (TryGetTopSkipTakeLiteral(scalarExpression, context, out SqlNumberLiteral takeNumberLiteral))
             {
                 limitSpec = SqlLimitSpec.Create(takeNumberLiteral);
             }
-            else if (TryGetTopSkipTakeParameter(scalarExpression, context, out sqlParameter))
+            else if (TryGetTopSkipTakeParameter(scalarExpression, context, out SqlParameter sqlParameter))
             {
                 limitSpec = SqlLimitSpec.Create(sqlParameter);
             }
@@ -1750,16 +1734,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             SqlScalarExpression scalarExpression = ExpressionToSql.VisitScalarExpression(expression, context);
-            SqlNumberLiteral takeNumberLiteral;
-            SqlParameter sqlParameter;
             SqlTopSpec topSpec;
 
             // takeExpression must be number literal
-            if (TryGetTopSkipTakeLiteral(scalarExpression, context, out takeNumberLiteral))
+            if (TryGetTopSkipTakeLiteral(scalarExpression, context, out SqlNumberLiteral takeNumberLiteral))
             {
                 topSpec = SqlTopSpec.Create(takeNumberLiteral);
             }
-            else if (TryGetTopSkipTakeParameter(scalarExpression, context, out sqlParameter))
+            else if (TryGetTopSkipTakeParameter(scalarExpression, context, out SqlParameter sqlParameter))
             {
                 topSpec = SqlTopSpec.Create(sqlParameter);
             }

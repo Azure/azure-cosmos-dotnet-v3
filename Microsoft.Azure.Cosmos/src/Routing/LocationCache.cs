@@ -62,9 +62,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 string unavailableLocationsExpirationTimeInSecondsConfig = System.Configuration.ConfigurationManager.AppSettings[LocationCache.UnavailableLocationsExpirationTimeInSeconds];
                 if (!string.IsNullOrEmpty(unavailableLocationsExpirationTimeInSecondsConfig))
                 {
-                    int unavailableLocationsExpirationTimeinSecondsConfigValue;
-
-                    if (!int.TryParse(unavailableLocationsExpirationTimeInSecondsConfig, out unavailableLocationsExpirationTimeinSecondsConfigValue))
+                    if (!int.TryParse(unavailableLocationsExpirationTimeInSecondsConfig, out int unavailableLocationsExpirationTimeinSecondsConfigValue))
                     {
                         this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
                     }
@@ -263,9 +261,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (!string.IsNullOrEmpty(mostPreferredLocation))
                 {
-                    Uri mostPreferredReadEndpoint;
-
-                    if (currentLocationInfo.AvailableReadEndpointByLocation.TryGetValue(mostPreferredLocation, out mostPreferredReadEndpoint))
+                    if (currentLocationInfo.AvailableReadEndpointByLocation.TryGetValue(mostPreferredLocation, out Uri mostPreferredReadEndpoint))
                     {
                         if (mostPreferredReadEndpoint != readLocationEndpoints[0])
                         {
@@ -282,7 +278,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
 
-                Uri mostPreferredWriteEndpoint;
                 ReadOnlyCollection<Uri> writeLocationEndpoints = currentLocationInfo.WriteEndpoints;
 
                 if (!this.CanUseMultipleWriteLocations())
@@ -306,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 else if (!string.IsNullOrEmpty(mostPreferredLocation))
                 {
-                    if (currentLocationInfo.AvailableWriteEndpointByLocation.TryGetValue(mostPreferredLocation, out mostPreferredWriteEndpoint))
+                    if (currentLocationInfo.AvailableWriteEndpointByLocation.TryGetValue(mostPreferredLocation, out Uri mostPreferredWriteEndpoint))
                     {
                         shouldRefresh |= mostPreferredWriteEndpoint != writeLocationEndpoints[0];
                         DefaultTrace.TraceInformation("ShouldRefreshEndpoints = {0} since most preferred location {1} is not available for write.", shouldRefresh, mostPreferredLocation);
@@ -344,12 +339,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 foreach (Uri unavailableEndpoint in unavailableEndpoints)
                 {
-                    LocationUnavailabilityInfo unavailabilityInfo;
-                    LocationUnavailabilityInfo removed;
-
-                    if (this.locationUnavailablityInfoByEndpoint.TryGetValue(unavailableEndpoint, out unavailabilityInfo)
+                    if (this.locationUnavailablityInfoByEndpoint.TryGetValue(unavailableEndpoint, out LocationUnavailabilityInfo unavailabilityInfo)
                         && DateTime.UtcNow - unavailabilityInfo.LastUnavailabilityCheckTimeStamp > this.unavailableLocationsExpirationTime
-                        && this.locationUnavailablityInfoByEndpoint.TryRemove(unavailableEndpoint, out removed))
+                        && this.locationUnavailablityInfoByEndpoint.TryRemove(unavailableEndpoint, out LocationUnavailabilityInfo removed))
                     {
                         DefaultTrace.TraceInformation(
                             "Removed endpoint {0} unavailable for operations {1} from unavailableEndpoints",
@@ -362,10 +354,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private bool IsEndpointUnavailable(Uri endpoint, OperationType expectedAvailableOperations)
         {
-            LocationUnavailabilityInfo unavailabilityInfo;
-
             if (expectedAvailableOperations == OperationType.None
-                || !this.locationUnavailablityInfoByEndpoint.TryGetValue(endpoint, out unavailabilityInfo)
+                || !this.locationUnavailablityInfoByEndpoint.TryGetValue(endpoint, out LocationUnavailabilityInfo unavailabilityInfo)
                 || !unavailabilityInfo.UnavailableOperations.HasFlag(expectedAvailableOperations))
             {
                 return false;
@@ -443,15 +433,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (readLocations != null)
                 {
-                    ReadOnlyCollection<string> availableReadLocations;
-                    nextLocationInfo.AvailableReadEndpointByLocation = this.GetEndpointByLocation(readLocations, out availableReadLocations);
+                    nextLocationInfo.AvailableReadEndpointByLocation = this.GetEndpointByLocation(readLocations, out ReadOnlyCollection<string> availableReadLocations);
                     nextLocationInfo.AvailableReadLocations = availableReadLocations;
                 }
 
                 if (writeLocations != null)
                 {
-                    ReadOnlyCollection<string> availableWriteLocations;
-                    nextLocationInfo.AvailableWriteEndpointByLocation = this.GetEndpointByLocation(writeLocations, out availableWriteLocations);
+                    nextLocationInfo.AvailableWriteEndpointByLocation = this.GetEndpointByLocation(writeLocations, out ReadOnlyCollection<string> availableWriteLocations);
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
 
@@ -486,8 +474,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     foreach (string location in currentLocationInfo.PreferredLocations)
                     {
-                        Uri endpoint;
-                        if (endpointsByLocation.TryGetValue(location, out endpoint))
+                        if (endpointsByLocation.TryGetValue(location, out Uri endpoint))
                         {
                             if (this.IsEndpointUnavailable(endpoint, expectedAvailableOperation))
                             {
@@ -512,9 +499,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     foreach (string location in orderedLocations)
                     {
-                        Uri endpoint;
                         if (!string.IsNullOrEmpty(location) && // location is empty during manual failover
-                            endpointsByLocation.TryGetValue(location, out endpoint))
+                            endpointsByLocation.TryGetValue(location, out Uri endpoint))
                         {
                             endpoints.Add(endpoint);
                         }
@@ -537,9 +523,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (AccountRegion location in locations)
             {
-                Uri endpoint;
                 if (!string.IsNullOrEmpty(location.Name)
-                    && Uri.TryCreate(location.Endpoint, UriKind.Absolute, out endpoint))
+                    && Uri.TryCreate(location.Endpoint, UriKind.Absolute, out Uri endpoint))
                 {
                     endpointsByLocation[location.Name] = endpoint;
                     parsedLocations.Add(location.Name);

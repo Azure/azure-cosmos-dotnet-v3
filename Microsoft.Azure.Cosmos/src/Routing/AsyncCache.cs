@@ -97,9 +97,7 @@ namespace Microsoft.Azure.Cosmos.Common
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            AsyncLazy<TValue> initialLazyValue;
-
-            if (this.values.TryGetValue(key, out initialLazyValue))
+            if (this.values.TryGetValue(key, out AsyncLazy<TValue> initialLazyValue))
             {
                 // If we haven't computed the value or we're currently computing it, then return it...
                 if (!initialLazyValue.IsValueCreated || !initialLazyValue.Value.IsCompleted)
@@ -149,9 +147,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
         public void Remove(TKey key)
         {
-            AsyncLazy<TValue> initialLazyValue;
-
-            if (this.values.TryRemove(key, out initialLazyValue) && initialLazyValue.IsValueCreated)
+            if (this.values.TryRemove(key, out AsyncLazy<TValue> initialLazyValue) && initialLazyValue.IsValueCreated)
             {
                 // Observe all exceptions thrown.
                 Task unused = initialLazyValue.Value.ContinueWith(c => c.Exception, TaskContinuationOptions.OnlyOnFaulted);
@@ -160,12 +156,12 @@ namespace Microsoft.Azure.Cosmos.Common
 
         public bool TryRemoveIfCompleted(TKey key)
         {
-            AsyncLazy<TValue> initialLazyValue;
-
-            if (this.values.TryGetValue(key, out initialLazyValue) && initialLazyValue.IsValueCreated && initialLazyValue.Value.IsCompleted)
+            if (this.values.TryGetValue(key, out AsyncLazy<TValue> initialLazyValue) && initialLazyValue.IsValueCreated && initialLazyValue.Value.IsCompleted)
             {
                 // Accessing Exception marks as observed.
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
                 Exception e = initialLazyValue.Value.Exception;
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
 
                 // This is a nice trick to do "atomic remove if value not changed".
                 // ConcurrentDictionary inherits from ICollection<KVP<..>>, which allows removal of specific key value pair, instead of removal just by key.
@@ -184,8 +180,7 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <returns>Value if present, default value if not present.</returns>
         public async Task<TValue> RemoveAsync(TKey key)
         {
-            AsyncLazy<TValue> initialLazyValue;
-            if (this.values.TryRemove(key, out initialLazyValue))
+            if (this.values.TryRemove(key, out AsyncLazy<TValue> initialLazyValue))
             {
                 try
                 {
@@ -196,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 }
             }
 
-            return default(TValue);
+            return default;
         }
 
         public void Clear()
@@ -230,15 +225,13 @@ namespace Microsoft.Azure.Cosmos.Common
             {
                 try
                 {
-                    AsyncLazy<TValue> initialLazyValue;
-
                     // If we don't have a value, or we have one that has completed running (i.e. if a value is currently being generated, we do nothing).
-                    if (!this.values.TryGetValue(key, out initialLazyValue) || (initialLazyValue.IsValueCreated && initialLazyValue.Value.IsCompleted))
+                    if (!this.values.TryGetValue(key, out AsyncLazy<TValue> initialLazyValue) || (initialLazyValue.IsValueCreated && initialLazyValue.Value.IsCompleted))
                     {
                         // Use GetAsync to trigger the generation of a value.
                         await this.GetAsync(
                             key,
-                            default(TValue), // obsolete value unused since forceRefresh: true
+                            default, // obsolete value unused since forceRefresh: true
                             singleValueInitFunc,
                             CancellationToken.None,
                             forceRefresh: true);

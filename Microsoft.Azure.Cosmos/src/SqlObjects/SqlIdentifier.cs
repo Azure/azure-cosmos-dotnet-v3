@@ -90,8 +90,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public static SqlIdentifier Create(string value)
         {
-            SqlIdentifier sqlIdentifier;
-            if (!SqlIdentifier.FrequentIdentifiers.TryGetValue(value, out sqlIdentifier))
+            if (!SqlIdentifier.FrequentIdentifiers.TryGetValue(value, out SqlIdentifier sqlIdentifier))
             {
                 sqlIdentifier = new SqlIdentifier(value);
             }

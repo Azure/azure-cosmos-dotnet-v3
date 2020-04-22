@@ -41,9 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static HttpContent AsHttpContent<T>(this T resource, NameValueCollection requestHeaders = null)
             where T : Resource, new()
         {
-            Stream requestStream = null;
-
-            requestStream = new MemoryStream();
+            Stream requestStream = new MemoryStream();
             resource.SaveTo(requestStream);
             requestStream.Seek(0, SeekOrigin.Begin);
 
@@ -117,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 responseMessage.StatusCode == HttpStatusCode.NotModified)
             {
                 responseMessage.Dispose();
-                return default(T);
+                return default;
             }
 
             if ((int)responseMessage.StatusCode < 400)

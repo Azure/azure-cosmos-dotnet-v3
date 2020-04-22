@@ -92,8 +92,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         private async Task RemoveLeaseAsync(DocumentServiceLease lease)
         {
-            TaskCompletionSource<bool> worker;
-            if (!this.currentlyOwnedPartitions.TryRemove(lease.CurrentLeaseToken, out worker))
+            if (!this.currentlyOwnedPartitions.TryRemove(lease.CurrentLeaseToken, out TaskCompletionSource<bool> worker))
             {
                 return;
             }

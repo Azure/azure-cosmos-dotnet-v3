@@ -314,7 +314,6 @@ namespace Microsoft.Azure.Cosmos
                 if (!collectionCacheIsUptoDate)
                 {
                     request.ForceNameCacheRefresh = true;
-                    collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
                     if (collection.ResourceId != routingMap.CollectionUniqueId)
                     {
@@ -331,7 +330,6 @@ namespace Microsoft.Azure.Cosmos
 
                 if (!collectionRoutingMapCacheIsUptoDate)
                 {
-                    collectionRoutingMapCacheIsUptoDate = true;
                     routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: routingMap,
@@ -442,7 +440,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRange range;
             string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
 
-            object effectivePartitionKeyStringObject = null;
+            object effectivePartitionKeyStringObject;
             if (partitionKeyString != null)
             {
                 range = this.TryResolveServerPartitionByPartitionKey(
@@ -572,8 +570,8 @@ namespace Microsoft.Azure.Cosmos
         {
             // Optimization to not refresh routing map unnecessary. As we keep track of parent child relationships,
             // we can determine that a range is gone just by looking up in the routing map.
-            if (collectionCacheIsUpToDate && routingMapCacheIsUpToDate ||
-                collectionCacheIsUpToDate && routingMap.IsGone(request.PartitionKeyRangeIdentity.PartitionKeyRangeId))
+            if ((collectionCacheIsUpToDate && routingMapCacheIsUpToDate) ||
+                (collectionCacheIsUpToDate && routingMap.IsGone(request.PartitionKeyRangeIdentity.PartitionKeyRangeId)))
             {
                 string errorMessage = string.Format(
                     CultureInfo.InvariantCulture,
@@ -631,12 +629,12 @@ namespace Microsoft.Azure.Cosmos
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
 
             if (partitionKeyString == null)
             {
-                throw new ArgumentNullException("partitionKeyString");
+                throw new ArgumentNullException(nameof(partitionKeyString));
             }
 
             if (collection == null)
@@ -721,18 +719,8 @@ namespace Microsoft.Azure.Cosmos
                 PartitionAddressInformation addresses,
                 ServiceIdentity serviceIdentity)
             {
-                if (addresses == null)
-                {
-                    throw new ArgumentNullException("addresses");
-                }
-
-                if (serviceIdentity == null)
-                {
-                    throw new ArgumentNullException("serviceIdentity");
-                }
-
-                this.Addresses = addresses;
-                this.TargetServiceIdentity = serviceIdentity;
+                this.Addresses = addresses ?? throw new ArgumentNullException("addresses");
+                this.TargetServiceIdentity = serviceIdentity ?? throw new ArgumentNullException("serviceIdentity");
             }
 
             public ResolutionResult(
@@ -740,18 +728,8 @@ namespace Microsoft.Azure.Cosmos
                 PartitionAddressInformation addresses,
                 ServiceIdentity serviceIdentity)
             {
-                if (targetPartitionKeyRange == null)
-                {
-                    throw new ArgumentNullException("targetPartitionKeyRange");
-                }
-
-                if (addresses == null)
-                {
-                    throw new ArgumentNullException("addresses");
-                }
-
-                this.TargetPartitionKeyRange = targetPartitionKeyRange;
-                this.Addresses = addresses;
+                this.TargetPartitionKeyRange = targetPartitionKeyRange ?? throw new ArgumentNullException("targetPartitionKeyRange");
+                this.Addresses = addresses ?? throw new ArgumentNullException("addresses");
                 this.TargetServiceIdentity = serviceIdentity;
             }
         }

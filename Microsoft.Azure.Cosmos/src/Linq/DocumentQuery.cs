@@ -48,12 +48,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedOptions feedOptions,
             object partitionKey = null)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException("client");
-            }
-
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException("client");
             this.resourceTypeEnum = resourceTypeEnum;
             this.resourceType = resourceType;
             this.documentsFeedOrDatabaseLink = documentsFeedOrDatabaseLink;

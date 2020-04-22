@@ -54,8 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new Exception("Invalid value; expected integer.");
             }
 
-            double totalSeconds = 0;
-
+            double totalSeconds;
             try
             {
                 totalSeconds = Convert.ToDouble(reader.Value, CultureInfo.InvariantCulture);
