@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -231,6 +229,7 @@ namespace Microsoft.Azure.Cosmos
 
             return feedTokens;
         }
+
         public override FeedIterator GetChangeFeedStreamIterator(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
@@ -241,6 +240,7 @@ namespace Microsoft.Azure.Cosmos
                 continuation: continuationToken,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
+
         public override FeedIterator GetChangeFeedStreamIterator(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
@@ -262,6 +262,7 @@ namespace Microsoft.Azure.Cosmos
                 continuation: null,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
+
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
