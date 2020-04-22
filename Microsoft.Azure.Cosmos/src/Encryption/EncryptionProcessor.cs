@@ -176,6 +176,7 @@ namespace Microsoft.Azure.Cosmos
                 if (index == segmentsOfPath.Length - 1)
                 {
                     value = readProp.Value;
+                    readObj.Remove(segmentsOfPath[index]);
                     return true;
                 }
                 else

@@ -122,6 +122,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.pathsToEncryptSegments.Add(pathToEncrypt.Split('/'));
             }
+
+            this.isPathsToEncryptValidated = true;
         }
     }
 }
