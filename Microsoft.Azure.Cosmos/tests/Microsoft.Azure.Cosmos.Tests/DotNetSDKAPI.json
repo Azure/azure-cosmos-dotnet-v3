@@ -2856,6 +2856,18 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()"
         },
+        "System.Nullable`1[System.Int32] get_ItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_ItemCount()"
+        },
+        "System.Nullable`1[System.Int32] ItemCount": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String ActivityId[Microsoft.Azure.Cosmos.CosmosKnownHeaderAttribute(HeaderName = \"x-ms-activity-id\")]": {
           "Type": "Property",
           "Attributes": [
