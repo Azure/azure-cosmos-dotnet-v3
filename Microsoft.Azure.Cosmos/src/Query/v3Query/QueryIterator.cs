@@ -146,7 +146,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     return QueryResponse.CreateSuccess(
                         result: decryptedCosmosElements ?? responseCore.CosmosElements,
-                        count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         diagnostics: diagnostics,
                         serializationOptions: this.cosmosSerializationFormatOptions,

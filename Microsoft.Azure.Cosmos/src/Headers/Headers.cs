@@ -131,6 +131,11 @@ namespace Microsoft.Azure.Cosmos
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Location)]
         public virtual string Location { get; internal set; }
 
+        /// <summary>
+        /// Gets the item count for feed operations like query. The value is null for point operations.
+        /// </summary>
+        public virtual int? ItemCount { get; internal set; }
+
         [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.SubStatus)]
         internal string SubStatusCodeLiteral
         {
@@ -175,6 +180,19 @@ namespace Microsoft.Azure.Cosmos
 
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PageSize)]
         internal string PageSize { get; set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ItemCount)]
+        private string itemCount
+        {
+            get
+            {
+                return this.ItemCount.HasValue ? this.ItemCount.ToString() : null; 
+            }
+            set
+            {
+                this.ItemCount = string.IsNullOrEmpty(value) ? (int?)null : int.Parse(value, CultureInfo.InvariantCulture);
+            }
+        }
 
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.QueryMetrics)]
         internal string QueryMetricsText { get; set; }

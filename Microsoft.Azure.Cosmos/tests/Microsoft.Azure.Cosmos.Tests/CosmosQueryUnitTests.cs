@@ -81,7 +81,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             QueryResponse queryResponse = QueryResponse.CreateSuccess(
                         result: responseCore.CosmosElements,
-                        count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
@@ -119,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             QueryResponse queryResponse = QueryResponse.CreateSuccess(
                         result: cosmosElements,
-                        count: cosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
@@ -160,7 +158,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             QueryResponse queryResponse = QueryResponse.CreateSuccess(
                         result: cosmosElements,
-                        count: cosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(

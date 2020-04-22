@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos
 
         private QueryResponse(
             IReadOnlyList<CosmosElement> result,
-            int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
@@ -52,13 +51,14 @@ namespace Microsoft.Azure.Cosmos
                 diagnostics: diagnostics)
         {
             this.CosmosElements = result;
-            this.Count = count;
+            this.Headers.ItemCount = result.Count;
             this.ResponseLengthBytes = responseLengthBytes;
             this.memoryStream = memoryStream;
             this.CosmosSerializationOptions = serializationOptions;
+            
         }
 
-        public int Count { get; }
+        public int Count => this.Headers.ItemCount ?? 0;
 
         public override Stream Content
         {
@@ -89,17 +89,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal static QueryResponse CreateSuccess(
             IReadOnlyList<CosmosElement> result,
-            int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             CosmosDiagnosticsContext diagnostics,
             CosmosSerializationFormatOptions serializationOptions)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException("count must be positive");
-            }
-
             if (responseLengthBytes < 0)
             {
                 throw new ArgumentOutOfRangeException("responseLengthBytes must be positive");
@@ -113,7 +107,6 @@ namespace Microsoft.Azure.Cosmos
 
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,
-               count: count,
                responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
                diagnostics: diagnostics,
@@ -135,7 +128,6 @@ namespace Microsoft.Azure.Cosmos
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
                     result: new List<CosmosElement>(),
-                    count: 0,
                     responseLengthBytes: 0,
                     responseHeaders: responseHeaders,
                     diagnostics: diagnostics,

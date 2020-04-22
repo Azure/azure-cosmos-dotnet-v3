@@ -1211,6 +1211,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
+                string message = exception.ToString();
                 Assert.IsTrue(exception.Message.Contains("continuation token limit specified is not large enough"), exception.Message);
             }
 
@@ -1267,6 +1268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
                 Assert.AreNotEqual(e.ActivityId, Guid.Empty);
                 Assert.IsTrue(e.RequestCharge > 0);
+                string message = e.ToString();
                 Assert.AreEqual($"{{{Environment.NewLine}  \"Errors\": [{Environment.NewLine}    \"One of the specified pre-condition is not met\"{Environment.NewLine}  ]{Environment.NewLine}}}", e.ResponseBody);
                 string expectedMessage = $"Response status code does not indicate success: PreconditionFailed (412); Substatus: 0; ActivityId: {e.ActivityId}; Reason: ({{{Environment.NewLine}  \"Errors\": [{Environment.NewLine}    \"One of the specified pre-condition is not met\"{Environment.NewLine}  ]{Environment.NewLine}}});";
                 Assert.AreEqual(expectedMessage, e.Message);

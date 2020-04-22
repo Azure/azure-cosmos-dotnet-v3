@@ -642,7 +642,6 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                 });
             QueryResponse queryResponse = QueryResponse.CreateSuccess(
                 vertexArray,
-                count: 2,
                 responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
                 serializationOptions: null,
                 responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
@@ -724,7 +723,6 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                 });
             QueryResponse queryResponse = QueryResponse.CreateSuccess(
                 vertexArray,
-                count: 2,
                 responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
                 serializationOptions: null,
                 responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(

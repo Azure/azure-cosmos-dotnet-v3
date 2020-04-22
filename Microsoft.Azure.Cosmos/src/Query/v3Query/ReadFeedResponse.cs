@@ -4,10 +4,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
-    using System.IO;
+    using System.Diagnostics;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
@@ -18,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
             Headers responseMessageHeaders,
             CosmosDiagnostics diagnostics)
         {
-            this.Count = cosmosArray != null ? cosmosArray.Count : 0;
+            Debug.Assert(cosmosArray.Count == responseMessageHeaders.ItemCount.Value);
             this.Headers = responseMessageHeaders;
             this.StatusCode = httpStatusCode;
             this.Diagnostics = diagnostics;
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
                 serializerCore: serializerCore);
         }
 
-        public override int Count { get; }
+        public override int Count => this.Headers.ItemCount ?? 0;
 
         public override string ContinuationToken => this.Headers?.ContinuationToken;
 

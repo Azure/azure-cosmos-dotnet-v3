@@ -682,14 +682,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await feedStreamIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual(expectedStatus, response.StatusCode);
-
+                
                 StreamReader sr = new StreamReader(response.Content);
                 string result = await sr.ReadToEndAsync();
                 ICollection<T> responseResults;
                 responseResults = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<T>>(result).Data;
 
                 Assert.IsTrue(responseResults.Count <= 1);
-
+                Assert.AreEqual(responseResults.Count, response.Headers.ItemCount);
                 streamResults.AddRange(responseResults);
             }
 
@@ -702,8 +702,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual(expectedStatus, response.StatusCode);
 
-                IEnumerable<T> responseResults = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
-                Assert.IsTrue(responseResults.Count() <= 1);
+                List<T> responseResults = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data.ToList();
+                Assert.IsTrue(responseResults.Count <= 1);
+                Assert.AreEqual(responseResults.Count, response.Headers.ItemCount);
 
                 pagedStreamResults.AddRange(responseResults);
                 continuationToken = response.Headers.ContinuationToken;
@@ -729,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(expectedStatus, response.StatusCode);
                 Assert.IsTrue(response.Count <= 1);
                 Assert.IsTrue(response.Resource.Count() <= 1);
-
+                Assert.AreEqual(response.Count, response.Headers.ItemCount);
                 results.AddRange(response);
             }
 
@@ -742,6 +743,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(expectedStatus, response.StatusCode);
                 Assert.IsTrue(response.Count <= 1);
                 Assert.IsTrue(response.Resource.Count() <= 1);
+                Assert.AreEqual(response.Count, response.Headers.ItemCount);
+
                 pagedResults.AddRange(response);
                 continuationToken = response.ContinuationToken;
             } while (continuationToken != null);
