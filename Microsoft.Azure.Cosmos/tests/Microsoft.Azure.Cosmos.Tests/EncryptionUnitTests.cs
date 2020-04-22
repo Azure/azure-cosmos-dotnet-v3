@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             // No properties to encrypt
-            MyItem item1 = await EncryptionUnitTests.CreateItemAsync(container, EncryptionUnitTests.DekId, new List<string> { });
+            MyItem item1 = await EncryptionUnitTests.CreateAndQueryItemAsync(container, EncryptionUnitTests.DekId, new List<string> { });
             JObject serverItem1JObj = this.testHandler.Items[item1.Id];
             JProperty eiJProp1 = serverItem1JObj.Property(Constants.Properties.EncryptedInfo);
             Assert.IsNull(eiJProp1);
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(item1, serverItem1);
 
             // Property to encrypt not in serialized item, or path intending to reference array indexes (are ignored)
-            MyItem item2 = await EncryptionUnitTests.CreateItemAsync(container, EncryptionUnitTests.DekId, new List<string> { "/unknown", "/ByteArr[2]", "/ByteArr/2" });
+            MyItem item2 = await EncryptionUnitTests.CreateAndQueryItemAsync(container, EncryptionUnitTests.DekId, new List<string> { "/unknown", "/ByteArr[2]", "/ByteArr/2" });
             JObject serverItem2JObj = this.testHandler.Items[item2.Id];
             JProperty eiJProp2 = serverItem2JObj.Property(Constants.Properties.EncryptedInfo);
             Assert.IsNull(eiJProp2);
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(item2, serverItem2);
 
             // Encrypt various types
-            MyItem item3 = await EncryptionUnitTests.CreateItemAsync(container, EncryptionUnitTests.DekId, new List<string> { "/Struct", "/Enum", "/ByteArr", "/Child" });
+            MyItem item3 = await EncryptionUnitTests.CreateAndQueryItemAsync(container, EncryptionUnitTests.DekId, new List<string> { "/Struct", "/Enum", "/ByteArr", "/Child" });
             MyItem serverItem3 = this.testHandler.Items[item3.Id].ToObject<MyItem>();
             item3.Struct = null;
             item3.Enum = null;
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(item3, serverItem3);
 
             // Encrypt part of child class
-            MyItem item4 = await EncryptionUnitTests.CreateItemAsync(container, EncryptionUnitTests.DekId, new List<string> { "/Child/MyStr", "/ByteArr", "/Child/MyChars" });
+            MyItem item4 = await EncryptionUnitTests.CreateAndQueryItemAsync(container, EncryptionUnitTests.DekId, new List<string> { "/Child/MyStr", "/ByteArr", "/Child/MyChars" });
             MyItem serverItem4 = this.testHandler.Items[item4.Id].ToObject<MyItem>();
             item4.Child.MyStr = null;
             item4.Child.MyChars = null;
@@ -160,6 +160,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new Cosmos.PartitionKey(item.PK));
             Assert.AreEqual(item, readResponse.Resource);
+        }
+
+        private static async Task<MyItem> CreateAndQueryItemAsync(Container container, string dekId, List<string> pathsToEncrypt)
+        {
+            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId, pathsToEncrypt);
+            FeedIterator<MyItem> feedIterator = container.GetItemQueryIterator<MyItem>(
+                $"SELECT * FROM c where c.id = '{item.Id}'");
+            FeedResponse<MyItem> queryResultItems = await feedIterator.ReadNextAsync();
+            Assert.AreEqual(1, queryResultItems.Count);
+            Assert.AreEqual(item, queryResultItems.First());
+            return item;
         }
 
         private static async Task<MyItem> CreateItemAsync(Container container, string dekId, List<string> pathsToEncrypt)
@@ -450,6 +461,34 @@ namespace Microsoft.Azure.Cosmos.Tests
                             httpStatusCode = HttpStatusCode.NotFound;
                         }
                     }
+                    else if(request.OperationType == OperationType.Query)
+                    {
+                        string query = EncryptionUnitTests.ParseStream(request.Content).Property("query").Value.Value<string>();
+                        string itemId = query.Split('\'')[1]; // expecting specific query in unit test
+                        httpStatusCode = HttpStatusCode.OK;
+                        JObject queryResponse = new JObject();
+                        queryResponse.Add("_rid", "containerRid");
+
+                        if (this.Items.TryGetValue(itemId, out item))
+                        {
+                            queryResponse.Add("_count", "1");
+                            queryResponse.Add("Documents", new JArray(new JObject(item)));
+                        }
+                        else
+                        {
+                            queryResponse.Add("_count", "0");
+                            queryResponse.Add("Documents", new JArray());
+                        }
+
+                        ResponseMessage queryResponseMessage = new ResponseMessage(httpStatusCode, request)
+                        {
+                            Content = this.serializer.ToStream(queryResponse)
+                        };
+
+                        queryResponseMessage.Headers.ActivityId = request.Headers.ActivityId ?? Guid.Empty.ToString();
+                        queryResponseMessage.Headers.RequestCharge = EncryptionUnitTests.requestCharge;
+                        return queryResponseMessage;
+                    }
 
                     ResponseMessage responseMessage = new ResponseMessage(httpStatusCode, request)
                     {
@@ -458,7 +497,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                     responseMessage.Headers.RequestCharge = EncryptionUnitTests.requestCharge;
                     return responseMessage;
-
                 }
 
                 return new ResponseMessage(httpStatusCode, request);
