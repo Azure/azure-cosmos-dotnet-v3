@@ -37,50 +37,17 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(ClientResources.EncryptorNotConfigured);
             }
 
-            if (string.IsNullOrEmpty(encryptionOptions.DataEncryptionKeyId))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
-            }
-
-            if (string.IsNullOrEmpty(encryptionOptions.EncryptionAlgorithm))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
-            }
-
-            if (encryptionOptions.PathsToEncrypt == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
-            }
-
+            encryptionOptions.Validate();
             if (encryptionOptions.PathsToEncrypt.Count == 0)
             {
                 return input;
-            }
-
-            foreach (string path in encryptionOptions.PathsToEncrypt)
-            {
-                if (string.IsNullOrEmpty(path) || path[0] != '/')
-                {
-                    throw new ArgumentException($"Invalid path provided: {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
-                }
-            }
-
-            List<string> pathsToEncrypt = encryptionOptions.PathsToEncrypt.OrderBy(p => p).ToList();
-
-            for (int index = 1; index < encryptionOptions.PathsToEncrypt.Count; index++)
-            {
-                // If path (eg. /foo) is a prefix of another path (eg. /foo/bar), /foo/bar is redundant.
-                if (pathsToEncrypt[index].StartsWith(pathsToEncrypt[index - 1]) && pathsToEncrypt[index][pathsToEncrypt[index - 1].Length] == '/')
-                {
-                    throw new ArgumentException($"Redundant path provided: {pathsToEncrypt[index]}", nameof(encryptionOptions.PathsToEncrypt));
-                }
             }
 
             JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
 
             JObject toEncryptJObj = new JObject();
 
-            if (EncryptionProcessor.SplitItemJObjectForEncryption(itemJObj, toEncryptJObj, pathsToEncrypt))
+            if (EncryptionProcessor.SplitItemJObjectForEncryption(itemJObj, toEncryptJObj, encryptionOptions.PathsToEncryptSegments))
             {
                 MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj) as MemoryStream;
                 Debug.Assert(memoryStream != null);
@@ -177,67 +144,81 @@ namespace Microsoft.Azure.Cosmos
             return EncryptionProcessor.baseSerializer.FromStream<CosmosObject>(stream);
         }
 
-        private static bool SplitItemJObjectForEncryption(JObject itemJObj, JObject toEncryptJObj, List<string> pathsToEncrypt)
+        private static bool SplitItemJObjectForEncryption(JObject itemJObj, JObject toEncryptJObj, List<string[]> pathsToEncryptSegments)
         {
             bool isAnyPathFound = false;
-            foreach (string pathToEncrypt in pathsToEncrypt)
+            foreach (string[] segmentsOfPath in pathsToEncryptSegments)
             {
-                string[] segmentsOfPath = pathToEncrypt.Split('/'); // The first segment is always empty since the path starts with / 
-                bool isPathFound = false;
-                JObject readObj = itemJObj;
-                for (int index = 1; index < segmentsOfPath.Length; index++)
+                if (EncryptionProcessor.TryFindAndRemoveValueAtPath(itemJObj, segmentsOfPath, out JToken readValue))
                 {
-                    JProperty readProp = readObj.Property(segmentsOfPath[index]);
-                    if (readProp == null)
-                    {
-                        // path not found
-                        break;
-                    }
-
-                    if (index == segmentsOfPath.Length - 1)
-                    {
-                        isPathFound = true;
-                        isAnyPathFound = true;
-                    }
-                    else
-                    {
-                        if (readProp.Value.Type != JTokenType.Object)
-                        {
-                            // the Value (RHS) of the property for all except the last path segment needs to be an Object so we can go deeper
-                            break;
-                        }
-                        else
-                        {
-                            readObj = (JObject)readProp.Value;
-                        }
-                    }
+                    isAnyPathFound = true;
                 }
-
-                if (!isPathFound)
+                else
                 {
                     // Didn't find current path in the item to encrypt; try the next one.
                     continue;
                 }
 
-                JObject writeObj = toEncryptJObj;
-                for (int index = 1; index < segmentsOfPath.Length - 1; index++)
-                {
-                    JProperty writeProp = writeObj.Property(segmentsOfPath[index]);
-                    if (writeProp == null)
-                    {
-                        writeObj.Add(new JProperty(segmentsOfPath[index], new JObject()));
-                        writeProp = writeObj.Property(segmentsOfPath[index]);
-                    }
-
-                    writeObj = (JObject)writeProp.Value;
-                }
-
-                string lastSegment = segmentsOfPath[segmentsOfPath.Length - 1];
-                writeObj.Add(lastSegment, readObj.Property(lastSegment).Value);
-                readObj.Remove(lastSegment);
+                EncryptionProcessor.AddValueAtPath(toEncryptJObj, segmentsOfPath, readValue);
             }
 
             return isAnyPathFound;
+        }
+
+        private static bool TryFindAndRemoveValueAtPath(JObject itemJObj, string[] segmentsOfPath, out JToken value)
+        {
+            JObject readObj = itemJObj;
+
+            // The first segment is always empty since the path starts with / 
+            for (int index = 1; index < segmentsOfPath.Length; index++)
+            {
+                JProperty readProp = readObj.Property(segmentsOfPath[index]);
+                if (readProp == null)
+                {
+                    // path not found
+                    break;
+                }
+
+                if (index == segmentsOfPath.Length - 1)
+                {
+                    value = readProp.Value;
+                    return true;
+                }
+                else
+                {
+                    if (readProp.Value.Type != JTokenType.Object)
+                    {
+                        // the Value (RHS) of the property for all except the last path segment needs to be an Object so we can go deeper
+                        break;
+                    }
+                    else
+                    {
+                        readObj = (JObject)readProp.Value;
+                    }
+                }
+            }
+
+            value = null;
+            return false;
+        }
+
+        private static void AddValueAtPath(JObject toEncryptJObj, string[] segmentsOfPath, JToken value)
+        {
+            JObject writeObj = toEncryptJObj;
+            for (int index = 1; index < segmentsOfPath.Length - 1; index++)
+            {
+                JProperty writeProp = writeObj.Property(segmentsOfPath[index]);
+                if (writeProp == null)
+                {
+                    writeObj.Add(new JProperty(segmentsOfPath[index], new JObject()));
+                    writeProp = writeObj.Property(segmentsOfPath[index]);
+                }
+
+                writeObj = (JObject)writeProp.Value;
+            }
+
+            string lastSegment = segmentsOfPath[segmentsOfPath.Length - 1];
+            writeObj.Add(lastSegment, value);
         }
 
         private async Task DecryptAsync(

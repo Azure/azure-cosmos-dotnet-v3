@@ -3,7 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
 
     /// <summary>
     /// Options around encryption / decryption of data.
@@ -16,6 +19,21 @@ namespace Microsoft.Azure.Cosmos
 #endif
         class EncryptionOptions
     {
+        private bool isPathsToEncryptValidated = false;
+
+        private IReadOnlyList<string> pathsToEncrypt;
+
+        private List<string[]> pathsToEncryptSegments;
+
+        internal List<string[]> PathsToEncryptSegments
+        {
+            get
+            {
+                Debug.Assert(this.isPathsToEncryptValidated);
+                return this.pathsToEncryptSegments;
+            }
+        }
+
         /// <summary>
         /// Identifier of the data encryption key to be used for encrypting the data in the request payload.
         /// The data encryption key must be suitable for use with the <see cref="EncryptionAlgorithm"/> provided.
@@ -39,6 +57,71 @@ namespace Microsoft.Azure.Cosmos
         /// Paths should not overlap, eg. passing both /a and /a/b is not valid. 
         /// Array index specifications are not honored. 
         /// </remarks> 
-        public List<string> PathsToEncrypt { get; set; }
+        public IReadOnlyList<string> PathsToEncrypt
+        {
+            get
+            {
+                return this.pathsToEncrypt;
+            }
+
+            set
+            {
+                this.pathsToEncrypt = value;
+                this.isPathsToEncryptValidated = false;
+            }
+        }
+
+        internal void Validate()
+        {
+            if (string.IsNullOrEmpty(this.DataEncryptionKeyId))
+            {
+                throw new ArgumentNullException(nameof(this.DataEncryptionKeyId));
+            }
+
+            if (string.IsNullOrEmpty(this.EncryptionAlgorithm))
+            {
+                throw new ArgumentNullException(nameof(this.EncryptionAlgorithm));
+            }
+
+            this.ValidatePathsToEncrypt();
+        }
+
+        private void ValidatePathsToEncrypt()
+        {
+            if (this.isPathsToEncryptValidated)
+            {
+                return;
+            }
+
+            if (this.PathsToEncrypt == null)
+            {
+                throw new ArgumentNullException(nameof(this.PathsToEncrypt));
+            }
+
+            foreach (string path in this.PathsToEncrypt)
+            {
+                if (string.IsNullOrEmpty(path) || path[0] != '/')
+                {
+                    throw new ArgumentException($"Invalid path provided: {path ?? string.Empty}", nameof(this.PathsToEncrypt));
+                }
+            }
+
+            List<string> pathsToEncrypt = this.PathsToEncrypt.OrderBy(p => p).ToList();
+
+            for (int index = 1; index < this.PathsToEncrypt.Count; index++)
+            {
+                // If path (eg. /foo) is a prefix of another path (eg. /foo/bar), /foo/bar is redundant.
+                if (pathsToEncrypt[index].StartsWith(pathsToEncrypt[index - 1]) && pathsToEncrypt[index][pathsToEncrypt[index - 1].Length] == '/')
+                {
+                    throw new ArgumentException($"Redundant path provided: {pathsToEncrypt[index]}", nameof(this.PathsToEncrypt));
+                }
+            }
+
+            this.pathsToEncryptSegments = new List<string[]>();
+            foreach (string pathToEncrypt in this.PathsToEncrypt)
+            {
+                this.pathsToEncryptSegments.Add(pathToEncrypt.Split('/'));
+            }
+        }
     }
 }
