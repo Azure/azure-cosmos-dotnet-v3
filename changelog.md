@@ -31,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## <a name="3.8.0"/> [3.8.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0) - 2020-04-07
 
 ### Added
-- [#1123](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1123) Client encryption support Part 1 (towards Preview) 
 
 - [#1314](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1314) Added configuration for proactive TCP end-of-connection detection
 - [#1305](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1305) Added support for preferred region customization
