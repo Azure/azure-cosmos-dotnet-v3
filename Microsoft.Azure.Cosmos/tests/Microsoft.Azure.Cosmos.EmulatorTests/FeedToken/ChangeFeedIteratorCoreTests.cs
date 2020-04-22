@@ -434,59 +434,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         /// <summary>
-        /// Migration test from V2 Continuation model
-        /// </summary>
-        [TestMethod]
-        [Timeout(30000)]
-        public async Task ChangeFeedIteratorCore_FromV2SDK()
-        {
-            int expected = 100;
-            int count = 0;
-            await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
-
-            IReadOnlyList<FeedRange> feedRanges = await this.LargerContainer.GetFeedRangesAsync();
-            List<string> continuations = new List<string>();
-            // First do one request to construct the old model information based on Etag
-            foreach (FeedRange feedRange in feedRanges)
-            {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime(), MaxItemCount = 1 };
-                ChangeFeedIteratorCore feedIterator = this.LargerContainer.GetChangeFeedStreamIterator(feedRange: feedRange, changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
-                ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
-                if (firstResponse.IsSuccessStatusCode)
-                {
-                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
-                    count += response.Count;
-                }
-
-                // Construct the continuation's range, FeedRange.ToString() = [min,max)
-                string range = feedRange.ToString();
-                int separator = range.IndexOf(',');
-                string min = range.Substring(1, separator - 1);
-                string max = range.Substring(separator + 1, range.IndexOf(')') - separator - 1);
-                dynamic ctRange = new { min = min, max = max };
-                List<dynamic> ct = new List<dynamic>() { new { min = min, max = max, token = firstResponse.Headers.ETag, range=ctRange} };
-                // Extract Etag and manually construct the continuation
-                dynamic oldContinuation = new { V = 0, Range = ctRange, Continuation = ct };
-                continuations.Add(JsonConvert.SerializeObject(oldContinuation));
-            }
-
-            // Now start the new iterators with the constructed continuations from migration
-            foreach (string continuation in continuations)
-            {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { MaxItemCount = 100 };
-                ChangeFeedIteratorCore feedIterator = this.LargerContainer.GetChangeFeedStreamIterator(continuationToken: continuation, changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
-                ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
-                if (firstResponse.IsSuccessStatusCode)
-                {
-                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
-                    count += response.Count;
-                }
-            }
-
-            Assert.AreEqual(expected, count);
-        }
-
-        /// <summary>
         /// Test that verifies that we do breath first while moving across partitions
         /// </summary>
         [TestMethod]
@@ -627,69 +574,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 cost = double.MaxValue
             };
         }
-
-        private class CosmosChangeFeedResultSetIteratorCoreMock : StandByFeedIteratorCore
-        {
-            public int Iteration = 0;
-            public bool HasCalledForceRefresh = false;
-
-            internal CosmosChangeFeedResultSetIteratorCoreMock(
-                ContainerInternal container,
-                string continuationToken,
-                int? maxItemCount,
-                ChangeFeedRequestOptions options) : base(
-                    clientContext: container.ClientContext,
-                    container: container,
-                    continuationToken: continuationToken,
-                    maxItemCount: maxItemCount,
-                    options: options)
-            {
-                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
-                {
-                    new CompositeContinuationToken()
-                    {
-                        Token = null,
-                        Range = new Documents.Routing.Range<string>("A", "B", true, false)
-                    }
-                };
-
-                string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
-
-                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
-                {
-                    IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
-                    {
-                        new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "0" }
-                    };
-
-                    if (forceRefresh)
-                    {
-                        this.HasCalledForceRefresh = true;
-                    }
-
-                    return Task.FromResult(filteredRanges);
-                }).Result;
-            }
-
-            internal override Task<ResponseMessage> NextResultSetDelegateAsync(
-                string continuationToken,
-                string partitionKeyRangeId,
-                int? maxItemCount,
-                ChangeFeedRequestOptions options,
-                CancellationToken cancellationToken)
-            {
-                if (this.Iteration++ == 0)
-                {
-                    ResponseMessage httpResponse = new ResponseMessage(System.Net.HttpStatusCode.Gone);
-                    httpResponse.Headers.Add(Documents.WFConstants.BackendHeaders.SubStatus, ((uint)Documents.SubStatusCodes.PartitionKeyRangeGone).ToString(CultureInfo.InvariantCulture));
-
-                    return Task.FromResult(httpResponse);
-                }
-
-                return Task.FromResult(new ResponseMessage(System.Net.HttpStatusCode.NotModified));
-            }
-        }
-
 
         public class ToDoActivity
         {
