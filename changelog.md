@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Reduced memory allocations on query deserialization.
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Diagnostics: Add CPU monitoring for .Net Core
+
+## <a name="3.9.0-preview"/> [3.9.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.0-preview) - 2020-04-17
+
+### Added
+
+- [#1356](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1356) Autoscale Preview: Add to public preview release
+
+## <a name="3.8.0-preview"/> [3.8.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0-preview) - 2020-04-16
+
+### Added
+
+- [#1331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1331) Enable client encryption / decryption for transactional batch requests
+
+### Fixed
+
+- [#1369](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1369) Fix decryption for 'order by' query results
+
+## <a name="3.8.0"/> [3.8.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0) - 2020-04-07
+
 ### Added
 - [#1123](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1123) Client encryption support Part 1 (towards Preview) 
 
@@ -17,9 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#1312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1312) Fixed null reference when using default(PartitionKey)
 - [#1296](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1296) Decrypt the encrypted properties before returning query result
-- [#1331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1331) Enable client encryption / decryption for transactional batch requests
+- [#1345](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1345) Fixed get query plan diagnostics
 
-## <a name="3.7.1-preview"/> [3.7.0-preview2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.1-preview) - 2020-03-30
+## <a name="3.7.1-preview"/> [3.7.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.1-preview) - 2020-03-30
 
 - [#1210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1210) Change Feed pull model
 - [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties

@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: continuationToken,
-                feedToken: null,
+                feedRange: null,
                 requestOptions: requestOptions);
         }
 
@@ -307,6 +307,7 @@ namespace Microsoft.Azure.Cosmos
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
+            FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -365,8 +366,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 queryIterator = QueryIterator.Create(
                     client: this.queryClient,
+                    clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                     continuationToken: continuationToken,
+                    feedRangeInternal: feedRangeInternal,
                     queryRequestOptions: requestOptions,
                     resourceLink: this.LinkUri,
                     isContinuationExpected: false,
@@ -446,15 +449,17 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
+            FeedRange feedRange,
             QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
             if (!(this.GetItemQueryStreamIterator(
-                feedToken,
+                feedRange,
                 queryDefinition,
+                continuationToken,
                 requestOptions) is FeedIteratorInternal feedIterator))
             {
                 throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
@@ -471,65 +476,18 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,            
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            if (feedToken is FeedTokenInternal feedTokenInternal)
-            {
-                return this.GetItemQueryStreamIteratorInternal(
+            FeedRangeInternal feedRangeInternal = feedRange as FeedRangeInternal;
+            return this.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
-                continuationToken: null,
-                feedToken: feedTokenInternal,
+                continuationToken: continuationToken,
+                feedRange: feedRangeInternal,
                 requestOptions: requestOptions);
-            }
-
-            throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_InvalidImplementation);
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            string queryText = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            QueryDefinition queryDefinition = null;
-            if (queryText != null)
-            {
-                queryDefinition = new QueryDefinition(queryText);
-            }
-
-            return this.GetItemQueryIterator<T>(
-                feedToken,
-                queryDefinition,
-                requestOptions);
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            string queryText = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            QueryDefinition queryDefinition = null;
-            if (queryText != null)
-            {
-                queryDefinition = new QueryDefinition(queryText);
-            }
-
-            return this.GetItemQueryStreamIterator(
-                feedToken,
-                queryDefinition,
-                requestOptions);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -624,16 +582,16 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
-            FeedTokenInternal feedToken,
+            FeedRangeInternal feedRange,
             QueryRequestOptions requestOptions)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
             if (requestOptions.IsEffectivePartitionKeyRouting)
             {
-                if (feedToken != null)
+                if (feedRange != null)
                 {
-                    throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_EffectivePartitionKeyRouting);
+                    throw new ArgumentException(nameof(feedRange), ClientResources.FeedToken_EffectivePartitionKeyRouting);
                 }
 
                 requestOptions.PartitionKey = null;
@@ -641,20 +599,19 @@ namespace Microsoft.Azure.Cosmos
 
             if (sqlQuerySpec == null)
             {
-                return FeedIteratorCore.CreateForPartitionedResource(
-                    this,
-                    this.LinkUri,
-                    resourceType: ResourceType.Document,
-                    queryDefinition: null,
-                    continuationToken: continuationToken,
-                    feedTokenInternal: feedToken,
+                return FeedRangeIteratorCore.Create(
+                    containerCore: this,
+                    continuation: continuationToken,
+                    feedRangeInternal: feedRange,
                     options: requestOptions);
             }
 
             return QueryIterator.Create(
                 client: this.queryClient,
+                clientContext: this.ClientContext,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
+                feedRangeInternal: feedRange,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
@@ -778,7 +735,7 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            if (responseMessage.Content != null && this.ClientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+            if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
             {
                 responseMessage.Content = await this.ClientContext.DecryptItemAsync(
                     responseMessage.Content,

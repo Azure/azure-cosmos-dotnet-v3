@@ -17,21 +17,28 @@ namespace Microsoft.Azure.Cosmos
         class EncryptionOptions
     {
         /// <summary>
-        /// Reference to encryption key to be used for encryption of data in the request payload.
-        /// The key must already be created using Database.CreateDataEncryptionKeyAsync
-        /// before using it in encryption options.
+        /// Identifier of the data encryption key to be used for encrypting the data in the request payload.
+        /// The data encryption key must be suitable for use with the <see cref="EncryptionAlgorithm"/> provided.
         /// </summary>
-        public DataEncryptionKey DataEncryptionKey { get; set; }
+        /// <remarks>
+        /// The <see cref="Encryptor"/> configured on the client is used to retrieve the actual data encryption key.
+        /// </remarks>
+        public string DataEncryptionKeyId { get; set; }
+
+        /// <summary>
+        /// Algorithm to be used for encrypting the data in the request payload.
+        /// </summary>
+        public string EncryptionAlgorithm { get; set; }
 
         /// <summary>
         /// For the request payload, list of JSON paths to encrypt.
         /// Example of a path specification: /sensitive
         /// </summary>
-        /// <remarks>
-        /// Paths that are not found in the item are ignored.
-        /// Paths should not overlap, eg. passing both /a and /a/b is not valid.
-        /// Array index specifications are not honored.
-        /// </remarks>
+        /// <remarks> 
+        /// Paths that are not found in the item are ignored. 
+        /// Paths should not overlap, eg. passing both /a and /a/b is not valid. 
+        /// Array index specifications are not honored. 
+        /// </remarks> 
         public List<string> PathsToEncrypt { get; set; }
     }
 }

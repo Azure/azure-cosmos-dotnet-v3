@@ -12,19 +12,24 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.EncryptionFormatVersion)]
         public int EncryptionFormatVersion { get; }
 
-        [JsonProperty(PropertyName = Constants.Properties.DataEncryptionKeyRid)]
-        public string DataEncryptionKeyRid { get; }
+        [JsonProperty(PropertyName = "_en")]
+        public string DataEncryptionKeyId { get; }
+
+        [JsonProperty(PropertyName = "_ea")]
+        public string EncryptionAlgorithm { get;  }
 
         [JsonProperty(PropertyName = Constants.Properties.EncryptedData)]
         public byte[] EncryptedData { get; }
 
         public EncryptionProperties(
             int encryptionFormatVersion,
-            string dataEncryptionKeyRid,
+            string encryptionAlgorithm,
+            string dataEncryptionKeyId,
             byte[] encryptedData)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
-            this.DataEncryptionKeyRid = dataEncryptionKeyRid;
+            this.EncryptionAlgorithm = encryptionAlgorithm;
+            this.DataEncryptionKeyId = dataEncryptionKeyId;
             this.EncryptedData = encryptedData;
         }
     }

@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientOptions clientOptions;
         private readonly string userAgent;
         private readonly EncryptionProcessor encryptionProcessor;
-        private readonly DekCache dekCache;
         private bool isDisposed = false;
 
         private ClientContextCore(
@@ -40,7 +39,6 @@ namespace Microsoft.Azure.Cosmos
             DocumentClient documentClient,
             string userAgent,
             EncryptionProcessor encryptionProcessor,
-            DekCache dekCache,
             BatchAsyncContainerExecutorCache batchExecutorCache)
         {
             this.client = client;
@@ -51,7 +49,6 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.encryptionProcessor = encryptionProcessor;
-            this.dekCache = dekCache;
             this.batchExecutorCache = batchExecutorCache;
         }
 
@@ -129,7 +126,6 @@ namespace Microsoft.Azure.Cosmos
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
                 encryptionProcessor: new EncryptionProcessor(),
-                dekCache: new DekCache(),
                 batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
@@ -151,8 +147,6 @@ namespace Microsoft.Azure.Cosmos
         internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
 
         internal override EncryptionProcessor EncryptionProcessor => this.ThrowIfDisposed(this.encryptionProcessor);
-
-        internal override DekCache DekCache => this.ThrowIfDisposed(this.dekCache);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -345,8 +339,7 @@ namespace Microsoft.Azure.Cosmos
                 return await this.EncryptionProcessor.EncryptAsync(
                     input,
                     encryptionOptions,
-                    database,
-                    this.ClientOptions.EncryptionKeyWrapProvider,
+                    this.ClientOptions.Encryptor,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -358,7 +351,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (input == null || this.ClientOptions.EncryptionKeyWrapProvider == null)
+            if (input == null || this.ClientOptions.Encryptor == null)
             {
                 return input;
             }
@@ -370,8 +363,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await this.EncryptionProcessor.DecryptAsync(
                     input,
-                    database,
-                    this.ClientOptions.EncryptionKeyWrapProvider,
+                    this.ClientOptions.Encryptor,
                     diagnosticsContext,
                     cancellationToken);
             }
