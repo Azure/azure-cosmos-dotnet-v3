@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -60,9 +59,20 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (string path in encryptionOptions.PathsToEncrypt)
             {
-                if (string.IsNullOrEmpty(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
+                if (string.IsNullOrEmpty(path) || path[0] != '/')
                 {
-                    throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
+                    throw new ArgumentException($"Invalid path provided: {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
+                }
+            }
+
+            List<string> pathsToEncrypt = encryptionOptions.PathsToEncrypt.OrderBy(p => p).ToList();
+
+            for (int index = 1; index < encryptionOptions.PathsToEncrypt.Count; index++)
+            {
+                // If path (eg. /foo) is a prefix of another path (eg. /foo/bar), /foo/bar is redundant.
+                if (pathsToEncrypt[index].StartsWith(pathsToEncrypt[index - 1]) && pathsToEncrypt[index][pathsToEncrypt[index - 1].Length] == '/')
+                {
+                    throw new ArgumentException($"Redundant path provided: {pathsToEncrypt[index]}", nameof(encryptionOptions.PathsToEncrypt));
                 }
             }
 
@@ -70,42 +80,33 @@ namespace Microsoft.Azure.Cosmos
 
             JObject toEncryptJObj = new JObject();
 
-            foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
+            if (EncryptionProcessor.SplitItemJObjectForEncryption(itemJObj, toEncryptJObj, pathsToEncrypt))
             {
-                string propertyName = pathToEncrypt.Substring(1);
-                JToken propertyValueHolder = itemJObj.Property(propertyName).Value;
+                MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj) as MemoryStream;
+                Debug.Assert(memoryStream != null);
+                Debug.Assert(memoryStream.TryGetBuffer(out _));
 
-                // Even null in the JSON is a JToken with Type Null, this null check is just a sanity check
-                if (propertyValueHolder != null)
+                byte[] plainText = memoryStream.GetBuffer();
+                byte[] cipherText = await encryptor.EncryptAsync(
+                    plainText,
+                    encryptionOptions.DataEncryptionKeyId,
+                    encryptionOptions.EncryptionAlgorithm,
+                    cancellationToken);
+
+                if (cipherText == null)
                 {
-                    toEncryptJObj.Add(propertyName, itemJObj.Property(propertyName).Value.Value<JToken>());
-                    itemJObj.Remove(propertyName);
+                    throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
                 }
+
+                EncryptionProperties encryptionProperties = new EncryptionProperties(
+                    encryptionFormatVersion: 2,
+                    dataEncryptionKeyId: encryptionOptions.DataEncryptionKeyId,
+                    encryptionAlgorithm: encryptionOptions.EncryptionAlgorithm,
+                    encryptedData: cipherText);
+
+                itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
             }
 
-            MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj) as MemoryStream;
-            Debug.Assert(memoryStream != null);
-            Debug.Assert(memoryStream.TryGetBuffer(out _));
-
-            byte[] plainText = memoryStream.GetBuffer();
-            byte[] cipherText = await encryptor.EncryptAsync(
-                plainText,
-                encryptionOptions.DataEncryptionKeyId,
-                encryptionOptions.EncryptionAlgorithm,
-                cancellationToken);
-
-            if (cipherText == null)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
-            }
-
-            EncryptionProperties encryptionProperties = new EncryptionProperties(
-                encryptionFormatVersion: 2,
-                dataEncryptionKeyId: encryptionOptions.DataEncryptionKeyId,
-                encryptionAlgorithm: encryptionOptions.EncryptionAlgorithm,
-                encryptedData: cipherText);
-
-            itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
 
@@ -130,32 +131,20 @@ namespace Microsoft.Azure.Cosmos
             }
 
             JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.Properties.EncryptedInfo);
-            JObject encryptionPropertiesJObj = null;
-            if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
-            {
-                encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
-            }
-
-            if (encryptionPropertiesJObj == null)
+            if (encryptionPropertiesJProp == null
+                || encryptionPropertiesJProp.Value == null
+                || encryptionPropertiesJProp.Value.Type != JTokenType.Object)
             {
                 input.Position = 0;
                 return input;
             }
 
-            EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-
-            JObject plainTextJObj = await this.DecryptContentAsync(
-                encryptionProperties,
+            await this.DecryptAsync(
+                itemJObj,
                 encryptor,
                 diagnosticsContext,
                 cancellationToken);
 
-            foreach (JProperty property in plainTextJObj.Properties())
-            {
-                itemJObj.Add(property.Name, property.Value);
-            }
-
-            itemJObj.Remove(Constants.Properties.EncryptedInfo);
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
 
@@ -169,39 +158,104 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            if (!document.TryGetValue(Constants.Properties.EncryptedInfo, out CosmosElement encryptedInfo))
+            if (!document.TryGetValue(Constants.Properties.EncryptedInfo, out CosmosElement encryptedInfo)
+                || encryptedInfo.Type != CosmosElementType.Object)
             {
                 return document;
             }
 
-            EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
+            Stream stream = EncryptionProcessor.baseSerializer.ToStream<CosmosObject>(document);
+            JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(stream);
 
-            JObject plainTextJObj = await this.DecryptContentAsync(
-                encryptionProperties,
+            await this.DecryptAsync(
+                itemJObj,
                 encryptor,
                 diagnosticsContext,
                 cancellationToken);
 
-            Dictionary<string, CosmosElement> documentContent = document.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            documentContent.Remove(Constants.Properties.EncryptedInfo);
-
-            foreach (JProperty property in plainTextJObj.Properties())
-            {
-                documentContent.Add(property.Name, property.Value.ToObject<CosmosElement>());
-            }
-
-            return CosmosObject.Create(documentContent);
+            stream = EncryptionProcessor.baseSerializer.ToStream<JObject>(itemJObj);
+            return EncryptionProcessor.baseSerializer.FromStream<CosmosObject>(stream);
         }
 
-        private async Task<JObject> DecryptContentAsync(
-            EncryptionProperties encryptionProperties,
+        private static bool SplitItemJObjectForEncryption(JObject itemJObj, JObject toEncryptJObj, List<string> pathsToEncrypt)
+        {
+            bool isAnyPathFound = false;
+            foreach (string pathToEncrypt in pathsToEncrypt)
+            {
+                string[] segmentsOfPath = pathToEncrypt.Split('/'); // The first segment is always empty since the path starts with / 
+                bool isPathFound = false;
+                JObject readObj = itemJObj;
+                for (int index = 1; index < segmentsOfPath.Length; index++)
+                {
+                    JProperty readProp = readObj.Property(segmentsOfPath[index]);
+                    if (readProp == null)
+                    {
+                        // path not found
+                        break;
+                    }
+
+                    if (index == segmentsOfPath.Length - 1)
+                    {
+                        isPathFound = true;
+                        isAnyPathFound = true;
+                    }
+                    else
+                    {
+                        if (readProp.Value.Type != JTokenType.Object)
+                        {
+                            // the Value (RHS) of the property for all except the last path segment needs to be an Object so we can go deeper
+                            break;
+                        }
+                        else
+                        {
+                            readObj = (JObject)readProp.Value;
+                        }
+                    }
+                }
+
+                if (!isPathFound)
+                {
+                    // Didn't find current path in the item to encrypt; try the next one.
+                    continue;
+                }
+
+                JObject writeObj = toEncryptJObj;
+                for (int index = 1; index < segmentsOfPath.Length - 1; index++)
+                {
+                    JProperty writeProp = writeObj.Property(segmentsOfPath[index]);
+                    if (writeProp == null)
+                    {
+                        writeObj.Add(new JProperty(segmentsOfPath[index], new JObject()));
+                        writeProp = writeObj.Property(segmentsOfPath[index]);
+                    }
+
+                    writeObj = (JObject)writeProp.Value;
+                }
+
+                string lastSegment = segmentsOfPath[segmentsOfPath.Length - 1];
+                writeObj.Add(lastSegment, readObj.Property(lastSegment).Value);
+                readObj.Remove(lastSegment);
+            }
+
+            return isAnyPathFound;
+        }
+
+        private async Task DecryptAsync(
+            JObject itemJObj,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.Properties.EncryptedInfo);
+            Debug.Assert(encryptionPropertiesJProp != null
+                && encryptionPropertiesJProp.Value != null
+                && encryptionPropertiesJProp.Value.Type == JTokenType.Object);
+
+            EncryptionProperties encryptionProperties = encryptionPropertiesJProp.Value.ToObject<EncryptionProperties>();
+
             if (encryptionProperties.EncryptionFormatVersion != 2)
             {
-                throw CosmosExceptionFactory.CreateInternalServerErrorException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+                throw new InvalidOperationException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
             byte[] plainText = await encryptor.DecryptAsync(
@@ -216,14 +270,13 @@ namespace Microsoft.Azure.Cosmos
             }
 
             JObject plainTextJObj;
-            using (MemoryStream memoryStream = new MemoryStream(plainText))
-            using (StreamReader streamReader = new StreamReader(memoryStream))
-            using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
+            using (MemoryStream plainTextStream = new MemoryStream(plainText))
             {
-                plainTextJObj = JObject.Load(jsonTextReader);
+                plainTextJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(plainTextStream);
             }
 
-            return plainTextJObj;
+            itemJObj.Merge(plainTextJObj);
+            itemJObj.Remove(Constants.Properties.EncryptedInfo);
         }
     }
 }
