@@ -70,6 +70,10 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
+        internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
+        {
+        }
+
         internal override void SetSdkUserAgent(string userAgent)
         {
         }

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: CurratedDocsBenchmark.tt: 36
+// This is auto-generated code. Modify: CuratedDocsBenchmark.tt: 36
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 {

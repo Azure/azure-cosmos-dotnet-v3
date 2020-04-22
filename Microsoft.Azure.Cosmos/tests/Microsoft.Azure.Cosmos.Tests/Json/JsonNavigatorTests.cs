@@ -653,8 +653,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 case JsonNodeType.True:
                     return new JsonToken[] { JsonToken.Boolean(true) };
 
-                case JsonNodeType.Number:
-                    return new JsonToken[] { JsonToken.Number(navigator.GetNumberValue(node)) };
+                case JsonNodeType.Number64:
+                    return new JsonToken[] { JsonToken.Number(navigator.GetNumber64Value(node)) };
 
                 case JsonNodeType.String:
                     return new JsonToken[] { JsonToken.String(navigator.GetStringValue(node)) };

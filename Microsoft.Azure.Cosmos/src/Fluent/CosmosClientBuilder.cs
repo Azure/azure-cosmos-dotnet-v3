@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets the minimum time to wait between retry and the max number of times to retry on throttled requests.
+        /// Sets the maximum time to wait between retry and the max number of times to retry on throttled requests.
         /// </summary>
         /// <param name="maxRetryWaitTimeOnThrottledRequests">The maximum retry time in seconds for the Azure Cosmos DB service. Any interval that is smaller than a second will be ignored.</param>
         /// <param name="maxRetryAttemptsOnThrottledRequests">The number specifies the times retry requests for throttled requests.</param>
@@ -392,19 +392,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Provider to wrap/unwrap data encryption keys for client side encryption.
+        /// Provider that allows encrypting and decrypting data.
         /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
-        /// <param name="encryptionKeyWrapProvider">Provider to wrap/unwrap data encryption keys.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        CosmosClientBuilder WithEncryptionKeyWrapProvider(EncryptionKeyWrapProvider encryptionKeyWrapProvider)
+        CosmosClientBuilder WithEncryptor(Encryptor encryptor)
         {
-            this.clientOptions.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
+            this.clientOptions.Encryptor = encryptor;
             return this;
         }
 

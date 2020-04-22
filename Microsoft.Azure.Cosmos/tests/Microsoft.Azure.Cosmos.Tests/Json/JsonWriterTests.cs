@@ -1745,7 +1745,7 @@
 
                         case JsonTokenType.Number:
                             Number64 numberValue = (token as JsonNumberToken).Value;
-                            jsonWriter.WriteNumberValue(numberValue);
+                            jsonWriter.WriteNumber64Value(numberValue);
                             break;
 
                         case JsonTokenType.True:
