@@ -151,15 +151,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (EncryptionProcessor.TryFindAndRemoveValueAtPath(itemJObj, segmentsOfPath, out JToken readValue))
                 {
+                    EncryptionProcessor.AddValueAtPath(toEncryptJObj, segmentsOfPath, readValue);
                     isAnyPathFound = true;
                 }
-                else
-                {
-                    // Didn't find current path in the item to encrypt; try the next one.
-                    continue;
-                }
-
-                EncryptionProcessor.AddValueAtPath(toEncryptJObj, segmentsOfPath, readValue);
             }
 
             return isAnyPathFound;
