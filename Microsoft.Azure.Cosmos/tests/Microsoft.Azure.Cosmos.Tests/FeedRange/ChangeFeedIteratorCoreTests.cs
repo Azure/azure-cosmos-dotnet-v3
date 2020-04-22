@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [ExpectedException(typeof(ArgumentNullException))]
         public void ChangeFeedIteratorCore_Null_Container()
         {
-            ChangeFeedIteratorCore.Create(null, null, null, new ChangeFeedRequestOptions());
+            ChangeFeedIteratorCore.Create(null, null, new ChangeFeedRequestOptions());
         }
 
         [DataTestMethod]
@@ -30,13 +30,13 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [DataRow(0)]
         public void ChangeFeedIteratorCore_ValidateOptions(int maxItemCount)
         {
-            ChangeFeedIteratorCore.Create(Mock.Of<ContainerCore>(), null, null, new ChangeFeedRequestOptions() { MaxItemCount = maxItemCount });
+            ChangeFeedIteratorCore.Create(Mock.Of<ContainerCore>(), null, new ChangeFeedRequestOptions() { MaxItemCount = maxItemCount });
         }
 
         [TestMethod]
         public void ChangeFeedIteratorCore_HasMoreResultsDefault()
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(Mock.Of<ContainerCore>(), null, null, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(Mock.Of<ContainerCore>(), null, null);
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
         }
 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void ChangeFeedIteratorCore_FeedRange()
         {
             FeedRangeInternal feedToken = Mock.Of<FeedRangeInternal>();
-            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(Mock.Of<ContainerCore>(), feedToken, null, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(Mock.Of<ContainerCore>(), feedToken, null);
             Assert.AreEqual(feedToken, changeFeedIteratorCore.FeedRangeInternal);
         }
 

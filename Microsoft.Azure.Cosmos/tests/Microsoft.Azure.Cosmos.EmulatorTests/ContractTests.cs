@@ -77,8 +77,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             // Now start the new iterators with the constructed continuations from migration
             foreach (string continuation in continuations)
             {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { MaxItemCount = 100 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(continuationToken: continuation, changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation),
+                    MaxItemCount = 100
+                };
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {

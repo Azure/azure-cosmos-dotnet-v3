@@ -33,18 +33,17 @@ namespace Microsoft.Azure.Cosmos
         public static ChangeFeedIteratorCore Create(
             ContainerCore container,
             FeedRangeInternal feedRangeInternal,
-            string continuation,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
-            if (!string.IsNullOrEmpty(continuation))
+            if (changeFeedRequestOptions.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
             {
-                if (FeedRangeContinuation.TryParse(continuation, out FeedRangeContinuation feedRangeContinuation))
+                if (FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
                     return new ChangeFeedIteratorCore(container, feedRangeContinuation, changeFeedRequestOptions);
                 }
                 else
                 {
-                    throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, continuation));
+                    throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, startFromContinuation.Continuation));
                 }
             }
 
