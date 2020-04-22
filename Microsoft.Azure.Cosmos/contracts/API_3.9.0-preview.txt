@@ -368,7 +368,8 @@ namespace Microsoft.Azure.Cosmos
     public abstract class FeedRange
     {
         protected FeedRange();
-        public abstract override string ToString();
+        public static FeedRange FromJsonString(string toStringValue);
+        public abstract string ToJsonString();
     }
     public abstract class FeedResponse<T> : IEnumerable, IEnumerable<T>
     {
