@@ -20,11 +20,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 // Schemaless array
                 IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-                object[] arrayValue = new object[] { (Number64)1, (Number64)2, (Number64)3 };
+                object[] arrayValue = new object[] { (Number64)1, (Number64)2, (Number64)3, (Number64)4 };
                 jsonWriter.WriteArrayStart();
                 jsonWriter.WriteNumberValue(1);
                 jsonWriter.WriteNumberValue(2);
                 jsonWriter.WriteNumberValue(3);
+                jsonWriter.WriteNumberValue(4);
                 jsonWriter.WriteArrayEnd();
                 ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
 
