@@ -238,48 +238,64 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, dek1, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, dek2, TestDoc.PathsToEncrypt);
 
-            //{
-            //    FeedIterator<TestDoc> changeIterator = EncryptionTests.itemContainerCore.GetChangeFeedIterator<TestDoc>(
-            //        new ChangeFeedRequestOptions()
-            //        {
-            //            StartTime = DateTime.MinValue.ToUniversalTime()
-            //        });
+            // Multiple encrypted documents in same transaction
+            string partitionKey = "thePK";
+            TestDoc testDoc3 = TestDoc.Create(partitionKey);
+            TestDoc testDoc4 = TestDoc.Create(partitionKey);
+            TransactionalBatchResponse batchResponse = await EncryptionTests.itemContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                .CreateItem(testDoc3, EncryptionTests.GetBatchItemRequestOptions(EncryptionTests.itemContainerCore, dek1, TestDoc.PathsToEncrypt))
+                .CreateItem(testDoc4, EncryptionTests.GetBatchItemRequestOptions(EncryptionTests.itemContainerCore, dek2, TestDoc.PathsToEncrypt))
+                .ExecuteAsync();
 
-            //    List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
-            //    while (changeIterator.HasMoreResults)
-            //    {
-            //        FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-            //        changeFeedReturnedDocs.AddRange(testDocs);
-            //    }
-
-            //    Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
-
-            //    // Assumes tests don't run in parallel
-            //    Assert.AreEqual(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
-            //    Assert.AreEqual(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
-            //}
-
+            for(int testCaseIndex = 0; testCaseIndex < 2; testCaseIndex++)
             {
+
                 List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
-                ChangeFeedProcessor cfp = EncryptionTests.itemContainer.GetChangeFeedProcessorBuilder(
-                    "testCFP",
-                    (IReadOnlyCollection<TestDoc> changes, CancellationToken cancellationToken)
-                    =>
+                if (testCaseIndex == 0)
+                {
+                    // Test change-feed pull model flow
+                    FeedIterator<TestDoc> changeIterator = EncryptionTests.itemContainerCore.GetChangeFeedIterator<TestDoc>(
+                        new ChangeFeedRequestOptions()
+                        {
+                            StartTime = DateTime.MinValue.ToUniversalTime()
+                        });
+
+                    while (changeIterator.HasMoreResults)
                     {
-                        changeFeedReturnedDocs.AddRange(changes);
-                        return Task.CompletedTask;
-                    })
-                    .WithInMemoryLeaseContainer()
-                    .WithStartFromBeginning()
-                    .Build();
+                        FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
+                        changeFeedReturnedDocs.AddRange(testDocs);
+                    }
+                }
+                else
+                {
+                    // Test change-feed processor flow
+                    ChangeFeedProcessor cfp = EncryptionTests.itemContainer.GetChangeFeedProcessorBuilder(
+                        "testCFP",
+                        (IReadOnlyCollection<TestDoc> changes, CancellationToken cancellationToken)
+                        =>
+                        {
+                            changeFeedReturnedDocs.AddRange(changes);
+                            return Task.CompletedTask;
+                        })
+                        .WithInMemoryLeaseContainer()
+                        .WithStartFromBeginning()
+                        .Build();
 
-                await cfp.StartAsync();
-                await Task.Delay(2000);
-                await cfp.StopAsync();
+                    await cfp.StartAsync();
+                    await Task.Delay(2000);
+                    await cfp.StopAsync();
+                }
 
-                Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
-                Assert.AreEqual(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
-                Assert.AreEqual(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+                Assert.IsTrue(changeFeedReturnedDocs.Count >= 4);
+
+                // Assumes tests are not run in parallel
+                Assert.AreEqual(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 4]);
+                Assert.AreEqual(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 3]);
+
+                // Order of items changed in same transaction may not hold, so compare them as sets.
+                List<TestDoc> expected = new List<TestDoc> { testDoc3, testDoc4 };
+                List<TestDoc> actual = new List<TestDoc> { changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2], changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1] };
+                CollectionAssert.AreEquivalent(expected, actual);
             }
         }
 
