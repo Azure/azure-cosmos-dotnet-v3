@@ -242,7 +242,6 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-
         public abstract Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
                     ThroughputProperties throughputProperties,
