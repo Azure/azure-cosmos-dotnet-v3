@@ -3,7 +3,7 @@
 <table>
 <tr>
   <td>TypeName</td>
-  <td>Cosmos503_9000SNATPortExhuastion</td>
+  <td>CosmosSNATPortExhuastion</td>
 </tr>
 <tr>
   <td>CheckId</td>

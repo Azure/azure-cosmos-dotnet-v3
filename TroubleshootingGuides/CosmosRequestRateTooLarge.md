@@ -1,19 +1,10 @@
-## Cosmos429_0000
+## CosmosRequestRateTooLarge
 
-<table>
-<tr>
-  <td>TypeName</td>
-  <td>Cosmos429_0000RequestRateTooLarge</td>
-</tr>
-<tr>
-  <td>CheckId</td>
-  <td>Cosmos429_0000</td>
-</tr>
-<tr>
-  <td>Category</td>
-  <td>Service</td>
-</tr>
-</table>
+|   |   |   |
+|---|---|---|
+|TypeName|CosmosRequestRateTooLarge|
+|Status|429_0000|
+|Category|Service|
 
 ## Issue
 

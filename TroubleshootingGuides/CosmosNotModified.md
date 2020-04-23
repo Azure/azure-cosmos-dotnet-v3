@@ -1,19 +1,10 @@
-## Cosmos304_0000
+## CosmosNotModified
 
-<table>
-<tr>
-  <td>TypeName</td>
-  <td>Cosmos304_0000NotModified</td>
-</tr>
-<tr>
-  <td>CheckId</td>
-  <td>Cosmos304_0000</td>
-</tr>
-<tr>
-  <td>Category</td>
-  <td>Service</td>
-</tr>
-</table>
+|   |   |   |
+|---|---|---|
+|TypeName|CosmosNotModified|
+|Status|304_0000|
+|Category|Service|
 
 ## Description
 

@@ -1,19 +1,10 @@
-## Cosmos404_0000
+## CosmosNotFound
 
-<table>
-<tr>
-  <td>TypeName</td>
-  <td>Cosmos404_0000NotFound</td>
-</tr>
-<tr>
-  <td>CheckId</td>
-  <td>Cosmos404_0000</td>
-</tr>
-<tr>
-  <td>Category</td>
-  <td>Service</td>
-</tr>
-</table>
+|   |   |   |
+|---|---|---|
+|TypeName|CosmosNotFound|
+|Status|404_0000|
+|Category|Service|
 
 ## Description
 
