@@ -1,0 +1,270 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<#
+Dictionary<string, string> cosmosNumberTypeToDotNetType = new Dictionary<string, string>()
+{
+    { "Number64", "Number64" },
+    { "Int8", "sbyte" },
+    { "Int16", "short" },
+    { "Int32", "int" },
+    { "Int64", "long" },
+    { "UInt32", "uint" },
+    { "Float32", "float" },
+    { "Float64", "double" },
+};
+#>
+<# foreach (KeyValuePair<string, string> kvp in cosmosNumberTypeToDotNetType) 
+{
+    string cosmosNumberType = kvp.Key;
+    string dotNetType = kvp.Value;
+#>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+    using System;
+    using Microsoft.Azure.Cosmos.Json;
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    {
+        protected Cosmos<#= cosmosNumberType #>()
+            : base(CosmosNumberType.<#= cosmosNumberType #>)
+        {
+        }
+
+        public override Number64 Value => this.GetValue();
+
+        public abstract <#= dotNetType #> GetValue();
+
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
+        {
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            cosmosNumberVisitor.Visit(this);
+        }
+
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
+        {
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            return cosmosNumberVisitor.Visit(this, input);
+        }
+
+        public override void WriteTo(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException($"{nameof(jsonWriter)}");
+            }
+
+            jsonWriter.Write<#= cosmosNumberType #>Value(this.GetValue());
+        }
+
+        public static Cosmos<#= cosmosNumberType #> Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmos<#= cosmosNumberType #>(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static Cosmos<#= cosmosNumberType #> Create(<#= dotNetType #> number)
+        {
+            return new EagerCosmos<#= cosmosNumberType #>(number);
+        }
+    }
+}
+<# SaveOutput($"Cosmos{cosmosNumberType}.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    {
+        private sealed class EagerCosmos<#= cosmosNumberType #> : Cosmos<#= cosmosNumberType #>
+        {
+            private readonly <#= dotNetType #> number;
+
+            public EagerCosmos<#= cosmosNumberType #>(<#= dotNetType #> number)
+            {
+                this.number = number;
+            }
+
+            public override <#= dotNetType #> GetValue()
+            {
+                return this.number;
+            }
+        }
+    }
+}
+<# SaveOutput($"Cosmos{cosmosNumberType}.EagerCosmos{cosmosNumberType}.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+    using System;
+    using Microsoft.Azure.Cosmos.Json;
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    {
+        private sealed class LazyCosmos<#= cosmosNumberType #> : Cosmos<#= cosmosNumberType #>
+        {
+            private readonly Lazy<<#= dotNetType #>> lazyNumber;
+
+            public LazyCosmos<#= cosmosNumberType #>(
+                IJsonNavigator jsonNavigator,
+                IJsonNavigatorNode jsonNavigatorNode)
+            {
+                if (jsonNavigator == null)
+                {
+                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
+                }
+
+                if (jsonNavigatorNode == null)
+                {
+                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
+                }
+
+                JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
+                if (type != JsonNodeType.<#= cosmosNumberType #>)
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(jsonNavigatorNode)} must be a {JsonNodeType.<#= cosmosNumberType #>} node. Got {type} instead.");
+                }
+
+                this.lazyNumber = new Lazy<<#= dotNetType #>>(() => jsonNavigator.Get<#= cosmosNumberType #>Value(jsonNavigatorNode));
+            }
+
+            public override <#= dotNetType #> GetValue()
+            {
+                return this.lazyNumber.Value;
+            }
+        }
+    }
+}
+<# SaveOutput($"Cosmos{cosmosNumberType}.LazyCosmos{cosmosNumberType}.cs"); #>
+<# } #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    interface ICosmosNumberVisitor
+    {
+<# foreach (KeyValuePair<string, string> kvp in cosmosNumberTypeToDotNetType) 
+{
+    string cosmosNumberType = kvp.Key;
+    string dotNetType = kvp.Value;
+#>
+        void Visit(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>);
+<# } #>
+    }
+}
+<# SaveOutput("ICosmosNumberVisitor.cs"); #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    interface ICosmosNumberVisitor<TArg, TOutput>
+    {
+<# foreach (KeyValuePair<string, string> kvp in cosmosNumberTypeToDotNetType) 
+{
+    string cosmosNumberType = kvp.Key;
+    string dotNetType = kvp.Value;
+#>
+        TOutput Visit(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>, TArg input);
+<# } #>
+    }
+}
+<# SaveOutput("ICosmosNumberVisitor{TArg,TOutput}.cs"); #>
+<#+
+private void SaveOutput(string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string outputFilePath = Path.Combine(templateDirectory, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+
+private void SaveOutputToSubFolder(string folderName, string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string newDirectoryName = Path.Combine(templateDirectory,folderName);
+  if(!Directory.Exists(newDirectoryName))
+    Directory.CreateDirectory(newDirectoryName);
+  string outputFilePath = Path.Combine(newDirectoryName, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+private static string ModificationInstructions(
+                        [CallerFilePath] string file = "",
+                        [CallerLineNumber] int line = 0)
+{
+    return $"This is auto-generated code. Modify: {Path.GetFileName(file)}: {line}";
+}
+#>
