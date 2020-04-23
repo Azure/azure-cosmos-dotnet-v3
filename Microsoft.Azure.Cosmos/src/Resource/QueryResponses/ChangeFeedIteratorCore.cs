@@ -189,12 +189,14 @@ namespace Microsoft.Azure.Cosmos
                     (decryptedCosmosElements, decryptionInfo) = await this.GetDecryptedElementResponseAsync(this.clientContext, cosmosArray, diagnosticsScope, cancellationToken);
 
                     return ReadFeedResponse.CreateSuccess(
-                        this.feedTokenInternal.ContainerRid,
+                        await this.container.GetRIDAsync(cancellationToken),
                         decryptedCosmosElements,
-                        responseMessage.Headers,
+                        feedRangeResponse.Headers,
                         diagnosticsScope,
                         decryptionInfo);
                 }
+
+                return feedRangeResponse;
             }
             else
             {

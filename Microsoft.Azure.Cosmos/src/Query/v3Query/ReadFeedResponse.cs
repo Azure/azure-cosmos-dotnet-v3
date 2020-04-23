@@ -168,9 +168,9 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<DecryptionInfo> decryptionInfo)
         {
             Lazy<MemoryStream> memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
-                       containerRid,
-                       result,
-                       Documents.ResourceType.Document));
+                containerRid,
+                result,
+                Documents.ResourceType.Document));
 
             ReadFeedResponse readFeedResponse = new ReadFeedResponse(
                result: result,

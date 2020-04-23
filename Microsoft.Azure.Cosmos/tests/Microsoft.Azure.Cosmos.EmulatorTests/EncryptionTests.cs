@@ -590,6 +590,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             bool hasDecryptionFailed = false)
         {
             FeedIterator<TestDoc> changeIterator = containerCore.GetChangeFeedIterator<TestDoc>(
+                continuationToken: null,
                 new ChangeFeedRequestOptions()
                 {
                     StartTime = DateTime.MinValue.ToUniversalTime()

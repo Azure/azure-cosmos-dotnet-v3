@@ -177,7 +177,26 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.FeedRangeContinuation.ReplaceContinuation(response.Headers.ContinuationToken);
                 this.hasMoreResultsInternal = !this.FeedRangeContinuation.IsDone;
-                return FeedRangeResponse.CreateSuccess(response, this.FeedRangeContinuation);
+                ResponseMessage feedRangeResponse = FeedRangeResponse.CreateSuccess(response, this.FeedRangeContinuation);
+
+                if (this.clientContext.ClientOptions?.Encryptor != null && feedRangeResponse.Content != null)
+                {
+                    CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                        feedRangeResponse.Content,
+                        ResourceType.Document);
+
+                    (List<CosmosElement> decryptedCosmosElements, List<DecryptionInfo> decryptionInfo) =
+                        await this.GetDecryptedElementResponseAsync(this.clientContext, cosmosArray, diagnostics, cancellationToken);
+
+                    return ReadFeedResponse.CreateSuccess(
+                        this.lazyContainerRid.Result.Result,
+                        decryptedCosmosElements,
+                        feedRangeResponse.Headers,
+                        diagnostics,
+                        decryptionInfo);
+                }
+
+                return feedRangeResponse;
             }
             else
             {

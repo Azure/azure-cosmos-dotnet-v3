@@ -103,6 +103,9 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
+            this.ContinuationToken = response.Headers.ContinuationToken;
+            this.hasMoreResultsInternal = this.ContinuationToken != null && response.StatusCode != HttpStatusCode.NotModified;
+
             if (response.IsSuccessStatusCode)
             {
                 if (this.clientContext.ClientOptions?.Encryptor != null && response.Content != null)
@@ -115,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                         await this.GetDecryptedElementResponseAsync(this.clientContext, cosmosArray, diagnostics, cancellationToken);
 
                     return ReadFeedResponse.CreateSuccess(
-                        this.feedTokenInternal.ContainerRid,
+                        string.Empty,
                         decryptedCosmosElements,
                         response.Headers,
                         diagnostics,
@@ -123,8 +126,6 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            this.ContinuationToken = response.Headers.ContinuationToken;
-            this.hasMoreResultsInternal = this.ContinuationToken != null && response.StatusCode != HttpStatusCode.NotModified;
             return response;
         }
 
