@@ -22,7 +22,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} --collect "Code coverage" /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
