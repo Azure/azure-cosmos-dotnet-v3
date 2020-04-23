@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         public void Number64Integer_Text()
         {
             JsonWriteMicroBenchmarks.ExecuteWriteMicroBenchmark(
-                writeTokens: (jsonWriter) => { jsonWriter.WriteNumberValue(123); },
+                writeTokens: (jsonWriter) => { jsonWriter.WriteNumber64Value(123); },
                 benchmarkSerializationFormat: BenchmarkSerializationFormat.Text);
         }
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         public void Number64Integer_Binary()
         {
             JsonWriteMicroBenchmarks.ExecuteWriteMicroBenchmark(
-                writeTokens: (jsonWriter) => { jsonWriter.WriteNumberValue(123); },
+                writeTokens: (jsonWriter) => { jsonWriter.WriteNumber64Value(123); },
                 benchmarkSerializationFormat: BenchmarkSerializationFormat.Binary);
         }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         public void Number64Integer_Newtonsoft()
         {
             JsonWriteMicroBenchmarks.ExecuteWriteMicroBenchmark(
-                writeTokens: (jsonWriter) => { jsonWriter.WriteNumberValue(123); },
+                writeTokens: (jsonWriter) => { jsonWriter.WriteNumber64Value(123); },
                 benchmarkSerializationFormat: BenchmarkSerializationFormat.Newtonsoft);
         }
 
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         public void Number64Double_Text()
         {
             JsonWriteMicroBenchmarks.ExecuteWriteMicroBenchmark(
-                writeTokens: (jsonWriter) => { jsonWriter.WriteNumberValue(6.0221409e+23); },
+                writeTokens: (jsonWriter) => { jsonWriter.WriteNumber64Value(6.0221409e+23); },
                 benchmarkSerializationFormat: BenchmarkSerializationFormat.Text);
         }
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         public void Number64Double_Binary()
         {
             JsonWriteMicroBenchmarks.ExecuteWriteMicroBenchmark(
-                writeTokens: (jsonWriter) => { jsonWriter.WriteNumberValue(6.0221409e+23); },
+                writeTokens: (jsonWriter) => { jsonWriter.WriteNumber64Value(6.0221409e+23); },
                 benchmarkSerializationFormat: BenchmarkSerializationFormat.Binary);
         }
 
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         public void Number64Double_Newtonsoft()
         {
             JsonWriteMicroBenchmarks.ExecuteWriteMicroBenchmark(
-                writeTokens: (jsonWriter) => { jsonWriter.WriteNumberValue(6.0221409e+23); },
+                writeTokens: (jsonWriter) => { jsonWriter.WriteNumber64Value(6.0221409e+23); },
                 benchmarkSerializationFormat: BenchmarkSerializationFormat.Newtonsoft);
         }
 

@@ -25,88 +25,125 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         private static readonly CurratedDocsPayload NutritionDataData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
 
         [Benchmark]
-        public void NutritionData_Text_To_Text()
+        public void NutritionData_TextReader_To_TextWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.Text,
                 destinationFormat: SerializationFormat.Text);
         }
 
         [Benchmark]
-        public void NutritionData_Text_To_Binary()
+        public void NutritionData_TextReader_To_BinaryWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.Text,
                 destinationFormat: SerializationFormat.Binary);
         }
 
         [Benchmark]
-        public void NutritionData_Text_To_NewtonsoftText()
+        public void NutritionData_TextReader_To_NewtonsoftTextWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.Text,
                 destinationFormat: SerializationFormat.NewtonsoftText);
         }
 
         [Benchmark]
-        public void NutritionData_Binary_To_Text()
+        public void NutritionData_BinaryReader_To_TextWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.Binary,
                 destinationFormat: SerializationFormat.Text);
         }
 
         [Benchmark]
-        public void NutritionData_Binary_To_Binary()
+        public void NutritionData_BinaryReader_To_BinaryWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.Binary,
                 destinationFormat: SerializationFormat.Binary);
         }
 
         [Benchmark]
-        public void NutritionData_Binary_To_NewtonsoftText()
+        public void NutritionData_BinaryReader_To_NewtonsoftTextWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.Binary,
                 destinationFormat: SerializationFormat.NewtonsoftText);
         }
 
         [Benchmark]
-        public void NutritionData_NewtonsoftText_To_Text()
+        public void NutritionData_NewtonsoftTextReader_To_TextWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.NewtonsoftText,
                 destinationFormat: SerializationFormat.Text);
         }
 
         [Benchmark]
-        public void NutritionData_NewtonsoftText_To_Binary()
+        public void NutritionData_NewtonsoftTextReader_To_BinaryWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.NewtonsoftText,
                 destinationFormat: SerializationFormat.Binary);
         }
 
         [Benchmark]
-        public void NutritionData_NewtonsoftText_To_NewtonsoftText()
+        public void NutritionData_NewtonsoftTextReader_To_NewtonsoftTextWriter()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.NutritionDataData,
                 sourceFormat: SerializationFormat.NewtonsoftText,
                 destinationFormat: SerializationFormat.NewtonsoftText);
         }
 
 
-        private static void ExecuteBenchmark(
+        [Benchmark]
+        public void NutritionData_TextNavigator_To_TextWriter()
+        {
+            JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
+                payload: JsonRoundtripBenchmark.NutritionDataData,
+                sourceFormat: SerializationFormat.Text,
+                destinationFormat: SerializationFormat.Text);
+        }
+
+        [Benchmark]
+        public void NutritionData_TextNavigator_To_BinaryWriter()
+        {
+            JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
+                payload: JsonRoundtripBenchmark.NutritionDataData,
+                sourceFormat: SerializationFormat.Text,
+                destinationFormat: SerializationFormat.Binary);
+        }
+
+        [Benchmark]
+        public void NutritionData_BinaryNavigator_To_TextWriter()
+        {
+            JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
+                payload: JsonRoundtripBenchmark.NutritionDataData,
+                sourceFormat: SerializationFormat.Binary,
+                destinationFormat: SerializationFormat.Text);
+        }
+
+        [Benchmark]
+        public void NutritionData_BinaryNavigator_To_BinaryWriter()
+        {
+            JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
+                payload: JsonRoundtripBenchmark.NutritionDataData,
+                sourceFormat: SerializationFormat.Binary,
+                destinationFormat: SerializationFormat.Binary);
+        }
+
+
+        private static void ExecuteReaderBenchmark(
             CurratedDocsPayload payload,
             SerializationFormat sourceFormat,
             SerializationFormat destinationFormat)
@@ -128,6 +165,28 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             };
 
             writer.WriteAll(reader);
+        }
+
+        private static void ExecuteNavigatorBenchmark(
+            CurratedDocsPayload payload,
+            SerializationFormat sourceFormat,
+            SerializationFormat destinationFormat)
+        {
+            IJsonNavigator navigator = sourceFormat switch
+            {
+                SerializationFormat.Text => JsonNavigator.Create(payload.Text),
+                SerializationFormat.Binary => JsonNavigator.Create(payload.Binary),
+                _ => throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: '{sourceFormat}'"),
+            };
+
+            IJsonWriter writer = destinationFormat switch
+            {
+                SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
+                SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
+                _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
+            };
+
+            writer.WriteJsonNode(navigator, navigator.GetRootNode());
         }
 
         private enum SerializationFormat

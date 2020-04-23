@@ -127,7 +127,7 @@
                     case JsonNodeType.Null:
                     case JsonNodeType.False:
                     case JsonNodeType.True:
-                    case JsonNodeType.Number:
+                    case JsonNodeType.Number64:
                     case JsonNodeType.Int8:
                     case JsonNodeType.Int16:
                     case JsonNodeType.Int32:
@@ -188,7 +188,7 @@
                         break;
                     case JsonTokenType.Number:
                         Number64 numberValue = (token as JsonNumberToken).Value;
-                        jsonWriter.WriteNumberValue(numberValue);
+                        jsonWriter.WriteNumber64Value(numberValue);
                         break;
                     case JsonTokenType.True:
                         jsonWriter.WriteBoolValue(true);

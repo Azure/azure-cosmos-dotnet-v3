@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 <# } #>
 
 <#  foreach (string curatedDoc in curatedDocs) { #>
-<#  foreach (var serializationFormat in Enum.GetValues(typeof(SerializationFormat))) { #>
+<#  foreach (SerializationFormat serializationFormat in Enum.GetValues(typeof(SerializationFormat))) { #>
         [Benchmark]
         public void Write<#= curatedDoc #>_<#= serializationFormat #>()
         {

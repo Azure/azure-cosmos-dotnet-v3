@@ -61,9 +61,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 <#  foreach (var sourceFormat in Enum.GetValues(typeof(SerializationFormat))) { #>
 <#  foreach (var destinationFormat in Enum.GetValues(typeof(SerializationFormat))) { #>
         [Benchmark]
-        public void <#= curatedDoc #>_<#= sourceFormat #>_To_<#= destinationFormat #>()
+        public void <#= curatedDoc #>_<#= sourceFormat #>Reader_To_<#= destinationFormat #>Writer()
         {
-            JsonRoundtripBenchmark.ExecuteBenchmark(
+            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
                 payload: JsonRoundtripBenchmark.<#= curatedDoc #>Data,
                 sourceFormat: SerializationFormat.<#= sourceFormat #>,
                 destinationFormat: SerializationFormat.<#= destinationFormat #>);
@@ -73,7 +73,23 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 <# } #>
 <# } #>
 
-        private static void ExecuteBenchmark(
+<#  foreach (string curatedDoc in curatedDocs) { #>
+<#  foreach (SerializationFormat sourceFormat in Enum.GetValues(typeof(SerializationFormat))) { if (sourceFormat == SerializationFormat.NewtonsoftText) { continue; } #>
+<#  foreach (SerializationFormat destinationFormat in Enum.GetValues(typeof(SerializationFormat))) { if (destinationFormat == SerializationFormat.NewtonsoftText) { continue; } #>
+        [Benchmark]
+        public void <#= curatedDoc #>_<#= sourceFormat #>Navigator_To_<#= destinationFormat #>Writer()
+        {
+            JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
+                payload: JsonRoundtripBenchmark.<#= curatedDoc #>Data,
+                sourceFormat: SerializationFormat.<#= sourceFormat #>,
+                destinationFormat: SerializationFormat.<#= destinationFormat #>);
+        }
+
+<# } #>
+<# } #>
+<# } #>
+
+        private static void ExecuteReaderBenchmark(
             CurratedDocsPayload payload,
             SerializationFormat sourceFormat,
             SerializationFormat destinationFormat)
@@ -95,6 +111,28 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             };
 
             writer.WriteAll(reader);
+        }
+
+        private static void ExecuteNavigatorBenchmark(
+            CurratedDocsPayload payload,
+            SerializationFormat sourceFormat,
+            SerializationFormat destinationFormat)
+        {
+            IJsonNavigator navigator = sourceFormat switch
+            {
+                SerializationFormat.Text => JsonNavigator.Create(payload.Text),
+                SerializationFormat.Binary => JsonNavigator.Create(payload.Binary),
+                _ => throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: '{sourceFormat}'"),
+            };
+
+            IJsonWriter writer = destinationFormat switch
+            {
+                SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
+                SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
+                _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
+            };
+
+            writer.WriteJsonNode(navigator, navigator.GetRootNode());
         }
 
         private enum SerializationFormat
