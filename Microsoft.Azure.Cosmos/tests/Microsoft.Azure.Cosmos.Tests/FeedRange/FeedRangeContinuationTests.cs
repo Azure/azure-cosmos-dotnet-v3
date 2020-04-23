@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             requestMessage.OperationType = Documents.OperationType.ReadFeed;
             requestMessage.ResourceType = Documents.ResourceType.Document;
             FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
-            token.Accept(feedRangeVisitor, (rm, ct) => { }) ;
+            token.Accept(feedRangeVisitor, (rm, ct) => rm.Headers.IfNoneMatch = ct) ;
             Assert.AreEqual(range.Min, requestMessage.Properties[HandlerConstants.StartEpkString]);
             Assert.AreEqual(range.Max, requestMessage.Properties[HandlerConstants.EndEpkString]);
             Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);

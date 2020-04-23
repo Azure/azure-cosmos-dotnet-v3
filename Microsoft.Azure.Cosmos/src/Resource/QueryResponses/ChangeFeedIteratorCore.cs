@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
             FeedRangeInternal feedRangeInternal,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
-            if (changeFeedRequestOptions.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+            if (changeFeedRequestOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
             {
                 if (FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
