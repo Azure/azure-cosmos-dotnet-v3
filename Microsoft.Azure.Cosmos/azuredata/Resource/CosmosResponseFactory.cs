@@ -93,7 +93,7 @@ namespace Azure.Cosmos
             });
         }
 
-        internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
+        internal Task<CosmosDatabaseResponse> CreateDatabaseResponseAsync(
             CosmosDatabase database,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
@@ -104,7 +104,7 @@ namespace Azure.Cosmos
                     cosmosResponseMessage,
                     this.propertiesSerializer);
 
-                return new DatabaseResponse(
+                return new CosmosDatabaseResponse(
                     cosmosResponseMessage,
                     databaseProperties,
                     database);

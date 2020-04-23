@@ -409,7 +409,7 @@ namespace Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual Task<DatabaseResponse> CreateDatabaseAsync(
+        public virtual Task<CosmosDatabaseResponse> CreateDatabaseAsync(
                 string id,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
@@ -460,7 +460,7 @@ namespace Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
+        public virtual async Task<CosmosDatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -719,7 +719,7 @@ namespace Azure.Cosmos
             return databaseProperties;
         }
 
-        internal Task<DatabaseResponse> CreateDatabaseAsync(
+        internal Task<CosmosDatabaseResponse> CreateDatabaseAsync(
                     CosmosDatabaseProperties databaseProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,

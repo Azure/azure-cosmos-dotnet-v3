@@ -61,7 +61,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                DatabaseResponse createResponse = await client.CreateDatabaseIfNotExistsAsync(id: "BasicQueryDb1");
+                CosmosDatabaseResponse createResponse = await client.CreateDatabaseIfNotExistsAsync(id: "BasicQueryDb1");
                 deleteList.Add(createResponse.Database);
                 createdIds.Add(createResponse.Database.Id);
 

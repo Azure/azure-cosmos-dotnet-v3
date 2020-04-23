@@ -47,7 +47,7 @@ namespace Azure.Cosmos
 
         internal CosmosClientContext ClientContext { get; }
 
-        public override Task<DatabaseResponse> ReadAsync(
+        public override Task<CosmosDatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -58,7 +58,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response, cancellationToken);
         }
 
-        public override Task<DatabaseResponse> DeleteAsync(
+        public override Task<CosmosDatabaseResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -574,7 +574,7 @@ namespace Azure.Cosmos
 
         internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
+            CosmosDatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
             return databaseResponse.Value?.ResourceId;
         }
 

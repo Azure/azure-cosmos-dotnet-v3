@@ -7,14 +7,14 @@ namespace Azure.Cosmos
     /// <summary>
     /// The cosmos database response
     /// </summary>
-    public class DatabaseResponse : Response<CosmosDatabaseProperties>
+    public class CosmosDatabaseResponse : Response<CosmosDatabaseProperties>
     {
         private readonly Response rawResponse;
 
         /// <summary>
-        /// Create a <see cref="DatabaseResponse"/> as a no-op for mock testing
+        /// Create a <see cref="CosmosDatabaseResponse"/> as a no-op for mock testing
         /// </summary>
-        protected DatabaseResponse()
+        protected CosmosDatabaseResponse()
             : base()
         {
         }
@@ -23,7 +23,7 @@ namespace Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        internal DatabaseResponse(
+        internal CosmosDatabaseResponse(
             Response response,
             CosmosDatabaseProperties databaseProperties,
             CosmosDatabase database)
@@ -46,10 +46,10 @@ namespace Azure.Cosmos
         public override Response GetRawResponse() => this.rawResponse;
 
         /// <summary>
-        /// Get <see cref="Cosmos.CosmosDatabase"/> implicitly from <see cref="DatabaseResponse"/>
+        /// Get <see cref="Cosmos.CosmosDatabase"/> implicitly from <see cref="CosmosDatabaseResponse"/>
         /// </summary>
         /// <param name="response">DatabaseResponse</param>
-        public static implicit operator CosmosDatabase(DatabaseResponse response)
+        public static implicit operator CosmosDatabase(CosmosDatabaseResponse response)
         {
             return response.Database;
         }
