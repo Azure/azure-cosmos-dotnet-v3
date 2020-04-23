@@ -74,18 +74,18 @@ namespace Azure.Cosmos.EmulatorTests
                 createdIds.Add(createResponse.Database.Id);
 
                 //Read All
-                List<DatabaseProperties> results = await this.ToListAsync(
+                List<CosmosDatabaseProperties> results = await this.ToListAsync(
                     client.GetDatabaseQueryStreamIterator,
-                    client.GetDatabaseQueryIterator<DatabaseProperties>,
+                    client.GetDatabaseQueryIterator<CosmosDatabaseProperties>,
                     null,
                     CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
                 //Basic query
-                List<DatabaseProperties> queryResults = await this.ToListAsync(
+                List<CosmosDatabaseProperties> queryResults = await this.ToListAsync(
                     client.GetDatabaseQueryStreamIterator,
-                    client.GetDatabaseQueryIterator<DatabaseProperties>,
+                    client.GetDatabaseQueryIterator<CosmosDatabaseProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryDb\")",
                     CosmosBasicQueryTests.RequestOptions);
 

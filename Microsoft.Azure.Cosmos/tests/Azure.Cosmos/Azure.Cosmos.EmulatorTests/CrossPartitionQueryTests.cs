@@ -332,9 +332,9 @@ namespace Azure.Cosmos.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            AsyncPageable<DatabaseProperties> allDatabases = client.GetDatabaseQueryIterator<DatabaseProperties>();
+            AsyncPageable<CosmosDatabaseProperties> allDatabases = client.GetDatabaseQueryIterator<CosmosDatabaseProperties>();
 
-            await foreach (DatabaseProperties db in allDatabases)
+            await foreach (CosmosDatabaseProperties db in allDatabases)
             {
                 await client.GetDatabase(db.Id).DeleteAsync();
             }

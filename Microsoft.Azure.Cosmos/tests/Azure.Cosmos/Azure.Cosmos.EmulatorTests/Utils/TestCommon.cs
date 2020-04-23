@@ -195,14 +195,14 @@ namespace Azure.Cosmos.EmulatorTests
         {
             IList<Cosmos.CosmosDatabase> databases = new List<Cosmos.CosmosDatabase>();
 
-            AsyncPageable<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
+            AsyncPageable<CosmosDatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<CosmosDatabaseProperties>(
                 queryDefinition: null,
                 continuationToken: null,
                 requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
 
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
             int totalCount = 0;
-            await foreach (DatabaseProperties database in resultSetIterator)
+            await foreach (CosmosDatabaseProperties database in resultSetIterator)
             {
                 deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(database.Id)));
                 totalCount++;

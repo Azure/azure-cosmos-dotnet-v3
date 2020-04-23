@@ -100,7 +100,7 @@ namespace Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                DatabaseProperties databaseProperties = CosmosResponseFactory.ToObjectInternal<DatabaseProperties>(
+                CosmosDatabaseProperties databaseProperties = CosmosResponseFactory.ToObjectInternal<CosmosDatabaseProperties>(
                     cosmosResponseMessage,
                     this.propertiesSerializer);
 

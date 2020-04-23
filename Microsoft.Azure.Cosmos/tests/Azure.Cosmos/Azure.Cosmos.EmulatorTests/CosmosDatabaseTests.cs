@@ -52,7 +52,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.IsNotNull(response.GetRawResponse().Headers);
             Assert.IsNotNull(response.GetRawResponse().Headers.GetActivityId());
 
-            DatabaseProperties databaseSettings = response.Value;
+            CosmosDatabaseProperties databaseSettings = response.Value;
             Assert.IsNotNull(databaseSettings.Id);
             Assert.IsNotNull(databaseSettings.ResourceId);
             Assert.IsNotNull(databaseSettings.ETag);
@@ -115,7 +115,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task StreamCreateConflictTestAsync()
         {
-            DatabaseProperties databaseSettings = new DatabaseProperties()
+            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties()
             {
                 Id = Guid.NewGuid().ToString()
             };
@@ -177,7 +177,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             DatabaseResponse cosmosDatabaseResponse = await this.CreateDatabaseHelper();
             Cosmos.CosmosDatabase cosmosDatabase = cosmosDatabaseResponse;
-            DatabaseProperties cosmosDatabaseSettings = cosmosDatabaseResponse;
+            CosmosDatabaseProperties cosmosDatabaseSettings = cosmosDatabaseResponse;
             Assert.IsNotNull(cosmosDatabase);
             Assert.IsNotNull(cosmosDatabaseSettings);
 
@@ -335,7 +335,7 @@ namespace Azure.Cosmos.EmulatorTests
                     databaseIds.Add(createResponse.Value.Id);
                 }
 
-                await foreach(DatabaseProperties databaseSettings in this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                await foreach(CosmosDatabaseProperties databaseSettings in this.cosmosClient.GetDatabaseQueryIterator<CosmosDatabaseProperties>(
                     queryDefinition: null,
                     continuationToken: null,
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 2 }))
@@ -375,7 +375,7 @@ namespace Azure.Cosmos.EmulatorTests
                 deleteList.Add(createResponse3.Database);
 
                 int iterations = 0;
-                await foreach(Page<DatabaseProperties> iterator in this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                await foreach(Page<CosmosDatabaseProperties> iterator in this.cosmosClient.GetDatabaseQueryIterator<CosmosDatabaseProperties>(
                         new QueryDefinition("select c.id From c where c.id = @id ")
                         .WithParameter("@id", createResponse.Database.Id),
                         requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }).AsPages())
@@ -444,7 +444,7 @@ namespace Azure.Cosmos.EmulatorTests
                 databaseId = Guid.NewGuid().ToString();
             }
 
-            DatabaseProperties databaseSettings = new DatabaseProperties() { Id = databaseId };
+            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties() { Id = databaseId };
             Response response = await this.cosmosClient.CreateDatabaseStreamAsync(
                 databaseSettings,
                 throughput: 400);

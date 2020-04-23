@@ -7,7 +7,7 @@ namespace Azure.Cosmos
     /// <summary>
     /// The cosmos database response
     /// </summary>
-    public class DatabaseResponse : Response<DatabaseProperties>
+    public class DatabaseResponse : Response<CosmosDatabaseProperties>
     {
         private readonly Response rawResponse;
 
@@ -25,7 +25,7 @@ namespace Azure.Cosmos
         /// </summary>
         internal DatabaseResponse(
             Response response,
-            DatabaseProperties databaseProperties,
+            CosmosDatabaseProperties databaseProperties,
             CosmosDatabase database)
         {
             this.rawResponse = response;
@@ -40,7 +40,7 @@ namespace Azure.Cosmos
         public virtual CosmosDatabase Database { get; }
 
         /// <inheritdoc/>
-        public override DatabaseProperties Value { get; }
+        public override CosmosDatabaseProperties Value { get; }
 
         /// <inheritdoc/>
         public override Response GetRawResponse() => this.rawResponse;
