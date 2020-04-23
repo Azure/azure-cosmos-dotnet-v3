@@ -480,7 +480,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.AreEqual((HttpStatusCode)429, failure.Value.StatusCode);
                     Assert.IsNotNull(failure.Value.CosmosException.ToString());
 
-                    Assert.AreEqual(0 /*We don't get any items, since we don't buffer the failure anymore*/, itemsRead.Count);
+                    Assert.IsTrue(itemsRead.Count <= 1 /*We should get back up to 1 item, since we are returning partial results now*/);
 
                     //CollectionAssert.AreEqual(allItems.ToList(), itemsRead, new ToDoItemComparer());
                 }
