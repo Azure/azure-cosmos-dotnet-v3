@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Text;
@@ -117,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
-        internal abstract Task<Stream> DecryptItemAsync(
+        internal abstract Task<(Stream, List<string>)> DecryptItemAsync(
             Stream input,
             DatabaseCore database,
             CosmosDiagnosticsContext diagnosticsContext,

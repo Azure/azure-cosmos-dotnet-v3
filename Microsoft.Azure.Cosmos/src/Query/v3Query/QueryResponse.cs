@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnostics,
             CosmosException cosmosException,
             Lazy<MemoryStream> memoryStream,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            IReadOnlyList<DecryptionInfo> decryptionInfo)
             : base(
                 statusCode: statusCode,
                 requestMessage: requestMessage,
@@ -56,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseLengthBytes = responseLengthBytes;
             this.memoryStream = memoryStream;
             this.CosmosSerializationOptions = serializationOptions;
+            this.DecryptionInfo = decryptionInfo;
         }
 
         public int Count { get; }
@@ -69,6 +71,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
+
+        internal virtual IReadOnlyList<DecryptionInfo> DecryptionInfo { get; }
 
         internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
 
@@ -93,7 +97,8 @@ namespace Microsoft.Azure.Cosmos
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             CosmosDiagnosticsContext diagnostics,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            IReadOnlyList<DecryptionInfo> decryptionInfo)
         {
             if (count < 0)
             {
@@ -121,7 +126,8 @@ namespace Microsoft.Azure.Cosmos
                cosmosException: null,
                requestMessage: null,
                memoryStream: memoryStream,
-               serializationOptions: serializationOptions);
+               serializationOptions: serializationOptions,
+               decryptionInfo: decryptionInfo);
 
             return cosmosQueryResponse;
         }
@@ -143,7 +149,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosException: cosmosException,
                     requestMessage: requestMessage,
                     memoryStream: null,
-                    serializationOptions: null);
+                    serializationOptions: null,
+                    decryptionInfo: null);
 
             return cosmosQueryResponse;
         }
@@ -175,7 +182,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             CosmosDiagnostics diagnostics,
             CosmosSerializerCore serializerCore,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            IReadOnlyList<DecryptionInfo> decryptionInfo)
         {
             this.QueryHeaders = responseMessageHeaders;
             this.Diagnostics = diagnostics;
@@ -186,6 +194,7 @@ namespace Microsoft.Azure.Cosmos
             this.Resource = CosmosElementSerializer.GetResources<T>(
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
+            this.DecryptionInfo = decryptionInfo;
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -201,6 +210,8 @@ namespace Microsoft.Azure.Cosmos
         public override int Count { get; }
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
+
+        public override IReadOnlyList<DecryptionInfo> DecryptionInfo { get; }
 
         public override IEnumerator<T> GetEnumerator()
         {
@@ -224,7 +235,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
                     diagnostics: cosmosQueryResponse.Diagnostics,
                     serializerCore: serializerCore,
-                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
+                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions,
+                    decryptionInfo: cosmosQueryResponse.DecryptionInfo);
             }
             return queryResponse;
         }

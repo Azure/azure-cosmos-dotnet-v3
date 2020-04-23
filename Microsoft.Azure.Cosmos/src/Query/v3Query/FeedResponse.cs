@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections;
     using System.Collections.Generic;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The user contract for the various feed responses that serialized the responses to a type.
@@ -41,6 +40,11 @@ namespace Microsoft.Azure.Cosmos
         /// The number of items in the stream.
         /// </summary>
         public abstract int Count { get; }
+
+        /// <summary>
+        /// Decryption processing information for each item
+        /// </summary>
+        public abstract IReadOnlyList<DecryptionInfo> DecryptionInfo { get; }
 
         /// <summary>
         /// Get an enumerator of the object

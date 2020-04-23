@@ -93,7 +93,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContextCore());
+                        diagnostics: new CosmosDiagnosticsContextCore(),
+                        decryptionInfo: null);
 
             using (Stream stream = queryResponse.Content)
             {
@@ -131,7 +132,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContextCore());
+                        diagnostics: new CosmosDiagnosticsContextCore(),
+                        decryptionInfo: null);
 
             QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
             List<ToDoItem> resultItems = new List<ToDoItem>(itemQueryResponse.Resource);
@@ -172,7 +174,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContextCore());
+                        diagnostics: new CosmosDiagnosticsContextCore(),
+                        decryptionInfo: null);
 
             QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);
             List<CosmosElement> resultItems = new List<CosmosElement>(itemQueryResponse.Resource);

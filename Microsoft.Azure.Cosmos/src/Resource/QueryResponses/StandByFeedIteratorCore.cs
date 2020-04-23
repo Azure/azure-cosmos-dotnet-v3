@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -102,30 +103,50 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (this.compositeContinuationToken == null)
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
-                PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                this.containerRid = await this.container.GetRIDAsync(cancellationToken);
-                this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
-            }
+                if (this.compositeContinuationToken == null)
+                {
+                    PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                    this.containerRid = await this.container.GetRIDAsync(cancellationToken);
+                    this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
+                }
 
-            (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-            string partitionKeyRangeId = rangeId;
-            this.continuationToken = currentRangeToken.Token;
-            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
-            if (await this.ShouldRetryFailureAsync(response, cancellationToken))
-            {
-                return await this.ReadNextInternalAsync(cancellationToken);
-            }
+                (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+                string partitionKeyRangeId = rangeId;
+                this.continuationToken = currentRangeToken.Token;
+                ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, diagnosticsContext, cancellationToken);
+                if (await this.ShouldRetryFailureAsync(response, cancellationToken))
+                {
+                    return await this.ReadNextInternalAsync(cancellationToken);
+                }
 
-            if (response.IsSuccessStatusCode
-                || response.StatusCode == HttpStatusCode.NotModified)
-            {
-                // Change Feed read uses Etag for continuation
-                currentRangeToken.Token = response.Headers.ETag;
-            }
+                if (response.IsSuccessStatusCode
+                    || response.StatusCode == HttpStatusCode.NotModified)
+                {
+                    // Change Feed read uses Etag for continuation
+                    currentRangeToken.Token = response.Headers.ETag;
 
-            return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
+                    CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                            response.Content,
+                            Documents.ResourceType.Document);
+
+                    (List<CosmosElement> decryptedCosmosElements, List<DecryptionInfo> decryptionInfo) =
+                        await this.GetDecryptedElementResponseAsync(this.clientContext, cosmosArray, diagnosticsContext, cancellationToken);
+
+                    return new Tuple<string, ResponseMessage>(
+                        partitionKeyRangeId,
+                        ReadFeedResponse.CreateSuccess(
+                            this.containerRid,
+                            decryptedCosmosElements,
+                            response.Headers,
+                            diagnosticsContext,
+                            decryptionInfo));
+                }
+
+                return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
+            }
         }
 
         /// <summary>
@@ -157,6 +178,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyRangeId,
             int? maxItemCount,
             ChangeFeedRequestOptions options,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
@@ -175,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
-                diagnosticsContext: null,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 

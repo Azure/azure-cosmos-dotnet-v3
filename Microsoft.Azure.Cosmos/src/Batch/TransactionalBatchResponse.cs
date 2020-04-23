@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         ContainerCore containerCore = serverRequest.Operations[index].ContainerCore;
                         TransactionalBatchOperationResult result = response.results[index];
-                        result.ResourceStream = await containerCore.ClientContext.DecryptItemAsync(
+                        (result.ResourceStream, _) = await containerCore.ClientContext.DecryptItemAsync(
                             result.ResourceStream,
                             (DatabaseCore)containerCore.Database,
                             responseMessage.DiagnosticsContext,

@@ -5,8 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Scripts;
 
     internal class CosmosResponseFactory
@@ -93,11 +93,18 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 T item = this.ToObjectInternal<T>(cosmosResponseMessage);
+                DecryptionInfo decryptionInfo = null;
+                if (cosmosResponseMessage is ItemResponse itemResponse)
+                {
+                    decryptionInfo = itemResponse.DecryptionInfo;
+                }
+
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    decryptionInfo);
             });
         }
 

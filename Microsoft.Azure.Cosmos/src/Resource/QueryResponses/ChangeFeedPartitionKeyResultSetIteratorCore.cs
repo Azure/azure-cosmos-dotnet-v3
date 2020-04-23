@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -93,31 +94,53 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
-        private Task<ResponseMessage> NextResultSetDelegateAsync(
+        private async Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationStreamAsync(
-               cosmosContainerCore: this.container,
-               resourceUri: resourceUri,
-               resourceType: Documents.ResourceType.Document,
-               operationType: Documents.OperationType.ReadFeed,
-               requestOptions: options,
-               requestEnricher: request =>
-               {
-                   ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                   ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                   ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
-               },
-               partitionKey: null,
-               streamPayload: null,
-               diagnosticsContext: null,
-               cancellationToken: cancellationToken);
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
+            using (diagnostics.GetOverallScope())
+            {
+                Uri resourceUri = this.container.LinkUri;
+                ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                   cosmosContainerCore: this.container,
+                   resourceUri: resourceUri,
+                   resourceType: Documents.ResourceType.Document,
+                   operationType: Documents.OperationType.ReadFeed,
+                   requestOptions: options,
+                   requestEnricher: request =>
+                   {
+                       ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
+                       ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
+                       ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
+                   },
+                   partitionKey: null,
+                   streamPayload: null,
+                   diagnosticsContext: null,
+                   cancellationToken: cancellationToken);
 
+                if (responseMessage.IsSuccessStatusCode && this.clientContext.ClientOptions?.Encryptor != null && responseMessage.Content != null)
+                {
+                    CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                        responseMessage.Content,
+                        Documents.ResourceType.Document);
+
+                    (List<CosmosElement> decryptedCosmosElements, List<DecryptionInfo> decryptionInfo) =
+                        await this.GetDecryptedElementResponseAsync(this.clientContext, cosmosArray, diagnostics, cancellationToken);
+
+                    return ReadFeedResponse.CreateSuccess(
+                        await this.container.GetRIDAsync(cancellationToken),
+                        decryptedCosmosElements,
+                        responseMessage.Headers,
+                        diagnostics,
+                        decryptionInfo);
+                }
+
+                return responseMessage;
+            }
         }
     }
 }

@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+    using System.IO;
     using System.Net;
     using Microsoft.Azure.Documents;
 
@@ -28,12 +30,14 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             T item,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            DecryptionInfo decryptionInfo = null)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = item;
             this.Diagnostics = diagnostics;
+            this.DecryptionInfo = decryptionInfo;
         }
 
         /// <inheritdoc/>
@@ -56,5 +60,44 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
+
+        /// <summary>
+        /// Decryption processing information
+        /// </summary>
+        public virtual DecryptionInfo DecryptionInfo { get; }
+    }
+
+    internal class ItemResponse : ResponseMessage
+    {
+        private readonly Stream Result;
+
+        internal virtual DecryptionInfo DecryptionInfo { get; }
+
+        public override Stream Content
+        {
+            get
+            {
+                return this.Result;
+            }
+        }
+
+        internal ItemResponse(
+            Stream result,
+            DecryptionInfo decryptionInfo,
+            HttpStatusCode statusCode,
+            RequestMessage requestMessage,
+            Headers responseHeaders,
+            CosmosException cosmosException,
+            CosmosDiagnosticsContext diagnostics)
+            : base(
+                statusCode: statusCode,
+                requestMessage: requestMessage,
+                headers: responseHeaders,
+                cosmosException: cosmosException,
+                diagnostics: diagnostics)
+        {
+            this.Result = result;
+            this.DecryptionInfo = decryptionInfo;
+        }        
     }
 }

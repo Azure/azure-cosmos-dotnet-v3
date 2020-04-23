@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
 
-        public async Task<Stream> DecryptAsync(
+        public async Task<(Stream, List<string>)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -120,6 +120,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
+            List<string> decryptedPaths = new List<string>();
             JObject itemJObj;
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             {
@@ -139,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
             if (encryptionPropertiesJObj == null)
             {
                 input.Position = 0;
-                return input;
+                return (input, decryptedPaths);
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
@@ -153,13 +154,14 @@ namespace Microsoft.Azure.Cosmos
             foreach (JProperty property in plainTextJObj.Properties())
             {
                 itemJObj.Add(property.Name, property.Value);
+                decryptedPaths.Add("/" + property.Name);
             }
 
             itemJObj.Remove(Constants.Properties.EncryptedInfo);
-            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+            return (EncryptionProcessor.baseSerializer.ToStream(itemJObj), decryptedPaths);
         }
 
-        public async Task<CosmosObject> DecryptAsync(
+        public async Task<(CosmosObject, List<string>)> DecryptAsync(
             CosmosObject document,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -169,9 +171,11 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
+            List<string> decryptedPaths = new List<string>();
+
             if (!document.TryGetValue(Constants.Properties.EncryptedInfo, out CosmosElement encryptedInfo))
             {
-                return document;
+                return (document, decryptedPaths);
             }
 
             EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
@@ -188,9 +192,10 @@ namespace Microsoft.Azure.Cosmos
             foreach (JProperty property in plainTextJObj.Properties())
             {
                 documentContent.Add(property.Name, property.Value.ToObject<CosmosElement>());
+                decryptedPaths.Add("/" + property.Name);
             }
 
-            return CosmosObject.Create(documentContent);
+            return (CosmosObject.Create(documentContent), decryptedPaths);
         }
 
         private async Task<JObject> DecryptContentAsync(

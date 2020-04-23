@@ -782,11 +782,32 @@ namespace Microsoft.Azure.Cosmos
 
             if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
             {
-                responseMessage.Content = await this.ClientContext.DecryptItemAsync(
-                    responseMessage.Content,
-                    (DatabaseCore)this.Database,
-                    diagnosticsContext,
-                    cancellationToken);
+                Stream decryptedContent = responseMessage.Content;
+                List<string> decryptedPaths = new List<string>();
+                DecryptionInfo decryptionInfo = null;
+                try
+                {
+                    (decryptedContent, decryptedPaths) = await this.ClientContext.DecryptItemAsync(
+                        responseMessage.Content,
+                        (DatabaseCore)this.Database,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    decryptionInfo = new DecryptionInfo(false, decryptedPaths);
+                }
+                catch (Exception ex)
+                {
+                    decryptionInfo = new DecryptionInfo(responseMessage.Content, ex.Message);
+                }
+
+                return new ItemResponse(
+                    result: decryptedContent,
+                    decryptionInfo: decryptionInfo,
+                    statusCode: responseMessage.StatusCode,
+                    requestMessage: responseMessage.RequestMessage,
+                    responseHeaders: responseMessage.Headers,
+                    cosmosException: responseMessage.CosmosException,
+                    diagnostics: responseMessage.DiagnosticsContext);
             }
 
             return responseMessage;

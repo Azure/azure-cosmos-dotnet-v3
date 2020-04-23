@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Text;
@@ -195,6 +196,23 @@ namespace Microsoft.Azure.Cosmos
                 this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
                 this.ContinuationToken = this.feedTokenInternal.GetContinuation();
                 this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone;
+
+                if (this.clientContext.ClientOptions?.Encryptor != null && response.Content != null)
+                {
+                    CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                        response.Content,
+                        this.resourceType);
+
+                    (List<CosmosElement> decryptedCosmosElements, List<DecryptionInfo> decryptionInfo) =
+                        await this.GetDecryptedElementResponseAsync(this.clientContext, cosmosArray, diagnostics, cancellationToken);
+
+                    return ReadFeedResponse.CreateSuccess(
+                        this.feedTokenInternal.ContainerRid,
+                        decryptedCosmosElements,
+                        response.Headers,
+                        diagnostics,
+                        decryptionInfo);
+                }
             }
             else
             {

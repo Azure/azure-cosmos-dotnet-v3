@@ -463,6 +463,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string partitionKeyRangeId,
                 int? maxItemCount,
                 ChangeFeedRequestOptions options,
+                CosmosDiagnosticsContext diagnosticsContext,
                 CancellationToken cancellationToken)
             {
                 if (this.Iteration++ == 0)

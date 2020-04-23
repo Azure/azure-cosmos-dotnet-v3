@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
@@ -134,9 +135,29 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Change Feed read uses Etag for continuation
                 this.feedTokenInternal.UpdateContinuation(responseMessage.Headers.ETag);
+
+                if (this.clientContext.ClientOptions?.Encryptor != null && responseMessage.Content != null)
+                {
+                    CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                        responseMessage.Content,
+                        ResourceType.Document);
+
+                    List<CosmosElement> decryptedCosmosElements = null;
+                    List<DecryptionInfo> decryptionInfo = null;
+
+                    (decryptedCosmosElements, decryptionInfo) = await this.GetDecryptedElementResponseAsync(this.clientContext, cosmosArray, diagnosticsScope, cancellationToken);
+
+                    return ReadFeedResponse.CreateSuccess(
+                        this.feedTokenInternal.ContainerRid,
+                        decryptedCosmosElements,
+                        responseMessage.Headers,
+                        diagnosticsScope,
+                        decryptionInfo);
+                }
             }
 
             this.hasMoreResults = responseMessage.IsSuccessStatusCode;
+            
             return responseMessage;
         }
 

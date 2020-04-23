@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
@@ -345,7 +346,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override async Task<Stream> DecryptItemAsync(
+        internal override async Task<(Stream, List<string>)> DecryptItemAsync(
             Stream input,
             DatabaseCore database,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -353,7 +354,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (input == null || this.ClientOptions.Encryptor == null)
             {
-                return input;
+                return (input, new List<string>());
             }
 
             Debug.Assert(database != null);
