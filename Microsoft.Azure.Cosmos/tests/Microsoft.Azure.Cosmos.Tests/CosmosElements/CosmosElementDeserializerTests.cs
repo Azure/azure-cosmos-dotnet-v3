@@ -22,10 +22,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
                 object[] arrayValue = new object[] { (Number64)1, (Number64)2, (Number64)3, (Number64)4 };
                 jsonWriter.WriteArrayStart();
-                jsonWriter.WriteNumberValue(1);
-                jsonWriter.WriteNumberValue(2);
-                jsonWriter.WriteNumberValue(3);
-                jsonWriter.WriteNumberValue(4);
+                jsonWriter.WriteNumber64Value(1);
+                jsonWriter.WriteNumber64Value(2);
+                jsonWriter.WriteNumber64Value(3);
+                jsonWriter.WriteNumber64Value(4);
                 jsonWriter.WriteArrayEnd();
                 ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
 
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 jsonWriter.WriteFieldName("name");
                 jsonWriter.WriteStringValue("John");
                 jsonWriter.WriteFieldName("age");
-                jsonWriter.WriteNumberValue(24);
+                jsonWriter.WriteNumber64Value(24);
                 jsonWriter.WriteObjectEnd();
                 jsonWriter.WriteArrayEnd();
                 ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             int integerValue = 42;
             IJsonWriter integerWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-            integerWriter.WriteNumberValue(integerValue);
+            integerWriter.WriteNumber64Value(integerValue);
             ReadOnlyMemory<byte> integerBuffer = integerWriter.GetResult();
 
             {
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             float doubleValue = 42.1337f;
             IJsonWriter doubleWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-            doubleWriter.WriteNumberValue(doubleValue);
+            doubleWriter.WriteNumber64Value(doubleValue);
             ReadOnlyMemory<byte> doubleBuffer = doubleWriter.GetResult();
 
             {
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             jsonWriter.WriteStringValue("John");
 
             jsonWriter.WriteFieldName("age");
-            jsonWriter.WriteNumberValue(24);
+            jsonWriter.WriteNumber64Value(24);
 
             jsonWriter.WriteObjectEnd();
             ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
