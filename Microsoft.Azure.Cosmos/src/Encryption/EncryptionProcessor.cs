@@ -97,10 +97,8 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.Properties.EncryptedInfo);
-            if (encryptionPropertiesJProp == null
-                || encryptionPropertiesJProp.Value == null
-                || encryptionPropertiesJProp.Value.Type != JTokenType.Object)
+            if (!itemJObj.TryGetValue(Constants.Properties.EncryptedInfo, out JToken encryptedInfoJToken)
+                || encryptedInfoJToken.Type != JTokenType.Object)
             {
                 input.Position = 0;
                 return input;

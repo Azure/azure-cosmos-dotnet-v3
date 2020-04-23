@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// Options around encryption / decryption of data.
-    /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
+    /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
 #if PREVIEW
     public
@@ -19,9 +19,9 @@ namespace Microsoft.Azure.Cosmos
 #endif
         class EncryptionOptions
     {
-        private bool isPathsToEncryptValidated = false;
-
         private IReadOnlyList<string> pathsToEncrypt;
+
+        private HashSet<string> validatedPathsToEncrypt;
 
         private List<string[]> pathsToEncryptSegments;
 
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                Debug.Assert(this.isPathsToEncryptValidated);
+                Debug.Assert(this.validatedPathsToEncrypt != null);
                 return this.pathsToEncryptSegments;
             }
         }
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.pathsToEncrypt = value;
-                this.isPathsToEncryptValidated = false;
+                this.validatedPathsToEncrypt = null;
             }
         }
 
@@ -88,14 +88,14 @@ namespace Microsoft.Azure.Cosmos
 
         private void ValidatePathsToEncrypt()
         {
-            if (this.isPathsToEncryptValidated)
-            {
-                return;
-            }
-
             if (this.PathsToEncrypt == null)
             {
                 throw new ArgumentNullException(nameof(this.PathsToEncrypt));
+            }
+
+            if (this.validatedPathsToEncrypt != null && this.validatedPathsToEncrypt.SetEquals(this.PathsToEncrypt))
+            {
+                return;
             }
 
             foreach (string path in this.PathsToEncrypt)
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 this.pathsToEncryptSegments.Add(pathToEncrypt.Split('/'));
             }
 
-            this.isPathsToEncryptValidated = true;
+            this.validatedPathsToEncrypt = new HashSet<string>(this.PathsToEncrypt);
         }
     }
 }
