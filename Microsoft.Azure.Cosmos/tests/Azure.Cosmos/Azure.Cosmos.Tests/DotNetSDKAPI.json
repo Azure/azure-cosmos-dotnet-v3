@@ -399,155 +399,6 @@
       },
       "NestedTypes": {}
     },
-    "ContainerProperties": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.ConflictResolutionPolicy ConflictResolutionPolicy": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.ConflictResolutionPolicy get_ConflictResolutionPolicy()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.ConflictResolutionPolicy get_ConflictResolutionPolicy()"
-        },
-        "Azure.Cosmos.IndexingPolicy get_IndexingPolicy()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.IndexingPolicy get_IndexingPolicy()"
-        },
-        "Azure.Cosmos.IndexingPolicy IndexingPolicy": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy()"
-        },
-        "Azure.Cosmos.UniqueKeyPolicy UniqueKeyPolicy": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] get_PartitionKeyDefinitionVersion()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] get_PartitionKeyDefinitionVersion()"
-        },
-        "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] PartitionKeyDefinitionVersion": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Nullable`1[Azure.ETag] ETag": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
-        },
-        "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
-        },
-        "System.Nullable`1[System.DateTime] LastModified": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Nullable`1[System.Int32] DefaultTimeToLive": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Nullable`1[System.Int32] get_DefaultTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.Int32] get_DefaultTimeToLive()"
-        },
-        "System.String get_Id()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String get_Id()"
-        },
-        "System.String get_PartitionKeyPath()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String get_PartitionKeyPath()"
-        },
-        "System.String Id": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String PartitionKeyPath": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
-        },
-        "Void .ctor(System.String, System.String)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(System.String, System.String)"
-        },
-        "Void set_ConflictResolutionPolicy(Azure.Cosmos.ConflictResolutionPolicy)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_ConflictResolutionPolicy(Azure.Cosmos.ConflictResolutionPolicy)"
-        },
-        "Void set_DefaultTimeToLive(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DefaultTimeToLive(System.Nullable`1[System.Int32])"
-        },
-        "Void set_Id(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_Id(System.String)"
-        },
-        "Void set_IndexingPolicy(Azure.Cosmos.IndexingPolicy)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_IndexingPolicy(Azure.Cosmos.IndexingPolicy)"
-        },
-        "Void set_PartitionKeyDefinitionVersion(System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_PartitionKeyDefinitionVersion(System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion])"
-        },
-        "Void set_PartitionKeyPath(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_PartitionKeyPath(System.String)"
-        },
-        "Void set_UniqueKeyPolicy(Azure.Cosmos.UniqueKeyPolicy)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_UniqueKeyPolicy(Azure.Cosmos.UniqueKeyPolicy)"
-        }
-      },
-      "NestedTypes": {}
-    },
     "ContainerRequestOptions": {
       "Subclasses": {},
       "Members": {
@@ -574,46 +425,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_PopulateQuotaInfo(Boolean)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "ContainerResponse": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.ContainerProperties get_Value()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.Cosmos.ContainerProperties get_Value()"
-        },
-        "Azure.Cosmos.ContainerProperties Value": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.CosmosContainer Container": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.CosmosContainer get_Container()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.Cosmos.CosmosContainer get_Container()"
-        },
-        "Azure.Cosmos.CosmosContainer op_Implicit(Azure.Cosmos.ContainerResponse)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.CosmosContainer op_Implicit(Azure.Cosmos.ContainerResponse)"
-        },
-        "Azure.Response GetRawResponse()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Response GetRawResponse()"
         }
       },
       "NestedTypes": {}
@@ -658,22 +469,22 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.AccountProperties] ReadAccountAsync()"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosDatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosDatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__38))]": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosDatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__38))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosDatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Response] CreateDatabaseStreamAsync(Azure.Cosmos.DatabaseProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Response] CreateDatabaseStreamAsync(Azure.Cosmos.CosmosDatabaseProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Response] CreateDatabaseStreamAsync(Azure.Cosmos.DatabaseProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Response] CreateDatabaseStreamAsync(Azure.Cosmos.CosmosDatabaseProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Uri Endpoint": {
           "Type": "Property",
@@ -1079,20 +890,20 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] DeleteContainerAsync(Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] DeleteContainerAsync(Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] DeleteContainerAsync(Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] DeleteContainerAsync(Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] ReadContainerAsync(Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] ReadContainerAsync(Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] ReadContainerAsync(Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] ReadContainerAsync(Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] ReplaceContainerAsync(Azure.Cosmos.ContainerProperties, Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] ReplaceContainerAsync(Azure.Cosmos.CosmosContainerProperties, Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] ReplaceContainerAsync(Azure.Cosmos.ContainerProperties, Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] ReplaceContainerAsync(Azure.Cosmos.CosmosContainerProperties, Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Azure.Cosmos.ItemResponse`1[T]] CreateItemAsync[T](T, System.Nullable`1[Azure.Cosmos.PartitionKey], Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1154,10 +965,10 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Response] ReadItemStreamAsync(System.String, Azure.Cosmos.PartitionKey, Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Response] ReplaceContainerStreamAsync(Azure.Cosmos.ContainerProperties, Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Response] ReplaceContainerStreamAsync(Azure.Cosmos.CosmosContainerProperties, Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Response] ReplaceContainerStreamAsync(Azure.Cosmos.ContainerProperties, Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Response] ReplaceContainerStreamAsync(Azure.Cosmos.CosmosContainerProperties, Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Azure.Response] ReplaceItemStreamAsync(System.IO.Stream, System.String, Azure.Cosmos.PartitionKey, Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1173,6 +984,195 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] ReadThroughputAsync(System.Threading.CancellationToken)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosContainerProperties": {
+      "Subclasses": {},
+      "Members": {
+        "Azure.Cosmos.ConflictResolutionPolicy ConflictResolutionPolicy": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.ConflictResolutionPolicy get_ConflictResolutionPolicy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.ConflictResolutionPolicy get_ConflictResolutionPolicy()"
+        },
+        "Azure.Cosmos.IndexingPolicy get_IndexingPolicy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.IndexingPolicy get_IndexingPolicy()"
+        },
+        "Azure.Cosmos.IndexingPolicy IndexingPolicy": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy()"
+        },
+        "Azure.Cosmos.UniqueKeyPolicy UniqueKeyPolicy": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] get_PartitionKeyDefinitionVersion()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] get_PartitionKeyDefinitionVersion()"
+        },
+        "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] PartitionKeyDefinitionVersion": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] ETag": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
+        },
+        "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
+        },
+        "System.Nullable`1[System.DateTime] LastModified": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.Int32] DefaultTimeToLive": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.Int32] get_DefaultTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_DefaultTimeToLive()"
+        },
+        "System.String get_Id()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_Id()"
+        },
+        "System.String get_PartitionKeyPath()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_PartitionKeyPath()"
+        },
+        "System.String Id": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String PartitionKeyPath": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void .ctor(System.String, System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String, System.String)"
+        },
+        "Void set_ConflictResolutionPolicy(Azure.Cosmos.ConflictResolutionPolicy)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_ConflictResolutionPolicy(Azure.Cosmos.ConflictResolutionPolicy)"
+        },
+        "Void set_DefaultTimeToLive(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DefaultTimeToLive(System.Nullable`1[System.Int32])"
+        },
+        "Void set_Id(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_Id(System.String)"
+        },
+        "Void set_IndexingPolicy(Azure.Cosmos.IndexingPolicy)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_IndexingPolicy(Azure.Cosmos.IndexingPolicy)"
+        },
+        "Void set_PartitionKeyDefinitionVersion(System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_PartitionKeyDefinitionVersion(System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion])"
+        },
+        "Void set_PartitionKeyPath(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_PartitionKeyPath(System.String)"
+        },
+        "Void set_UniqueKeyPolicy(Azure.Cosmos.UniqueKeyPolicy)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_UniqueKeyPolicy(Azure.Cosmos.UniqueKeyPolicy)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosContainerResponse": {
+      "Subclasses": {},
+      "Members": {
+        "Azure.Cosmos.CosmosContainer Container": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.CosmosContainer get_Container()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Azure.Cosmos.CosmosContainer get_Container()"
+        },
+        "Azure.Cosmos.CosmosContainer op_Implicit(Azure.Cosmos.CosmosContainerResponse)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosContainer op_Implicit(Azure.Cosmos.CosmosContainerResponse)"
+        },
+        "Azure.Cosmos.CosmosContainerProperties get_Value()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Azure.Cosmos.CosmosContainerProperties get_Value()"
+        },
+        "Azure.Cosmos.CosmosContainerProperties Value": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Response GetRawResponse()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Response GetRawResponse()"
         }
       },
       "NestedTypes": {}
@@ -1235,35 +1235,35 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateContainerAsync(Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateContainerAsync(Azure.Cosmos.CosmosContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateContainerAsync(Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateContainerAsync(Azure.Cosmos.CosmosContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateContainerAsync(System.String, System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateContainerAsync(System.String, System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateContainerAsync(System.String, System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateContainerAsync(System.String, System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateContainerIfNotExistsAsync(Azure.Cosmos.CosmosContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateContainerIfNotExistsAsync(Azure.Cosmos.CosmosContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(System.String, System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateContainerIfNotExistsAsync(System.String, System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(System.String, System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateContainerIfNotExistsAsync(System.String, System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] DeleteAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosDatabaseResponse] DeleteAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] DeleteAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosDatabaseResponse] DeleteAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] ReadAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosDatabaseResponse] ReadAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] ReadAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosDatabaseResponse] ReadAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Azure.Cosmos.ThroughputResponse] ReadThroughputAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1285,10 +1285,10 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.UserResponse] UpsertUserAsync(System.String, Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Response] CreateContainerStreamAsync(Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Azure.Response] CreateContainerStreamAsync(Azure.Cosmos.CosmosContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Response] CreateContainerStreamAsync(Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Response] CreateContainerStreamAsync(Azure.Cosmos.CosmosContainerProperties, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Azure.Response] DeleteStreamAsync(Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1304,6 +1304,142 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] ReadThroughputAsync(System.Threading.CancellationToken)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosDatabaseProperties": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[Azure.ETag] ETag": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
+        },
+        "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
+        },
+        "System.Nullable`1[System.DateTime] LastModified": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String get_Id()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_Id()"
+        },
+        "System.String Id": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void .ctor(System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String)"
+        },
+        "Void set_Id(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_Id(System.String)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosDatabaseResponse": {
+      "Subclasses": {},
+      "Members": {
+        "Azure.Cosmos.CosmosDatabase Database": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.CosmosDatabase get_Database()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Azure.Cosmos.CosmosDatabase get_Database()"
+        },
+        "Azure.Cosmos.CosmosDatabase op_Implicit(Azure.Cosmos.CosmosDatabaseResponse)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosDatabase op_Implicit(Azure.Cosmos.CosmosDatabaseResponse)"
+        },
+        "Azure.Cosmos.CosmosDatabaseProperties get_Value()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Azure.Cosmos.CosmosDatabaseProperties get_Value()"
+        },
+        "Azure.Cosmos.CosmosDatabaseProperties Value": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Response GetRawResponse()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Response GetRawResponse()"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosDataType": {
+      "Subclasses": {},
+      "Members": {
+        "Azure.Cosmos.CosmosDataType LineString": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.CosmosDataType MultiPolygon": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.CosmosDataType Number": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.CosmosDataType Point": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.CosmosDataType Polygon": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Azure.Cosmos.CosmosDataType String": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
         }
       },
       "NestedTypes": {}
@@ -1372,6 +1508,297 @@
       },
       "NestedTypes": {}
     },
+    "CosmosRegions": {
+      "Subclasses": {},
+      "Members": {
+        "System.String AustraliaCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String AustraliaCentral2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String AustraliaEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String AustraliaSoutheast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String BrazilSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String CanadaCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String CanadaEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String CentralIndia": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String CentralUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String CentralUSEUAP": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ChinaEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ChinaEast2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ChinaNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ChinaNorth2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String EastAsia": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String EastUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String EastUS2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String EastUS2EUAP": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String FranceCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String FranceSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String GermanyCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String GermanyNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String GermanyNortheast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String GermanyWestCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String JapanEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String JapanWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String KoreaCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String KoreaSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorthCentralUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorthEurope": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorwayEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorwayWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SouthAfricaNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SouthAfricaWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SouthCentralUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SoutheastAsia": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SouthIndia": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SwitzerlandNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SwitzerlandWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String UAECentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String UAENorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String UKSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String UKWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USDoDCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USDoDEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USGovArizona": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USGovTexas": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USGovVirginia": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USNatEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USNatWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USSecEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String USSecWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String WestCentralUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String WestEurope": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String WestIndia": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String WestUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String WestUS2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        }
+      },
+      "NestedTypes": {}
+    },
     "CosmosUser": {
       "Subclasses": {},
       "Members": {
@@ -1424,142 +1851,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.UserResponse] ReplaceAsync(Azure.Cosmos.UserProperties, Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "DatabaseProperties": {
-      "Subclasses": {},
-      "Members": {
-        "System.Nullable`1[Azure.ETag] ETag": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
-        },
-        "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
-        },
-        "System.Nullable`1[System.DateTime] LastModified": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String get_Id()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String get_Id()"
-        },
-        "System.String Id": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
-        },
-        "Void .ctor(System.String)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(System.String)"
-        },
-        "Void set_Id(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_Id(System.String)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "DatabaseResponse": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.CosmosDatabase Database": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.CosmosDatabase get_Database()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.Cosmos.CosmosDatabase get_Database()"
-        },
-        "Azure.Cosmos.CosmosDatabase op_Implicit(Azure.Cosmos.DatabaseResponse)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.CosmosDatabase op_Implicit(Azure.Cosmos.DatabaseResponse)"
-        },
-        "Azure.Cosmos.DatabaseProperties get_Value()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.Cosmos.DatabaseProperties get_Value()"
-        },
-        "Azure.Cosmos.DatabaseProperties Value": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Response GetRawResponse()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Response GetRawResponse()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "DataType": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.DataType LineString": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.DataType MultiPolygon": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.DataType Number": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.DataType Point": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.DataType Polygon": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.DataType String": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
         }
       },
       "NestedTypes": {}
@@ -1639,10 +1930,10 @@
     "ContainerBuilder": {
       "Subclasses": {},
       "Members": {
-        "Azure.Cosmos.ContainerProperties Build()": {
+        "Azure.Cosmos.CosmosContainerProperties Build()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.ContainerProperties Build()"
+          "MethodInfo": "Azure.Cosmos.CosmosContainerProperties Build()"
         },
         "Azure.Cosmos.Fluent.ConflictResolutionDefinition WithConflictResolution()": {
           "Type": "Method",
@@ -1654,19 +1945,19 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.Fluent.UniqueKeyDefinition WithUniqueKey()"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>d__9))]": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateAsync(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>d__9))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32])"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateAsync(System.Nullable`1[System.Int32])"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>d__10))]": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>d__10))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])"
         }
       },
       "NestedTypes": {}
@@ -1674,10 +1965,10 @@
     "ContainerDefinition`1": {
       "Subclasses": {},
       "Members": {
-        "Azure.Cosmos.ContainerProperties Build()": {
+        "Azure.Cosmos.CosmosContainerProperties Build()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.ContainerProperties Build()"
+          "MethodInfo": "Azure.Cosmos.CosmosContainerProperties Build()"
         },
         "Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithIndexingPolicy()": {
           "Type": "Method",
@@ -2672,297 +2963,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Regions": {
-      "Subclasses": {},
-      "Members": {
-        "System.String AustraliaCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String AustraliaCentral2": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String AustraliaEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String AustraliaSoutheast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String BrazilSouth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String CanadaCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String CanadaEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String CentralIndia": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String CentralUS": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String CentralUSEUAP": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String ChinaEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String ChinaEast2": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String ChinaNorth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String ChinaNorth2": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String EastAsia": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String EastUS": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String EastUS2": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String EastUS2EUAP": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String FranceCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String FranceSouth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String GermanyCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String GermanyNorth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String GermanyNortheast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String GermanyWestCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String JapanEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String JapanWest": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String KoreaCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String KoreaSouth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String NorthCentralUS": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String NorthEurope": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String NorwayEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String NorwayWest": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String SouthAfricaNorth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String SouthAfricaWest": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String SouthCentralUS": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String SoutheastAsia": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String SouthIndia": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String SwitzerlandNorth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String SwitzerlandWest": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String UAECentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String UAENorth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String UKSouth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String UKWest": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USDoDCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USDoDEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USGovArizona": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USGovTexas": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USGovVirginia": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USNatEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USNatWest": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USSecEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String USSecWest": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String WestCentralUS": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String WestEurope": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String WestIndia": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String WestUS": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String WestUS2": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
         }
       },
       "NestedTypes": {}
