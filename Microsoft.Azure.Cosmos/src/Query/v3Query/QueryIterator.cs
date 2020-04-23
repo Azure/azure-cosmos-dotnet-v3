@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
@@ -75,17 +76,21 @@ namespace Microsoft.Azure.Cosmos.Query
                 case ExecutionEnvironment.Client:
                     if (continuationToken != null)
                     {
-                        if (!CosmosElement.TryParse(continuationToken, out requestContinuationToken))
+                        TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(continuationToken);
+                        if (tryParse.Failed)
                         {
                             return new QueryIterator(
                                 cosmosQueryContext,
                                 new QueryExecutionContextWithException(
                                     new MalformedContinuationTokenException(
-                                        $"Malformed Continuation Token: {continuationToken}")),
+                                        message: $"Malformed Continuation Token: {continuationToken}",
+                                        innerException: tryParse.Exception)),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
                                 queryRequestOptions,
                                 clientContext);
                         }
+
+                        requestContinuationToken = tryParse.Result;
                     }
                     else
                     {
