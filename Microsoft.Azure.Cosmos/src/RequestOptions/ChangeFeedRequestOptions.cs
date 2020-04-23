@@ -87,7 +87,10 @@ namespace Microsoft.Azure.Cosmos
                 HttpConstants.A_IMHeaderValues.IncrementalFeed);
         }
 
-        [Obsolete]
+        /// <summary>
+        /// IfMatchEtag is inherited from the base class but not used. 
+        /// </summary>
+        [Obsolete("IfMatchEtag is inherited from the base class but not used.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public new string IfMatchEtag
         {
@@ -95,7 +98,10 @@ namespace Microsoft.Azure.Cosmos
             set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfMatchEtag)} property.");
         }
 
-        [Obsolete]
+        /// <summary>
+        /// IfNoneMatchEtag is inherited from the base class but not used. 
+        /// </summary>
+        [Obsolete()]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public new string IfNoneMatchEtag
         {
