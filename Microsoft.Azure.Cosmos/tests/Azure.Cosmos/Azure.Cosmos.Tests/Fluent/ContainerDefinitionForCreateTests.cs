@@ -42,7 +42,7 @@ namespace Azure.Cosmos.Tests.Fluent
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task MissingPKForReplace_CallsReadAsync()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             mockContainerResponse
                 .Setup(c => c.Value)
                 .Returns(new CosmosContainerProperties() { PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { partitionKey } } });
@@ -69,7 +69,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 containerName,
                 null);
 
-            ContainerResponse response = await containerFluentDefinitionForCreate.CreateAsync();
+            CosmosContainerResponse response = await containerFluentDefinitionForCreate.CreateAsync();
 
             mockContainer.Verify(c => c.ReadContainerAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -77,7 +77,7 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithThroughput()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -109,7 +109,7 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithDefaultTimeToLiveTimeSpan()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -142,7 +142,7 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithDefaultTimeToLiveInt()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -175,7 +175,7 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithIndexingPolicy()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -211,7 +211,7 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithUniqueKey()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(

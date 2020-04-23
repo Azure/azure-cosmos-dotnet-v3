@@ -24,7 +24,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            ContainerResponse response = await this.database.CreateContainerAsync(
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 50000,
                 cancellationToken: this.cancellationToken);

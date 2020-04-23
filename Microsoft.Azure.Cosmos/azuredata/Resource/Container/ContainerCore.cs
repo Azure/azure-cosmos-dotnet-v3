@@ -65,7 +65,7 @@ namespace Azure.Cosmos
 
         public override Scripts.CosmosScripts Scripts { get; }
 
-        public override async Task<ContainerResponse> ReadContainerAsync(
+        public override async Task<CosmosContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -76,7 +76,7 @@ namespace Azure.Cosmos
             return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
-        public override Task<ContainerResponse> ReplaceContainerAsync(
+        public override Task<CosmosContainerResponse> ReplaceContainerAsync(
             CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -95,7 +95,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
-        public override Task<ContainerResponse> DeleteContainerAsync(
+        public override Task<CosmosContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {

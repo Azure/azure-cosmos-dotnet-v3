@@ -19,7 +19,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
         {
             await base.TestInit();
             string PartitionKey = "/id";
-            ContainerResponse response = await this.database.CreateContainerAsync(
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerProperties(id: "monitored", partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             this.Container = response;

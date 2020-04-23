@@ -302,7 +302,7 @@ namespace Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<ContainerResponse> CreateContainerAsync(
+        public abstract Task<CosmosContainerResponse> CreateContainerAsync(
                     CosmosContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -346,7 +346,7 @@ namespace Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<ContainerResponse> CreateContainerAsync(
+        public abstract Task<CosmosContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -413,7 +413,7 @@ namespace Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+        public abstract Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -458,7 +458,7 @@ namespace Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+        public abstract Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,

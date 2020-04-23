@@ -45,7 +45,7 @@ namespace Azure.Cosmos.EmulatorTests
             await base.TestInit();
             string PartitionKey = "/status";
             this.containerSettings = new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
-            ContainerResponse response = await this.database.CreateContainerAsync(
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -1022,7 +1022,7 @@ namespace Azure.Cosmos.EmulatorTests
             try
             {
                 // Create a container large enough to have at least 2 partitions
-                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                CosmosContainerResponse containerResponse = await this.database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk",
                     throughput: 15000);
@@ -1253,7 +1253,7 @@ namespace Azure.Cosmos.EmulatorTests
                 await NonPartitionedContainerHelper.CreateItemInNonPartitionedContainer(fixedContainer, nonPartitionItemId);
                 await NonPartitionedContainerHelper.CreateUndefinedPartitionItem((ContainerCore)this.Container, undefinedPartitionItemId);
 
-                ContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
+                CosmosContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
                 Assert.IsTrue(containerResponse.Value.PartitionKey.Paths.Count > 0);
                 Assert.AreEqual(PartitionKey.SystemKeyPath, containerResponse.Value.PartitionKey.Paths[0]);
 
@@ -1380,7 +1380,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 // Read the container metadata
-                ContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
+                CosmosContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
 
                 // Query items on the container that have no partition key value
                 int resultsFetched = 0;

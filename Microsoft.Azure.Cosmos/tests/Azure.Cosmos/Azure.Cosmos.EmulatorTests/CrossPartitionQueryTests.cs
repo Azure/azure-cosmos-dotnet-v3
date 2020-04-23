@@ -123,7 +123,7 @@ namespace Azure.Cosmos.EmulatorTests
             string partitionKey = "/id",
             Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
+            CosmosContainerResponse containerResponse = await this.CreatePartitionedContainer(
                 throughput: 25000,
                 partitionKey: partitionKey,
                 indexingPolicy: indexingPolicy);
@@ -140,7 +140,7 @@ namespace Azure.Cosmos.EmulatorTests
             string partitionKey = "/id",
             Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
+            CosmosContainerResponse containerResponse = await this.CreatePartitionedContainer(
                 throughput: 4000,
                 partitionKey: partitionKey,
                 indexingPolicy: indexingPolicy);
@@ -168,7 +168,7 @@ namespace Azure.Cosmos.EmulatorTests
             return this.database.GetContainer(containerName);
         }
 
-        private async Task<ContainerResponse> CreatePartitionedContainer(
+        private async Task<CosmosContainerResponse> CreatePartitionedContainer(
             int throughput,
             string partitionKey = "/id",
             Azure.Cosmos.IndexingPolicy indexingPolicy = null)
@@ -177,7 +177,7 @@ namespace Azure.Cosmos.EmulatorTests
             Response responseMessage = await this.database.ReadStreamAsync();
             Assert.AreEqual((int)HttpStatusCode.OK, responseMessage.Status);
 
-            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+            CosmosContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 new CosmosContainerProperties
                 {
                     Id = Guid.NewGuid().ToString() + "container",
@@ -528,7 +528,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                     await Task.WhenAll(queryTasks);
 
-                    List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
+                    List<Task<CosmosContainerResponse>> deleteContainerTasks = new List<Task<CosmosContainerResponse>>();
                     foreach (CosmosContainer container in collectionsAndDocuments.Select(tuple => tuple.Item1))
                     {
                         deleteContainerTasks.Add(container.DeleteContainerAsync());

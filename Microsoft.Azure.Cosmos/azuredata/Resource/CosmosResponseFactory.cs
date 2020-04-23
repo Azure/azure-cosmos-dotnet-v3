@@ -75,7 +75,7 @@ namespace Azure.Cosmos
                        serializer);
         }
 
-        internal Task<ContainerResponse> CreateContainerResponseAsync(
+        internal Task<CosmosContainerResponse> CreateContainerResponseAsync(
             CosmosContainer container,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
@@ -86,7 +86,7 @@ namespace Azure.Cosmos
                     cosmosResponseMessage,
                     this.propertiesSerializer);
 
-                return new ContainerResponse(
+                return new CosmosContainerResponse(
                     cosmosResponseMessage,
                     containerProperties,
                     container);

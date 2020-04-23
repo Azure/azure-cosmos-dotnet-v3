@@ -70,7 +70,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ContainerResponse> ReadContainerAsync(
+        public abstract Task<CosmosContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -127,7 +127,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ContainerResponse> ReplaceContainerAsync(
+        public abstract Task<CosmosContainerResponse> ReplaceContainerAsync(
             CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -180,7 +180,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ContainerResponse> DeleteContainerAsync(
+        public abstract Task<CosmosContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

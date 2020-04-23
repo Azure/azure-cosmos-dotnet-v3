@@ -145,7 +145,7 @@ namespace Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(
+        public override Task<CosmosContainerResponse> CreateContainerAsync(
                     CosmosContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -167,7 +167,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response, cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(
+        public override Task<CosmosContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -193,7 +193,7 @@ namespace Azure.Cosmos
                 cancellationToken);
         }
 
-        public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+        public override async Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -210,7 +210,7 @@ namespace Azure.Cosmos
             Response response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
             if (response.Status != (int)HttpStatusCode.NotFound)
             {
-                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), Task.FromResult(response), cancellationToken);
+                CosmosContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), Task.FromResult(response), cancellationToken);
                 if (!retrivedContainerResponse.Value.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
                 {
                     throw new ArgumentException(
@@ -237,7 +237,7 @@ namespace Azure.Cosmos
             return await container.ReadContainerAsync(cancellationToken: cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+        public override Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,

@@ -24,7 +24,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
             await base.ChangeFeedTestInit();
 
             string PartitionKey = "/pk";
-            ContainerResponse response = await this.database.CreateContainerAsync(
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);

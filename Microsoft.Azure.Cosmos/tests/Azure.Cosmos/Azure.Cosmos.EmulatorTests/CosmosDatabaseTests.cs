@@ -283,7 +283,7 @@ namespace Azure.Cosmos.EmulatorTests
             // Database must have a container before it can be scaled
             string containerId = Guid.NewGuid().ToString();
             string partitionPath = "/users";
-            ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath, throughput: null);
+            CosmosContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath, throughput: null);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
 
             ThroughputResponse replaceThroughputResponse = await cosmosDatabase.ReplaceThroughputAsync(readThroughputResponse.Value.Throughput.Value + 1000);

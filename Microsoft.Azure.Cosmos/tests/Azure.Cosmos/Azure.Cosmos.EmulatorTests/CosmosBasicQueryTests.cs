@@ -111,7 +111,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                ContainerResponse createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer1", partitionKeyPath: "/pk");
+                CosmosContainerResponse createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer1", partitionKeyPath: "/pk");
                 createdIds.Add(createResponse.Container.Id);
 
                 createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer2", partitionKeyPath: "/pk2");
@@ -468,7 +468,7 @@ namespace Azure.Cosmos.EmulatorTests
                 Assert.AreEqual((int)HttpStatusCode.Created, createUserResponse.GetRawResponse().Status);
                 user = (UserCore)createUserResponse.User;
 
-                ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                CosmosContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
                 CosmosContainer container = createContainerResponse.Container;
                 PermissionResponse permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission1", PermissionMode.All, container));
                 createdContainerIds.Add(createContainerResponse.Container.Id);

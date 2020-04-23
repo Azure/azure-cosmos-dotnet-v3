@@ -62,7 +62,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             };
 
-            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cp);
+            CosmosContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cp);
             CosmosContainer container = response;
             CosmosContainerProperties existingCosmosContainerProperties = response.Value;
 
@@ -78,7 +78,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             while(true)
             {
-                ContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
+                CosmosContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
                 Assert.IsTrue(readResponse.GetRawResponse().Headers.TryGetValue("x-ms-documentdb-collection-index-transformation-progress", out string indexTransformationStatus));
                 Assert.IsNotNull(indexTransformationStatus);
 
@@ -94,7 +94,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task ContainerContractTest()
         {
-            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(new Guid().ToString(), "/id");
+            CosmosContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(new Guid().ToString(), "/id");
             this.ValidateCreateContainerResponseContract(response);
         }
 
@@ -117,7 +117,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -173,7 +173,7 @@ namespace Azure.Cosmos.EmulatorTests
             CosmosContainerProperties settings = new CosmosContainerProperties(containerName, partitionKeyPath);
             settings.PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V1;
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
 
@@ -190,7 +190,7 @@ namespace Azure.Cosmos.EmulatorTests
             partitionKeyDefinition.Paths.Add(partitionKeyPath);
 
             CosmosContainerProperties settings = new CosmosContainerProperties(containerName, partitionKeyDefinition);
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -207,7 +207,7 @@ namespace Azure.Cosmos.EmulatorTests
             string partitionKeyPath1 = "/users";
 
             CosmosContainerProperties settings = new CosmosContainerProperties(containerName, partitionKeyPath1);
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -309,7 +309,7 @@ namespace Azure.Cosmos.EmulatorTests
             partitionKeyDefinition.Paths.Add("/test");
 
             CosmosContainerProperties settings = new CosmosContainerProperties(containerName, partitionKeyDefinition);
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
 
             Assert.Fail("Multiple partition keys should have caused an exception.");
         }
@@ -341,7 +341,7 @@ namespace Azure.Cosmos.EmulatorTests
             CosmosContainerProperties settings = new CosmosContainerProperties() { Id = containerName };
             try
             {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
+                CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
                 Assert.Fail("Create should throw null ref exception");
             }
             catch (ArgumentNullException ae)
@@ -351,7 +351,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+                CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
                 Assert.Fail("Create should throw null ref exception");
             }
             catch (ArgumentNullException ae)
@@ -361,7 +361,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(id: containerName, partitionKeyPath: null);
+                CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(id: containerName, partitionKeyPath: null);
                 Assert.Fail("Create should throw null ref exception");
             }
             catch (ArgumentNullException ae)
@@ -371,7 +371,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(id: containerName, partitionKeyPath: null);
+                CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(id: containerName, partitionKeyPath: null);
                 Assert.Fail("Create should throw null ref exception");
             }
             catch (ArgumentNullException ae)
@@ -386,7 +386,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
@@ -406,7 +406,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
@@ -439,7 +439,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
@@ -479,7 +479,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                ContainerResponse containerResponse = await container.DeleteContainerAsync();
+                CosmosContainerResponse containerResponse = await container.DeleteContainerAsync();
                 Assert.Fail();
             }
             catch (CosmosException ex)
@@ -494,7 +494,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             CosmosContainer container = this.cosmosDatabase.GetContainer(containerName);
 
@@ -511,7 +511,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             CosmosContainer container = this.cosmosDatabase.GetContainer(containerName);
 
@@ -617,7 +617,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             CosmosContainer container = containerResponse;
             CosmosContainerProperties containerSettings = containerResponse;
             Assert.IsNotNull(container);
@@ -630,7 +630,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.IsNull(containerSettings);
         }
 
-        private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
+        private void ValidateCreateContainerResponseContract(CosmosContainerResponse containerResponse)
         {
             Assert.IsNotNull(containerResponse);
             ResponseHeaders headers = containerResponse.GetRawResponse().Headers;

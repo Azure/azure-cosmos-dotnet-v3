@@ -343,7 +343,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             Cosmos.CosmosDatabase cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
-            ContainerResponse cosmosContainerResponse = await cosmosDatabase.CreateContainerAsync(containerSetting);
+            CosmosContainerResponse cosmosContainerResponse = await cosmosDatabase.CreateContainerAsync(containerSetting);
 
             Assert.IsTrue(IndexingPolicyTests.indexingPolicyEqualityComparer.Equals(indexingPolicy, containerSetting.IndexingPolicy));
         }

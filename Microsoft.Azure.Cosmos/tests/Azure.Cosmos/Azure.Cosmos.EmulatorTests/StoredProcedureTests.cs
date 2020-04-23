@@ -28,7 +28,7 @@ namespace Azure.Cosmos.EmulatorTests
             await base.TestInit();
 
             string containerName = Guid.NewGuid().ToString();
-            ContainerResponse cosmosContainerResponse = await this.database
+            CosmosContainerResponse cosmosContainerResponse = await this.database
                 .CreateContainerIfNotExistsAsync(containerName, "/user");
             this.container = cosmosContainerResponse;
             this.scripts = this.container.Scripts;
