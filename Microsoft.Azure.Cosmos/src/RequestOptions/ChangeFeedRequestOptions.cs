@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// IfNoneMatchEtag is inherited from the base class but not used. 
         /// </summary>
-        [Obsolete()]
+        [Obsolete("IfNoneMatchEtag is inherited from the base class but not used.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public new string IfNoneMatchEtag
         {
