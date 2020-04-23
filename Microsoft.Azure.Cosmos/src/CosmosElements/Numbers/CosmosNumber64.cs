@@ -1,6 +1,9 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 33
+
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;
@@ -45,6 +48,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return cosmosNumberVisitor.Visit(this, input);
         }
 
+        public override void WriteTo(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException($"{nameof(jsonWriter)}");
+            }
+
+            jsonWriter.WriteNumber64Value(this.GetValue());
+        }
+
         public static CosmosNumber64 Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
@@ -57,9 +70,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return new EagerCosmosNumber64(number);
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore SA1600 // Elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

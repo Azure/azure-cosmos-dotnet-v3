@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     case JsonTokenType.Number:
                         Number64 numberValue = (token as JsonNumberToken).Value;
                         stopwatch.Start();
-                        jsonWriter.WriteNumberValue(numberValue);
+                        jsonWriter.WriteNumber64Value(numberValue);
                         stopwatch.Stop();
                         break;
                     case JsonTokenType.True:

@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     item = CosmosBoolean.Create(true);
                     break;
 
-                case JsonNodeType.Number:
+                case JsonNodeType.Number64:
                     item = CosmosNumber64.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
