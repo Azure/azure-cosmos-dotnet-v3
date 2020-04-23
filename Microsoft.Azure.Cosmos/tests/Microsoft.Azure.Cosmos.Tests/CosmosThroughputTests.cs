@@ -14,8 +14,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AutoscaleThroughputSerializationTest()
         {
-            ThroughputProperties autoscaleThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(1000);
-            Assert.AreEqual(1000, autoscaleThroughputProperties.MaxAutoscaleThroughput);
+            ThroughputProperties autoscaleThroughputProperties = ThroughputProperties.CreateAutoscaleMaxThroughput(1000);
+            Assert.AreEqual(1000, autoscaleThroughputProperties.AutoscaleMaxThroughput);
             Assert.IsNull(autoscaleThroughputProperties.Throughput);
 
             using (Stream stream = MockCosmosUtil.Serializer.ToStream<ThroughputProperties>(autoscaleThroughputProperties))
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (Stream stream = MockCosmosUtil.Serializer.ToStream<ThroughputProperties>(autoscaleThroughputProperties))
             {
                 ThroughputProperties fromStream = MockCosmosUtil.Serializer.FromStream<ThroughputProperties>(stream);
-                Assert.AreEqual(1000, fromStream.MaxAutoscaleThroughput);
+                Assert.AreEqual(1000, fromStream.AutoscaleMaxThroughput);
                 Assert.IsNull(fromStream.Throughput); ;
             }
         }

@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        int? MaxAutoscaleThroughput => this.Content?.OfferAutoscaleSettings?.MaxThroughput;
+        int? AutoscaleMaxThroughput => this.Content?.OfferAutoscaleSettings?.MaxThroughput;
 
         /// <summary>
         /// The amount to increment if the maximum RUs is getting throttled.
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        static ThroughputProperties CreateAutoscaleThroughput(
+        static ThroughputProperties CreateAutoscaleMaxThroughput(
             int maxAutoscaleThroughput)
         {
             return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
