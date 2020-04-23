@@ -77,7 +77,7 @@ namespace Azure.Cosmos
         }
 
         public override Task<ContainerResponse> ReplaceContainerAsync(
-            ContainerProperties containerProperties,
+            CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -184,7 +184,7 @@ namespace Azure.Cosmos
         }
 
         public override async Task<Response> ReplaceContainerStreamAsync(
-            ContainerProperties containerProperties,
+            CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -205,8 +205,8 @@ namespace Azure.Cosmos
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
         /// </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing the <see cref="ContainerProperties"/> for this container.</returns>
-        internal async Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerProperties"/> for this container.</returns>
+        internal async Task<CosmosContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             try
@@ -222,7 +222,7 @@ namespace Azure.Cosmos
         // Name based look-up, needs re-computation and can't be cached
         internal async Task<string> GetRIDAsync(CancellationToken cancellationToken)
         {
-            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
+            CosmosContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             return containerProperties?.ResourceId;
         }
 
@@ -239,7 +239,7 @@ namespace Azure.Cosmos
         /// <returns>Returns the partition key path</returns>
         internal virtual async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
+            CosmosContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             if (containerProperties == null)
             {
                 throw new ArgumentOutOfRangeException($"Container {this.LinkUri.ToString()} not found");
@@ -265,7 +265,7 @@ namespace Azure.Cosmos
         /// </remarks>
         internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
+            CosmosContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             return containerProperties.GetNoneValue();
         }
 

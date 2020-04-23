@@ -34,7 +34,7 @@ namespace Azure.Cosmos.EmulatorTests
     public class CosmosItemTests : BaseCosmosClientHelper
     {
         private CosmosContainer Container = null;
-        private ContainerProperties containerSettings = null;
+        private CosmosContainerProperties containerSettings = null;
 
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
@@ -44,7 +44,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            this.containerSettings = new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
                 cancellationToken: this.cancellationToken);

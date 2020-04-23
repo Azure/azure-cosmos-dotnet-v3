@@ -82,7 +82,7 @@ namespace Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                ContainerProperties containerProperties = CosmosResponseFactory.ToObjectInternal<ContainerProperties>(
+                CosmosContainerProperties containerProperties = CosmosResponseFactory.ToObjectInternal<CosmosContainerProperties>(
                     cosmosResponseMessage,
                     this.propertiesSerializer);
 

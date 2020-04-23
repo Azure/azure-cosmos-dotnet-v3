@@ -7,7 +7,7 @@ namespace Azure.Cosmos
     /// <summary>
     /// The cosmos container response
     /// </summary>
-    public class ContainerResponse : Response<ContainerProperties>
+    public class ContainerResponse : Response<CosmosContainerProperties>
     {
         private readonly Response rawResponse;
 
@@ -25,7 +25,7 @@ namespace Azure.Cosmos
         /// </summary>
         internal ContainerResponse(
             Response response,
-            ContainerProperties containerProperties,
+            CosmosContainerProperties containerProperties,
             CosmosContainer container)
         {
             this.rawResponse = response;
@@ -40,7 +40,7 @@ namespace Azure.Cosmos
         public virtual CosmosContainer Container { get; private set; }
 
         /// <inheritdoc/>
-        public override ContainerProperties Value { get; }
+        public override CosmosContainerProperties Value { get; }
 
         /// <inheritdoc/>
         public override Response GetRawResponse() => this.rawResponse;

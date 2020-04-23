@@ -121,18 +121,18 @@ namespace Azure.Cosmos.EmulatorTests
                 createdIds.Add(createResponse.Container.Id);
 
                 //Read All
-                List<ContainerProperties> results = await this.ToListAsync(
+                List<CosmosContainerProperties> results = await this.ToListAsync(
                     database.GetContainerQueryStreamIterator,
-                    database.GetContainerQueryIterator<ContainerProperties>,
+                    database.GetContainerQueryIterator<CosmosContainerProperties>,
                     null,
                     CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
                 //Basic query
-                List<ContainerProperties> queryResults = await this.ToListAsync(
+                List<CosmosContainerProperties> queryResults = await this.ToListAsync(
                     database.GetContainerQueryStreamIterator,
-                    database.GetContainerQueryIterator<ContainerProperties>,
+                    database.GetContainerQueryIterator<CosmosContainerProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryContainer\")",
                     CosmosBasicQueryTests.RequestOptions);
 

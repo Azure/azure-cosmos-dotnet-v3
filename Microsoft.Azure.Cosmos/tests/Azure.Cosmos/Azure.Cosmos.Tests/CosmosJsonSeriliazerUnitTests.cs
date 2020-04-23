@@ -129,7 +129,7 @@ namespace Azure.Cosmos.Tests
             mockUserJsonSerializer.VerifyAll();
 
             // Test the system specified response
-            ContainerProperties containerSettings = new ContainerProperties("mockId", "/pk");
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties("mockId", "/pk");
             DatabaseProperties databaseSettings = new DatabaseProperties()
             {
                 Id = "mock"
@@ -151,7 +151,7 @@ namespace Azure.Cosmos.Tests
             };
 
             mockDefaultJsonSerializer.Setup(x => x.FromStream<DatabaseProperties>(databaseResponse.ContentStream)).Returns(databaseSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<ContainerProperties>(containerResponse.ContentStream)).Returns(containerSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosContainerProperties>(containerResponse.ContentStream)).Returns(containerSettings);
 
             Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
             Mock<CosmosDatabase> mockDatabase = new Mock<CosmosDatabase>();

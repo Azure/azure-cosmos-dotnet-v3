@@ -146,7 +146,7 @@ namespace Azure.Cosmos
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
-                    ContainerProperties containerProperties,
+                    CosmosContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
@@ -184,7 +184,7 @@ namespace Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            ContainerProperties containerProperties = new ContainerProperties(id, partitionKeyPath);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id, partitionKeyPath);
 
             return this.CreateContainerAsync(
                 containerProperties,
@@ -194,7 +194,7 @@ namespace Azure.Cosmos
         }
 
         public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
-            ContainerProperties containerProperties,
+            CosmosContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -254,7 +254,7 @@ namespace Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            ContainerProperties containerProperties = new ContainerProperties(id, partitionKeyPath);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id, partitionKeyPath);
             return this.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, cancellationToken);
         }
 
@@ -272,7 +272,7 @@ namespace Azure.Cosmos
         }
 
         public override Task<Response> CreateContainerStreamAsync(
-            ContainerProperties containerProperties,
+            CosmosContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -514,7 +514,7 @@ namespace Azure.Cosmos
             return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
-        internal void ValidateContainerProperties(ContainerProperties containerProperties)
+        internal void ValidateContainerProperties(CosmosContainerProperties containerProperties)
         {
             containerProperties.ValidateRequiredProperties();
             this.ClientContext.ValidateResource(containerProperties.Id);

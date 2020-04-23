@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
+    using ContainerProperties = global::Azure.Cosmos.CosmosContainerProperties;
 
     /// <summary>
     /// Provides a client-side logical representation for the Azure Cosmos DB service.

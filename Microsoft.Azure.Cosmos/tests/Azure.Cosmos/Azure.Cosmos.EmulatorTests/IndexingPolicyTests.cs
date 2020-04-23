@@ -323,7 +323,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await cosmosClient.CreateDatabaseIfNotExistsAsync(database.Id);
             Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            ContainerProperties cosmosContainerSettings = new ContainerProperties()
+            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
@@ -335,7 +335,7 @@ namespace Azure.Cosmos.EmulatorTests
         private static async Task RoundTripWithLocal(Cosmos.IndexingPolicy indexingPolicy)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-            ContainerProperties containerSetting = new ContainerProperties()
+            CosmosContainerProperties containerSetting = new CosmosContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,

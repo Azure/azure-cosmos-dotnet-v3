@@ -10,6 +10,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+#if AZURECORE
+    using ContainerProperties = CosmosContainerProperties;
+#endif
 
     internal sealed class ChangeFeedProcessorCore<T> : ChangeFeedProcessor
     {

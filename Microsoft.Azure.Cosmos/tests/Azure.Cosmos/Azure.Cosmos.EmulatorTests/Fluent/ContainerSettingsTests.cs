@@ -38,7 +38,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task ContainerContractTest()
         {
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/users")
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(Guid.NewGuid().ToString(), "/users")
             {
                 IndexingPolicy = new IndexingPolicy()
                 {
@@ -90,7 +90,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             CosmosTextJsonSerializer serializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
             Stream stream = serializer.ToStream(containerProperties);
-            ContainerProperties deserialziedTest = serializer.FromStream<ContainerProperties>(stream);
+            CosmosContainerProperties deserialziedTest = serializer.FromStream<CosmosContainerProperties>(stream);
 
             ContainerResponse response = await this.database.CreateContainerAsync(containerProperties);
             Assert.IsNotNull(response);
@@ -98,7 +98,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.IsNotNull(response.GetRawResponse().Headers.GetActivityId());
             Assert.IsTrue(response.GetRawResponse().Headers.GetRequestCharge() > 0);
 
-            ContainerProperties responseProperties = response.Value;
+            CosmosContainerProperties responseProperties = response.Value;
             Assert.IsNotNull(responseProperties.Id);
             Assert.IsNotNull(responseProperties.ResourceId);
             Assert.IsNotNull(responseProperties.ETag);
@@ -127,7 +127,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task ContainerNegativeSpatialIndexTest()
         {
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/users")
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(Guid.NewGuid().ToString(), "/users")
             {
                 IndexingPolicy = new IndexingPolicy()
                 {
@@ -187,7 +187,7 @@ namespace Azure.Cosmos.EmulatorTests
 
         //    // Verify v3 can add composite indexes and update the container
         //    Container container = this.database.GetContainer(containerName);
-        //    ContainerProperties containerProperties = await container.ReadContainerAsync();
+        //    CosmosContainerProperties containerProperties = await container.ReadContainerAsync();
         //    string cPath0 = "/address/city";
         //    string cPath1 = "/address/state";
         //    containerProperties.IndexingPolicy.CompositeIndexes.Add(new Collection<CompositePath>()
@@ -211,7 +211,7 @@ namespace Azure.Cosmos.EmulatorTests
         //            SpatialTypes = new Collection<SpatialType>() { SpatialType.Point }
         //        });
 
-        //    ContainerProperties propertiesAfterReplace = await container.ReplaceContainerAsync(containerProperties);
+        //    CosmosContainerProperties propertiesAfterReplace = await container.ReplaceContainerAsync(containerProperties);
         //    Assert.AreEqual(0, propertiesAfterReplace.IndexingPolicy.IncludedPaths.First().Indexes.Count);
         //    Assert.AreEqual(1, propertiesAfterReplace.IndexingPolicy.CompositeIndexes.Count);
         //    Collection<CompositePath> compositePaths = propertiesAfterReplace.IndexingPolicy.CompositeIndexes.First();
@@ -314,7 +314,7 @@ namespace Azure.Cosmos.EmulatorTests
                 Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
                 Assert.AreEqual(containerName, containerResponse.Value.Id);
                 Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
-                ContainerProperties containerSettings = containerResponse.Value;
+                CosmosContainerProperties containerSettings = containerResponse.Value;
                 Assert.IsNotNull(containerSettings.ConflictResolutionPolicy);
                 Assert.AreEqual(ConflictResolutionMode.LastWriterWins, containerSettings.ConflictResolutionPolicy.Mode);
                 Assert.AreEqual("/lww", containerSettings.ConflictResolutionPolicy.ResolutionPath);
@@ -476,7 +476,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
                 CosmosContainer container = containerResponse;
-                ContainerProperties responseSettings = containerResponse;
+                CosmosContainerProperties responseSettings = containerResponse;
 
                 Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
 

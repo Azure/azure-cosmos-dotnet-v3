@@ -224,9 +224,9 @@ namespace Azure.Cosmos.EmulatorTests
         public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, Cosmos.CosmosDatabase database)
         {
             //Delete them in chunks of 10.
-            AsyncPageable<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+            AsyncPageable<CosmosContainerProperties> resultSetIterator = database.GetContainerQueryIterator<CosmosContainerProperties>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
             List<Task> deleteCollectionTasks = new List<Task>(10);
-            await foreach (ContainerProperties container in resultSetIterator)
+            await foreach (CosmosContainerProperties container in resultSetIterator)
             {
                 Logger.LogLine("Deleting Collection with following info Id:{0}, database Id: {1}", container.Id, database.Id);
                 deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.GetContainer(container.Id).DeleteContainerAsync()));

@@ -42,12 +42,12 @@ namespace Azure.Cosmos
         public abstract Scripts.CosmosScripts Scripts { get; }
 
         /// <summary>
-        /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Reads a <see cref="CosmosContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="Response"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="Response"/> which wraps a <see cref="CosmosContainerProperties"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -75,7 +75,7 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Reads a <see cref="CosmosContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -95,13 +95,13 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Replace a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Replace a <see cref="CosmosContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
+        /// <param name="containerProperties">The <see cref="CosmosContainerProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="Response"/> which wraps a <see cref="ContainerProperties"/> containing the replace resource record.
+        /// A <see cref="Task"/> containing a <see cref="Response"/> which wraps a <see cref="CosmosContainerProperties"/> containing the replace resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -128,14 +128,14 @@ namespace Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> ReplaceContainerAsync(
-            ContainerProperties containerProperties,
+            CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Replace a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Replace a <see cref="CosmosContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="containerProperties">The <see cref="ContainerProperties"/>.</param>
+        /// <param name="containerProperties">The <see cref="CosmosContainerProperties"/>.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -152,12 +152,12 @@ namespace Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<Response> ReplaceContainerStreamAsync(
-            ContainerProperties containerProperties,
+            CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Delete a <see cref="ContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="CosmosContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -185,7 +185,7 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Delete a <see cref="ContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="CosmosContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>

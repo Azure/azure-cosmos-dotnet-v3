@@ -17,7 +17,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void DefaultIncludesPopulated()
         {
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties("TestContainer", "/partitionKey");
             Assert.IsNotNull(containerSettings.IndexingPolicy);
 
             containerSettings.IndexingPolicy = new IndexingPolicy();
@@ -35,9 +35,9 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateSerialization()
         {
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
-            Stream basic = MockCosmosUtil.Serializer.ToStream<ContainerProperties>(containerSettings);
-            ContainerProperties response = MockCosmosUtil.Serializer.FromStream<ContainerProperties>(basic);
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties("TestContainer", "/partitionKey");
+            Stream basic = MockCosmosUtil.Serializer.ToStream<CosmosContainerProperties>(containerSettings);
+            CosmosContainerProperties response = MockCosmosUtil.Serializer.FromStream<CosmosContainerProperties>(basic);
             Assert.AreEqual(containerSettings.Id, response.Id);
             Assert.AreEqual(containerSettings.PartitionKeyPath, response.PartitionKeyPath);
         }
@@ -45,7 +45,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void DefaultIncludesShouldNotBePopulated()
         {
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties("TestContainer", "/partitionKey");
             Assert.IsNotNull(containerSettings.IndexingPolicy);
 
             // Any exclude path should not auto-generate default indexing
@@ -70,7 +70,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void DefaultSameAsDocumentCollection()
         {
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties("TestContainer", "/partitionKey");
 
             Microsoft.Azure.Documents.DocumentCollection dc = new Microsoft.Azure.Documents.DocumentCollection()
             {
@@ -89,7 +89,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void DefaultIndexingPolicySameAsDocumentCollection()
         {
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey")
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties("TestContainer", "/partitionKey")
             {
                 IndexingPolicy = new IndexingPolicy()
             };
@@ -124,7 +124,7 @@ namespace Azure.Cosmos.Tests
             }
         }
 
-        private static void AssertSerializedPayloads(ContainerProperties settings, Microsoft.Azure.Documents.DocumentCollection documentCollection)
+        private static void AssertSerializedPayloads(CosmosContainerProperties settings, Microsoft.Azure.Documents.DocumentCollection documentCollection)
         {
             // HAKC: Work-around till BE fixes defautls 
             settings.ValidateRequiredProperties();

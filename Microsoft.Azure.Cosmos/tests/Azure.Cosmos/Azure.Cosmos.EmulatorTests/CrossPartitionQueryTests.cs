@@ -105,7 +105,7 @@ namespace Azure.Cosmos.EmulatorTests
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(apiVersion);
         }
 
-        private async Task<IReadOnlyList<PartitionKeyRange>> GetPartitionKeyRanges(ContainerProperties container)
+        private async Task<IReadOnlyList<PartitionKeyRange>> GetPartitionKeyRanges(CosmosContainerProperties container)
         {
             Range<string> fullRange = new Range<string>(
                 PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -178,7 +178,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual((int)HttpStatusCode.OK, responseMessage.Status);
 
             ContainerResponse containerResponse = await this.database.CreateContainerAsync(
-                new ContainerProperties
+                new CosmosContainerProperties
                 {
                     Id = Guid.NewGuid().ToString() + "container",
                     IndexingPolicy = indexingPolicy == null ? new Cosmos.IndexingPolicy
@@ -3017,7 +3017,7 @@ namespace Azure.Cosmos.EmulatorTests
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
             IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
 
-            ContainerProperties containerSettings = await container.ReadContainerAsync();
+            CosmosContainerProperties containerSettings = await container.ReadContainerAsync();
             foreach (Document document in documents)
             {
                 IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
@@ -3809,7 +3809,7 @@ namespace Azure.Cosmos.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            ContainerProperties containerSettings = await container.ReadContainerAsync();
+            CosmosContainerProperties containerSettings = await container.ReadContainerAsync();
             // For every composite index
             foreach (Collection<Cosmos.CompositePath> compositeIndex in containerSettings.IndexingPolicy.CompositeIndexes)
             {

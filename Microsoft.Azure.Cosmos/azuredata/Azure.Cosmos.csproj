@@ -99,9 +99,6 @@
     <Compile Include="..\src\RetryOptions.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Regions.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\DocumentClientEventSource.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
