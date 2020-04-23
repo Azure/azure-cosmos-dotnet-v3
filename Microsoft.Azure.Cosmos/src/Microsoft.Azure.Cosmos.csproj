@@ -7,6 +7,8 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+    <ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
+    <ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
     <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
     <Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
@@ -59,6 +61,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ClientResources.resx</DependentUpon>
     </Compile>
+    <Compile Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -103,6 +110,13 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
@@ -114,7 +128,7 @@
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
     <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
 </Project>

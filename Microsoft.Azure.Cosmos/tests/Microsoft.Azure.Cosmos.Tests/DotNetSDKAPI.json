@@ -1456,6 +1456,18 @@
           ],
           "MethodInfo": null
         },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] ApplicationPreferredRegions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] get_ApplicationPreferredRegions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_ApplicationPreferredRegions()"
+        },
         "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] CustomHandlers[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
           "Type": "Property",
           "Attributes": [
@@ -1622,6 +1634,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ApplicationName(System.String)"
+        },
+        "Void set_ApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])"
         },
         "Void set_ApplicationRegion(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -7532,9 +7551,11 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Int32] get_Throughput()"
         },
-        "System.Nullable`1[System.Int32] Throughput": {
+        "System.Nullable`1[System.Int32] Throughput[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
           "MethodInfo": null
         },
         "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
@@ -7564,11 +7585,6 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}

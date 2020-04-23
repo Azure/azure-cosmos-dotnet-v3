@@ -123,6 +123,158 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        Task<ResponseMessage> CreateContainerStreamAsync(
+            ContainerProperties containerProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (containerProperties == null)
+            {
+                throw new ArgumentNullException(nameof(containerProperties));
+            }
+
+            this.ValidateContainerProperties(containerProperties);
+
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(containerProperties);
+            return this.ProcessCollectionCreateAsync(
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                throughputProperties: throughputProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        Task<ContainerResponse> CreateContainerAsync(
+            ContainerProperties containerProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (containerProperties == null)
+            {
+                throw new ArgumentNullException(nameof(containerProperties));
+            }
+
+            this.ValidateContainerProperties(containerProperties);
+
+            Task<ResponseMessage> response = this.ProcessCollectionCreateAsync(
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                throughputProperties: throughputProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+            ContainerProperties containerProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (containerProperties == null)
+            {
+                throw new ArgumentNullException(nameof(containerProperties));
+            }
+
+            this.ValidateContainerProperties(containerProperties);
+
+            Container container = this.GetContainer(containerProperties.Id);
+            ResponseMessage readResponse = await container.ReadContainerStreamAsync(
+                cancellationToken: cancellationToken);
+
+            if (readResponse.StatusCode != HttpStatusCode.NotFound)
+            {
+                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(
+                    container,
+                    Task.FromResult(readResponse));
+                if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                {
+                    throw new ArgumentException(
+                        string.Format(
+                            ClientResources.PartitionKeyPathConflict,
+                            containerProperties.PartitionKeyPath,
+                            containerProperties.Id,
+                            retrivedContainerResponse.Resource.PartitionKeyPath),
+                        nameof(containerProperties.PartitionKey));
+                }
+
+                return retrivedContainerResponse;
+            }
+
+            this.ValidateContainerProperties(containerProperties);
+            ResponseMessage createResponse = await this.CreateContainerStreamAsync(
+                containerProperties,
+                throughputProperties,
+                requestOptions,
+                cancellationToken);
+
+            // Merge the previous message diagnostics
+            createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
+
+            if (readResponse.StatusCode != HttpStatusCode.Conflict)
+            {
+                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(createResponse));
+            }
+
+            // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
+            // so for the remaining ones we should do a Read instead of throwing Conflict exception
+            ResponseMessage readResponseAfterCreate = await container.ReadContainerStreamAsync(
+                cancellationToken: cancellationToken);
+
+            // Merge the previous message diagnostics
+            createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
+            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(readResponseAfterCreate));
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        async Task<ThroughputResponse> ReplaceThroughputAsync(
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputPropertiesAsync(
+                targetRID: rid,
+                throughputProperties: throughputProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        internal async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputPropertiesIfExistsAsync(
+                targetRID: rid,
+                throughputProperties: throughputProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
         public override Task<ResponseMessage> ReadStreamAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -416,7 +568,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.ClientContext,
                resourceLink: this.LinkUri,
                resourceType: ResourceType.Collection,
@@ -470,7 +622,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.ClientContext,
                resourceLink: this.LinkUri,
                resourceType: ResourceType.User,
@@ -528,151 +680,29 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal virtual
-#endif
-        DataEncryptionKey GetDataEncryptionKey(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            return new DataEncryptionKeyInlineCore(
-                new DataEncryptionKeyCore(
-                    this.ClientContext,
-                    this,
-                    id));
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal virtual
-#endif
-            FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
-                string startId = null,
-                string endId = null,
-                bool isDescending = false,
-                string continuationToken = null,
-                QueryRequestOptions requestOptions = null)
-        {
-            if (!(this.GetDataEncryptionKeyStreamIterator(
-                startId,
-                endId,
-                isDescending,
-                continuationToken,
-                requestOptions) is FeedIteratorInternal dekStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected FeedIteratorInternal.");
-            }
-
-            return new FeedIteratorCore<DataEncryptionKeyProperties>(
-                dekStreamIterator,
-                (responseMessage) =>
-                {
-                    FeedResponse<DataEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DataEncryptionKeyProperties>(responseMessage, ResourceType.ClientEncryptionKey);
-                    foreach (DataEncryptionKeyProperties result in results)
-                    {
-                        Uri dekUri = DataEncryptionKeyCore.CreateLinkUri(this.ClientContext, this, result.Id);
-                        this.ClientContext.DekCache.Set(this.Id, dekUri, result);
-                    }
-
-                    return results;
-                });
-        }
-
-        internal FeedIterator GetDataEncryptionKeyStreamIterator(
-            string startId = null,
-            string endId = null,
-            bool isDescending = false,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            if (startId != null || endId != null)
-            {
-                if (requestOptions == null)
-                {
-                    requestOptions = new QueryRequestOptions();
-                }
-
-                requestOptions.StartId = startId;
-                requestOptions.EndId = endId;
-                requestOptions.EnumerationDirection = isDescending ? EnumerationDirection.Reverse : EnumerationDirection.Forward;
-            }
-
-            return FeedIteratorCore.CreateForNonPartitionedResource(
-               clientContext: this.ClientContext,
-               resourceLink: this.LinkUri,
-               resourceType: ResourceType.ClientEncryptionKey,
-               queryDefinition: null,
-               continuationToken: continuationToken,
-               options: requestOptions);
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal virtual
-#endif
-            async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
-                string id,
-                CosmosEncryptionAlgorithm encryptionAlgorithmId,
-                EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
-                RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (encryptionAlgorithmId != CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
-            {
-                throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithmId), nameof(encryptionAlgorithmId));
-            }
-
-            if (encryptionKeyWrapMetadata == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
-            }
-
-            this.ClientContext.ValidateResource(id);
-
-            DataEncryptionKeyCore newDek = (DataEncryptionKeyInlineCore)this.GetDataEncryptionKey(id);
-
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-
-            byte[] rawDek = newDek.GenerateKey(encryptionAlgorithmId);
-
-            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(
-                rawDek,
-                encryptionAlgorithmId,
-                encryptionKeyWrapMetadata,
-                diagnosticsContext,
-                cancellationToken);
-
-            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithmId, wrappedDek, updatedMetadata);
-            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(dekProperties);
-            Task<ResponseMessage> responseMessage = this.CreateDataEncryptionKeyStreamAsync(
-                streamPayload,
-                requestOptions,
-                cancellationToken);
-
-            DataEncryptionKeyResponse dekResponse = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(newDek, responseMessage);
-            Debug.Assert(dekResponse.Resource != null);
-
-            this.ClientContext.DekCache.Set(this.Id, newDek.LinkUri, dekResponse.Resource);
-            this.ClientContext.DekCache.SetRawDek(dekResponse.Resource.SelfLink, inMemoryRawDek);
-            return dekResponse;
-        }
-
         internal void ValidateContainerProperties(ContainerProperties containerProperties)
         {
             containerProperties.ValidateRequiredProperties();
             this.ClientContext.ValidateResource(containerProperties.Id);
+        }
+
+        internal Task<ResponseMessage> ProcessCollectionCreateAsync(
+            Stream streamPayload,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
+               resourceType: ResourceType.Collection,
+               operationType: OperationType.Create,
+               cosmosContainerCore: null,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
+               diagnosticsContext: null,
+               cancellationToken: cancellationToken);
         }
 
         internal Task<ResponseMessage> ProcessCollectionCreateAsync(
