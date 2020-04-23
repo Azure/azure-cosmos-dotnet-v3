@@ -274,7 +274,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             {
                 TryCatch<decimal> tryDeserialize = CosmosElementDeserializer.Monadic.Deserialize<decimal>(doubleBuffer);
-                Assert.IsFalse(tryDeserialize.Succeeded);
+                Assert.IsTrue(tryDeserialize.Succeeded);
+                Assert.AreEqual((decimal)(double)doubleValue, tryDeserialize.Result);
             }
 
             {

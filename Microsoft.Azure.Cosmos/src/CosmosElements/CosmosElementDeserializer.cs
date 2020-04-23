@@ -39,6 +39,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 if (!(tryAcceptVisitor.Result is T typedResult))
                 {
+                    Type type = typeof(T);
+                    if ((tryAcceptVisitor.Result is null) && (!type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))))
+                    {
+                        return TryCatch<T>.FromResult(default);
+                    }
+
                     throw new InvalidOperationException("Could not cast to T.");
                 }
 
