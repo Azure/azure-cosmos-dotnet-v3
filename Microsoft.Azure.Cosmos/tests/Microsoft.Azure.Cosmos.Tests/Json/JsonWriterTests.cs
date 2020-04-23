@@ -6,7 +6,6 @@
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Reflection;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
@@ -1747,7 +1746,7 @@
 
                         case JsonTokenType.Number:
                             Number64 numberValue = (token as JsonNumberToken).Value;
-                            jsonWriter.WriteNumberValue(numberValue);
+                            jsonWriter.WriteNumber64Value(numberValue);
                             break;
 
                         case JsonTokenType.True:

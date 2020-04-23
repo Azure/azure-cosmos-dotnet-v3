@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteNumberValue(Number64 value)
+            public override void WriteNumber64Value(Number64 value)
             {
                 if (value.IsInteger)
                 {

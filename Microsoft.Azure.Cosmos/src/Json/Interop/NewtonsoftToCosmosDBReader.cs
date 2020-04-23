@@ -4,8 +4,9 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
+    using System.Runtime.InteropServices;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -139,6 +140,23 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             }
 
             return succesfullyRead;
+        }
+
+        public static NewtonsoftToCosmosDBReader CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            MemoryStream stream;
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
+            {
+                stream = new MemoryStream(segment.Array, segment.Offset, segment.Count);
+            }
+            else
+            {
+                stream = new MemoryStream(buffer.ToArray());
+            }
+
+            StreamReader streamReader = new StreamReader(stream, Encoding.UTF8);
+            Newtonsoft.Json.JsonTextReader newtonsoftReader = new Newtonsoft.Json.JsonTextReader(streamReader);
+            return new NewtonsoftToCosmosDBReader(newtonsoftReader);
         }
 
         public static NewtonsoftToCosmosDBReader CreateFromString(string json)

@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     return JsonNodeType.Array;
                 case JTokenType.Integer:
                 case JTokenType.Float:
-                    return JsonNodeType.Number;
+                    return JsonNodeType.Number64;
                 case JTokenType.String:
                     return JsonNodeType.String;
                 case JTokenType.Boolean:
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return ((NewtonsoftNode)node).JsonNodeType;
         }
 
-        public Number64 GetNumberValue(IJsonNavigatorNode numberNode)
+        public Number64 GetNumber64Value(IJsonNavigatorNode numberNode)
         {
             return (double)((NewtonsoftNode)numberNode).JToken;
         }

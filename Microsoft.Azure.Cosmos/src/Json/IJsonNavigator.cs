@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A double that represents the number value in the node.</returns>
-        Number64 GetNumberValue(IJsonNavigatorNode numberNode);
+        Number64 GetNumber64Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Tries to get the buffered string value from a node.

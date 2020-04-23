@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
@@ -363,6 +364,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                     MaxConcurrency = maxDegreeOfParallelism,
                                     MaxItemCount = maxItemCount,
                                 },
+                                feedRangeInternal: null,
                                 continuationToken: continuationToken);
 
                             Assert.AreEqual(canSupportExpected, canSupportActual);
@@ -388,6 +390,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                     MaxConcurrency = 1,
                                     MaxItemCount = 1,
                                 },
+                                feedRangeInternal: null,
                                 continuationToken: null);
 
                 Assert.IsNotNull(exception);
@@ -466,6 +469,164 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             // Test initialie does load CosmosClient
             Assert.IsFalse(CustomTypeExtensions.ByPassQueryParsing());
+        }
+
+        [TestMethod]
+        public async Task TestPassthroughQueryAsync()
+        {
+            string[] inputDocs = new[]
+            {
+                @"{""id"":""documentId1"",""key"":""A"",""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId2"",""key"":""A"",""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId3"",""key"":""A"",""prop"":1,""shortArray"":[{""a"":7}]}",
+                @"{""id"":""documentId4"",""key"":5,""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId5"",""key"":5,""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId6"",""key"":5,""prop"":1,""shortArray"":[{""a"":7}]}",
+                @"{""id"":""documentId10"",""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId11"",""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId12"",""prop"":1,""shortArray"":[{""a"":7}]}",
+            };
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocs,
+                ImplementationAsync,
+                "/key");
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+                {
+                    foreach (int maxItemCount in new int[] { 10, 100 })
+                    {
+                        QueryRequestOptions feedOptions = new QueryRequestOptions
+                        {
+                            MaxBufferedItemCount = 7000,
+                            MaxConcurrency = maxDegreeOfParallelism,
+                            MaxItemCount = maxItemCount,
+                        };
+
+                        foreach (string query in new string[]
+                        {
+                            "SELECT * FROM c WHERE c.key = 5",
+                            "SELECT * FROM c WHERE c.key = 5 ORDER BY c._ts",
+                        })
+                        {
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                            Assert.AreEqual(
+                                3,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT TOP 2 c.id FROM c WHERE c.key = 5";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                            Assert.AreEqual(
+                                2,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT c.id FROM c WHERE c.key = 5 OFFSET 1 LIMIT 1";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                            Assert.AreEqual(
+                                1,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT VALUE COUNT(1) FROM c WHERE c.key = 5";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                feedOptions);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                            Assert.AreEqual(
+                                1,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+
+                            Assert.AreEqual(
+                                3,
+                                Number64.ToLong((queryResults.First() as CosmosNumber64).GetValue()),
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT VALUE c.key FROM c WHERE c.key = 5 GROUP BY c.key";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
+                                container,
+                                query,
+                                feedOptions,
+                                QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                            Assert.AreEqual(
+                                1,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+
+                        {
+                            feedOptions.TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, responseStats: new TestInjections.ResponseStats());
+
+                            string query = "SELECT DISTINCT VALUE c.key FROM c WHERE c.key = 5";
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
+                                container,
+                                query,
+                                feedOptions,
+                                QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                            Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value); 
+
+                            Assert.AreEqual(
+                                1,
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+                    }
+                }
+            }
         }
     }
 }

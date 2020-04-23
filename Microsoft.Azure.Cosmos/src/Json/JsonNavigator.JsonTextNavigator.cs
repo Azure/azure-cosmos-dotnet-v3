@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override Number64 GetNumberValue(IJsonNavigatorNode numberNavigatorNode)
+            public override Number64 GetNumber64Value(IJsonNavigatorNode numberNavigatorNode)
             {
                 if (numberNavigatorNode == null)
                 {
@@ -860,13 +860,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 private readonly Lazy<Number64> value;
 
                 private NumberNode(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Number)
+                    : base(JsonNodeType.Number64)
                 {
                     this.value = new Lazy<Number64>(() => JsonTextParser.GetNumberValue(bufferedToken.Span));
                 }
 
                 private NumberNode(Number64 value)
-                    : base(JsonNodeType.Number)
+                    : base(JsonNodeType.Number64)
                 {
                     this.value = new Lazy<Number64>(() => value);
                 }

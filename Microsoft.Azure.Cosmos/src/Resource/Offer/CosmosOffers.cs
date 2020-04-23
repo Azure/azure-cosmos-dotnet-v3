@@ -92,7 +92,19 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+                ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+
+                if (currentProperty == null)
+                {
+                    CosmosException notFound = CosmosExceptionFactory.CreateNotFoundException(
+                         $"Throughput is not configured for {targetRID}");
+                    return new ThroughputResponse(
+                        httpStatusCode: notFound.StatusCode,
+                        headers: notFound.Headers,
+                        throughputProperties: null,
+                        diagnostics: notFound.Diagnostics);
+                }
+
                 currentProperty.Content = throughputProperties.Content;
 
                 return await this.GetThroughputResponseAsync(
@@ -131,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ReplaceThroughputPropertiesAsync(
                 targetRID,
-                ThroughputProperties.CreateFixedThroughput(throughput),
+                ThroughputProperties.CreateManualThroughput(throughput),
                 requestOptions,
                 cancellationToken);
         }
@@ -144,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ReplaceThroughputPropertiesIfExistsAsync(
                 targetRID,
-                ThroughputProperties.CreateFixedThroughput(throughput),
+                ThroughputProperties.CreateManualThroughput(throughput),
                 requestOptions,
                 cancellationToken);
         }
@@ -207,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.ClientContext,
                resourceLink: this.OfferRootUri,
                resourceType: ResourceType.Offer,

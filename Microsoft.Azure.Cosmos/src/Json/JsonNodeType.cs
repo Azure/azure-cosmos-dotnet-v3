@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Corresponds to the number type in JSON (number = [ minus ] integer [ fraction ] [ exponent ])
         /// </summary>
-        Number,
+        Number64,
 
         /// <summary>
         /// Corresponds to the string type in JSON (string = quotation-mark *char quotation-mark)
