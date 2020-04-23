@@ -157,5 +157,39 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Assert.AreEqual(partitionKey.InternalKey.ToJsonString(), requestMessage.Headers.PartitionKey);
             Assert.IsFalse(requestMessage.IsPartitionKeyRangeHandlerRequired);
         }
+
+        [TestMethod]
+        public void FeedRangeEPK_ToJsonFromJson()
+        {
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
+            FeedRangeEPK feedRangeEPK = new FeedRangeEPK(range);
+            string representation = feedRangeEPK.ToJsonString();
+            FeedRangeEPK feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEPK;
+            Assert.IsNotNull(feedRangeEPKDeserialized);
+            Assert.AreEqual(feedRangeEPK.Range.Min, feedRangeEPKDeserialized.Range.Min);
+            Assert.AreEqual(feedRangeEPK.Range.Max, feedRangeEPKDeserialized.Range.Max);
+        }
+
+        [TestMethod]
+        public void FeedRangePK_ToJsonFromJson()
+        {
+            PartitionKey partitionKey = new PartitionKey("test");
+            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
+            string representation = feedRangePartitionKey.ToJsonString();
+            FeedRangePartitionKey feedRangePartitionKeyDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangePartitionKey;
+            Assert.IsNotNull(feedRangePartitionKeyDeserialized);
+            Assert.AreEqual(feedRangePartitionKey.PartitionKey.ToJsonString(), feedRangePartitionKeyDeserialized.PartitionKey.ToJsonString());
+        }
+
+        [TestMethod]
+        public void FeedRangePKRangeId_ToJsonFromJson()
+        {
+            string pkRangeId = Guid.NewGuid().ToString();
+            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(pkRangeId);
+            string representation = feedRangePartitionKeyRange.ToJsonString();
+            FeedRangePartitionKeyRange feedRangePartitionKeyRangeDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangePartitionKeyRange;
+            Assert.IsNotNull(feedRangePartitionKeyRangeDeserialized);
+            Assert.AreEqual(feedRangePartitionKeyRange.PartitionKeyRangeId, feedRangePartitionKeyRangeDeserialized.PartitionKeyRangeId);
+        }
     }
 }

@@ -7,10 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
+    [JsonConverter(typeof(FeedRangeInternalConverter))]
     internal abstract class FeedRangeInternal : FeedRange
     {
         public abstract Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
@@ -28,28 +29,23 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract override string ToString();
 
+        public override string ToJsonString() => JsonConvert.SerializeObject(this);
+
         public static bool TryParse(
-            JObject jObject,
-            JsonSerializer serializer,
+            string jsonString,
             out FeedRangeInternal feedRangeInternal)
         {
-            if (FeedRangeEPK.TryParse(jObject, serializer, out feedRangeInternal))
+            try
             {
+                feedRangeInternal = JsonConvert.DeserializeObject<FeedRangeInternal>(jsonString);
                 return true;
             }
-
-            if (FeedRangePartitionKey.TryParse(jObject, serializer, out feedRangeInternal))
+            catch (JsonReaderException)
             {
-                return true;
+                DefaultTrace.TraceError("Unable to parse FeedRange from string.");
+                feedRangeInternal = null;
+                return false;
             }
-
-            if (FeedRangePartitionKeyRange.TryParse(jObject, serializer, out feedRangeInternal))
-            {
-                return true;
-            }
-
-            feedRangeInternal = null;
-            return false;
         }
     }
 }
