@@ -132,26 +132,28 @@ namespace Microsoft.Azure.Cosmos.Json
             public override void WriteFieldName(string fieldName)
             {
                 int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
-                Span<byte> utf8FieldName = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(fieldName, utf8FieldName);
+                Span<byte> utf8Buffer = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
+                Encoding.UTF8.GetBytes(fieldName, utf8Buffer);
+                Utf8Span utf8FieldName = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
 
-                this.WriteFieldNameOrString(isFieldName: true, Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8FieldName));
+                this.WriteFieldNameOrString(isFieldName: true, utf8FieldName);
             }
 
             /// <inheritdoc />
-            public override void WriteFieldName(Utf8Span utf8FieldName)
+            public override void WriteFieldName(Utf8Span fieldName)
             {
-                this.WriteFieldNameOrString(isFieldName: true, utf8FieldName);
+                this.WriteFieldNameOrString(isFieldName: true, fieldName);
             }
 
             /// <inheritdoc />
             public override void WriteStringValue(string value)
             {
                 int utf8Length = Encoding.UTF8.GetByteCount(value);
-                Span<byte> utf8String = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(value, utf8String);
+                Span<byte> utf8Buffer = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
+                Encoding.UTF8.GetBytes(value, utf8Buffer);
+                Utf8Span utf8StringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
 
-                this.WriteFieldNameOrString(isFieldName: false, Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8String));
+                this.WriteFieldNameOrString(isFieldName: false, utf8StringValue);
             }
 
             /// <inheritdoc />

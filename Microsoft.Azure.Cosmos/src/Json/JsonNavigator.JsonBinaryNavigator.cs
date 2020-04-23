@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override bool TryGetBufferedStringValue(
                 IJsonNavigatorNode stringNode,
-                out Utf8Memory bufferedUtf8StringValue)
+                out Utf8Memory value)
             {
                 ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
                     JsonNodeType.String,
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonBinaryEncoding.TryGetBufferedStringValue(
                     Utf8Memory.UnsafeCreateNoValidation(buffer),
                     this.jsonStringDictionary,
-                    out bufferedUtf8StringValue);
+                    out value);
             }
 
             /// <inheritdoc />
