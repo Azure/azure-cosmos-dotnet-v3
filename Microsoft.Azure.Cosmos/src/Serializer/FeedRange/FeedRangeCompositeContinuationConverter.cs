@@ -51,10 +51,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             List<CompositeContinuationToken> ranges = serializer.Deserialize<List<CompositeContinuationToken>>(continuationJToken.CreateReader());
-            if (!FeedRangeInternal.TryParse(jObject, serializer, out FeedRangeInternal feedRangeInternal))
-            {
-                throw new JsonReaderException();
-            }
+            FeedRangeInternal feedRangeInternal = FeedRangeInternalConverter.ReadJObject(jObject, serializer);
 
             return new FeedRangeCompositeContinuation(
                 containerRid: containerRid,
@@ -73,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                 writer.WriteValue(feedRangeCompositeContinuation.ContainerRid);
                 writer.WritePropertyName(FeedRangeCompositeContinuationConverter.ContinuationPropertyName);
                 serializer.Serialize(writer, feedRangeCompositeContinuation.CompositeContinuationTokens.ToArray());
-                serializer.Serialize(writer, feedRangeCompositeContinuation.FeedRange);
+                FeedRangeInternalConverter.WriteJObject(writer, feedRangeCompositeContinuation.FeedRange, serializer);
                 writer.WriteEndObject();
                 return;
             }

@@ -2655,10 +2655,15 @@
     "FeedRange": {
       "Subclasses": {},
       "Members": {
-        "System.String ToString()": {
+        "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.String ToString()"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)"
+        },
+        "System.String ToJsonString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToJsonString()"
         }
       },
       "NestedTypes": {}
