@@ -220,6 +220,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteEndObject();
         }
 
+        public override void Visit(FeedRangeStatistics feedRangeStatistics)
+        {
+            this.jsonWriter.WriteStartObject();
+            this.jsonWriter.WritePropertyName("FeedRange");
+            this.jsonWriter.WriteValue(feedRangeStatistics.FeedRange.ToString());
+            this.jsonWriter.WriteEndObject();
+        }
+
         private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)
         {
             this.jsonWriter.WritePropertyName(propertyName);

@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteNull();
         }
 
-        public override void WriteNumberValue(Number64 value)
+        public override void WriteNumber64Value(Number64 value)
         {
             if (value.IsInteger)
             {

@@ -80,6 +80,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task MemoryStreamBufferIsAccessibleOnResponse()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.SerializerCore.ToStream(testItem), partitionKey: new Cosmos.PartitionKey(testItem.status));
+            Assert.IsNotNull(response);
+            Assert.IsTrue((response.Content as MemoryStream).TryGetBuffer(out _));
+        }
+
+        [TestMethod]
         public async Task CustomSerilizerTest()
         {
             string id1 = "MyCustomSerilizerTestId1";
@@ -1056,7 +1065,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     properties: new Dictionary<string, object>()
                     {
                         {"x-ms-effective-partition-key-string", "AA" }
-                    });
+                    },
+                    feedRangeInternal: null);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
             }
