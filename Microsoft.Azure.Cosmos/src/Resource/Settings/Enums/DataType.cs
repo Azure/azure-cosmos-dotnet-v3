@@ -10,7 +10,11 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines the target data type of an index path specification in the Azure Cosmos DB service.
     /// </summary>
+#if AZURECORE
+    public enum CosmosDataType
+#else
     public enum DataType
+#endif
     {
         /// <summary>
         /// Represents a numeric data type.

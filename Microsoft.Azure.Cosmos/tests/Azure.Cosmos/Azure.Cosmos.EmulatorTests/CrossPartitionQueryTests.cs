@@ -190,8 +190,8 @@ namespace Azure.Cosmos.EmulatorTests
                                 Path = "/*",
                                 Indexes = new Collection<Cosmos.Index>
                                 {
-                                    Cosmos.Index.Range(Cosmos.DataType.Number),
-                                    Cosmos.Index.Range(Cosmos.DataType.String),
+                                    Cosmos.Index.Range(Cosmos.CosmosDataType.Number),
+                                    Cosmos.Index.Range(Cosmos.CosmosDataType.String),
                                 }
                             }
                         }
