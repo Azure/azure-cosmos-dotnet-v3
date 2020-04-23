@@ -80,6 +80,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task MemoryStreamBufferIsAccessibleOnResponse()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.SerializerCore.ToStream(testItem), partitionKey: new Cosmos.PartitionKey(testItem.status));
+            Assert.IsNotNull(response);
+            Assert.IsTrue((response.Content as MemoryStream).TryGetBuffer(out _));
+        }
+
+        [TestMethod]
         public async Task CustomSerilizerTest()
         {
             string id1 = "MyCustomSerilizerTestId1";
@@ -395,7 +404,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsFalse(response.IsSuccessStatusCode);
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode, response.ErrorMessage);
-                    Assert.IsTrue(response.ErrorMessage.Contains("https://aka.ms/CosmosTsgNotFound"));
                 }
             }
 
@@ -1057,7 +1065,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     properties: new Dictionary<string, object>()
                     {
                         {"x-ms-effective-partition-key-string", "AA" }
-                    });
+                    },
+                    feedRangeInternal: null);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
             }
@@ -1295,7 +1304,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new Cosmos.PartitionKey(originalStatus),
                 item: testItem);
                 Assert.Fail("Replace changing partition key is not supported.");
-            }catch(CosmosException ce)
+            }
+            catch (CosmosException ce)
             {
                 Assert.AreEqual((HttpStatusCode)400, ce.StatusCode);
             }
@@ -1560,7 +1570,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage failedResponseMessage = failedToManyRequests.First();
                 Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
                 Assert.IsNotNull(failedResponseMessage.ErrorMessage);
-                Assert.IsNotNull(failedResponseMessage.ErrorMessage.Contains("https://aka.ms/CosmosTsgRequestRateTooLarge"));
                 string diagnostics = failedResponseMessage.Diagnostics.ToString();
                 Assert.IsNotNull(diagnostics);
             }

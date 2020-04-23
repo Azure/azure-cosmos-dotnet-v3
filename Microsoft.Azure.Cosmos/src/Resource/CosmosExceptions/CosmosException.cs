@@ -32,8 +32,7 @@ namespace Microsoft.Azure.Cosmos
                 statusCodes,
                 subStatusCode,
                 message,
-                activityId,
-                innerException), innerException)
+                activityId), innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
@@ -187,32 +186,11 @@ namespace Microsoft.Azure.Cosmos
                  diagnostics: this.DiagnosticsContext);
         }
 
-        private static bool TryGetTroubleshootingLink(
-            HttpStatusCode statusCode,
-            int subStatusCode,
-            Exception innerException,
-            out string tsgLink)
-        {
-            if (CosmosTroubleshootingLink.TryGetTroubleshootingLinks(
-                (int)statusCode,
-                subStatusCode,
-                innerException,
-                out CosmosTroubleshootingLink link))
-            {
-                tsgLink = link.Link;
-                return true;
-            }
-
-            tsgLink = null;
-            return false;
-        }
-
         private static string GetMessageHelper(
             HttpStatusCode statusCode,
             int subStatusCode,
             string responseBody,
-            string activityId,
-            Exception innerException)
+            string activityId)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -220,17 +198,6 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append($"{statusCode} ({(int)statusCode})");
             stringBuilder.Append("; Substatus: ");
             stringBuilder.Append(subStatusCode);
-
-            if (CosmosException.TryGetTroubleshootingLink(
-                statusCode,
-                subStatusCode,
-                innerException,
-                out string tsgLink))
-            {
-                stringBuilder.Append("; Troubleshooting: ");
-                stringBuilder.Append(tsgLink);
-            }
-
             stringBuilder.Append("; ActivityId: ");
             stringBuilder.Append(activityId ?? string.Empty);
             stringBuilder.Append("; Reason: (");
@@ -241,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private string ToStringHelper(
-            StringBuilder stringBuilder)
+        StringBuilder stringBuilder)
         {
             if (stringBuilder == null)
             {
