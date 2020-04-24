@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
 
-        internal abstract Task<Stream> EncryptItemAsync(
+        internal abstract Task<Stream> EncryptItemIfNeededAsync(
             Stream input,
             RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,

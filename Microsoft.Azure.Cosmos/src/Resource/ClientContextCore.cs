@@ -318,33 +318,38 @@ namespace Microsoft.Azure.Cosmos
             return this.batchExecutorCache.GetExecutorForContainer(container, this);
         }
 
-        internal override async Task<Stream> EncryptItemAsync(
+        internal override async Task<Stream> EncryptItemIfNeededAsync(
             Stream input,
             RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
+            TransactionalBatchItemRequestOptions batchItemRequestOptions = requestOptions as TransactionalBatchItemRequestOptions;
+            EncryptionOptions encryptionOptions = null;
+
+            if (itemRequestOptions != null)
+            {
+                encryptionOptions = itemRequestOptions.EncryptionOptions;
+                itemRequestOptions.IsClientEncrypted = false;
+            }
+            else if (batchItemRequestOptions != null)
+            {
+                encryptionOptions = batchItemRequestOptions.EncryptionOptions;
+                batchItemRequestOptions.IsClientEncrypted = false;
+            }
+
+            if (encryptionOptions == null)
+            {
+                return input;
+            }
+
             if (input == null)
             {
                 throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
             }
 
-            EncryptionOptions encryptionOptions = null;
-            ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
-            TransactionalBatchItemRequestOptions batchItemRequestOptions = requestOptions as TransactionalBatchItemRequestOptions;
-
-            if (itemRequestOptions != null)
-            {
-                encryptionOptions = itemRequestOptions.EncryptionOptions;
-            }
-            else if (batchItemRequestOptions != null)
-            {
-                encryptionOptions = batchItemRequestOptions.EncryptionOptions;
-            }
-
-            Debug.Assert(encryptionOptions != null);
             Debug.Assert(diagnosticsContext != null);
-
             using (diagnosticsContext.CreateScope("Encrypt"))
             {
                 (Stream encryptedStream, bool isEncrypted) = await this.EncryptionProcessor.EncryptAsync(

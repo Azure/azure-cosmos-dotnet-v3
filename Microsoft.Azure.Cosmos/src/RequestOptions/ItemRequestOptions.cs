@@ -137,7 +137,6 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(
                     "x-ms-cosmos-is-client-encrypted", // todo: fix post latest .Direct package
                     bool.TrueString);
-
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);

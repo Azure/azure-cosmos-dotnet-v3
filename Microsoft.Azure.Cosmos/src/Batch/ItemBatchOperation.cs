@@ -330,9 +330,9 @@ namespace Microsoft.Azure.Cosmos
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
                 Stream stream = this.ResourceStream;
-                if (this.ContainerCore != null && this.RequestOptions?.EncryptionOptions != null)
+                if (this.ContainerCore != null)
                 {
-                    stream = await this.ContainerCore.ClientContext.EncryptItemAsync(
+                    stream = await this.ContainerCore.ClientContext.EncryptItemIfNeededAsync(
                         stream,
                         this.RequestOptions,
                         this.DiagnosticsContext,
