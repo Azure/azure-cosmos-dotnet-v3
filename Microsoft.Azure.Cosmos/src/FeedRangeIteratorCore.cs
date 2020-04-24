@@ -177,54 +177,57 @@ namespace Microsoft.Azure.Cosmos
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
-            // Rewrite the payload to be in the specified format.
-            // If it's already in the correct format, then the following will be a memcpy.
-            MemoryStream memoryStream;
-            if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
+            if (responseMessage.Content != null)
             {
-                memoryStream = responseContentAsMemoryStream;
-            }
-            else
-            {
-                memoryStream = new MemoryStream();
-                await responseMessage.Content.CopyToAsync(memoryStream);
-            }
+                // Rewrite the payload to be in the specified format.
+                // If it's already in the correct format, then the following will be a memcpy.
+                MemoryStream memoryStream;
+                if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
+                {
+                    memoryStream = responseContentAsMemoryStream;
+                }
+                else
+                {
+                    memoryStream = new MemoryStream();
+                    await responseMessage.Content.CopyToAsync(memoryStream);
+                }
 
-            ReadOnlyMemory<byte> buffer;
-            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
-            {
-                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
-            }
-            else
-            {
-                buffer = memoryStream.ToArray();
-            }
+                ReadOnlyMemory<byte> buffer;
+                if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+                {
+                    buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
+                }
+                else
+                {
+                    buffer = memoryStream.ToArray();
+                }
 
-            IJsonReader jsonReader = JsonReader.Create(buffer);
-            IJsonWriter jsonWriter;
-            if (this.queryRequestOptions?.CosmosSerializationFormatOptions != null)
-            {
-                jsonWriter = this.queryRequestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
-            }
-            else
-            {
-                jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-            }
+                IJsonReader jsonReader = JsonReader.Create(buffer);
+                IJsonWriter jsonWriter;
+                if (this.queryRequestOptions?.CosmosSerializationFormatOptions != null)
+                {
+                    jsonWriter = this.queryRequestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
+                }
+                else
+                {
+                    jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                }
 
-            jsonWriter.WriteAll(jsonReader);
+                jsonWriter.WriteAll(jsonReader);
 
-            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
-            MemoryStream rewrittenMemoryStream;
-            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
-            {
-                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count);
-            }
-            else
-            {
-                rewrittenMemoryStream = new MemoryStream(result.ToArray());
-            }
+                ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+                MemoryStream rewrittenMemoryStream;
+                if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
+                {
+                    rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count);
+                }
+                else
+                {
+                    rewrittenMemoryStream = new MemoryStream(result.ToArray());
+                }
 
-            responseMessage.Content = rewrittenMemoryStream;
+                responseMessage.Content = rewrittenMemoryStream;
+            }
 
             if (responseMessage.IsSuccessStatusCode)
             {
