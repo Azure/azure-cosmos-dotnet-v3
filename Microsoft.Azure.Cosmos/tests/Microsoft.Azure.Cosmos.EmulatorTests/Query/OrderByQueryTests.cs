@@ -1098,7 +1098,7 @@
 #endif
 
                     IEnumerable<CosmosObject> insertedDocs = documents
-                        .Select(document => CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)
+                        .Select(document => CosmosElement.CreateFromBuffer<CosmosObject>(Encoding.UTF8.GetBytes(document.ToString())))
                         .Select(document =>
                         {
                             Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
