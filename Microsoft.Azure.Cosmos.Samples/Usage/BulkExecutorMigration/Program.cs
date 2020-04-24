@@ -84,7 +84,7 @@
         private static CosmosClient GetBulkClientInstance(
             string endpoint,
             string authKey) =>
-        // </Initialization>
+        // <Initialization>
             new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true });
         // </Initialization>
 
