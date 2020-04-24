@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             // Create a container in v2 without a partition key
             string containerId = "SprocPkNone" + Guid.NewGuid().ToString();
-            ContainerCore containerNonePk = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(this.database, containerId);
+            ContainerInternal containerNonePk = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(this.database, containerId);
             Scripts scriptsNonePk = containerNonePk.Scripts;
 
             string sprocId = Guid.NewGuid().ToString();

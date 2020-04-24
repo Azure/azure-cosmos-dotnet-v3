@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
         private CosmosClient cosmosClient;
-        private ContainerCore cosmosContainer;
+        private ContainerInternal cosmosContainer;
 
         [TestInitialize]
         public async Task InitializeAsync()
