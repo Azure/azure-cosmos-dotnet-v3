@@ -112,8 +112,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<Stream> EncryptItemAsync(
             Stream input,
-            EncryptionOptions encryptionOptions,
-            DatabaseCore database,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 

@@ -320,8 +320,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override async Task<Stream> EncryptItemAsync(
             Stream input,
-            EncryptionOptions encryptionOptions,
-            DatabaseCore database,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -330,18 +329,44 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
             }
 
+            EncryptionOptions encryptionOptions = null;
+            ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
+            TransactionalBatchItemRequestOptions batchItemRequestOptions = requestOptions as TransactionalBatchItemRequestOptions;
+
+            if (itemRequestOptions != null)
+            {
+                encryptionOptions = itemRequestOptions.EncryptionOptions;
+            }
+            else if (batchItemRequestOptions != null)
+            {
+                encryptionOptions = batchItemRequestOptions.EncryptionOptions;
+            }
+
             Debug.Assert(encryptionOptions != null);
-            Debug.Assert(database != null);
             Debug.Assert(diagnosticsContext != null);
 
             using (diagnosticsContext.CreateScope("Encrypt"))
             {
-                return await this.EncryptionProcessor.EncryptAsync(
+                (Stream encryptedStream, bool isEncrypted) = await this.EncryptionProcessor.EncryptAsync(
                     input,
                     encryptionOptions,
                     this.ClientOptions.Encryptor,
                     diagnosticsContext,
                     cancellationToken);
+
+                if (isEncrypted)
+                {
+                    if (itemRequestOptions != null)
+                    {
+                        itemRequestOptions.IsClientEncrypted = true;
+                    }
+                    else if (batchItemRequestOptions != null)
+                    {
+                        batchItemRequestOptions.IsClientEncrypted = true;
+                    }
+                }
+
+                return encryptedStream;
             }
         }
 

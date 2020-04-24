@@ -107,6 +107,8 @@ namespace Microsoft.Azure.Cosmos
 #endif
         EncryptionOptions EncryptionOptions { get; set; }
 
+        internal bool IsClientEncrypted { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -128,6 +130,14 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(
                     HttpConstants.HttpHeaders.IndexingDirective,
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
+            }
+
+            if (this.IsClientEncrypted)
+            {
+                request.Headers.Add(
+                    "x-ms-cosmos-is-client-encrypted", // todo: fix post latest .Direct package
+                    bool.TrueString);
+
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);

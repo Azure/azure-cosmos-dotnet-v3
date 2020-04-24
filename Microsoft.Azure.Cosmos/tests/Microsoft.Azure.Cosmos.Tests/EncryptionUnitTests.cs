@@ -67,6 +67,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
             MyItem item = await EncryptionUnitTests.CreateItemAsync(container, EncryptionUnitTests.DekId, MyItem.PathsToEncrypt);
 
             // Validate server state
+            Assert.AreEqual(1, this.testHandler.Received.Count);
+            RequestMessage itemCreationRequest = this.testHandler.Received[0];
+            Assert.AreEqual(bool.TrueString, itemCreationRequest.Headers["x-ms-cosmos-is-client-encrypted"]);
+
             Assert.IsTrue(this.testHandler.Items.TryGetValue(item.Id, out JObject serverItem));
             Assert.IsNotNull(serverItem);
             Assert.AreEqual(item.Id, serverItem.Property(Constants.Properties.Id).Value.Value<string>());
@@ -99,6 +103,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
 
             ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new Cosmos.PartitionKey(item.PK));
             Assert.AreEqual(item, readResponse.Resource);
+        }
+
+        [TestMethod]
+        public async Task EncryptionUTTransactionalBatch()
+        {
+            Container container = this.GetContainerWithMockSetup();
+            MyItem item = EncryptionUnitTests.GetNewItem();
+            TransactionalBatchResponse response = await container
+                .CreateTransactionalBatch(new Cosmos.PartitionKey(item.PK))
+                .CreateItem<MyItem>(item,
+                    requestOptions: new TransactionalBatchItemRequestOptions
+                    {
+                        EncryptionOptions = new EncryptionOptions
+                        {
+                            DataEncryptionKeyId = EncryptionUnitTests.DekId,
+                            EncryptionAlgorithm = EncryptionUnitTests.Algo,
+                            PathsToEncrypt = MyItem.PathsToEncrypt
+                        }
+                    })
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(item, response.GetOperationResultAtIndex<MyItem>(0).Resource);
         }
 
         private static async Task<MyItem> CreateItemAsync(Container container, string dekId, List<string> pathsToEncrypt)
@@ -294,6 +322,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
                             httpStatusCode = HttpStatusCode.NotFound;
                         }
                     }
+                    else if(request.OperationType == OperationType.Batch)
+                    {
+                        List<ItemBatchOperation> batchOperations = await new BatchRequestPayloadReader().ReadPayloadAsync(request.Content);
+                        List<TransactionalBatchOperationResult> operationResults = new List<TransactionalBatchOperationResult>();
+
+                        foreach(ItemBatchOperation operation in batchOperations)
+                        {
+                            if(operation.OperationType == OperationType.Create)
+                            {
+                                Assert.AreEqual(true, operation.RequestOptions.IsClientEncrypted);
+
+                                item = EncryptionUnitTests.ParseStream(new MemoryStream(operation.ResourceBody.ToArray()));
+                                string itemId = item.Property("id").Value.Value<string>();
+
+                                if (!this.Items.TryAdd(itemId, item))
+                                {
+                                    Assert.Fail("Conflicting insert within TransactionalBatch not handled in tests.");
+                                }
+
+                                operationResults.Add(new TransactionalBatchOperationResult(HttpStatusCode.Created)
+                                    {
+                                        ResourceStream = this.serializer.ToStream(item)
+                                    });
+                            }
+                            else
+                            {
+                                Assert.Fail($"Operation type {operation.OperationType} within TransactionalBatch not handled in tests.");
+                            }
+                        }
+
+                        ResponseMessage batchResponseMessage = new ResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = await new BatchResponsePayloadWriter(operationResults).GeneratePayloadAsync()
+                        };
+
+                        batchResponseMessage.Headers.RequestCharge = EncryptionUnitTests.requestCharge;
+                        return batchResponseMessage;
+                    }
 
                     ResponseMessage responseMessage = new ResponseMessage(httpStatusCode, request)
                     {
@@ -315,6 +381,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider.Tests
                 {
                     // assuming seekable Stream
                     contentClone = new MemoryStream((int)request.Content.Length);
+                    request.Content.Position = 0;
                     request.Content.CopyTo(contentClone);
                     request.Content.Position = 0;
                 }

@@ -187,6 +187,15 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
+                if (options.IsClientEncrypted)
+                {
+                    r = writer.WriteBool("isClientEncrypted", true);
+                    if (r != Result.Success)
+                    {
+                        return r;
+                    }
+                }
+
                 if (options.Properties != null)
                 {
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
@@ -325,8 +334,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     stream = await this.ContainerCore.ClientContext.EncryptItemAsync(
                         stream,
-                        this.RequestOptions.EncryptionOptions,
-                        (DatabaseCore)this.ContainerCore.Database,
+                        this.RequestOptions,
                         this.DiagnosticsContext,
                         cancellationToken);
                 }

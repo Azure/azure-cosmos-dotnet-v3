@@ -28,6 +28,8 @@ namespace Microsoft.Azure.Cosmos
 #endif
         EncryptionOptions EncryptionOptions { get; set; }
 
+        internal bool IsClientEncrypted { get; set; }
+
         internal static TransactionalBatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             if (itemRequestOptions == null)

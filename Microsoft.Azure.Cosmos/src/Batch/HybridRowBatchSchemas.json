@@ -83,6 +83,13 @@
             "type": "int32",
             "storage": "sparse"
           }
+        },
+        {
+          "path": "isClientEncrypted",
+          "type": {
+            "type": "bool",
+            "storage": "sparse"
+          }
         }
       ]
     },

@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string ifMatch = null;
             string ifNoneMatch = null;
             int? ttlInSeconds = null;
+            bool isClientEncrypted = false;
 
             while (reader.Read())
             {
@@ -179,6 +180,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                         ttlInSeconds = ttl;
                         break;
+
+                    case "isClientEncrypted":
+                        r = reader.ReadBool(out isClientEncrypted);
+                        if (r != Result.Success)
+                        {
+                            return r;
+                        }
+
+                        break;
                 }
             }
 
@@ -189,7 +199,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             TransactionalBatchItemRequestOptions requestOptions = null;
-            if (indexingDirective.HasValue || ifMatch != null || ifNoneMatch != null || binaryId != null || effectivePartitionKey != null || ttlInSeconds.HasValue)
+            if (indexingDirective.HasValue || ifMatch != null || ifNoneMatch != null || binaryId != null
+                || effectivePartitionKey != null || ttlInSeconds.HasValue || isClientEncrypted)
             {
                 requestOptions = new TransactionalBatchItemRequestOptions();
                 if (indexingDirective.HasValue)
@@ -204,6 +215,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 else if (ifNoneMatch != null)
                 {
                     requestOptions.IfNoneMatchEtag = ifNoneMatch;
+                }
+
+                if(isClientEncrypted)
+                {
+                    requestOptions.IsClientEncrypted = true;
                 }
 
                 if (binaryId != null || effectivePartitionKey != null || ttlInSeconds.HasValue)

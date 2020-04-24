@@ -716,8 +716,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 streamPayload = await this.ClientContext.EncryptItemAsync(
                     streamPayload,
-                    requestOptions.EncryptionOptions,
-                    (DatabaseCore)this.Database,
+                    requestOptions,
                     diagnosticsContext,
                     cancellationToken);
             }
