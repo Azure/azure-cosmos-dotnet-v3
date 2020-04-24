@@ -34,8 +34,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public abstract void Accept(
-            FeedRangeVisitor visitor,
-            Action<RequestMessage, string> fillContinuation);
+            FeedRangeVisitor visitor);
 
         public abstract string GetContinuation();
 

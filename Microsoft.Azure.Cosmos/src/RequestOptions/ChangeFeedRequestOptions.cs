@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public StartFrom From { get; set; } = StartFromNow.Singleton;
 
-        internal string PartitionKeyRangeId { get; set; }
+        public FeedRange FeedRange { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -77,9 +77,10 @@ namespace Microsoft.Azure.Cosmos
                     this.MaxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }
 
-            if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
+            if (this.FeedRange != null)
             {
-                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(this.PartitionKeyRangeId);
+                FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
+                ((FeedRangeInternal)this.FeedRange).Accept(feedRangeVisitor);
             }
 
             request.Headers.Add(

@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                PartitionKeyRangeId = "randomPK",
+                FeedRange = new FeedRangePartitionKeyRange("randomPK")
             };
             requestOptions.PopulateRequestOptions(request);
 

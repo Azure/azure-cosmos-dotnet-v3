@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Visitor to populate RequestMessage headers and properties based on FeedRange and Continuation.
     /// </summary>
-    internal sealed class FeedRangeVisitor : IFeedRangeVisitor
+    internal sealed class QueryFeedRangeVisitor : IFeedRangeVisitor
     {
         private readonly RequestMessage request;
 
-        public FeedRangeVisitor(RequestMessage request)
+        public QueryFeedRangeVisitor(RequestMessage request)
         {
             this.request = request ?? throw new ArgumentNullException(nameof(request));
         }
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-            this.request.Headers.IfNoneMatch = continuation.GetContinuation();
+            this.request.Headers.ContinuationToken = continuation.GetContinuation();
         }
     }
 }

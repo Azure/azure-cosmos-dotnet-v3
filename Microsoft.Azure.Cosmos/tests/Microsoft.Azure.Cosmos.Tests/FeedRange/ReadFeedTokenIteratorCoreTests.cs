@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                .Setup(f => f.FeedRange)
                .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             Mock.Get(feedToken)
                 .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                .Setup(f => f.FeedRange)
                .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             Mock.Get(feedToken)
                 .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                .Setup(f => f.FeedRange)
                .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             Mock.Get(feedToken)
                 .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.FeedRange)
                 .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             Mock.Get(feedToken)
                 .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.FeedRange)
                 .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             Mock.Get(feedToken)
                 .Setup(f => f.HandleSplitAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));

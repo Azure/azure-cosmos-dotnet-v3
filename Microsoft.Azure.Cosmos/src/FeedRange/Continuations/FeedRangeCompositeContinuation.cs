@@ -38,10 +38,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override void Accept(
-            FeedRangeVisitor visitor,
-            Action<RequestMessage, string> fillContinuation)
+            FeedRangeVisitor visitor)
         {
-            visitor.Visit(this, fillContinuation);
+            visitor.Visit(this);
         }
 
         public FeedRangeCompositeContinuation(

@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             return new List<string>() { range.Id };
         }
 
-        public override void Accept(FeedRangeVisitor visitor)
+        public override void Accept(IFeedRangeVisitor visitor)
         {
             visitor.Visit(this);
         }

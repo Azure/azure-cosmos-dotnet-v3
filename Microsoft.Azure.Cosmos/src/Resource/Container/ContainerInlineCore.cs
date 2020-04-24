@@ -272,61 +272,68 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.container.CreateTransactionalBatch(partitionKey);
         }
-
 #if PREVIEW
-        public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public
+#else
+        internal
+#endif
+        override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedRangesAsync(cancellationToken));
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(changeFeedRequestOptions);
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return this.container.GetChangeFeedStreamIterator(feedRange, changeFeedRequestOptions);
-        }
-
-        public override FeedIterator GetChangeFeedStreamIterator(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
         }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedIterator<T>(changeFeedRequestOptions);
         }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return this.container.GetChangeFeedIterator<T>(feedRange, changeFeedRequestOptions);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedIterator<T>(partitionKey, changeFeedRequestOptions);
         }
 
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken));
-        }
-
-        public override FeedIterator GetItemQueryStreamIterator(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -335,7 +342,12 @@ namespace Microsoft.Azure.Cosmos
             return this.container.GetItemQueryStreamIterator(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
-        public override FeedIterator<T> GetItemQueryIterator<T>(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -344,7 +356,6 @@ namespace Microsoft.Azure.Cosmos
             return this.container.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
-#endif
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }
 }

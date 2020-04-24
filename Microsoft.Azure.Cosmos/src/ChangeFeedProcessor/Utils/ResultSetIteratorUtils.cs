@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
                 MaxItemCount = maxItemCount,
-                PartitionKeyRangeId = partitionKeyRangeId,
+                FeedRange = new FeedRangePartitionKeyRange(partitionKeyRangeId),
                 From = startFrom,
             };
 

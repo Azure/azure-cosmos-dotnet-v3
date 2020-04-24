@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
             return Task.FromResult(partitionKeyRanges);
         }
 
-        public override void Accept(FeedRangeVisitor visitor)
+        public override void Accept(IFeedRangeVisitor visitor)
         {
             visitor.Visit(this);
         }

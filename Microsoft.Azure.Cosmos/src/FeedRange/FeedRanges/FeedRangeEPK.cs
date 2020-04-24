@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
         }
 
-        public override void Accept(FeedRangeVisitor visitor)
+        public override void Accept(IFeedRangeVisitor visitor)
         {
             visitor.Visit(this);
         }

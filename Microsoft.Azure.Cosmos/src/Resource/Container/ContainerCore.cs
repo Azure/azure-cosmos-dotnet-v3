@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -240,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        override async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRId = await this.GetRIDAsync(cancellationToken);
@@ -262,103 +260,71 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override
+        public
 #else
         internal
 #endif
-        FeedIterator GetChangeFeedStreamIterator(
+        override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return ChangeFeedIteratorCore.Create(
                 container: this,
-                feedRangeInternal: null,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
 #if PREVIEW
-        public override
+        public
 #else
         internal
 #endif
-        FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            FeedRangeInternal feedRangeInternal = feedRange as FeedRangeInternal;
-            return ChangeFeedIteratorCore.Create(
-                container: this,
-                feedRangeInternal: feedRangeInternal,
-                changeFeedRequestOptions: changeFeedRequestOptions);
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator GetChangeFeedStreamIterator(
+        override FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
+            changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
+
             return ChangeFeedIteratorCore.Create(
                 container: this,
-                feedRangeInternal: new FeedRangePartitionKey(partitionKey),
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
 #if PREVIEW
-        public override
+        public
 #else
         internal
 #endif
-        FeedIterator<T> GetChangeFeedIterator<T>(
+        override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
                 container: this,
-                feedRangeInternal: null,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
 #if PREVIEW
-        public override
+        public
 #else
         internal
 #endif
-        FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            FeedRangeInternal feedRangeInternal = feedRange as FeedRangeInternal;
-            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
-                container: this,
-                feedRangeInternal: feedRangeInternal,
-                changeFeedRequestOptions: changeFeedRequestOptions);
-
-            return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator<T> GetChangeFeedIterator<T>(
+        override FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
+            changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
+
             ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
                 container: this,
-                feedRangeInternal: new FeedRangePartitionKey(partitionKey),
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
 #if PREVIEW
-        public override
+        public
 #else
         internal
 #endif

@@ -1155,13 +1155,17 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
-#if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A list of <see cref="FeedRange"/>.</returns>
-        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// This method creates an iterator to consume the container's Change Feed.
@@ -1187,39 +1191,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        ///  This method creates an iterator to consume a FeedRange's Change Feed.
-        /// </summary>
-        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/> or from a previous FeedIterator</param>
-        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedRanges[0]);
-        ///
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
-        ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
-        ///         {
-        ///             JObject result = JObject.Load(jtr);
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1247,7 +1224,12 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular Partition Key.</returns>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1271,35 +1253,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        ///  This method creates an iterator to consume a FeedRange's Change Feed.
-        /// </summary>
-        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>.</param>
-        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
-        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedRanges[0]);
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
-        ///     {
-        ///         Console.WriteLine(item);
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1323,20 +1282,14 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a Partition Key.</returns>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
-        /// </summary>
-        /// <param name="feedRange">A <see cref="FeedRange"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
@@ -1383,7 +1336,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetItemQueryStreamIterator(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken,
@@ -1430,11 +1388,15 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<T> GetItemQueryIterator<T>(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
-#endif
     }
 }

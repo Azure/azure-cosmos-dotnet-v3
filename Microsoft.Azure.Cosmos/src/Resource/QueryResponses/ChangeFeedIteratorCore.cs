@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos
 
         public static ChangeFeedIteratorCore Create(
             ContainerCore container,
-            FeedRangeInternal feedRangeInternal,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
             if (changeFeedRequestOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
@@ -47,8 +46,8 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            feedRangeInternal ??= FeedRangeEPK.ForCompleteRange();
-            return new ChangeFeedIteratorCore(container, feedRangeInternal, changeFeedRequestOptions);
+            changeFeedRequestOptions.FeedRange ??= FeedRangeEPK.ForCompleteRange();
+            return new ChangeFeedIteratorCore(container, (FeedRangeInternal)changeFeedRequestOptions.FeedRange, changeFeedRequestOptions);
         }
 
         internal ChangeFeedIteratorCore(
@@ -257,6 +256,8 @@ namespace Microsoft.Azure.Cosmos
                     ranges: effectiveRanges,
                     continuation: this.FeedRangeContinuation.GetContinuation());
             }
+
+            this.changeFeedOptions.FeedRange = this.FeedRangeInternal;
         }
     }
 }

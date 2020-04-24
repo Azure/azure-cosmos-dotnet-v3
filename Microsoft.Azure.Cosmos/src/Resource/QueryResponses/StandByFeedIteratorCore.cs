@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                 this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(currentRangeToken.Token);
             }
 
-            this.changeFeedOptions.PartitionKeyRangeId = rangeId;
+            this.changeFeedOptions.FeedRange = new FeedRangePartitionKeyRange(rangeId);
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {

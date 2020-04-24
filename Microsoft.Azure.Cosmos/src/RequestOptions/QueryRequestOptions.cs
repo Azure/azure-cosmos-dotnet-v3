@@ -159,6 +159,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal TestInjections TestSettings { get; set; }
 
+        internal FeedRange FeedRange { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -230,6 +232,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
+
+            QueryFeedRangeVisitor queryFeedRangeVisitor = new QueryFeedRangeVisitor(request);
+            ((FeedRangeInternal)this.FeedRange).Accept(queryFeedRangeVisitor);
 
             base.PopulateRequestOptions(request);
         }

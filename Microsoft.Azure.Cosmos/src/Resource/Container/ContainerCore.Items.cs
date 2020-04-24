@@ -444,11 +444,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override
+        public
 #else
         internal
 #endif
-        FeedIterator<T> GetItemQueryIterator<T>(
+        override FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -471,11 +471,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override
+        public
 #else
         internal
 #endif
-        FeedIterator GetItemQueryStreamIterator(
+        override FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,

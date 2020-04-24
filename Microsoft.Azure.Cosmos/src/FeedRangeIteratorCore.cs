@@ -157,13 +157,8 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: this.queryRequestOptions,
                cosmosContainerCore: this.containerCore,
                partitionKey: this.queryRequestOptions?.PartitionKey,
-               streamPayload: null,
-               requestEnricher: request =>
-               {
-                   FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
-                   this.FeedRangeInternal.Accept(feedRangeVisitor);
-                   this.FeedRangeContinuation.Accept(feedRangeVisitor, QueryRequestOptions.FillContinuationToken);
-               },
+               streamPayload: default,
+               requestEnricher: default,
                diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
