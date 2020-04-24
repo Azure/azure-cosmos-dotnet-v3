@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal static class Serializer
@@ -46,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     break;
 
                 case Number64 value:
-                    jsonWriter.WriteNumberValue(value);
+                    jsonWriter.WriteNumber64Value(value);
                     break;
 
                 case sbyte value:
@@ -149,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
         {
             IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteNumberValue(value);
+            jsonWriter.WriteNumber64Value(value);
             return jsonWriter.GetResult();
         }
 

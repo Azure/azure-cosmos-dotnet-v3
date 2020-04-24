@@ -26,11 +26,11 @@
 
             this.json = JsonConvert.SerializeObject(people);
 
-            IJsonWriter jsonTextWriter = Json.JsonWriter.Create(JsonSerializationFormat.Text);
+            IJsonWriter jsonTextWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
             CosmosElement.Parse(this.json).WriteTo(jsonTextWriter);
             this.textBuffer = jsonTextWriter.GetResult();
 
-            IJsonWriter jsonBinaryWriter = Json.JsonWriter.Create(JsonSerializationFormat.Binary);
+            IJsonWriter jsonBinaryWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);
             CosmosElement.Parse(this.json).WriteTo(jsonBinaryWriter);
             this.binaryBuffer = jsonBinaryWriter.GetResult();
         }

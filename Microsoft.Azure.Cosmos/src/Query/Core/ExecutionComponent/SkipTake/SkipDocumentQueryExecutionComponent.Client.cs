@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 CosmosElement sourceToken;
                 if (offsetContinuationToken.SourceToken != null)
                 {
-                    TryCatch<CosmosElement> tryParse = CosmosElement.TryParse(offsetContinuationToken.SourceToken);
-                    if (tryParse.Faulted)
+                    TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(offsetContinuationToken.SourceToken);
+                    if (tryParse.Failed)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException(

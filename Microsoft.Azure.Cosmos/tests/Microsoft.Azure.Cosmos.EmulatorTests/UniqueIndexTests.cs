@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Runtime.ExceptionServices;
+    using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -18,30 +16,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class UniqueIndexTests
     {
-        private DocumentClient client;  // This is only used for housekeeping this.database.
-        private Database database;
-        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+        private CosmosClient client;  // This is only used for housekeeping this.database.
+        private Cosmos.Database database;
+        private readonly string defaultPartitionKeyDefinition = "/pk";
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitializeAsync()
         {
-            this.client = TestCommon.CreateClient(true);
-            this.database = TestCommon.CreateOrGetDatabase(this.client);
+            this.client = TestCommon.CreateCosmosClient(true);
+            this.database = await this.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
         }
 
         [TestCleanup]
-        public void TestCleanup()
+        public async Task TestCleanupAsync()
         {
-            this.client.DeleteDatabaseAsync(this.database).Wait();
+            if (this.database != null)
+            {
+                using (await this.database.DeleteStreamAsync()) { }
+            }
         }
 
         [TestMethod]
-        public void InsertWithUniqueIndex()
+        public async Task InsertWithUniqueIndex()
         {
-            var collectionSpec = new DocumentCollection
+            ContainerProperties collectionSpec = new ContainerProperties
             {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
-                PartitionKey = defaultPartitionKeyDefinition,
+                PartitionKeyPath = defaultPartitionKeyDefinition,
                 UniqueKeyPolicy = new UniqueKeyPolicy
                 {
                     UniqueKeys = new Collection<UniqueKey> {
@@ -63,110 +64,109 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            Func<DocumentClient, DocumentCollection, Task> testFunction = async (DocumentClient client, DocumentCollection collection) =>
+            Func<Container, Task> testFunction = async (Container container) =>
             {
-                var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 630090\"}");
-                var doc2 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 640000\"}");
-                var doc3 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"address\":\"Russia 630090\"}");
+                dynamic doc1 = new { id = Guid.NewGuid().ToString(), name = "Alexander Pushkin", pk = "test", address = "Russia 630090" };
+                dynamic doc1Conflict = new { id = Guid.NewGuid().ToString(), name = doc1.name, pk = doc1.pk, address = doc1.address };
+                dynamic doc1Conflict2 = new { id = Guid.NewGuid().ToString(), name = doc1.name, pk = doc1.pk, address = doc1.address };
+                dynamic doc2 = new { id = Guid.NewGuid().ToString(), name = "Alexander Pushkin", pk = "test", address = "Russia 640000" };
+                dynamic doc3 = new { id = Guid.NewGuid().ToString(), name = "Mihkail Lermontov", pk = "test", address = "Russia 630090" };
 
-                await client.CreateDocumentAsync(collection, doc1);
+                await container.CreateItemAsync<dynamic>(doc1);
 
                 try
                 {
-                    await client.CreateDocumentAsync(collection, doc1);
+                    await container.CreateItemAsync<dynamic>(doc1Conflict);
                     Assert.Fail("Did not throw due to unique constraint (create)");
                 }
-                catch (DocumentClientException ex)
+                catch (CosmosException ex)
                 {
-                    Assert.AreEqual(StatusCodes.Conflict, (StatusCodes)ex.StatusCode);
+                    Assert.AreEqual(HttpStatusCode.Conflict, ex.StatusCode, $"Expected:Conflict, Actual:{ex.StatusCode}; Exception:ex.ToString()");
                 }
 
                 try
                 {
-                    await client.UpsertDocumentAsync(collection.SelfLink, doc1);
+                    await container.UpsertItemAsync<dynamic>(doc1Conflict2);
                     Assert.Fail("Did not throw due to unique constraint (upsert)");
                 }
-                catch (DocumentClientException ex)
+                catch (CosmosException ex)
                 {
                     // Search for: L"For upsert insert, if it failed with E_RESOURCE_ALREADY_EXISTS, return E_CONCURRENCY_VIOLATION so that client will retry"
-                    Assert.AreEqual(StatusCodes.Conflict, (StatusCodes)ex.StatusCode);
+                    Assert.AreEqual(HttpStatusCode.Conflict, ex.StatusCode, $"Expected:Conflict, Actual:{ex.StatusCode}; Exception:ex.ToString()");
                 }
 
-                await client.CreateDocumentAsync(collection, doc2);
-                await client.CreateDocumentAsync(collection, doc3);
+                await container.CreateItemAsync<dynamic>(doc2);
+                await container.CreateItemAsync<dynamic>(doc3);
             };
 
-            TestForEachClient(collectionSpec, testFunction, "InsertWithUniqueIndex");
+            await this.TestForEachClient(collectionSpec, testFunction, "InsertWithUniqueIndex");
         }
 
         [TestMethod]
-        public void ReplaceAndDeleteWithUniqueIndex()
+        public async Task ReplaceAndDeleteWithUniqueIndex()
         {
-            var collectionSpec = new DocumentCollection
+            ContainerProperties collectionSpec = new ContainerProperties
             {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
-                PartitionKey = defaultPartitionKeyDefinition,
+                PartitionKeyPath = defaultPartitionKeyDefinition,
                 UniqueKeyPolicy = new UniqueKeyPolicy
                 {
                     UniqueKeys = new Collection<UniqueKey> { new UniqueKey { Paths = new Collection<string> { "/name", "/address" } } }
                 }
             };
-            RequestOptions requestOptions = new RequestOptions();
-            requestOptions.PartitionKey = new PartitionKey("test");
-            Func<DocumentClient, DocumentCollection, Task> testFunction = async (DocumentClient client, DocumentCollection collection) =>
+
+            Func<Container, Task> testFunction = async (Container collection) =>
             {
-                var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
-                var doc2 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
-                var doc3 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 640000\"}");
+                JObject doc1 = JObject.FromObject(new { id = Guid.NewGuid().ToString(), name = "Alexander Pushkin", pk = "test", address = "Russia 630090" });
+                JObject doc2 = JObject.FromObject(new { id = Guid.NewGuid().ToString(), name = "Mihkail Lermontov", pk = "test", address = "Russia 630090" });
+                JObject doc3 = JObject.FromObject(new { id = Guid.NewGuid().ToString(), name = "Alexander Pushkin", pk = "test", address = "Russia 640000" });
 
-                Document doc1Inserted = await client.CreateDocumentAsync(collection, doc1);
+                ItemResponse<JObject> doc1InsertedResponse = await collection.CreateItemAsync<JObject>(doc1);
+                JObject doc1Inserted = doc1InsertedResponse.Resource;
 
-                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc1Inserted, requestOptions);     // Replace with same values -- OK.
+                await collection.ReplaceItemAsync<dynamic>(doc1Inserted, doc1Inserted["id"].ToString());     // Replace with same values -- OK.
 
-                Document doc2Inserted = await client.CreateDocumentAsync(collection, doc2);
-                var doc2Replacement = JObject.Parse(JsonConvert.SerializeObject(doc1Inserted));
-                doc2Replacement["id"] = doc2Inserted.Id;
+                ItemResponse<JObject> doc2InsertedResponse = await collection.CreateItemAsync<JObject>(doc2);
+                JObject doc2Inserted = doc2InsertedResponse.Resource;
+                JObject doc2Replacement = JObject.Parse(JsonConvert.SerializeObject(doc1Inserted));
+                doc2Replacement["id"] = doc2Inserted["id"];
 
                 try
                 {
-                    await client.ReplaceDocumentAsync(doc2Inserted.SelfLink, doc2Replacement, requestOptions); // Replace doc2 with values from doc1 -- Conflict.
+                    await collection.ReplaceItemAsync<JObject>(doc2Replacement, doc2Inserted["id"].ToString()); // Replace doc2 with values from doc1 -- Conflict.
                     Assert.Fail("Did not throw due to unique constraint");
                 }
-                catch (DocumentClientException ex)
+                catch (CosmosException ex)
                 {
-                    Assert.AreEqual(StatusCodes.Conflict, (StatusCodes)ex.StatusCode);
+                    Assert.AreEqual(HttpStatusCode.Conflict, ex.StatusCode, $"Expected:Conflict, Actual:{ex.StatusCode}; Exception:ex.ToString()");
                 }
 
-                doc3["id"] = doc1Inserted.Id;
-                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc3, requestOptions);             // Replace with values from doc3 -- OK.
+                doc3["id"] = doc1Inserted["id"].ToString();
+                await collection.ReplaceItemAsync<dynamic>(doc3, doc1Inserted["id"].ToString());             // Replace with values from doc3 -- OK.
 
-                await client.DeleteDocumentAsync(doc1Inserted.SelfLink, requestOptions);
-                await client.CreateDocumentAsync(collection, doc1);
+                await collection.DeleteItemAsync<dynamic>(doc1["id"].ToString(), new PartitionKey(doc1["pk"].ToString()));
+                await collection.CreateItemAsync<dynamic>(doc1);
             };
 
-            TestForEachClient(collectionSpec, testFunction, "ReplaceAndDeleteWithUniqueIndex");
+            await this.TestForEachClient(collectionSpec, testFunction, "ReplaceAndDeleteWithUniqueIndex");
         }
 
         [TestMethod]
         [Description("Make sure that the pair (PK, unique key) is globally (not depending on partition/PK) unique")]
         public void TestGloballyUniquenessOfFieldAndPartitionedKeyPair()
         {
-            using (DocumentClient client = TestCommon.CreateClient(true, tokenType: AuthorizationTokenType.PrimaryMasterKey))
+            using (CosmosClient client = TestCommon.CreateCosmosClient(true))
             {
-                TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(client).Wait();
+                this.TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(client).Wait();
             }
         }
 
-        private async Task TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(DocumentClient client)
+        private async Task TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(CosmosClient client)
         {
-            var collectionSpec = new DocumentCollection
+            ContainerProperties collectionSpec = new ContainerProperties
             {
                 Id = "TestGloballyUniqueFieldForPartitionedCollection_" + Guid.NewGuid(),
-                PartitionKey = new PartitionKeyDefinition
-                {
-                    Kind = PartitionKind.Hash,
-                    Paths = new Collection<string> { "/pk" }
-                },
+                PartitionKeyPath = defaultPartitionKeyDefinition,
                 UniqueKeyPolicy = new UniqueKeyPolicy
                 {
                     UniqueKeys = new Collection<UniqueKey> {
@@ -185,71 +185,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            var collection = await client.CreateDocumentCollectionAsync(
-                this.database,
+            Container collection = await this.database.CreateContainerAsync(
                 collectionSpec,
-                new RequestOptions { OfferThroughput = 20000 });
+                20000);
 
             const int partitionCount = 50;
-            var partitionKeyValues = new List<string>();
+            List<string> partitionKeyValues = new List<string>();
             for (int i = 0; i < partitionCount * 3; ++i)
             {
                 partitionKeyValues.Add(Guid.NewGuid().ToString());
             }
 
-            string documentTemplate = "{{ \"pk\":\"{0}\", \"name\":\"{1}\" }}";
+            string documentTemplate = "{{ \"id\":\"{0}\",  \"pk\":\"{1}\", \"name\":\"{2}\" }}";
             foreach (string partitionKey in partitionKeyValues)
             {
-                string document = string.Format(documentTemplate, partitionKey, "Same Name");
-                await client.CreateDocumentAsync(collection, JObject.Parse(document));
+                string document = string.Format(documentTemplate, Guid.NewGuid().ToString(), partitionKey, "Same Name");
+                await collection.CreateItemAsync<dynamic>(JObject.Parse(document));
             }
 
-            string conflictDocument = string.Format(documentTemplate, partitionKeyValues[0], "Same Name");
+            string conflictDocument = string.Format(documentTemplate, Guid.NewGuid().ToString(), partitionKeyValues[0], "Same Name");
             try
             {
-                await client.CreateDocumentAsync(collection, JObject.Parse(conflictDocument));
+                await collection.CreateItemAsync<dynamic>(JObject.Parse(conflictDocument));
                 Assert.Fail("Did not throw due to unique constraint");
             }
-            catch (DocumentClientException ex)
+            catch (CosmosException ex)
             {
-                Assert.AreEqual(StatusCodes.Conflict, (StatusCodes)ex.StatusCode);
+                Assert.AreEqual(HttpStatusCode.Conflict, ex.StatusCode, $"Expected:Conflict, Actual:{ex.StatusCode}; Exception:ex.ToString()");
             }
         }
 
-        private void TestForEachClient(DocumentCollection collectionSpec, Func<DocumentClient, DocumentCollection, Task> testFunction, string scenarioName)
+        private async Task TestForEachClient(ContainerProperties collectionSpec, Func<Container, Task> testFunction, string scenarioName)
         {
-            Func<DocumentClient, DocumentClientType, Task<int>> wrapperFunction = async (DocumentClient client, DocumentClientType clientType) =>
+            Container collection = await this.database.CreateContainerAsync(collectionSpec);
+
+            try
             {
-                var collection = await client.CreateDocumentCollectionAsync(this.database, collectionSpec);
-
-                // Normally we would delete collection in in finally block, but can't await there.
-                // Delete collection is needed so that next client from Util.TestForEachClient starts fresh.
-                ExceptionDispatchInfo dispatchInfo = null;
-                try
-                {
-                    await testFunction(client, collection);
-                }
-                catch (Exception ex)
-                {
-                    dispatchInfo = ExceptionDispatchInfo.Capture(ex);
-                }
-
-                try
-                {
-                    await client.DeleteDocumentCollectionAsync(collection);
-                }
-                finally
-                {
-                    if (dispatchInfo != null)
-                    {
-                        dispatchInfo.Throw();
-                    }
-                }
-
-                return 0;
-            };
-
-            Util.TestForEachClient(wrapperFunction, scenarioName);
+                await testFunction(collection);
+            }
+            finally
+            {
+                using (await collection.DeleteContainerStreamAsync()) { }
+            }
         }
     }
 }

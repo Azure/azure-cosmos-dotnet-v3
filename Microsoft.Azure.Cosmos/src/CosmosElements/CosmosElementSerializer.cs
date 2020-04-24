@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             // Write the count field and value
             jsonWriter.WriteFieldName("_count");
-            jsonWriter.WriteNumberValue(count);
+            jsonWriter.WriteNumber64Value(count);
 
             jsonWriter.WriteObjectEnd();
 

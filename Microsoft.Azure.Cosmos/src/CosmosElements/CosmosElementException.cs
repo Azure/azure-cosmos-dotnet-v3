@@ -38,6 +38,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         }
     }
 
+    internal sealed class CosmosElementCouldNotDetermineWhichConstructorToUseException : CosmosElementException
+    {
+        public CosmosElementCouldNotDetermineWhichConstructorToUseException(string message = "Could not determine which constructor to use", Exception innerException = null)
+            : base(message, innerException)
+        {
+        }
+    }
+
     internal sealed class CosmosElementFailedToFindPropertyException : CosmosElementException
     {
         public CosmosElementFailedToFindPropertyException(string message = null, Exception innerException = null)
