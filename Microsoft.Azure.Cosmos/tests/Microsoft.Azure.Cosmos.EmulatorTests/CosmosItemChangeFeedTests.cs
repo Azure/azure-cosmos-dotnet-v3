@@ -67,7 +67,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(
-                requestOptions: new ChangeFeedRequestOptions());
+                requestOptions: new ChangeFeedRequestOptions()
+                {
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                });
 
             while (feedIterator.HasMoreResults)
             {
@@ -208,24 +211,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
             ContainerCore itemsCore = this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(
-                requestOptions: new ChangeFeedRequestOptions());
+                requestOptions: new ChangeFeedRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                });
 
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    if (responseMessage.IsSuccessStatusCode)
+                    Assert.IsTrue(responseMessage.IsSuccessStatusCode, responseMessage.ErrorMessage);
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    if (response.Count > 0)
                     {
-                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                        if (response.Count > 0)
-                        {
-                            Assert.AreEqual(1, response.Count);
-                            return;
-                        }
+                        Assert.AreEqual(1, response.Count);
+                        return;
                     }
                 }
-
             }
 
             Assert.Fail("Found no batch with size 1");
@@ -247,7 +251,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (true)
             {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                };
 
                 FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(
                     requestOptions: requestOptions);
@@ -325,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ChangeFeedRequestOptions()
                 {
                     MaxItemCount = 100,
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation: ""),
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
                 });
             using (ResponseMessage responseMessage =
                     await iterator.ReadNextAsync(this.cancellationToken))
