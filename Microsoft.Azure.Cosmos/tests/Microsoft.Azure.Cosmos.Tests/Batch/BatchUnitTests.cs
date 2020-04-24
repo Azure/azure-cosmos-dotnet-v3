@@ -392,13 +392,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void BatchFromItemRequestOptions_FromNull()
+        public void FromItemRequestOptions_FromNull()
         {
             Assert.IsNull(TransactionalBatchItemRequestOptions.FromItemRequestOptions(null));
         }
 
         [TestMethod]
-        public void BatchFromItemRequestOptions_WithCustomValues()
+        public void FromItemRequestOptions_WithCustomValues()
         {
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
             itemRequestOptions.IfMatchEtag = Guid.NewGuid().ToString();
@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void BatchFromItemRequestOptions_WithDefaultValues()
+        public void FromItemRequestOptions_WithDefaultValues()
         {
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);

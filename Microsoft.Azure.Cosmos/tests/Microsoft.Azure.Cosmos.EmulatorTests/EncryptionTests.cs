@@ -42,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static CosmosDataEncryptionKeyProvider dekProvider;
         private static TestEncryptor encryptor;
 
-
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context)
         {
