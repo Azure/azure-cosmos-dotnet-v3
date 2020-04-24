@@ -93,14 +93,16 @@
             IReadOnlyList<MyItem> documentsToWorkWith)
         {
             // <BulkImport>
-            List<Task<OperationResponse<MyItem>>> operations = new List<Task<OperationResponse<MyItem>>>(documentsToWorkWith.Count);
+            BulkOperations<MyItem> bulkOperations = new BulkOperations<MyItem>(documentsToWorkWith.Count);
             foreach (MyItem document in documentsToWorkWith)
             {
-                operations.Add(container.CreateItemAsync(document, new PartitionKey(document.pk)).CaptureOperationResponse(document));
+                bulkOperations.Tasks.Add(container.CreateItemAsync(document, new PartitionKey(document.pk)).CaptureOperationResponse(document));
             }
             // </BulkImport>
 
-            BulkOperationResponse<MyItem> bulkOperationResponse = await ExecuteTasksAsync(operations);
+            // <WhenAll>
+            BulkOperationResponse<MyItem> bulkOperationResponse = await bulkOperations.ExecuteAsync();
+            // </WhenAll>
             Console.WriteLine($"Bulk create operation finished in {bulkOperationResponse.TotalTimeTaken}");
             Console.WriteLine($"Consumed {bulkOperationResponse.TotalRequestUnitsConsumed} RUs in total");
             Console.WriteLine($"Created {bulkOperationResponse.SuccessfulDocuments} documents");
@@ -116,18 +118,18 @@
             IReadOnlyList<MyItem> documentsToWorkWith)
         {
             // <BulkUpdate>
-            List<Task<OperationResponse<MyItem>>> operations = new List<Task<OperationResponse<MyItem>>>(documentsToWorkWith.Count);
+            BulkOperations<MyItem> bulkOperations = new BulkOperations<MyItem>(documentsToWorkWith.Count);
             foreach (MyItem document in documentsToWorkWith)
             {
                 document.operationCounter++;
-                operations.Add(container.ReplaceItemAsync(document, document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
+                bulkOperations.Tasks.Add(container.ReplaceItemAsync(document, document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
             }
             // </BulkUpdate>
 
-            BulkOperationResponse<MyItem> bulkOperationResponse = await ExecuteTasksAsync(operations);
+            BulkOperationResponse<MyItem> bulkOperationResponse = await bulkOperations.ExecuteAsync();
             Console.WriteLine($"Bulk update operation finished in {bulkOperationResponse.TotalTimeTaken}");
             Console.WriteLine($"Consumed {bulkOperationResponse.TotalRequestUnitsConsumed} RUs in total");
-            Console.WriteLine($"Created {bulkOperationResponse.SuccessfulDocuments} documents");
+            Console.WriteLine($"Updated {bulkOperationResponse.SuccessfulDocuments} documents");
             Console.WriteLine($"Failed {bulkOperationResponse.Failures.Count} documents");
             if (bulkOperationResponse.Failures.Count > 0)
             {
@@ -140,40 +142,23 @@
             IReadOnlyList<MyItem> documentsToWorkWith)
         {
             // <BulkDelete>
-            List<Task<OperationResponse<MyItem>>> operations = new List<Task<OperationResponse<MyItem>>>(documentsToWorkWith.Count);
+            BulkOperations<MyItem> bulkOperations = new BulkOperations<MyItem>(documentsToWorkWith.Count);
             foreach (MyItem document in documentsToWorkWith)
             {
                 document.operationCounter++;
-                operations.Add(container.DeleteItemAsync<MyItem>(document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
+                bulkOperations.Tasks.Add(container.DeleteItemAsync<MyItem>(document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
             }
             // </BulkDelete>
 
-            BulkOperationResponse<MyItem> bulkOperationResponse = await ExecuteTasksAsync(operations);
+            BulkOperationResponse<MyItem> bulkOperationResponse = await bulkOperations.ExecuteAsync();
             Console.WriteLine($"Bulk update operation finished in {bulkOperationResponse.TotalTimeTaken}");
             Console.WriteLine($"Consumed {bulkOperationResponse.TotalRequestUnitsConsumed} RUs in total");
-            Console.WriteLine($"Created {bulkOperationResponse.SuccessfulDocuments} documents");
+            Console.WriteLine($"Deleted {bulkOperationResponse.SuccessfulDocuments} documents");
             Console.WriteLine($"Failed {bulkOperationResponse.Failures.Count} documents");
             if (bulkOperationResponse.Failures.Count > 0)
             {
                 Console.WriteLine($"First failed sample document {bulkOperationResponse.Failures[0].Item1.id} - {bulkOperationResponse.Failures[0].Item2}");
             }
-        }
-
-        private static async Task<BulkOperationResponse<T>> ExecuteTasksAsync<T>(IReadOnlyList<Task<OperationResponse<T>>> tasks)
-        {
-            // <WhenAll>
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            await Task.WhenAll(tasks);
-            stopwatch.Stop();
-
-            return new BulkOperationResponse<T>()
-            {
-                TotalTimeTaken = stopwatch.Elapsed,
-                TotalRequestUnitsConsumed = tasks.Sum(task => task.Result.RequestUnitsConsumed),
-                SuccessfulDocuments = tasks.Count(task => task.Result.IsSuccessful),
-                Failures = tasks.Where(task => !task.Result.IsSuccessful).Select(task => (task.Result.Item, task.Result.CosmosException)).ToList()
-            };
-            // </WhenAll>
         }
 
         private static async Task<Container> Initialize()
@@ -252,6 +237,33 @@
             return container;
         }
     }
+
+    // <Operation>
+    public class BulkOperations<T>
+    {
+        public readonly List<Task<OperationResponse<T>>> Tasks;
+
+        private readonly Stopwatch stopwatch = Stopwatch.StartNew();
+
+        public BulkOperations(int operationCount)
+        {
+            this.Tasks = new List<Task<OperationResponse<T>>>(operationCount);
+        }
+
+        public async Task<BulkOperationResponse<T>> ExecuteAsync()
+        {
+            await Task.WhenAll(this.Tasks);
+            this.stopwatch.Stop();
+            return new BulkOperationResponse<T>()
+            {
+                TotalTimeTaken = this.stopwatch.Elapsed,
+                TotalRequestUnitsConsumed = this.Tasks.Sum(task => task.Result.RequestUnitsConsumed),
+                SuccessfulDocuments = this.Tasks.Count(task => task.Result.IsSuccessful),
+                Failures = this.Tasks.Where(task => !task.Result.IsSuccessful).Select(task => (task.Result.Item, task.Result.CosmosException)).ToList()
+            };
+        }
+    }
+    // </Operation>
 
     // </ResponseType>
     public class BulkOperationResponse<T>
