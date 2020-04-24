@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                     List<OrderByItem> orderByItems = new List<OrderByItem>()
                     {
-                        new OrderByItem(CosmosObject.CreateFromBuffer(Encoding.UTF8.GetBytes("{\"item\":\"2c4ce711-13c3-4c93-817c-49287b71b6c3\"}")))
+                        new OrderByItem(CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes("{\"item\":\"2c4ce711-13c3-4c93-817c-49287b71b6c3\"}")))
                     };
 
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
