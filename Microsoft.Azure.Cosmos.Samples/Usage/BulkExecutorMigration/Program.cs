@@ -184,7 +184,7 @@
 
             Program.client = GetBulkClientInstance(endpointUrl, authKey);
             Program.database = client.GetDatabase(DatabaseName);
-            Container container = await CreateFreshContainerAsync(client, DatabaseName, ContainerName, 1000);
+            Container container = await CreateFreshContainerAsync(client, DatabaseName, ContainerName, 10000);
 
             try
             {
