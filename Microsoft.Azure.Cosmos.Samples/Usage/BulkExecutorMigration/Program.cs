@@ -238,7 +238,7 @@
         }
     }
 
-    // <Operation>
+    // <BulkOperationsHelper>
     public class BulkOperations<T>
     {
         public readonly List<Task<OperationResponse<T>>> Tasks;
@@ -263,9 +263,9 @@
             };
         }
     }
-    // </Operation>
+    // </BulkOperationsHelper>
 
-    // </ResponseType>
+    // <ResponseType>
     public class BulkOperationResponse<T>
     {
         public TimeSpan TotalTimeTaken { get; set; }
