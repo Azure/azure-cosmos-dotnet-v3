@@ -144,15 +144,15 @@
                     listOfObjects2.Add(operation);
                 }
 
-                TransactionalBatch cosmosDeleteBatch = container.CreateTransactionalBatch(new PartitionKey(pk));
-                for (int i = 0; i < listOfObjects2.Count; i++)
-                {
-                    cosmosDeleteBatch.DeleteItem(listOfObjects2[i]["id"].ToString());
-                }
-
                 if(loop % 2 == 0)
                 {
                     // Delete half the time
+                    TransactionalBatch cosmosDeleteBatch = container.CreateTransactionalBatch(new PartitionKey(pk));
+                    for (int i = 0; i < listOfObjects2.Count; i++)
+                    {
+                        cosmosDeleteBatch.DeleteItem(listOfObjects2[i]["id"].ToString());
+                    }
+
                     TransactionalBatchResponse deleteBatchResponse = await cosmosDeleteBatch.ExecuteAsync();
 
                     // Check batch response
@@ -175,9 +175,7 @@
                         Console.WriteLine($"loop {loop} done");
                     }
                 }
-               
             }
-
 
             Console.WriteLine("Successfull");
         }
@@ -193,11 +191,6 @@
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
-
-            ItemRequestOptions requestOptions = new ItemRequestOptions();
-            requestOptions.Prefer = "return=representational"; //"return=minimal";
-
-            Console.WriteLine("Return prefer value and no compression Direct mode: " + requestOptions.Prefer);
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             long startMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -217,7 +210,7 @@
                             docCounter++;
 
                             MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
-                            _ = container.CreateItemStreamAsync(stream, partitionKeyValue, requestOptions, cancellationToken)
+                            _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
                                 .ContinueWith((Task<ResponseMessage> task) =>
                                 {
                                     Interlocked.Increment(ref taskCompleteCounter);
@@ -351,7 +344,7 @@
         // </Initialization>
             new CosmosClient(endpoint, authKey, new CosmosClientOptions()
             {
-                AllowBulkExecution = false,
+                AllowBulkExecution = true,
                 ConnectionMode = ConnectionMode.Direct,
                 MaxRetryAttemptsOnRateLimitedRequests = 100,
                 RequestTimeout = new TimeSpan(0, 5, 0),
@@ -386,7 +379,7 @@
             //Console.ReadKey();
 
             // Indexing Policy to exclude all attributes to maximize RU/s usage
-            Container container = await database.DefineContainer(containerName, "/pk")
+            Container container = await database.DefineContainer(containerName, "/partitionKey")
                     .WithIndexingPolicy()
                         .WithIndexingMode(IndexingMode.Consistent)
                         .WithIncludedPaths()
@@ -434,10 +427,6 @@
             private MemoryStream CreateNextDocItem(out PartitionKey partitionKeyValue)
             {
                 string partitionKey = Guid.NewGuid().ToString();
-
-                //MyDocument myDocument = new MyDocument() { id = id, pk = partitionKey, other = padding };
-                //string value = JsonConvert.SerializeObject(myDocument);
-
                 string payloadToUse = payloadGenerator.GeneratePayload(partitionKey);
                 partitionKeyValue = new PartitionKey(partitionKey);
 
