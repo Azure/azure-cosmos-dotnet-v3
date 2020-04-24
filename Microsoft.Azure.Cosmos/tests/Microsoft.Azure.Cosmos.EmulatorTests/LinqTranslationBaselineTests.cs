@@ -775,7 +775,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // get_item
                 new LinqTestInput("get_item", b => getQuery(b).Select(doc => doc.EnumerableField[0])),
                 // TagsMatch
-                new LinqTestInput("TagsMatch", b => getQuery(b).Where(doc => Tags.Match(doc.TagsField, new [] { "ns:name=1" }, true)))
+                new LinqTestInput("TagsMatch", b => getQuery(b).Where(doc => CosmosTags.Match(doc.TagsField, new [] { "ns:name=1" }, TagsQueryOptions.Default)))
             };
             this.ExecuteTestSuite(inputs);
         }
