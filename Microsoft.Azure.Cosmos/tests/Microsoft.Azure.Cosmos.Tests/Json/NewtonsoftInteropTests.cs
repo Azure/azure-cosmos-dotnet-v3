@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private static void VerifyBinaryReader<T>(T expectedDeserializedValue)
         {
             string stringValue = NewtonsoftInteropTests.NewtonsoftFormat(JsonConvert.SerializeObject(expectedDeserializedValue));
-            ReadOnlyMemory<byte> result = JsonPerfMeasurement.ConvertTextToBinary(stringValue);
+            ReadOnlyMemory<byte> result = JsonTestUtils.ConvertTextToBinary(stringValue);
             NewtonsoftInteropTests.VerifyReader<T>(result, expectedDeserializedValue);
         }
 

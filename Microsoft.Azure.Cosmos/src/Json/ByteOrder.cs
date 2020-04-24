@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ushort b1 = (ushort)(((ushort)value >> 0) & 0xff);
             ushort b2 = (ushort)(((ushort)value >> 8) & 0xff);
 
-            return (char)(b1 << 8 | b2 << 0);
+            return (char)((b1 << 8) | (b2 << 0));
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ushort b1 = (ushort)(((ushort)value >> 0) & 0xff);
             ushort b2 = (ushort)(((ushort)value >> 8) & 0xff);
 
-            return (short)(b1 << 8 | b2 << 0);
+            return (short)((b1 << 8) | (b2 << 0));
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ushort b1 = (ushort)((value >> 0) & 0xff);
             ushort b2 = (ushort)((value >> 8) & 0xff);
 
-            return (ushort)(b1 << 8 | b2 << 0);
+            return (ushort)((b1 << 8) | (b2 << 0));
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Json
             uint b3 = ((uint)value >> 16) & 0xff;
             uint b4 = ((uint)value >> 24) & 0xff;
 
-            return (int)(b1 << 24 | b2 << 16 | b3 << 8 | b4 << 0);
+            return (int)((b1 << 24) | (b2 << 16) | (b3 << 8) | (b4 << 0));
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Json
             uint b3 = (value >> 16) & 0xff;
             uint b4 = (value >> 24) & 0xff;
 
-            return b1 << 24 | b2 << 16 | b3 << 8 | b4 << 0;
+            return (b1 << 24) | (b2 << 16) | (b3 << 8) | (b4 << 0);
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ulong b7 = ((ulong)value >> 48) & 0xff;
             ulong b8 = ((ulong)value >> 56) & 0xff;
 
-            return (long)(b1 << 56 | b2 << 48 | b3 << 40 | b4 << 32 | b5 << 24 | b6 << 16 | b7 << 8 | b8 << 0);
+            return (long)((b1 << 56) | (b2 << 48) | (b3 << 40) | (b4 << 32) | (b5 << 24) | (b6 << 16) | (b7 << 8) | (b8 << 0));
         }
 
         /// <summary>
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ulong b7 = (value >> 48) & 0xff;
             ulong b8 = (value >> 56) & 0xff;
 
-            return b1 << 56 | b2 << 48 | b3 << 40 | b4 << 32 | b5 << 24 | b6 << 16 | b7 << 8 | b8 << 0;
+            return (b1 << 56) | (b2 << 48) | (b3 << 40) | (b4 << 32) | (b5 << 24) | (b6 << 16) | (b7 << 8) | (b8 << 0);
         }
 
         /// <summary>
