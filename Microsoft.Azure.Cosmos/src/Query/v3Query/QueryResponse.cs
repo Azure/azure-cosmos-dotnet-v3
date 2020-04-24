@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos
 
         private QueryResponse(
             IReadOnlyList<CosmosElement> result,
-            int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
@@ -52,7 +51,9 @@ namespace Microsoft.Azure.Cosmos
                 diagnostics: diagnostics)
         {
             this.CosmosElements = result;
-            this.Count = count;
+            this.Count = result.Count;
+            this.Headers.SetItemCount(result.Count);
+
             this.ResponseLengthBytes = responseLengthBytes;
             this.memoryStream = memoryStream;
             this.CosmosSerializationOptions = serializationOptions;
@@ -113,7 +114,6 @@ namespace Microsoft.Azure.Cosmos
 
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,
-               count: count,
                responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
                diagnostics: diagnostics,
@@ -135,7 +135,6 @@ namespace Microsoft.Azure.Cosmos
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
                     result: new List<CosmosElement>(),
-                    count: 0,
                     responseLengthBytes: 0,
                     responseHeaders: responseHeaders,
                     diagnostics: diagnostics,

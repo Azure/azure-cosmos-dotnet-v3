@@ -674,21 +674,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string queryText,
             QueryRequestOptions requestOptions)
         {
-            HttpStatusCode expectedStatus = HttpStatusCode.OK;
             FeedIterator feedStreamIterator = createStreamQuery(queryText, null, requestOptions);
             List<T> streamResults = new List<T>();
             while (feedStreamIterator.HasMoreResults)
             {
                 ResponseMessage response = await feedStreamIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
-                Assert.AreEqual(expectedStatus, response.StatusCode);
 
                 StreamReader sr = new StreamReader(response.Content);
                 string result = await sr.ReadToEndAsync();
                 ICollection<T> responseResults;
                 responseResults = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<T>>(result).Data;
 
-                Assert.IsTrue(responseResults.Count <= 1);
+                this.ValidateHeader(response, responseResults.Count);
 
                 streamResults.AddRange(responseResults);
             }
@@ -700,14 +698,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedIterator pagedFeedIterator = createStreamQuery(queryText, continuationToken, requestOptions);
                 ResponseMessage response = await pagedFeedIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
-                Assert.AreEqual(expectedStatus, response.StatusCode);
 
-                IEnumerable<T> responseResults = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
-                Assert.IsTrue(responseResults.Count() <= 1);
+                ICollection<T> responseResults = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                Assert.IsTrue(responseResults.Count <= 1);
 
                 pagedStreamResults.AddRange(responseResults);
                 continuationToken = response.Headers.ContinuationToken;
-                Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
+                this.ValidateHeader(response, responseResults.Count);
             } while (continuationToken != null);
 
             Assert.AreEqual(pagedStreamResults.Count, streamResults.Count);
@@ -726,10 +723,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<T> response = await feedIterator.ReadNextAsync();
-                Assert.AreEqual(expectedStatus, response.StatusCode);
                 Assert.IsTrue(response.Count <= 1);
                 Assert.IsTrue(response.Resource.Count() <= 1);
-
+                this.ValidateHeader(response, response.Count);
                 results.AddRange(response);
             }
 
@@ -739,9 +735,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedIterator<T> pagedFeedIterator = createQuery(queryText, continuationToken, requestOptions);
                 FeedResponse<T> response = await pagedFeedIterator.ReadNextAsync();
-                Assert.AreEqual(expectedStatus, response.StatusCode);
                 Assert.IsTrue(response.Count <= 1);
                 Assert.IsTrue(response.Resource.Count() <= 1);
+                this.ValidateHeader(response, response.Count);
+
                 pagedResults.AddRange(response);
                 continuationToken = response.ContinuationToken;
             } while (continuationToken != null);
@@ -759,6 +756,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             return results;
+        }
+
+        private void ValidateHeader(
+            ResponseMessage responseMessage,
+            int itemCount)
+        {
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
+            this.ValidateHeadersHelper(
+                responseMessage.Headers,
+                itemCount,
+                responseMessage.Diagnostics);
+        }
+
+        private void ValidateHeader<T>(
+            FeedResponse<T> feedResponse,
+            int itemCount)
+        {
+            Assert.AreEqual(HttpStatusCode.OK, feedResponse.StatusCode);
+            Assert.AreEqual(feedResponse.ContinuationToken, feedResponse.Headers.ContinuationToken);
+            this.ValidateHeadersHelper(
+                feedResponse.Headers,
+                itemCount,
+                feedResponse.Diagnostics);
+        }
+
+        private void ValidateHeadersHelper(
+            Headers headers,
+            int itemCount,
+            CosmosDiagnostics diagnostics)
+        {
+            Assert.IsNotNull(diagnostics.ToString());
+            Assert.IsNotNull(headers.ItemCount);
+            int headerItemCount = int.Parse(headers.ItemCount);
+            Assert.AreEqual(itemCount, headerItemCount);
         }
 
         public const string DatabaseName = "testcosmosclient";
