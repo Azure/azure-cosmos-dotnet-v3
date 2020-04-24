@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class BatchExecutor
     {
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
 
         private readonly CosmosClientContext clientContext;
 
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosDiagnosticsContext diagnosticsContext;
 
         public BatchExecutor(
-            ContainerCore container,
+            ContainerInternal container,
             PartitionKey partitionKey,
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,

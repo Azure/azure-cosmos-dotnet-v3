@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultDispatchTimerInSeconds = 1;
         private const int MinimumDispatchTimerInSeconds = 1;
 
-        private readonly ContainerCore cosmosContainer;
+        private readonly ContainerInternal cosmosContainer;
         private readonly CosmosClientContext cosmosClientContext;
         private readonly int maxServerRequestBodyLength;
         private readonly int maxServerRequestOperationCount;
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public BatchAsyncContainerExecutor(
-            ContainerCore cosmosContainer,
+            ContainerInternal cosmosContainer,
             CosmosClientContext cosmosClientContext,
             int maxServerRequestOperationCount,
             int maxServerRequestBodyLength,
