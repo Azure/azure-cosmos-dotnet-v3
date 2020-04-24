@@ -6,9 +6,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.ExceptionServices;
     using System.Threading.Tasks;
 
-    internal readonly struct TryCatch<TResult>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    readonly struct TryCatch<TResult>
     {
         private readonly Either<Exception, TResult> either;
 
@@ -17,10 +25,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             this.either = either;
         }
 
-        public bool Succeeded
-        {
-            get { return this.either.IsRight; }
-        }
+        public bool Succeeded => this.either.IsRight;
+
+        public bool Failed => !this.Succeeded;
 
         public TResult Result
         {
@@ -148,6 +155,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             return this;
         }
 
+        public void ThrowIfFailed()
+        {
+            if (!this.Succeeded)
+            {
+                ExceptionDispatchInfo.Capture(this.Exception).Throw();
+            }
+        }
+
         public override bool Equals(object obj)
         {
             if (object.ReferenceEquals(this, obj))
@@ -187,6 +202,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                     message: $"{nameof(TryCatch<TResult>)} resulted in an exception.",
                     innerException: exception,
                     stackTrace: stackTrace));
+        }
+
+        public static bool ConvertToTryGet<T>(TryCatch<T> tryCatch, out T result)
+        {
+            if (tryCatch.Failed)
+            {
+                result = default;
+                return false;
+            }
+
+            result = tryCatch.Result;
+            return true;
         }
     }
 }
