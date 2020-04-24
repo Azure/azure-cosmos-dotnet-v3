@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(createItemsTasks);
 
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
-            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
+            FeedIterator changeFeedIterator = ((ContainerInternal)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
             {
                 using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())
@@ -325,15 +325,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 perPKItemCount: 1,
                 randomPartitionKey: true);
 
-            ContainerCore containerCore = (ContainerInlineCore)this.Container;
+            ContainerInternal containerCore = (ContainerInlineCore)this.Container;
             MockCosmosQueryClient gatewayQueryPlanClient = new MockCosmosQueryClient(
                    clientContext: containerCore.ClientContext,
                    cosmosContainerCore: containerCore,
                    forceQueryPlanGatewayElseServiceInterop: true);
 
-            Container gatewayQueryPlanContainer = new ContainerCore(
+            Container gatewayQueryPlanContainer = new ContainerInlineCore(
                 containerCore.ClientContext,
-                (DatabaseCore)containerCore.Database,
+                (DatabaseInternal)containerCore.Database,
                 containerCore.Id,
                 gatewayQueryPlanClient);
 

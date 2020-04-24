@@ -274,14 +274,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
-            ContainerCore testContainer = (ContainerInlineCore)client.GetContainer(dbName, containerName);
+            ContainerInternal testContainer = (ContainerInlineCore)client.GetContainer(dbName, containerName);
 
             int loopCount = 2;
             for (int i = 0; i < loopCount; i++)
             {
                 try
                 {
-                    await testContainer.GetNonePartitionKeyValueAsync();
+                    await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
                     Assert.Fail();
                 }
                 catch (CosmosException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetNonePartitionKeyValueAsync();
+                await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
             }
 
             // expected once post create 
@@ -1032,7 +1032,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemEpkQuerySingleKeyRangeValidation()
         {
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            ContainerCore container = null;
+            ContainerInternal container = null;
             try
             {
                 // Create a container large enough to have at least 2 partitions
@@ -1314,7 +1314,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadNonPartitionItemAsync()
         {
-            ContainerCore fixedContainer = null;
+            ContainerInternal fixedContainer = null;
             try
             {
                 fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -1444,7 +1444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task MigrateDataInNonPartitionContainer()
         {
-            ContainerCore fixedContainer = null;
+            ContainerInternal fixedContainer = null;
             try
             {
                 fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -1665,7 +1665,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string containerName = Guid.NewGuid().ToString();
 
                 db1 = await cc1.CreateDatabaseAsync(dbName);
-                ContainerCore container1 = (ContainerInlineCore)await db1.CreateContainerAsync(containerName, "/id");
+                ContainerInternal container1 = (ContainerInlineCore)await db1.CreateContainerAsync(containerName, "/id");
 
                 await operation(container1, HttpStatusCode.OK);
 
