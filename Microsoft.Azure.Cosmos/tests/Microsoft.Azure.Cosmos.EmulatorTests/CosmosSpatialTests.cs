@@ -13,7 +13,7 @@
     [TestClass]
     public class CosmosSpatialTests
     {
-        private ContainerCore Container = null;
+        private ContainerInternal Container = null;
         private DocumentClient documentClient;
         private readonly string spatialName = "SpatialName";
         protected CancellationTokenSource cancellationTokenSource = null;

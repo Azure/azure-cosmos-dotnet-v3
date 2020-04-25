@@ -25,14 +25,14 @@ namespace Microsoft.Azure.Cosmos
     {
         internal readonly FeedRangeInternal FeedRangeInternal;
         internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
-        private readonly ContainerCore containerCore;
+        private readonly ContainerInternal containerCore;
         private readonly CosmosClientContext clientContext;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private bool hasMoreResultsInternal;
 
         public static FeedRangeIteratorCore Create(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             FeedRangeInternal feedRangeInternal,
             string continuation,
             QueryRequestOptions options)
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         /// For unit tests
         /// </summary>
         internal FeedRangeIteratorCore(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             FeedRangeContinuation feedRangeContinuation,
             QueryRequestOptions options)
             : this(containerCore, feedRangeContinuation.FeedRange, options)
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private FeedRangeIteratorCore(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions options)
             : this(containerCore, options)
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private FeedRangeIteratorCore(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             QueryRequestOptions options)
         {
             this.containerCore = containerCore ?? throw new ArgumentNullException(nameof(containerCore));

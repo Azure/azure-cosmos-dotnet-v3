@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                ContainerCore containerCore = (ContainerInlineCore)container;
+                ContainerInternal containerCore = (ContainerInlineCore)container;
 
                 foreach (bool isGatewayQueryPlan in new bool[] { true, false })
                 {
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         containerCore,
                         isGatewayQueryPlan);
 
-                    ContainerCore containerWithForcedPlan = new ContainerCore(
+                    ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
                         containerCore.ClientContext,
                         (DatabaseCore)containerCore.Database,
                         containerCore.Id,
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
-            ContainerCore conatinerCore = (ContainerInlineCore)container;
+            ContainerInternal conatinerCore = (ContainerInlineCore)container;
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
