@@ -330,16 +330,23 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            if (requestOptions == null)
+            {
+                return input;
+            }
+
             ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = requestOptions as TransactionalBatchItemRequestOptions;
-            EncryptionOptions encryptionOptions = null;
+            Debug.Assert(itemRequestOptions != null || batchItemRequestOptions != null);
+
+            EncryptionOptions encryptionOptions;
 
             if (itemRequestOptions != null)
             {
                 encryptionOptions = itemRequestOptions.EncryptionOptions;
                 itemRequestOptions.IsClientEncrypted = false;
             }
-            else if (batchItemRequestOptions != null)
+            else
             {
                 encryptionOptions = batchItemRequestOptions.EncryptionOptions;
                 batchItemRequestOptions.IsClientEncrypted = false;
@@ -358,7 +365,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(diagnosticsContext != null);
             using (diagnosticsContext.CreateScope("Encrypt"))
             {
-                (Stream encryptedStream, bool isEncrypted) = await this.EncryptionProcessor.TryEncryptAsync(
+                (bool isEncrypted, Stream encryptedStream) = await this.EncryptionProcessor.TryEncryptAsync(
                     input,
                     encryptionOptions,
                     this.ClientOptions.Encryptor,
@@ -375,9 +382,11 @@ namespace Microsoft.Azure.Cosmos
                     {
                         batchItemRequestOptions.IsClientEncrypted = true;
                     }
+
+                    return encryptedStream;
                 }
 
-                return encryptedStream;
+                return input;
             }
         }
 

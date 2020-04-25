@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
-        public async Task<(Stream, bool)> TryEncryptAsync(
+        public async Task<(bool isSuccessful, Stream encryptedStream)> TryEncryptAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
             Encryptor encryptor,
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (encryptionOptions.PathsToEncrypt.Count == 0)
             {
-                return (input, false);
+                return (false, default);
             }
 
             foreach (string path in encryptionOptions.PathsToEncrypt)
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
                 encryptedData: cipherText);
 
             itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
-            return (EncryptionProcessor.baseSerializer.ToStream(itemJObj), true);
+            return (true, EncryptionProcessor.baseSerializer.ToStream(itemJObj));
         }
 
         public async Task<Stream> DecryptAsync(
