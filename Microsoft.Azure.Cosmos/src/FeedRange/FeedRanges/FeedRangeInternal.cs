@@ -47,5 +47,10 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
         }
+
+        public static FeedRange Test()
+        {
+            return null;
+        }
     }
 }
