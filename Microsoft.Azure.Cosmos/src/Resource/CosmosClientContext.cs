@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         internal abstract EncryptionProcessor EncryptionProcessor { get; }
 
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
-            ContainerCore container);
+            ContainerInternal container);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,
-           ContainerCore cosmosContainerCore,
+           ContainerInternal cosmosContainerCore,
            PartitionKey? partitionKey,
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<Stream> DecryptItemAsync(
             Stream input,
-            DatabaseCore database,
+            DatabaseInternal database,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
