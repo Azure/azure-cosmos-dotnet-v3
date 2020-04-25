@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
-        public async Task<(Stream, bool)> EncryptAsync(
+        public async Task<(Stream, bool)> TryEncryptAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
             Encryptor encryptor,
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (cipherText == null)
             {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
+                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(TryEncryptAsync)}.");
             }
 
             EncryptionProperties encryptionProperties = new EncryptionProperties(

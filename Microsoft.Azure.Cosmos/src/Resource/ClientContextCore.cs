@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(diagnosticsContext != null);
             using (diagnosticsContext.CreateScope("Encrypt"))
             {
-                (Stream encryptedStream, bool isEncrypted) = await this.EncryptionProcessor.EncryptAsync(
+                (Stream encryptedStream, bool isEncrypted) = await this.EncryptionProcessor.TryEncryptAsync(
                     input,
                     encryptionOptions,
                     this.ClientOptions.Encryptor,
