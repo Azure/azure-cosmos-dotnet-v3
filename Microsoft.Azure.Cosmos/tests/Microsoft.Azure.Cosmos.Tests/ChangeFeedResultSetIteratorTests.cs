@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<ContainerCore>(),
+                It.IsAny<ContainerInternal>(),
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
@@ -59,14 +60,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
 
-            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+            DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object,
-                new ContainerCore(mockContext.Object, databaseCore, "myColl"),
+                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
                 new ChangeFeedRequestOptions()
                 {
                     MaxItemCount = 10,
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
                 });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -78,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<ContainerCore>(),
+                It.IsAny<ContainerInternal>(),
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
@@ -110,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<ContainerCore>(),
+                It.IsAny<ContainerInternal>(),
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
@@ -120,14 +122,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
 
-            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+            DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object,
-                new ContainerCore(mockContext.Object, databaseCore, "myColl"),
+                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
                 new ChangeFeedRequestOptions()
                 {
                     MaxItemCount = 10,
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
                 });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -139,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<ContainerCore>(),
+                It.IsAny<ContainerInternal>(),
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
@@ -173,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<ContainerCore>(),
+                It.IsAny<ContainerInternal>(),
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
@@ -184,14 +187,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(secondResponse))
                 .Returns(Task.FromResult(thirdResponse));
 
-            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+            DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object,
-                new ContainerCore(mockContext.Object, databaseCore, "myColl"),
+                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
                 new ChangeFeedRequestOptions()
                 {
                     MaxItemCount = 10,
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
                 });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -204,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<ContainerCore>(),
+                It.IsAny<ContainerInternal>(),
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
@@ -234,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<ContainerCore>(),
+                It.IsAny<ContainerInternal>(),
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
@@ -243,14 +247,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
 
-            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+            DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object,
-                new ContainerCore(mockContext.Object, databaseCore, "myColl"),
+                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
                 new ChangeFeedRequestOptions()
                 {
                     MaxItemCount = 10,
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
                 });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -261,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<ContainerCore>(),
+                It.IsAny<ContainerInternal>(),
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
@@ -283,8 +288,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.Client).Returns(client);
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ContainerCore container = new ContainerCore(mockContext.Object, db, "test");
+            DatabaseInternal db = new DatabaseInlineCore(mockContext.Object, "test");
+            ContainerInternal container = new ContainerInlineCore(mockContext.Object, db, "test");
             IEnumerable<string> tokens = await container.GetChangeFeedTokensAsync();
             Assert.AreEqual(3, tokens.Count());
 

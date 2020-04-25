@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private string containerRid;
 
         internal StandByFeedIteratorCore(

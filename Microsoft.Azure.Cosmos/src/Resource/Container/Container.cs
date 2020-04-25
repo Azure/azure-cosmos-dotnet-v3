@@ -293,7 +293,6 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
-#if PREVIEW
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
@@ -322,11 +321,15 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// </remarks>
-        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
+#if PREVIEW
+        public 
+#else
+        internal
+#endif
+        abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
-#endif
 
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
@@ -1290,6 +1293,22 @@ namespace Microsoft.Azure.Cosmos
         abstract FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
+        /// </summary>
+        /// <param name="feedRange">A <see cref="FeedRange"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.

@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<Documents.ShouldRetryResult> HandleSplitAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken)
         {

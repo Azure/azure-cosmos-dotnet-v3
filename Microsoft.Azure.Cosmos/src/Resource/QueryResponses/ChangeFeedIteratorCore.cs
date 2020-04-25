@@ -26,14 +26,15 @@ namespace Microsoft.Azure.Cosmos
         internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private bool hasMoreResults = true;
 
         public static ChangeFeedIteratorCore Create(
-            ContainerCore container,
+            ContainerInternal container,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
+            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
             if (changeFeedRequestOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
             {
                 if (FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal ChangeFeedIteratorCore(
-            ContainerCore container,
+            ContainerInternal container,
             FeedRangeContinuation feedRangeContinuation,
             ChangeFeedRequestOptions changeFeedRequestOptions)
             : this(container, feedRangeContinuation.FeedRange, changeFeedRequestOptions)
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private ChangeFeedIteratorCore(
-            ContainerCore container,
+            ContainerInternal container,
             FeedRangeInternal feedRangeInternal,
             ChangeFeedRequestOptions changeFeedRequestOptions)
             : this(container, changeFeedRequestOptions)
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private ChangeFeedIteratorCore(
-            ContainerCore container,
+            ContainerInternal container,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
             if (changeFeedRequestOptions != null

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
-            ContainerCore container,
+            ContainerInternal container,
             DateTime? startTime,
             bool startFromBeginning)
         {

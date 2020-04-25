@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
     /// 1. The object operations where it serializes and deserializes the item on request/response
     /// 2. The stream response which takes a Stream containing a JSON serialized object and returns a response containing a Stream
     /// </summary>
-    internal partial class ContainerCore : Container
+    internal partial class ContainerCore : ContainerInternal
     {
         /// <summary>
         /// Cache the full URI segment without the last resource id.
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Used in the compute gateway to support legacy gateway interface.
         /// </summary>
-        internal async Task<((Exception, PartitionedQueryExecutionInfo), (bool, QueryIterator))> TryExecuteQueryAsync(
+        internal override async Task<((Exception, PartitionedQueryExecutionInfo), (bool, QueryIterator))> TryExecuteQueryAsync(
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
@@ -541,7 +541,7 @@ namespace Microsoft.Azure.Cosmos
             return new BatchCore(this, partitionKey);
         }
 
-        internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal override async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRid = await this.GetRIDAsync(cancellationToken);
@@ -557,9 +557,13 @@ namespace Microsoft.Azure.Cosmos
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
-        internal FeedIterator GetStandByFeedIterator(
-            ChangeFeedRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator GetStandByFeedIterator(
+            ChangeFeedRequestOptions requestOptions = null)
         {
             ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 
@@ -574,7 +578,7 @@ namespace Microsoft.Azure.Cosmos
         /// It decides if it is a query or read feed and create
         /// the correct instance.
         /// </summary>
-        internal FeedIteratorInternal GetItemQueryStreamIteratorInternal(
+        internal override FeedIteratorInternal GetItemQueryStreamIteratorInternal(
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
@@ -618,7 +622,7 @@ namespace Microsoft.Azure.Cosmos
         // Extracted partition key might be invalid as CollectionCache might be stale.
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
         // and partition-key is extracted again. 
-        internal async Task<ResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync<T>(
+        private async Task<ResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync<T>(
             PartitionKey? partitionKey,
             string itemId,
             T item,
@@ -686,7 +690,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task<ResponseMessage> ProcessItemStreamAsync(
+        private async Task<ResponseMessage> ProcessItemStreamAsync(
             PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
@@ -705,7 +709,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey = null;
             }
 
-            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+            ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             if (requestOptions?.EncryptionOptions != null)
@@ -713,7 +717,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload = await this.ClientContext.EncryptItemAsync(
                     streamPayload,
                     requestOptions.EncryptionOptions,
-                    (DatabaseCore)this.Database,
+                    (DatabaseInternal)this.Database,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -735,7 +739,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 responseMessage.Content = await this.ClientContext.DecryptItemAsync(
                     responseMessage.Content,
-                    (DatabaseCore)this.Database,
+                    (DatabaseInternal)this.Database,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -743,7 +747,7 @@ namespace Microsoft.Azure.Cosmos
             return responseMessage;
         }
 
-        internal async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
+        internal override async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
             CancellationToken cancellation = default(CancellationToken))
         {
@@ -818,7 +822,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
+        private Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
             if (requestOptions != null && requestOptions.TryGetResourceUri(out Uri resourceUri))
             {
@@ -834,24 +838,6 @@ namespace Microsoft.Azure.Cosmos
                 default:
                     return this.ContcatCachedUriWithId(itemId);
             }
-        }
-
-        /// <summary>
-        /// Throw an exception if the partition key is null or empty string
-        /// </summary>
-        internal static void ValidatePartitionKey(object partitionKey, RequestOptions requestOptions)
-        {
-            if (partitionKey != null)
-            {
-                return;
-            }
-
-            if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
-            {
-                return;
-            }
-
-            throw new ArgumentNullException(nameof(partitionKey));
         }
 
         /// <summary>

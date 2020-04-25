@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Documents.ShouldRetryResult HandleChangeFeedNotModified(ResponseMessage responseMessage);
 
         public abstract Task<Documents.ShouldRetryResult> HandleSplitAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken);
     }

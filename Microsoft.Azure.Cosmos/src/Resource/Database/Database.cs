@@ -157,7 +157,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken));
-
 #if PREVIEW
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.

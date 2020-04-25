@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos
     // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
     internal class ConflictsCore : Conflicts
     {
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly CosmosClientContext clientContext;
 
         public ConflictsCore(
             CosmosClientContext clientContext,
-            ContainerCore container)
+            ContainerInternal container)
         {
             if (clientContext == null)
             {
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
-            DatabaseCore databaseCore = (DatabaseCore)this.container.Database;
+            DatabaseInternal databaseCore = (DatabaseInternal)this.container.Database;
             string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
             string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
 

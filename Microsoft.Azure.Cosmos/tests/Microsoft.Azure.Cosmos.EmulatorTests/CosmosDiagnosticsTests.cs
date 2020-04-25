@@ -325,15 +325,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 perPKItemCount: 1,
                 randomPartitionKey: true);
 
-            ContainerCore containerCore = (ContainerInlineCore)this.Container;
+            ContainerInternal containerCore = (ContainerInlineCore)this.Container;
             MockCosmosQueryClient gatewayQueryPlanClient = new MockCosmosQueryClient(
                    clientContext: containerCore.ClientContext,
                    cosmosContainerCore: containerCore,
                    forceQueryPlanGatewayElseServiceInterop: true);
 
-            Container gatewayQueryPlanContainer = new ContainerCore(
+            Container gatewayQueryPlanContainer = new ContainerInlineCore(
                 containerCore.ClientContext,
-                (DatabaseCore)containerCore.Database,
+                (DatabaseInternal)containerCore.Database,
                 containerCore.Id,
                 gatewayQueryPlanClient);
 

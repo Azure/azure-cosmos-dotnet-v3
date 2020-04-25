@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class UserDefinedFunctionsTests : BaseCosmosClientHelper
     {
-        private ContainerCore container = null;
+        private ContainerInternal container = null;
         private Scripts scripts = null;
         private const string function = @"function(amt) { return amt * 0.05; }";
 
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<string> iterIds = new HashSet<string>();
             while (feedIterator.HasMoreResults)
             {
-                foreach (var response in await feedIterator.ReadNextAsync())
+                foreach (dynamic response in await feedIterator.ReadNextAsync())
                 {
                     Assert.IsTrue(response.cost > 9000);
                     Assert.AreEqual(response.cost * .05, response.total);

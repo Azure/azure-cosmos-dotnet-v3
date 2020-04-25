@@ -16,13 +16,13 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private bool hasMoreResultsInternal;
 
         public ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
-            ContainerCore container,
+            ContainerInternal container,
             ChangeFeedRequestOptions options)
         {
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));

@@ -98,5 +98,43 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseResponse response = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             Assert.IsTrue(object.ReferenceEquals(mockDbResponse.Object, response));
         }
+
+        [TestMethod]
+        public void VerifyInlineOverride()
+        {
+            Assembly assembly = Assembly.GetAssembly(typeof(CosmosClient));
+            IEnumerable<Type> allClasses = from t in assembly.GetTypes()
+                                           where t.IsClass && !t.IsPublic && !t.IsAbstract
+                                           where t.Namespace != null
+                                           where t.Namespace.StartsWith("Microsoft.Azure.Cosmos") && t.Name.EndsWith("InlineCore")
+                                           select t;
+
+            List<Type> inlineClasses = allClasses.ToList();
+            Assert.IsTrue(inlineClasses.Count >= 7);
+
+            foreach (Type inlineType in inlineClasses)
+            {
+                string contractClassName = inlineType.FullName.Replace("InlineCore", string.Empty);
+                Type contractClass = assembly.GetType(contractClassName);
+                Assert.IsNotNull(contractClass);
+                string[] allContractMethods = contractClass.GetMethods()
+                    .Where(x => x.DeclaringType == contractClass && x.Name.EndsWith("Async"))
+                    .Select(x => x.ToString())
+                    .ToArray();
+
+                HashSet<string> allInlineMethods = inlineType.GetMethods()
+                    .Where(x => x.Name.EndsWith("Async") && x.DeclaringType == inlineType)
+                    .Select(x => x.ToString())
+                    .ToHashSet<string>();
+
+                foreach (string contractMethod in allContractMethods)
+                {
+                    if (!allInlineMethods.Contains(contractMethod))
+                    {
+                        Assert.Fail($"The class: {inlineType.FullName} does not override method \"{contractMethod}\" in the inline class");
+                    }
+                }
+            }
+        }
     }
 }
