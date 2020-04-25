@@ -107,6 +107,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(nameof(EncryptionOptions.PathsToEncrypt), ex.ParamName);
             }
 
+            // Duplicate paths to encrypt
+            try
+            {
+                await EncryptionUnitTests.CreateItemAsync(container, EncryptionUnitTests.DekId, new List<string> { "/Child/MyChars", "/Int", "/Child/MyChars", "/Str" });
+                Assert.Fail("Expected encryption with duplicate path to fail");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.AreEqual(nameof(EncryptionOptions.PathsToEncrypt), ex.ParamName);
+            }
+
             // Overlapping (parent and child) paths to encrypt
             try
             {

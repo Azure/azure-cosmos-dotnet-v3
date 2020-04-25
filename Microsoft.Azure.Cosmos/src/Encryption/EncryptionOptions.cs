@@ -111,9 +111,16 @@ namespace Microsoft.Azure.Cosmos
             for (int index = 1; index < this.PathsToEncrypt.Count; index++)
             {
                 // If path (eg. /foo) is a prefix of another path (eg. /foo/bar), /foo/bar is redundant.
-                if (pathsToEncrypt[index].StartsWith(pathsToEncrypt[index - 1]) && pathsToEncrypt[index][pathsToEncrypt[index - 1].Length] == '/')
+                if (pathsToEncrypt[index].StartsWith(pathsToEncrypt[index - 1]))
                 {
-                    throw new ArgumentException($"Redundant path provided: {pathsToEncrypt[index]}", nameof(this.PathsToEncrypt));
+                    if (pathsToEncrypt[index].Length == pathsToEncrypt[index - 1].Length)
+                    {
+                        throw new ArgumentException($"Duplicate path provided: {pathsToEncrypt[index]}", nameof(this.PathsToEncrypt));
+                    }
+                    else if (pathsToEncrypt[index][pathsToEncrypt[index - 1].Length] == '/')
+                    {
+                        throw new ArgumentException($"Redundant path provided: {pathsToEncrypt[index]}", nameof(this.PathsToEncrypt));
+                    }
                 }
             }
 
