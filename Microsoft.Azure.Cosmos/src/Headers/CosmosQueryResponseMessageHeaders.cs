@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.ResourceType = resourceType;
             this.ContainerRid = containerRid;
-            this.SetItemCount(itemCount);
+            this.Add(HttpConstants.HttpHeaders.ItemCount, itemCount.ToString(CultureInfo.InvariantCulture));
         }
 
         internal string DisallowContinuationTokenMessage { get; }
@@ -58,10 +58,5 @@ namespace Microsoft.Azure.Cosmos
         internal virtual ResourceType ResourceType { get; }
 
         internal string InternalContinuationToken => base.ContinuationToken;
-
-        private void SetItemCount(int itemCount)
-        {
-            this.Add(HttpConstants.HttpHeaders.ItemCount, itemCount.ToString(CultureInfo.InvariantCulture));
-        }
     }
 }
