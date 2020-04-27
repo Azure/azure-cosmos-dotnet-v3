@@ -33,6 +33,15 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
+        /// Gets or sets the boolean to tell Cosmos DB to return a minimal response.
+        /// In most cases the body or item will not be returned in the response.
+        /// </summary>
+        /// <remarks>
+        /// This is optimal for workloads where the returned resource is not used.
+        /// </remarks>
+        public bool ReturnMinimalResponse { get; set; }
+
+        /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
         internal bool IsEffectivePartitionKeyRouting { get; set; }
@@ -79,6 +88,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.IfNoneMatchEtag != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
+            }
+
+            if (this.ReturnMinimalResponse)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
             }
         }
 

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -164,6 +165,15 @@ namespace Microsoft.Azure.Cosmos
                 {
                     string indexingDirectiveString = IndexingDirectiveStrings.FromIndexingDirective(options.IndexingDirective.Value);
                     r = writer.WriteString("indexingDirective", indexingDirectiveString);
+                    if (r != Result.Success)
+                    {
+                        return r;
+                    }
+                }
+
+                if (options.ReturnMinimalResponse)
+                {
+                    r = writer.WriteBool("minimalReturnPreference", true);
                     if (r != Result.Success)
                     {
                         return r;
