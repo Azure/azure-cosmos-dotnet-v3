@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
@@ -90,5 +91,44 @@ namespace Microsoft.Azure.Cosmos
 
             throw new ArgumentNullException(nameof(partitionKey));
         }
+
+#if !PREVIEW
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract FeedIterator GetItemQueryStreamIterator(
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions = null);
+
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+#endif
     }
 }

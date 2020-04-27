@@ -155,12 +155,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
-#if PREVIEW
-        public 
-#else
-        internal
-#endif
-        override async Task<ThroughputResponse> ReplaceThroughputAsync(
+
+        public override async Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -213,12 +209,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-#if PREVIEW
-        public 
-#else
-        internal
-#endif
-        override async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRId = await this.GetRIDAsync(cancellationToken);
@@ -239,12 +230,7 @@ namespace Microsoft.Azure.Cosmos
             return feedTokens;
         }
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedIterator GetChangeFeedStreamIterator(
+        public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return ChangeFeedIteratorCore.Create(
@@ -252,29 +238,18 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedIterator GetChangeFeedStreamIterator(
+        public override FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
             changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
-
             return ChangeFeedIteratorCore.Create(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedIterator<T> GetChangeFeedIterator<T>(
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
@@ -284,18 +259,12 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedIterator<T> GetChangeFeedIterator<T>(
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
             changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
-
             ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);
@@ -303,12 +272,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken))
         {

@@ -293,6 +293,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
+#if PREVIEW
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
@@ -321,15 +322,11 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// </remarks>
-#if PREVIEW
-        public 
-#else
-        internal
-#endif
-        abstract Task<ThroughputResponse> ReplaceThroughputAsync(
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
+#endif
 
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
@@ -1158,17 +1155,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
+#if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A list of <see cref="FeedRange"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// This method creates an iterator to consume the container's Change Feed.
@@ -1194,12 +1187,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract FeedIterator GetChangeFeedStreamIterator(
+        public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1227,18 +1215,14 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular Partition Key.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract FeedIterator GetChangeFeedStreamIterator(
+        public abstract FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
         ///  This method creates an iterator to consume the container's Change Feed.
         /// </summary>
+        /// <param name="continuationToken">(Optional) The continuation from a previous Change Feed iterator.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <returns>An iterator to go through the Change Feed.</returns>
         /// <example>
@@ -1256,12 +1240,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract FeedIterator<T> GetChangeFeedIterator<T>(
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1285,12 +1264,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a Partition Key.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract FeedIterator<T> GetChangeFeedIterator<T>(
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1301,12 +1275,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -1355,12 +1324,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract FeedIterator GetItemQueryStreamIterator(
+        public abstract FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken,
@@ -1407,15 +1371,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract FeedIterator<T> GetItemQueryIterator<T>(
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
+#endif
     }
 }

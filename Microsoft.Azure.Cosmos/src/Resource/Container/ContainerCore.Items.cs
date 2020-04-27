@@ -442,13 +442,7 @@ namespace Microsoft.Azure.Cosmos
                 allowSynchronousQueryExecution,
                 this.ClientContext.ClientOptions.SerializerOptions);
         }
-
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedIterator<T> GetItemQueryIterator<T>(
+        public override FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -470,12 +464,7 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedIterator GetItemQueryStreamIterator(
+        public override FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
