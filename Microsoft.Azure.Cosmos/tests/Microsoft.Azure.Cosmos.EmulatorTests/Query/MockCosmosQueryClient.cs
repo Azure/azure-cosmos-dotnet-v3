@@ -24,7 +24,7 @@
 
         public MockCosmosQueryClient(
             CosmosClientContext clientContext,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             bool forceQueryPlanGatewayElseServiceInterop) : base(
                 clientContext,
                 cosmosContainerCore)

@@ -2,9 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -20,27 +21,56 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ReadFeedIteratorCore_HasMoreResultsDefault()
         {
-            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
-            Assert.IsTrue(feedTokenIterator.HasMoreResults);
+            FeedRangeIteratorCore iterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), Mock.Of<FeedRangeInternal>(), null, null);
+            Assert.IsTrue(iterator.HasMoreResults);
         }
 
         [TestMethod]
-        public void ReadFeedIteratorCore_FeedToken()
+        public void ReadFeedIteratorCore_Create_Default()
         {
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
-            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
-            Assert.AreEqual(feedToken, feedTokenIterator.FeedToken);
+            FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), null, null, null);
+            FeedRangeEPK defaultRange = feedTokenIterator.FeedRangeInternal as FeedRangeEPK;
+            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Min, defaultRange.Range.Min);
+            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Max, defaultRange.Range.Max);
+            Assert.IsNull(feedTokenIterator.FeedRangeContinuation);
         }
 
         [TestMethod]
-        public void ReadFeedIteratorCore_TryGetContinuation()
+        public void ReadFeedIteratorCore_Create_WithRange()
         {
+            Documents.Routing.Range<string>  range = new Documents.Routing.Range<string>("A", "B", true, false);
+            FeedRangeEPK feedRangeEPK = new FeedRangeEPK(range);
+            FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), feedRangeEPK, null, null);
+            Assert.AreEqual(feedRangeEPK, feedTokenIterator.FeedRangeInternal);
+            Assert.IsNull(feedTokenIterator.FeedRangeContinuation);
+        }
+
+        [TestMethod]
+        public void ReadFeedIteratorCore_Create_WithContinuation()
+        {
+
             string continuation = Guid.NewGuid().ToString();
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
-            Mock.Get(feedToken)
-                .Setup(f => f.GetContinuation()).Returns(continuation);
-            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
-            Assert.AreEqual(continuation, feedTokenIterator.ContinuationToken);
+            FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), null, continuation, null);
+            FeedRangeEPK defaultRange = feedTokenIterator.FeedRangeInternal as FeedRangeEPK;
+            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Min, defaultRange.Range.Min);
+            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Max, defaultRange.Range.Max);
+            Assert.IsNotNull(feedTokenIterator.FeedRangeContinuation);
+            Assert.AreEqual(continuation, feedTokenIterator.FeedRangeContinuation.GetContinuation());
+        }
+
+        [TestMethod]
+        public void ReadFeedIteratorCore_Create_WithFeedContinuation()
+        {
+
+            string continuation = Guid.NewGuid().ToString();
+            FeedRangeEPK feedRangeEPK = FeedRangeEPK.ForCompleteRange();
+            FeedRangeCompositeContinuation feedRangeSimpleContinuation = new FeedRangeCompositeContinuation(Guid.NewGuid().ToString(), feedRangeEPK, new List<Documents.Routing.Range<string>>() { feedRangeEPK.Range }, continuation);
+            FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), null, feedRangeSimpleContinuation.ToString(), null);
+            FeedRangeEPK defaultRange = feedTokenIterator.FeedRangeInternal as FeedRangeEPK;
+            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Min, defaultRange.Range.Min);
+            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Max, defaultRange.Range.Max);
+            Assert.IsNotNull(feedTokenIterator.FeedRangeContinuation);
+            Assert.AreEqual(continuation, feedTokenIterator.FeedRangeContinuation.GetContinuation());
         }
 
         [TestMethod]
@@ -59,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -67,16 +97,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
+            Mock.Get(range)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
+            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
-                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
+               .Setup(f => f.FeedRange)
+               .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+            Mock.Get(feedToken)
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation())
                 .Returns(continuation);
@@ -84,18 +120,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedRangeIteratorCore feedTokenIterator = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
-            Assert.AreEqual(feedToken, feedTokenIterator.FeedToken);
             Mock.Get(feedToken)
-                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
+                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.IsDone, Times.Once);
+                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -114,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -122,16 +154,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
+            Mock.Get(range)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
+            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
-                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
+               .Setup(f => f.FeedRange)
+               .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+            Mock.Get(feedToken)
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation())
                 .Returns(continuation);
@@ -139,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedRangeIteratorCore feedTokenIterator = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
             bool creatorCalled = false;
             Func<ResponseMessage, FeedResponse<dynamic>> creator = (ResponseMessage r) =>
             {
@@ -152,13 +190,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsTrue(creatorCalled, "Response creator not called");
             Mock.Get(feedToken)
-                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
+                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.IsDone, Times.Once);
+                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -177,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -185,16 +220,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
+            Mock.Get(range)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
+            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
-                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
+               .Setup(f => f.FeedRange)
+               .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+            Mock.Get(feedToken)
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation())
                 .Returns(continuation);
@@ -202,17 +243,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIterator feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedRangeIteratorCore feedTokenIterator = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)
-                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
+                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
-            Mock.Get(feedToken)
-                .Verify(f => f.IsDone, Times.Once);
         }
 
         [TestMethod]
@@ -231,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -239,16 +278,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
+            Mock.Get(range)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
+            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
-                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
+                .Setup(f => f.FeedRange)
+                .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+            Mock.Get(feedToken)
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation())
                 .Returns(continuation);
@@ -256,14 +301,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIterator feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedRangeIteratorCore feedTokenIterator = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)
-                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Never);
+                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Never);
 
             Mock.Get(feedToken)
-                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
             Mock.Get(feedToken)
                 .Verify(f => f.IsDone, Times.Never);
@@ -277,15 +322,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             responseMessage.Headers.ContinuationToken = continuation;
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
+
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();            
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<Uri>(),
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
+                    It.IsAny<ContainerInternal>(),
                     It.IsAny<PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
@@ -293,61 +341,25 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
+            Mock.Get(containerCore)
+                .Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Guid.NewGuid().ToString());
 
-            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+            FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(containerCore, null, null, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
-            FeedToken feedTokenOut = feedTokenIterator.FeedToken;
-            Assert.IsNotNull(feedTokenOut);
-
-            FeedTokenEPKRange feedTokenEPKRange = feedTokenOut as FeedTokenEPKRange;
+            Assert.IsTrue(FeedRangeContinuation.TryParse(response.ContinuationToken, out FeedRangeContinuation parsedToken));
+            FeedRangeCompositeContinuation feedRangeCompositeContinuation = parsedToken as FeedRangeCompositeContinuation;
+            FeedRangeEPK feedTokenEPKRange = feedRangeCompositeContinuation.FeedRange as FeedRangeEPK;
             // Assert that a FeedToken for the entire range is used
-            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Min);
-            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Max);
-            Assert.AreEqual(continuation, feedTokenEPKRange.CompositeContinuationTokens.Peek().Token);
-            Assert.IsFalse(feedTokenEPKRange.IsDone);
-        }
-
-        [TestMethod]
-        public async Task ReadFeedIteratorCore_ForNonPartitionedResource_WithNoInitialState_ReadNextAsync()
-        {
-            string continuation = "TBD";
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
-            responseMessage.Headers.ContinuationToken = continuation;
-            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
-
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerCore>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
-
-            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForNonPartitionedResource(cosmosClientContext.Object, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, new QueryRequestOptions());
-            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
-
-            FeedToken feedTokenOut = feedTokenIterator.FeedToken;
-            Assert.IsNotNull(feedTokenOut);
-
-            FeedTokenEPKRange feedTokenEPKRange = feedTokenOut as FeedTokenEPKRange;
-            // Assert that a FeedToken for the entire range is used
-            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Min);
-            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Max);
-            Assert.AreEqual(continuation, feedTokenEPKRange.CompositeContinuationTokens.Peek().Token);
-            Assert.IsFalse(feedTokenEPKRange.IsDone);
+            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, feedTokenEPKRange.Range.Min);
+            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.Range.Max);
+            Assert.AreEqual(continuation, feedRangeCompositeContinuation.CompositeContinuationTokens.Peek().Token);
+            Assert.IsFalse(feedRangeCompositeContinuation.IsDone);
         }
 
         [TestMethod]
@@ -366,21 +378,27 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnStatusCode(HttpStatusCode.OK);
             });
 
-            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext);
             Mock.Get(containerCore)
                 .Setup(c => c.LinkUri)
                 .Returns(new Uri($"/dbs/db/colls/colls", UriKind.Relative));
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
+            Mock.Get(range)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
+            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
-                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
+                .Setup(f => f.FeedRange)
+                .Returns(range);
             Mock.Get(feedToken)
-                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(false));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
+            Mock.Get(feedToken)
+                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
 
-            FeedIteratorCore changeFeedIteratorCore = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri($"/dbs/db/colls/colls", UriKind.Relative), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedRangeIteratorCore changeFeedIteratorCore = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
 
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
@@ -423,6 +441,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             return clientContext;
+        }
+
+        private class MultiRangeMockDocumentClient : MockDocumentClient
+        {
+            private List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
+                new Documents.PartitionKeyRange() { MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, Id = "0" }
+            };
+
+            internal override IReadOnlyList<Documents.PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
+            {
+                return this.availablePartitionKeyRanges;
+            }
         }
     }
 }

@@ -21,6 +21,15 @@ namespace Microsoft.Azure.Cosmos
             validator.Validate();
         }
 
+        public static void ValidateChangeFeedOperationDiagnostics(CosmosDiagnosticsContext diagnosticsContext)
+        {
+            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            ChangeFeedDiagnosticValidatorHelper validator = new ChangeFeedDiagnosticValidatorHelper();
+            validator.Visit(diagnosticsContext);
+            validator.Validate();
+        }
+
+
         public static void ValidateQueryDiagnostics(CosmosDiagnosticsContext diagnosticsContext, bool isFirstPage)
         {
             JObject jObject = JObject.Parse(diagnosticsContext.ToString());
@@ -258,6 +267,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"Point Operation should not have {nameof(clientSideRequestStatistics)}");
             }
 
+            public override void Visit(FeedRangeStatistics feedRangeStatistics)
+            {
+                throw new ArgumentException($"Point Operation should not have {nameof(feedRangeStatistics)}");
+            }
+
             public virtual void Validate(bool isFirstPage)
             {
                 Assert.IsTrue(this.isContextVisited);
@@ -343,6 +357,11 @@ namespace Microsoft.Azure.Cosmos
                 DiagnosticValidator.ValidateClientSideRequestStatistics(clientSideRequestStatistics);
             }
 
+            public override void Visit(FeedRangeStatistics feedRangeStatistics)
+            {
+                throw new ArgumentException($"Point Operation should not have {nameof(feedRangeStatistics)}");
+            }
+
             public void Validate()
             {
                 Assert.IsTrue(this.isContextVisited);
@@ -363,6 +382,71 @@ namespace Microsoft.Azure.Cosmos
                         Assert.IsTrue(this.isStoreResponseStatisticsVisited);
                     }
                 }
+            }
+        }
+
+        private sealed class ChangeFeedDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor
+        {
+            private bool isFeedRangeStatisticsVisited = false;
+            private bool isContextVisited = false;
+            private bool isScopeVisited = false;
+            private DateTime? StartTimeUtc = null;
+            private TimeSpan? TotalElapsedTime = null;
+
+            public override void Visit(PointOperationStatistics pointOperationStatistics)
+            {
+            }
+
+            public override void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            {
+                Assert.IsFalse(this.isContextVisited, "Point operations should only have a single context");
+                this.isContextVisited = true;
+                this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
+
+                DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
+
+                foreach (CosmosDiagnosticsInternal diagnosticsInternal in cosmosDiagnosticsContext)
+                {
+                    diagnosticsInternal.Accept(this);
+                }
+            }
+
+            public override void Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
+            {
+                Assert.IsTrue(this.isContextVisited);
+                this.isScopeVisited = true;
+                DiagnosticValidator.ValidateScope(cosmosDiagnosticScope, this.TotalElapsedTime);
+            }
+
+            public override void Visit(QueryPageDiagnostics queryPageDiagnostics)
+            {
+            }
+
+            public override void Visit(AddressResolutionStatistics addressResolutionStatistics)
+            {
+            }
+
+            public override void Visit(StoreResponseStatistics storeResponseStatistics)
+            {
+            }
+
+            public override void Visit(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+            {
+            }
+
+            public override void Visit(FeedRangeStatistics feedRangeStatistics)
+            {
+                this.isFeedRangeStatisticsVisited = true;
+            }
+
+            public void Validate()
+            {
+                Assert.IsTrue(this.isFeedRangeStatisticsVisited);
+                Assert.IsTrue(this.isContextVisited);
+                Assert.IsNotNull(this.StartTimeUtc);
+                Assert.IsNotNull(this.TotalElapsedTime);
+                Assert.IsTrue(this.isScopeVisited);
             }
         }
     }
