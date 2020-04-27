@@ -5089,6 +5089,18 @@
         }
       },
       "Members": {
+        "Boolean get_ReturnMinimalResponse()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_ReturnMinimalResponse()"
+        },
+        "Boolean ReturnMinimalResponse": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String get_IfMatchEtag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5131,6 +5143,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
+        },
+        "Void set_ReturnMinimalResponse(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ReturnMinimalResponse(Boolean)"
         }
       },
       "NestedTypes": {}
