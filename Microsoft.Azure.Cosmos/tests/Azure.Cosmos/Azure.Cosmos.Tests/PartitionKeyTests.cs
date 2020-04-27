@@ -1,7 +1,7 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Azure.Cosmos.Tests
 {
     using System;
     using Microsoft.Azure.Documents;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             const string somePK = "somePK";
             string expected = $"[\"{somePK}\"]";
-            PartitionKey pk = new PartitionKey(somePK);
+            Cosmos.PartitionKey pk = new Cosmos.PartitionKey(somePK);
             Assert.AreEqual(expected, pk.ToString());
         }
 
@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Tuple<dynamic, string>[] testcases =
             {
-                Tuple.Create<dynamic, string>(Documents.Undefined.Value, "[{}]"),
-                Tuple.Create<dynamic, string>(Documents.Undefined.Value, "[{}]"),
+                Tuple.Create<dynamic, string>(Undefined.Value, "[{}]"),
+                Tuple.Create<dynamic, string>(Undefined.Value, "[{}]"),
                 Tuple.Create<dynamic, string>(false, "[false]"),
                 Tuple.Create<dynamic, string>(true, "[true]"),
                 Tuple.Create<dynamic, string>(123.456, "[123.456]"),
