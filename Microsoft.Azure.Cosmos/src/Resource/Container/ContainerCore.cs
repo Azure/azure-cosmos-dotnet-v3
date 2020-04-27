@@ -39,8 +39,8 @@ namespace Microsoft.Azure.Cosmos
                 id: containerId);
 
             this.Database = database;
-            this.Conflicts = new ConflictsInlineCore(new ConflictsCore(this.ClientContext, this));
-            this.Scripts = new ScriptsInlineCore(new ScriptsCore(this, this.ClientContext));
+            this.Conflicts = new ConflictsInlineCore(this.ClientContext, this);
+            this.Scripts = new ScriptsInlineCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
             this.lazyBatchExecutor = new Lazy<BatchAsyncContainerExecutor>(() => this.ClientContext.GetExecutorForContainer(this));
