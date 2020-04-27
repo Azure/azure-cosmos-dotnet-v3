@@ -312,7 +312,6 @@ namespace Microsoft.Azure.Cosmos
                     resourceType,
                     requestOptions.CosmosSerializationFormatOptions);
 
-                int itemCount = cosmosArray.Count;
                 return QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
                     requestCharge: cosmosResponseMessage.Headers.RequestCharge,

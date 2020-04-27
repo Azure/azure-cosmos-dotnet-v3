@@ -179,14 +179,6 @@ namespace Microsoft.Azure.Cosmos
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.QueryMetrics)]
         internal string QueryMetricsText { get; set; }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ItemCount)]
-        internal string ItemCount { get; private set; }
-
-        internal void SetItemCount(int itemCount)
-        {
-            this.ItemCount = itemCount.ToString(CultureInfo.InvariantCulture);
-        }
-
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
         /// </summary>

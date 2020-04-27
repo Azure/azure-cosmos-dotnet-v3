@@ -784,12 +784,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void ValidateHeadersHelper(
             Headers headers,
-            int itemCount,
+            int actualItemCount,
             CosmosDiagnostics diagnostics)
         {
             Assert.IsNotNull(diagnostics.ToString());
-            Assert.IsNotNull(headers.ItemCount);
-            int headerItemCount = int.Parse(headers.ItemCount);
+            string itemCount = headers.Get("x-ms-item-count");
+            Assert.IsNotNull(itemCount);
+            int headerItemCount = int.Parse(itemCount);
             Assert.AreEqual(itemCount, headerItemCount);
         }
 

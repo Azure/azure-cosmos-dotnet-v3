@@ -49,14 +49,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         cosmosException: cosmosException,
                         requestMessage: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            null,
-                            null,
-                            ResourceType.Document,
-                            contianerRid)
-                        {
-                            RequestCharge = requestCharge,
-                            ActivityId = activityId
-                        },
+                            requestCharge: requestCharge,
+                            activityId: activityId,
+                            subStatusCode: default,
+                            continauationToken: null,
+                            disallowContinuationTokenMessage: null,
+                            resourceType: ResourceType.Document,
+                            containerRid: contianerRid,
+                            itemCount: 0),
                         diagnostics: diagnostics);
 
             Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
@@ -85,14 +85,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            requestCharge: responseCore.RequestCharge,
+                            activityId: responseCore.ActivityId,
+                            subStatusCode: responseCore.SubStatusCode ?? SubStatusCodes.Unknown,
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
                             ResourceType.Document,
-                            contianerRid)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId
-                        },
+                            contianerRid,
+                            responseCore.CosmosElements.Count),
                         diagnostics: new CosmosDiagnosticsContextCore());
 
             using (Stream stream = queryResponse.Content)
@@ -123,14 +123,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            responseCore.RequestCharge,
+                            responseCore.ActivityId,
+                            responseCore.SubStatusCode ?? SubStatusCodes.Unknown,
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
                             ResourceType.Document,
-                            contianerRid)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId
-                        },
+                            contianerRid,
+                            cosmosElements.Count),
                         diagnostics: new CosmosDiagnosticsContextCore());
 
             QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
@@ -164,14 +164,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            responseCore.RequestCharge,
+                            responseCore.ActivityId,
+                            responseCore.SubStatusCode ?? SubStatusCodes.Unknown,
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
                             ResourceType.Document,
-                            containerRid)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId
-                        },
+                            containerRid,
+                            cosmosElements.Count),
                         diagnostics: new CosmosDiagnosticsContextCore());
 
             QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);

@@ -141,6 +141,16 @@ namespace Microsoft.Azure.Cosmos.Query
                 // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
                 diagnostics.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
 
+                CosmosQueryResponseMessageHeaders queryHeaders = new CosmosQueryResponseMessageHeaders(
+                    responseCore.RequestCharge,
+                    responseCore.ActivityId,
+                    responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown,
+                    responseCore.ContinuationToken,
+                    responseCore.DisallowContinuationTokenMessage,
+                    this.cosmosQueryContext.ResourceTypeEnum,
+                    this.cosmosQueryContext.ContainerResourceId,
+                    responseCore.CosmosElements.Count);
+
                 if (responseCore.IsSuccess)
                 {
                     List<CosmosElement> decryptedCosmosElements = null;
@@ -155,16 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         diagnostics: diagnostics,
                         serializationOptions: this.cosmosSerializationFormatOptions,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            responseCore.ContinuationToken,
-                            responseCore.DisallowContinuationTokenMessage,
-                            this.cosmosQueryContext.ResourceTypeEnum,
-                            this.cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId,
-                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
-                        });
+                        responseHeaders: queryHeaders);
                 }
 
                 if (responseCore.CosmosException != null)
@@ -177,16 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     cosmosException: responseCore.CosmosException,
                     requestMessage: null,
                     diagnostics: diagnostics,
-                    responseHeaders: new CosmosQueryResponseMessageHeaders(
-                        responseCore.ContinuationToken,
-                        responseCore.DisallowContinuationTokenMessage,
-                        this.cosmosQueryContext.ResourceTypeEnum,
-                        this.cosmosQueryContext.ContainerResourceId)
-                    {
-                        RequestCharge = responseCore.RequestCharge,
-                        ActivityId = responseCore.ActivityId,
-                        SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown,
-                    });
+                    responseHeaders: queryHeaders);
             }
         }
 

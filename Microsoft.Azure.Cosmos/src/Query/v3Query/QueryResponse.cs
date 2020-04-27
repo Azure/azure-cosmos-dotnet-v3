@@ -52,7 +52,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.CosmosElements = result;
             this.Count = result.Count;
-            this.Headers.SetItemCount(result.Count);
 
             this.ResponseLengthBytes = responseLengthBytes;
             this.memoryStream = memoryStream;

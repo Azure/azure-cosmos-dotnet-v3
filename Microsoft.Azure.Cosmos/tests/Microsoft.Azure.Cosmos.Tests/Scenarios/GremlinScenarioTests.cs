@@ -645,10 +645,15 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                 count: 2,
                 responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
                 serializationOptions: null,
-                responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
-                    sourceHeaders: null,
+                responseHeaders: new CosmosQueryResponseMessageHeaders(
+                    requestCharge: 42,
+                    activityId: Guid.NewGuid().ToString(),
+                    subStatusCode: SubStatusCodes.Unknown,
+                    continauationToken: null,
+                    disallowContinuationTokenMessage: null,
                     resourceType: ResourceType.Document,
-                    containerRid: GremlinScenarioTests.CreateRandomString(10)),
+                    containerRid: GremlinScenarioTests.CreateRandomString(10),
+                    itemCount: 2),
                 diagnostics: new CosmosDiagnosticsContextCore());
             QueryResponse<CosmosElement> cosmosElementQueryResponse =
                 QueryResponse<CosmosElement>.CreateResponse<CosmosElement>(
@@ -727,10 +732,15 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                 count: 2,
                 responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
                 serializationOptions: null,
-                responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
-                    sourceHeaders: null,
+                responseHeaders: new CosmosQueryResponseMessageHeaders(
+                    requestCharge: 42,
+                    activityId: Guid.NewGuid().ToString(),
+                    subStatusCode: SubStatusCodes.Unknown,
+                    continauationToken: null,
+                    disallowContinuationTokenMessage: null,
                     resourceType: ResourceType.Document,
-                    containerRid: GremlinScenarioTests.CreateRandomString(10)),
+                    containerRid: GremlinScenarioTests.CreateRandomString(10),
+                    itemCount: 2),
                 diagnostics: new CosmosDiagnosticsContextCore());
             QueryResponse<dynamic> cosmosElementQueryResponse =
                 QueryResponse<dynamic>.CreateResponse<dynamic>(
