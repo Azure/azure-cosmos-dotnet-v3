@@ -2562,6 +2562,31 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Boolean Equals(Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Azure.Cosmos.PartitionKey)"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object)"
+        },
+        "Boolean op_Equality(Azure.Cosmos.PartitionKey, Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean op_Equality(Azure.Cosmos.PartitionKey, Azure.Cosmos.PartitionKey)"
+        },
+        "Boolean op_Inequality(Azure.Cosmos.PartitionKey, Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean op_Inequality(Azure.Cosmos.PartitionKey, Azure.Cosmos.PartitionKey)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
         "System.String SystemKeyName": {
           "Type": "Field",
           "Attributes": [],
