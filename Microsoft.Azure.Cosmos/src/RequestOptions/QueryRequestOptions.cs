@@ -233,8 +233,11 @@ namespace Microsoft.Azure.Cosmos
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 
-            QueryFeedRangeVisitor queryFeedRangeVisitor = new QueryFeedRangeVisitor(request);
-            ((FeedRangeInternal)this.FeedRange).Accept(queryFeedRangeVisitor);
+            if (this.FeedRange != null)
+            {
+                QueryFeedRangeVisitor queryFeedRangeVisitor = new QueryFeedRangeVisitor(request);
+                ((FeedRangeInternal)this.FeedRange).Accept(queryFeedRangeVisitor);
+            }
 
             base.PopulateRequestOptions(request);
         }
