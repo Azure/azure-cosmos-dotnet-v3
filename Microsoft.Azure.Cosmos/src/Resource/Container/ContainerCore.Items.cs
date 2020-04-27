@@ -442,6 +442,7 @@ namespace Microsoft.Azure.Cosmos
                 allowSynchronousQueryExecution,
                 this.ClientContext.ClientOptions.SerializerOptions);
         }
+
         public override FeedIterator<T> GetItemQueryIterator<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
