@@ -1,12 +1,12 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Azure.Cosmos
 {
     /// <summary>
     /// Defines the target data type of an index path specification in the Azure Cosmos DB service.
     /// </summary>
-    public enum DataType
+    public enum CosmosDataType
     {
         /// <summary>
         /// Represents a numeric data type.

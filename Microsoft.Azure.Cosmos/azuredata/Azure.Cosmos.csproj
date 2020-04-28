@@ -54,7 +54,7 @@
 
   <!--SDK V3 dependencies-->
   <ItemGroup>
-    <Compile Include="..\src\Resource\Settings\Enums\*.cs">
+    <Compile Include="..\src\Resource\Settings\Enums\*.cs" Exclude="..\src\Resource\Settings\Enums\DataType.cs">
       <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;">
