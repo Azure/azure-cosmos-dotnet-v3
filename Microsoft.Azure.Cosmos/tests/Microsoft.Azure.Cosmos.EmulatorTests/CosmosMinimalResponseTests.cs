@@ -122,6 +122,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
             this.ValidateResponse(itemResponse);
 
+            itemResponse = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), requestOptions: requestOptions);
+            Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
+            this.ValidateResponse(itemResponse);
+
             item.cost = 424242.42;
             itemResponse = await container.UpsertItemAsync<ToDoActivity>(item, requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
@@ -144,6 +148,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.ValidateResponse(itemResponse);
 
             await database.DeleteAsync();
+
+            Assert.ThrowsException<NotSupportedException>(() =>
+            {
+                new QueryRequestOptions()
+                {
+                    ReturnMinimalResponse = true
+                };
+            });
         }
 
         [TestMethod]
@@ -338,6 +350,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     break;
                 }
 
+                Assert.IsTrue(itemResponse.IsSuccessStatusCode);
+                Assert.IsTrue(itemResponse.StatusCode == HttpStatusCode.OK || itemResponse.StatusCode == HttpStatusCode.Created);
                 Assert.IsNull(itemResponse.ResourceStream);
                 Assert.IsTrue(itemResponse.RequestCharge > 0);
             }

@@ -33,13 +33,24 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
-        /// Gets or sets the boolean to tell Cosmos DB to return a minimal response.
-        /// In most cases the body or item will not be returned in the response.
+        /// Gets or sets the boolean to only return the headers and status code in the Cosmos DB response.
+        /// This removes the resource from the response. This reduces networking and CPU load by not sending
+        /// the resource back over the network and serializing it on the client.
         /// </summary>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ItemRequestOption requestOptions = new ItemRequestOptions() { ReturnMinimalResponse = true };
+        /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
+        /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+        /// Assert.IsNull(itemResponse.Resource);
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <remarks>
         /// This is optimal for workloads where the returned resource is not used.
         /// </remarks>
-        public bool ReturnMinimalResponse { get; set; }
+        public virtual bool ReturnMinimalResponse { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.

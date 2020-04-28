@@ -143,6 +143,13 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string SessionToken { get; set; }
 
+        /// <inheritdoc/>
+        public override bool ReturnMinimalResponse
+        {
+            get => base.ReturnMinimalResponse;
+            set => throw new NotSupportedException("ReturnMinimalResponse is not supported on query operations. Please use SQL to change the response.");
+        }
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }
