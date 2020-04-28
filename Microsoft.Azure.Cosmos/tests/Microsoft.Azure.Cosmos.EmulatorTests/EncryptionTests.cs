@@ -34,9 +34,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static CosmosClient client;
 
-        private static DatabaseCore databaseCore;
+        private static DatabaseInternal databaseCore;
         private static DataEncryptionKeyProperties dekProperties;
-        private static ContainerCore itemContainerCore;
+        private static ContainerInternal itemContainerCore;
         private static Container itemContainer;
         private static Container keyContainer;
         private static CosmosDataEncryptionKeyProvider dekProvider;
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             EncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
             EncryptionTests.encryptor = new TestEncryptor(EncryptionTests.dekProvider);
 
-            EncryptionTests.client = EncryptionTests.GetClient(EncryptionTests.encryptor);
+            EncryptionTests.client = EncryptionTests.GetClient();
             EncryptionTests.databaseCore = (DatabaseInlineCore)await EncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
             EncryptionTests.keyContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
@@ -228,7 +228,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
 
-            await ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.itemContainerCore, testDoc1, testDoc2);
+            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
+            await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.itemContainerCore, testDoc1, testDoc2, query);
+
+            // ORDER BY query
+            query = query + " ORDER BY c._ts";
+            await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.itemContainerCore, testDoc1, testDoc2, query);
         }
 
         [TestMethod]
@@ -239,8 +244,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, dekId1, TestDoc.PathsToEncrypt);
+            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
 
-            await ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.itemContainerCore, testDoc1, testDoc2);
+            await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.itemContainerCore, testDoc1, testDoc2, query);
         }
 
         [TestMethod]
@@ -314,13 +320,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             string query = "SELECT VALUE COUNT(1) FROM c";
 
-            FeedIterator feedIterator = EncryptionTests.itemContainerCore.GetItemQueryStreamIterator(query);
-            while (feedIterator.HasMoreResults)
-            {
-                ResponseMessage response = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(response.IsSuccessStatusCode);
-                Assert.IsNull(response.ErrorMessage);
-            }
+            await EncryptionTests.ValidateQueryResponseAsync(EncryptionTests.itemContainerCore, query);
+        }
+
+        [TestMethod]
+        public async Task DecryptGroupByQueryResultTest()
+        {
+            string partitionKey = Guid.NewGuid().ToString();
+
+            TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.itemContainerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt, partitionKey);
+
+            string query = $"SELECT COUNT(c.Id), c.PK " +
+                           $"FROM c WHERE c.PK = '{partitionKey}' " +
+                           $"GROUP BY c.PK ";
+
+            await EncryptionTests.ValidateQueryResponseAsync(EncryptionTests.itemContainerCore, query);
         }
 
         [TestMethod]
@@ -465,8 +480,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithBulkExecution(true)
                 .Build();
 
-            DatabaseCore databaseWithBulk = (DatabaseInlineCore)clientWithBulk.GetDatabase(EncryptionTests.databaseCore.Id);
-            ContainerCore containerWithBulk = (ContainerInlineCore)databaseWithBulk.GetContainer(EncryptionTests.itemContainer.Id);
+            DatabaseInternal databaseWithBulk = (DatabaseInlineCore)clientWithBulk.GetDatabase(EncryptionTests.databaseCore.Id);
+            ContainerInternal containerWithBulk = (ContainerInlineCore)databaseWithBulk.GetContainer(EncryptionTests.itemContainer.Id);
 
             List<Task> tasks = new List<Task>();
             tasks.Add(EncryptionTests.CreateItemAsync(containerWithBulk, EncryptionTests.dekId, TestDoc.PathsToEncrypt));
@@ -533,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NotFound, readResponseMessage.StatusCode);
         }
 
-        private static async Task ValidateSprocResultsAsync(ContainerCore containerCore, TestDoc expectedDoc)
+        private static async Task ValidateSprocResultsAsync(ContainerInternal containerCore, TestDoc expectedDoc)
         {
             string sprocId = Guid.NewGuid().ToString();
             string sprocBody = @"function(docId) {
@@ -562,7 +577,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // One of query or queryDefinition is to be passed in non-null
         private static async Task ValidateQueryResultsAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             string query = null,
             TestDoc expectedDoc = null,
             QueryDefinition queryDefinition = null)
@@ -594,11 +609,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             TestDoc testDoc1,
-            TestDoc testDoc2)
+            TestDoc testDoc2,
+            string query)
         {
-            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
             FeedIterator<TestDoc> queryResponseIterator = containerCore.GetItemQueryIterator<TestDoc>(query);
             FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             Assert.AreEqual(null, readDocs.ContinuationToken);
@@ -609,7 +624,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static CosmosClient GetClient(Encryptor encryptor)
+        private static async Task ValidateQueryResponseAsync(ContainerInternal containerCore, string query)
+        {
+            FeedIterator feedIterator = containerCore.GetItemQueryStreamIterator(query);
+            while (feedIterator.HasMoreResults)
+            {
+                ResponseMessage response = await feedIterator.ReadNextAsync();
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.IsNull(response.ErrorMessage);
+            }
+        }
+
+        private static CosmosClient GetClient()
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             return new CosmosClientBuilder(endpoint, authKey)
@@ -686,7 +712,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static async Task<ItemResponse<TestDoc>> UpsertItemAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             TestDoc testDoc,
             string dekId,
             List<string> pathsToEncrypt,
@@ -702,7 +728,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static async Task<ItemResponse<TestDoc>> CreateItemAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             string dekId,
             List<string> pathsToEncrypt,
             string partitionKey = null)
@@ -718,7 +744,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static async Task<ItemResponse<TestDoc>> ReplaceItemAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             TestDoc testDoc,
             string dekId,
             List<string> pathsToEncrypt,
@@ -736,7 +762,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static async Task<ItemResponse<TestDoc>> DeleteItemAsync(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             TestDoc testDoc)
         {
             ItemResponse<TestDoc> deleteResponse = await containerCore.DeleteItemAsync<TestDoc>(
@@ -749,7 +775,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static ItemRequestOptions GetRequestOptions(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             string dekId,
             List<string> pathsToEncrypt,
             string ifMatchEtag = null)
@@ -767,7 +793,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static TransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             string dekId,
             List<string> pathsToEncrypt,
             string ifMatchEtag = null)
@@ -943,7 +969,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (dek == null)
                 {
-                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
                 }
 
                 return dek.DecryptData(cipherText);

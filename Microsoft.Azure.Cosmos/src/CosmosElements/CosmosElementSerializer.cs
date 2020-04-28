@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
 
 #if INTERNAL
@@ -232,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             // Write the count field and value
             jsonWriter.WriteFieldName("_count");
-            jsonWriter.WriteNumberValue(count);
+            jsonWriter.WriteNumber64Value(count);
 
             jsonWriter.WriteObjectEnd();
 

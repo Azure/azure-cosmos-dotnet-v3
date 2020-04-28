@@ -26,14 +26,14 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore cosmosContainerCore;
+        private readonly ContainerInternal cosmosContainerCore;
         private readonly DocumentClient documentClient;
         private readonly SemaphoreSlim semaphore;
         private QueryPartitionProvider queryPartitionProvider;
 
         internal CosmosQueryClientCore(
             CosmosClientContext clientContext,
-            ContainerCore cosmosContainerCore)
+            ContainerInternal cosmosContainerCore)
         {
             this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
             this.cosmosContainerCore = cosmosContainerCore;
@@ -149,55 +149,12 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
-            QueryResponseCore queryResponseCore = this.GetCosmosElementResponse(
+            return this.GetCosmosElementResponse(
                 requestOptions,
                 resourceType,
                 message,
                 partitionKeyRange,
                 queryPageDiagnostics);
-
-            if (queryResponseCore.IsSuccess &&
-                this.clientContext.ClientOptions.Encryptor != null)
-            {
-                return await this.GetDecryptedElementResponseAsync(queryResponseCore, message, cancellationToken);
-            }
-
-            return queryResponseCore;
-        }
-
-        private async Task<QueryResponseCore> GetDecryptedElementResponseAsync(
-            QueryResponseCore queryResponseCore,
-            ResponseMessage message,
-            CancellationToken cancellationToken)
-        {
-            List<CosmosElement> documents = new List<CosmosElement>();
-            using (message.DiagnosticsContext.CreateScope("Decrypt"))
-            {
-                foreach (CosmosElement document in queryResponseCore.CosmosElements)
-                {
-                    if (!(document is CosmosObject documentObject))
-                    {
-                        documents.Add(document);
-                        continue;
-                    }
-
-                    CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
-                        documentObject,
-                        this.clientContext.ClientOptions.Encryptor,
-                        message.DiagnosticsContext,
-                        cancellationToken);
-
-                    documents.Add(decryptedDocument);
-                }
-            }
-
-            return QueryResponseCore.CreateSuccess(
-                result: documents,
-                requestCharge: queryResponseCore.RequestCharge,
-                activityId: queryResponseCore.ActivityId,
-                responseLengthBytes: queryResponseCore.ResponseLengthBytes,
-                disallowContinuationTokenMessage: queryResponseCore.DisallowContinuationTokenMessage,
-                continuationToken: queryResponseCore.ContinuationToken);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -250,6 +207,21 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
                 });
+        }
+
+        internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
+            string resourceLink,
+            string collectionResourceId,
+            PartitionKeyDefinition partitionKeyDefinition,
+            FeedRangeInternal feedRangeInternal)
+        {
+            IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
+            List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
+
+            return await this.GetTargetPartitionKeyRangesAsync(
+                resourceLink,
+                collectionResourceId,
+                ranges);
         }
 
         internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(

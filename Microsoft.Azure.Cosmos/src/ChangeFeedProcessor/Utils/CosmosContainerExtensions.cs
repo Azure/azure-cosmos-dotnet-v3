@@ -103,8 +103,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 return suggestedMonitoredRid;
             }
 
-            string containerRid = await ((ContainerCore)monitoredContainer).GetRIDAsync(cancellationToken);
-            string databaseRid = await ((DatabaseCore)((ContainerCore)monitoredContainer).Database).GetRIDAsync(cancellationToken);
+            string containerRid = await ((ContainerInternal)monitoredContainer).GetRIDAsync(cancellationToken);
+            string databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
         }
 
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 CultureInfo.InvariantCulture,
                 "{0}{1}_{2}",
                 optionsPrefix,
-                ((ContainerCore)monitoredContainer).ClientContext.Client.Endpoint.Host,
+                ((ContainerInternal)monitoredContainer).ClientContext.Client.Endpoint.Host,
                 monitoredContainerRid);
         }
     }

@@ -9,14 +9,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Json;
-    using System.IO;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    [TestCategory("Functional")]
     public class JsonNavigatorTests
     {
         [TestInitialize]
@@ -38,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "true";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -47,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "false";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -56,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "null";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -65,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "1337";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -74,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "1337.0";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -83,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "-1337.0";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -92,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "6.02252e23";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -102,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // regression test - the value 0.00085647800000000004 was being incorrectly rejected
             string numberValueString = "0.00085647800000000004";
 
-            this.VerifyNavigator(numberValueString);
+            JsonNavigatorTests.VerifyNavigator(numberValueString);
         }
 
         [TestMethod]
@@ -111,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "\"Hello World\"";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -120,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "[  ]  ";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -129,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "[ -2, -1, 0, 1, 2]  ";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -138,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "[15,  22, 0.1, -7.3e-2, 77.0001e90 ]  ";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -147,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "[ true, false]  ";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -156,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "[ null, null, null]  ";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -165,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "[{}, {}]  ";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -174,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "[0, 0.0, -1, -1.0, 1, 2, \"hello\", null, true, false]  ";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -183,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "[[], []]  ";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -197,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 1111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110
                     ]";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -206,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "{}";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -215,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string input = "{\"GlossDiv\":10,\"title\": \"example glossary\" }";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -240,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         ""text"": ""tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby""
                     }";
 
-            this.VerifyNavigator(input);
+            JsonNavigatorTests.VerifyNavigator(input);
         }
 
         [TestMethod]
@@ -251,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             foreach (sbyte value in values)
             {
                 string input = $"I{value}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
 
@@ -263,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             foreach (short value in values)
             {
                 string input = $"H{value}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
 
@@ -275,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             foreach (int value in values)
             {
                 string input = $"L{value}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
 
@@ -287,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             foreach (long value in values)
             {
                 string input = $"LL{value}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
 
@@ -299,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             foreach (uint value in values)
             {
                 string input = $"UL{value}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
 
@@ -311,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             foreach (float value in values)
             {
                 string input = $"S{value.ToString("G9", CultureInfo.InvariantCulture)}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
 
@@ -323,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             foreach (double value in values)
             {
                 string input = $"D{value.ToString("G17", CultureInfo.InvariantCulture)}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
 
@@ -335,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             foreach (Guid value in values)
             {
                 string input = $"G{value.ToString()}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
 
@@ -346,14 +344,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 // Empty Binary
                 string input = $"B";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
 
             {
                 // Binary 1 Byte Length
                 IReadOnlyList<byte> binary = Enumerable.Range(0, 25).Select(x => (byte)x).ToList();
                 string input = $"B{Convert.ToBase64String(binary.ToArray())}";
-                this.VerifyNavigator(input);
+                JsonNavigatorTests.VerifyNavigator(input);
             }
         }
         #endregion
@@ -363,134 +361,128 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("brchon")]
         public void CombinedScriptsDataTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("CombinedScriptsData.json");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("CombinedScriptsData.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void CountriesTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("countries", false);
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("countries", false);
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void DevTestCollTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("devtestcoll.json");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("devtestcoll.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void LastFMTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("lastfm");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("lastfm");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void LogDataTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("LogData.json");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("LogData.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void MillionSong1KDocumentsTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("MillionSong1KDocuments.json");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("MillionSong1KDocuments.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void MsnCollectionTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("MsnCollection.json");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("MsnCollection.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void NutritionDataTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("NutritionData");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("NutritionData");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void RunsCollectionTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("runsCollection");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("runsCollection");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void StatesCommitteesTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("states_committees.json");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("states_committees.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void StatesLegislatorsTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("states_legislators");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("states_legislators");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void Store01Test()
         {
-            this.VerifyNavigatorWithCurratedDoc("store01C.json");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("store01C.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void TicinoErrorBucketsTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("TicinoErrorBuckets");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("TicinoErrorBuckets");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void TwitterDataTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("twitter_data");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("twitter_data");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void Ups1Test()
         {
-            this.VerifyNavigatorWithCurratedDoc("ups1");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("ups1");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void XpertEventsTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("XpertEvents");
+            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("XpertEvents");
         }
 
-        private void VerifyNavigatorWithCurratedDoc(string path, bool performExtraChecks = true)
+        private static void VerifyNavigatorWithCurratedDoc(string path, bool performExtraChecks = true)
         {
             path = string.Format("TestJsons/{0}", path);
             string json = TextFileConcatenation.ReadMultipartFile(path);
 #if true
-            json = JsonTestUtils.RandomSampleJson(json);
+            json = JsonTestUtils.RandomSampleJson(json, maxNumberOfItems: 1);
 #endif
 
-            this.VerifyNavigator(json, performExtraChecks);
+            JsonNavigatorTests.VerifyNavigator(json, performExtraChecks);
         }
         #endregion
 
-        private void VerifyNavigator(string input, bool performExtraChecks = true)
-        {
-            this.VerifyNavigator(input, null, performExtraChecks);
-        }
-
-        private void VerifyNavigator(
+        private static void VerifyNavigator(
             string input,
-            Exception expectedException,
             bool performExtraChecks = true)
         {
             CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
@@ -528,13 +520,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     // Test binary + user string encoding
                     JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 4096);
                     byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
-                    if (jsonStringDictionary.TryGetStringAtIndex(index: 0, value: out string temp))
+                    if (jsonStringDictionary.TryGetStringAtIndex(index: 0, value: out _))
                     {
                         Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be different with user string encoding");
                     }
                     IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
                     IJsonNavigatorNode binaryRootNodeWithUserStringEncoding = binaryNavigatorWithUserStringEncoding.GetRootNode();
-                    JsonToken[] tokensFromBinaryNavigatorWithUserStringEncoding = JsonNavigatorTests.GetTokensFromNode(binaryRootNode, binaryNavigator, performExtraChecks);
+                    JsonToken[] tokensFromBinaryNavigatorWithUserStringEncoding = JsonNavigatorTests.GetTokensFromNode(binaryRootNodeWithUserStringEncoding, binaryNavigatorWithUserStringEncoding, performExtraChecks);
 
                     Assert.IsTrue(tokensFromBinaryNavigatorWithUserStringEncoding.SequenceEqual(tokensFromReader));
                 }
@@ -545,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        internal static JsonToken[] GetTokensWithReader(IJsonReader jsonReader)
+        private static JsonToken[] GetTokensWithReader(IJsonReader jsonReader)
         {
             List<JsonToken> tokens = new List<JsonToken>();
             while (jsonReader.Read())
@@ -642,7 +634,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return tokens.ToArray();
         }
 
-        internal static JsonToken[] GetTokensFromNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
+        private static JsonToken[] GetTokensFromNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
         {
             switch (navigator.GetNodeType(node))
             {
@@ -655,8 +647,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 case JsonNodeType.True:
                     return new JsonToken[] { JsonToken.Boolean(true) };
 
-                case JsonNodeType.Number:
-                    return new JsonToken[] { JsonToken.Number(navigator.GetNumberValue(node)) };
+                case JsonNodeType.Number64:
+                    return new JsonToken[] { JsonToken.Number(navigator.GetNumber64Value(node)) };
 
                 case JsonNodeType.String:
                     return new JsonToken[] { JsonToken.String(navigator.GetStringValue(node)) };
@@ -702,7 +694,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        internal static JsonToken[] GetTokensFromObjectNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
+        private static JsonToken[] GetTokensFromObjectNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
         {
             // Get the tokens through .GetObjectProperties
             List<JsonToken> tokensFromGetProperties = new List<JsonToken>();
@@ -725,9 +717,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 tokensFromTryGetProperty.Add(JsonToken.ObjectStart());
                 foreach (ObjectProperty objectProperty in properties)
                 {
-                    ObjectProperty propertyFromTryGetProperty;
                     string fieldname = navigator.GetStringValue(objectProperty.NameNode);
-                    if (navigator.TryGetObjectProperty(node, fieldname, out propertyFromTryGetProperty))
+                    if (navigator.TryGetObjectProperty(node, fieldname, out ObjectProperty propertyFromTryGetProperty))
                     {
                         tokensFromTryGetProperty.Add(JsonToken.FieldName(fieldname));
                         tokensFromTryGetProperty.AddRange(JsonNavigatorTests.GetTokensFromNode(propertyFromTryGetProperty.ValueNode, navigator, performCorrectnessCheck));
@@ -745,7 +736,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return tokensFromGetProperties.ToArray();
         }
 
-        internal static JsonToken[] GetTokensFromArrayNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
+        private static JsonToken[] GetTokensFromArrayNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
         {
             // Get tokens once through IEnumerable
             List<JsonToken> tokensFromIEnumerable = new List<JsonToken>();
