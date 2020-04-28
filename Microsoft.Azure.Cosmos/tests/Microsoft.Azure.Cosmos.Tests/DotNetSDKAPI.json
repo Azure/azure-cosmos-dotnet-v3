@@ -4103,6 +4103,16 @@
     "QueryRequestOptions": {
       "Subclasses": {},
       "Members": {
+        "Boolean get_ReturnMinimalResponse()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean get_ReturnMinimalResponse()"
+        },
+        "Boolean ReturnMinimalResponse": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
           "Type": "Property",
           "Attributes": [],
@@ -4267,6 +4277,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])"
+        },
+        "Void set_ReturnMinimalResponse(Boolean)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_ReturnMinimalResponse(Boolean)"
         },
         "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -4818,6 +4833,16 @@
         "QueryRequestOptions": {
           "Subclasses": {},
           "Members": {
+            "Boolean get_ReturnMinimalResponse()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Boolean get_ReturnMinimalResponse()"
+            },
+            "Boolean ReturnMinimalResponse": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
             "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
               "Type": "Property",
               "Attributes": [],
@@ -4982,6 +5007,11 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])"
+            },
+            "Void set_ReturnMinimalResponse(Boolean)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void set_ReturnMinimalResponse(Boolean)"
             },
             "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
