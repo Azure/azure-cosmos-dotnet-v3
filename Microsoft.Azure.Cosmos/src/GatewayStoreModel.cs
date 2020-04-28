@@ -40,12 +40,13 @@ namespace Microsoft.Azure.Cosmos
             JsonSerializerSettings serializerSettings,
             UserAgentContainer userAgent,
             ApiType apiType = ApiType.None,
-            HttpMessageHandler messageHandler = null)
+            HttpMessageHandler messageHandler = null,
+            Func<HttpClient> httpClientFactory = null)
         {
             // CookieContainer is not really required, but is helpful in debugging.
             this.cookieJar = new CookieContainer();
             this.endpointManager = endpointManager;
-            HttpClient httpClient = new HttpClient(messageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar });
+            HttpClient httpClient = this.GetHttpClient(httpClientFactory, messageHandler);
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
 
@@ -71,6 +72,19 @@ namespace Microsoft.Azure.Cosmos
                 this.eventSource,
                 serializerSettings);
 
+        }
+
+        private HttpClient GetHttpClient(
+            Func<HttpClient> httpClientFactory,
+            HttpMessageHandler httpMessageHandler)
+        {
+            if (httpClientFactory != null)
+            {
+                DefaultTrace.TraceInformation("Using HttpClientFactory provided by CosmosClientOptions.");
+                return httpClientFactory();
+            }
+
+            return new HttpClient(httpMessageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar });
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))

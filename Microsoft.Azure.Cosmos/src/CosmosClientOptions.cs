@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -427,6 +428,19 @@ namespace Microsoft.Azure.Cosmos
         public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// HTTPS communication is used when <see cref="ConnectionMode"/> is set to <see cref="ConnectionMode.Gateway"/> for all operations and when <see cref="ConnectionMode"/> is <see cref="ConnectionMode.Direct"/> (default) for metadata operations.
+        /// </para>
+        /// <para>
+        /// Useful in scenarios where the application is using a pool of HttpClient instances to be shared, like ASP.NET Core applications with IHttpClientFactory or Blazor WebAssembly applications.
+        /// </para>
+        /// </remarks>
+        public Func<HttpClient> HttpClientFactory { get; set; }
+
+        /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
         /// <value>
@@ -556,7 +570,8 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 PortReuseMode = this.portReuseMode,
-                EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery
+                EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
+                HttpClientFactory = this.HttpClientFactory
             };
 
             if (this.ApplicationRegion != null)

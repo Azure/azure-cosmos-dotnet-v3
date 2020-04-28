@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
     using System.Net;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -388,6 +389,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithBulkExecution(bool enabled)
         {
             this.clientOptions.AllowBulkExecution = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
+        /// </summary>
+        /// <param name="httpClientFactory">A delegate function to generate instances of HttpClient.</param>
+        /// <remarks>
+        /// <para>
+        /// HTTPS communication is used when <see cref="ConnectionMode"/> is set to <see cref="ConnectionMode.Gateway"/> for all operations and when <see cref="ConnectionMode"/> is <see cref="ConnectionMode.Direct"/> (default) for metadata operations.
+        /// </para>
+        /// <para>
+        /// Useful in scenarios where the application is using a pool of HttpClient instances to be shared, like ASP.NET Core applications with IHttpClientFactory or Blazor WebAssembly applications.
+        /// </para>
+        /// </remarks>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="CosmosClientOptions.HttpClientFactory"/>
+        public CosmosClientBuilder WithHttpClientFactory(Func<HttpClient> httpClientFactory)
+        {
+            this.clientOptions.HttpClientFactory = httpClientFactory;
             return this;
         }
 
