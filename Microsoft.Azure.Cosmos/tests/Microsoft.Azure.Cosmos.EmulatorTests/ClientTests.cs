@@ -301,6 +301,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             });
         }
+
+        [TestMethod]
+        public async Task HttpClientFactorySmokeTest()
+        {
+            Func<HttpClient> factory = () => new HttpClient();
+            CosmosClient cosmosClient = new CosmosClient(
+                ConfigurationManager.AppSettings["GatewayEndpoint"],
+                ConfigurationManager.AppSettings["MasterKey"],
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ConnectionProtocol = Protocol.Https,
+                    HttpClientFactory = factory
+                }
+            );
+
+            string someId = Guid.NewGuid().ToString();
+            Cosmos.Database database = null;
+            try
+            {
+                database = await cosmosClient.CreateDatabaseAsync(someId);
+                Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+                await container.CreateItemAsync<dynamic>(new { id = someId });
+                await container.ReadItemAsync<dynamic>(someId, new Cosmos.PartitionKey(someId));
+                await container.DeleteItemAsync<dynamic>(someId, new Cosmos.PartitionKey(someId));
+                await container.DeleteContainerAsync();
+            }
+            finally
+            {
+                if (database!= null)
+                {
+                    await database.DeleteAsync();
+                }
+            }
+        }
     }
 
     internal static class StringHelper
