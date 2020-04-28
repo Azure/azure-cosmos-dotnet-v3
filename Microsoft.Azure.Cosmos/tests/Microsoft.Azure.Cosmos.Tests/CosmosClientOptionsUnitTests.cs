@@ -99,7 +99,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithApiType(apiType)
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                 .WithBulkExecution(true)
-                .WithHttpClientFactory(this.HttpClientFactoryDelegate)
                 .WithSerializerOptions(cosmosSerializerOptions);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -121,7 +120,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
-            Assert.AreEqual(this.HttpClientFactoryDelegate, clientOptions.HttpClientFactory);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -134,7 +132,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.UseMultipleWriteLocations);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
-            Assert.AreEqual(this.HttpClientFactoryDelegate, policy.HttpClientFactory);
 
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
@@ -357,6 +354,41 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
             cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyWebProxyHttpClientFactorySet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.WebProxy = Mock.Of<WebProxy>();
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyHttpClientFactoryWebProxySet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+            cosmosClientOptions.WebProxy = Mock.Of<WebProxy>();
+        }
+
+        [TestMethod]
+        public void HttpClientFactoryBuildsConnectionPolicy()
+        {
+            string endpoint = AccountEndpoint;
+            string key = Guid.NewGuid().ToString();
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key)
+                .WithHttpClientFactory(this.HttpClientFactoryDelegate);
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.AreEqual(clientOptions.HttpClientFactory, this.HttpClientFactoryDelegate);
+            ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
+            Assert.AreEqual(policy.HttpClientFactory, this.HttpClientFactoryDelegate);
         }
 
         [TestMethod]

@@ -293,11 +293,37 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 new UserAgentContainer(),
                 ApiType.None,
-                null,
                 mockFactory.Object);
 
             Mock.Get(mockFactory.Object)
                 .Verify(f => f(), Times.Once);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void GatewayStoreModel_HttpClientFactory_IfNull()
+        {
+            HttpClient staticHttpClient = null;
+
+            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
+            mockFactory.Setup(f => f()).Returns(staticHttpClient);
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                TimeSpan.FromSeconds(5),
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new UserAgentContainer(),
+                ApiType.None,
+                mockFactory.Object);
         }
 
         [TestMethod]

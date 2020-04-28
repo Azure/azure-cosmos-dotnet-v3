@@ -67,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
         private int? maxTcpConnectionsPerEndpoint;
         private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
+        private Func<HttpClient> httpClientFactory;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -322,6 +323,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException($"{nameof(this.WebProxy)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
                 }
+
+                if (this.HttpClientFactory != null)
+                {
+                    throw new ArgumentException($"{nameof(this.WebProxy)} cannot be set along {nameof(this.HttpClientFactory)}");
+                }
             }
         }
 
@@ -439,7 +445,19 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-        public Func<HttpClient> HttpClientFactory { get; set; }
+        public Func<HttpClient> HttpClientFactory
+        {
+            get => this.httpClientFactory;
+            set
+            {
+                if (this.WebProxy != null)
+                {
+                    throw new ArgumentException($"{nameof(this.HttpClientFactory)} cannot be set along {nameof(this.WebProxy)}");
+                }
+
+                this.httpClientFactory = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -572,7 +590,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.HttpClientFactory
+                HttpClientFactory = this.httpClientFactory
             };
 
             if (this.ApplicationRegion != null)

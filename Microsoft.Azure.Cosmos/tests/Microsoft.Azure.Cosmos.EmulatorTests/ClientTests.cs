@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -305,7 +306,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task HttpClientFactorySmokeTest()
         {
-            Func<HttpClient> factory = () => new HttpClient();
+            HttpClient client = new HttpClient();
+            Mock<Func<HttpClient>> factory = new Mock<Func<HttpClient>>();
+            factory.Setup(f => f()).Returns(client);
             CosmosClient cosmosClient = new CosmosClient(
                 ConfigurationManager.AppSettings["GatewayEndpoint"],
                 ConfigurationManager.AppSettings["MasterKey"],
@@ -313,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     ConnectionMode = ConnectionMode.Gateway,
                     ConnectionProtocol = Protocol.Https,
-                    HttpClientFactory = factory
+                    HttpClientFactory = factory.Object
                 }
             );
 
@@ -327,6 +330,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await container.ReadItemAsync<dynamic>(someId, new Cosmos.PartitionKey(someId));
                 await container.DeleteItemAsync<dynamic>(someId, new Cosmos.PartitionKey(someId));
                 await container.DeleteContainerAsync();
+                Mock.Get(factory.Object).Verify(f => f(), Times.Once);
             }
             finally
             {

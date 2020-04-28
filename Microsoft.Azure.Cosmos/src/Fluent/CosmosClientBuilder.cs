@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <seealso cref="CosmosClientOptions.HttpClientFactory"/>
         public CosmosClientBuilder WithHttpClientFactory(Func<HttpClient> httpClientFactory)
         {
-            this.clientOptions.HttpClientFactory = httpClientFactory;
+            this.clientOptions.HttpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             return this;
         }
 
