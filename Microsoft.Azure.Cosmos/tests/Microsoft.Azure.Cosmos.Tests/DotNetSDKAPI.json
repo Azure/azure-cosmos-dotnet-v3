@@ -1482,11 +1482,9 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] get_CustomHandlers()"
         },
-        "System.Func`1[System.Net.Http.HttpClient] get_HttpClientFactory()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Func`1[System.Net.Http.HttpClient] get_HttpClientFactory()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Func`1[System.Net.Http.HttpClient] get_HttpClientFactory()"
         },
         "System.Func`1[System.Net.Http.HttpClient] HttpClientFactory[Newtonsoft.Json.JsonIgnoreAttribute()]": {
@@ -1687,11 +1685,9 @@
           "Attributes": [],
           "MethodInfo": "Void set_GatewayModeMaxConnectionLimit(Int32)"
         },
-        "Void set_HttpClientFactory(System.Func`1[System.Net.Http.HttpClient])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_HttpClientFactory(System.Func`1[System.Net.Http.HttpClient])": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Void set_HttpClientFactory(System.Func`1[System.Net.Http.HttpClient])"
         },
         "Void set_IdleTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])": {
