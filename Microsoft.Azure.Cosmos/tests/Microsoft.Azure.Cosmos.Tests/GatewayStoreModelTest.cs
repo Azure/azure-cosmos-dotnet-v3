@@ -271,6 +271,36 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void GatewayStoreModel_HttpClientFactory()
+        {
+            HttpClient staticHttpClient = new HttpClient();
+
+            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
+            mockFactory.Setup(f => f()).Returns(staticHttpClient);
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                TimeSpan.FromSeconds(5),
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new UserAgentContainer(),
+                ApiType.None,
+                null,
+                mockFactory.Object);
+
+            Mock.Get(mockFactory.Object)
+                .Verify(f => f(), Times.Once);
+        }
+
+        [TestMethod]
         // Verify that for 429 exceptions, session token is not updated
         public async Task GatewayStoreModel_Exception_NotUpdateSessionTokenOnKnownExceptions()
         {

@@ -438,6 +438,7 @@ namespace Microsoft.Azure.Cosmos
         /// Useful in scenarios where the application is using a pool of HttpClient instances to be shared, like ASP.NET Core applications with IHttpClientFactory or Blazor WebAssembly applications.
         /// </para>
         /// </remarks>
+        [JsonIgnore]
         public Func<HttpClient> HttpClientFactory { get; set; }
 
         /// <summary>
