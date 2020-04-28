@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
         public const string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+        public Func<HttpClient> HttpClientFactoryDelegate = () => new HttpClient();
 
         [TestMethod]
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
@@ -74,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
             Assert.IsFalse(clientOptions.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsNull(clientOptions.HttpClientFactory);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -87,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
             Assert.IsTrue(policy.EnableEndpointDiscovery);
             Assert.IsFalse(policy.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsNull(policy.HttpClientFactory);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -96,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithApiType(apiType)
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                 .WithBulkExecution(true)
+                .WithHttpClientFactory(this.HttpClientFactoryDelegate)
                 .WithSerializerOptions(cosmosSerializerOptions);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -117,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
+            Assert.AreEqual(this.HttpClientFactoryDelegate, clientOptions.HttpClientFactory);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -129,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.UseMultipleWriteLocations);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
+            Assert.AreEqual(this.HttpClientFactoryDelegate, policy.HttpClientFactory);
 
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
