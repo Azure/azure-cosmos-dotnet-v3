@@ -755,29 +755,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<ResponseMessage> CreateDataEncryptionKeyStreamAsync(
-            Stream streamPayload,
-            RequestOptions requestOptions,
-            CancellationToken cancellationToken)
-        {
-            if (streamPayload == null)
-            {
-                throw new ArgumentNullException(nameof(streamPayload));
-            }
-
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.LinkUri,
-                resourceType: ResourceType.ClientEncryptionKey,
-                operationType: OperationType.Create,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                requestOptions: requestOptions,
-                requestEnricher: null,
-                diagnosticsContext: null,
-                cancellationToken: cancellationToken);
-        }
-
         private Task<ResponseMessage> ProcessAsync(
             OperationType operationType,
             RequestOptions requestOptions,

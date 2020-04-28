@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
 
     /// <summary>
-    /// This is an empty implementation of CosmosDiagnosticsContext which has been plumbed through the DataEncryptionKeyProvider.
+    /// This is an empty implementation of CosmosDiagnosticsContext which has been plumbed through the DataEncryptionKeyProvider & EncryptionStreamTransformer.
     /// This may help adding diagnostics more easily in future.
     /// </summary>
     internal class CosmosDiagnosticsContext

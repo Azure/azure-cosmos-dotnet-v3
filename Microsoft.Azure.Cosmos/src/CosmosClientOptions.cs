@@ -385,18 +385,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Provider that allows encrypting and decrypting data.
-        /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
-        /// </summary>
-        [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        Encryptor Encryptor { get; set; }
-
-        /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClient.
         /// </summary>
         /// <value>

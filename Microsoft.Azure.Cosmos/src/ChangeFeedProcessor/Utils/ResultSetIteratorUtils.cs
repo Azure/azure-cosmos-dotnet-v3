@@ -14,9 +14,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             int? maxItemCount,
             ContainerInternal container,
             DateTime? startTime,
-            bool startFromBeginning)
+            bool startFromBeginning,
+            CosmosStreamTransformer streamTransformer = null)
         {
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
+            requestOptions.CosmosStreamTransformer = streamTransformer;
             if (startTime.HasValue)
             {
                 requestOptions.StartTime = startTime.Value;

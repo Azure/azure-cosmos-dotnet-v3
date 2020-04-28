@@ -167,6 +167,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Sets the CosmosStreamTransformer to be used as part of the ChangeFeedRequestOptions
+        /// </summary>
+        /// <param name="cosmosStreamTransformer">Instance of stream transformer</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        public ChangeFeedProcessorBuilder WithCosmosStreamTransformer(CosmosStreamTransformer cosmosStreamTransformer)
+        {
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.CosmosStreamTransformer = cosmosStreamTransformer;
+            return this;
+        }
+
+        /// <summary>
         /// Uses an in-memory container to maintain state of the leases
         /// </summary>
         /// <remarks>

@@ -99,5 +99,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// Gets or sets the Batch size of query API.
         /// </summary>
         internal int QueryFeedMaxBatchSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the stream transformer to be used as part of the change feed request options.
+        /// </summary>
+        internal CosmosStreamTransformer CosmosStreamTransformer { get; set; }
     }
 }

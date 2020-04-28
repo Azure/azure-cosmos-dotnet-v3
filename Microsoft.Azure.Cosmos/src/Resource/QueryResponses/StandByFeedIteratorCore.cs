@@ -61,37 +61,43 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            string firstNotModifiedKeyRangeId = null;
-            string currentKeyRangeId;
-            string nextKeyRangeId;
-            ResponseMessage response;
-            do
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
-                (currentKeyRangeId, response) = await this.ReadNextInternalAsync(cancellationToken);
-                // Read only one range at a time - Breath first
-                this.compositeContinuationToken.MoveToNextToken();
-                (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-                if (response.StatusCode != HttpStatusCode.NotModified)
+                string firstNotModifiedKeyRangeId = null;
+                string currentKeyRangeId;
+                string nextKeyRangeId;
+                ResponseMessage response;
+                do
                 {
-                    break;
-                }
+                    (currentKeyRangeId, response) = await this.ReadNextInternalAsync(diagnosticsContext, cancellationToken);
+                    // Read only one range at a time - Breath first
+                    this.compositeContinuationToken.MoveToNextToken();
+                    (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+                    if (response.StatusCode != HttpStatusCode.NotModified)
+                    {
+                        break;
+                    }
 
-                // HttpStatusCode.NotModified
-                if (string.IsNullOrEmpty(firstNotModifiedKeyRangeId))
-                {
-                    // First NotModified Response
-                    firstNotModifiedKeyRangeId = currentKeyRangeId;
+                    // HttpStatusCode.NotModified
+                    if (string.IsNullOrEmpty(firstNotModifiedKeyRangeId))
+                    {
+                        // First NotModified Response
+                        firstNotModifiedKeyRangeId = currentKeyRangeId;
+                    }
                 }
+                // We need to keep checking across all ranges until one of them returns OK or we circle back to the start
+                while (!firstNotModifiedKeyRangeId.Equals(nextKeyRangeId, StringComparison.InvariantCultureIgnoreCase));
+
+                // Send to the user the composite state for all ranges
+                response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
+                return response;
             }
-            // We need to keep checking across all ranges until one of them returns OK or we circle back to the start
-            while (!firstNotModifiedKeyRangeId.Equals(nextKeyRangeId, StringComparison.InvariantCultureIgnoreCase));
-
-            // Send to the user the composite state for all ranges
-            response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
-            return response;
         }
 
-        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
+        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -108,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
-                return await this.ReadNextInternalAsync(cancellationToken);
+                return await this.ReadNextInternalAsync(diagnosticsContext, cancellationToken);
             }
 
             if (response.IsSuccessStatusCode
@@ -116,6 +122,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Change Feed read uses Etag for continuation
                 currentRangeToken.Token = response.Headers.ETag;
+                if (this.changeFeedOptions.CosmosStreamTransformer != null && response.Content != null)
+                {
+                    response.Content = await this.GetTransformedResponseMessageAsync(
+                        response.Content,
+                        this.clientContext.SerializerCore,
+                        this.changeFeedOptions.CosmosStreamTransformer,
+                        this.containerRid,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
             }
 
             return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);

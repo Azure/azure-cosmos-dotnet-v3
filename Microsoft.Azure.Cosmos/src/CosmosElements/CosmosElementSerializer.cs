@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// <param name="cosmosElement">The cosmos elements</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        private static MemoryStream ElementToMemoryStream(
+        internal static MemoryStream ElementToMemoryStream(
             CosmosElement cosmosElement,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {

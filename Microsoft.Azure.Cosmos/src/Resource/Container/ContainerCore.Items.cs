@@ -701,14 +701,10 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            if (requestOptions?.EncryptionOptions != null)
+            if (requestOptions?.CosmosStreamTransformer != null)
             {
-                streamPayload = await this.ClientContext.EncryptItemAsync(
-                    streamPayload,
-                    requestOptions.EncryptionOptions,
-                    (DatabaseInternal)this.Database,
-                    diagnosticsContext,
-                    cancellationToken);
+                streamPayload = await requestOptions.CosmosStreamTransformer.TransformRequestItemStreamAsync(
+                    streamPayload, null, cancellationToken);
             }
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -724,13 +720,10 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
+            if (responseMessage.Content != null && requestOptions?.CosmosStreamTransformer != null)
             {
-                responseMessage.Content = await this.ClientContext.DecryptItemAsync(
-                    responseMessage.Content,
-                    (DatabaseInternal)this.Database,
-                    diagnosticsContext,
-                    cancellationToken);
+                responseMessage.Content = await requestOptions.CosmosStreamTransformer.TransformResponseItemStreamAsync(
+                    responseMessage.Content, null, cancellationToken);
             }
 
             return responseMessage;

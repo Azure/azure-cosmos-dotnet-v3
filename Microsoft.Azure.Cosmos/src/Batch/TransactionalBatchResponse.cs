@@ -314,13 +314,12 @@ namespace Microsoft.Azure.Cosmos
                 {
                     for (int index = 0; index < serverRequest.Operations.Count; index++)
                     {
-                        ContainerInternal containerCore = serverRequest.Operations[index].ContainerInternal;
                         TransactionalBatchOperationResult result = response.results[index];
-                        result.ResourceStream = await containerCore.ClientContext.DecryptItemAsync(
-                            result.ResourceStream,
-                            (DatabaseInternal)containerCore.Database,
-                            responseMessage.DiagnosticsContext,
-                            cancellationToken);
+                        if (serverRequest.Operations[index].RequestOptions?.CosmosStreamTransformer != null)
+                        {
+                            result.ResourceStream = await serverRequest.Operations[index].RequestOptions.CosmosStreamTransformer.TransformResponseItemStreamAsync(
+                                result.ResourceStream, null, cancellationToken);
+                        }
                     }
                 }
 

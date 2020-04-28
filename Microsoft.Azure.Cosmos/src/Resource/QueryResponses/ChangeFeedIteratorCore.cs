@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             this.changeFeedOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
             {
-                return this.TryInitializeContainerRIdAsync(innerCancellationToken);
+                return this.TryInitializeContainerRIdAsync(this.container, innerCancellationToken);
             });
         }
 
@@ -173,6 +173,16 @@ namespace Microsoft.Azure.Cosmos
                 // Change Feed read uses Etag for continuation
                 this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
                 this.hasMoreResults = responseMessage.IsSuccessStatusCode;
+                if (this.changeFeedOptions.CosmosStreamTransformer != null && responseMessage?.Content != null)
+                {
+                    responseMessage.Content = await this.GetTransformedResponseMessageAsync(
+                        responseMessage.Content,
+                        this.clientContext.SerializerCore,
+                        this.changeFeedOptions.CosmosStreamTransformer,
+                        this.lazyContainerRid.Result.Result,
+                        diagnosticsScope,
+                        cancellationToken);
+                }
                 return FeedRangeResponse.CreateSuccess(
                     responseMessage,
                     this.FeedRangeContinuation);
@@ -201,19 +211,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return false;
-        }
-
-        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                string containerRId = await this.container.GetRIDAsync(cancellationToken);
-                return TryCatch<string>.FromResult(containerRId);
-            }
-            catch (CosmosException cosmosException)
-            {
-                return TryCatch<string>.FromException(cosmosException);
-            }
         }
 
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)

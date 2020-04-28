@@ -9,7 +9,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
+        private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private string continuationToken;
         private string partitionKeyRangeId;
         private bool hasMoreResultsInternal;
@@ -47,6 +49,10 @@ namespace Microsoft.Azure.Cosmos
             this.MaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
             this.partitionKeyRangeId = partitionKeyRangeId;
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
+            {
+                return this.TryInitializeContainerRIdAsync(this.container, innerCancellationToken);
+            });
         }
 
         /// <summary>
@@ -68,29 +74,34 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A change feed response from cosmos service</returns>
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
+            using (diagnosticsContext.GetOverallScope())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-            return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
-                .ContinueWith(task =>
-                {
-                    ResponseMessage response = task.Result;
-                    // Change Feed uses ETAG
-                    this.continuationToken = response.Headers.ETag;
-                    this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
-                    response.Headers.ContinuationToken = this.continuationToken;
-                    return response;
-                }, cancellationToken);
+                return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, diagnosticsContext, cancellationToken)
+                    .ContinueWith(task =>
+                    {
+                        ResponseMessage response = task.Result;
+                        // Change Feed uses ETAG
+                        this.continuationToken = response.Headers.ETag;
+                        this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
+                        response.Headers.ContinuationToken = this.continuationToken;
+                        return response;
+                    }, cancellationToken);
+            }
         }
 
-        private Task<ResponseMessage> NextResultSetDelegateAsync(
+        private async Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
             ChangeFeedRequestOptions options,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                cosmosContainerCore: this.container,
                resourceUri: resourceUri,
                resourceType: Documents.ResourceType.Document,
@@ -107,6 +118,33 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsContext: null,
                cancellationToken: cancellationToken);
 
+            if (responseMessage.IsSuccessStatusCode && this.changeFeedOptions.CosmosStreamTransformer != null && responseMessage.Content != null)
+            {
+                if (!this.lazyContainerRid.ValueInitialized)
+                {
+                    using (diagnosticsContext.CreateScope("InitializeContainerResourceId"))
+                    {
+                        TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
+                        if (!tryInitializeContainerRId.Succeeded)
+                        {
+                            CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
+                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsContext));
+                        }
+                    }
+                }
+
+                responseMessage.Content = await this.GetTransformedResponseMessageAsync(
+                    responseMessage.Content,
+                    this.clientContext.SerializerCore,
+                    this.changeFeedOptions.CosmosStreamTransformer,
+                    this.lazyContainerRid.Result.Result,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                return responseMessage;
+            }
+
+            return responseMessage;
         }
     }
 }
