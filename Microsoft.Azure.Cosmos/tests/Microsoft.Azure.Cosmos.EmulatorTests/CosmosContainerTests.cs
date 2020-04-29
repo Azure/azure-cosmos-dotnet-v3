@@ -432,6 +432,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
 
+        [TestMethod]
+        public async Task AnalyticalContainerDefaultsTest()
+        {
+            string containerId = Guid.NewGuid().ToString();
+
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            Assert.IsNull(response.Resource.AnalyticalStorageTimeToLiveInSeconds);
+
+            await response.Container.DeleteContainerAsync();
+        }
+
+        [TestMethod]
+        public async Task AnalyticalContainerCustomTest()
+        {
+            string containerId = Guid.NewGuid().ToString();
+            int analyticalTtlInSec = (int)TimeSpan.FromDays(6 * 30).TotalSeconds;
+            ContainerProperties cpInput = new ContainerProperties()
+            {
+                Id = containerId,
+                PartitionKeyPath = "/id",
+                AnalyticalStorageTimeToLiveInSeconds = analyticalTtlInSec,
+            };
+
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cpInput);
+            Assert.IsNotNull(response.Resource.AnalyticalStorageTimeToLiveInSeconds);
+            Assert.AreEqual(analyticalTtlInSec, response.Resource.AnalyticalStorageTimeToLiveInSeconds);
+
+            await response.Container.DeleteContainerAsync();
+        }
 
         [TestMethod]
         public async Task CreateHashV1Container()
