@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (tags.Any())
             {
-                var needsAnd = false;
+                var needsLoopAnd = false;
                 var machineTags = tags.Select(Parse);
                 var tagsByGroup = machineTags.GroupBy(x => x.Namespace + ":" + x.Name);
                 foreach (var grouping in tagsByGroup)
@@ -115,21 +115,27 @@ namespace Microsoft.Azure.Cosmos.Linq
                     var regularProp = $"{tagsProp}[\"tags\"][\"{tagName}\"]";
                     var notProp = $"{tagsProp}[\"tags\"][\"!{tagName}\"]";
 
-                    if (needsAnd)
+                    if (needsLoopAnd)
+                    {
                         sb.Append(" AND ");
+                        needsLoopAnd = false;
+                    }
 
                     if (nots.Any())
                     {
-                        needsNotsAnd = true;
                         if (nots.Any(x => x.IsWildcard))
                         {
                             sb.Append($"NOT(IS_DEFINED({regularProp}))");
+                            needsNotsAnd = true;
+                            needsLoopAnd = true;
                         }
-                        else if (nots.Any(x => !x.IsWildcard))
+                        else
                         {
                             sb.Append($"NOT(ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\"))");
                             foreach (var not in nots)
                                 sb.Append($" AND NOT(ARRAY_CONTAINS({tagProp}, \"{not.Tag.Substring(1)}\"))");
+                            needsNotsAnd = true;
+                            needsLoopAnd = true;
                         }
                     }
                     if (regulars.Any())
@@ -138,18 +144,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                         {
                             if (queryOptions.HasFlag(TagsQueryOptions.DocumentNotTags))
                             {
-                                needsRegularsAnd = true;
-
-                                if (nots.Any())
+                                if (needsNotsAnd)
                                     sb.Append(" AND ");
                                 sb.Append($"NOT(IS_DEFINED({notProp}))");
+
+                                needsRegularsAnd = true;
+                                needsLoopAnd = true;
                             }
                         }
-                        else if (regulars.Any(x => !x.IsWildcard))
+                        else
                         {
-                            needsRegularsAnd = true;
-
-                            if (nots.Any())
+                            if (needsNotsAnd)
                                 sb.Append(" AND ");
 
                             if (queryOptions.HasFlag(TagsQueryOptions.DocumentNotTags))
@@ -185,25 +190,28 @@ namespace Microsoft.Azure.Cosmos.Linq
                                 sb.Append($" OR ARRAY_CONTAINS({tagProp}, \"{regular.Tag}\")");
 
                             sb.Append(")");
+
+                            needsRegularsAnd = true;
+                            needsLoopAnd = true;
                         }
                     }
                     if (requireds.Any())
                     {
                         if (needsNotsAnd || needsRegularsAnd)
                             sb.Append(" AND ");
+                        sb.Append("(");
                         sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
                         sb.Append(" OR ");
-                        sb.Append("(");
                         foreach ((var value, int index) in requireds.Select((v, i) => (v, i)))
                         {
                             if (index > 0)
-                                sb.Append(" AND ");
+                                sb.Append(" OR ");
                             sb.Append($"ARRAY_CONTAINS({tagProp}, \"{value.Tag.Substring(1)}\")");
                         }
                         sb.Append(")");
-                    }
 
-                    needsAnd = true;
+                        needsLoopAnd = true;
+                    }
                 }
 
                 if (sb.Length > 0)
@@ -216,6 +224,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 sb.Append("true");
             }
+
+            if (sb.Length == 0)
+                sb.Append("true");
 
             return sb.ToString();
         }
