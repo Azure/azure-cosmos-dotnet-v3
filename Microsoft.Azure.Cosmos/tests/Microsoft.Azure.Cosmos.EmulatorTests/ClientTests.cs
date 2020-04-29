@@ -314,6 +314,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConfigurationManager.AppSettings["MasterKey"],
                 new CosmosClientOptions
                 {
+                    ApplicationName = "test",
                     ConnectionMode = ConnectionMode.Gateway,
                     ConnectionProtocol = Protocol.Https,
                     HttpClientFactory = factory.Object
