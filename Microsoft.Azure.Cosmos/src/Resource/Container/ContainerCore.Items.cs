@@ -725,7 +725,9 @@ namespace Microsoft.Azure.Cosmos
             if (responseMessage.Content != null && requestOptions?.CosmosStreamTransformer != null)
             {
                 responseMessage.Content = await requestOptions.CosmosStreamTransformer.TransformResponseItemStreamAsync(
-                    responseMessage.Content, null, cancellationToken);
+                    responseMessage.Content,
+                    context: null,
+                    cancellationToken);
             }
 
             return responseMessage;

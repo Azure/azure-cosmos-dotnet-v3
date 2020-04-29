@@ -1070,7 +1070,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (InvalidOperationException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("The CosmosDataEncryptionKeyProvider was not initialized."));
+                Assert.AreEqual(ex.Message, "The CosmosDataEncryptionKeyProvider was not initialized.");
             }
         }
 

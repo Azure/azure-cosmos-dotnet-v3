@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Linq;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
 #if INTERNAL
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
 
             CosmosArray documents;
-            string containerRid;
+            string containerRid = string.Empty;
             if ((jsonNavigator.SerializationFormat == JsonSerializationFormat.Binary) && jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),
                 "stringDictionary",
@@ -123,27 +124,60 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                         .Select(item => jsonNavigator.GetStringValue(item))
                         .ToList());
                 
-                documents = CosmosElementSerializer.ExtractObjectFromStringDictionaryPayload<CosmosArray>(
+                TryCatch<CosmosArray> retrieveDocuments = CosmosElementSerializer.ExtractObjectFromStringDictionaryPayload<CosmosArray>(
                     jsonNavigator,
                     resourceName,
                     jsonStringDictionary);
 
-                containerRid = CosmosElementSerializer.ExtractObjectFromStringDictionaryPayload<CosmosString>(
+                if (retrieveDocuments.Succeeded)
+                {
+                    documents = retrieveDocuments.Result;
+                }
+                else
+                {
+                    throw retrieveDocuments.Exception;
+                }
+
+                TryCatch<CosmosString> retrieveContainerRid = CosmosElementSerializer.ExtractObjectFromStringDictionaryPayload<CosmosString>(
                     jsonNavigator,
                     CosmosElementSerializer.containerRidPropertyName,
-                    jsonStringDictionary).Value;
+                    jsonStringDictionary);
+
+                if (retrieveContainerRid.Succeeded)
+                {
+                    containerRid = retrieveContainerRid.Result.Value;
+                }
             }
             else
             {
                 // Payload is not string dictionary encoded so we can just do for the documents as is.
-                documents = CosmosElementSerializer.ExtractObjectFromPayload<CosmosArray>(jsonNavigator, resourceName);
-                containerRid = CosmosElementSerializer.ExtractObjectFromPayload<CosmosString>(jsonNavigator, CosmosElementSerializer.containerRidPropertyName).Value;
+                TryCatch<CosmosArray> retrieveDocuments = CosmosElementSerializer.ExtractObjectFromPayload<CosmosArray>(
+                    jsonNavigator,
+                    resourceName);
+
+                if (retrieveDocuments.Succeeded)
+                {
+                    documents = retrieveDocuments.Result;
+                }
+                else
+                {
+                    throw retrieveDocuments.Exception;
+                }
+
+                TryCatch<CosmosString> retrieveContainerRid = CosmosElementSerializer.ExtractObjectFromPayload<CosmosString>(
+                    jsonNavigator,
+                    CosmosElementSerializer.containerRidPropertyName);
+
+                if (retrieveContainerRid.Succeeded)
+                {
+                    containerRid = retrieveContainerRid.Result.Value;
+                }
             }
 
             return (documents, containerRid);
         }
 
-        private static T ExtractObjectFromStringDictionaryPayload<T>(
+        private static TryCatch<T> ExtractObjectFromStringDictionaryPayload<T>(
             IJsonNavigator jsonNavigator,
             string resourceName,
             JsonStringDictionary jsonStringDictionary)
@@ -153,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     resourceName,
                     out ObjectProperty resourceProperty))
             {
-                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+                return TryCatch<T>.FromException(new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}"));
             }
 
             IJsonNavigatorNode resources = resourceProperty.ValueNode;
@@ -169,13 +203,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 navigatorWithStringDictionary,
                 navigatorWithStringDictionary.GetRootNode()) is T result))
             {
-                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+                return TryCatch<T>.FromException(new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}"));                
             }
 
-            return result;
+            return TryCatch<T>.FromResult(result);
         }
 
-        private static T ExtractObjectFromPayload<T>(
+        private static TryCatch<T> ExtractObjectFromPayload<T>(
             IJsonNavigator jsonNavigator,
             string resourceName)
         {
@@ -184,17 +218,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     resourceName,
                     out ObjectProperty objectProperty))
             {
-                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+                return TryCatch<T>.FromException(new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}"));
             }
 
             if (!(CosmosElement.Dispatch(
                 jsonNavigator,
                 objectProperty.ValueNode) is T result))
             {
-                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+                return TryCatch<T>.FromException(new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}"));                
             }
 
-            return result;
+            return TryCatch<T>.FromResult(result);
         }
 
         /// <summary>
