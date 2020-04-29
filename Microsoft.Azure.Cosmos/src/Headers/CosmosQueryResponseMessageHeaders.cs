@@ -5,32 +5,32 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// HTTP headers in a <see cref="ResponseMessage"/>.
     /// </summary>
-    internal class CosmosQueryResponseMessageHeaders : Headers
+    internal sealed class CosmosQueryResponseMessageHeaders : Headers
     {
         public CosmosQueryResponseMessageHeaders(
             double requestCharge,
             string activityId,
             SubStatusCodes subStatusCode,
-            string continauationToken,
+            string continuationToken,
             string disallowContinuationTokenMessage,
             ResourceType resourceType,
             string containerRid,
             int itemCount)
+             : base(
+                requestCharge,
+                activityId,
+                subStatusCode,
+                continuationToken,
+                itemCount)
         {
-            this.RequestCharge = requestCharge;
-            this.ActivityId = activityId;
-            this.SubStatusCode = subStatusCode;
-            base.ContinuationToken = continauationToken;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.ResourceType = resourceType;
             this.ContainerRid = containerRid;
-            this.Add(HttpConstants.HttpHeaders.ItemCount, itemCount.ToString(CultureInfo.InvariantCulture));
         }
 
         internal string DisallowContinuationTokenMessage { get; }
@@ -47,15 +47,12 @@ namespace Microsoft.Azure.Cosmos
                 return base.ContinuationToken;
             }
 
-            internal set
-            {
-                throw new InvalidOperationException("To prevent the different aggregate context from impacting each other only allow updating the continuation token via clone method.");
-            }
+            internal set => throw new InvalidOperationException("To prevent the different aggregate context from impacting each other only allow updating the continuation token via clone method.");
         }
 
-        internal virtual string ContainerRid { get; }
+        internal string ContainerRid { get; }
 
-        internal virtual ResourceType ResourceType { get; }
+        internal ResourceType ResourceType { get; }
 
         internal string InternalContinuationToken => base.ContinuationToken;
     }

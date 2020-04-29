@@ -179,12 +179,30 @@ namespace Microsoft.Azure.Cosmos
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.QueryMetrics)]
         internal string QueryMetricsText { get; set; }
 
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ItemCount)]
+        internal string ItemCount { get; set; }
+
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
         /// </summary>
         public Headers()
         {
             this.messageHeaders = new Lazy<CosmosMessageHeadersInternal>(this.CreateCosmosMessageHeaders);
+        }
+
+        internal Headers(
+            double requestCharge,
+            string activityId,
+            SubStatusCodes subStatusCode,
+            string continuationToken,
+            int itemCount)
+            : this()
+        {
+            this.RequestCharge = requestCharge;
+            this.ActivityId = activityId;
+            this.subStatusCode = subStatusCode;
+            this.ContinuationToken = continuationToken;
+            this.ItemCount = itemCount.ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>
