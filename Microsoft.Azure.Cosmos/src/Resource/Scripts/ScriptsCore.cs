@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal sealed class ScriptsCore : Scripts
+    internal class ScriptsCore : Scripts
     {
         private readonly ContainerInternal container;
         private readonly CosmosClientContext clientContext;
