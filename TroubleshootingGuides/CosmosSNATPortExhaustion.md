@@ -1,19 +1,10 @@
-## Cosmos503_9000
+## CosmosSNATPortExhuastion
 
-<table>
-<tr>
-  <td>TypeName</td>
-  <td>CosmosSNATPortExhuastion</td>
-</tr>
-<tr>
-  <td>CheckId</td>
-  <td>Cosmos503_9000</td>
-</tr>
-<tr>
-  <td>Category</td>
-  <td>Connectivity</td>
-</tr>
-</table>
+|   |   |   |
+|---|---|---|
+|TypeName|CosmosSNATPortExhuastion|
+|Status|503_0000|
+|Category|Connectivity|
 
 ## Issue
 
