@@ -771,6 +771,11 @@ namespace Microsoft.Azure.Cosmos
                 features |= CosmosClientOptionsFeatures.AllowBulkExecution;
             }
 
+            if (this.HttpClientFactory != null)
+            {
+                features |= CosmosClientOptionsFeatures.HttpClientFactory;
+            }
+
             if (features == CosmosClientOptionsFeatures.NoFeatures)
             {
                 return null;
