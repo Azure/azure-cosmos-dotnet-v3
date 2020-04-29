@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Abstraction for performing client-side encryption.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    abstract class Encryptor
+    public abstract class Encryptor
     {
         /// <summary>
         /// Encrypts the plainText using the key and algorithm provided.

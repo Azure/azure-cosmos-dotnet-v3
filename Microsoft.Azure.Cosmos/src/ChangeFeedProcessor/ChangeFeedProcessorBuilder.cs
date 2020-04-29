@@ -169,9 +169,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sets the CosmosStreamTransformer to be used as part of the ChangeFeedRequestOptions
         /// </summary>
+        /// <remarks>
+        /// This is needed explicitly for decrypting the content processed through change feed.
+        /// </remarks>
         /// <param name="cosmosStreamTransformer">Instance of stream transformer</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithCosmosStreamTransformer(CosmosStreamTransformer cosmosStreamTransformer)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedProcessorBuilder WithCosmosStreamTransformer(CosmosStreamTransformer cosmosStreamTransformer)
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.CosmosStreamTransformer = cosmosStreamTransformer;

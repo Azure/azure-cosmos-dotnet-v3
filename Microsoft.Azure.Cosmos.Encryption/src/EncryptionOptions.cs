@@ -9,12 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Options around encryption / decryption of data.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class EncryptionOptions
+    public class EncryptionOptions
     {
         /// <summary>
         /// Identifier of the data encryption key to be used for encrypting the data in the request payload.

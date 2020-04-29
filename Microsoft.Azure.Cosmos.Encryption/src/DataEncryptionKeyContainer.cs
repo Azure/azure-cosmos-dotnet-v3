@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         /// <summary>
         /// Generates a data encryption key, wraps it using the key wrap metadata provided
-        /// with the key wrapping provider in the CosmosStreamTransformer for encryption specified via <see cref="RequestOptions"/>,
+        /// with the key wrapping provider in the CosmosDataEncryptionKeyProvider for encryption,
         /// and saves the wrapped data encryption key as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="id">Unique identifier for the data encryption key.</param>

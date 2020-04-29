@@ -18,6 +18,16 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
         public IndexingDirective? IndexingDirective { get; set; }
 
+        /// <summary>
+        /// Request / response stream transformer.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosStreamTransformer CosmosStreamTransformer { get; set; }
+
         internal static TransactionalBatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             if (itemRequestOptions == null)

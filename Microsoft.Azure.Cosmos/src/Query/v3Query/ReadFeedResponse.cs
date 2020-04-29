@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosArray cosmosArray = null;
                 if (responseMessage.Content != null)
                 {
-                    cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                    (cosmosArray, _) = CosmosElementSerializer.ToCosmosElements(
                         responseMessage.Content,
                         resourceType,
                         null);

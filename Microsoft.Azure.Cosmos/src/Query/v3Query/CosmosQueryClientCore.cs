@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 long responseLengthBytes = memoryStream.Length;
-                CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                (CosmosArray cosmosArray, _) = CosmosElementSerializer.ToCosmosElements(
                     memoryStream,
                     resourceType,
                     requestOptions.CosmosSerializationFormatOptions);

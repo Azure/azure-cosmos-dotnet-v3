@@ -20,14 +20,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     static class CosmosElementSerializer
     {
+        private const string containerRidPropertyName = "_rid";
+
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>
         /// <param name="stream">The stream response from Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
-        /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        internal static CosmosArray ToCosmosElements(
+        /// <returns>Returns a memory stream of cosmos elements and containerRid value extracted from the stream. By default the memory stream will contain JSON.</returns>
+        internal static (CosmosArray, string) ToCosmosElements(
             Stream stream,
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
@@ -50,8 +52,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// <param name="memoryStream">The memory stream response from Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
-        /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        internal static CosmosArray ToCosmosElements(
+        /// <returns>Returns a memory stream of cosmos elements and containerRid value extracted from the stream. By default the memory stream will contain JSON.</returns>
+        internal static (CosmosArray, string) ToCosmosElements(
             MemoryStream memoryStream,
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
@@ -107,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
 
             CosmosArray documents;
+            string containerRid;
             if ((jsonNavigator.SerializationFormat == JsonSerializationFormat.Binary) && jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),
                 "stringDictionary",
@@ -119,55 +122,79 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                         .GetArrayItems(stringDictionaryNode)
                         .Select(item => jsonNavigator.GetStringValue(item))
                         .ToList());
-
-                if (!jsonNavigator.TryGetObjectProperty(
-                    jsonNavigator.GetRootNode(),
+                
+                documents = CosmosElementSerializer.ExtractObjectFromStringDictionaryPayload<CosmosArray>(
+                    jsonNavigator,
                     resourceName,
-                    out ObjectProperty resourceProperty))
-                {
-                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-                }
+                    jsonStringDictionary);
 
-                IJsonNavigatorNode resources = resourceProperty.ValueNode;
-
-                if (!jsonNavigator.TryGetBufferedBinaryValue(resources, out ReadOnlyMemory<byte> resourceBinary))
-                {
-                    resourceBinary = jsonNavigator.GetBinaryValue(resources);
-                }
-
-                IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary, jsonStringDictionary);
-
-                if (!(CosmosElement.Dispatch(
-                    navigatorWithStringDictionary,
-                    navigatorWithStringDictionary.GetRootNode()) is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-                }
-
-                documents = cosmosArray;
+                containerRid = CosmosElementSerializer.ExtractObjectFromStringDictionaryPayload<CosmosString>(
+                    jsonNavigator,
+                    CosmosElementSerializer.containerRidPropertyName,
+                    jsonStringDictionary).Value;
             }
             else
             {
                 // Payload is not string dictionary encoded so we can just do for the documents as is.
-                if (!jsonNavigator.TryGetObjectProperty(
+                documents = CosmosElementSerializer.ExtractObjectFromPayload<CosmosArray>(jsonNavigator, resourceName);
+                containerRid = CosmosElementSerializer.ExtractObjectFromPayload<CosmosString>(jsonNavigator, CosmosElementSerializer.containerRidPropertyName).Value;
+            }
+
+            return (documents, containerRid);
+        }
+
+        private static T ExtractObjectFromStringDictionaryPayload<T>(
+            IJsonNavigator jsonNavigator,
+            string resourceName,
+            JsonStringDictionary jsonStringDictionary)
+        {
+            if (!jsonNavigator.TryGetObjectProperty(
+                    jsonNavigator.GetRootNode(),
+                    resourceName,
+                    out ObjectProperty resourceProperty))
+            {
+                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+            }
+
+            IJsonNavigatorNode resources = resourceProperty.ValueNode;
+
+            if (!jsonNavigator.TryGetBufferedBinaryValue(resources, out ReadOnlyMemory<byte> resourceBinary))
+            {
+                resourceBinary = jsonNavigator.GetBinaryValue(resources);
+            }
+
+            IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary, jsonStringDictionary);
+
+            if (!(CosmosElement.Dispatch(
+                navigatorWithStringDictionary,
+                navigatorWithStringDictionary.GetRootNode()) is T result))
+            {
+                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+            }
+
+            return result;
+        }
+
+        private static T ExtractObjectFromPayload<T>(
+            IJsonNavigator jsonNavigator,
+            string resourceName)
+        {
+            if (!jsonNavigator.TryGetObjectProperty(
                     jsonNavigator.GetRootNode(),
                     resourceName,
                     out ObjectProperty objectProperty))
-                {
-                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-                }
-
-                if (!(CosmosElement.Dispatch(
-                    jsonNavigator,
-                    objectProperty.ValueNode) is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-                }
-
-                documents = cosmosArray;
+            {
+                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
             }
 
-            return documents;
+            if (!(CosmosElement.Dispatch(
+                jsonNavigator,
+                objectProperty.ValueNode) is T result))
+            {
+                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+            }
+
+            return result;
         }
 
         /// <summary>

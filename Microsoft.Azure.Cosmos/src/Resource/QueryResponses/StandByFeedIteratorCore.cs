@@ -124,11 +124,10 @@ namespace Microsoft.Azure.Cosmos
                 currentRangeToken.Token = response.Headers.ETag;
                 if (this.changeFeedOptions.CosmosStreamTransformer != null && response.Content != null)
                 {
-                    response.Content = await this.GetTransformedResponseMessageAsync(
+                    response.Content = await FeedIteratorUtil.GetTransformedResponseMessageAsync(
                         response.Content,
                         this.clientContext.SerializerCore,
                         this.changeFeedOptions.CosmosStreamTransformer,
-                        this.containerRid,
                         diagnosticsContext,
                         cancellationToken);
                 }

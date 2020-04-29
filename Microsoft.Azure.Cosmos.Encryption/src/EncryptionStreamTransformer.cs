@@ -25,22 +25,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
     class EncryptionStreamTransformer : CosmosStreamTransformer
     {
         private static readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
-        
+        private IReadOnlyList<string> EncryptedPaths;
+        private IReadOnlyList<string> DecryptedPaths;
+
         public Encryptor Encryptor { get; }
 
         public EncryptionOptions EncryptionOptions { get; }
 
-        public Action<Stream, string> ErrorHandler { get; }
-        
-        public IReadOnlyList<string> EncryptedPaths { get; private set; }
-        
-        public IReadOnlyList<string> DecryptedPaths { get; private set; }
-        
+        public Action<Stream, Exception> ErrorHandler { get; }
+                
         public EncryptionStreamTransformer(
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
-            Action<Stream, string> errorHandler = null)
+            Action<Stream, Exception> errorHandler = null)
         {
+            if(encryptor == null)
+            {
+                throw new ArgumentNullException(ClientResources.EncryptorNotConfigured);
+            }
+
             this.Encryptor = encryptor;
             this.EncryptionOptions = encryptionOptions;
             this.ErrorHandler = errorHandler;
@@ -50,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override async Task<Stream> TransformRequestItemStreamAsync(Stream input, StreamTransformationContext context, CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             if (input == null)
             {
                 return null;
@@ -67,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override async Task<Stream> TransformResponseItemStreamAsync(Stream input, StreamTransformationContext context, CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             if (input == null)
             {
                 return null;
@@ -86,11 +89,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             catch(Exception ex)
             {
                 input.Position = 0;
-                Stream output = new MemoryStream();
-                input.CopyTo(output);
-                input.Position = 0;
-                output.Position = 0;
-                this.ErrorHandler(output, ex.Message);
+                if (this.ErrorHandler != null)
+                {
+                    Stream output = new MemoryStream();
+                    input.CopyTo(output);
+                    input.Position = 0;
+                    output.Position = 0;
+                    this.ErrorHandler(output, ex);
+                }
                 return input;
             }
         }
@@ -147,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     toEncryptJObj.Add(propertyName, itemJObj.Property(propertyName).Value.Value<JToken>());
                     itemJObj.Remove(propertyName);
-                    encryptedPaths.Add(propertyName);
+                    encryptedPaths.Add("/" + propertyName);
                 }
             }
 
@@ -271,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (encryptionProperties.EncryptionFormatVersion != 2)
             {
-                throw new ArgumentException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
             byte[] plainText = await this.Encryptor.DecryptAsync(

@@ -179,11 +179,10 @@ namespace Microsoft.Azure.Cosmos
                 this.hasMoreResultsInternal = !this.FeedRangeContinuation.IsDone;
                 if (this.queryRequestOptions.CosmosStreamTransformer != null && response.Content != null)
                 {
-                    response.Content = await this.GetTransformedResponseMessageAsync(
+                    response.Content = await FeedIteratorUtil.GetTransformedResponseMessageAsync(
                         response.Content,
                         this.clientContext.SerializerCore,
                         this.queryRequestOptions.CosmosStreamTransformer,
-                        this.lazyContainerRid.Result.Result,
                         diagnostics,
                         cancellationToken);
                 }

@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             Stream stream,
             ResourceType resourceType)
         {
-            CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
+            (CosmosArray cosmosArray, _) = CosmosElementSerializer.ToCosmosElements(
                     stream,
                     resourceType);
 

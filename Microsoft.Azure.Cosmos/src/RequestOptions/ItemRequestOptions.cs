@@ -98,6 +98,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Request / response stream transformer.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosStreamTransformer CosmosStreamTransformer { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>

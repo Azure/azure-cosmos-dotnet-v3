@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
@@ -20,7 +18,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
-        private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private string continuationToken;
         private string partitionKeyRangeId;
         private bool hasMoreResultsInternal;
@@ -49,10 +46,6 @@ namespace Microsoft.Azure.Cosmos
             this.MaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
             this.partitionKeyRangeId = partitionKeyRangeId;
-            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
-            {
-                return this.TryInitializeContainerRIdAsync(this.container, innerCancellationToken);
-            });
         }
 
         /// <summary>
@@ -79,7 +72,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, diagnosticsContext, cancellationToken)
+                return this.NextResultSetDelegateAsync(
+                    this.continuationToken,
+                    this.partitionKeyRangeId,
+                    this.MaxItemCount,
+                    this.changeFeedOptions,
+                    diagnosticsContext,
+                    cancellationToken)
                     .ContinueWith(task =>
                     {
                         ResponseMessage response = task.Result;
@@ -118,26 +117,14 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsContext: null,
                cancellationToken: cancellationToken);
 
-            if (responseMessage.IsSuccessStatusCode && this.changeFeedOptions.CosmosStreamTransformer != null && responseMessage.Content != null)
+            if (responseMessage.IsSuccessStatusCode &&
+                this.changeFeedOptions.CosmosStreamTransformer != null &&
+                responseMessage.Content != null)
             {
-                if (!this.lazyContainerRid.ValueInitialized)
-                {
-                    using (diagnosticsContext.CreateScope("InitializeContainerResourceId"))
-                    {
-                        TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
-                        if (!tryInitializeContainerRId.Succeeded)
-                        {
-                            CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
-                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsContext));
-                        }
-                    }
-                }
-
-                responseMessage.Content = await this.GetTransformedResponseMessageAsync(
+                responseMessage.Content = await FeedIteratorUtil.GetTransformedResponseMessageAsync(
                     responseMessage.Content,
                     this.clientContext.SerializerCore,
                     this.changeFeedOptions.CosmosStreamTransformer,
-                    this.lazyContainerRid.Result.Result,
                     diagnosticsContext,
                     cancellationToken);
 

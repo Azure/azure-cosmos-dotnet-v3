@@ -143,6 +143,16 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string SessionToken { get; set; }
 
+        /// <summary>
+        /// Request / response stream transformer.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosStreamTransformer CosmosStreamTransformer { get; set; }
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }

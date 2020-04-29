@@ -21,14 +21,14 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryContextCore cosmosQueryContext;
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
-        private readonly RequestOptions requestOptions;
+        private readonly QueryRequestOptions requestOptions;
         private readonly CosmosClientContext clientContext;
 
         private QueryIterator(
             CosmosQueryContextCore cosmosQueryContext,
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
-            RequestOptions requestOptions,
+            QueryRequestOptions requestOptions,
             CosmosClientContext clientContext)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
@@ -142,10 +142,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (responseCore.IsSuccess)
                 {
-                    List<CosmosElement> decryptedCosmosElements = null;
+                    List<CosmosElement> transformedCosmosElements = null;
                     if (this.requestOptions?.CosmosStreamTransformer != null)
                     {
-                        decryptedCosmosElements = await this.GetTransformedElementResponseAsync(
+                        transformedCosmosElements = await FeedIteratorUtil.GetTransformedElementResponseAsync(
                             this.clientContext.SerializerCore,
                             this.requestOptions.CosmosStreamTransformer,
                             responseCore.CosmosElements,
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     return QueryResponse.CreateSuccess(
-                        result: decryptedCosmosElements ?? responseCore.CosmosElements,
+                        result: transformedCosmosElements ?? responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         diagnostics: diagnostics,

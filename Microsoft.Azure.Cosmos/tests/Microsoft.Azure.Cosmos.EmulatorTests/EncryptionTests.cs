@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             EncryptionTests.encryptionStreamTransformerForRead = EncryptionTests.GetEncryptionStreamTransformer(
                 EncryptionTests.encryptor,
-                null,
+                encryptionOptions: null,
                 EncryptionTests.ErrorHandler);
         }
 
@@ -459,9 +459,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             int failureCount = 0;
             TestEncryptor encryptor = new TestEncryptor(dekProvider);
-            Action<Stream, string> errorHandler = (stream, exMessage) =>
+            Action<Stream, Exception> errorHandler = (stream, exception) =>
             {
-                exMessage.Equals("The CosmosDataEncryptionKeyProvider was not initialized.");
+                exception.Message.Equals("The CosmosDataEncryptionKeyProvider was not initialized.");
                 failureCount++;
             };
             ItemRequestOptions requestOptionsWithEncryptor = EncryptionTests.GetRequestOptions(
@@ -815,9 +815,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static void ErrorHandler(Stream input, string exceptionMessage)
+        private static void ErrorHandler(Stream input, Exception exception)
         {
-            Assert.AreEqual(exceptionMessage, "Null DataEncryptionKey returned from FetchDataEncryptionKeyAsync.");
+            Assert.AreEqual(exception.Message, "Null DataEncryptionKey returned from FetchDataEncryptionKeyAsync.");
             JObject itemJObj = EncryptionTests.cosmosSerializer.FromStream<JObject>(input);
             JProperty encryptionPropertiesJProp = itemJObj.Property("_ei");
             Assert.IsNotNull(encryptionPropertiesJProp);
@@ -963,7 +963,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static EncryptionStreamTransformer GetEncryptionStreamTransformer(
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
-            Action<Stream, string> errorHandler = null)
+            Action<Stream, Exception> errorHandler = null)
         {
             return new EncryptionStreamTransformer(encryptor, encryptionOptions, errorHandler);
         }
