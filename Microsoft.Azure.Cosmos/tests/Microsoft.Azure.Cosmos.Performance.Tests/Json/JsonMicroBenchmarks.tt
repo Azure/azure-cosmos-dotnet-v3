@@ -1,0 +1,256 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<#
+Dictionary<TokenType, string> tokenTypeToWriteFunction = new Dictionary<TokenType, string>()
+{
+    { TokenType.Null, "{ jsonWriter.WriteNullValue(); }" },
+    { TokenType.True, "{ jsonWriter.WriteBoolValue(true); }" },
+    { TokenType.False, "{ jsonWriter.WriteBoolValue(false); }" },
+    { TokenType.Number64Integer, "{ jsonWriter.WriteNumber64Value(123); }" },
+    { TokenType.Number64Double, "{ jsonWriter.WriteNumber64Value(6.0221409e+23); }" },
+    { TokenType.String, "{ jsonWriter.WriteStringValue(\"Hello World\"); }" },
+    { TokenType.Array, "{ jsonWriter.WriteArrayStart(); jsonWriter.WriteArrayEnd(); }" },
+    { TokenType.Object, "{ jsonWriter.WriteObjectStart(); jsonWriter.WriteObjectEnd(); }" },
+};
+HashSet<TokenType> tokenTypesToMaterialize = new HashSet<TokenType>() { TokenType.Number64Integer, TokenType.Number64Double, TokenType.String };
+#>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    public enum BenchmarkSerializationFormat
+    {
+<#  foreach (var value in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+        <#= value #>,
+<# } #>
+    }
+}
+<# SaveOutput("BenchmarkSerializationFormat.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    using System;
+    using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
+
+    [MemoryDiagnoser]
+    public class JsonReadMicroBenchmarks
+    {
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
+        private static readonly BenchmarkPayload <#= tokenType #>Payload = new BenchmarkPayload((jsonWriter) => <#= writeFunction #>);
+<# } #>
+
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key;#>
+<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+<# foreach (bool materialize in new bool[] { true, false }) { if(materialize && !tokenTypesToMaterialize.Contains(tokenType)) { continue; } #>
+        [Benchmark]
+        public void <#= tokenType #>_<#= benchmarkSerializationFormat #><#= materialize ? "_Materialize" : string.Empty #>()
+        {
+            JsonReadMicroBenchmarks.ExecuteReadMicroBenchmark(
+                payload: JsonReadMicroBenchmarks.<#= tokenType #>Payload,
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>,
+                materializeValue: <#= materialize.ToString().ToLower() #>);
+        }
+
+<# } #>
+<# } #>
+<# } #>
+
+        private static void ExecuteReadMicroBenchmark(
+            BenchmarkPayload payload,
+            BenchmarkSerializationFormat benchmarkSerializationFormat,
+            bool materializeValue)
+        {
+            IJsonReader jsonReader = benchmarkSerializationFormat switch
+            {
+                BenchmarkSerializationFormat.Text => JsonReader.Create(payload.Text),
+                BenchmarkSerializationFormat.Binary => JsonReader.Create(payload.Binary),
+                BenchmarkSerializationFormat.Newtonsoft => NewtonsoftToCosmosDBReader.CreateFromBuffer(payload.Newtonsoft),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'."),
+            };
+
+            Utils.DrainReader(jsonReader, materializeValue);
+        }
+    }
+}
+<# SaveOutput("ReadMicroBenchmarks.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    using System;
+    using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
+
+    [MemoryDiagnoser]
+    public class JsonWriteMicroBenchmarks
+    {
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
+<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+        [Benchmark]
+        public void <#= tokenType #>_<#= benchmarkSerializationFormat #>()
+        {
+            JsonWriteMicroBenchmarks.ExecuteWriteMicroBenchmark(
+                writeTokens: (jsonWriter) => <#= writeFunction #>,
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>);
+        }
+
+<# } #>
+<# } #>
+
+        private static void ExecuteWriteMicroBenchmark(
+            Action<IJsonWriter> writeTokens,
+            BenchmarkSerializationFormat benchmarkSerializationFormat)
+        {
+            if (writeTokens == null)
+            {
+                throw new ArgumentNullException(nameof(writeTokens));
+            }
+
+            IJsonWriter jsonWriter;
+            switch (benchmarkSerializationFormat)
+            {
+                case BenchmarkSerializationFormat.Text:
+                    jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                    break;
+
+                case BenchmarkSerializationFormat.Binary:
+                    jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                    break;
+
+                case BenchmarkSerializationFormat.Newtonsoft:
+                    jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'.");
+            }
+
+            jsonWriter.WriteArrayStart();
+
+            for (int i = 0; i < 2000000; i++)
+            {
+                writeTokens(jsonWriter);
+            }
+
+            jsonWriter.WriteArrayEnd();
+        }
+    }
+}
+<# SaveOutput("WriteMicroBenchmarks.cs"); #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    using System;
+    using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
+
+    [MemoryDiagnoser]
+    public class JsonNavigateMicroBenchmarks
+    {
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key; string writeFunction = kvp.Value; #>
+        private static readonly BenchmarkPayload <#= tokenType #>Payload = new BenchmarkPayload((jsonWriter) => <#= writeFunction #>);
+<# } #>
+
+<# foreach (KeyValuePair<TokenType, string> kvp in tokenTypeToWriteFunction) { TokenType tokenType = kvp.Key;#>
+<# foreach (var benchmarkSerializationFormat in Enum.GetValues(typeof(BenchmarkSerializationFormat))) { #>
+        [Benchmark]
+        public void Navigate_<#= tokenType #>_<#= benchmarkSerializationFormat #>()
+        {
+            JsonNavigateMicroBenchmarks.ExecuteNavigateMicroBenchmark(
+                payload: JsonNavigateMicroBenchmarks.<#= tokenType #>Payload,
+                benchmarkSerializationFormat: BenchmarkSerializationFormat.<#= benchmarkSerializationFormat #>);
+        }
+
+<# } #>
+<# } #>
+
+        private static void ExecuteNavigateMicroBenchmark(
+            BenchmarkPayload payload,
+            BenchmarkSerializationFormat benchmarkSerializationFormat)
+        {
+            IJsonNavigator jsonNavigator = benchmarkSerializationFormat switch
+            {
+                BenchmarkSerializationFormat.Text => JsonNavigator.Create(payload.Text),
+                BenchmarkSerializationFormat.Binary => JsonNavigator.Create(payload.Binary),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'."),
+            };
+
+            Utils.DrainNavigator(jsonNavigator);
+        }
+    }
+}
+<# SaveOutput("NavigateMicroBenchmarks.cs"); #>
+<#+
+enum BenchmarkSerializationFormat
+{
+    Text,
+    Binary,
+    Newtonsoft,
+}
+#>
+<#+
+enum TokenType
+{
+    Null,
+    True,
+    False,
+    Number64Integer,
+    Number64Double,
+    String,
+    Array,
+    Object
+}
+#>
+<#+
+private void SaveOutput(string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string outputFilePath = Path.Combine(templateDirectory, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+
+private void SaveOutputToSubFolder(string folderName, string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string newDirectoryName = Path.Combine(templateDirectory,folderName);
+  if(!Directory.Exists(newDirectoryName))
+    Directory.CreateDirectory(newDirectoryName);
+  string outputFilePath = Path.Combine(newDirectoryName, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+private static string ModificationInstructions(
+                        [CallerFilePath] string file = "",
+                        [CallerLineNumber] int line = 0)
+{
+    return $"This is auto-generated code. Modify: {Path.GetFileName(file)}: {line}";
+}
+#>

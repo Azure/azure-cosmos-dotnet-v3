@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         private ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
 
         public BatchAsyncContainerExecutor GetExecutorForContainer(
-            ContainerCore container,
+            ContainerInternal container,
             CosmosClientContext cosmosClientContext)
         {
             if (!cosmosClientContext.ClientOptions.AllowBulkExecution)
