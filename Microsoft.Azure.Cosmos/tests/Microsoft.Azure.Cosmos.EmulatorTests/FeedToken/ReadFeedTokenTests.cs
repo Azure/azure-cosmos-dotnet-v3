@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     [SDK.EmulatorTests.TestClass]
     public class ReadFeedRangeTests : BaseCosmosClientHelper
     {
-        private ContainerCore Container = null;
-        private ContainerCore LargerContainer = null;
+        private ContainerInternal Container = null;
+        private ContainerInternal LargerContainer = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -54,13 +54,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int batchSize = 1000;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             IReadOnlyList<FeedRange> tokens = await itemsCore.GetFeedRangesAsync();
 
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
                 int count = 0;
-                FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition:null, feedRange:token);
+                FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(
+                    queryDefinition: null,
+                    feedRange: token,
+                    continuationToken: null,
+                    requestOptions: null);
                 while (feedIterator.HasMoreResults)
                 {
                     using (ResponseMessage responseMessage =
@@ -96,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int batchSize = 1000;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 } );
             while (feedIterator.HasMoreResults)
             {
@@ -121,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int batchSize = 50;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
             string continuation = null;
             while (feedIterator.HasMoreResults)
@@ -164,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int batchSize = 50;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
             string continuation = null;
             while (feedIterator.HasMoreResults)
@@ -191,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int batchSize = 1000;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             IReadOnlyList<FeedRange> tokens = await itemsCore.GetFeedRangesAsync();
 
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
@@ -236,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int batchSize = 1000;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
             FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
             ResponseMessage firstResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
             feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: firstResponse.Headers.ContinuationToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
@@ -276,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
             }
 
-            ContainerCore itemsCore = this.Container;
+            ContainerInternal itemsCore = this.Container;
             FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey(pkToRead) });
             while (feedIterator.HasMoreResults)
             {
@@ -309,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int batchSize = 1000;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = this.LargerContainer;
+            ContainerInternal itemsCore = this.LargerContainer;
 
             // Do a read without FeedRange and get the older CT from Header
             string olderContinuationToken = null;
@@ -365,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         [DataTestMethod]
         public async Task ReadFeedIteratorCore_CrossPartitionBiDirectional(bool useStatelessIteration)
         {
-            ContainerCore container = null;
+            ContainerInternal container = null;
 
             try
             {
@@ -497,7 +501,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
 
-        private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
+        private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
 

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosReadFeedTests : BaseCosmosClientHelper
     {
-        private ContainerCore Container = null;
+        private ContainerInternal Container = null;
         private const string PartitionKey = "/id";
 
         [TestInitialize]
