@@ -39,7 +39,9 @@ namespace Microsoft.Azure.Cosmos
         {
             if (ServicePointAccessor.IsBrowser)
             {
-                return; // Not supported
+                // Workaround for WebAssembly.
+                // WebAssembly currently throws a SynchronizationLockException and not a PlatformNotSupportedException.
+                return; 
             }
 
             try
