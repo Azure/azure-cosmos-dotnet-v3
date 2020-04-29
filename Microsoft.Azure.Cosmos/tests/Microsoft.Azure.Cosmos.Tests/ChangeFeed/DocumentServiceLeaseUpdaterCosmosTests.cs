@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Stream leaseStream = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate);
 
-            Mock<ContainerCore> mockedItems = new Mock<ContainerCore>();
+            Mock<ContainerInternal> mockedItems = new Mock<ContainerInternal>();
             mockedItems.Setup(i => i.ReplaceItemStreamAsync(
                 It.IsAny<Stream>(),
                 It.Is<string>((id) => id == itemId),
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("1");
             DocumentServiceLeaseCore leaseToUpdate = new DocumentServiceLeaseCore();
 
-            Mock<ContainerCore> mockedItems = new Mock<ContainerCore>();
+            Mock<ContainerInternal> mockedItems = new Mock<ContainerInternal>();
             mockedItems.Setup(i => i.ReadItemStreamAsync(
                 It.Is<string>((id) => id == itemId),
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("1");
             DocumentServiceLeaseCore leaseToUpdate = new DocumentServiceLeaseCore();
 
-            Mock<ContainerCore> mockedItems = new Mock<ContainerCore>();
+            Mock<ContainerInternal> mockedItems = new Mock<ContainerInternal>();
             mockedItems.Setup(i => i.ReadItemStreamAsync(
                 It.Is<string>((id) => id == itemId),
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("1");
             DocumentServiceLeaseCore leaseToUpdate = new DocumentServiceLeaseCore();
 
-            Mock<ContainerCore> mockedItems = new Mock<ContainerCore>();
+            Mock<ContainerInternal> mockedItems = new Mock<ContainerInternal>();
             mockedItems.Setup(i => i.ReadItemStreamAsync(
                 It.Is<string>((id) => id == itemId),
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("1");
             DocumentServiceLeaseCore leaseToUpdate = new DocumentServiceLeaseCore();
 
-            Mock<ContainerCore> mockedItems = new Mock<ContainerCore>();
+            Mock<ContainerInternal> mockedItems = new Mock<ContainerInternal>();
             mockedItems.Setup(i => i.ReadItemStreamAsync(
                 It.Is<string>((id) => id == itemId),
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("1");
             DocumentServiceLeaseCore leaseToUpdate = new DocumentServiceLeaseCore();
 
-            Mock<ContainerCore> mockedItems = new Mock<ContainerCore>();
+            Mock<ContainerInternal> mockedItems = new Mock<ContainerInternal>();
             mockedItems.Setup(i => i.ReadItemStreamAsync(
                 It.Is<string>((id) => id == itemId),
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             });
         }
 
-        private static ContainerCore GetMockedContainer(Mock<ContainerCore> mockedContainer)
+        private static ContainerInternal GetMockedContainer(Mock<ContainerInternal> mockedContainer)
         {
             mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/myColl", UriKind.Relative));
             return mockedContainer.Object;

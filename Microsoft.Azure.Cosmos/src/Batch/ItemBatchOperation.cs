@@ -46,14 +46,14 @@ namespace Microsoft.Azure.Cosmos
         public ItemBatchOperation(
             OperationType operationType,
             int operationIndex,
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             string id = null,
             Stream resourceStream = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
-            this.ContainerCore = containerCore;
+            this.ContainerInternal = containerCore;
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
 
         public int OperationIndex { get; internal set; }
 
-        internal ContainerCore ContainerCore { get; }
+        internal ContainerInternal ContainerInternal { get; }
 
         internal CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
@@ -321,12 +321,12 @@ namespace Microsoft.Azure.Cosmos
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
                 Stream stream = this.ResourceStream;
-                if (this.ContainerCore != null && this.RequestOptions?.EncryptionOptions != null)
+                if (this.ContainerInternal != null && this.RequestOptions?.EncryptionOptions != null)
                 {
-                    stream = await this.ContainerCore.ClientContext.EncryptItemAsync(
+                    stream = await this.ContainerInternal.ClientContext.EncryptItemAsync(
                         stream,
                         this.RequestOptions.EncryptionOptions,
-                        (DatabaseCore)this.ContainerCore.Database,
+                        (DatabaseInternal)this.ContainerInternal.Database,
                         this.DiagnosticsContext,
                         cancellationToken);
                 }
@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             int operationIndex,
             T resource,
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             string id = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
             : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions)

@@ -108,18 +108,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
-        /// <param name="maxAutoscaleThroughput">The maximum throughput the resource can scale to.</param>
+        /// <param name="autoMaxscaleThroughput">The maximum throughput the resource can scale to.</param>
         /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        static ThroughputProperties CreateAutoscaleMaxThroughput(
-            int maxAutoscaleThroughput)
+        static ThroughputProperties CreateAutoscaleThroughput(
+            int autoMaxscaleThroughput)
         {
             return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
-                startingMaxThroughput: maxAutoscaleThroughput,
+                startingMaxThroughput: autoMaxscaleThroughput,
                 autoUpgradeMaxThroughputIncrementPercentage: null));
         }
 
