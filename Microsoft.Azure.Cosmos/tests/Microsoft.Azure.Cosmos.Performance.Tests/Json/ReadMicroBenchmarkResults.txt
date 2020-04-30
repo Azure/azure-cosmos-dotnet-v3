@@ -1,0 +1,35 @@
+﻿|                                 Method |      Mean |    Error |    StdDev |    Median |      Gen 0 | Gen 1 | Gen 2 |   Allocated |
+|--------------------------------------- |----------:|---------:|----------:|----------:|-----------:|------:|------:|------------:|
+|                              Null_Text |  56.94 ms | 1.123 ms |  1.538 ms |  56.31 ms |          - |     - |     - |       176 B |
+|                            Null_Binary |  66.09 ms | 4.283 ms | 12.630 ms |  58.62 ms |          - |     - |     - |       176 B |
+|                        Null_Newtonsoft |  41.01 ms | 0.427 ms |  0.356 ms |  41.14 ms |          - |     - |     - |     18080 B |
+|                              True_Text |  53.83 ms | 0.494 ms |  0.412 ms |  53.86 ms |          - |     - |     - |       176 B |
+|                            True_Binary |  52.33 ms | 0.764 ms |  0.678 ms |  52.31 ms |          - |     - |     - |       176 B |
+|                        True_Newtonsoft |  56.55 ms | 0.918 ms |  0.767 ms |  56.51 ms |  5000.0000 |     - |     - |  24018080 B |
+|                             False_Text |  56.17 ms | 0.752 ms |  0.703 ms |  56.12 ms |          - |     - |     - |       176 B |
+|                           False_Binary |  54.54 ms | 0.955 ms |  0.847 ms |  54.61 ms |          - |     - |     - |       176 B |
+|                       False_Newtonsoft |  58.46 ms | 1.079 ms |  1.108 ms |  58.32 ms |  5000.0000 |     - |     - |  57556392 B |
+|       Number64Integer_Text_Materialize | 131.04 ms | 1.594 ms |  1.413 ms | 130.74 ms |          - |     - |     - |       176 B |
+|                   Number64Integer_Text | 107.28 ms | 2.075 ms |  1.732 ms | 107.32 ms |          - |     - |     - |       176 B |
+|     Number64Integer_Binary_Materialize | 133.36 ms | 2.573 ms |  3.254 ms | 132.20 ms |          - |     - |     - |       176 B |
+|                 Number64Integer_Binary | 103.10 ms | 1.223 ms |  1.084 ms | 102.75 ms |          - |     - |     - |       176 B |
+| Number64Integer_Newtonsoft_Materialize | 213.21 ms | 5.216 ms |  4.879 ms | 210.69 ms | 13000.0000 |     - |     - |  56005744 B |
+|             Number64Integer_Newtonsoft |  91.96 ms | 1.474 ms |  1.231 ms |  91.84 ms |  5000.0000 |     - |     - |  24005744 B |
+|        Number64Double_Text_Materialize | 304.33 ms | 3.687 ms |  3.449 ms | 303.70 ms |          - |     - |     - |       176 B |
+|                    Number64Double_Text | 194.84 ms | 1.853 ms |  1.733 ms | 194.80 ms |          - |     - |     - |       176 B |
+|      Number64Double_Binary_Materialize | 299.22 ms | 2.285 ms |  1.784 ms | 298.81 ms |          - |     - |     - |       176 B |
+|                  Number64Double_Binary | 194.43 ms | 1.964 ms |  1.640 ms | 194.09 ms |          - |     - |     - |       176 B |
+|  Number64Double_Newtonsoft_Materialize | 587.30 ms | 5.936 ms |  5.262 ms | 585.30 ms | 28000.0000 |     - |     - | 120005744 B |
+|              Number64Double_Newtonsoft | 253.10 ms | 4.759 ms |  4.452 ms | 252.39 ms | 17000.0000 |     - |     - |  72005744 B |
+|                String_Text_Materialize | 169.99 ms | 2.650 ms |  2.350 ms | 169.54 ms | 11000.0000 |     - |     - |  48000176 B |
+|                            String_Text | 105.92 ms | 2.318 ms |  2.169 ms | 105.52 ms |          - |     - |     - |       176 B |
+|              String_Binary_Materialize | 172.49 ms | 2.471 ms |  2.312 ms | 171.67 ms | 11000.0000 |     - |     - |  48000176 B |
+|                          String_Binary | 105.76 ms | 1.885 ms |  1.574 ms | 105.39 ms |          - |     - |     - |       176 B |
+|          String_Newtonsoft_Materialize |  95.59 ms | 1.710 ms |  1.600 ms |  95.42 ms | 11000.0000 |     - |     - |  48005744 B |
+|                      String_Newtonsoft |  88.44 ms | 0.995 ms |  0.931 ms |  88.14 ms | 11000.0000 |     - |     - |  48005744 B |
+|                             Array_Text |  77.03 ms | 1.382 ms |  1.154 ms |  77.24 ms |          - |     - |     - |       176 B |
+|                           Array_Binary |  90.92 ms | 3.406 ms | 10.042 ms |  97.09 ms |          - |     - |     - |       176 B |
+|                       Array_Newtonsoft |  81.88 ms | 1.602 ms |  1.250 ms |  81.45 ms |          - |     - |     - |      5896 B |
+|                            Object_Text |  80.65 ms | 0.935 ms |  0.781 ms |  80.48 ms |          - |     - |     - |       176 B |
+|                          Object_Binary |  77.68 ms | 1.899 ms |  2.332 ms |  77.27 ms |          - |     - |     - |       176 B |
+|                      Object_Newtonsoft |  87.68 ms | 3.132 ms |  3.217 ms |  86.93 ms |          - |     - |     - |      5896 B |

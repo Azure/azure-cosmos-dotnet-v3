@@ -1,0 +1,22 @@
+﻿|                     Method |         Mean |      Error |     StdDev |       Median |       Gen 0 | Gen 1 | Gen 2 |    Allocated |
+|--------------------------- |-------------:|-----------:|-----------:|-------------:|------------:|------:|------:|-------------:|
+|     ReadUtf16StringLength8 |    16.742 ms |  0.3310 ms |  0.6909 ms |    16.678 ms |           - |     - |     - |    4000176 B |
+|      ReadUtf8StringLength8 |     9.912 ms |  0.1962 ms |  0.5135 ms |     9.875 ms |           - |     - |     - |        176 B |
+|    ReadUtf16StringLength32 |    33.825 ms |  0.8186 ms |  1.7968 ms |    33.244 ms |   2000.0000 |     - |     - |    8800176 B |
+|     ReadUtf8StringLength32 |    22.862 ms |  0.4527 ms |  0.9841 ms |    22.750 ms |           - |     - |     - |        176 B |
+|   ReadUtf16StringLength256 |   154.918 ms |  3.0134 ms |  3.5873 ms |   153.837 ms |  12000.0000 |     - |     - |   53600176 B |
+|    ReadUtf8StringLength256 |   137.505 ms |  2.8666 ms |  2.5412 ms |   136.813 ms |           - |     - |     - |        176 B |
+|  ReadUtf16StringLength1024 |   570.558 ms | 10.9986 ms | 10.8021 ms |   566.767 ms |  49000.0000 |     - |     - |  207200320 B |
+|   ReadUtf8StringLength1024 |   532.174 ms | 10.2220 ms |  9.0615 ms |   532.964 ms |           - |     - |     - |        320 B |
+|  ReadUtf16StringLength4096 | 2,252.328 ms | 44.4726 ms | 51.2148 ms | 2,247.586 ms | 196000.0000 |     - |     - |  821600176 B |
+|   ReadUtf8StringLength4096 | 2,145.663 ms | 40.2348 ms | 44.7209 ms | 2,144.233 ms |           - |     - |     - |        176 B |
+|    WriteUtf16StringLength8 |     9.657 ms |  0.2229 ms |  0.6141 ms |     9.608 ms |           - |     - |     - |    2138384 B |
+|     WriteUtf8StringLength8 |     6.459 ms |  0.2922 ms |  0.8192 ms |     6.236 ms |           - |     - |     - |    2138384 B |
+|   WriteUtf16StringLength32 |    10.209 ms |  0.2280 ms |  0.6317 ms |    10.213 ms |           - |     - |     - |    9731656 B |
+|    WriteUtf8StringLength32 |     6.754 ms |  0.3746 ms |  1.0127 ms |     6.442 ms |           - |     - |     - |    9731656 B |
+|  WriteUtf16StringLength256 |    42.857 ms |  0.8553 ms |  2.2381 ms |    42.408 ms |           - |     - |     - |   90523256 B |
+|   WriteUtf8StringLength256 |    34.557 ms |  0.8454 ms |  1.2654 ms |    34.271 ms |           - |     - |     - |   90523256 B |
+| WriteUtf16StringLength1024 |   163.811 ms |  3.2162 ms |  5.0073 ms |   161.487 ms |           - |     - |     - |  358943864 B |
+|  WriteUtf8StringLength1024 |   148.547 ms |  2.9397 ms |  5.5930 ms |   147.086 ms |           - |     - |     - |  358943864 B |
+| WriteUtf16StringLength4096 |   715.373 ms | 13.9520 ms | 18.1415 ms |   709.256 ms |  98000.0000 |     - |     - | 1844626296 B |
+|  WriteUtf8StringLength4096 |   604.387 ms | 15.2608 ms | 14.2750 ms |   604.532 ms |           - |     - |     - | 1432627576 B |

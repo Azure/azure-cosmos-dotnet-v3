@@ -1,0 +1,8 @@
+﻿|                        Method |     Mean |     Error |    StdDev |   Median | Gen 0 | Gen 1 | Gen 2 | Allocated |
+|------------------------------ |---------:|----------:|----------:|---------:|------:|------:|------:|----------:|
+|        ReadNutritionData_Text | 6.132 ms | 0.4139 ms | 1.1401 ms | 5.637 ms |     - |     - |     - | 730.74 KB |
+|      ReadNutritionData_Binary | 3.252 ms | 0.1759 ms | 0.4635 ms | 3.062 ms |     - |     - |     - |  645.7 KB |
+|  ReadNutritionData_Newtonsoft | 4.075 ms | 0.2276 ms | 0.6602 ms | 4.063 ms |     - |     - |     - | 892.65 KB |
+|       WriteNutritionData_Text | 7.460 ms | 0.6686 ms | 1.9610 ms | 6.445 ms |     - |     - |     - | 561.23 KB |
+|     WriteNutritionData_Binary | 4.480 ms | 0.6897 ms | 2.0229 ms | 3.323 ms |     - |     - |     - | 618.73 KB |
+| WriteNutritionData_Newtonsoft | 2.074 ms | 0.0724 ms | 0.2077 ms | 2.033 ms |     - |     - |     - | 451.98 KB |

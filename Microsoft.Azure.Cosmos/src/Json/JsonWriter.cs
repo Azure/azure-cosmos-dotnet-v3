@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
 
         /// <inheritdoc />
-        public abstract void WriteNumberValue(Number64 value);
+        public abstract void WriteNumber64Value(Number64 value);
 
         /// <inheritdoc />
         public abstract void WriteBoolValue(bool value);
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                 case JsonTokenType.Number:
                                     {
                                         Number64 value = jsonReader.GetNumberValue();
-                                        this.WriteNumberValue(value);
+                                        this.WriteNumber64Value(value);
                                     }
                                     break;
 
@@ -361,9 +361,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Either the formats did not match or we couldn't retrieve the buffered raw JSON
                 switch (jsonNodeType)
                 {
-                    case JsonNodeType.Number:
-                        Number64 numberValue = jsonNavigator.GetNumberValue(jsonNavigatorNode);
-                        this.WriteNumberValue(numberValue);
+                    case JsonNodeType.Number64:
+                        Number64 numberValue = jsonNavigator.GetNumber64Value(jsonNavigatorNode);
+                        this.WriteNumber64Value(numberValue);
                         break;
 
                     case JsonNodeType.String:

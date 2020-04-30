@@ -61,6 +61,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ClientResources.resx</DependentUpon>
     </Compile>
+    <Compile Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -105,6 +110,13 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
