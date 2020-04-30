@@ -31,7 +31,16 @@ namespace Microsoft.Azure.Cosmos
             Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
                 collectionResourceId: containerRid,
                 partitionKeyRangeId: this.PartitionKeyRangeId,
-                forceRefresh: true);
+                forceRefresh: false);
+
+            if (pkRange == null)
+            {
+                // Try with a refresh
+                pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
+                    collectionResourceId: containerRid,
+                    partitionKeyRangeId: this.PartitionKeyRangeId,
+                    forceRefresh: true);
+            }
 
             if (pkRange == null)
             {
