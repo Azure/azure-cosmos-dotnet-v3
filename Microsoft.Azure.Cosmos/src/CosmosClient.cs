@@ -257,8 +257,14 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
         /// <summary>
-        /// The response factory used to initialize CosmosClient response types
+        /// The response factory used to create CosmosClient response types.
         /// </summary>
+        /// <remarks>
+        /// This can be used for generating responses for tests, and allows users to create
+        /// a custom container that modifies the response. For example the client encryption
+        /// uses this to decrypt responses before returning to the caller.
+        /// user composition to 
+        /// </remarks>
         public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
 
         /// <summary>
