@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 throughput: 400).GetAwaiter().GetResult().Container;
 
-            BatchTestBase.PartitionKeyDefinition = ((ContainerCore)(ContainerInlineCore)BatchTestBase.LowThroughputJsonContainer).GetPartitionKeyDefinitionAsync(CancellationToken.None).GetAwaiter().GetResult();
+            BatchTestBase.PartitionKeyDefinition = ((ContainerInternal)(ContainerInlineCore)BatchTestBase.LowThroughputJsonContainer).GetPartitionKeyDefinitionAsync(CancellationToken.None).GetAwaiter().GetResult();
 
             // Create a container with at least 2 physical partitions for effective cross-partition testing
             BatchTestBase.JsonContainer = BatchTestBase.Database.CreateContainerAsync(

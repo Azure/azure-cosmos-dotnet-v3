@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     [SDK.EmulatorTests.TestClass]
     public class FeedRangeTests : BaseCosmosClientHelper
     {
-        private ContainerCore Container = null;
+        private ContainerInternal Container = null;
 
         [TestInitialize]
         public async Task TestInitialize()

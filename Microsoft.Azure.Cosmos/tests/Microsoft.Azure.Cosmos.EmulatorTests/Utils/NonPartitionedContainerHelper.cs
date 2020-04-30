@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private static readonly string PreNonPartitionedMigrationApiVersion = "2018-08-31";
 
-        internal static async Task<ContainerCore> CreateNonPartitionedContainer(
+        internal static async Task<ContainerInternal> CreateNonPartitionedContainer(
             Cosmos.Database database,
             string containerId,
             string indexingPolicy = null)
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static async Task CreateUndefinedPartitionItem(
-            ContainerCore container,
+            ContainerInternal container,
             string itemId)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static async Task CreateItemInNonPartitionedContainer(
-            ContainerCore container,
+            ContainerInternal container,
             string itemId)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
