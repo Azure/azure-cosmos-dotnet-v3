@@ -38,26 +38,26 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosClientContext ClientContext { get; }
 
-        public override Task<DatabaseResponse> ReadAsync(
+        public override async Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadStreamAsync(
+            ResponseMessage response = await this.ReadStreamAsync(
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
-        public override Task<DatabaseResponse> DeleteAsync(
+        public override async Task<DatabaseResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteStreamAsync(
+            ResponseMessage response = await this.DeleteStreamAsync(
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
         public async override Task<int?> ReadThroughputAsync(
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(
+        public override async Task<ContainerResponse> CreateContainerAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
@@ -150,13 +150,13 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            Task<ResponseMessage> response = this.ProcessCollectionCreateAsync(
+            ResponseMessage response = await this.ProcessCollectionCreateAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
                 throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this.GetContainer(containerProperties.Id), response);
         }
         public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             ContainerProperties containerProperties,
@@ -177,9 +177,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (readResponse.StatusCode != HttpStatusCode.NotFound)
             {
-                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(
+                ContainerResponse retrivedContainerResponse = this.ClientContext.ResponseFactory.CreateContainerResponse(
                     container,
-                    Task.FromResult(readResponse));
+                    readResponse);
                 if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
                 {
                     throw new ArgumentException(
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (readResponse.StatusCode != HttpStatusCode.Conflict)
             {
-                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(createResponse));
+                return this.ClientContext.ResponseFactory.CreateContainerResponse(container, createResponse);
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Merge the previous message diagnostics
             createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
-            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(readResponseAfterCreate));
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(container, readResponseAfterCreate);
         }
 
         public override async Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(
+        public override async Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -280,13 +280,13 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            Task<ResponseMessage> response = this.CreateContainerStreamInternalAsync(
+            ResponseMessage response = await this.CreateContainerStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this.GetContainer(containerProperties.Id), response);
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -334,9 +334,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (readResponse.StatusCode != HttpStatusCode.NotFound)
             {
-                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(
+                ContainerResponse retrivedContainerResponse = this.ClientContext.ResponseFactory.CreateContainerResponse(
                     container,
-                    Task.FromResult(readResponse));
+                    readResponse);
                 if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
                 {
                     throw new ArgumentException(
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (readResponse.StatusCode != HttpStatusCode.Conflict)
             {
-                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(createResponse));
+                return this.ClientContext.ResponseFactory.CreateContainerResponse(container, createResponse);
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Merge the previous message diagnostics
             createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
-            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(readResponseAfterCreate));
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(container, readResponseAfterCreate);
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -430,7 +430,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<UserResponse> CreateUserAsync(
+        public override async Task<UserResponse> CreateUserAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -442,12 +442,12 @@ namespace Microsoft.Azure.Cosmos
 
             UserProperties userProperties = new UserProperties(id);
 
-            Task<ResponseMessage> response = this.CreateUserStreamAsync(
+            ResponseMessage response = await this.CreateUserStreamAsync(
                 userProperties: userProperties,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response);
+            return this.ClientContext.ResponseFactory.CreateUserResponse(this.GetUser(userProperties.Id), response);
         }
 
         public override User GetUser(string id)
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<UserResponse> UpsertUserAsync(string id,
+        public override async Task<UserResponse> UpsertUserAsync(string id,
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -493,12 +493,12 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(id);
 
-            Task<ResponseMessage> response = this.ProcessUserUpsertAsync(
+            ResponseMessage response = await this.ProcessUserUpsertAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(new UserProperties(id)),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response);
+            return this.ClientContext.ResponseFactory.CreateUserResponse(this.GetUser(id), response);
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(

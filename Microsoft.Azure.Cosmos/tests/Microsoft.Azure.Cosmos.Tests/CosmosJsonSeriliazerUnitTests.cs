@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
-        public async Task ValidateResponseFactoryJsonSerializer()
+        public void ValidateResponseFactoryJsonSerializer()
         {
             ResponseMessage databaseResponse = this.CreateResponse();
             ResponseMessage containerResponse = this.CreateResponse();
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
-            CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
+            CosmosResponseFactoryInternal cosmosResponseFactory = new CosmosResponseFactoryCore(
                serializerCore);
 
             // Test the user specified response
@@ -187,8 +187,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
-            await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse));
-            await cosmosResponseFactory.CreateStoredProcedureExecuteResponseAsync<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
+            cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            cosmosResponseFactory.CreateStoredProcedureExecuteResponse<ToDoActivity>(storedProcedureExecuteResponse);
 
             // Throw if the setups were not called
             mockUserJsonSerializer.VerifyAll();
@@ -219,11 +219,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             Mock<Database> mockDatabase = new Mock<Database>();
 
             // Verify all the system types that should always use default
-            await cosmosResponseFactory.CreateContainerResponseAsync(mockContainer.Object, Task.FromResult(containerResponse));
-            await cosmosResponseFactory.CreateDatabaseResponseAsync(mockDatabase.Object, Task.FromResult(databaseResponse));
-            await cosmosResponseFactory.CreateStoredProcedureResponseAsync(Task.FromResult(storedProcedureResponse));
-            await cosmosResponseFactory.CreateTriggerResponseAsync(Task.FromResult(triggerResponse));
-            await cosmosResponseFactory.CreateUserDefinedFunctionResponseAsync(Task.FromResult(udfResponse));
+            cosmosResponseFactory.CreateContainerResponse(mockContainer.Object, containerResponse);
+            cosmosResponseFactory.CreateDatabaseResponse(mockDatabase.Object, databaseResponse);
+            cosmosResponseFactory.CreateStoredProcedureResponse(storedProcedureResponse);
+            cosmosResponseFactory.CreateTriggerResponse(triggerResponse);
+            cosmosResponseFactory.CreateUserDefinedFunctionResponse(udfResponse);
         }
 
         [TestMethod]
