@@ -457,10 +457,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new UserInlineCore(new UserCore(
+            return new UserInlineCore(
                     this.ClientContext,
                     this,
-                    id));
+                    id);
         }
 
         public Task<ResponseMessage> CreateUserStreamAsync(
