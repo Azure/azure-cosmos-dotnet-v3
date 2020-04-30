@@ -213,8 +213,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             if (sqlIdentifierPathExpression.ParentPath != null)
             {
                 sqlIdentifierPathExpression.ParentPath.Accept(this);
-                this.writer.Write(".");
             }
+
+            this.writer.Write(".");
 
             sqlIdentifierPathExpression.Value.Accept(this);
         }
