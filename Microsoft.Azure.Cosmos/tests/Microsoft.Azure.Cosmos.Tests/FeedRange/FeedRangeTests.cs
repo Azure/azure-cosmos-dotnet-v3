@@ -80,6 +80,19 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task FeedRangePKRangeId_GetEffectiveRangesAsync_NotFound()
+        {
+            Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { Id = Guid.NewGuid().ToString(), MinInclusive = "AA", MaxExclusive = "BB" };
+            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
+            Routing.IRoutingMapProvider routingProvider = Mock.Of<Routing.IRoutingMapProvider>();
+            Mock.Get(routingProvider)
+                .Setup(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.Is<bool>(b => true)))
+                .ReturnsAsync((Documents.PartitionKeyRange)null);
+            List<Documents.Routing.Range<string>> ranges = await feedRangePartitionKeyRange.GetEffectiveRangesAsync(routingProvider, null, null);
+        }
+
+        [TestMethod]
         public async Task FeedRangeEPK_GetPartitionKeyRangesAsync()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
