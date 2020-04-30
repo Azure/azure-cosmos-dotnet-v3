@@ -12,16 +12,16 @@ namespace Microsoft.Azure.Cosmos.Json
     internal static class Serializer
     {
         public static ReadOnlyMemory<byte> Serialize(
-            object poco,
+            object value,
             JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
         {
             IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: false);
-            Serializer.SerializeInternal(poco, jsonWriter);
+            Serializer.SerializeInternal(value, jsonWriter);
             return jsonWriter.GetResult();
         }
 
-        private static void SerializeInternal(
-            object poco,
+        public static void SerializeInternal(
+            object value,
             IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
@@ -29,64 +29,64 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException(nameof(jsonWriter));
             }
 
-            switch (poco)
+            switch (value)
             {
                 case null:
                     jsonWriter.WriteNullValue();
                     break;
 
-                case bool value:
-                    jsonWriter.WriteBoolValue(value);
+                case bool boolValue:
+                    jsonWriter.WriteBoolValue(boolValue);
                     break;
 
-                case string value:
-                    jsonWriter.WriteStringValue(value);
+                case string stringValue:
+                    jsonWriter.WriteStringValue(stringValue);
                     break;
 
-                case Number64 value:
-                    jsonWriter.WriteNumber64Value(value);
+                case Number64 numberValue:
+                    jsonWriter.WriteNumber64Value(numberValue);
                     break;
 
-                case sbyte value:
-                    jsonWriter.WriteInt8Value(value);
+                case sbyte signedByteValue:
+                    jsonWriter.WriteInt8Value(signedByteValue);
                     break;
 
-                case short value:
-                    jsonWriter.WriteInt16Value(value);
+                case short shortValue:
+                    jsonWriter.WriteInt16Value(shortValue);
                     break;
 
-                case int value:
-                    jsonWriter.WriteInt32Value(value);
+                case int intValue:
+                    jsonWriter.WriteInt32Value(intValue);
                     break;
 
-                case long value:
-                    jsonWriter.WriteInt64Value(value);
+                case long longValue:
+                    jsonWriter.WriteInt64Value(longValue);
                     break;
 
-                case uint value:
-                    jsonWriter.WriteUInt32Value(value);
+                case uint uintValue:
+                    jsonWriter.WriteUInt32Value(uintValue);
                     break;
 
-                case float value:
-                    jsonWriter.WriteFloat32Value(value);
+                case float floatValue:
+                    jsonWriter.WriteFloat32Value(floatValue);
                     break;
 
-                case double value:
-                    jsonWriter.WriteFloat64Value(value);
+                case double doubleValue:
+                    jsonWriter.WriteFloat64Value(doubleValue);
                     break;
 
-                case ReadOnlyMemory<byte> value:
-                    jsonWriter.WriteBinaryValue(value.Span);
+                case ReadOnlyMemory<byte> binaryValue:
+                    jsonWriter.WriteBinaryValue(binaryValue.Span);
                     break;
 
-                case Guid value:
-                    jsonWriter.WriteGuidValue(value);
+                case Guid guidValue:
+                    jsonWriter.WriteGuidValue(guidValue);
                     break;
 
-                case IEnumerable value:
+                case IEnumerable enumerableValue:
                     jsonWriter.WriteArrayStart();
 
-                    foreach (object arrayItem in value)
+                    foreach (object arrayItem in enumerableValue)
                     {
                         Serializer.SerializeInternal(arrayItem, jsonWriter);
                     }
@@ -94,15 +94,15 @@ namespace Microsoft.Azure.Cosmos.Json
                     jsonWriter.WriteArrayEnd();
                     break;
 
-                case CosmosElement value:
-                    value.WriteTo(jsonWriter);
+                case CosmosElement cosmosElementValue:
+                    cosmosElementValue.WriteTo(jsonWriter);
                     break;
 
                 case ValueType valueType:
                     throw new ArgumentOutOfRangeException($"Unable to serialize type: {valueType.GetType()}");
 
                 default:
-                    Type type = poco.GetType();
+                    Type type = value.GetType();
                     PropertyInfo[] properties = type.GetProperties();
 
                     jsonWriter.WriteObjectStart();
@@ -110,135 +110,13 @@ namespace Microsoft.Azure.Cosmos.Json
                     foreach (PropertyInfo propertyInfo in properties)
                     {
                         jsonWriter.WriteFieldName(propertyInfo.Name);
-                        object propertyValue = propertyInfo.GetValue(poco);
+                        object propertyValue = propertyInfo.GetValue(value);
                         Serializer.SerializeInternal(propertyValue, jsonWriter);
                     }
 
                     jsonWriter.WriteObjectEnd();
                     break;
             }
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            bool value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteBoolValue(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            string value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteStringValue(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            Number64 value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteNumber64Value(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            sbyte value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteInt8Value(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            short value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteInt16Value(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            int value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteInt32Value(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            long value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteInt64Value(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            uint value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteUInt32Value(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            float value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteFloat32Value(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            double value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteFloat64Value(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            ReadOnlyMemory<byte> value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteBinaryValue(value.Span);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            Guid value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            jsonWriter.WriteGuidValue(value);
-            return jsonWriter.GetResult();
-        }
-
-        public static ReadOnlyMemory<byte> Serialize(
-            CosmosElement value,
-            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: true);
-            value.WriteTo(jsonWriter);
-            return jsonWriter.GetResult();
         }
     }
 }

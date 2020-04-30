@@ -25,6 +25,9 @@
 
             Assert.IsTrue(cosmosObject.TryGetValue("Age", out CosmosNumber personAge));
             Assert.AreEqual(person.Age, personAge.Value);
+
+            Assert.IsTrue(cosmosObject.TryGetValue("Children", out CosmosArray personChildren));
+            Assert.AreEqual(person.Children.Count, personChildren.Count);
         }
 
         [TestMethod]

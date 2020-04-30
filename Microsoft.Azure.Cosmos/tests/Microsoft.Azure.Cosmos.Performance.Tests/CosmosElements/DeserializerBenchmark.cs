@@ -6,7 +6,7 @@
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Performance.Tests.Models;
+    using Microsoft.Azure.Cosmos.Tests.Poco;
     using Newtonsoft.Json;
 
     [MemoryDiagnoser]
