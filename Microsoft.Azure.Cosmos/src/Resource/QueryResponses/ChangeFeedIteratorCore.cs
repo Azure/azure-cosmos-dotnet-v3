@@ -73,13 +73,6 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal container,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
-            if (changeFeedRequestOptions != null
-                && changeFeedRequestOptions.MaxItemCount.HasValue
-                && changeFeedRequestOptions.MaxItemCount.Value <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(changeFeedRequestOptions.MaxItemCount));
-            }
-
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.clientContext = container.ClientContext;
             this.changeFeedOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
@@ -171,6 +164,7 @@ namespace Microsoft.Azure.Cosmos
                 // Change Feed read uses Etag for continuation
                 this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
                 this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(responseMessage.Headers.ETag);
+                this.changeFeedOptions.FeedRange = this.FeedRangeInternal;
                 this.hasMoreResults = responseMessage.IsSuccessStatusCode;
                 return FeedRangeResponse.CreateSuccess(
                     responseMessage,
