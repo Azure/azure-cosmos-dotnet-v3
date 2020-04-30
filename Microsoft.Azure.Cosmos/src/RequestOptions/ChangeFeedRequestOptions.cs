@@ -46,10 +46,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// Only applies in the case where no FeedToken is provided or the FeedToken was never used in a previous iterator.
-        /// In order to read the Change Feed from the beginning, set this to DateTime.MinValue.ToUniversalTime().
         /// </remarks>
         public StartFrom From { get; set; } = StartFromNow.Singleton;
 
+        /// <summary>
+        /// Gets or set which ranges to execute the ChangeFeed operation on.
+        /// </summary>
         public FeedRange FeedRange { get; set; }
 
         /// <summary>

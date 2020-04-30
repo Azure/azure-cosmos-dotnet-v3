@@ -1222,7 +1222,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         ///  This method creates an iterator to consume the container's Change Feed.
         /// </summary>
-        /// <param name="continuationToken">(Optional) The continuation from a previous Change Feed iterator.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <returns>An iterator to go through the Change Feed.</returns>
         /// <example>
