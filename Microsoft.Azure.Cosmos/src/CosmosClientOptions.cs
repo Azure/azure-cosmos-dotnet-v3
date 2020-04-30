@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
-        private CosmosSerializer serializer;
+        private CosmosSerializer serializerInternal;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer
         {
-            get => this.serializer;
+            get => this.serializerInternal;
             set
             {
                 if (this.SerializerOptions != null)
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
                 }
 
-                this.serializer = value;
+                this.serializerInternal = value;
             }
         }
 
@@ -529,6 +529,14 @@ namespace Microsoft.Azure.Cosmos
         /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
+
+        internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
+        {
+            if (this.serializerInternal == null)
+            {
+                this.serializerInternal = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            }
+        }
 
         internal CosmosClientOptions Clone()
         {
