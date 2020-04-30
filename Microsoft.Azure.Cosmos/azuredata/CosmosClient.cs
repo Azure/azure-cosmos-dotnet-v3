@@ -500,7 +500,7 @@ namespace Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual AsyncPageable<T> GetDatabaseQueryIterator<T>(
+        public virtual AsyncPageable<T> GetDatabaseQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -555,7 +555,7 @@ namespace Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An iterator to go through the databases</returns>
-        public virtual async IAsyncEnumerable<Response> GetDatabaseQueryStreamIterator(
+        public virtual async IAsyncEnumerable<Response> GetDatabaseStreamQueryResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
