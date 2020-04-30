@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class TriggersTests : BaseCosmosClientHelper
     {
-        private ContainerCore container = null;
+        private ContainerInternal container = null;
         private Scripts scripts = null;
 
         [TestInitialize]

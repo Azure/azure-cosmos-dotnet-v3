@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
 
-            Mock<ContainerCore> containerCore = new Mock<ContainerCore>();
+            Mock<ContainerInternal> containerCore = new Mock<ContainerInternal>();
             containerCore
                 .Setup(c => c.ClientContext).Returns(cosmosClientContext.Object);
 

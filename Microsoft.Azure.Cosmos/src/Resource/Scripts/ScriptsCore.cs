@@ -10,13 +10,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal sealed class ScriptsCore : Scripts
+    internal class ScriptsCore : Scripts
     {
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly CosmosClientContext clientContext;
 
         internal ScriptsCore(
-            ContainerCore container,
+            ContainerInternal container,
             CosmosClientContext clientContext)
         {
             this.container = container;
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(storedProcedureId));
             }
 
-            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+            ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
             
             Uri linkUri = this.clientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,
