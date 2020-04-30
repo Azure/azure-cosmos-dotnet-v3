@@ -4,16 +4,18 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.IO;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
     /// <summary>
     /// This response factory converts response messages
     /// to the corresponding type response.
     /// </summary>
-    public abstract class CosmosResponseFactory
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class CosmosResponseFactory
     {
         /// <summary>
         /// Creates a FeedResponse from a response message

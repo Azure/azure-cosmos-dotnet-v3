@@ -265,7 +265,12 @@ namespace Microsoft.Azure.Cosmos
         /// uses this to decrypt responses before returning to the caller.
         /// user composition to 
         /// </remarks>
-        public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
