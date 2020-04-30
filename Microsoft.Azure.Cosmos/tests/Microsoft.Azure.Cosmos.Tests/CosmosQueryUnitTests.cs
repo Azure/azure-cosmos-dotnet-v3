@@ -268,6 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionedQueryExecutionInfo: null,
                 executionEnvironment: queryRequestOptions?.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: true,
+                forcePassthrough: false,
                 testInjections: queryRequestOptions?.TestSettings);
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
