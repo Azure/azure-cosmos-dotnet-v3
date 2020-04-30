@@ -38,19 +38,19 @@
         [Benchmark]
         public void CosmosElementDeserializer_TryDeserialize_Text()
         {
-            IReadOnlyList<Person> deserializedPeople = CosmosElementDeserializer.Deserialize<IReadOnlyList<Person>>(this.textBuffer);
+            _ = Serializer.Deserialize<IReadOnlyList<Person>>(this.textBuffer);
         }
 
         [Benchmark]
         public void CosmosElementDeserializer_TryDeserialize_Binary()
         {
-            IReadOnlyList<Person> deserializedPeople = CosmosElementDeserializer.Deserialize<IReadOnlyList<Person>>(this.binaryBuffer);
+            _ = Serializer.Deserialize<IReadOnlyList<Person>>(this.binaryBuffer);
         }
 
         [Benchmark]
         public void JsonConvert_DeserializeObject_Text()
         {
-            IReadOnlyList<Person> deserializedPeople = JsonConvert.DeserializeObject<IReadOnlyList<Person>>(this.json);
+            _ = JsonConvert.DeserializeObject<IReadOnlyList<Person>>(this.json);
         }
 
         [Benchmark]
@@ -58,7 +58,7 @@
         {
             JsonSerializer jsonSerializer = JsonSerializer.CreateDefault();
             CosmosDBToNewtonsoftReader cosmosDBToNewtonsoftReader = new CosmosDBToNewtonsoftReader(this.binaryBuffer);
-            IReadOnlyList<Person> deserializedPeople = jsonSerializer.Deserialize<IReadOnlyList<Person>>(cosmosDBToNewtonsoftReader);
+            _ = jsonSerializer.Deserialize<IReadOnlyList<Person>>(cosmosDBToNewtonsoftReader);
         }
     }
 }
