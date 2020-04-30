@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string dbName = nameof(CreateDatabaseIfNotExistTest) + Guid.NewGuid();
             DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
                 dbName,
-                ThroughputProperties.CreateAutoscaleThroughput(autoMaxscaleThroughput: 5000));
+                ThroughputProperties.CreateAutoscaleThroughput(autoscaleMaxThroughput: 5000));
             Assert.AreEqual(HttpStatusCode.Created, databaseResponse.StatusCode);
 
             // Container is required to validate database throughput upgrade scenarios
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             databaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
                 dbName,
                 ThroughputProperties.CreateAutoscaleThroughput(
-                    autoMaxscaleThroughput: 5000));
+                    autoscaleMaxThroughput: 5000));
             Assert.AreEqual(HttpStatusCode.OK, databaseResponse.StatusCode);
 
             autoscale = await databaseResponse.Database.ReadThroughputAsync(requestOptions: null);

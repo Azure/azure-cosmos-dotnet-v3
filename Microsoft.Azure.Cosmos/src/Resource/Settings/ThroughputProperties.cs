@@ -102,13 +102,18 @@ namespace Microsoft.Azure.Cosmos
 #endif
         static ThroughputProperties CreateManualThroughput(int throughput)
         {
+            if (throughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(throughput)} must be greater than 0");
+            }
+
             return new ThroughputProperties(OfferContentProperties.CreateManualOfferConent(throughput));
         }
 
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
-        /// <param name="autoMaxscaleThroughput">The maximum throughput the resource can scale to.</param>
+        /// <param name="autoscaleMaxThroughput">The maximum throughput the resource can scale to.</param>
         /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
 #if PREVIEW
         public
@@ -116,10 +121,15 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         static ThroughputProperties CreateAutoscaleThroughput(
-            int autoMaxscaleThroughput)
+            int autoscaleMaxThroughput)
         {
+            if (autoscaleMaxThroughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(autoscaleMaxThroughput)} must be greater than 0");
+            }
+
             return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
-                startingMaxThroughput: autoMaxscaleThroughput,
+                startingMaxThroughput: autoscaleMaxThroughput,
                 autoUpgradeMaxThroughputIncrementPercentage: null));
         }
 
