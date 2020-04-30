@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestInit()
         {
             this.cosmosClient = TestCommon.CreateCosmosClient();
-            //this.cosmosClient = new CosmosClient()
         }
 
         [TestCleanup]
