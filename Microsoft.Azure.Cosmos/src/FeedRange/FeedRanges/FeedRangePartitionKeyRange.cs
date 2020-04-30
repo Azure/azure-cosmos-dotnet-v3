@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (pkRange == null)
             {
-                throw new InvalidOperationException("The PartitionKeyRangeId is not valid for the current container.");
+                throw new InvalidOperationException($"The PartitionKeyRangeId: \"{this.PartitionKeyRangeId}\" is not valid for the current container {containerRid} .");
             }
 
             return new List<Documents.Routing.Range<string>> { pkRange.ToRange() };
