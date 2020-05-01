@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -66,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
         private int? maxTcpConnectionsPerEndpoint;
         private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
+        private Func<HttpClient> httpClientFactory;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -321,6 +323,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException($"{nameof(this.WebProxy)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
                 }
+
+                if (this.HttpClientFactory != null)
+                {
+                    throw new ArgumentException($"{nameof(this.WebProxy)} cannot be set along {nameof(this.HttpClientFactory)}");
+                }
             }
         }
 
@@ -425,6 +432,32 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is false
         /// </value>
         public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// HTTPS communication is used when <see cref="ConnectionMode"/> is set to <see cref="ConnectionMode.Gateway"/> for all operations and when <see cref="ConnectionMode"/> is <see cref="ConnectionMode.Direct"/> (default) for metadata operations.
+        /// </para>
+        /// <para>
+        /// Useful in scenarios where the application is using a pool of HttpClient instances to be shared, like ASP.NET Core applications with IHttpClientFactory or Blazor WebAssembly applications.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+        public Func<HttpClient> HttpClientFactory
+        {
+            get => this.httpClientFactory;
+            set
+            {
+                if (this.WebProxy != null)
+                {
+                    throw new ArgumentException($"{nameof(this.HttpClientFactory)} cannot be set along {nameof(this.WebProxy)}");
+                }
+
+                this.httpClientFactory = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -564,7 +597,8 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 PortReuseMode = this.portReuseMode,
-                EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery
+                EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
+                HttpClientFactory = this.httpClientFactory
             };
 
             if (this.ApplicationRegion != null)
@@ -743,6 +777,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.AllowBulkExecution)
             {
                 features |= CosmosClientOptionsFeatures.AllowBulkExecution;
+            }
+
+            if (this.HttpClientFactory != null)
+            {
+                features |= CosmosClientOptionsFeatures.HttpClientFactory;
             }
 
             if (features == CosmosClientOptionsFeatures.NoFeatures)
