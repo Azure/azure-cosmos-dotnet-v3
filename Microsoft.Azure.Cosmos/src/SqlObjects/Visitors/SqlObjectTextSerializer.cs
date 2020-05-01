@@ -285,23 +285,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             sqlObject.LimitExpression.Accept(this);
         }
 
-        public override void Visit(SqlLiteralArrayCollection sqlLiteralArrayCollection)
-        {
-            this.writer.Write("[");
-
-            for (int i = 0; i < sqlLiteralArrayCollection.Items.Count; i++)
-            {
-                if (i > 0)
-                {
-                    this.writer.Write(", ");
-                }
-
-                sqlLiteralArrayCollection.Items[i].Accept(this);
-            }
-
-            this.writer.Write("]");
-        }
-
         public override void Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
         {
             sqlLiteralScalarExpression.Literal.Accept(this);

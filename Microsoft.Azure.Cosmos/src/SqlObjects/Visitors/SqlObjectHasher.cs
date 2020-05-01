@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private const int SqlInScalarExpressionNotHashCode = -1131398119;
         private const int SqlJoinCollectionExpressionHashCode = 1000382226;
         private const int SqlLimitSpecHashCode = 92601316;
-        private const int SqlLiteralArrayCollectionHashCode = 1634639566;
         private const int SqlLiteralScalarExpressionHashCode = -158339101;
         private const int SqlMemberIndexerScalarExpressionHashCode = 1589675618;
         private const int SqlNullLiteralHashCode = -709456592;
@@ -293,17 +292,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             int hashCode = SqlJoinCollectionExpressionHashCode;
             hashCode = CombineHashes(hashCode, sqlJoinCollectionExpression.LeftExpression.Accept(this));
             hashCode = CombineHashes(hashCode, sqlJoinCollectionExpression.RightExpression.Accept(this));
-            return hashCode;
-        }
-
-        public override int Visit(SqlLiteralArrayCollection sqlLiteralArrayCollection)
-        {
-            int hashCode = SqlLiteralArrayCollectionHashCode;
-            for (int i = 0; i < sqlLiteralArrayCollection.Items.Count; i++)
-            {
-                hashCode = CombineHashes(hashCode, sqlLiteralArrayCollection.Items[i].Accept(this));
-            }
-
             return hashCode;
         }
 

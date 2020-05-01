@@ -189,17 +189,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             return SqlLimitSpec.Create(SqlNumberLiteral.Create(0));
         }
 
-        public override SqlObject Visit(SqlLiteralArrayCollection sqlLiteralArrayCollection)
-        {
-            SqlScalarExpression[] items = new SqlScalarExpression[sqlLiteralArrayCollection.Items.Count];
-            for (int i = 0; i < sqlLiteralArrayCollection.Items.Count; i++)
-            {
-                items[i] = sqlLiteralArrayCollection.Items[i].Accept(this) as SqlScalarExpression;
-            }
-
-            return SqlLiteralArrayCollection.Create(items);
-        }
-
         public override SqlObject Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
         {
             return SqlLiteralScalarExpression.Create(sqlLiteralScalarExpression.Literal.Accept(this) as SqlLiteral);
