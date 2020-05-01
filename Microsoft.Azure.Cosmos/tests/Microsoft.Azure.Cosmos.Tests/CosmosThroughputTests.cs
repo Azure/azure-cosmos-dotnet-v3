@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AutoscaleThroughputSerializationTest()
         {
-            ThroughputProperties autoscaleThroughputProperties = ThroughputProperties.CreateAutoscaleMaxThroughput(1000);
+            ThroughputProperties autoscaleThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(1000);
             Assert.AreEqual(1000, autoscaleThroughputProperties.AutoscaleMaxThroughput);
             Assert.IsNull(autoscaleThroughputProperties.Throughput);
 

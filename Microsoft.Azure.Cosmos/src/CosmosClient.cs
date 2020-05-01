@@ -392,12 +392,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual Task<DatabaseResponse> CreateDatabaseAsync(
+        public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
@@ -447,12 +442,7 @@ namespace Microsoft.Azure.Cosmos
         /// </list>
         /// </returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
+        public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
