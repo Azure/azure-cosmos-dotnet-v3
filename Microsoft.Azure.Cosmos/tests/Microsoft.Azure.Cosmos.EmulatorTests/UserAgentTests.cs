@@ -112,8 +112,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.SetEnvironmentInformation(useMacOs);
 
             const string suffix = " UserApplicationName/1.0";
+            CosmosClientOptionsFeatures featuresFlags = CosmosClientOptionsFeatures.NoFeatures;
+            featuresFlags |= CosmosClientOptionsFeatures.AllowBulkExecution;
+            featuresFlags |= CosmosClientOptionsFeatures.HttpClientFactory;
 
-            string features = Convert.ToString((int)CosmosClientOptionsFeatures.AllowBulkExecution, 2).PadLeft(8, '0');
+            string features = Convert.ToString((int)featuresFlags, 2).PadLeft(8, '0');
 
             Action<Fluent.CosmosClientBuilder> applicationNameBuilder = (builder) =>
             {
@@ -123,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => applicationNameBuilder(builder.WithBulkExecution(true))))
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => applicationNameBuilder(builder.WithBulkExecution(true).WithHttpClientFactory(() => new HttpClient()))))
             {
                 Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
 
