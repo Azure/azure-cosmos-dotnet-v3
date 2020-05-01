@@ -827,23 +827,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             return client.CreateDocumentQuery(owner.GetLink(), querySpec, feedOptions);
         }
-
-        /// <summary>
-        /// Extension method to create a change feed query for documents.
-        /// </summary>
-        /// <param name="client">The DocumentClient to use.</param>
-        /// <param name="owner">The collection to read documents from.</param>
-        /// <param name="feedOptions">The options for processing the query results feed.</param>
-        /// <returns>the query result set.</returns>
-        public static IDocumentQuery<Document> CreateDocumentChangeFeedQuery(this DocumentClient client, DocumentCollection owner, ChangeFeedOptions feedOptions)
-        {
-            if (owner == null)
-            {
-                throw new ArgumentNullException("owner");
-            } 
-
-            return client.CreateDocumentChangeFeedQuery(owner.GetLink(), feedOptions);
-        }
         #endregion
 
         #region FeedReader

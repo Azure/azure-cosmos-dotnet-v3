@@ -6,189 +6,207 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Sql;
 
     internal static class MathBuiltinFunctions
     {
-        private static Dictionary<string, BuiltinFunctionVisitor> MathBuiltinFunctionDefinitions { get; set; }
-
-        static MathBuiltinFunctions()
+        private static readonly ImmutableDictionary<string, BuiltinFunctionVisitor> MathBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
         {
-            MathBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>();
-
-            MathBuiltinFunctionDefinitions.Add("Abs",
-                new SqlBuiltinFunctionVisitor("ABS",
-                    true,
-                    new List<Type[]>()
+            {
+                nameof(Math.Abs),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Abs,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(decimal)},
-                        new Type[]{typeof(double)},
-                        new Type[]{typeof(float)},
-                        new Type[]{typeof(int)},
-                        new Type[]{typeof(long)},
-                        new Type[]{typeof(sbyte)},
-                        new Type[]{typeof(short)},
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Acos",
-                new SqlBuiltinFunctionVisitor("ACOS",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(decimal)}.ToImmutableArray(),
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                        new Type[]{typeof(float)}.ToImmutableArray(),
+                        new Type[]{typeof(int)}.ToImmutableArray(),
+                        new Type[]{typeof(long)}.ToImmutableArray(),
+                        new Type[]{typeof(sbyte)}.ToImmutableArray(),
+                        new Type[]{typeof(short)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Acos),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Acos,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Asin",
-                new SqlBuiltinFunctionVisitor("ASIN",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Asin),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Asin,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Atan",
-                new SqlBuiltinFunctionVisitor("ATAN",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Atan),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Atan,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Atan2",
-                new SqlBuiltinFunctionVisitor("ATN2",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Atan2),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Atn2,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double), typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Ceiling",
-                new SqlBuiltinFunctionVisitor("CEILING",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Ceiling),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Ceiling,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(decimal)},
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Cos",
-                new SqlBuiltinFunctionVisitor("COS",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Cos),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Cos,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Exp",
-                new SqlBuiltinFunctionVisitor("EXP",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Exp),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Exp,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Floor",
-                new SqlBuiltinFunctionVisitor("FLOOR",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Floor),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Floor,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(decimal)},
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Log",
-                new SqlBuiltinFunctionVisitor("LOG",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(decimal)}.ToImmutableArray(),
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Log),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Log,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)},
-                        new Type[]{typeof(double), typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Log10",
-                new SqlBuiltinFunctionVisitor("LOG10",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                        new Type[]{typeof(double), typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Log10),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Log10,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Pow",
-                new SqlBuiltinFunctionVisitor("POWER",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Pow),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Power,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double), typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Round",
-                new SqlBuiltinFunctionVisitor("ROUND",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double), typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Round),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Round,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(decimal)},
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Sign",
-                new SqlBuiltinFunctionVisitor("SIGN",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(decimal)}.ToImmutableArray(),
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Sign),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Sign,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(decimal)},
-                        new Type[]{typeof(double)},
-                        new Type[]{typeof(float)},
-                        new Type[]{typeof(int)},
-                        new Type[]{typeof(long)},
-                        new Type[]{typeof(sbyte)},
-                        new Type[]{typeof(short)},
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Sin",
-                new SqlBuiltinFunctionVisitor("SIN",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(decimal)}.ToImmutableArray(),
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                        new Type[]{typeof(float)}.ToImmutableArray(),
+                        new Type[]{typeof(int)}.ToImmutableArray(),
+                        new Type[]{typeof(long)}.ToImmutableArray(),
+                        new Type[]{typeof(sbyte)}.ToImmutableArray(),
+                        new Type[]{typeof(short)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Sin),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Sin,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Sqrt",
-                new SqlBuiltinFunctionVisitor("SQRT",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Sqrt),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Sin,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Tan",
-                new SqlBuiltinFunctionVisitor("TAN",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Tan),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Tan,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(double)}
-                    }));
-
-            MathBuiltinFunctionDefinitions.Add("Truncate",
-                new SqlBuiltinFunctionVisitor("TRUNC",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Math.Truncate),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.Trunc,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(decimal)},
-                        new Type[]{typeof(double)}
-                    }));
-        }
+                        new Type[]{typeof(decimal)}.ToImmutableArray(),
+                        new Type[]{typeof(double)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+        }.ToImmutableDictionary();
 
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            BuiltinFunctionVisitor visitor = null;
-            if (MathBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out visitor))
+            if (!MathBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out BuiltinFunctionVisitor visitor))
             {
-                return visitor.Visit(methodCallExpression, context);
+                throw new DocumentQueryException(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        ClientResources.MethodNotSupported,
+                        methodCallExpression.Method.Name));
             }
 
-            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+            return visitor.Visit(methodCallExpression, context);
         }
     }
 }

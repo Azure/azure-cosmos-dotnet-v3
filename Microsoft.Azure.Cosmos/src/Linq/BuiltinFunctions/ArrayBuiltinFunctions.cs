@@ -6,45 +6,84 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Globalization;
+    using System.Linq;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Sql;
 
     internal static class ArrayBuiltinFunctions
     {
-        private static Dictionary<string, BuiltinFunctionVisitor> ArrayBuiltinFunctionDefinitions { get; set; }
+        private static readonly ImmutableDictionary<string, BuiltinFunctionVisitor> ArrayBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
+        {
+            {
+                nameof(Enumerable.Concat),
+                new ArrayConcatVisitor()
+            },
+            {
+                nameof(Enumerable.Contains),
+                new ArrayContainsVisitor()
+            },
+            {
+                nameof(Enumerable.Count),
+                new ArrayCountVisitor()
+            },
+            {
+                "get_Item",
+                new ArrayGetItemVisitor()
+            },
+            {
+                nameof(Enumerable.ToArray),
+                new ArrayToArrayVisitor()
+            },
+            {
+                nameof(Enumerable.ToList),
+                new ArrayToArrayVisitor()
+            }
+        }.ToImmutableDictionary();
 
-        private class ArrayConcatVisitor : SqlBuiltinFunctionVisitor
+        private sealed class ArrayConcatVisitor : SqlBuiltinFunctionVisitor
         {
             public ArrayConcatVisitor()
-                : base("ARRAY_CONCAT", true, null)
+                : base(
+                      name: SqlFunctionCallScalarExpression.Names.ArrayConcat,
+                      argumentLists: null)
             {
             }
 
-            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            protected override SqlScalarExpression VisitImplicit(
+                MethodCallExpression methodCallExpression,
+                TranslationContext context)
             {
                 if (methodCallExpression.Arguments.Count == 2)
                 {
                     SqlScalarExpression array1 = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
                     SqlScalarExpression array2 = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[1], context);
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONCAT", array1, array2);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(
+                        SqlFunctionCallScalarExpression.Identifiers.ArrayConcat,
+                        array1,
+                        array2);
                 }
 
                 return null;
             }
         }
 
-        private class ArrayContainsVisitor : SqlBuiltinFunctionVisitor
+        private sealed class ArrayContainsVisitor : SqlBuiltinFunctionVisitor
         {
             public ArrayContainsVisitor()
-                : base("ARRAY_CONTAINS", true, null)
+                : base(
+                      name: SqlFunctionCallScalarExpression.Names.ArrayContains,
+                      argumentLists: null)
             {
             }
 
-            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            protected override SqlScalarExpression VisitImplicit(
+                MethodCallExpression methodCallExpression,
+                TranslationContext context)
             {
-                Expression searchList = null;
-                Expression searchExpression = null;
+                Expression searchList;
+                Expression searchExpression;
 
                 // If non static Contains
                 if (methodCallExpression.Arguments.Count == 1)
@@ -58,8 +97,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                     searchList = methodCallExpression.Arguments[0];
                     searchExpression = methodCallExpression.Arguments[1];
                 }
+                else
+                {
+                    searchList = null;
+                    searchExpression = null;
+                }
 
-                if (searchList == null || searchExpression == null)
+                if ((searchList == null) || (searchExpression == null))
                 {
                     return null;
                 }
@@ -71,7 +115,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(searchList, context);
                 SqlScalarExpression expression = ExpressionToSql.VisitScalarExpression(searchExpression, context);
-                return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", array, expression);
+                return SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.ArrayContains,
+                    array,
+                    expression);
             }
 
             private SqlScalarExpression VisitIN(Expression expression, ConstantExpression constantExpressionList, TranslationContext context)
@@ -89,14 +136,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(expression, context);
-                return SqlInScalarExpression.Create(scalarExpression, false, items);
+                return SqlInScalarExpression.Create(scalarExpression, not: false, items);
             }
         }
 
         private class ArrayCountVisitor : SqlBuiltinFunctionVisitor
         {
             public ArrayCountVisitor()
-                : base("ARRAY_LENGTH", true, null)
+                : base(
+                      name: SqlFunctionCallScalarExpression.Names.ArrayLength,
+                      argumentLists: null)
             {
             }
 
@@ -107,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
                     SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
 
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_LENGTH", array);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Identifiers.ArrayLength, array);
                 }
 
                 return null;
@@ -153,38 +202,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        static ArrayBuiltinFunctions()
-        {
-            ArrayBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>();
-
-            ArrayBuiltinFunctionDefinitions.Add("Concat",
-                new ArrayConcatVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("Contains",
-                new ArrayContainsVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("Count",
-                new ArrayCountVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("get_Item",
-                new ArrayGetItemVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("ToArray",
-                new ArrayToArrayVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("ToList",
-                new ArrayToArrayVisitor());
-        }
-
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            BuiltinFunctionVisitor visitor = null;
-            if (ArrayBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out visitor))
+            if (!ArrayBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out BuiltinFunctionVisitor visitor))
             {
-                return visitor.Visit(methodCallExpression, context);
+                throw new DocumentQueryException(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        ClientResources.MethodNotSupported,
+                        methodCallExpression.Method.Name));
+
             }
 
-            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+            return visitor.Visit(methodCallExpression, context);
         }
     }
 }

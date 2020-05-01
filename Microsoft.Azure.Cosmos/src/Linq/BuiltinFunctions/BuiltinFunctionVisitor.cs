@@ -28,7 +28,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return result;
             }
 
-            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+            throw new DocumentQueryException(
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    ClientResources.MethodNotSupported,
+                    methodCallExpression.Method.Name));
         }
 
         public static SqlScalarExpression VisitBuiltinFunctionCall(MethodCallExpression methodCallExpression, TranslationContext context)

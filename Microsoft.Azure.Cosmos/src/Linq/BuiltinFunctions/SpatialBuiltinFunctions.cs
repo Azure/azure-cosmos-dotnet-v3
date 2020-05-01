@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Spatial;
@@ -13,56 +14,61 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal static class SpatialBuiltinFunctions
     {
-        private static Dictionary<string, BuiltinFunctionVisitor> SpatialBuiltinFunctionDefinitions { get; set; }
-
-        static SpatialBuiltinFunctions()
+        private static readonly ImmutableDictionary<string, BuiltinFunctionVisitor> SpatialBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
         {
-            SpatialBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>();
-
-            SpatialBuiltinFunctionDefinitions.Add("Distance",
-                new SqlBuiltinFunctionVisitor("ST_Distance",
-                    true,
-                    new List<Type[]>()
+            {
+                nameof(Geometry.Distance),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.StDistance,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(Geometry)},
-                    }));
-
-            SpatialBuiltinFunctionDefinitions.Add("Within",
-                new SqlBuiltinFunctionVisitor("ST_Within",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(Geometry)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Geometry.Within),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.StWithin,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(Geometry)},
-                    }));
-
-            SpatialBuiltinFunctionDefinitions.Add("IsValidDetailed",
-                new SqlBuiltinFunctionVisitor("ST_IsValidDetailed",
-                    true,
-                    new List<Type[]>()));
-
-            SpatialBuiltinFunctionDefinitions.Add("IsValid",
-                new SqlBuiltinFunctionVisitor("ST_IsValid",
-                    true,
-                    new List<Type[]>()));
-
-            SpatialBuiltinFunctionDefinitions.Add("Intersects",
-                new SqlBuiltinFunctionVisitor("ST_Intersects",
-                    true,
-                    new List<Type[]>()
+                        new Type[]{typeof(Geometry)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            },
+            {
+                nameof(Geometry.IsValidDetailed),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.StIsvaliddetailed,
+                    new ImmutableArray<Type>[]{}.ToImmutableArray())
+            },
+            {
+                nameof(Geometry.IsValid),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.StIsvalid,
+                    new ImmutableArray<Type>[]{}.ToImmutableArray())
+            },
+            {
+                nameof(Geometry.Intersects),
+                new SqlBuiltinFunctionVisitor(
+                    SqlFunctionCallScalarExpression.Names.StIntersects,
+                    new ImmutableArray<Type>[]
                     {
-                        new Type[]{typeof(Geometry)},
-                    }));
-        }
+                        new Type[]{typeof(Geometry)}.ToImmutableArray(),
+                    }.ToImmutableArray())
+            }
+        }.ToImmutableDictionary();
 
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            BuiltinFunctionVisitor visitor = null;
-            if (SpatialBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out visitor))
+            if (!SpatialBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out BuiltinFunctionVisitor visitor))
             {
-                return visitor.Visit(methodCallExpression, context);
+                throw new DocumentQueryException(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        ClientResources.MethodNotSupported,
+                        methodCallExpression.Method.Name));
             }
 
-            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+            return visitor.Visit(methodCallExpression, context);
         }
     }
 }

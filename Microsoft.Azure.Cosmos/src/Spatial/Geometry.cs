@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if geometries are equal. <c>false</c> otherwise.</returns>
         private bool Equals(Geometry other)
         {
-            if (ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
