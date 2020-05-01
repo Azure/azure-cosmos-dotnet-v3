@@ -17,13 +17,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class UserCore : User
     {
-        /// <summary>
-        /// Only used for unit testing
-        /// </summary>
-        internal UserCore()
-        {
-        }
-
         internal UserCore(
             CosmosClientContext clientContext,
             DatabaseInternal database,
@@ -136,10 +129,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new PermissionInlineCore(new PermissionCore(
+            return new PermissionInlineCore(
                     this.ClientContext,
                     this,
-                    id));
+                    id);
         }
 
         /// <inheritdoc/>
