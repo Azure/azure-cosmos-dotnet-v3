@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -300,6 +301,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             });
+        }
+
+        [TestMethod]
+        public async Task HttpClientFactorySmokeTest()
+        {
+            HttpClient client = new HttpClient();
+            Mock<Func<HttpClient>> factory = new Mock<Func<HttpClient>>();
+            factory.Setup(f => f()).Returns(client);
+            CosmosClient cosmosClient = new CosmosClient(
+                ConfigurationManager.AppSettings["GatewayEndpoint"],
+                ConfigurationManager.AppSettings["MasterKey"],
+                new CosmosClientOptions
+                {
+                    ApplicationName = "test",
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ConnectionProtocol = Protocol.Https,
+                    HttpClientFactory = factory.Object
+                }
+            );
+
+            string someId = Guid.NewGuid().ToString();
+            Cosmos.Database database = null;
+            try
+            {
+                database = await cosmosClient.CreateDatabaseAsync(someId);
+                Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+                await container.CreateItemAsync<dynamic>(new { id = someId });
+                await container.ReadItemAsync<dynamic>(someId, new Cosmos.PartitionKey(someId));
+                await container.DeleteItemAsync<dynamic>(someId, new Cosmos.PartitionKey(someId));
+                await container.DeleteContainerAsync();
+                Mock.Get(factory.Object).Verify(f => f(), Times.Once);
+            }
+            finally
+            {
+                if (database!= null)
+                {
+                    await database.DeleteAsync();
+                }
+            }
         }
     }
 
