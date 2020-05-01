@@ -677,6 +677,16 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.Database Database": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.Database get_Database()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Database get_Database()"
+        },
         "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
@@ -1482,6 +1492,18 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] get_CustomHandlers()"
         },
+        "System.Func`1[System.Net.Http.HttpClient] get_HttpClientFactory()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Func`1[System.Net.Http.HttpClient] get_HttpClientFactory()"
+        },
+        "System.Func`1[System.Net.Http.HttpClient] HttpClientFactory[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": null
+        },
         "System.Net.IWebProxy get_WebProxy()": {
           "Type": "Method",
           "Attributes": [],
@@ -1672,6 +1694,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_GatewayModeMaxConnectionLimit(Int32)"
+        },
+        "Void set_HttpClientFactory(System.Func`1[System.Net.Http.HttpClient])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_HttpClientFactory(System.Func`1[System.Net.Http.HttpClient])"
         },
         "Void set_IdleTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])": {
           "Type": "Method",
@@ -1997,6 +2024,16 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Container GetContainer(System.String)"
+        },
+        "Microsoft.Azure.Cosmos.CosmosClient Client": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosClient get_Client()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosClient get_Client()"
         },
         "Microsoft.Azure.Cosmos.FeedIterator GetContainerQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
@@ -2639,6 +2676,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Microsoft.Azure.Cosmos.CosmosSerializer)"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithHttpClientFactory(System.Func`1[System.Net.Http.HttpClient])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithHttpClientFactory(System.Func`1[System.Net.Http.HttpClient])"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)": {
           "Type": "Method",

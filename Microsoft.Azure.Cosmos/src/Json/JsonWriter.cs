@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Query.Core;
     using RMResources = Documents.RMResources;
 
@@ -91,13 +92,13 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteFieldName(string fieldName);
 
         /// <inheritdoc />
-        public abstract void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
+        public abstract void WriteFieldName(Utf8Span fieldName);
 
         /// <inheritdoc />
         public abstract void WriteStringValue(string value);
 
         /// <inheritdoc />
-        public abstract void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
+        public abstract void WriteStringValue(Utf8Span value);
 
         /// <inheritdoc />
         public abstract void WriteNumber64Value(Number64 value);
@@ -369,17 +370,17 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonNodeType.String:
                     case JsonNodeType.FieldName:
                         bool fieldName = jsonNodeType == JsonNodeType.FieldName;
-                        if (jsonNavigator.TryGetBufferedUtf8StringValue(
+                        if (jsonNavigator.TryGetBufferedStringValue(
                             jsonNavigatorNode,
-                            out ReadOnlyMemory<byte> bufferedStringValue))
+                            out Utf8Memory bufferedValue))
                         {
                             if (fieldName)
                             {
-                                this.WriteFieldName(bufferedStringValue.Span);
+                                this.WriteFieldName(bufferedValue.Span);
                             }
                             else
                             {
-                                this.WriteStringValue(bufferedStringValue.Span);
+                                this.WriteStringValue(bufferedValue.Span);
                             }
                         }
                         else

@@ -524,6 +524,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     {
                         Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be different with user string encoding");
                     }
+
                     IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
                     IJsonNavigatorNode binaryRootNodeWithUserStringEncoding = binaryNavigatorWithUserStringEncoding.GetRootNode();
                     JsonToken[] tokensFromBinaryNavigatorWithUserStringEncoding = JsonNavigatorTests.GetTokensFromNode(binaryRootNodeWithUserStringEncoding, binaryNavigatorWithUserStringEncoding, performExtraChecks);

@@ -7,6 +7,7 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     [TestClass]
     public class JsonWriterTests
@@ -400,9 +401,9 @@
         public void SystemStringTest()
         {
             int systemStringId = 0;
-            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out string systemString))
+            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
-                string expectedString = "\"" + systemString + "\"";
+                string expectedString = "\"" + systemString.Utf16String + "\"";
                 // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
                 expectedString = Newtonsoft.Json.Linq.JToken
                     .Parse(expectedString)
@@ -416,7 +417,7 @@
 
                 JsonToken[] tokensToWrite =
                 {
-                    JsonToken.String(systemString)
+                    JsonToken.String(systemString.Utf16String)
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedString);
@@ -487,8 +488,8 @@
             for (int i = 0; i < OneByteCount + 1; i++)
             {
                 string userEncodedString = "a" + i.ToString();
-                Assert.IsTrue(jsonStringDictionary.TryGetStringAtIndex(i, out string value));
-                Assert.AreEqual(userEncodedString, value);
+                Assert.IsTrue(jsonStringDictionary.TryGetStringAtIndex(i, out UtfAllString value));
+                Assert.AreEqual(userEncodedString, value.Utf16String);
             }
         }
         #endregion
@@ -1735,7 +1736,7 @@
                             string stringValue = (token as JsonStringToken).Value;
                             if (writeAsUtf8String)
                             {
-                                jsonWriter.WriteStringValue(Encoding.UTF8.GetBytes(stringValue));
+                                jsonWriter.WriteStringValue(Utf8Span.TranscodeUtf16(stringValue));
                             }
                             else
                             {
@@ -1764,7 +1765,7 @@
                             string fieldNameValue = (token as JsonFieldNameToken).Value;
                             if (writeAsUtf8String)
                             {
-                                jsonWriter.WriteFieldName(Encoding.UTF8.GetBytes(fieldNameValue));
+                                jsonWriter.WriteFieldName(Utf8Span.TranscodeUtf16(fieldNameValue));
                             }
                             else
                             {

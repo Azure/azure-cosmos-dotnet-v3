@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
@@ -201,12 +202,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return JsonBinaryEncoding.GetStringValue(
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    Utf8Memory.UnsafeCreateNoValidation(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition)),
                     this.jsonStringDictionary);
             }
 
             /// <inheritdoc />
-            public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+            public override bool TryGetBufferedStringValue(out Utf8Memory bufferedUtf8StringValue)
             {
                 if (!(
                     (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
@@ -215,8 +216,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonInvalidTokenException();
                 }
 
-                return JsonBinaryEncoding.TryGetBufferedUtf8StringValue(
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                return JsonBinaryEncoding.TryGetBufferedStringValue(
+                    Utf8Memory.UnsafeCreateNoValidation(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition)),
                     this.jsonStringDictionary,
                     out bufferedUtf8StringValue);
             }
