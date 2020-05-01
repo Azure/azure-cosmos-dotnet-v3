@@ -1117,7 +1117,23 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
+            GatewayStoreModel gatewayStoreModel;
+            if (this.ConnectionPolicy.HttpClientFactory != null)
+            {
+                gatewayStoreModel = new GatewayStoreModel(
+                    this.GlobalEndpointManager,
+                    this.sessionContainer,
+                    this.ConnectionPolicy.RequestTimeout,
+                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                    this.eventSource,
+                    this.serializerSettings,
+                    this.ConnectionPolicy.UserAgentContainer,
+                    this.ApiType,
+                    this.ConnectionPolicy.HttpClientFactory);
+            }
+            else
+            {
+                gatewayStoreModel = new GatewayStoreModel(
                     this.GlobalEndpointManager,
                     this.sessionContainer,
                     this.ConnectionPolicy.RequestTimeout,
@@ -1127,6 +1143,7 @@ namespace Microsoft.Azure.Cosmos
                     this.ConnectionPolicy.UserAgentContainer,
                     this.ApiType,
                     this.httpMessageHandler);
+            }
 
             this.GatewayStoreModel = gatewayStoreModel;
 
