@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         public static bool IsConstant(Expression inputExpression)
         {
-            return inputExpression == null || inputExpression.NodeType == ExpressionType.Constant;
+            return (inputExpression == null) || (inputExpression.NodeType == ExpressionType.Constant);
         }
 
         public static Expression Fold(Expression inputExpression)
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // skip simplifying .Take(Constant)
             if (inputExpression.Method.IsStatic &&
                 inputExpression.Method.DeclaringType.IsAssignableFrom(typeof(Queryable)) &&
-                inputExpression.Method.Name.Equals("Take"))
+                inputExpression.Method.Name.Equals(nameof(Enumerable.Take)))
             {
                 return resultExpression;
             }

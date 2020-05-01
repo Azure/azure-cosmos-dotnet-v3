@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Sql;
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         internal static SqlQuerySpec TranslateQuery(
             Expression inputExpression,
             CosmosSerializationOptions serializationOptions,
-            IDictionary<object, string> parameters)
+            ImmutableDictionary<object, string> parameters)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
             SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, serializationOptions);

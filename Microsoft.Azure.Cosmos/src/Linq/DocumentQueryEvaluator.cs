@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static SqlQuerySpec Evaluate(
             Expression expression,
             CosmosSerializationOptions serializationOptions = null,
-            IDictionary<object, string> parameters = null)
+            ImmutableDictionary<object, string> parameters = null)
         {
             switch (expression.NodeType)
             {
@@ -40,8 +41,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static bool IsTransformExpression(Expression expression)
         {
-            MethodCallExpression methodCallExpression = expression as MethodCallExpression;
-            return methodCallExpression != null &&
+            return expression is MethodCallExpression methodCallExpression &&
                 methodCallExpression.Method.DeclaringType == typeof(DocumentQueryable) &&
                 (methodCallExpression.Method.Name == DocumentQueryEvaluator.SQLMethod);
         }
@@ -69,28 +69,27 @@ namespace Microsoft.Azure.Cosmos.Linq
                     ClientResources.BadQuery_InvalidExpression,
                     expression.ToString()));
             }
+
             //No query specified.
             return null;
         }
 
         private static SqlQuerySpec HandleMethodCallExpression(
             MethodCallExpression expression,
-            IDictionary<object, string> parameters,
+            ImmutableDictionary<object, string> parameters,
             CosmosSerializationOptions serializationOptions = null)
         {
             if (DocumentQueryEvaluator.IsTransformExpression(expression))
             {
-                if (string.Compare(expression.Method.Name, DocumentQueryEvaluator.SQLMethod, StringComparison.Ordinal) == 0)
-                {
-                    return DocumentQueryEvaluator.HandleAsSqlTransformExpression(expression);
-                }
-                else
+                if (string.Compare(expression.Method.Name, DocumentQueryEvaluator.SQLMethod, StringComparison.Ordinal) != 0)
                 {
                     throw new DocumentQueryException(
                         string.Format(CultureInfo.CurrentUICulture,
                         ClientResources.BadQuery_InvalidExpression,
                         expression.ToString()));
                 }
+
+                return DocumentQueryEvaluator.HandleAsSqlTransformExpression(expression);
             }
 
             return SqlTranslator.TranslateQuery(expression, serializationOptions, parameters);
@@ -124,27 +123,25 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlQuerySpec GetSqlQuerySpec(object value)
         {
-            if (value == null)
+            switch (value)
             {
-                throw new DocumentQueryException(
+                case null:
+                    throw new DocumentQueryException(
                     string.Format(CultureInfo.CurrentUICulture,
                     ClientResources.BadQuery_InvalidExpression,
                     value));
-            }
-            else if (value.GetType() == typeof(SqlQuerySpec))
-            {
-                return (SqlQuerySpec)value;
-            }
-            else if (value.GetType() == typeof(string))
-            {
-                return new SqlQuerySpec((string)value);
-            }
-            else
-            {
-                throw new DocumentQueryException(
-                   string.Format(CultureInfo.CurrentUICulture,
-                   ClientResources.BadQuery_InvalidExpression,
-                   value));
+
+                case SqlQuerySpec sqlQuerySpec:
+                    return sqlQuerySpec;
+
+                case string stringValue:
+                    return new SqlQuerySpec(stringValue);
+
+                default:
+                    throw new DocumentQueryException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                        ClientResources.BadQuery_InvalidExpression,
+                        value));
             }
         }
     }

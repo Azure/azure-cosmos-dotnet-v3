@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (!typeof(Geometry).IsAssignableFrom(geometryExpression.Type))
             {
-                throw new ArgumentException("geometryExpression");
+                throw new ArgumentException(nameof(geometryExpression));
             }
 
             if (geometryExpression.NodeType == ExpressionType.Constant)
@@ -90,9 +90,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return SqlObjectCreateScalarExpression.Create(properties);
 
                 case JTokenType.Float:
+                    SqlNumberLiteral sqlNumberDoubleLiteral = SqlNumberLiteral.Create(jToken.Value<double>());
+                    return SqlLiteralScalarExpression.Create(sqlNumberDoubleLiteral);
+
                 case JTokenType.Integer:
-                    SqlNumberLiteral sqlNumberLiteral = SqlNumberLiteral.Create(jToken.Value<double>());
-                    return SqlLiteralScalarExpression.Create(sqlNumberLiteral);
+                    SqlNumberLiteral sqlNumberLongLiteral = SqlNumberLiteral.Create(jToken.Value<long>());
+                    return SqlLiteralScalarExpression.Create(sqlNumberLongLiteral);
 
                 default:
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.UnexpectedTokenType, jToken.Type));

@@ -6,9 +6,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Linq;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Sql;
-    using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     /// <summary>
@@ -17,43 +18,37 @@ namespace Microsoft.Azure.Cosmos.Linq
     internal sealed class TranslationContext
     {
         /// <summary>
-        /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
-        /// </summary>
-        public HashSet<ParameterExpression> InScope;
-        /// <summary>
         /// Query that is being assembled.
         /// </summary>
         public QueryUnderConstruction currentQuery;
 
         /// <summary>
-        /// Dictionary for parameter name and value
-        /// </summary>
-        public IDictionary<object, string> parameters;
-
-        /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
         /// the lambda expressions for the WHERE and SELECT clauses.
         /// </summary>
-        private ParameterSubstitution substitutions;
+        private readonly ParameterSubstitution substitutions;
         /// <summary>
         /// We are currently visiting these methods.
         /// </summary>
-        private List<MethodCallExpression> methodStack;
+        private readonly List<MethodCallExpression> methodStack;
         /// <summary>
         /// Stack of parameters from lambdas currently in scope.
         /// </summary>
-        private List<ParameterExpression> lambdaParametersStack;
+        private readonly List<ParameterExpression> lambdaParametersStack;
         /// <summary>
         /// Stack of collection-valued inputs.
         /// </summary>
-        private List<Collection> collectionStack;
+        private readonly List<Collection> collectionStack;
         /// <summary>
         /// The stack of subquery binding information.
         /// </summary>
-        private Stack<SubqueryBinding> subqueryBindingStack;
+        private readonly Stack<SubqueryBinding> subqueryBindingStack;
 
-        public TranslationContext()
+        public TranslationContext(CosmosSerializationOptions serializationOptions = null, ImmutableDictionary<object, string> parameters = null)
         {
+            this.serializationOptions = serializationOptions;
+            this.Parameters = parameters;
+
             this.InScope = new HashSet<ParameterExpression>();
             this.substitutions = new ParameterSubstitution();
             this.methodStack = new List<MethodCallExpression>();
@@ -61,13 +56,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.collectionStack = new List<Collection>();
             this.currentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-        }
-
-        public TranslationContext(CosmosSerializationOptions serializationOptions, IDictionary<object, string> parameters = null)
-            : this()
-        {
-            this.serializationOptions = serializationOptions;
-            this.parameters = parameters;
         }
 
         public CosmosSerializationOptions serializationOptions;
@@ -216,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             string topMethodName = this.methodStack[this.methodStack.Count - 1].Method.Name;
-            return isPositive && (topMethodName.Equals(LinqMethods.Select) || topMethodName.Equals(LinqMethods.SelectMany));
+            return isPositive && (topMethodName.Equals(nameof(Enumerable.Select)) || topMethodName.Equals(nameof(Enumerable.SelectMany)));
         }
 
         public void PushSubqueryBinding(bool shouldBeOnNewQuery)
@@ -246,6 +234,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return this.subqueryBindingStack.Peek();
             }
         }
+
+        public ImmutableDictionary<object, string> Parameters { get; }
+
+        /// <summary>
+        /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
+        /// </summary>
+        public HashSet<ParameterExpression> InScope { get; }
 
         /// <summary>
         /// Create a new QueryUnderConstruction node if indicated as neccesary by the subquery binding 

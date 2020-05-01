@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq.Expressions;
 
     /// <summary> 
@@ -12,11 +12,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary> 
     internal sealed class SubtreeEvaluator : ExpressionVisitor
     {
-        private HashSet<Expression> candidates;
+        private readonly ImmutableHashSet<Expression> candidates;
 
-        public SubtreeEvaluator(HashSet<Expression> candidates)
+        public SubtreeEvaluator(ImmutableHashSet<Expression> candidates)
         {
-            this.candidates = candidates;
+            this.candidates = candidates ?? throw new ArgumentNullException(nameof(candidates));
         }
 
         public Expression Evaluate(Expression expression)
@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 return expression;
             }
+
             LambdaExpression lambda = Expression.Lambda(expression);
             Delegate function = lambda.Compile();
             return Expression.Constant(function.DynamicInvoke(null), expression.Type);

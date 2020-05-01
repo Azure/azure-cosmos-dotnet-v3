@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Linq.Expressions;
 
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static Expression PartialEval(Expression expression, Func<Expression, bool> fnCanBeEvaluated)
         {
             HashSet<Expression> candidates = Nominator.Nominate(expression, fnCanBeEvaluated);
-            SubtreeEvaluator subTreeEvaluator = new SubtreeEvaluator(candidates);
+            SubtreeEvaluator subTreeEvaluator = new SubtreeEvaluator(candidates.ToImmutableHashSet());
 
             return subTreeEvaluator.Evaluate(expression);
         }
@@ -31,13 +32,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>A new tree with sub-trees evaluated and replaced.</returns> 
         public static Expression PartialEval(Expression expression)
         {
-            return PartialEval(expression, ConstantEvaluator.CanBeEvaluated);
+            return ConstantEvaluator.PartialEval(expression, ConstantEvaluator.CanBeEvaluated);
         }
 
         private static bool CanBeEvaluated(Expression expression)
         {
-            ConstantExpression constantExpression = expression as ConstantExpression;
-            if (constantExpression != null)
+            if (expression is ConstantExpression constantExpression)
             {
                 if (constantExpression.Value is IQueryable)
                 {
@@ -45,22 +45,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            MethodCallExpression methodCallExpression = expression as MethodCallExpression;
-            if (methodCallExpression != null)
+            if (expression is MethodCallExpression methodCallExpression)
             {
                 Type type = methodCallExpression.Method.DeclaringType;
-                if (type == typeof(Enumerable) || type == typeof(Queryable) || type == typeof(UserDefinedFunctionProvider))
+                if ((type == typeof(Enumerable)) || (type == typeof(Queryable)) || (type == typeof(UserDefinedFunctionProvider)))
                 {
                     return false;
                 }
             }
 
-            if (expression.NodeType == ExpressionType.Constant && expression.Type == typeof(object))
+            if ((expression.NodeType == ExpressionType.Constant) && (expression.Type == typeof(object)))
             {
                 return true;
             }
 
-            if (expression.NodeType == ExpressionType.Parameter || expression.NodeType == ExpressionType.Lambda)
+            if ((expression.NodeType == ExpressionType.Parameter) || (expression.NodeType == ExpressionType.Lambda))
             {
                 return false;
             }

@@ -472,48 +472,48 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             switch (methodName)
             {
-                case LinqMethods.Select:
+                case nameof(Enumerable.Select):
                     // New query is needed when adding a Select to an existing Select
                     shouldPackage = this.selectClause != null;
                     break;
 
-                case LinqMethods.Min:
-                case LinqMethods.Max:
-                case LinqMethods.Sum:
-                case LinqMethods.Average:
+                case nameof(Enumerable.Min):
+                case nameof(Enumerable.Max):
+                case nameof(Enumerable.Sum):
+                case nameof(Enumerable.Average):
                     shouldPackage = (this.selectClause != null) ||
                         (this.offsetSpec != null) ||
                         (this.topSpec != null);
                     break;
 
-                case LinqMethods.Count:
+                case nameof(Enumerable.Count):
                     // When Count has 2 arguments, it calls into AddWhereClause so it should be considered as a Where in that case.
                     // Otherwise, treat it as other aggregate functions (using Sum here for simplicity).
-                    shouldPackage = (argumentCount == 2 && this.ShouldBeOnNewQuery(LinqMethods.Where, 2)) ||
-                        this.ShouldBeOnNewQuery(LinqMethods.Sum, 1);
+                    shouldPackage = (argumentCount == 2 && this.ShouldBeOnNewQuery(nameof(Enumerable.Where), 2)) ||
+                        this.ShouldBeOnNewQuery(nameof(Enumerable.Sum), 1);
                     break;
 
-                case LinqMethods.Where:
+                case nameof(Enumerable.Where):
                 // Where expression parameter needs to be substitued if necessary so
                 // It is not needed in Select distinct because the Select distinct would have the necessary parameter name adjustment.
-                case LinqMethods.Any:
-                case LinqMethods.OrderBy:
-                case LinqMethods.OrderByDescending:
-                case LinqMethods.ThenBy:
-                case LinqMethods.ThenByDescending:
-                case LinqMethods.Distinct:
+                case nameof(Enumerable.Any):
+                case nameof(Enumerable.OrderBy):
+                case nameof(Enumerable.OrderByDescending):
+                case nameof(Enumerable.ThenBy):
+                case nameof(Enumerable.ThenByDescending):
+                case nameof(Enumerable.Distinct):
                     // New query is needed when there is already a Take or a non-distinct Select
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
                         (this.selectClause != null && !this.selectClause.HasDistinct);
                     break;
 
-                case LinqMethods.Skip:
+                case nameof(Enumerable.Skip):
                     shouldPackage = (this.topSpec != null) ||
                         (this.limitSpec != null);
                     break;
 
-                case LinqMethods.SelectMany:
+                case nameof(Enumerable.SelectMany):
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
                         (this.selectClause != null);

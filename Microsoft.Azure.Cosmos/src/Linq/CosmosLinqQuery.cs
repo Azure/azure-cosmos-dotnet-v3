@@ -7,12 +7,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
@@ -141,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return this.container.LinkUri.ToString();
         }
 
-        public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
+        public QueryDefinition ToQueryDefinition(ImmutableDictionary<object, string> parameters = null)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions, parameters);
             return new QueryDefinition(querySpec);

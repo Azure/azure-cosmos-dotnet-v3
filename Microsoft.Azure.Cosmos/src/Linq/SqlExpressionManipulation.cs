@@ -22,156 +22,170 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentNullException("replacement");
             }
 
-            switch (into.Kind)
+            return into.Accept(SubstitionVisitor.Singleton, (replacement, toReplace));
+        }
+
+        private sealed class SubstitionVisitor : SqlScalarExpressionVisitor<(SqlScalarExpression replacement, SqlIdentifier toReplace), SqlScalarExpression>
+        {
+            public static readonly SubstitionVisitor Singleton = new SubstitionVisitor();
+
+            private SubstitionVisitor()
             {
-                case SqlObjectKind.ArrayCreateScalarExpression:
-                    {
-                        SqlArrayCreateScalarExpression arrayExp = into as SqlArrayCreateScalarExpression;
-                        if (arrayExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlArrayCreateScalarExpression, got a " + into.GetType());
-                        }
+            }
 
-                        SqlScalarExpression[] items = new SqlScalarExpression[arrayExp.Items.Count];
-                        for (int i = 0; i < items.Length; i++)
-                        {
-                            SqlScalarExpression item = arrayExp.Items[i];
-                            SqlScalarExpression replitem = Substitute(replacement, toReplace, item);
-                            items[i] = replitem;
-                        }
+            public override SqlScalarExpression Visit(
+                SqlArrayCreateScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Items.Count];
+                for (int i = 0; i < items.Length; i++)
+                {
+                    SqlScalarExpression replitem = scalarExpression.Accept(this, input);
+                    items[i] = replitem;
+                }
 
-                        return SqlArrayCreateScalarExpression.Create(items);
-                    }
-                case SqlObjectKind.BinaryScalarExpression:
-                    {
-                        SqlBinaryScalarExpression binaryExp = into as SqlBinaryScalarExpression;
-                        if (binaryExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a BinaryScalarExpression, got a " + into.GetType());
-                        }
+                return SqlArrayCreateScalarExpression.Create(items);
+            }
 
-                        SqlScalarExpression replleft = Substitute(replacement, toReplace, binaryExp.LeftExpression);
-                        SqlScalarExpression replright = Substitute(replacement, toReplace, binaryExp.RightExpression);
-                        return SqlBinaryScalarExpression.Create(binaryExp.OperatorKind, replleft, replright);
-                    }
-                case SqlObjectKind.UnaryScalarExpression:
-                    {
-                        SqlUnaryScalarExpression unaryExp = into as SqlUnaryScalarExpression;
-                        if (unaryExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlUnaryScalarExpression, got a " + into.GetType());
-                        }
+            public override SqlScalarExpression Visit(
+                SqlArrayScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                throw new NotImplementedException();
+            }
 
-                        SqlScalarExpression repl = Substitute(replacement, toReplace, unaryExp.Expression);
-                        return SqlUnaryScalarExpression.Create(unaryExp.OperatorKind, repl);
-                    }
-                case SqlObjectKind.LiteralScalarExpression:
-                    {
-                        return into;
-                    }
-                case SqlObjectKind.FunctionCallScalarExpression:
-                    {
-                        SqlFunctionCallScalarExpression funcExp = into as SqlFunctionCallScalarExpression;
-                        if (funcExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlFunctionCallScalarExpression, got a " + into.GetType());
-                        }
+            public override SqlScalarExpression Visit(
+                SqlBetweenScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                throw new NotImplementedException();
+            }
 
-                        SqlScalarExpression[] items = new SqlScalarExpression[funcExp.Arguments.Count];
-                        for (int i = 0; i < items.Length; i++)
-                        {
-                            SqlScalarExpression item = funcExp.Arguments[i];
-                            SqlScalarExpression replitem = Substitute(replacement, toReplace, item);
-                            items[i] = replitem;
-                        }
+            public override SqlScalarExpression Visit(
+                SqlBinaryScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                SqlScalarExpression replleft = scalarExpression.LeftExpression.Accept(this, input);
+                SqlScalarExpression replright = scalarExpression.RightExpression.Accept(this, input);
+                return SqlBinaryScalarExpression.Create(scalarExpression.OperatorKind, replleft, replright);
+            }
 
-                        return SqlFunctionCallScalarExpression.Create(funcExp.Name, funcExp.IsUdf, items);
-                    }
-                case SqlObjectKind.ObjectCreateScalarExpression:
-                    {
-                        SqlObjectCreateScalarExpression objExp = into as SqlObjectCreateScalarExpression;
-                        if (objExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlObjectCreateScalarExpression, got a " + into.GetType());
-                        }
+            public override SqlScalarExpression Visit(
+                SqlCoalesceScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                throw new NotImplementedException();
+            }
 
-                        return SqlObjectCreateScalarExpression.Create(
-                            objExp
-                                .Properties
-                                .Select(prop => SqlObjectProperty.Create(prop.Name, Substitute(replacement, toReplace, prop.Expression))));
-                    }
-                case SqlObjectKind.MemberIndexerScalarExpression:
-                    {
-                        SqlMemberIndexerScalarExpression memberExp = into as SqlMemberIndexerScalarExpression;
-                        if (memberExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlMemberIndexerScalarExpression, got a " + into.GetType());
-                        }
+            public override SqlScalarExpression Visit(
+                SqlConditionalScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                SqlScalarExpression condition = scalarExpression.ConditionExpression.Accept(this, input);
+                SqlScalarExpression first = scalarExpression.FirstExpression.Accept(this, input);
+                SqlScalarExpression second = scalarExpression.SecondExpression.Accept(this, input);
 
-                        SqlScalarExpression replMember = Substitute(replacement, toReplace, memberExp.MemberExpression);
-                        SqlScalarExpression replIndex = Substitute(replacement, toReplace, memberExp.IndexExpression);
-                        return SqlMemberIndexerScalarExpression.Create(replMember, replIndex);
-                    }
-                case SqlObjectKind.PropertyRefScalarExpression:
-                    {
-                        // This is the leaf of the recursion
-                        SqlPropertyRefScalarExpression propExp = into as SqlPropertyRefScalarExpression;
-                        if (propExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlPropertyRefScalarExpression, got a " + into.GetType());
-                        }
+                return SqlConditionalScalarExpression.Create(condition, first, second);
+            }
 
-                        if (propExp.MemberExpression == null)
-                        {
-                            if (propExp.PropertyIdentifier.Value == toReplace.Value)
-                            {
-                                return replacement;
-                            }
-                            else
-                            {
-                                return propExp;
-                            }
-                        }
-                        else
-                        {
-                            SqlScalarExpression replMember = Substitute(replacement, toReplace, propExp.MemberExpression);
-                            return SqlPropertyRefScalarExpression.Create(replMember, propExp.PropertyIdentifier);
-                        }
-                    }
-                case SqlObjectKind.ConditionalScalarExpression:
-                    {
-                        SqlConditionalScalarExpression conditionalExpression = (SqlConditionalScalarExpression)into;
-                        if (conditionalExpression == null)
-                        {
-                            throw new ArgumentException();
-                        }
+            public override SqlScalarExpression Visit(
+                SqlExistsScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                throw new NotImplementedException();
+            }
 
-                        SqlScalarExpression condition = Substitute(replacement, toReplace, conditionalExpression.ConditionExpression);
-                        SqlScalarExpression first = Substitute(replacement, toReplace, conditionalExpression.FirstExpression);
-                        SqlScalarExpression second = Substitute(replacement, toReplace, conditionalExpression.SecondExpression);
+            public override SqlScalarExpression Visit(
+                SqlFunctionCallScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Arguments.Count];
+                for (int i = 0; i < items.Length; i++)
+                {
+                    SqlScalarExpression item = scalarExpression.Arguments[i];
+                    SqlScalarExpression replitem = item.Accept(this, input);
+                    items[i] = replitem;
+                }
 
-                        return SqlConditionalScalarExpression.Create(condition, first, second);
-                    }
-                case SqlObjectKind.InScalarExpression:
-                    {
-                        SqlInScalarExpression inExpression = (SqlInScalarExpression)into;
-                        if (inExpression == null)
-                        {
-                            throw new ArgumentException();
-                        }
+                return SqlFunctionCallScalarExpression.Create(scalarExpression.Name, scalarExpression.IsUdf, items);
+            }
 
-                        SqlScalarExpression expression = Substitute(replacement, toReplace, inExpression.Expression);
+            public override SqlScalarExpression Visit(SqlInScalarExpression scalarExpression, (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                SqlScalarExpression expression = scalarExpression.Expression.Accept(this, input);
 
-                        SqlScalarExpression[] items = new SqlScalarExpression[inExpression.Items.Count];
-                        for (int i = 0; i < items.Length; i++)
-                        {
-                            items[i] = Substitute(replacement, toReplace, inExpression.Items[i]);
-                        }
+                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Items.Count];
+                for (int i = 0; i < items.Length; i++)
+                {
+                    items[i] = scalarExpression.Items[i].Accept(this, input);
+                }
 
-                        return SqlInScalarExpression.Create(expression, inExpression.Not, items);
-                    }
-                default:
-                    throw new ArgumentOutOfRangeException("Unexpected Sql Scalar expression kind " + into.Kind);
+                return SqlInScalarExpression.Create(expression, scalarExpression.Not, items);
+            }
+
+            public override SqlScalarExpression Visit(
+                SqlLiteralScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                return scalarExpression;
+            }
+
+            public override SqlScalarExpression Visit(SqlMemberIndexerScalarExpression scalarExpression, (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                SqlScalarExpression replMember = scalarExpression.MemberExpression.Accept(this, input);
+                SqlScalarExpression replIndex = scalarExpression.IndexExpression.Accept(this, input);
+                return SqlMemberIndexerScalarExpression.Create(replMember, replIndex);
+            }
+
+            public override SqlScalarExpression Visit(
+                SqlObjectCreateScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                return SqlObjectCreateScalarExpression.Create(
+                    scalarExpression
+                        .Properties
+                        .Select(prop => SqlObjectProperty.Create(prop.Name, prop.Expression.Accept(this, input))));
+            }
+
+            public override SqlScalarExpression Visit(
+                SqlParameterRefScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override SqlScalarExpression Visit(
+                SqlPropertyRefScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                // This is the leaf of the recursion
+                if (scalarExpression.MemberExpression != null)
+                {
+                    SqlScalarExpression replMember = scalarExpression.MemberExpression.Accept(this, input);
+                    return SqlPropertyRefScalarExpression.Create(replMember, scalarExpression.PropertyIdentifier);
+                }
+
+                if (scalarExpression.PropertyIdentifier.Value != input.toReplace.Value)
+                {
+                    return scalarExpression;
+                }
+
+                return input.replacement;
+            }
+
+            public override SqlScalarExpression Visit(
+                SqlSubqueryScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override SqlScalarExpression Visit(
+                SqlUnaryScalarExpression scalarExpression,
+                (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
+            {
+                SqlScalarExpression repl = scalarExpression.Expression.Accept(this, input);
+                return SqlUnaryScalarExpression.Create(scalarExpression.OperatorKind, repl);
             }
         }
     }
