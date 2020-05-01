@@ -116,10 +116,7 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions.SerializerOptions);
 
             // This sets the serializer on client options which gives users access to it if a custom one is not configured.
-            if (clientOptions.Serializer == null)
-            {
-                clientOptions.SetSerializerIfNotConfigured(serializerCore.GetCustomOrDefaultSerializer());
-            }
+            clientOptions.SetSerializerIfNotConfigured(serializerCore.GetCustomOrDefaultSerializer());
 
             CosmosResponseFactory responseFactory = new CosmosResponseFactory(serializerCore);
 
