@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override SqlObject Visit(SqlArrayIteratorCollectionExpression sqlArrayIteratorCollectionExpression)
         {
             return SqlArrayIteratorCollectionExpression.Create(
-                sqlArrayIteratorCollectionExpression.Alias.Accept(this) as SqlIdentifier,
+                sqlArrayIteratorCollectionExpression.Identifier.Accept(this) as SqlIdentifier,
                 sqlArrayIteratorCollectionExpression.Collection.Accept(this) as SqlCollection);
         }
 
@@ -71,16 +71,16 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             return SqlBetweenScalarExpression.Create(
                 sqlBetweenScalarExpression.Expression.Accept(this) as SqlScalarExpression,
-                sqlBetweenScalarExpression.LeftExpression.Accept(this) as SqlScalarExpression,
-                sqlBetweenScalarExpression.RightExpression.Accept(this) as SqlScalarExpression,
-                sqlBetweenScalarExpression.IsNot);
+                sqlBetweenScalarExpression.Not,
+                sqlBetweenScalarExpression.StartInclusive.Accept(this) as SqlScalarExpression,
+                sqlBetweenScalarExpression.EndInclusive.Accept(this) as SqlScalarExpression);
         }
 
         public override SqlObject Visit(SqlBinaryScalarExpression sqlBinaryScalarExpression)
         {
             return SqlBinaryScalarExpression.Create(
-                sqlBinaryScalarExpression.OperatorKind,
                 sqlBinaryScalarExpression.LeftExpression.Accept(this) as SqlScalarExpression,
+                sqlBinaryScalarExpression.OperatorKind,
                 sqlBinaryScalarExpression.RightExpression.Accept(this) as SqlScalarExpression);
         }
 
@@ -93,21 +93,21 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override SqlObject Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
         {
             return SqlCoalesceScalarExpression.Create(
-                sqlCoalesceScalarExpression.LeftExpression.Accept(this) as SqlScalarExpression,
-                sqlCoalesceScalarExpression.RightExpression.Accept(this) as SqlScalarExpression);
+                sqlCoalesceScalarExpression.Left.Accept(this) as SqlScalarExpression,
+                sqlCoalesceScalarExpression.Right.Accept(this) as SqlScalarExpression);
         }
 
         public override SqlObject Visit(SqlConditionalScalarExpression sqlConditionalScalarExpression)
         {
             return SqlConditionalScalarExpression.Create(
-                sqlConditionalScalarExpression.ConditionExpression.Accept(this) as SqlScalarExpression,
-                sqlConditionalScalarExpression.FirstExpression.Accept(this) as SqlScalarExpression,
-                sqlConditionalScalarExpression.SecondExpression.Accept(this) as SqlScalarExpression);
+                sqlConditionalScalarExpression.Condition.Accept(this) as SqlScalarExpression,
+                sqlConditionalScalarExpression.Consequent.Accept(this) as SqlScalarExpression,
+                sqlConditionalScalarExpression.Alternative.Accept(this) as SqlScalarExpression);
         }
 
         public override SqlObject Visit(SqlExistsScalarExpression sqlExistsScalarExpression)
         {
-            return SqlExistsScalarExpression.Create(sqlExistsScalarExpression.SqlQuery.Accept(this) as SqlQuery);
+            return SqlExistsScalarExpression.Create(sqlExistsScalarExpression.Subquery.Accept(this) as SqlQuery);
         }
 
         public override SqlObject Visit(SqlFromClause sqlFromClause)
@@ -165,14 +165,14 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override SqlObject Visit(SqlInScalarExpression sqlInScalarExpression)
         {
-            SqlScalarExpression[] items = new SqlScalarExpression[sqlInScalarExpression.Items.Count];
-            for (int i = 0; i < sqlInScalarExpression.Items.Count; i++)
+            SqlScalarExpression[] items = new SqlScalarExpression[sqlInScalarExpression.Haystack.Count];
+            for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
             {
-                items[i] = sqlInScalarExpression.Items[i].Accept(this) as SqlScalarExpression;
+                items[i] = sqlInScalarExpression.Haystack[i].Accept(this) as SqlScalarExpression;
             }
 
             return SqlInScalarExpression.Create(
-                sqlInScalarExpression.Expression.Accept(this) as SqlScalarExpression,
+                sqlInScalarExpression.Needle.Accept(this) as SqlScalarExpression,
                 sqlInScalarExpression.Not,
                 items);
         }
@@ -180,8 +180,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override SqlObject Visit(SqlJoinCollectionExpression sqlJoinCollectionExpression)
         {
             return SqlJoinCollectionExpression.Create(
-                sqlJoinCollectionExpression.LeftExpression.Accept(this) as SqlCollectionExpression,
-                sqlJoinCollectionExpression.RightExpression.Accept(this) as SqlCollectionExpression);
+                sqlJoinCollectionExpression.Left.Accept(this) as SqlCollectionExpression,
+                sqlJoinCollectionExpression.Right.Accept(this) as SqlCollectionExpression);
         }
 
         public override SqlObject Visit(SqlLimitSpec sqlObject)
@@ -197,8 +197,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override SqlObject Visit(SqlMemberIndexerScalarExpression sqlMemberIndexerScalarExpression)
         {
             return SqlMemberIndexerScalarExpression.Create(
-                sqlMemberIndexerScalarExpression.MemberExpression.Accept(this) as SqlScalarExpression,
-                sqlMemberIndexerScalarExpression.IndexExpression.Accept(this) as SqlScalarExpression);
+                sqlMemberIndexerScalarExpression.Member.Accept(this) as SqlScalarExpression,
+                sqlMemberIndexerScalarExpression.Indexer.Accept(this) as SqlScalarExpression);
         }
 
         public override SqlObject Visit(SqlNullLiteral sqlNullLiteral)
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             return SqlObjectProperty.Create(
                 sqlObjectProperty.Name.Accept(this) as SqlPropertyName,
-                sqlObjectProperty.Expression.Accept(this) as SqlScalarExpression);
+                sqlObjectProperty.Value.Accept(this) as SqlScalarExpression);
         }
 
         public override SqlObject Visit(SqlOffsetLimitClause sqlObject)
@@ -300,8 +300,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override SqlObject Visit(SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
         {
             return SqlPropertyRefScalarExpression.Create(
-                sqlPropertyRefScalarExpression.MemberExpression?.Accept(this) as SqlScalarExpression,
-                sqlPropertyRefScalarExpression.PropertyIdentifier.Accept(this) as SqlIdentifier);
+                sqlPropertyRefScalarExpression.Member?.Accept(this) as SqlScalarExpression,
+                sqlPropertyRefScalarExpression.Identifer.Accept(this) as SqlIdentifier);
         }
 
         public override SqlObject Visit(SqlQuery sqlQuery)

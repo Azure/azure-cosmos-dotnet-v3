@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (operand is SqlInScalarExpression && inputExpression.NodeType == ExpressionType.Not)
             {
                 SqlInScalarExpression inExpression = (SqlInScalarExpression)operand;
-                return SqlInScalarExpression.Create(inExpression.Expression, true, inExpression.Items);
+                return SqlInScalarExpression.Create(inExpression.Needle, true, inExpression.Haystack);
             }
 
             if (inputExpression.NodeType == ExpressionType.Quote)
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 left = ExpressionToSql.ApplyCustomConverters(inputExpression.Right, left as SqlLiteralScalarExpression);
             }
 
-            return SqlBinaryScalarExpression.Create(op, left, right);
+            return SqlBinaryScalarExpression.Create(left, op, right);
         }
 
         private static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
@@ -640,7 +640,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression leftExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Object, context);
             SqlScalarExpression rightExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Arguments[0], context);
 
-            return SqlBinaryScalarExpression.Create(op, leftExpression, rightExpression);
+            return SqlBinaryScalarExpression.Create(leftExpression, op, rightExpression);
         }
 
         private static SqlScalarExpression VisitTypeIs(TypeBinaryExpression inputExpression, TranslationContext context)
@@ -958,10 +958,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(
                 SqlBinaryScalarExpression.Create(
-                    SqlBinaryScalarOperatorKind.GreaterThan,
                     SqlFunctionCallScalarExpression.CreateBuiltin(
                         SqlFunctionCallScalarExpression.Names.Count,
                         SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterExpression.Name))),
+                    SqlBinaryScalarOperatorKind.GreaterThan,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0))));
             SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec);
             context.currentQuery.AddSelectClause(selectClause);
@@ -1858,8 +1858,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<SqlIdentifier> identifiers = new List<SqlIdentifier>();
             while (true)
             {
-                identifiers.Add(propRef.PropertyIdentifier);
-                SqlScalarExpression parent = propRef.MemberExpression;
+                identifiers.Add(propRef.Identifer);
+                SqlScalarExpression parent = propRef.Member;
                 if (parent == null)
                 {
                     break;
@@ -1898,8 +1898,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<SqlStringLiteral> literals = new List<SqlStringLiteral>();
             while (true)
             {
-                literals.Add((SqlStringLiteral)((SqlLiteralScalarExpression)memberIndexerExpression.IndexExpression).Literal);
-                SqlScalarExpression parent = memberIndexerExpression.MemberExpression;
+                literals.Add((SqlStringLiteral)((SqlLiteralScalarExpression)memberIndexerExpression.Indexer).Literal);
+                SqlScalarExpression parent = memberIndexerExpression.Member;
                 if (parent == null)
                 {
                     break;
@@ -1907,7 +1907,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 if (parent is SqlPropertyRefScalarExpression)
                 {
-                    literals.Add(SqlStringLiteral.Create(((SqlPropertyRefScalarExpression)parent).PropertyIdentifier.Value));
+                    literals.Add(SqlStringLiteral.Create(((SqlPropertyRefScalarExpression)parent).Identifer.Value));
                     break;
                 }
 

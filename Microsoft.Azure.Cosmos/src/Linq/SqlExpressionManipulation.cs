@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                         SqlScalarExpression replleft = Substitute(replacement, toReplace, binaryExp.LeftExpression);
                         SqlScalarExpression replright = Substitute(replacement, toReplace, binaryExp.RightExpression);
-                        return SqlBinaryScalarExpression.Create(binaryExp.OperatorKind, replleft, replright);
+                        return SqlBinaryScalarExpression.Create(replleft, binaryExp.OperatorKind, replright);
                     }
                 case SqlObjectKind.UnaryScalarExpression:
                     {
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         return SqlObjectCreateScalarExpression.Create(
                             objExp
                                 .Properties
-                                .Select(prop => SqlObjectProperty.Create(prop.Name, Substitute(replacement, toReplace, prop.Expression))));
+                                .Select(prop => SqlObjectProperty.Create(prop.Name, Substitute(replacement, toReplace, prop.Value))));
                     }
                 case SqlObjectKind.MemberIndexerScalarExpression:
                     {
@@ -108,8 +108,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new DocumentQueryException("Expected a SqlMemberIndexerScalarExpression, got a " + into.GetType());
                         }
 
-                        SqlScalarExpression replMember = Substitute(replacement, toReplace, memberExp.MemberExpression);
-                        SqlScalarExpression replIndex = Substitute(replacement, toReplace, memberExp.IndexExpression);
+                        SqlScalarExpression replMember = Substitute(replacement, toReplace, memberExp.Member);
+                        SqlScalarExpression replIndex = Substitute(replacement, toReplace, memberExp.Indexer);
                         return SqlMemberIndexerScalarExpression.Create(replMember, replIndex);
                     }
                 case SqlObjectKind.PropertyRefScalarExpression:
@@ -121,9 +121,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new DocumentQueryException("Expected a SqlPropertyRefScalarExpression, got a " + into.GetType());
                         }
 
-                        if (propExp.MemberExpression == null)
+                        if (propExp.Member == null)
                         {
-                            if (propExp.PropertyIdentifier.Value == toReplace.Value)
+                            if (propExp.Identifer.Value == toReplace.Value)
                             {
                                 return replacement;
                             }
@@ -134,8 +134,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                         }
                         else
                         {
-                            SqlScalarExpression replMember = Substitute(replacement, toReplace, propExp.MemberExpression);
-                            return SqlPropertyRefScalarExpression.Create(replMember, propExp.PropertyIdentifier);
+                            SqlScalarExpression replMember = Substitute(replacement, toReplace, propExp.Member);
+                            return SqlPropertyRefScalarExpression.Create(replMember, propExp.Identifer);
                         }
                     }
                 case SqlObjectKind.ConditionalScalarExpression:
@@ -146,9 +146,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new ArgumentException();
                         }
 
-                        SqlScalarExpression condition = Substitute(replacement, toReplace, conditionalExpression.ConditionExpression);
-                        SqlScalarExpression first = Substitute(replacement, toReplace, conditionalExpression.FirstExpression);
-                        SqlScalarExpression second = Substitute(replacement, toReplace, conditionalExpression.SecondExpression);
+                        SqlScalarExpression condition = Substitute(replacement, toReplace, conditionalExpression.Condition);
+                        SqlScalarExpression first = Substitute(replacement, toReplace, conditionalExpression.Consequent);
+                        SqlScalarExpression second = Substitute(replacement, toReplace, conditionalExpression.Alternative);
 
                         return SqlConditionalScalarExpression.Create(condition, first, second);
                     }
@@ -160,12 +160,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new ArgumentException();
                         }
 
-                        SqlScalarExpression expression = Substitute(replacement, toReplace, inExpression.Expression);
+                        SqlScalarExpression expression = Substitute(replacement, toReplace, inExpression.Needle);
 
-                        SqlScalarExpression[] items = new SqlScalarExpression[inExpression.Items.Count];
+                        SqlScalarExpression[] items = new SqlScalarExpression[inExpression.Haystack.Count];
                         for (int i = 0; i < items.Length; i++)
                         {
-                            items[i] = Substitute(replacement, toReplace, inExpression.Items[i]);
+                            items[i] = Substitute(replacement, toReplace, inExpression.Haystack[i]);
                         }
 
                         return SqlInScalarExpression.Create(expression, inExpression.Not, items);

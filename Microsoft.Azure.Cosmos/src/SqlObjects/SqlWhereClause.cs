@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlWhereClause(SqlScalarExpression filterExpression)
             : base(SqlObjectKind.WhereClause)
         {
-            if (filterExpression == null)
-            {
-                throw new ArgumentNullException("filterExpression");
-            }
-
-            this.FilterExpression = filterExpression;
+            this.FilterExpression = filterExpression ?? throw new ArgumentNullException(nameof(filterExpression));
         }
 
         public SqlScalarExpression FilterExpression

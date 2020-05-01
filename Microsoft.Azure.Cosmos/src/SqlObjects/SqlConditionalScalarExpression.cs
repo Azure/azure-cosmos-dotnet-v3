@@ -9,8 +9,8 @@ namespace Microsoft.Azure.Cosmos.Sql
     {
         private SqlConditionalScalarExpression(
             SqlScalarExpression condition,
-            SqlScalarExpression first,
-            SqlScalarExpression second)
+            SqlScalarExpression consequent,
+            SqlScalarExpression alternative)
             : base(SqlObjectKind.ConditionalScalarExpression)
         {
             if (condition == null)
@@ -18,42 +18,42 @@ namespace Microsoft.Azure.Cosmos.Sql
                 throw new ArgumentNullException("condition");
             }
 
-            if (first == null)
+            if (consequent == null)
             {
                 throw new ArgumentNullException("first");
             }
 
-            if (second == null)
+            if (alternative == null)
             {
                 throw new ArgumentNullException("second");
             }
 
-            this.ConditionExpression = condition;
-            this.FirstExpression = first;
-            this.SecondExpression = second;
+            this.Condition = condition;
+            this.Consequent = consequent;
+            this.Alternative = alternative;
         }
 
-        public SqlScalarExpression ConditionExpression
+        public SqlScalarExpression Condition
         {
             get;
         }
 
-        public SqlScalarExpression FirstExpression
+        public SqlScalarExpression Consequent
         {
             get;
         }
 
-        public SqlScalarExpression SecondExpression
+        public SqlScalarExpression Alternative
         {
             get;
         }
 
         public static SqlConditionalScalarExpression Create(
             SqlScalarExpression condition,
-            SqlScalarExpression first,
-            SqlScalarExpression second)
+            SqlScalarExpression consequent,
+            SqlScalarExpression alternative)
         {
-            return new SqlConditionalScalarExpression(condition, first, second);
+            return new SqlConditionalScalarExpression(condition, consequent, alternative);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

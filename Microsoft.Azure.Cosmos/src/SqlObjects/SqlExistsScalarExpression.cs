@@ -8,22 +8,17 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlExistsScalarExpression : SqlScalarExpression
     {
-        private SqlExistsScalarExpression(SqlQuery sqlQuery)
+        private SqlExistsScalarExpression(SqlQuery subquery)
           : base(SqlObjectKind.ExistsScalarExpression)
         {
-            if (sqlQuery == null)
-            {
-                throw new ArgumentNullException($"{nameof(sqlQuery)} can not be null");
-            }
-
-            this.SqlQuery = sqlQuery;
+            this.Subquery = subquery ?? throw new ArgumentNullException(nameof(subquery));
         }
 
-        public SqlQuery SqlQuery { get; }
+        public SqlQuery Subquery { get; }
 
-        public static SqlExistsScalarExpression Create(SqlQuery sqlQuery)
+        public static SqlExistsScalarExpression Create(SqlQuery subquery)
         {
-            return new SqlExistsScalarExpression(sqlQuery);
+            return new SqlExistsScalarExpression(subquery);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

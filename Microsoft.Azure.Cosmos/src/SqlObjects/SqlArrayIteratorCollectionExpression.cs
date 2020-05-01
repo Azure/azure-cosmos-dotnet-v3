@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlArrayIteratorCollectionExpression : SqlCollectionExpression
     {
         private SqlArrayIteratorCollectionExpression(
-           SqlIdentifier alias,
+           SqlIdentifier identifier,
            SqlCollection collection)
             : base(SqlObjectKind.ArrayIteratorCollectionExpression)
         {
-            if (alias == null)
+            if (identifier == null)
             {
                 throw new ArgumentNullException("alias");
             }
@@ -23,11 +23,11 @@ namespace Microsoft.Azure.Cosmos.Sql
                 throw new ArgumentNullException("collection");
             }
 
-            this.Alias = alias;
+            this.Identifier = identifier;
             this.Collection = collection;
         }
 
-        public SqlIdentifier Alias
+        public SqlIdentifier Identifier
         {
             get;
         }
@@ -38,10 +38,10 @@ namespace Microsoft.Azure.Cosmos.Sql
         }
 
         public static SqlArrayIteratorCollectionExpression Create(
-            SqlIdentifier alias,
+            SqlIdentifier identifier,
             SqlCollection collection)
         {
-            return new SqlArrayIteratorCollectionExpression(alias, collection);
+            return new SqlArrayIteratorCollectionExpression(identifier, collection);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

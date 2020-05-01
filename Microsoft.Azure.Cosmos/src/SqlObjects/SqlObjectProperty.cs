@@ -9,21 +9,11 @@ namespace Microsoft.Azure.Cosmos.Sql
     {
         private SqlObjectProperty(
              SqlPropertyName name,
-             SqlScalarExpression expression)
+             SqlScalarExpression value)
             : base(SqlObjectKind.ObjectProperty)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException("name");
-            }
-
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
-            this.Name = name;
-            this.Expression = expression;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public SqlPropertyName Name
@@ -31,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
-        public SqlScalarExpression Expression
+        public SqlScalarExpression Value
         {
             get;
         }

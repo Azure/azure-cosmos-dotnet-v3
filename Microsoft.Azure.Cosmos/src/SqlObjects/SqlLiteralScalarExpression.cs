@@ -15,12 +15,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlLiteralScalarExpression(SqlLiteral literal)
             : base(SqlObjectKind.LiteralScalarExpression)
         {
-            if (literal == null)
-            {
-                throw new ArgumentNullException("literal");
-            }
-
-            this.Literal = literal;
+            this.Literal = literal ?? throw new ArgumentNullException("literal");
         }
 
         public SqlLiteral Literal

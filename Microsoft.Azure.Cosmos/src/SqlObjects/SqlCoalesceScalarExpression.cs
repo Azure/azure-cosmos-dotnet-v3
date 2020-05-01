@@ -8,39 +8,39 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlCoalesceScalarExpression : SqlScalarExpression
     {
         private SqlCoalesceScalarExpression(
-            SqlScalarExpression leftExpression,
-            SqlScalarExpression rightExpression)
+            SqlScalarExpression left,
+            SqlScalarExpression right)
             : base(SqlObjectKind.CoalesceScalarExpression)
         {
-            if (leftExpression == null)
+            if (left == null)
             {
                 throw new ArgumentNullException("leftExpression");
             }
 
-            if (rightExpression == null)
+            if (right == null)
             {
                 throw new ArgumentNullException("rightExpression");
             }
 
-            this.LeftExpression = leftExpression;
-            this.RightExpression = rightExpression;
+            this.Left = left;
+            this.Right = right;
         }
 
-        public SqlScalarExpression LeftExpression
+        public SqlScalarExpression Left
         {
             get;
         }
 
-        public SqlScalarExpression RightExpression
+        public SqlScalarExpression Right
         {
             get;
         }
 
         public static SqlCoalesceScalarExpression Create(
-            SqlScalarExpression leftExpression,
-            SqlScalarExpression rightExpression)
+            SqlScalarExpression left,
+            SqlScalarExpression right)
         {
-            return new SqlCoalesceScalarExpression(leftExpression, rightExpression);
+            return new SqlCoalesceScalarExpression(left, right);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

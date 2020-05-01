@@ -7,15 +7,15 @@ namespace Microsoft.Azure.Cosmos.Sql
     {
         private SqlBetweenScalarExpression(
             SqlScalarExpression expression,
-            SqlScalarExpression leftExpression,
-            SqlScalarExpression rightExpression,
-            bool isNot = false)
+            bool not,
+            SqlScalarExpression startInclusive,
+            SqlScalarExpression endExclusive)
             : base(SqlObjectKind.BetweenScalarExpression)
         {
             this.Expression = expression;
-            this.LeftExpression = leftExpression;
-            this.RightExpression = rightExpression;
-            this.IsNot = isNot;
+            this.Not = not;
+            this.StartInclusive = startInclusive;
+            this.EndInclusive = endExclusive;
         }
 
         public SqlScalarExpression Expression
@@ -23,28 +23,28 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
-        public SqlScalarExpression LeftExpression
+        public bool Not
         {
             get;
         }
 
-        public SqlScalarExpression RightExpression
+        public SqlScalarExpression StartInclusive
         {
             get;
         }
 
-        public bool IsNot
+        public SqlScalarExpression EndInclusive
         {
             get;
         }
 
         public static SqlBetweenScalarExpression Create(
             SqlScalarExpression expression,
-            SqlScalarExpression leftExpression,
-            SqlScalarExpression rightExpression,
-            bool isNot = false)
+            bool not,
+            SqlScalarExpression startInclusive,
+            SqlScalarExpression endExclusive)
         {
-            return new SqlBetweenScalarExpression(expression, leftExpression, rightExpression, isNot);
+            return new SqlBetweenScalarExpression(expression, not, startInclusive, endExclusive);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

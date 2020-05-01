@@ -8,34 +8,29 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlPropertyRefScalarExpression : SqlScalarExpression
     {
         private SqlPropertyRefScalarExpression(
-            SqlScalarExpression memberExpression,
-            SqlIdentifier propertyIdentifier)
+            SqlScalarExpression member,
+            SqlIdentifier identifier)
             : base(SqlObjectKind.PropertyRefScalarExpression)
         {
-            if (propertyIdentifier == null)
-            {
-                throw new ArgumentNullException("propertyIdentifier");
-            }
-
-            this.MemberExpression = memberExpression;
-            this.PropertyIdentifier = propertyIdentifier;
+            this.Member = member;
+            this.Identifer = identifier ?? throw new ArgumentNullException(nameof(identifier));
         }
 
-        public SqlIdentifier PropertyIdentifier
+        public SqlIdentifier Identifer
         {
             get;
         }
 
-        public SqlScalarExpression MemberExpression
+        public SqlScalarExpression Member
         {
             get;
         }
 
         public static SqlPropertyRefScalarExpression Create(
-            SqlScalarExpression memberExpression,
-            SqlIdentifier propertyIdentifier)
+            SqlScalarExpression member,
+            SqlIdentifier identifier)
         {
-            return new SqlPropertyRefScalarExpression(memberExpression, propertyIdentifier);
+            return new SqlPropertyRefScalarExpression(member, identifier);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

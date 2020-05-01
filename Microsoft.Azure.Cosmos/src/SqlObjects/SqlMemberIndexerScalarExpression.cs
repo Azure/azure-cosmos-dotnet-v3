@@ -8,39 +8,29 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlMemberIndexerScalarExpression : SqlScalarExpression
     {
         private SqlMemberIndexerScalarExpression(
-            SqlScalarExpression memberExpression,
-            SqlScalarExpression indexExpression)
+            SqlScalarExpression member,
+            SqlScalarExpression indexer)
             : base(SqlObjectKind.MemberIndexerScalarExpression)
         {
-            if (memberExpression == null)
-            {
-                throw new ArgumentNullException("memberExpression");
-            }
-
-            if (indexExpression == null)
-            {
-                throw new ArgumentNullException("indexExpression");
-            }
-
-            this.MemberExpression = memberExpression;
-            this.IndexExpression = indexExpression;
+            this.Member = member ?? throw new ArgumentNullException("memberExpression");
+            this.Indexer = indexer ?? throw new ArgumentNullException("indexExpression");
         }
 
-        public SqlScalarExpression MemberExpression
+        public SqlScalarExpression Member
         {
             get;
         }
 
-        public SqlScalarExpression IndexExpression
+        public SqlScalarExpression Indexer
         {
             get;
         }
 
         public static SqlMemberIndexerScalarExpression Create(
-            SqlScalarExpression memberExpression,
-            SqlScalarExpression indexExpression)
+            SqlScalarExpression member,
+            SqlScalarExpression indexer)
         {
-            return new SqlMemberIndexerScalarExpression(memberExpression, indexExpression);
+            return new SqlMemberIndexerScalarExpression(member, indexer);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

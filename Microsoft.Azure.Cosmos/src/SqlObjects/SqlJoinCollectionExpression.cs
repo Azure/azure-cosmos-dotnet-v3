@@ -6,29 +6,29 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlJoinCollectionExpression : SqlCollectionExpression
     {
         private SqlJoinCollectionExpression(
-            SqlCollectionExpression leftExpression,
-            SqlCollectionExpression rightExpression)
+            SqlCollectionExpression left,
+            SqlCollectionExpression right)
             : base(SqlObjectKind.JoinCollectionExpression)
         {
-            this.LeftExpression = leftExpression;
-            this.RightExpression = rightExpression;
+            this.Left = left;
+            this.Right = right;
         }
 
-        public SqlCollectionExpression LeftExpression
+        public SqlCollectionExpression Left
         {
             get;
         }
 
-        public SqlCollectionExpression RightExpression
+        public SqlCollectionExpression Right
         {
             get;
         }
 
         public static SqlJoinCollectionExpression Create(
-            SqlCollectionExpression leftExpression,
-            SqlCollectionExpression rightExpression)
+            SqlCollectionExpression left,
+            SqlCollectionExpression right)
         {
-            return new SqlJoinCollectionExpression(leftExpression, rightExpression);
+            return new SqlJoinCollectionExpression(left, right);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

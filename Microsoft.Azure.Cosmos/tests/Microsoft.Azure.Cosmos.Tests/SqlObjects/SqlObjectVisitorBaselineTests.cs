@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text.RegularExpressions;
     using System.Xml;
     using BaselineTest;
@@ -111,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
         [Owner("brchon")]
         public void SqlScalarExpression()
         {
-            SqlMemberIndexerScalarExpression somePath = SqlObjectBuilderUtils.CreateSqlMemberIndexerScalarExpression(
+            SqlMemberIndexerScalarExpression somePath = SqlObjectVisitorBaselineTests.CreateSqlMemberIndexerScalarExpression(
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("some")),
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("random")),
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("path")),
@@ -138,14 +139,15 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 nameof(SqlBetweenScalarExpression),
                 SqlBetweenScalarExpression.Create(
                     somePath,
+                    not: false,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
 
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlBinaryScalarExpression),
                 SqlBinaryScalarExpression.Create(
-                    SqlBinaryScalarOperatorKind.Add,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)),
+                    SqlBinaryScalarOperatorKind.Add,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3)))));
 
             inputs.Add(new SqlObjectVisitorInput(
@@ -233,8 +235,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 inputs.Add(new SqlObjectVisitorInput(
                     sqlBinaryScalarOperatorKind.ToString(),
                     SqlBinaryScalarExpression.Create(
-                        sqlBinaryScalarOperatorKind,
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0xDEADBEEF)),
+                        sqlBinaryScalarOperatorKind,
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0xBAAAAAAD)))));
             }
 
@@ -779,7 +781,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
         [Owner("brchon")]
         public void SqlQueries()
         {
-            SqlMemberIndexerScalarExpression somePath = SqlObjectBuilderUtils.CreateSqlMemberIndexerScalarExpression(
+            SqlMemberIndexerScalarExpression somePath = SqlObjectVisitorBaselineTests.CreateSqlMemberIndexerScalarExpression(
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("some")),
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("random")),
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("path")),
@@ -823,15 +825,10 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     null,
                     SqlStringLiteral.Create("somePath")));
 
-            SqlLiteralArrayCollection sqlLiteralArrayCollection = SqlLiteralArrayCollection.Create(
-                SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("some")),
-                SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("SqlLiteralArrayCollection")),
-                SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("items")));
-
             SqlSubqueryCollection sqlSubqueryCollection = SqlSubqueryCollection.Create(
                 SqlQuery.Create(SqlSelectClause.SelectStar, null, null, null, null, null));
 
-            SqlCollection[] sqlCollections = new SqlCollection[] { sqlInputPathCollection, sqlLiteralArrayCollection, sqlSubqueryCollection };
+            SqlCollection[] sqlCollections = new SqlCollection[] { sqlInputPathCollection, sqlSubqueryCollection };
             SqlIdentifier sqlIdentifier = SqlIdentifier.Create("some alias");
             foreach (SqlCollection sqlCollection in sqlCollections)
             {
@@ -863,8 +860,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             // WHERE
             SqlWhereClause sqlWhereClause = SqlWhereClause.Create(
                 SqlBinaryScalarExpression.Create(
-                    SqlBinaryScalarOperatorKind.LessThan,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("this path")),
+                    SqlBinaryScalarOperatorKind.LessThan,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42))));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlWhereClause), sqlWhereClause));
 
@@ -970,6 +967,27 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             }
 
             return output;
+        }
+
+        private static SqlMemberIndexerScalarExpression CreateSqlMemberIndexerScalarExpression(
+            SqlScalarExpression first,
+            SqlScalarExpression second,
+            params SqlScalarExpression[] everythingElse)
+        {
+            List<SqlScalarExpression> segments = new List<SqlScalarExpression>(2 + everythingElse.Length)
+            {
+                first,
+                second
+            };
+            segments.AddRange(everythingElse);
+
+            SqlMemberIndexerScalarExpression rootExpression = SqlMemberIndexerScalarExpression.Create(first, second);
+            foreach (SqlScalarExpression indexer in segments.Skip(2))
+            {
+                rootExpression = SqlMemberIndexerScalarExpression.Create(rootExpression, indexer);
+            }
+
+            return rootExpression;
         }
     }
 

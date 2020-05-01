@@ -8,25 +8,25 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlInScalarExpression : SqlScalarExpression
     {
-        private SqlInScalarExpression(SqlScalarExpression expression, bool not, IReadOnlyList<SqlScalarExpression> items)
+        private SqlInScalarExpression(SqlScalarExpression needle, bool not, IReadOnlyList<SqlScalarExpression> haystack)
             : base(SqlObjectKind.InScalarExpression)
         {
-            if (expression == null)
+            if (needle == null)
             {
                 throw new ArgumentNullException("expression");
             }
 
-            if (items == null)
+            if (haystack == null)
             {
                 throw new ArgumentNullException("items");
             }
 
-            if (items.Count == 0)
+            if (haystack.Count == 0)
             {
                 throw new ArgumentException("items can't be empty.");
             }
 
-            foreach (SqlScalarExpression item in items)
+            foreach (SqlScalarExpression item in haystack)
             {
                 if (item == null)
                 {
@@ -34,9 +34,14 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
             }
 
-            this.Expression = expression;
-            this.Items = new List<SqlScalarExpression>(items);
+            this.Needle = needle;
             this.Not = not;
+            this.Haystack = new List<SqlScalarExpression>(haystack);
+        }
+
+        public SqlScalarExpression Needle
+        {
+            get;
         }
 
         public bool Not
@@ -44,24 +49,19 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
-        public SqlScalarExpression Expression
+        public IReadOnlyList<SqlScalarExpression> Haystack
         {
             get;
         }
 
-        public List<SqlScalarExpression> Items
+        public static SqlInScalarExpression Create(SqlScalarExpression needle, bool not, params SqlScalarExpression[] haystack)
         {
-            get;
+            return new SqlInScalarExpression(needle, not, haystack);
         }
 
-        public static SqlInScalarExpression Create(SqlScalarExpression expression, bool not, params SqlScalarExpression[] items)
+        public static SqlInScalarExpression Create(SqlScalarExpression needle, bool not, IReadOnlyList<SqlScalarExpression> haystack)
         {
-            return new SqlInScalarExpression(expression, not, items);
-        }
-
-        public static SqlInScalarExpression Create(SqlScalarExpression expression, bool not, IReadOnlyList<SqlScalarExpression> items)
-        {
-            return new SqlInScalarExpression(expression, not, items);
+            return new SqlInScalarExpression(needle, not, haystack);
         }
 
         public override void Accept(SqlObjectVisitor visitor)
