@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\src\Microsoft.Azure.Cosmos.Build.props" />
+  <PropertyGroup>
+    <ClientVersion>$(ClientPreviewVersion)</ClientVersion>
+    <Version>$(ClientPreviewVersion)-preview</Version>
+    <FileVersion>$(ClientPreviewVersion)</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);PREVIEW</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>bld\preview\</OutputPath>
+  </PropertyGroup>
+
+</Project>

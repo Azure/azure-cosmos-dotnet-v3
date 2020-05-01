@@ -222,7 +222,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
   <ItemGroup>

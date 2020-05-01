@@ -1,0 +1,469 @@
+{
+  "Subclasses": {
+    "ChangeFeedRequestOptions": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[System.DateTime] get_StartTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.DateTime] get_StartTime()"
+        },
+        "System.Nullable`1[System.DateTime] StartTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.Int32] get_MaxItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_MaxItemCount()"
+        },
+        "System.Nullable`1[System.Int32] MaxItemCount": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_MaxItemCount(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_MaxItemCount(System.Nullable`1[System.Int32])"
+        },
+        "Void set_StartTime(System.Nullable`1[System.DateTime])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_StartTime(System.Nullable`1[System.DateTime])"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Container": {
+      "Members": {
+        "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(System.String, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(System.String, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](System.String, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](System.String, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosClient": {
+      "Members": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        }
+      }
+    },
+    "CosmosClientOptions": {
+      "Members": {
+        "Microsoft.Azure.Cosmos.Encryptor Encryptor[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.Encryptor get_Encryptor()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryptor get_Encryptor()"
+        },
+        "Void set_Encryptor(Microsoft.Azure.Cosmos.Encryptor)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Encryptor(Microsoft.Azure.Cosmos.Encryptor)"
+        }
+      }
+    },
+    "Database": {
+      "Members": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        }
+      }
+    },
+    "EncryptionOptions": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.Generic.List`1[System.String] get_PathsToEncrypt()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[System.String] get_PathsToEncrypt()"
+        },
+        "System.Collections.Generic.List`1[System.String] PathsToEncrypt": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String DataEncryptionKeyId": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String EncryptionAlgorithm": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DataEncryptionKeyId()"
+        },
+        "System.String get_EncryptionAlgorithm()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_EncryptionAlgorithm()"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_DataEncryptionKeyId(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DataEncryptionKeyId(System.String)"
+        },
+        "Void set_EncryptionAlgorithm(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EncryptionAlgorithm(System.String)"
+        },
+        "Void set_PathsToEncrypt(System.Collections.Generic.List`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_PathsToEncrypt(System.Collections.Generic.List`1[System.String])"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Encryptor": {
+      "Subclasses": {},
+      "Members": {
+        "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "FeedRange": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)"
+        },
+        "System.String ToJsonString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToJsonString()"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosClientBuilder": {
+      "Members": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithEncryptor(Microsoft.Azure.Cosmos.Encryptor)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithEncryptor(Microsoft.Azure.Cosmos.Encryptor)"
+        }
+      }
+    },
+    "ItemRequestOptions": {
+      "Members": {
+        "Microsoft.Azure.Cosmos.EncryptionOptions EncryptionOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.EncryptionOptions get_EncryptionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EncryptionOptions get_EncryptionOptions()"
+        },
+        "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.EncryptionOptions)"
+        }
+      }
+    },
+    "CosmosLinqExtensions": {
+      "Members": {
+        "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])"
+        }
+      }
+    },
+    "RequestOptions": {
+      "Subclasses": {
+        "ChangeFeedRequestOptions": {
+          "Subclasses": {},
+          "Members": {
+            "System.Nullable`1[System.DateTime] get_StartTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.DateTime] get_StartTime()"
+            },
+            "System.Nullable`1[System.DateTime] StartTime": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Nullable`1[System.Int32] get_MaxItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Int32] get_MaxItemCount()"
+            },
+            "System.Nullable`1[System.Int32] MaxItemCount": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor()"
+            },
+            "Void set_MaxItemCount(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_MaxItemCount(System.Nullable`1[System.Int32])"
+            },
+            "Void set_StartTime(System.Nullable`1[System.DateTime])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_StartTime(System.Nullable`1[System.DateTime])"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "ItemRequestOptions": {
+          "Members": {
+            "Microsoft.Azure.Cosmos.EncryptionOptions EncryptionOptions": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.EncryptionOptions get_EncryptionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.EncryptionOptions get_EncryptionOptions()"
+            },
+            "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.EncryptionOptions)"
+            }
+          }
+        },
+        "TransactionalBatchItemRequestOptions": {
+          "Members": {
+            "Microsoft.Azure.Cosmos.EncryptionOptions EncryptionOptions": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.EncryptionOptions get_EncryptionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.EncryptionOptions get_EncryptionOptions()"
+            },
+            "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.EncryptionOptions)"
+            }
+          }
+        }
+      },
+      "Members": {}
+    },
+    "ThroughputProperties": {
+      "Members": {
+        "Microsoft.Azure.Cosmos.ThroughputProperties CreateAutoscaleThroughput(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ThroughputProperties CreateAutoscaleThroughput(Int32)"
+        },
+        "Microsoft.Azure.Cosmos.ThroughputProperties CreateManualThroughput(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ThroughputProperties CreateManualThroughput(Int32)"
+        },
+        "System.Nullable`1[System.Int32] get_MaxAutoscaleThroughput()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_MaxAutoscaleThroughput()"
+        },
+        "System.Nullable`1[System.Int32] MaxAutoscaleThroughput[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": null
+        }
+      }
+    },
+    "TransactionalBatchItemRequestOptions": {
+      "Members": {
+        "Microsoft.Azure.Cosmos.EncryptionOptions EncryptionOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.EncryptionOptions get_EncryptionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EncryptionOptions get_EncryptionOptions()"
+        },
+        "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.EncryptionOptions)"
+        }
+      }
+    }
+  },
+  "Members": {}
+}
