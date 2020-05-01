@@ -263,7 +263,6 @@ namespace Microsoft.Azure.Cosmos
         /// This can be used for generating responses for tests, and allows users to create
         /// a custom container that modifies the response. For example the client encryption
         /// uses this to decrypt responses before returning to the caller.
-        /// user composition to 
         /// </remarks>
 #if PREVIEW
         public

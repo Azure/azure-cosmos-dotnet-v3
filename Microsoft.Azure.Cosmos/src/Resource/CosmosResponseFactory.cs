@@ -8,7 +8,8 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// This response factory converts response messages
-    /// to the corresponding type response.
+    /// to the corresponding type response using the
+    /// CosmosClient serializer
     /// </summary>
 #if PREVIEW
     public
