@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClient client;
         private readonly DocumentClient documentClient;
         private readonly CosmosSerializerCore serializerCore;
-        private readonly CosmosResponseFactory responseFactory;
+        private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
         private readonly string userAgent;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClient client,
             CosmosClientOptions clientOptions,
             CosmosSerializerCore serializerCore,
-            CosmosResponseFactory cosmosResponseFactory,
+            CosmosResponseFactoryInternal cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions.Serializer,
                 clientOptions.SerializerOptions);
 
-            CosmosResponseFactory responseFactory = new CosmosResponseFactory(serializerCore);
+            CosmosResponseFactoryInternal responseFactory = new CosmosResponseFactoryCore(serializerCore);
 
             return new ClientContextCore(
                 client: cosmosClient,
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosSerializerCore SerializerCore => this.ThrowIfDisposed(this.serializerCore);
 
-        internal override CosmosResponseFactory ResponseFactory => this.ThrowIfDisposed(this.responseFactory);
+        internal override CosmosResponseFactoryInternal ResponseFactory => this.ThrowIfDisposed(this.responseFactory);
 
         internal override RequestInvokerHandler RequestHandler => this.ThrowIfDisposed(this.requestHandler);
 

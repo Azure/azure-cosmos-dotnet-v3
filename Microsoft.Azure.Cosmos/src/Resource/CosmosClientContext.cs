@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosSerializerCore SerializerCore { get; }
 
-        internal abstract CosmosResponseFactory ResponseFactory { get; }
+        internal abstract CosmosResponseFactoryInternal ResponseFactory { get; }
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 

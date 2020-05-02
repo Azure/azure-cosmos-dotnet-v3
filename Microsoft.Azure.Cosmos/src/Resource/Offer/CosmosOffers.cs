@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: linkUri,
               resourceType: resourceType,
               operationType: operationType,
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
               requestEnricher: null,
               diagnosticsContext: null,
               cancellationToken: cancellationToken);
-            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
+            return this.ClientContext.ResponseFactory.CreateThroughputResponse(responseMessage);
         }
     }
 }
