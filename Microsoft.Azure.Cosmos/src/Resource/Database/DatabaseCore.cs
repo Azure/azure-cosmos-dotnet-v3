@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///
-    /// <see cref="CosmosClient"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
+    /// <see cref="Client"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
     internal class DatabaseCore : DatabaseInternal
     {
@@ -33,6 +33,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override string Id { get; }
+
+        public override CosmosClient Client => this.ClientContext.Client;
 
         internal override Uri LinkUri { get; }
 
