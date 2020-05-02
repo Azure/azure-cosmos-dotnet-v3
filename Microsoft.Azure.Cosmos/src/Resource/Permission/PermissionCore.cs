@@ -37,14 +37,14 @@ namespace Microsoft.Azure.Cosmos
         public override string Id { get; }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> DeleteAsync(RequestOptions requestOptions = null,
+        public override async Task<PermissionResponse> DeleteAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeletePermissionStreamAsync(
+            ResponseMessage response = await this.DeletePermissionStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
+            return this.clientContext.ResponseFactory.CreatePermissionResponse(this, response);
         }
 
         public Task<ResponseMessage> DeletePermissionStreamAsync(
@@ -59,16 +59,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> ReadAsync(int? tokenExpiryInSeconds = null,
+        public override async Task<PermissionResponse> ReadAsync(int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadPermissionStreamAsync(
+            ResponseMessage response = await this.ReadPermissionStreamAsync(
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
+            return this.clientContext.ResponseFactory.CreatePermissionResponse(this, response);
         }
 
         public Task<ResponseMessage> ReadPermissionStreamAsync(int? tokenExpiryInSeconds = null,
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties,
+        public override async Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -95,13 +95,13 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientContext.ValidateResource(permissionProperties.Id);
-            Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
+            ResponseMessage response = await this.ReplaceStreamInternalAsync(
                 streamPayload: this.clientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
+            return this.clientContext.ResponseFactory.CreatePermissionResponse(this, response);
         }
 
         public Task<ResponseMessage> ReplacePermissionStreamAsync(PermissionProperties permissionProperties,

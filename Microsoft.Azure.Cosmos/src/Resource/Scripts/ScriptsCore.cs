@@ -153,21 +153,21 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
+        public override async Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
             string storedProcedureId,
             Cosmos.PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
+            ResponseMessage response = await this.ExecuteStoredProcedureStreamAsync(
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
                 parameters: parameters,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
+            return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponse<TOutput>(response);
         }
 
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
@@ -560,14 +560,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<StoredProcedureResponse> ProcessStoredProcedureOperationAsync(
+        private async Task<StoredProcedureResponse> ProcessStoredProcedureOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<ResponseMessage> response = this.ProcessStreamOperationAsync(
+            ResponseMessage response = await this.ProcessStreamOperationAsync(
                 resourceUri: linkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: operationType,
@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: streamPayload,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateStoredProcedureResponseAsync(response);
+            return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         private Task<TriggerResponse> ProcessTriggerOperationAsync(
@@ -599,14 +599,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<TriggerResponse> ProcessTriggerOperationAsync(
+        private async Task<TriggerResponse> ProcessTriggerOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<ResponseMessage> response = this.ProcessStreamOperationAsync(
+            ResponseMessage response = await this.ProcessStreamOperationAsync(
                 resourceUri: linkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: operationType,
@@ -615,7 +615,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: streamPayload,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateTriggerResponseAsync(response);
+            return this.clientContext.ResponseFactory.CreateTriggerResponse(response);
         }
 
         private Task<ResponseMessage> ProcessStreamOperationAsync(
@@ -660,14 +660,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
+        private async Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<ResponseMessage> response = this.ProcessStreamOperationAsync(
+            ResponseMessage response = await this.ProcessStreamOperationAsync(
                 resourceUri: linkUri,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: operationType,
@@ -676,7 +676,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: streamPayload,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponseAsync(response);
+            return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
         }
     }
 }
