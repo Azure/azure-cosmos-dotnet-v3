@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 
-            await operation.EncryptAndMaterializeResourceAsync(this.cosmosClientContext.SerializerCore, cancellationToken);
+            await operation.MaterializeResourceAsync(this.cosmosClientContext.SerializerCore, cancellationToken);
         }
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
@@ -256,7 +256,6 @@ namespace Microsoft.Azure.Cosmos
                             serverRequest,
                             this.cosmosClientContext.SerializerCore,
                             shouldPromoteOperationStatus: true,
-                            shouldPerformDecryption: false,
                             cancellationToken).ConfigureAwait(false);
 
                         return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);

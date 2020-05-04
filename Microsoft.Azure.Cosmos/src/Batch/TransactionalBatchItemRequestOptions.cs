@@ -18,16 +18,6 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
         public IndexingDirective? IndexingDirective { get; set; }
 
-        /// <summary>
-        /// Options to encrypt properties of the item.
-        /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        EncryptionOptions EncryptionOptions { get; set; }
-
         internal static TransactionalBatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             if (itemRequestOptions == null)

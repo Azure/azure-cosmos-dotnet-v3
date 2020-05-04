@@ -312,26 +312,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Encrypts (if encryption options are set) and materializes the operation's resource into a Memory{byte} wrapping a byte array.
+        /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
         /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal virtual async Task EncryptAndMaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
-                Stream stream = this.ResourceStream;
-                if (this.ContainerInternal != null && this.RequestOptions?.EncryptionOptions != null)
-                {
-                    stream = await this.ContainerInternal.ClientContext.EncryptItemAsync(
-                        stream,
-                        this.RequestOptions.EncryptionOptions,
-                        (DatabaseInternal)this.ContainerInternal.Database,
-                        this.DiagnosticsContext,
-                        cancellationToken);
-                }
-
-                this.body = await BatchExecUtils.StreamToMemoryAsync(stream, cancellationToken);
+                this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
             }
         }
 
@@ -402,12 +391,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal override Task EncryptAndMaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
                 this.ResourceStream = serializerCore.ToStream(this.Resource);
-                return base.EncryptAndMaterializeResourceAsync(serializerCore, cancellationToken);
+                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 
             return Task.CompletedTask;

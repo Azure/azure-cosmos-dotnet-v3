@@ -5,7 +5,7 @@
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption</RootNamespace>
     <LangVersion>latest</LangVersion>
     <IsPreview>true</IsPreview>
-	
+
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
     <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
@@ -26,6 +26,10 @@
 
   <ItemGroup>
      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.8.0-preview" />  
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
