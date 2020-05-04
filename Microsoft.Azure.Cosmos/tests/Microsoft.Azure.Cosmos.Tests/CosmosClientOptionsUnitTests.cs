@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
         public const string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+        public Func<HttpClient> HttpClientFactoryDelegate = () => new HttpClient();
 
         [TestMethod]
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
@@ -74,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
             Assert.IsFalse(clientOptions.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsNull(clientOptions.HttpClientFactory);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -87,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
             Assert.IsTrue(policy.EnableEndpointDiscovery);
             Assert.IsFalse(policy.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsNull(policy.HttpClientFactory);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -351,6 +354,41 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
             cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyWebProxyHttpClientFactorySet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.WebProxy = Mock.Of<WebProxy>();
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyHttpClientFactoryWebProxySet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+            cosmosClientOptions.WebProxy = Mock.Of<WebProxy>();
+        }
+
+        [TestMethod]
+        public void HttpClientFactoryBuildsConnectionPolicy()
+        {
+            string endpoint = AccountEndpoint;
+            string key = Guid.NewGuid().ToString();
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key)
+                .WithHttpClientFactory(this.HttpClientFactoryDelegate);
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.AreEqual(clientOptions.HttpClientFactory, this.HttpClientFactoryDelegate);
+            ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
+            Assert.AreEqual(policy.HttpClientFactory, this.HttpClientFactoryDelegate);
         }
 
         [TestMethod]

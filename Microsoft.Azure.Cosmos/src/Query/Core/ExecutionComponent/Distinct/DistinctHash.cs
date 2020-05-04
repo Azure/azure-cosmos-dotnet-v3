@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     internal static class DistinctHash
@@ -181,9 +182,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosString cosmosString, UInt128 seed)
             {
                 UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.StringHashSeed, seed);
-                if (cosmosString.TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value))
+                if (cosmosString.TryGetBufferedValue(out Utf8Memory bufferedUtf8Value))
                 {
-                    hash = MurmurHash3.Hash128(bufferedUtf8Value.Span, hash);
+                    hash = MurmurHash3.Hash128(bufferedUtf8Value.Span.Span, hash);
                 }
                 else
                 {

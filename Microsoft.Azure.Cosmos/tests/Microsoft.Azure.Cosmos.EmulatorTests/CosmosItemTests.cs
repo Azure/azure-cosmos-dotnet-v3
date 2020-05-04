@@ -58,6 +58,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public void ParentResourceTest()
+        {
+            Assert.AreEqual(this.database, this.Container.Database);
+            Assert.AreEqual(this.cosmosClient, this.Container.Database.Client);
+        }
+
+        [TestMethod]
         public async Task CreateDropItemTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
