@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             requestCharge: requestCharge,
                             activityId: activityId,
                             subStatusCode: default,
-                            continauationToken: null,
+                            continuationToken: null,
                             disallowContinuationTokenMessage: null,
                             resourceType: ResourceType.Document,
                             containerRid: contianerRid,

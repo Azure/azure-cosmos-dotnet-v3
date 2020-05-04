@@ -341,10 +341,14 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 1,
                 Encoding.UTF8.GetByteCount(serializedItem),
                 new CosmosQueryResponseMessageHeaders(
-                    continauationToken: null,
+                    requestCharge: 42,
+                    activityId: Guid.NewGuid().ToString(),
+                    subStatusCode: Documents.SubStatusCodes.Unknown,
+                    continuationToken: null,
                     disallowContinuationTokenMessage: null,
                     resourceType: Documents.ResourceType.Document,
-                    "+o4fAPfXPzw="),
+                    "+o4fAPfXPzw=",
+                    1),
                 new CosmosDiagnosticsContextCore(),
                 null);
 
