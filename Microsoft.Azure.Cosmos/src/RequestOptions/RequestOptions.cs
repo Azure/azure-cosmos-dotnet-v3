@@ -33,26 +33,6 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
-        /// Gets or sets the boolean to only return the headers and status code in the Cosmos DB response.
-        /// This removes the resource from the response. This reduces networking and CPU load by not sending
-        /// the resource back over the network and serializing it on the client.
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// ItemRequestOption requestOptions = new ItemRequestOptions() { ReturnMinimalResponse = true };
-        /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
-        /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
-        /// Assert.IsNull(itemResponse.Resource);
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <remarks>
-        /// This is optimal for workloads where the returned resource is not used.
-        /// </remarks>
-        public virtual bool ReturnMinimalResponse { get; set; }
-
-        /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
         internal bool IsEffectivePartitionKeyRouting { get; set; }
@@ -99,11 +79,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.IfNoneMatchEtag != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
-            }
-
-            if (this.ReturnMinimalResponse)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
             }
         }
 

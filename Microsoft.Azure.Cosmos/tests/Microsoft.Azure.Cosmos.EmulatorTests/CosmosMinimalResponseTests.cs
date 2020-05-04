@@ -17,145 +17,179 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosMinimalResponseTests
     {
-        protected CosmosClient cosmosClient = null;
-        protected CancellationTokenSource cancellationTokenSource = null;
-        protected CancellationToken cancellationToken;
+        private CosmosClient cosmosClient;
+        private Database database;
+        private Container container;
 
         [TestInitialize]
-        public void TestInit()
+        public async Task TestInit()
         {
-            this.cancellationTokenSource = new CancellationTokenSource();
-            this.cancellationToken = this.cancellationTokenSource.Token;
-
             this.cosmosClient = TestCommon.CreateCosmosClient();
+            this.database = await this.cosmosClient.CreateDatabaseAsync(
+                   id: Guid.NewGuid().ToString());
+
+            this.container = await this.database.CreateContainerAsync(
+                     id: "ItemNoResponseTest",
+                     partitionKeyPath: "/status");
         }
 
         [TestCleanup]
-        public void TestCleanup()
+        public async Task TestCleanup()
         {
             if (this.cosmosClient == null)
             {
                 return;
             }
 
-            this.cancellationTokenSource?.Cancel();
+            using (await this.database.DeleteStreamAsync()) { }
             this.cosmosClient.Dispose();
         }
 
         [TestMethod]
-        public async Task DatabaseNoResponseTest()
-        {
-            RequestOptions requestOptions = new RequestOptions()
-            {
-                ReturnMinimalResponse = true
-            };
-
-            string databaseName = Guid.NewGuid().ToString();
-
-            DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseAsync(
-                    id: databaseName,
-                    requestOptions: requestOptions);
-            Assert.AreEqual(HttpStatusCode.Created, databaseResponse.StatusCode);
-            this.ValidateResponse(databaseResponse);
-
-            databaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
-                    id: databaseName,
-                    requestOptions: requestOptions);
-            Assert.AreEqual(HttpStatusCode.OK, databaseResponse.StatusCode);
-            this.ValidateResponse(databaseResponse);
-
-            databaseResponse = await databaseResponse.Database.DeleteAsync(
-                    requestOptions: requestOptions);
-            Assert.AreEqual(HttpStatusCode.NoContent, databaseResponse.StatusCode);
-            this.ValidateResponse(databaseResponse);
-        }
-
-        [TestMethod]
-        public async Task ContainerNoResponseTest()
+        public async Task ItemCreateNoResponseTest()
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                ReturnMinimalResponse = true
+                NoContentResponseOnWrite = true
             };
 
-            Database database = await this.cosmosClient.CreateDatabaseAsync(
-                    id: Guid.NewGuid().ToString(),
-                    requestOptions: requestOptions);
-
-            string containerId = Guid.NewGuid().ToString();
-            ContainerResponse containerResponse = await database.CreateContainerAsync(
-                     id: containerId,
-                     partitionKeyPath: "/id",
-                     requestOptions: requestOptions);
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            this.ValidateResponse(containerResponse);
-
-            containerResponse = await database.CreateContainerIfNotExistsAsync(
-                    id: containerId,
-                    partitionKeyPath: "/id",
-                    requestOptions: requestOptions);
-            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
-            this.ValidateResponse(containerResponse);
-
-            await database.DeleteAsync();
+            await this.Validate(
+                requestOptions,
+                this.ValidateItemNoContentResponse,
+                this.ValidateItemResponse);
         }
 
         [TestMethod]
-        public async Task ItemNoResponseTest()
+        public async Task ItemReadNoResponseTest()
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                ReturnMinimalResponse = true
+                NoContentResponseOnRead = true
             };
 
-            Database database = await this.cosmosClient.CreateDatabaseAsync(
-                    id: Guid.NewGuid().ToString(),
-                    requestOptions: requestOptions);
+            await this.Validate(
+                requestOptions,
+                this.ValidateItemResponse,
+                this.ValidateItemNoContentResponse);
+        }
 
-            Container container = await database.CreateContainerAsync(
-                     id: "ItemNoResponseTest",
-                     partitionKeyPath: "/status",
-                     requestOptions: requestOptions);
-
+        private async Task Validate(
+            ItemRequestOptions requestOptions,
+            Action<ItemResponse<ToDoActivity>> ValidateWrite,
+            Action<ItemResponse<ToDoActivity>> ValidateRead)
+        {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item, requestOptions: requestOptions);
+            ItemResponse<ToDoActivity> itemResponse = await this.container.CreateItemAsync(item, requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
-            this.ValidateResponse(itemResponse);
+            ValidateWrite(itemResponse);
 
-            itemResponse = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), requestOptions: requestOptions);
+            itemResponse = await this.container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
-            this.ValidateResponse(itemResponse);
+            ValidateRead(itemResponse);
 
             item.cost = 424242.42;
-            itemResponse = await container.UpsertItemAsync<ToDoActivity>(item, requestOptions: requestOptions);
+            itemResponse = await this.container.UpsertItemAsync<ToDoActivity>(item, requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
-            this.ValidateResponse(itemResponse);
+            ValidateWrite(itemResponse);
 
             item.cost = 9000.42;
-            itemResponse = await container.ReplaceItemAsync<ToDoActivity>(
+            itemResponse = await this.container.ReplaceItemAsync<ToDoActivity>(
                 item,
                 item.id,
                 new PartitionKey(item.status),
                 requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
-            this.ValidateResponse(itemResponse);
+            ValidateWrite(itemResponse);
 
-            itemResponse = await container.DeleteItemAsync<ToDoActivity>(
+            itemResponse = await this.container.DeleteItemAsync<ToDoActivity>(
                 item.id,
                 new PartitionKey(item.status),
                 requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.NoContent, itemResponse.StatusCode);
-            this.ValidateResponse(itemResponse);
+            this.ValidateItemNoContentResponse(itemResponse);
+        }
 
-            await database.DeleteAsync();
-
-            Assert.ThrowsException<NotSupportedException>(() =>
+        [TestMethod]
+        public async Task ItemStreamCreateNoResponseTest()
+        {
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                new QueryRequestOptions()
-                {
-                    ReturnMinimalResponse = true
-                };
-            });
+                NoContentResponseOnWrite = true
+            };
+
+            await this.ValidateItemStream(
+                requestOptions,
+                this.ValidateItemStreamNoContentResponse,
+                this.ValidateItemStreamResponse);
+        }
+
+        [TestMethod]
+        public async Task ItemStreamReadNoResponseTest()
+        {
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                NoContentResponseOnRead = true
+            };
+
+            await this.ValidateItemStream(
+                requestOptions,
+                this.ValidateItemStreamResponse,
+                this.ValidateItemStreamNoContentResponse);
+        }
+
+        private async Task ValidateItemStream(
+            ItemRequestOptions requestOptions,
+            Action<ResponseMessage> ValidateWrite,
+            Action<ResponseMessage> ValidateRead)
+        {
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+            using (ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
+                TestCommon.SerializerCore.ToStream(item),
+                new PartitionKey(item.status),
+                requestOptions: requestOptions))
+            {
+                Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
+                ValidateWrite(responseMessage);
+            }
+
+            using (ResponseMessage responseMessage = await this.container.ReadItemStreamAsync(
+                item.id,
+                new PartitionKey(item.status),
+                requestOptions: requestOptions))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                ValidateRead(responseMessage);
+            }
+
+            item.cost = 424242.42;
+            using (ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
+                TestCommon.SerializerCore.ToStream(item),
+                new PartitionKey(item.status),
+                requestOptions: requestOptions))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                ValidateWrite(responseMessage);
+            }
+
+            item.cost = 9000.42;
+            using (ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
+                TestCommon.SerializerCore.ToStream(item),
+                item.id,
+                new PartitionKey(item.status),
+                requestOptions: requestOptions))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                ValidateWrite(responseMessage);
+            }
+
+            using (ResponseMessage responseMessage = await this.container.DeleteItemStreamAsync(
+                item.id,
+                new PartitionKey(item.status),
+                requestOptions: requestOptions))
+            {
+                Assert.AreEqual(HttpStatusCode.NoContent, responseMessage.StatusCode);
+                this.ValidateItemStreamNoContentResponse(responseMessage);
+            }
         }
 
         [TestMethod]
@@ -163,20 +197,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             TransactionalBatchItemRequestOptions requestOptions = new TransactionalBatchItemRequestOptions()
             {
-                ReturnMinimalResponse = true
+                NoContentResponseOnWrite = true
             };
 
-            Database database = await this.cosmosClient.CreateDatabaseAsync(
-                    id: Guid.NewGuid().ToString(),
-                    requestOptions: requestOptions);
-
-            Container container = await database.CreateContainerAsync(
-                     id: "ItemBatchNoResponseTest",
-                     partitionKeyPath: "/status",
-                     requestOptions: requestOptions);
-
             string pkId = "TestBatchId";
-            TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(pkId));
+            TransactionalBatch batch = this.container.CreateTransactionalBatch(new PartitionKey(pkId));
 
             int noResponseItemCount = 100;
             for (int i = 0; i < noResponseItemCount; i++)
@@ -190,15 +215,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.ValidateResponse(response, noResponseItemCount);
 
             pkId = "TestBatchId2";
-            batch = container.CreateTransactionalBatch(new PartitionKey(pkId));
+            batch = this.container.CreateTransactionalBatch(new PartitionKey(pkId));
 
             noResponseItemCount = 0;
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 10; i++)
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
                 batch.CreateItem<ToDoActivity>(item, requestOptions: requestOptions);
-                noResponseItemCount++;
-                batch.ReadItem(item.id, requestOptions: requestOptions);
                 noResponseItemCount++;
                 ToDoActivity item2 = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
                 item2.id = item.id;
@@ -206,19 +229,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 noResponseItemCount++;
             }
 
-            // The last 5 have a body response
-            int withBodyCount = 2;
-            for (int i = 0; i < withBodyCount; i++)
+            int withBodyCount = 0;
+            for (int i = 0; i < 5; i++)
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
                 batch.CreateItem<ToDoActivity>(item);
+                withBodyCount++;
+                batch.ReadItem(item.id);
+                withBodyCount++;
             }
 
             response = await batch.ExecuteAsync();
             Assert.AreEqual(noResponseItemCount + withBodyCount, response.Count);
             this.ValidateResponse(response, noResponseItemCount);
-
-            await database.DeleteAsync();
         }
 
         [TestMethod]
@@ -226,18 +249,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                ReturnMinimalResponse = true
+                NoContentResponseOnWrite = true
             };
 
             CosmosClient bulkClient = TestCommon.CreateCosmosClient((builder) => builder.WithBulkExecution(true));
-            Database database = await bulkClient.CreateDatabaseAsync(
-                    id: Guid.NewGuid().ToString(),
-                    requestOptions: requestOptions);
-
-            Container container = await database.CreateContainerAsync(
-                     id: "ItemBulkNoResponseTest",
-                     partitionKeyPath: "/status",
-                     requestOptions: requestOptions);
+            Container bulkContainer = bulkClient.GetContainer(this.database.Id, this.container.Id);
 
             string pkId = "TestBulkId";
 
@@ -247,90 +263,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
                 items.Add(item);
-                bulkOperations.Add(container.CreateItemAsync<ToDoActivity>(item, requestOptions: requestOptions));
+                bulkOperations.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, requestOptions: requestOptions));
             }
 
             foreach(Task<ItemResponse<ToDoActivity>> result in bulkOperations)
             {
                 ItemResponse<ToDoActivity> itemResponse = await result;
-                this.ValidateResponse(itemResponse);
+                this.ValidateItemNoContentResponse(itemResponse);
             }
 
             bulkOperations = new List<Task<ItemResponse<ToDoActivity>>>();
             foreach (ToDoActivity item in items)
             {
-                bulkOperations.Add(container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), requestOptions: requestOptions));
+                bulkOperations.Add(bulkContainer.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), requestOptions: requestOptions));
             }
 
             foreach (Task<ItemResponse<ToDoActivity>> result in bulkOperations)
             {
                 ItemResponse<ToDoActivity> itemResponse = await result;
-                this.ValidateResponse(itemResponse);
+                this.ValidateItemResponse(itemResponse);
             }
-
-            await database.DeleteAsync();
         }
 
-
-        [TestMethod]
-        public async Task ItemstreamNoResponseTest()
-        {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
-            {
-                ReturnMinimalResponse = true
-            };
-
-            Database database = await this.cosmosClient.CreateDatabaseAsync(
-                    id: Guid.NewGuid().ToString(),
-                    requestOptions: requestOptions);
-
-            Container container = await database.CreateContainerAsync(
-                     id: "ItemNoResponseTest",
-                     partitionKeyPath: "/id",
-                     requestOptions: requestOptions);
-
-            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-            using (ResponseMessage itemResponse = await container.CreateItemStreamAsync(
-                TestCommon.SerializerCore.ToStream(item),
-                new PartitionKey(item.id),
-                requestOptions: requestOptions))
-            {
-                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
-                this.ValidateResponse(itemResponse);
-            }
-
-            item.cost = 424242.42;
-            using (ResponseMessage itemResponse = await container.UpsertItemStreamAsync(
-                TestCommon.SerializerCore.ToStream(item),
-                new PartitionKey(item.id),
-                requestOptions: requestOptions))
-            {
-                Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
-                this.ValidateResponse(itemResponse);
-            }
-
-            item.cost = 9000.42;
-            using (ResponseMessage itemResponse = await container.ReplaceItemStreamAsync(
-                TestCommon.SerializerCore.ToStream(item),
-                item.id,
-                new PartitionKey(item.id),
-                requestOptions: requestOptions))
-            {
-                Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
-                this.ValidateResponse(itemResponse);
-            }
-
-            using (ResponseMessage itemResponse = await container.DeleteItemStreamAsync(
-                item.id,
-                new PartitionKey(item.id),
-                requestOptions: requestOptions))
-            {
-                Assert.AreEqual(HttpStatusCode.NoContent, itemResponse.StatusCode);
-                this.ValidateResponse(itemResponse);
-            }
-
-            await database.DeleteAsync();
-        }
 
         private void ValidateResponse(
            TransactionalBatchResponse response,
@@ -375,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private void ValidateResponse(
+        private void ValidateItemStreamNoContentResponse(
             ResponseMessage response)
         {
             Assert.IsNotNull(response);
@@ -384,7 +338,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 response.Headers);
         }
 
-        private void ValidateResponse(
+        private void ValidateItemStreamResponse(
+           ResponseMessage response)
+        {
+            Assert.IsNotNull(response);
+            Assert.IsNotNull(response.Content);
+            Assert.IsNotNull(response.Headers);
+            Assert.IsTrue(response.Headers.RequestCharge > 0);
+        }
+
+        private void ValidateItemResponse(
+           ItemResponse<ToDoActivity> response)
+        {
+            Assert.IsNotNull(response);
+            Assert.IsNotNull(response.Resource);
+            Assert.IsNotNull(response.Headers);
+            Assert.IsTrue(response.Headers.RequestCharge > 0);
+        }
+
+        private void ValidateItemNoContentResponse(
            ItemResponse<ToDoActivity> response)
         {
             Assert.IsNotNull(response);

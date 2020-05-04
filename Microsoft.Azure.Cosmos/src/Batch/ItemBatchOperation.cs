@@ -171,7 +171,10 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                if (options.ReturnMinimalResponse)
+                if (ItemRequestOptions.ShouldSetNoContentHeader(
+                    options.NoContentResponseOnWrite,
+                    options.NoContentResponseOnRead,
+                    operation.OperationType))
                 {
                     r = writer.WriteBool("minimalReturnPreference", true);
                     if (r != Result.Success)
