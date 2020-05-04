@@ -28,10 +28,23 @@ namespace Microsoft.Azure.Cosmos
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
-            Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(containerRid, this.PartitionKeyRangeId);
+            Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
+                collectionResourceId: containerRid,
+                partitionKeyRangeId: this.PartitionKeyRangeId,
+                forceRefresh: false);
+
             if (pkRange == null)
             {
-                throw new InvalidOperationException();
+                // Try with a refresh
+                pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
+                    collectionResourceId: containerRid,
+                    partitionKeyRangeId: this.PartitionKeyRangeId,
+                    forceRefresh: true);
+            }
+
+            if (pkRange == null)
+            {
+                throw new InvalidOperationException($"The PartitionKeyRangeId: \"{this.PartitionKeyRangeId}\" is not valid for the current container {containerRid} .");
             }
 
             return new List<Documents.Routing.Range<string>> { pkRange.ToRange() };
