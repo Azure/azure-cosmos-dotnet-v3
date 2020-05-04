@@ -93,10 +93,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if !PREVIEW
-        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
-            ThroughputProperties throughputProperties,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
