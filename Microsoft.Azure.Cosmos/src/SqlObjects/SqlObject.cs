@@ -70,10 +70,17 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public static bool Equals(SqlObject first, SqlObject second)
         {
+#if !DEBUG
             if (object.ReferenceEquals(first, second))
             {
                 return true;
             }
+#else
+            if ((first is null) && (second is null))
+            {
+                return true;
+            }
+#endif
 
             if ((first is null) || (second is null))
             {
