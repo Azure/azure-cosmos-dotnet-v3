@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(clientOptions.AllowBulkExecution);
             Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
             Assert.IsNull(clientOptions.SerializerOptions);
-            Assert.IsNull(clientOptions.Serializer);
+            Assert.IsNotNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
             Assert.IsFalse(clientOptions.EnableTcpConnectionEndpointRediscovery);

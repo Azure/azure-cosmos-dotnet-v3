@@ -103,9 +103,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task VerifyUserAgentWithFeatures(bool useMacOs)
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        public async Task VerifyUserAgentWithFeatures(bool setApplicationName, bool useMacOs)
         {
             this.SetEnvironmentInformation(useMacOs);
 
@@ -116,12 +118,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string features = Convert.ToString((int)featuresFlags, 2).PadLeft(8, '0');
 
-            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix).WithBulkExecution(true).WithHttpClientFactory(() => new HttpClient())))
+            Action<Fluent.CosmosClientBuilder> applicationNameBuilder = (builder) =>
+            {
+                if (setApplicationName)
+                {
+                    builder.WithApplicationName(suffix);
+                }
+            };
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => applicationNameBuilder(builder.WithBulkExecution(true).WithHttpClientFactory(() => new HttpClient()))))
             {
                 Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
 
                 string userAgentString = userAgentContainer.UserAgent;
-                Assert.IsTrue(userAgentString.Contains(suffix));
+                if (setApplicationName)
+                {
+                    Assert.IsTrue(userAgentString.Contains(suffix));
+                }
+                else
+                {
+                    Assert.IsFalse(userAgentString.Contains(suffix));
+                }
+
                 Assert.IsTrue(userAgentString.Contains($"|F {features}"));
                 if (useMacOs)
                 {
@@ -133,12 +151,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await db.DeleteAsync();
             }
 
-            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix)))
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => applicationNameBuilder(builder)))
             {
                 Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
 
                 string userAgentString = userAgentContainer.UserAgent;
-                Assert.IsTrue(userAgentString.Contains(suffix));
+                if (setApplicationName)
+                {
+                    Assert.IsTrue(userAgentString.Contains(suffix));
+                }
+                else
+                {
+                    Assert.IsFalse(userAgentString.Contains(suffix));
+                }
+
                 Assert.IsFalse(userAgentString.Contains($"|F {features}"));
             }
         }
