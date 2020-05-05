@@ -68,6 +68,8 @@ namespace Microsoft.Azure.Cosmos
 
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
+            // One DocumentServiceRequest can map to multiple store results, and the DocumentServiceRequest
+            // is reliably cleaned up else where in the code so no need to clean up the dictionary.
             DateTime? startDateTime = null;
             if (this.RecordRequestStartTime.TryGetValue(request, out DateTime startRequestTime))
             {
