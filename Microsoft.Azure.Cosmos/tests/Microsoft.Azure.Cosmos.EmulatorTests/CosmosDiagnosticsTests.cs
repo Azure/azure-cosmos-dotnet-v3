@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-       // [DataRow(true)]
+        [DataRow(true)]
         [DataRow(false)]
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        //[DataRow(true)]
+        [DataRow(true)]
         [DataRow(false)]
         public async Task QueryOperationDiagnostic(bool disableDiagnostics)
         {

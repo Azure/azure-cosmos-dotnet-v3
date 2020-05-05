@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         }
 
         /// <summary>
-        /// An client id for the query. This can be used to
+        /// A client id for the query. This can be used to
         /// correlate multiple query responses to a single
         /// query iterator.
         /// </summary>

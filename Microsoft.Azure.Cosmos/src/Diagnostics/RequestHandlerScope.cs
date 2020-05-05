@@ -12,8 +12,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         private readonly Stopwatch ElapsedTimeStopWatch;
         private bool isDisposed = false;
 
-        public RequestHandlerScope(
-            RequestHandler handler)
+        public RequestHandlerScope(RequestHandler handler)
         {
             if (handler == null)
             {
