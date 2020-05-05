@@ -61,17 +61,13 @@ namespace Microsoft.Azure.Cosmos
 
         public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
-        private int count = 0;
         public void RecordRequest(DocumentServiceRequest request)
         {
-            count++;
             this.RecordRequestStartTime[request] = DateTime.UtcNow;
         }
 
-        private int recordResponsecount = 0;
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
-            recordResponsecount++;
             DateTime? startDateTime = null;
             if (this.RecordRequestStartTime.TryGetValue(request, out DateTime startRequestTime))
             {
