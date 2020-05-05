@@ -334,6 +334,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.IsNotNull(response);
             this.ValidateNoContentResponse(
+                response.StatusCode,
                 response.Content,
                 response.Headers);
         }
@@ -361,6 +362,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.IsNotNull(response);
             this.ValidateNoContentResponse(
+                response.StatusCode,
                 response.Resource,
                 response.Headers);
         }
@@ -371,6 +373,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse);
             Assert.IsNotNull(containerResponse.Container);
             this.ValidateNoContentResponse(
+                containerResponse.StatusCode,
                 containerResponse.Resource,
                 containerResponse.Headers);
         }
@@ -381,17 +384,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(databaseResponse);
             Assert.IsNotNull(databaseResponse.Database);
             this.ValidateNoContentResponse(
+                databaseResponse.StatusCode,
                 databaseResponse.Resource,
                 databaseResponse.Headers);
         }
 
         private void ValidateNoContentResponse(
+            HttpStatusCode statusCode,
             dynamic resource,
             Headers headers)
         {
             Assert.IsNull(resource);
             Assert.IsNotNull(headers);
             Assert.IsTrue(headers.RequestCharge > 0);
+
+            // Delete response does not contain etag
+            if (statusCode != HttpStatusCode.NoContent)
+            {
+                Assert.IsNotNull(headers.ETag);
+            }
+            
             //Assert.IsNotNull(headers.ActivityId);
         }
     }
