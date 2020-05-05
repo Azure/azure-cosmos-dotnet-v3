@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Provides the default implementation for client-side encryption for Cosmos DB.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class CosmosEncryptor : Encryptor
+    public class CosmosEncryptor : Encryptor
     {
         public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
 

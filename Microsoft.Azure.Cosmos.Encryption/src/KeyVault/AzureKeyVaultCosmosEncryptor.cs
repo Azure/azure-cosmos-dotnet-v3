@@ -16,12 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// it using the Azure Key Vault key provided during the creation of each Data Encryption Key.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class AzureKeyVaultCosmosEncryptor : Encryptor
+    public class AzureKeyVaultCosmosEncryptor : Encryptor
     {
         private CosmosEncryptor cosmosEncryptor;
 

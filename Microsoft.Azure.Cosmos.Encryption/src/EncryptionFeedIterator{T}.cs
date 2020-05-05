@@ -7,12 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
 
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class EncryptionFeedIterator<T> : FeedIterator<T>
+    internal sealed class EncryptionFeedIterator<T> : FeedIterator<T>
     {
         private readonly FeedIterator FeedIterator;
         private readonly CosmosResponseFactory ResponseFactory;

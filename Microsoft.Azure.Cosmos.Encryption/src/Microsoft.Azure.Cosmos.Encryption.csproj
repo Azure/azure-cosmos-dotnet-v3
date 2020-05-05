@@ -4,7 +4,6 @@
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <IsPreview>true</IsPreview>
 
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
