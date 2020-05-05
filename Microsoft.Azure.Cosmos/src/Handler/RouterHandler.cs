@@ -41,14 +41,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestHandler targetHandler = null;
             if (request.IsPartitionKeyRangeHandlerRequired)
             {
-                targetHandler = documentFeedHandler;
+                targetHandler = this.documentFeedHandler;
             }
             else
             {
-                targetHandler = pointOperationHandler;
+                targetHandler = this.pointOperationHandler;
             }
 
-            return targetHandler.SendAsync(request, cancellationToken);
+            using (request.DiagnosticsContext.CreateRequestHandlerScopeScope(targetHandler))
+            {
+                return targetHandler.SendAsync(request, cancellationToken);
+            }
         }
+            
     }
 }

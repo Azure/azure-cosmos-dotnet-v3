@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Text;
@@ -35,6 +36,8 @@ namespace Microsoft.Azure.Cosmos
 
         private Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
 
+        private Dictionary<DocumentServiceRequest, DateTime> RecordRequestStartTime = new Dictionary<DocumentServiceRequest, DateTime>();
+
         public List<Uri> ContactedReplicas { get; set; }
 
         public HashSet<Uri> FailedReplicas { get; }
@@ -58,15 +61,31 @@ namespace Microsoft.Azure.Cosmos
 
         public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
+        private int count = 0;
         public void RecordRequest(DocumentServiceRequest request)
         {
+            count++;
+            this.RecordRequestStartTime[request] = DateTime.UtcNow;
         }
 
+        private int recordResponsecount = 0;
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
+            recordResponsecount++;
+            DateTime? startDateTime = null;
+            if (this.RecordRequestStartTime.TryGetValue(request, out DateTime startRequestTime))
+            {
+                startDateTime = startRequestTime;
+            }
+            else
+            {
+                Debug.Fail("DocumentServiceRequest start time not recorded");
+            }
+
             DateTime responseTime = DateTime.UtcNow;
             Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
             StoreResponseStatistics responseStatistics = new StoreResponseStatistics(
+                startDateTime,
                 responseTime,
                 storeResult,
                 request.ResourceType,

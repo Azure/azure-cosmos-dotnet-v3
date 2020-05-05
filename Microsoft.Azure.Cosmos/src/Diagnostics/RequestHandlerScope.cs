@@ -7,26 +7,26 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System;
     using System.Diagnostics;
 
-    /// <summary>
-    /// This represents a single scope in the diagnostics.
-    /// A scope is a section of code that is important to track.
-    /// For example there is a scope for serialization, retry handlers, etc..
-    /// </summary>
-    internal sealed class CosmosDiagnosticScope : CosmosDiagnosticsInternal, IDisposable
+    internal sealed class RequestHandlerScope : CosmosDiagnosticsInternal, IDisposable
     {
         private readonly Stopwatch ElapsedTimeStopWatch;
         private bool isDisposed = false;
 
-        public CosmosDiagnosticScope(
-            string name)
+        public RequestHandlerScope(
+            RequestHandler handler)
         {
-            this.Id = name;
+            if (handler == null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            this.Id = handler.GetType().FullName;
             this.ElapsedTimeStopWatch = Stopwatch.StartNew();
         }
 
         public string Id { get; }
 
-        public bool TryGetElapsedTime(out TimeSpan elapsedTime)
+        public bool TryGetTotalElapsedTime(out TimeSpan elapsedTime)
         {
             if (!this.isDisposed)
             {
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return true;
         }
 
-        internal TimeSpan GetElapsedTime()
+        internal TimeSpan GetCurrentElapsedTime()
         {
             return this.ElapsedTimeStopWatch.Elapsed;
         }
