@@ -5,12 +5,13 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
 
     internal sealed class SqlArrayCreateScalarExpression : SqlScalarExpression
     {
-        private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(new List<SqlScalarExpression>());
+        private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(new ImmutableArray<SqlScalarExpression>());
 
-        private SqlArrayCreateScalarExpression(IReadOnlyList<SqlScalarExpression> items)
+        private SqlArrayCreateScalarExpression(ImmutableArray<SqlScalarExpression> items)
             : base(SqlObjectKind.ArrayCreateScalarExpression)
         {
             if (items == null)
@@ -26,10 +27,10 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
             }
 
-            this.Items = new List<SqlScalarExpression>(items);
+            this.Items = items;
         }
 
-        public IReadOnlyList<SqlScalarExpression> Items
+        public ImmutableArray<SqlScalarExpression> Items
         {
             get;
         }
@@ -41,12 +42,12 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public static SqlArrayCreateScalarExpression Create(params SqlScalarExpression[] items)
         {
-            return new SqlArrayCreateScalarExpression(items);
+            return new SqlArrayCreateScalarExpression(items.ToImmutableArray());
         }
 
         public static SqlArrayCreateScalarExpression Create(IReadOnlyList<SqlScalarExpression> items)
         {
-            return new SqlArrayCreateScalarExpression(items);
+            return new SqlArrayCreateScalarExpression(items.ToImmutableArray());
         }
 
         public override void Accept(SqlObjectVisitor visitor)

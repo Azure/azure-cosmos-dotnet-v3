@@ -3,20 +3,20 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
-    using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class SqlNumberLiteral : SqlLiteral
     {
         private const int Capacity = 256;
-        private static readonly Dictionary<long, SqlNumberLiteral> FrequentLongs = Enumerable
+        private static readonly ImmutableDictionary<long, SqlNumberLiteral> FrequentLongs = Enumerable
             .Range(-Capacity, Capacity)
-            .ToDictionary(x => (long)x, x => new SqlNumberLiteral((long)x));
-        private static readonly Dictionary<double, SqlNumberLiteral> FrequentDoubles = Enumerable
+            .ToDictionary(x => (long)x, x => new SqlNumberLiteral((long)x))
+            .ToImmutableDictionary();
+        private static readonly ImmutableDictionary<double, SqlNumberLiteral> FrequentDoubles = Enumerable
             .Range(-Capacity, Capacity)
-            .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x));
+            .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x))
+            .ToImmutableDictionary();
 
         private SqlNumberLiteral(Number64 value)
             : base(SqlObjectKind.NumberLiteral)

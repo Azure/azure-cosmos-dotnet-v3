@@ -18,12 +18,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlIdentifier alias)
             : base(SqlObjectKind.AliasedCollectionExpression)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException("collection");
-            }
-
-            this.Collection = collection;
+            this.Collection = collection ?? throw new ArgumentNullException("collection");
             this.Alias = alias;
         }
 

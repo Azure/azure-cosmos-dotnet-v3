@@ -4,17 +4,18 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
+    using System.Collections.Immutable;
     using System.Linq;
 
     internal sealed class SqlOffsetSpec : SqlObject
     {
         private const int PremadeOffsetIndex = 256;
-        private static readonly SqlOffsetSpec[] PremadeOffsetSpecs = Enumerable
+        private static readonly ImmutableArray<SqlOffsetSpec> PremadeOffsetSpecs = Enumerable
             .Range(0, PremadeOffsetIndex)
             .Select(offset => new SqlOffsetSpec(
                 SqlLiteralScalarExpression.Create(
                     SqlNumberLiteral.Create(offset))))
-            .ToArray();
+            .ToImmutableArray();
 
         private SqlOffsetSpec(SqlScalarExpression offsetExpression)
             : base(SqlObjectKind.OffsetSpec)
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             value = Number64.ToLong(sqlNumberLiteral.Value);
             if (value < PremadeOffsetIndex && value >= 0)
             {
-                return SqlOffsetSpec.PremadeOffsetSpecs[value];
+                return SqlOffsetSpec.PremadeOffsetSpecs[(int)value];
             }
 
             SqlScalarExpression offsetExpression = SqlLiteralScalarExpression.Create(

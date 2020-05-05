@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Globalization;
@@ -315,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 }
 
-                return SqlFunctionCallScalarExpression.Create(methodName, true, arguments);
+                return SqlFunctionCallScalarExpression.Create(methodName, true, arguments.ToImmutableArray());
             }
             else
             {
@@ -2002,7 +2003,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     properties.Add(property);
                 }
 
-                return SqlObjectCreateScalarExpression.Create(properties);
+                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
             }
 
             public SqlScalarExpression Visit(CosmosString cosmosString)

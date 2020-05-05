@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class SqlObjectObfuscator : SqlObjectVisitor<SqlObject>
@@ -117,8 +118,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override SqlObject Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
         {
-            SqlScalarExpression[] items = new SqlScalarExpression[sqlFunctionCallScalarExpression.Arguments.Count];
-            for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Count; i++)
+            SqlScalarExpression[] items = new SqlScalarExpression[sqlFunctionCallScalarExpression.Arguments.Length];
+            for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Length; i++)
             {
                 items[i] = sqlFunctionCallScalarExpression.Arguments[i].Accept(this) as SqlScalarExpression;
             }
@@ -131,8 +132,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override SqlObject Visit(SqlGroupByClause sqlGroupByClause)
         {
-            SqlScalarExpression[] expressions = new SqlScalarExpression[sqlGroupByClause.Expressions.Count];
-            for (int i = 0; i < sqlGroupByClause.Expressions.Count; i++)
+            SqlScalarExpression[] expressions = new SqlScalarExpression[sqlGroupByClause.Expressions.Length];
+            for (int i = 0; i < sqlGroupByClause.Expressions.Length; i++)
             {
                 expressions[i] = sqlGroupByClause.Expressions[i].Accept(this) as SqlScalarExpression;
             }
@@ -165,8 +166,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override SqlObject Visit(SqlInScalarExpression sqlInScalarExpression)
         {
-            SqlScalarExpression[] items = new SqlScalarExpression[sqlInScalarExpression.Haystack.Count];
-            for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
+            SqlScalarExpression[] items = new SqlScalarExpression[sqlInScalarExpression.Haystack.Length];
+            for (int i = 0; i < sqlInScalarExpression.Haystack.Length; i++)
             {
                 items[i] = sqlInScalarExpression.Haystack[i].Accept(this) as SqlScalarExpression;
             }
@@ -229,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 properties.Add(property.Accept(this) as SqlObjectProperty);
             }
 
-            return SqlObjectCreateScalarExpression.Create(properties);
+            return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
         }
 
         public override SqlObject Visit(SqlObjectProperty sqlObjectProperty)
@@ -253,8 +254,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override SqlObject Visit(SqlOrderbyClause sqlOrderByClause)
         {
-            SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderbyItems.Count];
-            for (int i = 0; i < sqlOrderByClause.OrderbyItems.Count; i++)
+            SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderbyItems.Length];
+            for (int i = 0; i < sqlOrderByClause.OrderbyItems.Length; i++)
             {
                 items[i] = sqlOrderByClause.OrderbyItems[i].Accept(this) as SqlOrderByItem;
             }
@@ -338,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 items.Add(item.Accept(this) as SqlSelectItem);
             }
 
-            return SqlSelectListSpec.Create(items);
+            return SqlSelectListSpec.Create(items.ToImmutableArray());
         }
 
         public override SqlObject Visit(SqlSelectStarSpec sqlSelectStarSpec)

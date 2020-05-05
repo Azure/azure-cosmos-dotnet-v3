@@ -5,10 +5,11 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
 
     internal sealed class SqlSelectListSpec : SqlSelectSpec
     {
-        private SqlSelectListSpec(IReadOnlyList<SqlSelectItem> items)
+        private SqlSelectListSpec(ImmutableArray<SqlSelectItem> items)
             : base(SqlObjectKind.SelectListSpec)
         {
             if (items == null)
@@ -24,20 +25,20 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
             }
 
-            this.Items = new List<SqlSelectItem>(items);
+            this.Items = items;
         }
 
-        public IReadOnlyList<SqlSelectItem> Items
+        public ImmutableArray<SqlSelectItem> Items
         {
             get;
         }
 
         public static SqlSelectListSpec Create(params SqlSelectItem[] items)
         {
-            return new SqlSelectListSpec(items);
+            return new SqlSelectListSpec(items.ToImmutableArray());
         }
 
-        public static SqlSelectListSpec Create(IReadOnlyList<SqlSelectItem> items)
+        public static SqlSelectListSpec Create(ImmutableArray<SqlSelectItem> items)
         {
             return new SqlSelectListSpec(items);
         }

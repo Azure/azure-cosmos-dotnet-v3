@@ -5,10 +5,12 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Linq.Expressions;
 
     internal sealed class SqlGroupByClause : SqlObject
     {
-        private SqlGroupByClause(IReadOnlyList<SqlScalarExpression> expressions)
+        private SqlGroupByClause(ImmutableArray<SqlScalarExpression> expressions)
             : base(SqlObjectKind.GroupByClause)
         {
             if (expressions == null)
@@ -27,17 +29,17 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.Expressions = expressions;
         }
 
-        public IReadOnlyList<SqlScalarExpression> Expressions
+        public ImmutableArray<SqlScalarExpression> Expressions
         {
             get;
         }
 
         public static SqlGroupByClause Create(params SqlScalarExpression[] expressions)
         {
-            return new SqlGroupByClause(expressions);
+            return new SqlGroupByClause(expressions.ToImmutableArray());
         }
 
-        public static SqlGroupByClause Create(IReadOnlyList<SqlScalarExpression> expressions)
+        public static SqlGroupByClause Create(ImmutableArray<SqlScalarExpression> expressions)
         {
             return new SqlGroupByClause(expressions);
         }

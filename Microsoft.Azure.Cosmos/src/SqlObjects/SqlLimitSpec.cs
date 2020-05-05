@@ -4,17 +4,18 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
+    using System.Collections.Immutable;
     using System.Linq;
 
     internal sealed class SqlLimitSpec : SqlObject
     {
         private const int PremadeLimitIndex = 256;
-        private static readonly SqlLimitSpec[] PremadeLimitSpecs = Enumerable
+        private static readonly ImmutableArray<SqlLimitSpec> PremadeLimitSpecs = Enumerable
             .Range(0, PremadeLimitIndex)
             .Select(limit => new SqlLimitSpec(
                 SqlLiteralScalarExpression.Create(
                     SqlNumberLiteral.Create(limit))))
-            .ToArray();
+            .ToImmutableArray();
 
         private SqlLimitSpec(SqlScalarExpression limitExpression)
             : base(SqlObjectKind.LimitSpec)
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             value = Number64.ToLong(sqlNumberLiteral.Value);
             if (value < PremadeLimitIndex && value >= 0)
             {
-                return SqlLimitSpec.PremadeLimitSpecs[value];
+                return SqlLimitSpec.PremadeLimitSpecs[(int)value];
             }
 
             SqlScalarExpression limitExpression = SqlLiteralScalarExpression.Create(

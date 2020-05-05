@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq.Expressions;
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
                     }
 
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONCAT", arguments);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONCAT", arguments.ToImmutableArray());
                 }
 
                 return null;

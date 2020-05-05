@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Sql;
 
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new DocumentQueryException("Expected a SqlArrayCreateScalarExpression, got a " + into.GetType());
                         }
 
-                        SqlScalarExpression[] items = new SqlScalarExpression[arrayExp.Items.Count];
+                        SqlScalarExpression[] items = new SqlScalarExpression[arrayExp.Items.Length];
                         for (int i = 0; i < items.Length; i++)
                         {
                             SqlScalarExpression item = arrayExp.Items[i];
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new DocumentQueryException("Expected a SqlFunctionCallScalarExpression, got a " + into.GetType());
                         }
 
-                        SqlScalarExpression[] items = new SqlScalarExpression[funcExp.Arguments.Count];
+                        SqlScalarExpression[] items = new SqlScalarExpression[funcExp.Arguments.Length];
                         for (int i = 0; i < items.Length; i++)
                         {
                             SqlScalarExpression item = funcExp.Arguments[i];
@@ -98,7 +99,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                         return SqlObjectCreateScalarExpression.Create(
                             objExp
                                 .Properties
-                                .Select(prop => SqlObjectProperty.Create(prop.Name, Substitute(replacement, toReplace, prop.Value))));
+                                .Select(prop => SqlObjectProperty.Create(prop.Name, Substitute(replacement, toReplace, prop.Value)))
+                                .ToImmutableArray());
                     }
                 case SqlObjectKind.MemberIndexerScalarExpression:
                     {
@@ -162,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                         SqlScalarExpression expression = Substitute(replacement, toReplace, inExpression.Needle);
 
-                        SqlScalarExpression[] items = new SqlScalarExpression[inExpression.Haystack.Count];
+                        SqlScalarExpression[] items = new SqlScalarExpression[inExpression.Haystack.Length];
                         for (int i = 0; i < items.Length; i++)
                         {
                             items[i] = Substitute(replacement, toReplace, inExpression.Haystack[i]);

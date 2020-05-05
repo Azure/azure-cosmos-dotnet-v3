@@ -5,10 +5,11 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
 
     internal sealed class SqlObjectCreateScalarExpression : SqlScalarExpression
     {
-        private SqlObjectCreateScalarExpression(IEnumerable<SqlObjectProperty> properties)
+        private SqlObjectCreateScalarExpression(ImmutableArray<SqlObjectProperty> properties)
             : base(SqlObjectKind.ObjectCreateScalarExpression)
         {
             if (properties == null)
@@ -24,20 +25,20 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
             }
 
-            this.Properties = new List<SqlObjectProperty>(properties);
+            this.Properties = properties;
         }
 
-        public IEnumerable<SqlObjectProperty> Properties
+        public ImmutableArray<SqlObjectProperty> Properties
         {
             get;
         }
 
         public static SqlObjectCreateScalarExpression Create(params SqlObjectProperty[] properties)
         {
-            return new SqlObjectCreateScalarExpression(properties);
+            return new SqlObjectCreateScalarExpression(properties.ToImmutableArray());
         }
 
-        public static SqlObjectCreateScalarExpression Create(IEnumerable<SqlObjectProperty> properties)
+        public static SqlObjectCreateScalarExpression Create(ImmutableArray<SqlObjectProperty> properties)
         {
             return new SqlObjectCreateScalarExpression(properties);
         }

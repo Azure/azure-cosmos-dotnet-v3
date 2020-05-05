@@ -5,10 +5,14 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
 
     internal sealed class SqlInScalarExpression : SqlScalarExpression
     {
-        private SqlInScalarExpression(SqlScalarExpression needle, bool not, IReadOnlyList<SqlScalarExpression> haystack)
+        private SqlInScalarExpression(
+            SqlScalarExpression needle,
+            bool not,
+            ImmutableArray<SqlScalarExpression> haystack)
             : base(SqlObjectKind.InScalarExpression)
         {
             if (needle == null)
@@ -21,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 throw new ArgumentNullException("items");
             }
 
-            if (haystack.Count == 0)
+            if (haystack.IsEmpty)
             {
                 throw new ArgumentException("items can't be empty.");
             }
@@ -36,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
             this.Needle = needle;
             this.Not = not;
-            this.Haystack = new List<SqlScalarExpression>(haystack);
+            this.Haystack = haystack;
         }
 
         public SqlScalarExpression Needle
@@ -49,17 +53,17 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
-        public IReadOnlyList<SqlScalarExpression> Haystack
+        public ImmutableArray<SqlScalarExpression> Haystack
         {
             get;
         }
 
         public static SqlInScalarExpression Create(SqlScalarExpression needle, bool not, params SqlScalarExpression[] haystack)
         {
-            return new SqlInScalarExpression(needle, not, haystack);
+            return new SqlInScalarExpression(needle, not, haystack.ToImmutableArray());
         }
 
-        public static SqlInScalarExpression Create(SqlScalarExpression needle, bool not, IReadOnlyList<SqlScalarExpression> haystack)
+        public static SqlInScalarExpression Create(SqlScalarExpression needle, bool not, ImmutableArray<SqlScalarExpression> haystack)
         {
             return new SqlInScalarExpression(needle, not, haystack);
         }

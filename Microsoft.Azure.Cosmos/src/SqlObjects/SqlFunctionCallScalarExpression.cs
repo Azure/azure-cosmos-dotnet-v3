@@ -5,10 +5,10 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
 
     internal sealed class SqlFunctionCallScalarExpression : SqlScalarExpression
     {
-        private const string UdfNamespaceQualifier = "udf.";
         private static readonly Dictionary<string, SqlIdentifier> FunctionIdentifiers = new Dictionary<string, SqlIdentifier>(StringComparer.OrdinalIgnoreCase)
         {
             { Names.InternalCompareBsonBinaryData, Identifiers.InternalCompareBsonBinaryData },
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlFunctionCallScalarExpression(
             SqlIdentifier name,
             bool isUdf,
-            IReadOnlyList<SqlScalarExpression> arguments)
+            ImmutableArray<SqlScalarExpression> arguments)
             : base(SqlObjectKind.FunctionCallScalarExpression)
         {
             if (name == null)
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
             }
 
-            this.Arguments = new List<SqlScalarExpression>(arguments);
+            this.Arguments = arguments;
             this.Name = name;
             this.IsUdf = isUdf;
         }
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
-        public IReadOnlyList<SqlScalarExpression> Arguments
+        public ImmutableArray<SqlScalarExpression> Arguments
         {
             get;
         }
@@ -139,13 +139,13 @@ namespace Microsoft.Azure.Cosmos.Sql
             bool isUdf,
             params SqlScalarExpression[] arguments)
         {
-            return new SqlFunctionCallScalarExpression(name, isUdf, arguments);
+            return new SqlFunctionCallScalarExpression(name, isUdf, arguments.ToImmutableArray());
         }
 
         public static SqlFunctionCallScalarExpression Create(
             SqlIdentifier name,
             bool isUdf,
-            IReadOnlyList<SqlScalarExpression> arguments)
+            ImmutableArray<SqlScalarExpression> arguments)
         {
             return new SqlFunctionCallScalarExpression(name, isUdf, arguments);
         }
@@ -155,22 +155,15 @@ namespace Microsoft.Azure.Cosmos.Sql
             bool isUdf,
             params SqlScalarExpression[] arguments)
         {
-            SqlIdentifier sqlIdentifier;
-            if (!SqlFunctionCallScalarExpression.FunctionIdentifiers.TryGetValue(name, out sqlIdentifier))
-            {
-                sqlIdentifier = SqlIdentifier.Create(name);
-            }
-
-            return SqlFunctionCallScalarExpression.Create(sqlIdentifier, isUdf, arguments);
+            return SqlFunctionCallScalarExpression.Create(name, isUdf, arguments.ToImmutableArray());
         }
 
         public static SqlFunctionCallScalarExpression Create(
             string name,
             bool isUdf,
-            IReadOnlyList<SqlScalarExpression> arguments)
+            ImmutableArray<SqlScalarExpression> arguments)
         {
-            SqlIdentifier sqlIdentifier;
-            if (!SqlFunctionCallScalarExpression.FunctionIdentifiers.TryGetValue(name, out sqlIdentifier))
+            if (!SqlFunctionCallScalarExpression.FunctionIdentifiers.TryGetValue(name, out SqlIdentifier sqlIdentifier))
             {
                 sqlIdentifier = SqlIdentifier.Create(name);
             }
@@ -178,24 +171,24 @@ namespace Microsoft.Azure.Cosmos.Sql
             return SqlFunctionCallScalarExpression.Create(sqlIdentifier, isUdf, arguments);
         }
 
-        public static SqlFunctionCallScalarExpression CreateBuiltin(string name, IReadOnlyList<SqlScalarExpression> arguments)
-        {
-            return SqlFunctionCallScalarExpression.Create(name, false, arguments);
-        }
-
         public static SqlFunctionCallScalarExpression CreateBuiltin(string name, params SqlScalarExpression[] arguments)
         {
-            return SqlFunctionCallScalarExpression.Create(name, false, arguments);
+            return SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
         }
 
-        public static SqlFunctionCallScalarExpression CreateBuiltin(SqlIdentifier name, IReadOnlyList<SqlScalarExpression> arguments)
+        public static SqlFunctionCallScalarExpression CreateBuiltin(string name, ImmutableArray<SqlScalarExpression> arguments)
         {
-            return SqlFunctionCallScalarExpression.Create(name, false, arguments);
+            return SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
         }
 
         public static SqlFunctionCallScalarExpression CreateBuiltin(SqlIdentifier name, params SqlScalarExpression[] arguments)
         {
-            return SqlFunctionCallScalarExpression.Create(name, false, arguments);
+            return SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+        }
+
+        public static SqlFunctionCallScalarExpression CreateBuiltin(SqlIdentifier name, ImmutableArray<SqlScalarExpression> arguments)
+        {
+            return SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

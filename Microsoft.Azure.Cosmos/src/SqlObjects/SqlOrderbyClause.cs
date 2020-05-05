@@ -4,11 +4,11 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections.Immutable;
 
     internal sealed class SqlOrderbyClause : SqlObject
     {
-        private SqlOrderbyClause(IReadOnlyList<SqlOrderByItem> orderbyItems)
+        private SqlOrderbyClause(ImmutableArray<SqlOrderByItem> orderbyItems)
             : base(SqlObjectKind.OrderByClause)
         {
             if (orderbyItems == null)
@@ -27,17 +27,17 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.OrderbyItems = orderbyItems;
         }
 
-        public IReadOnlyList<SqlOrderByItem> OrderbyItems
+        public ImmutableArray<SqlOrderByItem> OrderbyItems
         {
             get;
         }
 
         public static SqlOrderbyClause Create(params SqlOrderByItem[] orderbyItems)
         {
-            return new SqlOrderbyClause(orderbyItems);
+            return new SqlOrderbyClause(orderbyItems.ToImmutableArray());
         }
 
-        public static SqlOrderbyClause Create(IReadOnlyList<SqlOrderByItem> orderbyItems)
+        public static SqlOrderbyClause Create(ImmutableArray<SqlOrderByItem> orderbyItems)
         {
             return new SqlOrderbyClause(orderbyItems);
         }

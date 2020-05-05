@@ -13,24 +13,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression alternative)
             : base(SqlObjectKind.ConditionalScalarExpression)
         {
-            if (condition == null)
-            {
-                throw new ArgumentNullException("condition");
-            }
-
-            if (consequent == null)
-            {
-                throw new ArgumentNullException("first");
-            }
-
-            if (alternative == null)
-            {
-                throw new ArgumentNullException("second");
-            }
-
-            this.Condition = condition;
-            this.Consequent = consequent;
-            this.Alternative = alternative;
+            this.Condition = condition ?? throw new ArgumentNullException(nameof(condition));
+            this.Consequent = consequent ?? throw new ArgumentNullException(nameof(consequent));
+            this.Alternative = alternative ?? throw new ArgumentNullException(nameof(alternative));
         }
 
         public SqlScalarExpression Condition
