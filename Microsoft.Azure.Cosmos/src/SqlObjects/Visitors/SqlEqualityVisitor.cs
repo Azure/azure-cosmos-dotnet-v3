@@ -4,12 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.ServiceProcess;
     using Microsoft.Azure.Cosmos.Sql;
+    using Newtonsoft.Json.Bson;
 
     internal sealed class SqlEqualityVisitor : SqlObjectVisitor<SqlObject, bool>
     {
@@ -51,17 +49,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            IEnumerable<(SqlScalarExpression, SqlScalarExpression)> itemPairs = first
-                .Items
-                .Zip(
-                    second.Items,
-                    (first, second) => (first, second));
-            foreach ((SqlScalarExpression firstItem, SqlScalarExpression secondItem) in itemPairs)
+            if (!SequenceEquals(first.Items, second.Items))
             {
-                if (firstItem.Accept(this, secondItem))
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
@@ -264,22 +254,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.Arguments.Count != second.Arguments.Count)
+            if (!SequenceEquals(first.Arguments, second.Arguments))
             {
                 return false;
-            }
-
-            IEnumerable<(SqlScalarExpression, SqlScalarExpression)> argumentPairs = first
-                .Arguments
-                .Zip(
-                    second.Arguments,
-                    (first, second) => (first, second));
-            foreach ((SqlScalarExpression firstItem, SqlScalarExpression secondItem) in argumentPairs)
-            {
-                if (!Equals(firstItem, secondItem))
-                {
-                    return false;
-                }
             }
 
             return true;
@@ -297,17 +274,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            IEnumerable<(SqlScalarExpression, SqlScalarExpression)> argumentPairs = first
-                .Expressions
-                .Zip(
-                    second.Expressions,
-                    (first, second) => (first, second));
-            foreach ((SqlScalarExpression firstItem, SqlScalarExpression secondItem) in argumentPairs)
+            if (!SequenceEquals(first.Expressions, second.Expressions))
             {
-                if (!Equals(firstItem, secondItem))
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
@@ -390,17 +359,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            IEnumerable<(SqlScalarExpression, SqlScalarExpression)> itemPairs = first
-                .Items
-                .Zip(
-                    second.Items,
-                    (first, second) => (first, second));
-            foreach ((SqlScalarExpression firstItem, SqlScalarExpression secondItem) in itemPairs)
+            if (!SequenceEquals(first.Items, second.Items))
             {
-                if (!Equals(firstItem, secondItem))
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
@@ -443,22 +404,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.Items.Count != second.Items.Count)
+            if (!SequenceEquals(first.Items, second.Items))
             {
                 return false;
-            }
-
-            IEnumerable<(SqlScalarExpression, SqlScalarExpression)> itemPairs = first
-                 .Items
-                 .Zip(
-                     second.Items,
-                     (first, second) => (first, second));
-            foreach ((SqlScalarExpression firstItem, SqlScalarExpression secondItem) in itemPairs)
-            {
-                if (!Equals(firstItem, secondItem))
-                {
-                    return false;
-                }
             }
 
             return true;
@@ -621,22 +569,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.OrderbyItems.Count != second.OrderbyItems.Count)
+            if (!SequenceEquals(first.OrderbyItems, second.OrderbyItems))
             {
                 return false;
-            }
-
-            IEnumerable<(SqlOrderByItem, SqlOrderByItem)> itemPairs = first
-                .OrderbyItems
-                .Zip(
-                    second.OrderbyItems,
-                    (first, second) => (first, second));
-            foreach ((SqlOrderByItem firstItem, SqlOrderByItem secondItem) in itemPairs)
-            {
-                if (!Equals(firstItem, secondItem))
-                {
-                    return false;
-                }
             }
 
             return true;
@@ -829,22 +764,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.Items.Count != second.Items.Count)
+            if (!SequenceEquals(first.Items, second.Items))
             {
                 return false;
-            }
-
-            IEnumerable<(SqlSelectItem, SqlSelectItem)> itemPairs = first
-                .Items
-                .Zip(
-                    second.Items,
-                    (first, second) => (first, second));
-            foreach ((SqlSelectItem firstItem, SqlSelectItem secondItem) in itemPairs)
-            {
-                if (!Equals(firstItem, secondItem))
-                {
-                    return false;
-                }
             }
 
             return true;
@@ -990,6 +912,29 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             if (!Equals(first.FilterExpression, second.FilterExpression))
             {
                 return false;
+            }
+
+            return true;
+        }
+
+        private static bool SequenceEquals(
+            IReadOnlyList<SqlObject> firstList,
+            IReadOnlyList<SqlObject> secondList)
+        {
+            if (firstList.Count != secondList.Count)
+            {
+                return false;
+            }
+
+            IEnumerable<(SqlObject, SqlObject)> itemPairs = firstList
+                .Zip(secondList, (first, second) => (first, second));
+
+            foreach ((SqlObject firstItem, SqlObject secondItem) in itemPairs)
+            {
+                if (firstItem.Accept(SqlEqualityVisitor.Singleton, secondItem))
+                {
+                    return false;
+                }
             }
 
             return true;
