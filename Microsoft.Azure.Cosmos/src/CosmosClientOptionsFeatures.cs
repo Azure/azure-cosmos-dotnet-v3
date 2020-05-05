@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     internal enum CosmosClientOptionsFeatures
     {
         NoFeatures = 0,
-        AllowBulkExecution = 1
+        AllowBulkExecution = 1,
+        HttpClientFactory = 2
     }
 }

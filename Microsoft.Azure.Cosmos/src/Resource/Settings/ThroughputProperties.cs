@@ -77,12 +77,7 @@ namespace Microsoft.Azure.Cosmos
         /// The maximum throughput the autoscale will scale to.
         /// </summary>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? MaxAutoscaleThroughput => this.Content?.OfferAutoscaleSettings?.MaxThroughput;
+        public int? AutoscaleMaxThroughput => this.Content?.OfferAutoscaleSettings?.MaxThroughput;
 
         /// <summary>
         /// The amount to increment if the maximum RUs is getting throttled.
@@ -95,31 +90,31 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="throughput">The current provisioned throughput for the resource.</param>
         /// <returns>Returns a ThroughputProperties for manual throughput</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static ThroughputProperties CreateManualThroughput(int throughput)
+        public static ThroughputProperties CreateManualThroughput(int throughput)
         {
+            if (throughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(throughput)} must be greater than 0");
+            }
+
             return new ThroughputProperties(OfferContentProperties.CreateManualOfferConent(throughput));
         }
 
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
-        /// <param name="maxAutoscaleThroughput">The maximum throughput the resource can scale to.</param>
+        /// <param name="autoscaleMaxThroughput">The maximum throughput the resource can scale to.</param>
         /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static ThroughputProperties CreateAutoscaleThroughput(
-            int maxAutoscaleThroughput)
+        public static ThroughputProperties CreateAutoscaleThroughput(
+            int autoscaleMaxThroughput)
         {
+            if (autoscaleMaxThroughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(autoscaleMaxThroughput)} must be greater than 0");
+            }
+
             return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
-                startingMaxThroughput: maxAutoscaleThroughput,
+                startingMaxThroughput: autoscaleMaxThroughput,
                 autoUpgradeMaxThroughputIncrementPercentage: null));
         }
 
