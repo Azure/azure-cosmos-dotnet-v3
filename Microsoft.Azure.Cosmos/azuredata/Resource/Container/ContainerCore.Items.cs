@@ -221,7 +221,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
-        public override IAsyncEnumerable<Response> GetItemQueryStreamIterator(
+        public override IAsyncEnumerable<Response> GetItemQueryStreamResultsAsync(
            string queryText = null,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null,
@@ -233,14 +233,14 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetItemQueryStreamIterator(
+            return this.GetItemQueryStreamResultsAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async IAsyncEnumerable<Response> GetItemQueryStreamIterator(
+        public override async IAsyncEnumerable<Response> GetItemQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -339,7 +339,7 @@ namespace Azure.Cosmos
             return ((null, partitionedQueryExecutionInfo), (supported, queryIterator));
         }
 
-        public override AsyncPageable<T> GetItemQueryIterator<T>(
+        public override AsyncPageable<T> GetItemQueryResultsAsync<T>(
            string queryText = null,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null,
@@ -351,14 +351,14 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetItemQueryIterator<T>(
+            return this.GetItemQueryResultsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override AsyncPageable<T> GetItemQueryIterator<T>(
+        public override AsyncPageable<T> GetItemQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -470,7 +470,7 @@ namespace Azure.Cosmos
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
-        internal async IAsyncEnumerable<Response> GetStandByFeedIterator(
+        internal async IAsyncEnumerable<Response> GetStandByFeedIteratorAsync(
             string continuationToken = null,
             int? maxItemCount = null,
             ChangeFeedRequestOptions requestOptions = null,

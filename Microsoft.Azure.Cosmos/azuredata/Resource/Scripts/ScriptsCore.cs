@@ -38,7 +38,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override IAsyncEnumerable<Response> GetStoredProcedureQueryStreamIterator(
+        public override IAsyncEnumerable<Response> GetStoredProcedureQueryStreamResultsAsync(
            string queryText = null,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null,
@@ -50,14 +50,14 @@ namespace Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetStoredProcedureQueryStreamIterator(
+            return this.GetStoredProcedureQueryStreamResultsAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override AsyncPageable<T> GetStoredProcedureQueryIterator<T>(
+        public override AsyncPageable<T> GetStoredProcedureQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -69,14 +69,14 @@ namespace Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetStoredProcedureQueryIterator<T>(
+            return this.GetStoredProcedureQueryResultsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async IAsyncEnumerable<Response> GetStoredProcedureQueryStreamIterator(
+        public override async IAsyncEnumerable<Response> GetStoredProcedureQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -89,7 +89,7 @@ namespace Azure.Cosmos.Scripts
             }
         }
 
-        public override AsyncPageable<T> GetStoredProcedureQueryIterator<T>(
+        public override AsyncPageable<T> GetStoredProcedureQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -236,7 +236,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override IAsyncEnumerable<Response> GetTriggerQueryStreamIterator(
+        public override IAsyncEnumerable<Response> GetTriggerQueryStreamResultsAsync(
            string queryText = null,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null,
@@ -248,14 +248,14 @@ namespace Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetTriggerQueryStreamIterator(
+            return this.GetTriggerQueryStreamResultsAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override AsyncPageable<T> GetTriggerQueryIterator<T>(
+        public override AsyncPageable<T> GetTriggerQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -267,14 +267,14 @@ namespace Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetTriggerQueryIterator<T>(
+            return this.GetTriggerQueryResultsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async IAsyncEnumerable<Response> GetTriggerQueryStreamIterator(
+        public override async IAsyncEnumerable<Response> GetTriggerQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -290,7 +290,7 @@ namespace Azure.Cosmos.Scripts
             }
         }
 
-        public override AsyncPageable<T> GetTriggerQueryIterator<T>(
+        public override AsyncPageable<T> GetTriggerQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -400,7 +400,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override IAsyncEnumerable<Response> GetUserDefinedFunctionQueryStreamIterator(
+        public override IAsyncEnumerable<Response> GetUserDefinedFunctionQueryStreamResultsAsync(
            string queryText = null,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null,
@@ -412,14 +412,14 @@ namespace Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetUserDefinedFunctionQueryStreamIterator(
+            return this.GetUserDefinedFunctionQueryStreamResultsAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override AsyncPageable<T> GetUserDefinedFunctionQueryIterator<T>(
+        public override AsyncPageable<T> GetUserDefinedFunctionQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -431,14 +431,14 @@ namespace Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetUserDefinedFunctionQueryIterator<T>(
+            return this.GetUserDefinedFunctionQueryResultsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async IAsyncEnumerable<Response> GetUserDefinedFunctionQueryStreamIterator(
+        public override async IAsyncEnumerable<Response> GetUserDefinedFunctionQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -457,7 +457,7 @@ namespace Azure.Cosmos.Scripts
             }
         }
 
-        public override AsyncPageable<T> GetUserDefinedFunctionQueryIterator<T>(
+        public override AsyncPageable<T> GetUserDefinedFunctionQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,

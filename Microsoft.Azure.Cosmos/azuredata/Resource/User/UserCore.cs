@@ -206,7 +206,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response, cancellationToken);
         }
 
-        public override AsyncPageable<T> GetPermissionQueryIterator<T>(QueryDefinition queryDefinition,
+        public override AsyncPageable<T> GetPermissionQueryResultsAsync<T>(QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -223,7 +223,7 @@ namespace Azure.Cosmos
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
 
-        public async IAsyncEnumerable<Response> GetPermissionQueryStreamIterator(QueryDefinition queryDefinition,
+        public async IAsyncEnumerable<Response> GetPermissionQueryStreamResultsAsync(QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default(CancellationToken))
@@ -239,7 +239,7 @@ namespace Azure.Cosmos
             }
         }
 
-        public override AsyncPageable<T> GetPermissionQueryIterator<T>(string queryText = null,
+        public override AsyncPageable<T> GetPermissionQueryResultsAsync<T>(string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -250,14 +250,14 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetPermissionQueryIterator<T>(
+            return this.GetPermissionQueryResultsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public IAsyncEnumerable<Response> GetPermissionQueryStreamIterator(string queryText = null,
+        public IAsyncEnumerable<Response> GetPermissionQueryStreamResultsAsync(string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -268,7 +268,7 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetPermissionQueryStreamIterator(
+            return this.GetPermissionQueryStreamResultsAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,

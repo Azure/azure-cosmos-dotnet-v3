@@ -11,7 +11,7 @@ namespace Azure.Cosmos
     /// <summary>
     /// Operations for reading/querying conflicts in a Azure Cosmos container.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "AsyncPageable or IAsyncEnumerable are not considered Async for checkers.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "AsyncPageable is not considered Async for checkers.")]
     public abstract class CosmosConflicts
     {
         /// <summary>
@@ -71,13 +71,13 @@ namespace Azure.Cosmos
         public abstract T ReadConflictContent<T>(ConflictProperties conflict);
 
         /// <summary>
-        /// Obtains an iterator to go through the <see cref="ConflictProperties"/> on an Azure Cosmos container.
+        /// Obtains an <see cref="AsyncPageable{T}"/> to go through the <see cref="ConflictProperties"/> on an Azure Cosmos container.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the conflicts.</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the conflicts.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -94,13 +94,13 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the conflicts for the container as the original ResponseMessage
+        /// Gets an <see cref="IAsyncEnumerable{Response}"/> to go through all the conflicts for the container as streams
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the conflicts.</returns>
+        /// <returns>An async enumerable to go through the conflicts.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -117,13 +117,13 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Obtains an iterator to go through the <see cref="ConflictProperties"/> on an Azure Cosmos container.
+        /// Obtains an <see cref="AsyncPageable{T}"/> to go through the <see cref="ConflictProperties"/> on an Azure Cosmos container.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the conflicts.</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the conflicts.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -140,13 +140,13 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the conflicts for the container as the original ResponseMessage
+        /// Gets an <see cref="IAsyncEnumerable{Response}"/> to go through all the conflicts for the container as streams
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the conflicts.</returns>
+        /// <returns>An async enumerable to go through the conflicts.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[

@@ -21,6 +21,7 @@ namespace Azure.Cosmos
     /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
     /// do this once on application start up.
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "AsyncPageable is not considered Async for checkers.")]
     public abstract class CosmosDatabase
     {
         /// <summary>
@@ -583,50 +584,48 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for containers under an database using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the containers</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the containers</returns>
         /// <example>
-        /// This create the type feed iterator for containers with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testDatabaseId");
-        /// await foreach(ContainerProperties properties in this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(queryDefinition))
+        /// await foreach(ContainerProperties properties in this.cosmosDatabase.GetContainerQueryResultsAsync<ContainerProperties>(queryDefinition))
         /// {
         ///     Console.WriteLine(properties.Id);
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetContainerQueryIterator<T>(
+        public abstract AsyncPageable<T> GetContainerQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for containers under an database using a SQL statement. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the containers</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to go through the containers</returns>
         /// <example>
-        /// This create the stream feed iterator for containers with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// await foreach(Response response in this.cosmosDatabase.GetContainerQueryStreamIterator(queryDefinition))
+        /// await foreach(Response response in this.cosmosDatabase.GetContainerQueryStreamResultsAsync(queryDefinition))
         /// {
         ///     using (StreamReader sr = new StreamReader(response.Content))
         ///     using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -637,27 +636,27 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetContainerQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetContainerQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for containers under an database using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the containers</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the containers</returns>
         /// <example>
-        /// 1. This create the type feed iterator for containers with queryText as input,
+        /// 1. This create the enumerable for containers with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// await foreach(ContainerProperties properties in this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(querytext))
+        /// await foreach(ContainerProperties properties in this.cosmosDatabase.GetContainerQueryResultsAsync<ContainerProperties>(querytext))
         /// {
         ///     Console.WriteLine(properties.Id);
         /// }
@@ -665,37 +664,37 @@ namespace Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// 2. This create the type feed iterator for containers without queryText, retrieving all containers.
+        /// 2. This create the enumerable for containers without queryText, retrieving all containers.
         /// <code language="c#">
         /// <![CDATA[
-        /// await foreach(ContainerProperties properties in this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>())
+        /// await foreach(ContainerProperties properties in this.cosmosDatabase.GetContainerQueryResultsAsync<ContainerProperties>())
         /// {
         ///     Console.WriteLine(properties.Id);
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetContainerQueryIterator<T>(
+        public abstract AsyncPageable<T> GetContainerQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for containers under an database using a SQL statement. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the containers</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to go through the containers</returns>
         /// <example>
-        /// 1. This create the stream feed iterator for containers with queryText as input.
+        /// 1. This create the stream enumerable for containers with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// await foreach (Response response in this.cosmosDatabase.GetContainerQueryStreamIterator(queryText))
+        /// await foreach (Response response in this.cosmosDatabase.GetContainerQueryStreamResultsAsync(queryText))
         /// {
         ///
         /// }
@@ -703,37 +702,37 @@ namespace Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// 2. This create the stream feed iterator for containers without queryText, retrieving all container.
+        /// 2. This create the stream enumerable for containers without queryText, retrieving all container.
         /// <code language="c#">
         /// <![CDATA[
-        /// await foreach (Response response in this.cosmosDatabase.GetContainerQueryStreamIterator())
+        /// await foreach (Response response in this.cosmosDatabase.GetContainerQueryStreamResultsAsync())
         /// {
         ///
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetContainerQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetContainerQueryStreamResultsAsync(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for users under an database using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for users under an database using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the users</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the users</returns>
         /// <example>
-        /// 1. This create the type feed iterator for users with queryText as input,
+        /// 1. This create the enumerable for users with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// await foreach (UserProperties properties in this.cosmosDatabase.GetUserQueryIterator<UserProperties>(queryText))
+        /// await foreach (UserProperties properties in this.cosmosDatabase.GetUserQueryResultsAsync<UserProperties>(queryText))
         /// {
         ///     
         /// }
@@ -741,46 +740,46 @@ namespace Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// 2. This create the type feed iterator for users without queryText, retrieving all users.
+        /// 2. This create the enumerable for users without queryText, retrieving all users.
         /// <code language="c#">
         /// <![CDATA[
-        /// await foreach (UserProperties properties in this.cosmosDatabase.GetUserQueryIterator<ContainerProperties>())
+        /// await foreach (UserProperties properties in this.cosmosDatabase.GetUserQueryResultsAsync<ContainerProperties>())
         /// {
         /// 
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetUserQueryIterator<T>(
+        public abstract AsyncPageable<T> GetUserQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for users under an database using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for users under an database using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the users</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the users</returns>
         /// <example>
-        /// This create the type feed iterator for users with queryDefinition as input.
+        /// This creates the enumerable for users with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testUserId");
-        /// await foreach(UserProperties properties in this.cosmosDatabase.GetUserQueryIterator<UserProperties>(queryDefinition))
+        /// await foreach(UserProperties properties in this.cosmosDatabase.GetUserQueryResultsAsync<UserProperties>(queryDefinition))
         /// {
         ///     Console.WriteLine(properties.Id);
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetUserQueryIterator<T>(
+        public abstract AsyncPageable<T> GetUserQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
