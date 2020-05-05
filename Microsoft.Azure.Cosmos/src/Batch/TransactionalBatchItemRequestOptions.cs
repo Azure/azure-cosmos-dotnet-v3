@@ -19,24 +19,26 @@ namespace Microsoft.Azure.Cosmos
         public IndexingDirective? IndexingDirective { get; set; }
 
         /// <summary>
-        /// Gets or sets the boolean to only return the headers and status code in the Cosmos DB response.
+        /// Gets or sets the boolean to only return the headers and status code in
+        /// the Cosmos DB response for write item operations like Create, Upsert, and Replace.
         /// This removes the resource from the response. This reduces networking and CPU load by not sending
         /// the resource back over the network and serializing it on the client.
         /// </summary>
         /// <remarks>
         /// This is optimal for workloads where the returned resource is not used.
         /// </remarks>
-        public virtual bool? NoContentResponseOnWrite { get; set; }
+        public bool? NoContentResponseOnWrite { get; set; }
 
         /// <summary>
-        /// Gets or sets the boolean to only return the headers and status code in the Cosmos DB response.
+        /// Gets or sets the boolean to only return the headers and status code in
+        /// the Cosmos DB response for read item operations like ReadItem
         /// This removes the resource from the response. This reduces networking and CPU load by not sending
         /// the resource back over the network and serializing it on the client.
         /// </summary>
         /// <remarks>
         /// This is optimal for workloads where the returned resource is not used.
         /// </remarks>
-        public virtual bool? NoContentResponseOnRead { get; set; }
+        public bool? NoContentResponseOnRead { get; set; }
 
         /// <summary>
         /// Options to encrypt properties of the item.
