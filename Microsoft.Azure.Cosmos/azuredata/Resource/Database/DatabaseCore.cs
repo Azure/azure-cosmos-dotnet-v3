@@ -479,7 +479,7 @@ namespace Azure.Cosmos
                 cancellationToken);
         }
 
-        public IAsyncEnumerable<Response> GetUserQueryResultsStreamAsync(string queryText = null,
+        public IAsyncEnumerable<Response> GetUserQueryStreamResultsAsync(string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))

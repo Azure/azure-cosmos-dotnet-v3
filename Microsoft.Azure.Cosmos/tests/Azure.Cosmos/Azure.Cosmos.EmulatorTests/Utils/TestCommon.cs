@@ -195,7 +195,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             IList<Cosmos.CosmosDatabase> databases = new List<Cosmos.CosmosDatabase>();
 
-            AsyncPageable<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
+            AsyncPageable<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryResultsAsync<DatabaseProperties>(
                 queryDefinition: null,
                 continuationToken: null,
                 requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
@@ -224,7 +224,7 @@ namespace Azure.Cosmos.EmulatorTests
         public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, Cosmos.CosmosDatabase database)
         {
             //Delete them in chunks of 10.
-            AsyncPageable<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+            AsyncPageable<ContainerProperties> resultSetIterator = database.GetContainerQueryResultsAsync<ContainerProperties>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
             List<Task> deleteCollectionTasks = new List<Task>(10);
             await foreach (ContainerProperties container in resultSetIterator)
             {
