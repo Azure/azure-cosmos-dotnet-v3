@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text.RegularExpressions;
     using System.Xml;
     using BaselineTest;
@@ -105,6 +106,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 $"{nameof(long.MaxValue)} {long.MaxValue}",
                 SqlNumberLiteral.Create(long.MaxValue)));
             this.ExecuteTestSuite(inputs);
+
+            ValidateEquality(inputs);
         }
 
         [TestMethod]
@@ -220,6 +223,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(-42)))));
 
             this.ExecuteTestSuite(inputs);
+
+            ValidateEquality(inputs);
         }
 
         [TestMethod]
@@ -239,6 +244,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             }
 
             this.ExecuteTestSuite(inputs);
+
+            ValidateEquality(inputs);
         }
 
         [TestMethod]
@@ -773,6 +780,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
 
             this.ExecuteTestSuite(inputs);
+
+            ValidateEquality(inputs);
         }
 
         [TestMethod]
@@ -942,6 +951,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlExistsScalarExpression.Create(query)));
 
             this.ExecuteTestSuite(inputs);
+
+            ValidateEquality(inputs);
         }
 
         public override SqlObjectVisitorOutput ExecuteTest(SqlObjectVisitorInput input)
@@ -970,6 +981,29 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             }
 
             return output;
+        }
+
+        private static void ValidateEquality(List<SqlObjectVisitorInput> inputs)
+        {
+            Assert.IsNotNull(inputs);
+            Assert.AreNotEqual(0, inputs.Count);
+
+            List<SqlObject> sqlObjects = inputs.Select(x => x.SqlObject).ToList();
+            foreach (SqlObject first in sqlObjects)
+            {
+                foreach (SqlObject second in sqlObjects)
+                {
+                    if (object.ReferenceEquals(first, second))
+                    {
+                        Assert.AreEqual(first, second);
+                        Assert.AreEqual(first.GetHashCode(), second.GetHashCode());
+                    }
+                    else
+                    {
+                        Assert.AreNotEqual(first, second);
+                    }
+                }
+            }
         }
     }
 

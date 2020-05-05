@@ -46,7 +46,16 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            IEnumerable<(SqlScalarExpression, SqlScalarExpression)> itemPairs = first.Items.Zip(second.Items, (first, second) => (first, second));
+            if (first.Items.Count != second.Items.Count)
+            {
+                return false;
+            }
+
+            IEnumerable<(SqlScalarExpression, SqlScalarExpression)> itemPairs = first
+                .Items
+                .Zip(
+                    second.Items,
+                    (first, second) => (first, second));
             foreach ((SqlScalarExpression firstItem, SqlScalarExpression secondItem) in itemPairs)
             {
                 if (firstItem.Accept(this, secondItem))
@@ -255,6 +264,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
+            if (first.Arguments.Count != second.Arguments.Count)
+            {
+                return false;
+            }
+
             IEnumerable<(SqlScalarExpression, SqlScalarExpression)> argumentPairs = first
                 .Arguments
                 .Zip(
@@ -274,6 +288,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override bool Visit(SqlGroupByClause first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlGroupByClause second))
+            {
+                return false;
+            }
+
+            if (first.Expressions.Count != second.Expressions.Count)
             {
                 return false;
             }
@@ -366,6 +385,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
+            if (first.Items.Count != second.Items.Count)
+            {
+                return false;
+            }
+
             IEnumerable<(SqlScalarExpression, SqlScalarExpression)> itemPairs = first
                 .Items
                 .Zip(
@@ -414,7 +438,30 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override bool Visit(SqlLiteralArrayCollection first, SqlObject secondAsObject)
         {
-            throw new System.NotImplementedException();
+            if (!(secondAsObject is SqlLiteralArrayCollection second))
+            {
+                return false;
+            }
+
+            if (first.Items.Count != second.Items.Count)
+            {
+                return false;
+            }
+
+            IEnumerable<(SqlScalarExpression, SqlScalarExpression)> itemPairs = first
+                 .Items
+                 .Zip(
+                     second.Items,
+                     (first, second) => (first, second));
+            foreach ((SqlScalarExpression firstItem, SqlScalarExpression secondItem) in itemPairs)
+            {
+                if (!Equals(firstItem, secondItem))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public override bool Visit(SqlLiteralScalarExpression first, SqlObject secondAsObject)
@@ -570,6 +617,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override bool Visit(SqlOrderbyClause first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlOrderbyClause second))
+            {
+                return false;
+            }
+
+            if (first.OrderbyItems.Count != second.OrderbyItems.Count)
             {
                 return false;
             }
@@ -773,6 +825,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override bool Visit(SqlSelectListSpec first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlSelectListSpec second))
+            {
+                return false;
+            }
+
+            if (first.Items.Count != second.Items.Count)
             {
                 return false;
             }

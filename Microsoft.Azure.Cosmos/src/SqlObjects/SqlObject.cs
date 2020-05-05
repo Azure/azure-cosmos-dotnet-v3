@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public bool Equals(SqlObject other)
         {
-            return this.Accept(SqlEqualityVisitor.Singleton, other);
+            return SqlObject.Equals(this, other);
         }
 
         public string PrettyPrint()
@@ -68,7 +68,22 @@ namespace Microsoft.Azure.Cosmos.Sql
             return sqlObjectTextSerializer.ToString();
         }
 
-        public static bool operator ==(SqlObject first, SqlObject second) => first.Equals(second);
+        public static bool Equals(SqlObject first, SqlObject second)
+        {
+            if (object.ReferenceEquals(first, second))
+            {
+                return true;
+            }
+
+            if ((first is null) || (second is null))
+            {
+                return false;
+            }
+
+            return first.Accept(SqlEqualityVisitor.Singleton, second);
+        }
+
+        public static bool operator ==(SqlObject first, SqlObject second) => SqlObject.Equals(first, second);
         public static bool operator !=(SqlObject first, SqlObject second) => !(first == second);
     }
 }
