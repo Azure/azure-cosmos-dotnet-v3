@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlArrayIteratorCollectionExpression(
            SqlIdentifier identifier,
            SqlCollection collection)
-            : base(SqlObjectKind.ArrayIteratorCollectionExpression)
         {
             this.Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
             this.Collection = collection ?? throw new ArgumentNullException(nameof(collection));

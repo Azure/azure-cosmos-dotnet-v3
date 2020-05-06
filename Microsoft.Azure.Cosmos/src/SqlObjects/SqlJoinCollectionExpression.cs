@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlJoinCollectionExpression(
             SqlCollectionExpression left,
             SqlCollectionExpression right)
-            : base(SqlObjectKind.JoinCollectionExpression)
         {
             this.Left = left;
             this.Right = right;

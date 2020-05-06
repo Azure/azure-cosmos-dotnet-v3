@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlSelectItem(
            SqlScalarExpression expression,
            SqlIdentifier alias)
-            : base(SqlObjectKind.SelectItem)
         {
             this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
             this.Alias = alias;

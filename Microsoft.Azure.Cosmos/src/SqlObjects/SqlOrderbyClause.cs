@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlOrderbyClause : SqlObject
     {
         private SqlOrderbyClause(IReadOnlyList<SqlOrderByItem> orderbyItems)
-            : base(SqlObjectKind.OrderByClause)
         {
             if (orderbyItems == null)
             {

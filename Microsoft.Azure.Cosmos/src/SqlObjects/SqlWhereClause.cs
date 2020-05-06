@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlWhereClause : SqlObject
     {
         private SqlWhereClause(SqlScalarExpression filterExpression)
-            : base(SqlObjectKind.WhereClause)
         {
             this.FilterExpression = filterExpression ?? throw new ArgumentNullException(nameof(filterExpression));
         }

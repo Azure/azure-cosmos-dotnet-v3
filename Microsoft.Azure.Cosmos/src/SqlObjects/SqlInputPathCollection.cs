@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlInputPathCollection(
             SqlIdentifier input,
             SqlPathExpression relativePath)
-            : base(SqlObjectKind.InputPathCollection)
         {
             this.Input = input ?? throw new ArgumentNullException(nameof(input));
             this.RelativePath = relativePath;

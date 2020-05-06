@@ -132,7 +132,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         };
 
         private SqlStringLiteral(string value)
-            : base(SqlObjectKind.StringLiteral)
         {
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }

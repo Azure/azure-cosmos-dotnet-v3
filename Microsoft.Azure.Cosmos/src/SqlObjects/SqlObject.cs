@@ -5,14 +5,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     internal abstract class SqlObject
     {
-        protected SqlObject(SqlObjectKind kind)
+        protected SqlObject()
         {
-            this.Kind = kind;
-        }
-
-        public SqlObjectKind Kind
-        {
-            get;
         }
 
         public abstract void Accept(SqlObjectVisitor visitor);

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlOrderByItem(
             SqlScalarExpression expression,
             bool isDescending)
-            : base(SqlObjectKind.OrderByItem)
         {
             this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
             this.IsDescending = isDescending;

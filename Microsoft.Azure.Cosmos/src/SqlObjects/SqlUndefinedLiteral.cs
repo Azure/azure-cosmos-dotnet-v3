@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private static readonly SqlUndefinedLiteral Singleton = new SqlUndefinedLiteral();
 
         private SqlUndefinedLiteral()
-            : base(SqlObjectKind.UndefinedLiteral)
         {
         }
 

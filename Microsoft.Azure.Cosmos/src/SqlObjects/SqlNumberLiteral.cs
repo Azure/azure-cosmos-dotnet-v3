@@ -3,10 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class SqlNumberLiteral : SqlLiteral
     {
@@ -19,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x));
 
         private SqlNumberLiteral(Number64 value)
-            : base(SqlObjectKind.NumberLiteral)
         {
             this.Value = value;
         }

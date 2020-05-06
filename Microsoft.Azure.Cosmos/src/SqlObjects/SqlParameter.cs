@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlParameter : SqlObject
     {
         private SqlParameter(string name)
-            : base(SqlObjectKind.Parameter)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
         }

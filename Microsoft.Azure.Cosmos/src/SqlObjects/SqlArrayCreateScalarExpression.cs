@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(new List<SqlScalarExpression>());
 
         private SqlArrayCreateScalarExpression(IReadOnlyList<SqlScalarExpression> items)
-            : base(SqlObjectKind.ArrayCreateScalarExpression)
         {
             if (items == null)
             {

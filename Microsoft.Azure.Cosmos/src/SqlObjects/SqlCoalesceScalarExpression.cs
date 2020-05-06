@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlCoalesceScalarExpression(
             SqlScalarExpression left,
             SqlScalarExpression right)
-            : base(SqlObjectKind.CoalesceScalarExpression)
         {
             this.Left = left ?? throw new ArgumentNullException(nameof(left));
             this.Right = right ?? throw new ArgumentNullException(nameof(right));

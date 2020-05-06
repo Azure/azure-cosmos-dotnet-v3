@@ -22,16 +22,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentNullException("replacement");
             }
 
-            switch (into.Kind)
+            switch (into)
             {
-                case SqlObjectKind.ArrayCreateScalarExpression:
+                case SqlArrayCreateScalarExpression arrayExp:
                     {
-                        SqlArrayCreateScalarExpression arrayExp = into as SqlArrayCreateScalarExpression;
-                        if (arrayExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlArrayCreateScalarExpression, got a " + into.GetType());
-                        }
-
                         SqlScalarExpression[] items = new SqlScalarExpression[arrayExp.Items.Count];
                         for (int i = 0; i < items.Length; i++)
                         {
@@ -42,41 +36,23 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                         return SqlArrayCreateScalarExpression.Create(items);
                     }
-                case SqlObjectKind.BinaryScalarExpression:
+                case SqlBinaryScalarExpression binaryExp:
                     {
-                        SqlBinaryScalarExpression binaryExp = into as SqlBinaryScalarExpression;
-                        if (binaryExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a BinaryScalarExpression, got a " + into.GetType());
-                        }
-
                         SqlScalarExpression replleft = Substitute(replacement, toReplace, binaryExp.LeftExpression);
                         SqlScalarExpression replright = Substitute(replacement, toReplace, binaryExp.RightExpression);
                         return SqlBinaryScalarExpression.Create(replleft, binaryExp.OperatorKind, replright);
                     }
-                case SqlObjectKind.UnaryScalarExpression:
+                case SqlUnaryScalarExpression unaryExp:
                     {
-                        SqlUnaryScalarExpression unaryExp = into as SqlUnaryScalarExpression;
-                        if (unaryExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlUnaryScalarExpression, got a " + into.GetType());
-                        }
-
                         SqlScalarExpression repl = Substitute(replacement, toReplace, unaryExp.Expression);
                         return SqlUnaryScalarExpression.Create(unaryExp.OperatorKind, repl);
                     }
-                case SqlObjectKind.LiteralScalarExpression:
+                case SqlLiteralScalarExpression literalScalarExpression:
                     {
                         return into;
                     }
-                case SqlObjectKind.FunctionCallScalarExpression:
+                case SqlFunctionCallScalarExpression funcExp:
                     {
-                        SqlFunctionCallScalarExpression funcExp = into as SqlFunctionCallScalarExpression;
-                        if (funcExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlFunctionCallScalarExpression, got a " + into.GetType());
-                        }
-
                         SqlScalarExpression[] items = new SqlScalarExpression[funcExp.Arguments.Count];
                         for (int i = 0; i < items.Length; i++)
                         {
@@ -87,40 +63,22 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                         return SqlFunctionCallScalarExpression.Create(funcExp.Name, funcExp.IsUdf, items);
                     }
-                case SqlObjectKind.ObjectCreateScalarExpression:
+                case SqlObjectCreateScalarExpression objExp:
                     {
-                        SqlObjectCreateScalarExpression objExp = into as SqlObjectCreateScalarExpression;
-                        if (objExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlObjectCreateScalarExpression, got a " + into.GetType());
-                        }
-
                         return SqlObjectCreateScalarExpression.Create(
                             objExp
                                 .Properties
                                 .Select(prop => SqlObjectProperty.Create(prop.Name, Substitute(replacement, toReplace, prop.Value))));
                     }
-                case SqlObjectKind.MemberIndexerScalarExpression:
+                case SqlMemberIndexerScalarExpression memberExp:
                     {
-                        SqlMemberIndexerScalarExpression memberExp = into as SqlMemberIndexerScalarExpression;
-                        if (memberExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlMemberIndexerScalarExpression, got a " + into.GetType());
-                        }
-
                         SqlScalarExpression replMember = Substitute(replacement, toReplace, memberExp.Member);
                         SqlScalarExpression replIndex = Substitute(replacement, toReplace, memberExp.Indexer);
                         return SqlMemberIndexerScalarExpression.Create(replMember, replIndex);
                     }
-                case SqlObjectKind.PropertyRefScalarExpression:
+                case SqlPropertyRefScalarExpression propExp:
                     {
                         // This is the leaf of the recursion
-                        SqlPropertyRefScalarExpression propExp = into as SqlPropertyRefScalarExpression;
-                        if (propExp == null)
-                        {
-                            throw new DocumentQueryException("Expected a SqlPropertyRefScalarExpression, got a " + into.GetType());
-                        }
-
                         if (propExp.Member == null)
                         {
                             if (propExp.Identifer.Value == toReplace.Value)
@@ -138,28 +96,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                             return SqlPropertyRefScalarExpression.Create(replMember, propExp.Identifer);
                         }
                     }
-                case SqlObjectKind.ConditionalScalarExpression:
+                case SqlConditionalScalarExpression conditionalExpression:
                     {
-                        SqlConditionalScalarExpression conditionalExpression = (SqlConditionalScalarExpression)into;
-                        if (conditionalExpression == null)
-                        {
-                            throw new ArgumentException();
-                        }
-
                         SqlScalarExpression condition = Substitute(replacement, toReplace, conditionalExpression.Condition);
                         SqlScalarExpression first = Substitute(replacement, toReplace, conditionalExpression.Consequent);
                         SqlScalarExpression second = Substitute(replacement, toReplace, conditionalExpression.Alternative);
 
                         return SqlConditionalScalarExpression.Create(condition, first, second);
                     }
-                case SqlObjectKind.InScalarExpression:
+                case SqlInScalarExpression inExpression:
                     {
-                        SqlInScalarExpression inExpression = (SqlInScalarExpression)into;
-                        if (inExpression == null)
-                        {
-                            throw new ArgumentException();
-                        }
-
                         SqlScalarExpression expression = Substitute(replacement, toReplace, inExpression.Needle);
 
                         SqlScalarExpression[] items = new SqlScalarExpression[inExpression.Haystack.Count];
@@ -171,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         return SqlInScalarExpression.Create(expression, inExpression.Not, items);
                     }
                 default:
-                    throw new ArgumentOutOfRangeException("Unexpected Sql Scalar expression kind " + into.Kind);
+                    throw new ArgumentOutOfRangeException("Unexpected Sql Scalar expression kind " + into.GetType());
             }
         }
     }

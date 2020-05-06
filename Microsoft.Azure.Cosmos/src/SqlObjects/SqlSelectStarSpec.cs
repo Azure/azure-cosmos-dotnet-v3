@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public static readonly SqlSelectStarSpec Singleton = new SqlSelectStarSpec();
 
         private SqlSelectStarSpec()
-            : base(SqlObjectKind.SelectStarSpec)
         {
         }
 

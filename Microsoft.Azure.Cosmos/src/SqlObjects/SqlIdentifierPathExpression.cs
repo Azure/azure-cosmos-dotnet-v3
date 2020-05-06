@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlIdentifierPathExpression : SqlPathExpression
     {
         private SqlIdentifierPathExpression(SqlPathExpression parentPath, SqlIdentifier value)
-            : base(SqlObjectKind.IdentifierPathExpression, parentPath)
+            : base(parentPath)
         {
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }

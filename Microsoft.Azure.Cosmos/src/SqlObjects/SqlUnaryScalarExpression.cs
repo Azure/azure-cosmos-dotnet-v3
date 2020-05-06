@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlUnaryScalarExpression(
             SqlUnaryScalarOperatorKind operatorKind,
             SqlScalarExpression expression)
-            : base(SqlObjectKind.UnaryScalarExpression)
         {
             this.OperatorKind = operatorKind;
             this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));

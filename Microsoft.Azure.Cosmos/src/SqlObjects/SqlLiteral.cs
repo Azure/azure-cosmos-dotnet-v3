@@ -6,8 +6,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     internal abstract class SqlLiteral : SqlObject
     {
-        protected SqlLiteral(SqlObjectKind kind)
-            : base(kind)
+        protected SqlLiteral()
         {
         }
 

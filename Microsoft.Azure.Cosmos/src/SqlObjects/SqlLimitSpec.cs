@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             .ToArray();
 
         private SqlLimitSpec(SqlScalarExpression limitExpression)
-            : base(SqlObjectKind.LimitSpec)
         {
             this.LimitExpression = limitExpression ?? throw new ArgumentNullException(nameof(limitExpression));
         }

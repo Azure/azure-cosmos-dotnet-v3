@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlOffsetLimitClause : SqlObject
     {
         private SqlOffsetLimitClause(SqlOffsetSpec offsetSpec, SqlLimitSpec limitSpec)
-            : base(SqlObjectKind.OffsetLimitClause)
         {
             this.OffsetSpec = offsetSpec ?? throw new ArgumentNullException(nameof(offsetSpec));
             this.LimitSpec = limitSpec ?? throw new ArgumentNullException(nameof(limitSpec));

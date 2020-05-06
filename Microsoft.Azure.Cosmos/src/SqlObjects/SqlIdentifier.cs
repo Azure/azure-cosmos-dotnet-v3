@@ -78,7 +78,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         };
 
         private SqlIdentifier(string value)
-            : base(SqlObjectKind.Identifier)
         {
             this.Value = value;
         }

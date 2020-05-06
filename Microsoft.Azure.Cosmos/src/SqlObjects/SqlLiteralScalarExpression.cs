@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public static readonly SqlLiteralScalarExpression SqlUndefinedLiteralScalarExpression = new SqlLiteralScalarExpression(SqlUndefinedLiteral.Create());
 
         private SqlLiteralScalarExpression(SqlLiteral literal)
-            : base(SqlObjectKind.LiteralScalarExpression)
         {
             this.Literal = literal ?? throw new ArgumentNullException(nameof(literal));
         }

@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     {
         private SqlSelectValueSpec(
             SqlScalarExpression expression)
-            : base(SqlObjectKind.SelectValueSpec)
         {
             this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }

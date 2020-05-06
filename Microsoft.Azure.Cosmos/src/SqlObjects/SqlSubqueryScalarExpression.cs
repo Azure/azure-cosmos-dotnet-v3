@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlSubqueryScalarExpression : SqlScalarExpression
     {
         private SqlSubqueryScalarExpression(SqlQuery query)
-            : base(SqlObjectKind.SubqueryScalarExpression)
         {
             this.Query = query ?? throw new ArgumentNullException(nameof(query));
         }

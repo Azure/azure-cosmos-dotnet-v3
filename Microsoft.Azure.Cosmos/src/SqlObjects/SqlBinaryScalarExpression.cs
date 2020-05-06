@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression left,
             SqlBinaryScalarOperatorKind operatorKind,
             SqlScalarExpression right)
-            : base(SqlObjectKind.BinaryScalarExpression)
         {
             this.LeftExpression = left ?? throw new ArgumentNullException(nameof(left));
             this.OperatorKind = operatorKind;

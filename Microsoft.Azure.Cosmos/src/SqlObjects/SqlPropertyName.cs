@@ -59,7 +59,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         };
 
         private SqlPropertyName(string value)
-            : base(SqlObjectKind.PropertyName)
         {
             if (string.IsNullOrWhiteSpace(value))
             {

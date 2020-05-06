@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlProgram : SqlObject
     {
         private SqlProgram(SqlQuery query)
-            : base(SqlObjectKind.Program)
         {
             this.Query = query ?? throw new ArgumentNullException(nameof(query));
         }

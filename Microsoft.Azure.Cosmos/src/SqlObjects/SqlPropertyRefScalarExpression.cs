@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlPropertyRefScalarExpression(
             SqlScalarExpression member,
             SqlIdentifier identifier)
-            : base(SqlObjectKind.PropertyRefScalarExpression)
         {
             this.Member = member;
             this.Identifer = identifier ?? throw new ArgumentNullException(nameof(identifier));

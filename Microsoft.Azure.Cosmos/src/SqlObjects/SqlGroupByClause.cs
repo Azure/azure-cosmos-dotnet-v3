@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlGroupByClause : SqlObject
     {
         private SqlGroupByClause(IReadOnlyList<SqlScalarExpression> expressions)
-            : base(SqlObjectKind.GroupByClause)
         {
             if (expressions == null)
             {

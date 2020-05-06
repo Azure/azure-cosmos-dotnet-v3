@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlObjectCreateScalarExpression : SqlScalarExpression
     {
         private SqlObjectCreateScalarExpression(IEnumerable<SqlObjectProperty> properties)
-            : base(SqlObjectKind.ObjectCreateScalarExpression)
         {
             if (properties == null)
             {

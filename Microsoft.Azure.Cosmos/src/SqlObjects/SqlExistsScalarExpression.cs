@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlExistsScalarExpression : SqlScalarExpression
     {
         private SqlExistsScalarExpression(SqlQuery subquery)
-          : base(SqlObjectKind.ExistsScalarExpression)
         {
             this.Subquery = subquery ?? throw new ArgumentNullException(nameof(subquery));
         }

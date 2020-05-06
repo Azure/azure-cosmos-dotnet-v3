@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlSelectSpec selectSpec,
             SqlTopSpec topSpec = null,
             bool hasDistinct = false)
-            : base(SqlObjectKind.SelectClause)
         {
             this.SelectSpec = selectSpec ?? throw new ArgumentNullException(nameof(selectSpec));
             this.TopSpec = topSpec;

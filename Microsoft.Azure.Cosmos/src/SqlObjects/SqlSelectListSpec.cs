@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlSelectListSpec : SqlSelectSpec
     {
         private SqlSelectListSpec(IReadOnlyList<SqlSelectItem> items)
-            : base(SqlObjectKind.SelectListSpec)
         {
             if (items == null)
             {

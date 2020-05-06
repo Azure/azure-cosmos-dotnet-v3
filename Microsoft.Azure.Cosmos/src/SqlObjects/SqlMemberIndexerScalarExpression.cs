@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlMemberIndexerScalarExpression(
             SqlScalarExpression member,
             SqlScalarExpression indexer)
-            : base(SqlObjectKind.MemberIndexerScalarExpression)
         {
             this.Member = member ?? throw new ArgumentNullException(nameof(member));
             this.Indexer = indexer ?? throw new ArgumentNullException(nameof(indexer));

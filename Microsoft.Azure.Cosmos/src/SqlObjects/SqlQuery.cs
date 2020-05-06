@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlGroupByClause groupByClause,
             SqlOrderbyClause orderbyClause,
             SqlOffsetLimitClause offsetLimitClause)
-            : base(SqlObjectKind.Query)
         {
             this.SelectClause = selectClause ?? throw new ArgumentNullException(nameof(selectClause));
             this.FromClause = fromClause;

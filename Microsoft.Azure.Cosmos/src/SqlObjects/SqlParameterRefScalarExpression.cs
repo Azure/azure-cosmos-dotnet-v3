@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlParameterRefScalarExpression : SqlScalarExpression
     {
         private SqlParameterRefScalarExpression(SqlParameter sqlParameter)
-            : base(SqlObjectKind.ParameterRefScalarExpression)
         {
             this.Parameter = sqlParameter ?? throw new ArgumentNullException(nameof(sqlParameter));
         }

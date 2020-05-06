@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public SqlQuery SqlQuery { get; }
 
         private SqlArrayScalarExpression(SqlQuery sqlQuery)
-            : base(SqlObjectKind.ArrayScalarExpression)
         {
             this.SqlQuery = sqlQuery ?? throw new ArgumentNullException(nameof(sqlQuery));
         }

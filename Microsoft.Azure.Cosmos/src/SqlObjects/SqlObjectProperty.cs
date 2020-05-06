@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlObjectProperty(
              SqlPropertyName name,
              SqlScalarExpression value)
-            : base(SqlObjectKind.ObjectProperty)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));

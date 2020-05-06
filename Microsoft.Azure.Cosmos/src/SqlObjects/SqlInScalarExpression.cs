@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression needle,
             bool not,
             IReadOnlyList<SqlScalarExpression> haystack)
-            : base(SqlObjectKind.InScalarExpression)
         {
             if (haystack == null)
             {

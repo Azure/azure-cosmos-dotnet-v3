@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression condition,
             SqlScalarExpression consequent,
             SqlScalarExpression alternative)
-            : base(SqlObjectKind.ConditionalScalarExpression)
         {
             this.Condition = condition ?? throw new ArgumentNullException(nameof(condition));
             this.Consequent = consequent ?? throw new ArgumentNullException(nameof(consequent));

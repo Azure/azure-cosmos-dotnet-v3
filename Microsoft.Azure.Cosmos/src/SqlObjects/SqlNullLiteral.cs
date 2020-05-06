@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public static readonly SqlNullLiteral Singleton = new SqlNullLiteral();
 
         private SqlNullLiteral()
-            : base(SqlObjectKind.NullLiteral)
         {
         }
 

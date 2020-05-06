@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlSubqueryCollection : SqlCollection
     {
         private SqlSubqueryCollection(SqlQuery query)
-            : base(SqlObjectKind.SubqueryCollection)
         {
             this.Query = query ?? throw new ArgumentNullException(nameof(query));
         }

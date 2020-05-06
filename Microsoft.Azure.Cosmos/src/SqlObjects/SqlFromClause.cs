@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlFromClause : SqlObject
     {
         private SqlFromClause(SqlCollectionExpression expression)
-            : base(SqlObjectKind.FromClause)
         {
             this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }

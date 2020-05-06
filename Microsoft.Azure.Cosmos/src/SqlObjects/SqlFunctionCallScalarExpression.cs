@@ -93,7 +93,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlIdentifier name,
             bool isUdf,
             IReadOnlyList<SqlScalarExpression> arguments)
-            : base(SqlObjectKind.FunctionCallScalarExpression)
         {
             if (arguments == null)
             {

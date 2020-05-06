@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             bool not,
             SqlScalarExpression startInclusive,
             SqlScalarExpression endExclusive)
-            : base(SqlObjectKind.BetweenScalarExpression)
         {
             this.Expression = expression;
             this.Not = not;
