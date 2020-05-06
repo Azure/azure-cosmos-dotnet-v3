@@ -228,57 +228,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             if (storeResponseStatistics.StoreResult != null)
             {
-                StoreResult storeResult = storeResponseStatistics.StoreResult;
-                this.jsonWriter.WritePropertyName("StatusCode");
-                this.jsonWriter.WriteValue((int)storeResult.StatusCode);
-
-                this.jsonWriter.WritePropertyName("SubStatusCode");
-                this.jsonWriter.WriteValue(storeResult.SubStatusCode);
-
-                this.jsonWriter.WritePropertyName("IsValid");
-                this.jsonWriter.WriteValue(storeResult.IsValid);
-
-                this.jsonWriter.WritePropertyName("IsClientCpuOverloaded");
-                this.jsonWriter.WriteValue(storeResult.IsClientCpuOverloaded);
-
-                this.jsonWriter.WritePropertyName("RequestCharge");
-                this.jsonWriter.WriteValue(storeResult.RequestCharge);
-
-                this.jsonWriter.WritePropertyName("StorePhysicalAddress");
-                this.jsonWriter.WriteValue(storeResult.StorePhysicalAddress);
-
-                this.jsonWriter.WritePropertyName("SessionToken");
-                this.jsonWriter.WriteValue(storeResult.SessionToken?.ConvertToString());
-
-                if (!string.IsNullOrEmpty(storeResult.PartitionKeyRangeId))
-                {
-                    this.jsonWriter.WritePropertyName("PartitionKeyRangeId");
-                    this.jsonWriter.WriteValue(storeResult.PartitionKeyRangeId);
-                }
-
-                this.jsonWriter.WritePropertyName("NumberOfReadRegions");
-                this.jsonWriter.WriteValue(storeResult.NumberOfReadRegions);
-
-                this.jsonWriter.WritePropertyName("UsingLocalLSN");
-                this.jsonWriter.WriteValue(storeResult.UsingLocalLSN);
-
-                this.jsonWriter.WritePropertyName("LSN");
-                this.jsonWriter.WriteValue(storeResult.LSN);
-
-                this.jsonWriter.WritePropertyName("ItemLSN");
-                this.jsonWriter.WriteValue(storeResult.ItemLSN);
-
-                this.jsonWriter.WritePropertyName("GlobalCommittedLSN");
-                this.jsonWriter.WriteValue(storeResult.GlobalCommittedLSN);
-
-                this.jsonWriter.WritePropertyName("QuorumAckedLSN");
-                this.jsonWriter.WriteValue(storeResult.QuorumAckedLSN);
-
-                this.jsonWriter.WritePropertyName("CurrentWriteQuorum");
-                this.jsonWriter.WriteValue(storeResult.CurrentWriteQuorum);
-
-                this.jsonWriter.WritePropertyName("CurrentReplicaSetSize");
-                this.jsonWriter.WriteValue(storeResult.CurrentReplicaSetSize);
+                this.jsonWriter.WritePropertyName("StoreResult");
+                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult.ToString());
             }
 
             this.jsonWriter.WriteEndObject();

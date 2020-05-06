@@ -138,15 +138,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             string id = clientSideRequestStatistics.RecordAddressResolutionStart(new Uri("https://testuri"));
             clientSideRequestStatistics.RecordAddressResolutionEnd(id);
 
-            clientSideRequestStatistics.RecordResponse(
-                new Documents.DocumentServiceRequest(
+            Documents.DocumentServiceRequest documentServiceRequest = new Documents.DocumentServiceRequest(
                     operationType: Documents.OperationType.Read,
                     resourceIdOrFullName: null,
                     resourceType: Documents.ResourceType.Database,
                     body: null,
                     headers: null,
                     isNameBased: false,
-                    authorizationTokenType: Documents.AuthorizationTokenType.PrimaryMasterKey),
+                    authorizationTokenType: Documents.AuthorizationTokenType.PrimaryMasterKey);
+
+            clientSideRequestStatistics.RecordRequest(documentServiceRequest);
+            clientSideRequestStatistics.RecordResponse(
+                documentServiceRequest,
                 new Documents.StoreResult(
                     storeResponse: new Documents.StoreResponse(),
                     exception: null,

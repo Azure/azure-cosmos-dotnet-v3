@@ -172,22 +172,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["ResourceType"].ToString());
             Assert.IsNotNull(jObject["OperationType"].ToString());
             Assert.IsNotNull(jObject["LocationEndpoint"].ToString());
-            Assert.IsNotNull(jObject["StatusCode"].ToString());
-            Assert.IsNotNull(jObject["SubStatusCode"].ToString());
-            Assert.IsNotNull(jObject["IsValid"].ToString());
-            Assert.IsNotNull(jObject["IsClientCpuOverloaded"].ToString());
-            Assert.IsNotNull(jObject["RequestCharge"].ToString());
-            Assert.IsNotNull(jObject["StorePhysicalAddress"].ToString());
-            Assert.IsNotNull(jObject["SessionToken"].ToString());
-            Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
-            Assert.IsNotNull(jObject["NumberOfReadRegions"].ToString());
-            Assert.IsNotNull(jObject["UsingLocalLSN"].ToString());
-            Assert.IsNotNull(jObject["LSN"].ToString());
-            Assert.IsNotNull(jObject["ItemLSN"].ToString());
-            Assert.IsNotNull(jObject["GlobalCommittedLSN"].ToString());
-            Assert.IsNotNull(jObject["QuorumAckedLSN"].ToString());
-            Assert.IsNotNull(jObject["CurrentWriteQuorum"].ToString());
-            Assert.IsNotNull(jObject["CurrentReplicaSetSize"].ToString());
+            Assert.IsNotNull(jObject["StoreResult"].ToString());
         }
 
         private static void ValidatePointOperationStatistics(PointOperationStatistics stats, DateTime startTimeUtc)
