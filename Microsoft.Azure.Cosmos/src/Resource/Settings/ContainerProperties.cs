@@ -364,9 +364,9 @@ namespace Microsoft.Azure.Cosmos
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
-        /// Gets or sets the time to live for analytical storage in seconds at container scope for the Azure Cosmos service.
+        /// Gets or sets the time to live for analytical store in seconds at container scope for the Azure Cosmos service.
         ///
-        /// Analytical store when enabled captures all the item changes in the container. AnalyticalStorageTimeToLiveInSeconds
+        /// Analytical store when enabled captures all the item changes in the container. AnalyticalStoreTimeToLiveInSeconds
         /// defines the time to live for the changes in analytical store.
         /// </summary>
         /// <value>
@@ -375,23 +375,23 @@ namespace Microsoft.Azure.Cosmos
         /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
         /// A valid value must be either a nonzero positive integer, '-1' or <c>null</c>.
         /// 
-        /// By default, AnalyticalStorageTimeToLiveInSeconds is set to null meaning analytical store is turned-off.
+        /// By default, AnalyticalStoreTimeToLiveInSeconds is set to null meaning analytical store is turned-off.
         /// </value>
         /// <remarks>
         /// <para>
-        /// The <see cref="AnalyticalStorageTimeToLiveInSeconds"/> is applicable to all the item changes in the container.
+        /// The <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is applicable to all the item changes in the container.
         /// It cannot be overriden or customizable per item.
         /// </para>
         /// <para>
-        /// When the <see cref="AnalyticalStorageTimeToLiveInSeconds"/> is <c>null</c> analytical store is turned-off.
+        /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is <c>null</c> analytical store is turned-off.
         /// It means all the item changes in the container are disregarded.
         /// </para>
         /// <para>
-        /// When the <see cref="AnalyticalStorageTimeToLiveInSeconds"/> is '-1', all the items changes will be captured
+        /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is '-1', all the items changes will be captured
         /// by analytical store and will never expire. 
         /// </para>
         /// <para>
-        /// When the <see cref="AnalyticalStorageTimeToLiveInSeconds"/> is a nonzero positive integer, all the items
+        /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is a nonzero positive integer, all the items
         /// changes will be captured by analytical store and exired after the specified time to live. 
         /// </para>
         /// </remarks>
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
         /// The example below disables analytical store on a container.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.AnalyticalStorageTimeToLiveInSeconds = null;
+        ///     container.AnalyticalStoreTimeToLiveInSeconds = null;
         /// ]]>
         /// </code>
         /// </example>
@@ -407,7 +407,7 @@ namespace Microsoft.Azure.Cosmos
         /// The example below enables analytical store on container capturing all changes and never expire.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.AnalyticalStorageTimeToLiveInSeconds = -1;
+        ///     container.AnalyticalStoreTimeToLiveInSeconds = -1;
         /// ]]>
         /// </code>
         /// </example>
@@ -415,12 +415,12 @@ namespace Microsoft.Azure.Cosmos
         /// The example below enables analytical store on container capturing all changes and expire after 6months.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.AnalyticalStorageTimeToLiveInSeconds = (int)TimeSpan.FromDays(6 * 30).TotalSeconds;
+        ///     container.AnalyticalStoreTimeToLiveInSeconds = (int)TimeSpan.FromDays(6 * 30).TotalSeconds;
         /// ]]>
         /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.AnalyticalStorageTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
-        public int? AnalyticalStorageTimeToLiveInSeconds { get; set; }
+        public int? AnalyticalStoreTimeToLiveInSeconds { get; set; }
 
         /// <summary>
         /// Gets the self-link associated with the resource from the Azure Cosmos DB service.

@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerId = Guid.NewGuid().ToString();
 
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
-            Assert.IsNull(response.Resource.AnalyticalStorageTimeToLiveInSeconds);
+            Assert.IsNull(response.Resource.AnalyticalStoreTimeToLiveInSeconds);
 
             await response.Container.DeleteContainerAsync();
         }
@@ -452,12 +452,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = containerId,
                 PartitionKeyPath = "/id",
-                AnalyticalStorageTimeToLiveInSeconds = analyticalTtlInSec,
+                AnalyticalStoreTimeToLiveInSeconds = analyticalTtlInSec,
             };
 
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cpInput);
-            Assert.IsNotNull(response.Resource.AnalyticalStorageTimeToLiveInSeconds);
-            Assert.AreEqual(analyticalTtlInSec, response.Resource.AnalyticalStorageTimeToLiveInSeconds);
+            Assert.IsNotNull(response.Resource.AnalyticalStoreTimeToLiveInSeconds);
+            Assert.AreEqual(analyticalTtlInSec, response.Resource.AnalyticalStoreTimeToLiveInSeconds);
 
             await response.Container.DeleteContainerAsync();
         }

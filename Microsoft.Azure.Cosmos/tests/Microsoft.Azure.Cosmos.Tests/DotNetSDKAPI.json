@@ -1008,7 +1008,7 @@
           ],
           "MethodInfo": null
         },
-        "System.Nullable`1[System.Int32] AnalyticalStorageTimeToLiveInSeconds[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"analyticalStorageTtl\")]": {
+        "System.Nullable`1[System.Int32] AnalyticalStoreTimeToLiveInSeconds[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"analyticalStorageTtl\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -1022,12 +1022,12 @@
           ],
           "MethodInfo": null
         },
-        "System.Nullable`1[System.Int32] get_AnalyticalStorageTimeToLiveInSeconds()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Nullable`1[System.Int32] get_AnalyticalStorageTimeToLiveInSeconds()"
+          "MethodInfo": "System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds()"
         },
         "System.Nullable`1[System.Int32] get_DefaultTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1113,12 +1113,12 @@
           "Attributes": [],
           "MethodInfo": "Void .ctor(System.String, System.String)"
         },
-        "Void set_AnalyticalStorageTimeToLiveInSeconds(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_AnalyticalStorageTimeToLiveInSeconds(System.Nullable`1[System.Int32])"
+          "MethodInfo": "Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32])"
         },
         "Void set_ConflictResolutionPolicy(Microsoft.Azure.Cosmos.ConflictResolutionPolicy)": {
           "Type": "Method",
