@@ -9,20 +9,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using JsonWriter = Json.JsonWriter;
-    using JsonReader = Json.JsonReader;
     using Microsoft.Azure.Cosmos.Encryption;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.Linq;
 
     [TestClass]
     public class EncryptionTests
@@ -55,9 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await EncryptionTests.dekProvider.InitializeAsync(EncryptionTests.databaseCore, EncryptionTests.keyContainer.Id);
 
             EncryptionTests.itemContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
-            EncryptionTests.encryptionContainer = EncryptionContainerExtensions.GetContainerWithEncryptor(
-                EncryptionTests.itemContainer,
-                encryptor);
+            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.GetContainerWithEncryptor(encryptor);
             EncryptionTests.dekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, EncryptionTests.dekId);
         }
 
@@ -163,6 +156,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new PartitionKey(testDoc.PK));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             Assert.AreEqual(testDoc, createResponse.Resource);
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateItemWithoutPrimaryKey()
+        {
+            TestDoc testDoc = TestDoc.Create();
+            try
+            {
+                await EncryptionTests.encryptionContainer.CreateItemAsync(
+                    testDoc,
+                    requestOptions: EncryptionTests.GetRequestOptions(EncryptionTests.dekId, TestDoc.PathsToEncrypt));
+                Assert.Fail("CreateItem should've failed because PartitionKey was not provided.");
+            }
+            catch (NotSupportedException ex)
+            {
+                Assert.AreEqual("partitionKey cannot be null for operations using EncryptionContainer.", ex.Message);
+            }
         }
 
         [TestMethod]
@@ -413,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(decryptionErrorDetails.Exception.Message, $"The CosmosDataEncryptionKeyProvider was not initialized.");
                 failureCount++;
             };
-            Container encryptionContainerForRestrictedUser = EncryptionContainerExtensions.GetContainerWithEncryptor(containerForRestrictedUser, encryptor);
+            Container encryptionContainerForRestrictedUser = containerForRestrictedUser.GetContainerWithEncryptor(encryptor);
 
             await EncryptionTests.PerformForbiddenOperationAsync(() =>
                 dekProvider.InitializeAsync(databaseForRestrictedUser, EncryptionTests.keyContainer.Id), "CosmosDekProvider.InitializeAsync");
@@ -507,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Database databaseWithBulk = clientWithBulk.GetDatabase(EncryptionTests.databaseCore.Id);
             Container containerWithBulk = databaseWithBulk.GetContainer(EncryptionTests.itemContainer.Id);
-            Container encryptionContainerWithBulk = EncryptionContainerExtensions.GetContainerWithEncryptor(containerWithBulk, EncryptionTests.encryptor);
+            Container encryptionContainerWithBulk = containerWithBulk.GetContainerWithEncryptor(EncryptionTests.encryptor);
 
             List<Task> tasks = new List<Task>();
             tasks.Add(EncryptionTests.CreateItemAsync(encryptionContainerWithBulk, EncryptionTests.dekId, TestDoc.PathsToEncrypt));
@@ -652,7 +662,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (query == null)
             {
                 IOrderedQueryable<TestDoc> linqQueryable = container.GetItemLinqQueryable<TestDoc>();
-                queryResponseIterator = EncryptionContainerExtensions.ToEncryptionFeedIterator<TestDoc>(container, linqQueryable, requestOptions);
+                queryResponseIterator = container.ToEncryptionFeedIterator<TestDoc>(linqQueryable, requestOptions);
             }
             else
             {
@@ -1086,8 +1096,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        // This class is same as CosmosEncryptor but copied since the emulator tests don't
-        // have internal visibility into Cosmos.Encryption assembly.
+        // This class is same as CosmosEncryptor but copied so as to induce decryption failure easily for testing.
         private class TestEncryptor : Encryptor
         {
             public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }

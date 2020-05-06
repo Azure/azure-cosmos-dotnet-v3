@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         /// <returns></returns>
         public static Container GetContainerWithEncryptor(
-            Container container,
+            this Container container,
             Encryptor encryptor)
         {
             return new EncryptionContainer(
@@ -45,15 +45,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </code>
         /// </example>
         public static FeedIterator<T> ToEncryptionFeedIterator<T>(
-            Container container, 
+            this Container container, 
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
             if (container is EncryptionContainer encryptionContainer)
             {
                 return new EncryptionFeedIterator<T>(
-                    EncryptionContainerExtensions.ToEncryptionStreamIterator(
-                        encryptionContainer,
+                    encryptionContainer.ToEncryptionStreamIterator(
                         query,
                         queryRequestOptions),
                     encryptionContainer.responseFactory);
@@ -84,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </code>
         /// </example>
         public static FeedIterator ToEncryptionStreamIterator<T>(
-            Container container, 
+            this Container container, 
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {

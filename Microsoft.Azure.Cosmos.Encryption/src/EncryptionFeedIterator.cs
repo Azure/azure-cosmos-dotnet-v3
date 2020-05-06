@@ -34,19 +34,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
             {
-                ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
-
-                if(responseMessage.Content != null)
+                using (ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken))
                 {
-                    Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
-                        responseMessage.Content,
-                        diagnosticsContext,
-                        cancellationToken);
+                    if (responseMessage.Content != null)
+                    {
+                        Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
+                            responseMessage.Content,
+                            diagnosticsContext,
+                            cancellationToken);
 
-                    return new DecryptedResponseMessage(responseMessage, decryptedContent);
+                        return new DecryptedResponseMessage(responseMessage, decryptedContent);
+                    }
+
+                    return responseMessage;
                 }
-
-                return responseMessage;
             }
         }
 
@@ -57,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             JObject contentJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(content);
             JArray result = new JArray();
+            
             if (contentJObj.SelectToken("Documents") is JArray documents)
             {
                 foreach(JToken value in documents)
@@ -75,12 +77,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         }
                         catch (Exception exception)
                         {
-                            result.Add(document);
                             if (this.decryptionErrorHandler == null)
                             {
-                                throw exception;
+                                throw;
                             }
 
+                            result.Add(document);
                             MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream(document) as MemoryStream;
                             Debug.Assert(memoryStream != null);
                             Debug.Assert(memoryStream.TryGetBuffer(out _));
@@ -102,7 +104,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             JObject decryptedResponse = new JObject();
-
             foreach (JProperty property in contentJObj.Properties())
             {
                 if (property.Name.Equals("Documents"))

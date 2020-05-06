@@ -9,23 +9,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionFeedIterator<T> : FeedIterator<T>
     {
-        private readonly FeedIterator FeedIterator;
-        private readonly CosmosResponseFactory ResponseFactory;
+        private readonly FeedIterator feedIterator;
+        private readonly CosmosResponseFactory responseFactory;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             CosmosResponseFactory responseFactory)
         {
-            this.FeedIterator = feedIterator;
-            this.ResponseFactory = responseFactory;
+            this.feedIterator = feedIterator;
+            this.responseFactory = responseFactory;
         }
 
-        public override bool HasMoreResults => this.FeedIterator.HasMoreResults;
+        public override bool HasMoreResults => this.feedIterator.HasMoreResults;
 
         public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            ResponseMessage responseMessage = await this.FeedIterator.ReadNextAsync(cancellationToken);
-            return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
+            ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+            return this.responseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.IO;
     using System.Net;
 
-    public sealed class DecryptedResponseMessage : ResponseMessage
+    internal sealed class DecryptedResponseMessage : ResponseMessage
     {
         private ResponseMessage responseMessage;
         private Stream decryptedContent;

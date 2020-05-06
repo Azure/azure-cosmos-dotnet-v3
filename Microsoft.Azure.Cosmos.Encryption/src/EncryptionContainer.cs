@@ -108,16 +108,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         cancellationToken);
 
                     ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
-                        streamPayload, 
-                        partitionKey, 
-                        requestOptions, 
+                        streamPayload,
+                        partitionKey,
+                        requestOptions,
                         cancellationToken);
-                    
+
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content,
                         encryptionItemRequestOptions.DecryptionErrorHandler,
-                        diagnosticsContext, 
+                        diagnosticsContext,
                         cancellationToken);
+
                     return responseMessage;
                 }
                 else
@@ -293,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         encryptionItemRequestOptions.DecryptionErrorHandler,
                         diagnosticsContext, 
                         cancellationToken);
+
                     return responseMessage;
                 }
                 else
@@ -757,7 +759,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 input.Position = 0;
                 if (decryptionErrorHandler == null)
                 {
-                    throw exception;
+                    throw;
                 }
                 
                 using (MemoryStream memoryStream = new MemoryStream((int)input.Length))

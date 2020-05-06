@@ -29,14 +29,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Example of a path specification: /sensitive
         /// </summary>
         public List<string> PathsToEncrypt { get; set; }
-
-        /// <summary>
-        /// Delegate method that will be invoked (if configured) in case of decryption failure.
-        /// </summary>
-        /// <remarks>
-        /// If decryptionErrorHandler is not configured, we throw exception.
-        /// If decryptionErrorHandler is configured, we invoke the delegate method and return the encrypted document as is (without decryption) in case of failure. 
-        /// </remarks>
-        public Action<DecryptionErrorDetails> decryptionErrorHandler { get; set; }
     }
 }
