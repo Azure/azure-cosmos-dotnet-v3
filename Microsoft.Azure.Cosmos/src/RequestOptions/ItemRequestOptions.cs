@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is optimal for workloads where the returned resource is not used.
         /// </remarks>
-        public bool? NoContentResponseOnRead { get; set; }
+        internal bool? NoContentResponseOnRead { get; set; }
 
         /// <summary>
         /// Options to encrypt properties of the item.
