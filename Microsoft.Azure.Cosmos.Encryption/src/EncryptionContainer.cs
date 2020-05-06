@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content,
-                        encryptionItemRequestOptions.DecryptionErrorHandler,
+                        encryptionItemRequestOptions.DecryptionResultHandler,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -184,10 +184,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     requestOptions, 
                     cancellationToken);
 
-                Action<DecryptionErrorDetails> decryptionErroHandler = null;
+                Action<DecryptionResult> decryptionErroHandler = null;
                 if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions)
                 {
-                    decryptionErroHandler = encryptionItemRequestOptions.DecryptionErrorHandler;
+                    decryptionErroHandler = encryptionItemRequestOptions.DecryptionResultHandler;
                 }
 
                 responseMessage.Content = await this.DecryptResponseAsync(
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content, 
-                        encryptionItemRequestOptions.DecryptionErrorHandler,
+                        encryptionItemRequestOptions.DecryptionResultHandler,
                         diagnosticsContext, 
                         cancellationToken);
 
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content,
-                        encryptionItemRequestOptions.DecryptionErrorHandler,
+                        encryptionItemRequestOptions.DecryptionResultHandler,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -542,10 +542,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null, 
             QueryRequestOptions requestOptions = null)
         {
-            Action<DecryptionErrorDetails> decryptionErrorHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler = null;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
-                decryptionErrorHandler = encryptionQueryRequestOptions.DecryptionErrorHandler;
+                DecryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
             }
 
             return new EncryptionFeedIterator(
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions), 
                 this.encryptor,
-                decryptionErrorHandler);
+                DecryptionResultHandler);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -562,10 +562,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null, 
             QueryRequestOptions requestOptions = null)
         {
-            Action<DecryptionErrorDetails> decryptionErrorHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler = null;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
-                decryptionErrorHandler = encryptionQueryRequestOptions.DecryptionErrorHandler;
+                DecryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
             }
 
             return new EncryptionFeedIterator(
@@ -574,7 +574,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions), 
                 this.encryptor,
-                decryptionErrorHandler);
+                DecryptionResultHandler);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -608,10 +608,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null, 
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            Action<DecryptionErrorDetails> decryptionErrorHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler = null;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
-                decryptionErrorHandler = encryptionChangeFeedRequestOptions.DecryptionErrorHandler;
+                DecryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
             }
 
             return new EncryptionFeedIterator(
@@ -619,17 +619,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     changeFeedRequestOptions),
                 this.encryptor,
-                decryptionErrorHandler);
+                DecryptionResultHandler);
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
             FeedRange feedRange, 
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            Action<DecryptionErrorDetails> decryptionErrorHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler = null;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
-                decryptionErrorHandler = encryptionChangeFeedRequestOptions.DecryptionErrorHandler;
+                DecryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
             }
 
             return new EncryptionFeedIterator(
@@ -637,17 +637,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     feedRange,
                     changeFeedRequestOptions),
                 this.encryptor,
-                decryptionErrorHandler);
+                DecryptionResultHandler);
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey, 
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            Action<DecryptionErrorDetails> decryptionErrorHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler = null;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
-                decryptionErrorHandler = encryptionChangeFeedRequestOptions.DecryptionErrorHandler;
+                DecryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
             }
 
             return new EncryptionFeedIterator(
@@ -655,7 +655,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     partitionKey,
                     changeFeedRequestOptions),
                 this.encryptor,
-                decryptionErrorHandler);
+                DecryptionResultHandler);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -704,10 +704,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken, 
             QueryRequestOptions requestOptions = null)
         {
-            Action<DecryptionErrorDetails> decryptionErrorHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler = null;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
-                decryptionErrorHandler = encryptionQueryRequestOptions.DecryptionErrorHandler;
+                DecryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
             }
 
             return new EncryptionFeedIterator(
@@ -717,7 +717,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions),
                 this.encryptor,
-                decryptionErrorHandler);
+                DecryptionResultHandler);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -737,7 +737,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<Stream> DecryptResponseAsync(
             Stream input,
-            Action<DecryptionErrorDetails> decryptionErrorHandler,
+            Action<DecryptionResult> DecryptionResultHandler,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -757,7 +757,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             catch (Exception exception)
             {
                 input.Position = 0;
-                if (decryptionErrorHandler == null)
+                if (DecryptionResultHandler == null)
                 {
                     throw;
                 }
@@ -766,8 +766,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     input.CopyTo(memoryStream);
                     Debug.Assert(memoryStream.TryGetBuffer(out _));
-                    decryptionErrorHandler(
-                        new DecryptionErrorDetails(
+                    DecryptionResultHandler(
+                        new DecryptionResult(
                             memoryStream.GetBuffer(), 
                             exception));
                 }

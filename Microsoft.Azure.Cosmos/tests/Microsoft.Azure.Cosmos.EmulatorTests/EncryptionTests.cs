@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await EncryptionTests.dekProvider.InitializeAsync(EncryptionTests.databaseCore, EncryptionTests.keyContainer.Id);
 
             EncryptionTests.itemContainer = await EncryptionTests.databaseCore.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
-            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.GetContainerWithEncryptor(encryptor);
+            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithEncryptor(encryptor);
             EncryptionTests.dekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, EncryptionTests.dekId);
         }
 
@@ -274,12 +274,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await EncryptionTests.VerifyItemByReadAsync(
                 EncryptionTests.encryptionContainer,
                 testDoc1,
-                EncryptionTests.GetItemRequestOptionsWithDecryptionErrorHandler());
+                EncryptionTests.GetItemRequestOptionsWithDecryptionResultHandler());
 
             await EncryptionTests.VerifyItemByReadStreamAsync(
                 EncryptionTests.encryptionContainer,
                 testDoc1,
-                EncryptionTests.GetItemRequestOptionsWithDecryptionErrorHandler());
+                EncryptionTests.GetItemRequestOptionsWithDecryptionResultHandler());
 
             await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(
                 EncryptionTests.encryptionContainer,
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 query,
                 new EncryptionQueryRequestOptions
                 {
-                    DecryptionErrorHandler = EncryptionTests.ErrorHandler
+                    DecryptionResultHandler = EncryptionTests.ErrorHandler
                 });
 
             await this.ValidateChangeFeedIteratorResponse(
@@ -418,12 +418,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int failureCount = 0;
             Database databaseForRestrictedUser = clientForRestrictedUser.GetDatabase(EncryptionTests.databaseCore.Id);
             Container containerForRestrictedUser = databaseForRestrictedUser.GetContainer(EncryptionTests.itemContainer.Id);
-            Action<DecryptionErrorDetails> errorHandler = (decryptionErrorDetails) =>
+            Action<DecryptionResult> errorHandler = (decryptionErrorDetails) =>
             {
                 Assert.AreEqual(decryptionErrorDetails.Exception.Message, $"The CosmosDataEncryptionKeyProvider was not initialized.");
                 failureCount++;
             };
-            Container encryptionContainerForRestrictedUser = containerForRestrictedUser.GetContainerWithEncryptor(encryptor);
+            Container encryptionContainerForRestrictedUser = containerForRestrictedUser.WithEncryptor(encryptor);
 
             await EncryptionTests.PerformForbiddenOperationAsync(() =>
                 dekProvider.InitializeAsync(databaseForRestrictedUser, EncryptionTests.keyContainer.Id), "CosmosDekProvider.InitializeAsync");
@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new PartitionKey(testDoc.PK),
                 new EncryptionItemRequestOptions
                 {
-                    DecryptionErrorHandler = errorHandler
+                    DecryptionResultHandler = errorHandler
                 });
             Assert.AreEqual(failureCount, 1);
 
@@ -445,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new PartitionKey(testDoc.PK),
                 new EncryptionItemRequestOptions
                 {
-                    DecryptionErrorHandler = errorHandler
+                    DecryptionResultHandler = errorHandler
                 });
             Assert.AreEqual(failureCount, 2);
         }
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Database databaseWithBulk = clientWithBulk.GetDatabase(EncryptionTests.databaseCore.Id);
             Container containerWithBulk = databaseWithBulk.GetContainer(EncryptionTests.itemContainer.Id);
-            Container encryptionContainerWithBulk = containerWithBulk.GetContainerWithEncryptor(EncryptionTests.encryptor);
+            Container encryptionContainerWithBulk = containerWithBulk.WithEncryptor(EncryptionTests.encryptor);
 
             List<Task> tasks = new List<Task>();
             tasks.Add(EncryptionTests.CreateItemAsync(encryptionContainerWithBulk, EncryptionTests.dekId, TestDoc.PathsToEncrypt));
@@ -709,14 +709,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             TestDoc testDoc1,
             TestDoc testDoc2,
-            Action<DecryptionErrorDetails> decryptionErrorHandler = null)
+            Action<DecryptionResult> DecryptionResultHandler = null)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
                 continuationToken: null,
                 new EncryptionChangeFeedRequestOptions()
                 {
                     StartTime = DateTime.MinValue.ToUniversalTime(),
-                    DecryptionErrorHandler = decryptionErrorHandler
+                    DecryptionResultHandler = DecryptionResultHandler
                 });
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
@@ -774,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static void ErrorHandler(DecryptionErrorDetails decryptionErrorDetails)
+        private static void ErrorHandler(DecryptionResult decryptionErrorDetails)
         {
             Assert.AreEqual(decryptionErrorDetails.Exception.Message, "Null DataEncryptionKey returned from FetchDataEncryptionKeyAsync.");
 
@@ -787,11 +787,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }                
         }
 
-        private static ItemRequestOptions GetItemRequestOptionsWithDecryptionErrorHandler()
+        private static ItemRequestOptions GetItemRequestOptionsWithDecryptionResultHandler()
         {
             return new EncryptionItemRequestOptions
             {
-                DecryptionErrorHandler = EncryptionTests.ErrorHandler
+                DecryptionResultHandler = EncryptionTests.ErrorHandler
             };
         }
 

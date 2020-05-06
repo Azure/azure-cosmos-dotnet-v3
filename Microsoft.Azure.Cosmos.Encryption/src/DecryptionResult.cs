@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
 
-    public class DecryptionErrorDetails
+    public class DecryptionResult
     {
-        protected DecryptionErrorDetails()
+        protected DecryptionResult()
         {
         }
 
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         public Exception Exception { get; }
 
-        internal DecryptionErrorDetails(
+        internal DecryptionResult(
             ReadOnlyMemory<byte> encryptedStream,
             Exception exception)
         {

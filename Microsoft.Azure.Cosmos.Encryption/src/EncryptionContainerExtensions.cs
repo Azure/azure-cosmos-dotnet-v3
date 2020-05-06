@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         /// <returns></returns>
-        public static Container GetContainerWithEncryptor(
+        public static Container WithEncryptor(
             this Container container,
             Encryptor encryptor)
         {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <typeparam name="T">the type of object to query.</typeparam>
         /// <param name="container">the encryption container.</param>
         /// <param name="query">the IQueryable{T} to be converted.</param>
-        /// <param name="queryRequestOptions">optional QueryRequestOptions for passing DecryptionErrorHandler.</param>
+        /// <param name="queryRequestOptions">optional QueryRequestOptions for passing DecryptionResultHandler.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <typeparam name="T">the type of object to query.</typeparam>
         /// <param name="container">the encryption container.</param>
         /// <param name="query">the IQueryable{T} to be converted.</param>
-        /// <param name="queryRequestOptions">optional QueryRequestOptions for passing DecryptionErrorHandler.</param>
+        /// <param name="queryRequestOptions">optional QueryRequestOptions for passing DecryptionResultHandler.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
@@ -89,17 +89,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (container is EncryptionContainer encryptionContainer)
             {
-                Action<DecryptionErrorDetails> decryptionErrorHandler = null;
+                Action<DecryptionResult> DecryptionResultHandler = null;
                 if (queryRequestOptions != null &&
                     queryRequestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
                 {
-                    decryptionErrorHandler = encryptionQueryRequestOptions.DecryptionErrorHandler;
+                    DecryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
                 }
 
                 return new EncryptionFeedIterator(
                     query.ToStreamIterator(),
                     encryptionContainer.encryptor,
-                    decryptionErrorHandler);
+                    DecryptionResultHandler);
             }
             else
             {

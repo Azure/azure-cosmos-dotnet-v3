@@ -15,16 +15,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
-        Action<DecryptionErrorDetails> decryptionErrorHandler;
+        Action<DecryptionResult> DecryptionResultHandler;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
-            Action<DecryptionErrorDetails> decryptionErrorHandler = null)
+            Action<DecryptionResult> DecryptionResultHandler = null)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
-            this.decryptionErrorHandler = decryptionErrorHandler;
+            this.DecryptionResultHandler = DecryptionResultHandler;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         }
                         catch (Exception exception)
                         {
-                            if (this.decryptionErrorHandler == null)
+                            if (this.DecryptionResultHandler == null)
                             {
                                 throw;
                             }
@@ -86,8 +86,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream(document) as MemoryStream;
                             Debug.Assert(memoryStream != null);
                             Debug.Assert(memoryStream.TryGetBuffer(out _));
-                            this.decryptionErrorHandler(
-                                new DecryptionErrorDetails(
+                            this.DecryptionResultHandler(
+                                new DecryptionResult(
                                     memoryStream.GetBuffer(),
                                     exception));
                         }
