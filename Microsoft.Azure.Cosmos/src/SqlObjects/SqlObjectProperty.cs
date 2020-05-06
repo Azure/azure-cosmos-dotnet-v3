@@ -16,36 +16,18 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public SqlPropertyName Name
-        {
-            get;
-        }
+        public SqlPropertyName Name { get; }
 
-        public SqlScalarExpression Value
-        {
-            get;
-        }
+        public SqlScalarExpression Value { get; }
 
         public static SqlObjectProperty Create(
             SqlPropertyName name,
-            SqlScalarExpression expression)
-        {
-            return new SqlObjectProperty(name, expression);
-        }
+            SqlScalarExpression expression) => new SqlObjectProperty(name, expression);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

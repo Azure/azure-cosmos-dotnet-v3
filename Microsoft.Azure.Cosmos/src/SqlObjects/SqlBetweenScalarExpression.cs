@@ -18,63 +18,30 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.EndInclusive = endExclusive;
         }
 
-        public SqlScalarExpression Expression
-        {
-            get;
-        }
+        public SqlScalarExpression Expression { get; }
 
-        public bool Not
-        {
-            get;
-        }
+        public bool Not { get;  }
 
-        public SqlScalarExpression StartInclusive
-        {
-            get;
-        }
+        public SqlScalarExpression StartInclusive { get; }
 
-        public SqlScalarExpression EndInclusive
-        {
-            get;
-        }
+        public SqlScalarExpression EndInclusive { get; }
 
         public static SqlBetweenScalarExpression Create(
             SqlScalarExpression expression,
             bool not,
             SqlScalarExpression startInclusive,
-            SqlScalarExpression endExclusive)
-        {
-            return new SqlBetweenScalarExpression(expression, not, startInclusive, endExclusive);
-        }
+            SqlScalarExpression endExclusive) => new SqlBetweenScalarExpression(expression, not, startInclusive, endExclusive);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlScalarExpressionVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlScalarExpressionVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

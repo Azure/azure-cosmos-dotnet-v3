@@ -13,67 +13,32 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression right)
             : base(SqlObjectKind.BinaryScalarExpression)
         {
-            if (left == null || right == null)
-            {
-                throw new ArgumentNullException();
-            }
-
+            this.LeftExpression = left ?? throw new ArgumentNullException(nameof(left));
             this.OperatorKind = operatorKind;
-            this.LeftExpression = left;
-            this.RightExpression = right;
+            this.RightExpression = right ?? throw new ArgumentNullException(nameof(right));
         }
 
-        public SqlBinaryScalarOperatorKind OperatorKind
-        {
-            get;
-        }
+        public SqlScalarExpression LeftExpression { get; }
 
-        public SqlScalarExpression LeftExpression
-        {
-            get;
-        }
+        public SqlBinaryScalarOperatorKind OperatorKind { get; }
 
-        public SqlScalarExpression RightExpression
-        {
-            get;
-        }
+        public SqlScalarExpression RightExpression { get; }
 
         public static SqlBinaryScalarExpression Create(
             SqlScalarExpression left,
             SqlBinaryScalarOperatorKind operatorKind,
-            SqlScalarExpression right)
-        {
-            return new SqlBinaryScalarExpression(left, operatorKind, right);
-        }
+            SqlScalarExpression right) => new SqlBinaryScalarExpression(left, operatorKind, right);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlScalarExpressionVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlScalarExpressionVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

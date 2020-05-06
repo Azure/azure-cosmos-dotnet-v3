@@ -11,10 +11,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.ParentPath = parentPath;
         }
 
-        public SqlPathExpression ParentPath
-        {
-            get;
-        }
+        public SqlPathExpression ParentPath { get; }
 
         public abstract void Accept(SqlPathExpressionVisitor visitor);
 

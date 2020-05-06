@@ -10,47 +10,23 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlIdentifierPathExpression(SqlPathExpression parentPath, SqlIdentifier value)
             : base(SqlObjectKind.IdentifierPathExpression, parentPath)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException("value");
-            }
-
-            this.Value = value;
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public SqlIdentifier Value
-        {
-            get;
-        }
+        public SqlIdentifier Value { get; }
 
-        public static SqlIdentifierPathExpression Create(SqlPathExpression parentPath, SqlIdentifier value)
-        {
-            return new SqlIdentifierPathExpression(parentPath, value);
-        }
+        public static SqlIdentifierPathExpression Create(
+            SqlPathExpression parentPath,
+            SqlIdentifier value) => new SqlIdentifierPathExpression(parentPath, value);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlPathExpressionVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlPathExpressionVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlPathExpressionVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlPathExpressionVisitor<TResult> visitor) => visitor.Visit(this);
     }
 }
