@@ -3366,6 +3366,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Boolean] get_NoContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_NoContentResponseOnWrite()"
+        },
+        "System.Nullable`1[System.Boolean] NoContentResponseOnWrite": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3394,6 +3406,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])"
+        },
+        "Void set_NoContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_NoContentResponseOnWrite(System.Nullable`1[System.Boolean])"
         },
         "Void set_PostTriggers(System.Collections.Generic.IEnumerable`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -4180,16 +4199,6 @@
     "QueryRequestOptions": {
       "Subclasses": {},
       "Members": {
-        "Boolean get_ReturnMinimalResponse()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Boolean get_ReturnMinimalResponse()"
-        },
-        "Boolean ReturnMinimalResponse": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
           "Type": "Property",
           "Attributes": [],
@@ -4354,11 +4363,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])"
-        },
-        "Void set_ReturnMinimalResponse(Boolean)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_ReturnMinimalResponse(Boolean)"
         },
         "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -4854,6 +4858,18 @@
               "Attributes": [],
               "MethodInfo": null
             },
+            "System.Nullable`1[System.Boolean] get_NoContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_NoContentResponseOnWrite()"
+            },
+            "System.Nullable`1[System.Boolean] NoContentResponseOnWrite": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
             "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
@@ -4883,6 +4899,13 @@
               ],
               "MethodInfo": "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])"
             },
+            "Void set_NoContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_NoContentResponseOnWrite(System.Nullable`1[System.Boolean])"
+            },
             "Void set_PostTriggers(System.Collections.Generic.IEnumerable`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
@@ -4910,16 +4933,6 @@
         "QueryRequestOptions": {
           "Subclasses": {},
           "Members": {
-            "Boolean get_ReturnMinimalResponse()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "Boolean get_ReturnMinimalResponse()"
-            },
-            "Boolean ReturnMinimalResponse": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": null
-            },
             "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
               "Type": "Property",
               "Attributes": [],
@@ -5085,11 +5098,6 @@
               ],
               "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])"
             },
-            "Void set_ReturnMinimalResponse(Boolean)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "Void set_ReturnMinimalResponse(Boolean)"
-            },
             "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
@@ -5179,6 +5187,18 @@
               "Attributes": [],
               "MethodInfo": null
             },
+            "System.Nullable`1[System.Boolean] get_NoContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_NoContentResponseOnWrite()"
+            },
+            "System.Nullable`1[System.Boolean] NoContentResponseOnWrite": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
             "Void .ctor()": {
               "Type": "Constructor",
               "Attributes": [],
@@ -5190,24 +5210,19 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])"
+            },
+            "Void set_NoContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_NoContentResponseOnWrite(System.Nullable`1[System.Boolean])"
             }
           },
           "NestedTypes": {}
         }
       },
       "Members": {
-        "Boolean get_ReturnMinimalResponse()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Boolean get_ReturnMinimalResponse()"
-        },
-        "Boolean ReturnMinimalResponse": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
         "System.String get_IfMatchEtag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5250,13 +5265,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
-        },
-        "Void set_ReturnMinimalResponse(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_ReturnMinimalResponse(Boolean)"
         }
       },
       "NestedTypes": {}
@@ -7912,6 +7920,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Boolean] get_NoContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_NoContentResponseOnWrite()"
+        },
+        "System.Nullable`1[System.Boolean] NoContentResponseOnWrite": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
@@ -7923,6 +7943,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])"
+        },
+        "Void set_NoContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_NoContentResponseOnWrite(System.Nullable`1[System.Boolean])"
         }
       },
       "NestedTypes": {}
