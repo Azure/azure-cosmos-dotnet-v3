@@ -4152,6 +4152,16 @@
     "QueryDefinition": {
       "Subclasses": {},
       "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.QueryDefinition)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.QueryDefinition)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
         "Microsoft.Azure.Cosmos.QueryDefinition WithParameter(System.String, System.Object)": {
           "Type": "Method",
           "Attributes": [],

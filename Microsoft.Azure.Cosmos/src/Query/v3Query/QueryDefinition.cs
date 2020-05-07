@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines a Cosmos SQL query
     /// </summary>
-    public class QueryDefinition
+    public class QueryDefinition : IEquatable<QueryDefinition>
     {
         private Dictionary<string, SqlParameter> SqlParameters { get; }
 
@@ -87,6 +87,58 @@ namespace Microsoft.Azure.Cosmos
 
             this.SqlParameters[name] = new SqlParameter(name, value);
             return this;
+        }
+
+        /// <summary>
+        /// Checks for equality of two QueryDefinitions ignoring order of sqlParameters
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns>Boolean representing the equality</returns>
+        public bool Equals(QueryDefinition other)
+        {
+            if (this.QueryText != other.QueryText)
+            {
+                return false;
+            }
+
+            if (this.SqlParameters.Count != other.SqlParameters.Count)
+            {
+                return false;
+            }
+
+            foreach (KeyValuePair<string, SqlParameter> queryParameter in this.SqlParameters)
+            {
+                if (!other.SqlParameters.TryGetValue(queryParameter.Key, out SqlParameter value) ||
+                    !value.Name.Equals(queryParameter.Value.Name) ||
+                    (value.Value != null && !value.Value.Equals(queryParameter.Value.Value)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Caculates a hashcode of QueryDefinition, ignoring order of sqlParameters.
+        /// </summary>
+        /// <returns>Hash code of the object.</returns>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = 17;
+                foreach (KeyValuePair<string, SqlParameter> queryParameter in this.SqlParameters)
+                {
+                    int kvpHashCode = 23 + (queryParameter.Value.Name.GetHashCode() * 233) + queryParameter.Value.Value.GetHashCode();
+
+                    // xor is associative so we generate the same hash code if order of parameters is different
+                    hashCode ^= kvpHashCode;
+                }
+
+                hashCode = (hashCode * 233) + this.QueryText.GetHashCode();
+                return hashCode;
+            }
         }
 
         internal SqlQuerySpec ToSqlQuerySpec()
