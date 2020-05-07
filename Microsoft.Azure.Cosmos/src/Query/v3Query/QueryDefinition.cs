@@ -96,14 +96,16 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Boolean representing the equality</returns>
         public bool Equals(QueryDefinition other)
         {
-            if (this.QueryText != other.QueryText)
+            if (other == null ||
+                this.SqlParameters.Count != other.SqlParameters.Count ||
+                !string.Equals(this.QueryText, other.QueryText, StringComparison.Ordinal))
             {
                 return false;
             }
 
-            if (this.SqlParameters.Count != other.SqlParameters.Count)
+            if (Object.ReferenceEquals(other, this))
             {
-                return false;
+                return true;
             }
 
             foreach (KeyValuePair<string, SqlParameter> queryParameter in this.SqlParameters)
@@ -127,16 +129,14 @@ namespace Microsoft.Azure.Cosmos
         {
             unchecked
             {
-                int hashCode = 17;
+                int hashCode = 23;
                 foreach (KeyValuePair<string, SqlParameter> queryParameter in this.SqlParameters)
                 {
-                    int kvpHashCode = 23 + (queryParameter.Value.Name.GetHashCode() * 233) + queryParameter.Value.Value.GetHashCode();
-
                     // xor is associative so we generate the same hash code if order of parameters is different
-                    hashCode ^= kvpHashCode;
+                    hashCode ^= queryParameter.Value.GetHashCode();
                 }
 
-                hashCode = (hashCode * 233) + this.QueryText.GetHashCode();
+                hashCode = (hashCode * 16777619) + this.QueryText.GetHashCode();
                 return hashCode;
             }
         }
