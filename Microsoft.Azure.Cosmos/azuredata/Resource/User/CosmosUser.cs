@@ -10,6 +10,7 @@ namespace Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific existing user by id and query a user's permissions.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "AsyncPageable is not considered Async for checkers.")]
     public abstract class CosmosUser
     {
         /// <summary>
@@ -206,20 +207,20 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for permission under a user using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for permission under a user using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the permission</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the permissions</returns>
         /// <example>
-        /// 1. This create the type feed iterator for permission with queryText as input,
+        /// 1. This create the enumerable for permission with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// FeedIterator<PermissionProperties> resultSet = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
+        /// FeedIterator<PermissionProperties> resultSet = this.users.GetPermissionQueryResultsAsync<PermissionProperties>(queryText);
         /// await foreach (PermissionProperties permissions in resultSet)
         /// {
         /// }
@@ -227,24 +228,24 @@ namespace Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// 2. This create the type feed iterator for permissions without queryText, retrieving all permissions.
+        /// 2. This create the enumerable for permissions without queryText, retrieving all permissions.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>();
+        /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryResultsAsync<PermissionProperties>();
         /// await foreach (PermissionProperties permissions in resultSet)
         /// {
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetPermissionQueryIterator<T>(
+        public abstract AsyncPageable<T> GetPermissionQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for permissions under a database using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for permissions under a database using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <remarks>
@@ -254,22 +255,22 @@ namespace Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the permissions</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the permissions</returns>
         /// <example>
-        /// This create the type feed iterator for permissions with queryDefinition as input.
+        /// This create the enumerable for permissions with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testPermissionId");
-        /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>(queryDefinition);
+        /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryResultsAsync<PermissionProperties>(queryDefinition);
         /// await foreach (PermissionProperties permissions in resultSet)
         /// {
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetPermissionQueryIterator<T>(
+        public abstract AsyncPageable<T> GetPermissionQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,

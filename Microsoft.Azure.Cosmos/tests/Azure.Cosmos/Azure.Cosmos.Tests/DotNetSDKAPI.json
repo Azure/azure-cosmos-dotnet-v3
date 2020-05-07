@@ -621,15 +621,15 @@
     "CosmosClient": {
       "Subclasses": {},
       "Members": {
-        "Azure.AsyncPageable`1[T] GetDatabaseQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetDatabaseQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetDatabaseQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetDatabaseQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetDatabaseQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetDatabaseQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetDatabaseQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetDatabaseQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
         "Azure.Cosmos.CosmosContainer GetContainer(System.String, System.String)": {
           "Type": "Method",
@@ -641,17 +641,17 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.CosmosDatabase GetDatabase(System.String)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<GetDatabaseQueryStreamIterator>d__41))]": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<GetDatabaseQueryStreamResultsAsync>d__41))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncIteratorStateMachineAttribute"
           ],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Azure.Cosmos.AccountProperties] ReadAccountAsync()": {
           "Type": "Method",
@@ -1029,15 +1029,15 @@
     "CosmosContainer": {
       "Subclasses": {},
       "Members": {
-        "Azure.AsyncPageable`1[T] GetItemQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetItemQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetItemQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetItemQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetItemQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetItemQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetItemQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetItemQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
         "Azure.Cosmos.CosmosConflicts Conflicts": {
           "Type": "Property",
@@ -1059,15 +1059,15 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetItemQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetItemQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetItemQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetItemQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetItemQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetItemQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetItemQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetItemQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
         "System.String get_Id()": {
           "Type": "Method",
@@ -1180,25 +1180,25 @@
     "CosmosDatabase": {
       "Subclasses": {},
       "Members": {
-        "Azure.AsyncPageable`1[T] GetContainerQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetContainerQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetContainerQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetContainerQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetContainerQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetContainerQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetContainerQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetContainerQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetUserQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetUserQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetUserQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetUserQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetUserQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetUserQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetUserQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetUserQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
         "Azure.Cosmos.CosmosContainer GetContainer(System.String)": {
           "Type": "Method",
@@ -1215,15 +1215,15 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.Fluent.ContainerBuilder DefineContainer(System.String, System.String)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
         "System.String get_Id()": {
           "Type": "Method",
@@ -1375,15 +1375,15 @@
     "CosmosUser": {
       "Subclasses": {},
       "Members": {
-        "Azure.AsyncPageable`1[T] GetPermissionQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetPermissionQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetPermissionQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetPermissionQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetPermissionQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetPermissionQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetPermissionQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetPermissionQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
         "Azure.Cosmos.CosmosPermission GetPermission(System.String)": {
           "Type": "Method",
@@ -3362,65 +3362,65 @@
     "CosmosScripts": {
       "Subclasses": {},
       "Members": {
-        "Azure.AsyncPageable`1[T] GetStoredProcedureQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetStoredProcedureQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetStoredProcedureQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetStoredProcedureQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetStoredProcedureQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetStoredProcedureQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetStoredProcedureQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetStoredProcedureQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetTriggerQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetTriggerQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetTriggerQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetTriggerQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetTriggerQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetTriggerQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetTriggerQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetTriggerQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetUserDefinedFunctionQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetUserDefinedFunctionQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetUserDefinedFunctionQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetUserDefinedFunctionQueryResultsAsync[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.AsyncPageable`1[T] GetUserDefinedFunctionQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "Azure.AsyncPageable`1[T] GetUserDefinedFunctionQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.AsyncPageable`1[T] GetUserDefinedFunctionQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Azure.AsyncPageable`1[T] GetUserDefinedFunctionQueryResultsAsync[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetStoredProcedureQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetStoredProcedureQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetStoredProcedureQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetStoredProcedureQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetStoredProcedureQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetStoredProcedureQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetStoredProcedureQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetStoredProcedureQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetTriggerQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetTriggerQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetTriggerQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetTriggerQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetTriggerQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetTriggerQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetTriggerQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetTriggerQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetUserDefinedFunctionQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetUserDefinedFunctionQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetUserDefinedFunctionQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetUserDefinedFunctionQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetUserDefinedFunctionQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetUserDefinedFunctionQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetUserDefinedFunctionQueryStreamIterator(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetUserDefinedFunctionQueryStreamResultsAsync(System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[TOutput]] ExecuteStoredProcedureAsync[TOutput](System.String, Azure.Cosmos.PartitionKey, System.Object[], Azure.Cosmos.StoredProcedureRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",

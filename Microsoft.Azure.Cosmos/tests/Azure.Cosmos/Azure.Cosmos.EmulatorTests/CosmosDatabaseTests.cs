@@ -335,7 +335,7 @@ namespace Azure.Cosmos.EmulatorTests
                     databaseIds.Add(createResponse.Value.Id);
                 }
 
-                await foreach(DatabaseProperties databaseSettings in this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                await foreach(DatabaseProperties databaseSettings in this.cosmosClient.GetDatabaseQueryResultsAsync<DatabaseProperties>(
                     queryDefinition: null,
                     continuationToken: null,
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 2 }))
@@ -375,7 +375,7 @@ namespace Azure.Cosmos.EmulatorTests
                 deleteList.Add(createResponse3.Database);
 
                 int iterations = 0;
-                await foreach(Page<DatabaseProperties> iterator in this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                await foreach(Page<DatabaseProperties> iterator in this.cosmosClient.GetDatabaseQueryResultsAsync<DatabaseProperties>(
                         new QueryDefinition("select c.id From c where c.id = @id ")
                         .WithParameter("@id", createResponse.Database.Id),
                         requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }).AsPages())

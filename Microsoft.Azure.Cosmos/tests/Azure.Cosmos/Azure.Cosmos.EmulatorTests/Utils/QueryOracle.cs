@@ -82,7 +82,7 @@ namespace Azure.Cosmos.EmulatorTests
 
         private async Task ReadAllDocsAndBuildInvertedIndex()
         {
-            IAsyncEnumerable<Page<JToken>> iterator = this.container.GetItemQueryIterator<JToken>(requestOptions: new QueryRequestOptions() { MaxItemCount = 1000 }).AsPages();
+            IAsyncEnumerable<Page<JToken>> iterator = this.container.GetItemQueryResultsAsync<JToken>(requestOptions: new QueryRequestOptions() { MaxItemCount = 1000 }).AsPages();
             await foreach (Page<JToken> page in iterator)
             {
                 Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + ": Indexing {0} documents", page.Values.Count);
@@ -193,7 +193,7 @@ namespace Azure.Cosmos.EmulatorTests
                                            resultCount / (double)numberOfQueries, numberOfQueries);
                 }
 
-                IAsyncEnumerable<Page<dynamic>> docQuery = this.container.GetItemQueryIterator<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = pageSize }).AsPages();
+                IAsyncEnumerable<Page<dynamic>> docQuery = this.container.GetItemQueryResultsAsync<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = pageSize }).AsPages();
                 await foreach (Page<dynamic> queryResultsPage in docQuery)
                 {
                     DateTime startTime = DateTime.Now;
