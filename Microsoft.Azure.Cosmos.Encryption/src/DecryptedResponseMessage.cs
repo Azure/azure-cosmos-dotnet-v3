@@ -4,14 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using Microsoft.Azure.Cosmos;
     using System.IO;
     using System.Net;
+    using Microsoft.Azure.Cosmos;
 
     internal sealed class DecryptedResponseMessage : ResponseMessage
     {
-        private ResponseMessage responseMessage;
+        private readonly ResponseMessage responseMessage;
         private Stream decryptedContent;
+        private bool isDisposed = false;
 
         public DecryptedResponseMessage(
             ResponseMessage responseMessage,
@@ -40,5 +41,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override HttpStatusCode StatusCode => this.responseMessage.StatusCode;
 
         public override bool IsSuccessStatusCode => this.responseMessage.IsSuccessStatusCode;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !this.isDisposed)
+            {
+                this.isDisposed = true;
+                if (this.decryptedContent != null)
+                {
+                    this.decryptedContent.Dispose();
+                    this.decryptedContent = null;
+                }
+
+                if (this.responseMessage != null)
+                {
+                    this.responseMessage.Dispose();
+                }
+            }
+        }
     }
 }

@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using Newtonsoft.Json.Linq;
+    using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using System;
-    using System.Diagnostics;
+    using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
@@ -59,9 +59,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject contentJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(content);
             JArray result = new JArray();
             
-            if (contentJObj.SelectToken("Documents") is JArray documents)
+            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents)
             {
-                foreach(JToken value in documents)
+                foreach (JToken value in documents)
                 {
                     if (value is JObject document)
                     {
@@ -83,12 +83,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             }
 
                             result.Add(document);
+
                             MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream(document) as MemoryStream;
                             Debug.Assert(memoryStream != null);
-                            Debug.Assert(memoryStream.TryGetBuffer(out _));
+                            ArraySegment<byte> encryptedStream;
+                            Debug.Assert(memoryStream.TryGetBuffer(out encryptedStream));
+                            
                             this.DecryptionResultHandler(
                                 new DecryptionResult(
-                                    memoryStream.GetBuffer(),
+                                    encryptedStream,
                                     exception));
                         }
                     }
@@ -100,13 +103,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new InvalidOperationException($"Feed response Body Contract was violated. Feed response did not have an array of Documents");
+                throw new InvalidOperationException("Feed response Body Contract was violated. Feed response did not have an array of Documents");
             }
 
             JObject decryptedResponse = new JObject();
             foreach (JProperty property in contentJObj.Properties())
             {
-                if (property.Name.Equals("Documents"))
+                if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
                 {
                     decryptedResponse.Add(property.Name, (JToken)result);
                 }

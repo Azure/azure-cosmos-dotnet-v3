@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
 
+    /// <summary>
+    /// The <see cref="QueryRequestOptions"/> that allows to specify options for decryption.
+    /// </summary>
     public class EncryptionQueryRequestOptions : QueryRequestOptions
     {
         /// <summary>

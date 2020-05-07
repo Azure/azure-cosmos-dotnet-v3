@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using Microsoft.Azure.Cosmos;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -12,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
 
     internal sealed class EncryptionContainer : Container
     {
@@ -63,13 +63,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
                 {
-                    ResponseMessage responseMessage = await this.CreateItemStreamAsync(
-                        itemStream, 
-                        partitionKey.Value, 
-                        requestOptions, 
-                        cancellationToken);
-
-                    return this.responseFactory.CreateItemResponse<T>(responseMessage);
+                    using (ResponseMessage responseMessage = await this.CreateItemStreamAsync(
+                        itemStream,
+                        partitionKey.Value,
+                        requestOptions,
+                        cancellationToken))
+                    {
+                        return this.responseFactory.CreateItemResponse<T>(responseMessage);
+                    }
                 }
             }
             else
@@ -112,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         partitionKey,
                         requestOptions,
                         cancellationToken);
-
+                    
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content,
                         encryptionItemRequestOptions.DecryptionResultHandler,
@@ -123,7 +124,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 else
                 {
-                    return await this.container.CreateItemStreamAsync(streamPayload, partitionKey, requestOptions, cancellationToken);
+                    return await this.container.CreateItemStreamAsync(
+                        streamPayload, 
+                        partitionKey, 
+                        requestOptions, 
+                        cancellationToken);
                 }
             }
         }
@@ -160,13 +165,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default)
         {
-            ResponseMessage responseMessage = await this.ReadItemStreamAsync(
-                id, 
-                partitionKey, 
-                requestOptions, 
-                cancellationToken);
-
-            return this.responseFactory.CreateItemResponse<T>(responseMessage);
+            using (ResponseMessage responseMessage = await this.ReadItemStreamAsync(
+                id,
+                partitionKey,
+                requestOptions,
+                cancellationToken))
+            {
+                return this.responseFactory.CreateItemResponse<T>(responseMessage);
+            }
         }
 
         public async override Task<ResponseMessage> ReadItemStreamAsync(
@@ -179,9 +185,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("ReadItemStream"))
             {
                 ResponseMessage responseMessage = await this.container.ReadItemStreamAsync(
-                    id, 
-                    partitionKey, 
-                    requestOptions, 
+                    id,
+                    partitionKey,
+                    requestOptions,
                     cancellationToken);
 
                 Action<DecryptionResult> decryptionErroHandler = null;
@@ -193,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 responseMessage.Content = await this.DecryptResponseAsync(
                     responseMessage.Content,
                     decryptionErroHandler,
-                    diagnosticsContext, 
+                    diagnosticsContext,
                     cancellationToken);
 
                 return responseMessage;
@@ -226,14 +232,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
                 {
-                    ResponseMessage responseMessage = await this.ReplaceItemStreamAsync(
-                        itemStream, 
-                        id, 
-                        partitionKey.Value, 
-                        requestOptions, 
-                        cancellationToken);
-
-                    return this.responseFactory.CreateItemResponse<T>(responseMessage);
+                    using (ResponseMessage responseMessage = await this.ReplaceItemStreamAsync(
+                        itemStream,
+                        id,
+                        partitionKey.Value,
+                        requestOptions,
+                        cancellationToken))
+                    {
+                        return this.responseFactory.CreateItemResponse<T>(responseMessage);
+                    }
                 }
             }
             else
@@ -283,16 +290,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         diagnosticsContext,
                         cancellationToken);
 
-                    ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(streamPayload, 
-                        id, 
-                        partitionKey, 
-                        requestOptions, 
+                    ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(streamPayload,
+                        id,
+                        partitionKey,
+                        requestOptions,
                         cancellationToken);
 
                     responseMessage.Content = await this.DecryptResponseAsync(
-                        responseMessage.Content, 
+                        responseMessage.Content,
                         encryptionItemRequestOptions.DecryptionResultHandler,
-                        diagnosticsContext, 
+                        diagnosticsContext,
                         cancellationToken);
 
                     return responseMessage;
@@ -328,12 +335,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
                 {
-                    ResponseMessage responseMessage = await this.UpsertItemStreamAsync(itemStream,
+                    using (ResponseMessage responseMessage = await this.UpsertItemStreamAsync(itemStream,
                         partitionKey.Value,
                         requestOptions,
-                        cancellationToken);
-
-                    return this.responseFactory.CreateItemResponse<T>(responseMessage);
+                        cancellationToken))
+                    { 
+                        return this.responseFactory.CreateItemResponse<T>(responseMessage); 
+                    }
                 }
             }
             else
@@ -765,10 +773,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 using (MemoryStream memoryStream = new MemoryStream((int)input.Length))
                 {
                     input.CopyTo(memoryStream);
-                    Debug.Assert(memoryStream.TryGetBuffer(out _));
+                    ArraySegment<byte> encryptedStream;
+                    Debug.Assert(memoryStream.TryGetBuffer(out encryptedStream));
                     DecryptionResultHandler(
                         new DecryptionResult(
-                            memoryStream.GetBuffer(), 
+                            encryptedStream, 
                             exception));
                 }
                 input.Position = 0;

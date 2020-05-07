@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Collections.Generic;
 
+    /// <summary>
+    /// The <see cref="ItemRequestOptions"/> that allows to specify options for encryption / decryption.
+    /// </summary>
     public class EncryptionItemRequestOptions : ItemRequestOptions
     {
         /// <summary>
@@ -21,6 +24,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Algorithm to be used for encrypting the data in the request payload.
         /// </summary>
+        /// <remarks>
+        /// Authenticated Encryption algorithm based on https://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05
+        /// is the only one supported and is represented by "AEAes256CbcHmacSha256Randomized" value.
+        /// </remarks>
         public string EncryptionAlgorithm { get; set; }
 
         /// <summary>
@@ -28,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Only top level paths are supported.
         /// Example of a path specification: /sensitive
         /// </summary>
-        public List<string> PathsToEncrypt { get; set; }
+        public IEnumerable<string> PathsToEncrypt { get; set; }
 
         /// <summary>
         /// Delegate method that will be invoked (if configured) in case of decryption failure.

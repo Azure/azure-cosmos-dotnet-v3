@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
 
+    /// <summary>
+    /// Represents the details of failure encountered while decrypting response content.
+    /// </summary>
     public class DecryptionResult
     {
         protected DecryptionResult()
@@ -15,12 +18,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// The encrypted document returned as is (without decryption) in case of failure
         /// </summary>
-        public ReadOnlyMemory<byte> EncryptedStream { get; }
+        public virtual ReadOnlyMemory<byte> EncryptedStream { get; }
 
         /// <summary>
         /// Represents the exception encountered.
         /// </summary>
-        public Exception Exception { get; }
+        public virtual Exception Exception { get; }
 
         internal DecryptionResult(
             ReadOnlyMemory<byte> encryptedStream,

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
-            List<string> pathsToEncrypt,
+            IEnumerable<string> pathsToEncrypt,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -31,12 +32,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            if (string.IsNullOrEmpty(dataEncryptionKeyId))
+            if (string.IsNullOrWhiteSpace(dataEncryptionKeyId))
             {
                 throw new ArgumentNullException(nameof(dataEncryptionKeyId));
             }
 
-            if (string.IsNullOrEmpty(encryptionAlgorithm))
+            if (string.IsNullOrWhiteSpace(encryptionAlgorithm))
             {
                 throw new ArgumentNullException(nameof(encryptionAlgorithm));
             }
@@ -46,14 +47,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(pathsToEncrypt));
             }
 
-            if (pathsToEncrypt.Count == 0)
+            if (!pathsToEncrypt.Any())
             {
                 return input;
             }
 
             foreach (string path in pathsToEncrypt)
             {
-                if (string.IsNullOrEmpty(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
+                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
                 {
                     throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(pathsToEncrypt));
                 }
@@ -78,11 +79,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj) as MemoryStream;
             Debug.Assert(memoryStream != null);
-            Debug.Assert(memoryStream.TryGetBuffer(out _));
-
-            byte[] plainText = memoryStream.GetBuffer();
+            ArraySegment<byte> plainText;
+            Debug.Assert(memoryStream.TryGetBuffer(out plainText));
+            
             byte[] cipherText = await encryptor.EncryptAsync(
-                plainText,
+                plainText.Array,
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
                 cancellationToken);

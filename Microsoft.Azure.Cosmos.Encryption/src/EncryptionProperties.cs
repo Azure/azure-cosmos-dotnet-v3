@@ -11,10 +11,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         [JsonProperty(PropertyName = Constants.EncryptionFormatVersion)]
         public int EncryptionFormatVersion { get; }
 
-        [JsonProperty(PropertyName = "_en")]
+        [JsonProperty(PropertyName = Constants.EncryptionDekId)]
         public string DataEncryptionKeyId { get; }
 
-        [JsonProperty(PropertyName = "_ea")]
+        [JsonProperty(PropertyName = Constants.EncryptionAlgorithm)]
         public string EncryptionAlgorithm { get;  }
 
         [JsonProperty(PropertyName = Constants.EncryptedData)]

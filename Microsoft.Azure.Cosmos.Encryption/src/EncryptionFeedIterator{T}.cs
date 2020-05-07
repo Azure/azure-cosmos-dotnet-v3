@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -16,6 +17,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedIterator feedIterator,
             CosmosResponseFactory responseFactory)
         {
+            if (!(feedIterator is EncryptionFeedIterator))
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(feedIterator)} must be of type {nameof(EncryptionFeedIterator)}.");
+            }
+
             this.feedIterator = feedIterator;
             this.responseFactory = responseFactory;
         }
@@ -24,8 +30,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
-            return this.responseFactory.CreateItemFeedResponse<T>(responseMessage);
+            using (ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken))
+            {
+                return this.responseFactory.CreateItemFeedResponse<T>(responseMessage);
+            }
         }
     }
 }

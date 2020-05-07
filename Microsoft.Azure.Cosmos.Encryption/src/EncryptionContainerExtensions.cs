@@ -4,10 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using Microsoft.Azure.Cosmos.Linq;
     using System;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Linq;
 
+    /// <summary>
+    /// This class provides extension methods for Encryption Container.
+    /// </summary>
     public static class EncryptionContainerExtensions
     {
         /// <summary>
@@ -49,18 +52,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
-            if (container is EncryptionContainer encryptionContainer)
-            {
-                return new EncryptionFeedIterator<T>(
-                    encryptionContainer.ToEncryptionStreamIterator(
-                        query,
-                        queryRequestOptions),
-                    encryptionContainer.responseFactory);
-            }
-            else
+            if (!(container is EncryptionContainer encryptionContainer))
             {
                 throw new ArgumentOutOfRangeException(nameof(query), "ToEncryptionFeedIterator is only supported with EncryptionContainer.");
             }
+
+            return new EncryptionFeedIterator<T>(
+                encryptionContainer.ToEncryptionStreamIterator(
+                    query,
+                    queryRequestOptions),
+                encryptionContainer.responseFactory);
         }
 
         /// <summary>
@@ -87,24 +88,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
-            if (container is EncryptionContainer encryptionContainer)
-            {
-                Action<DecryptionResult> DecryptionResultHandler = null;
-                if (queryRequestOptions != null &&
-                    queryRequestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
-                {
-                    DecryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
-                }
-
-                return new EncryptionFeedIterator(
-                    query.ToStreamIterator(),
-                    encryptionContainer.encryptor,
-                    DecryptionResultHandler);
-            }
-            else
+            if (!(container is EncryptionContainer encryptionContainer))
             {
                 throw new ArgumentOutOfRangeException(nameof(query), "ToEncryptionStreamIterator is only supported with EncryptionContainer.");
             }
+
+            Action<DecryptionResult> decryptionResultHandler;
+            if (queryRequestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
+            {
+                decryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
+            }
+            else
+            {
+                decryptionResultHandler = null;
+            }
+
+            return new EncryptionFeedIterator(
+                query.ToStreamIterator(),
+                encryptionContainer.encryptor,
+                decryptionResultHandler);
         }
     }
 }
