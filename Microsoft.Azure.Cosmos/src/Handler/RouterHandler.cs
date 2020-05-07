@@ -53,6 +53,5 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return targetHandler.SendAsync(request, cancellationToken);
             }
         }
-            
     }
 }
