@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is optimal for workloads where the returned resource is not used.
         /// </remarks>
-        public bool? NoContentResponseOnWrite { get; set; }
+        public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is optimal for workloads where the returned resource is not used.
         /// </remarks>
-        internal bool? NoContentResponseOnRead { get; set; }
+        internal bool? EnableContentResponseOnRead { get; set; }
 
         /// <summary>
         /// Options to encrypt properties of the item.
@@ -175,8 +175,8 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions.SetSessionToken(request, this.SessionToken);
 
             if (ItemRequestOptions.ShouldSetNoContentHeader(
-                this.NoContentResponseOnWrite,
-                this.NoContentResponseOnRead,
+                this.EnableContentResponseOnWrite,
+                this.EnableContentResponseOnRead,
                 request.OperationType))
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);

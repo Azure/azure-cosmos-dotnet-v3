@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is optimal for workloads where the returned resource is not used.
         /// </remarks>
-        public bool? NoContentResponseOnWrite { get; set; }
+        public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is optimal for workloads where the returned resource is not used.
         /// </remarks>
-        internal bool? NoContentResponseOnRead { get; set; }
+        internal bool? EnableContentResponseOnRead { get; set; }
 
         /// <summary>
         /// Options to encrypt properties of the item.
@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos
             batchItemRequestOptions.IfMatchEtag = itemRequestOptions.IfMatchEtag;
             batchItemRequestOptions.IfNoneMatchEtag = itemRequestOptions.IfNoneMatchEtag;
             batchItemRequestOptions.Properties = itemRequestOptions.Properties;
-            batchItemRequestOptions.NoContentResponseOnWrite = itemRequestOptions.NoContentResponseOnWrite;
-            batchItemRequestOptions.NoContentResponseOnRead = itemRequestOptions.NoContentResponseOnRead;
+            batchItemRequestOptions.EnableContentResponseOnWrite = itemRequestOptions.EnableContentResponseOnWrite;
+            batchItemRequestOptions.EnableContentResponseOnRead = itemRequestOptions.EnableContentResponseOnRead;
             batchItemRequestOptions.IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting;
             return batchItemRequestOptions;
         }

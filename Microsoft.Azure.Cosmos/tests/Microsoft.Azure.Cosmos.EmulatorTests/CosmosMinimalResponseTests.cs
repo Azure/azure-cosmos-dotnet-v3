@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                NoContentResponseOnWrite = true
+                EnableContentResponseOnWrite = true
             };
 
             await this.Validate(
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                NoContentResponseOnRead = true
+                EnableContentResponseOnRead = true
             };
 
             await this.Validate(
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                NoContentResponseOnWrite = true
+                EnableContentResponseOnWrite = true
             };
 
             await this.ValidateItemStream(
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                NoContentResponseOnRead = true
+                EnableContentResponseOnRead = true
             };
 
             await this.ValidateItemStream(
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             TransactionalBatchItemRequestOptions requestOptions = new TransactionalBatchItemRequestOptions()
             {
-                NoContentResponseOnWrite = true
+                EnableContentResponseOnWrite = true
             };
 
             string pkId = "TestBatchId";
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                NoContentResponseOnWrite = true
+                EnableContentResponseOnWrite = true
             };
 
             CosmosClient bulkClient = TestCommon.CreateCosmosClient((builder) => builder.WithBulkExecution(true));

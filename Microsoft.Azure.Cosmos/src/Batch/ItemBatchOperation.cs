@@ -172,8 +172,8 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 if (ItemRequestOptions.ShouldSetNoContentHeader(
-                    options.NoContentResponseOnWrite,
-                    options.NoContentResponseOnRead,
+                    options.EnableContentResponseOnWrite,
+                    options.EnableContentResponseOnRead,
                     operation.OperationType))
                 {
                     r = writer.WriteBool("minimalReturnPreference", true);
