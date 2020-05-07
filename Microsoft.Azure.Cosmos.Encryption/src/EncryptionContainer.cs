@@ -102,9 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     streamPayload = await EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.DataEncryptionKeyId,
-                        encryptionItemRequestOptions.EncryptionAlgorithm,
-                        encryptionItemRequestOptions.PathsToEncrypt,
+                        encryptionItemRequestOptions.EncryptionOption,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -284,9 +282,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     streamPayload = await EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.DataEncryptionKeyId,
-                        encryptionItemRequestOptions.EncryptionAlgorithm,
-                        encryptionItemRequestOptions.PathsToEncrypt,
+                        encryptionItemRequestOptions.EncryptionOption,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -377,9 +373,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     streamPayload = await EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.DataEncryptionKeyId,
-                        encryptionItemRequestOptions.EncryptionAlgorithm,
-                        encryptionItemRequestOptions.PathsToEncrypt,
+                        encryptionItemRequestOptions.EncryptionOption,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -459,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
-                this.GetItemQueryStreamIterator(
+                (EncryptionFeedIterator) this.GetItemQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
                     requestOptions),
@@ -472,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
-                this.GetItemQueryStreamIterator(
+                (EncryptionFeedIterator) this.GetItemQueryStreamIterator(
                     queryText,
                     continuationToken,
                     requestOptions),              
@@ -671,7 +665,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
-                this.GetChangeFeedStreamIterator(
+                (EncryptionFeedIterator) this.GetChangeFeedStreamIterator(
                     continuationToken,
                     changeFeedRequestOptions),
                 this.responseFactory);
@@ -682,7 +676,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
-                this.GetChangeFeedStreamIterator(
+                (EncryptionFeedIterator) this.GetChangeFeedStreamIterator(
                     feedRange, 
                     changeFeedRequestOptions),
                 this.responseFactory);
@@ -693,7 +687,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
-                this.GetChangeFeedStreamIterator(
+                (EncryptionFeedIterator) this.GetChangeFeedStreamIterator(
                     partitionKey,
                     changeFeedRequestOptions),
                 this.responseFactory);
@@ -735,7 +729,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
-                this.GetItemQueryStreamIterator(
+                (EncryptionFeedIterator) this.GetItemQueryStreamIterator(
                     feedRange,
                     queryDefinition,
                     continuationToken,
@@ -769,7 +763,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     throw;
                 }
-                
+
                 using (MemoryStream memoryStream = new MemoryStream((int)input.Length))
                 {
                     input.CopyTo(memoryStream);
@@ -777,7 +771,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     Debug.Assert(memoryStream.TryGetBuffer(out encryptedStream));
                     DecryptionResultHandler(
                         new DecryptionResult(
-                            encryptedStream, 
+                            encryptedStream,
                             exception));
                 }
                 input.Position = 0;

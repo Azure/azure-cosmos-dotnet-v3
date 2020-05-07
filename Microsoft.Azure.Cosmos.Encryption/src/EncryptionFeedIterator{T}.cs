@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly CosmosResponseFactory responseFactory;
 
         public EncryptionFeedIterator(
-            FeedIterator feedIterator,
+            EncryptionFeedIterator feedIterator,
             CosmosResponseFactory responseFactory)
         {
             if (!(feedIterator is EncryptionFeedIterator))

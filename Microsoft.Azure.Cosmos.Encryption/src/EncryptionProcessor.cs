@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -17,14 +16,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        internal static readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+        internal static readonly CosmosJsonDotNetSerializer baseSerializer = new CosmosJsonDotNetSerializer();
 
         public static async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
-            string dataEncryptionKeyId,
-            string encryptionAlgorithm,
-            IEnumerable<string> pathsToEncrypt,
+            EncryptionOptions encryptionOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -32,31 +29,31 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            if (string.IsNullOrWhiteSpace(dataEncryptionKeyId))
+            if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
             {
-                throw new ArgumentNullException(nameof(dataEncryptionKeyId));
+                throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
             }
 
-            if (string.IsNullOrWhiteSpace(encryptionAlgorithm))
+            if (string.IsNullOrWhiteSpace(encryptionOptions.EncryptionAlgorithm))
             {
-                throw new ArgumentNullException(nameof(encryptionAlgorithm));
+                throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
             }
 
-            if (pathsToEncrypt == null)
+            if (encryptionOptions.PathsToEncrypt == null)
             {
-                throw new ArgumentNullException(nameof(pathsToEncrypt));
+                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
             }
 
-            if (!pathsToEncrypt.Any())
+            if (!encryptionOptions.PathsToEncrypt.Any())
             {
                 return input;
             }
 
-            foreach (string path in pathsToEncrypt)
+            foreach (string path in encryptionOptions.PathsToEncrypt)
             {
                 if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
                 {
-                    throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(pathsToEncrypt));
+                    throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
                 }
             }
 
@@ -64,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             JObject toEncryptJObj = new JObject();
 
-            foreach (string pathToEncrypt in pathsToEncrypt)
+            foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
                 string propertyName = pathToEncrypt.Substring(1);
                 JToken propertyValueHolder = itemJObj.Property(propertyName).Value;
@@ -77,15 +74,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj) as MemoryStream;
+            MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj);
             Debug.Assert(memoryStream != null);
             ArraySegment<byte> plainText;
             Debug.Assert(memoryStream.TryGetBuffer(out plainText));
             
             byte[] cipherText = await encryptor.EncryptAsync(
                 plainText.Array,
-                dataEncryptionKeyId,
-                encryptionAlgorithm,
+                encryptionOptions.DataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
                 cancellationToken);
 
             if (cipherText == null)
@@ -95,8 +92,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionProperties encryptionProperties = new EncryptionProperties(
                 encryptionFormatVersion: 2,
-                encryptionAlgorithm,
-                dataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
+                encryptionOptions.DataEncryptionKeyId,
                 encryptedData: cipherText);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));

@@ -84,11 +84,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                             result.Add(document);
 
-                            MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream(document) as MemoryStream;
+                            MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream(document);
                             Debug.Assert(memoryStream != null);
                             ArraySegment<byte> encryptedStream;
                             Debug.Assert(memoryStream.TryGetBuffer(out encryptedStream));
-                            
+
                             this.DecryptionResultHandler(
                                 new DecryptionResult(
                                     encryptedStream,

@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return new EncryptionFeedIterator<T>(
-                encryptionContainer.ToEncryptionStreamIterator(
+                (EncryptionFeedIterator) encryptionContainer.ToEncryptionStreamIterator(
                     query,
                     queryRequestOptions),
                 encryptionContainer.responseFactory);

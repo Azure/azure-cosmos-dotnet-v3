@@ -935,9 +935,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             return new EncryptionItemRequestOptions
             {
-                DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                PathsToEncrypt = pathsToEncrypt,
+                EncryptionOption = EncryptionTests.GetEncryptionOptions(dekId, pathsToEncrypt),
                 IfMatchEtag = ifMatchEtag
             };
         }
@@ -949,10 +947,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             return new EncryptionTransactionalBatchItemRequestOptions
             {
+                EncryptionOption = EncryptionTests.GetEncryptionOptions(dekId, pathsToEncrypt),
+                IfMatchEtag = ifMatchEtag
+            };
+        }
+
+        private static Encryption.EncryptionOptions GetEncryptionOptions(
+            string dekId,
+            List<string> pathsToEncrypt)
+        {
+            return new Encryption.EncryptionOptions()
+            {
                 DataEncryptionKeyId = dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                PathsToEncrypt = pathsToEncrypt,
-                IfMatchEtag = ifMatchEtag
+                PathsToEncrypt = pathsToEncrypt
             };
         }
 
