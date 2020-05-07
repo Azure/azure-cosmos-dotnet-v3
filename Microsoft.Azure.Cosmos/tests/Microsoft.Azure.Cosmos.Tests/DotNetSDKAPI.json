@@ -2682,6 +2682,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)": {
           "Type": "Method",
           "Attributes": [],
@@ -2696,6 +2701,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect(System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.Int32], System.Nullable`1[System.Int32], System.Nullable`1[Microsoft.Azure.Cosmos.PortReuseMode], System.Nullable`1[System.Boolean])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect(System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.Int32], System.Nullable`1[System.Int32], System.Nullable`1[Microsoft.Azure.Cosmos.PortReuseMode], System.Nullable`1[System.Boolean])"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], System.Net.IWebProxy)": {
           "Type": "Method",
