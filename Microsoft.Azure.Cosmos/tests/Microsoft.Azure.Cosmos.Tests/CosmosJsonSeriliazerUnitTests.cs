@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -206,6 +207,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             mockUserJsonSerializer.VerifyAll();
 
+            ResponseMessage changeFeedResponseMessage = this.CreateChangeFeedNotModifiedResponse();
+            FeedResponse<ToDoActivity> changeFeedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(changeFeedResponseMessage);
+            Assert.AreEqual(HttpStatusCode.NotModified, changeFeedResponse.StatusCode);
+            Assert.IsFalse(changeFeedResponse.Resource.Any());
+
             ResponseMessage queryResponse = this.CreateReadFeedResponse();
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
             FeedResponse<ToDoActivity> queryFeedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(queryResponse);
@@ -347,6 +353,16 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                     "+o4fAPfXPzw="),
                 new CosmosDiagnosticsContextCore(),
                 null);
+
+            return cosmosResponse;
+        }
+
+        private ResponseMessage CreateChangeFeedNotModifiedResponse()
+        {
+            ResponseMessage cosmosResponse = new ResponseMessage(statusCode: HttpStatusCode.NotModified)
+            {
+                Content = null
+            };
 
             return cosmosResponse;
         }
