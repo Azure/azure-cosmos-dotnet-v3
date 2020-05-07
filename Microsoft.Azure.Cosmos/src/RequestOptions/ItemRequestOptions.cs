@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// ItemRequestOption requestOptions = new ItemRequestOptions() { NoContentResponseOnWrite = true };
+        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableContentResponseOnWrite = true };
         /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
         /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
         /// Assert.IsNull(itemResponse.Resource);
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// ItemRequestOption requestOptions = new ItemRequestOptions() { NoContentResponseOnWrite = true };
+        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableContentResponseOnRead = true };
         /// ItemResponse itemResponse = await this.container.ReadItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
         /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
         /// Assert.IsNull(itemResponse.Resource);
@@ -186,19 +186,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static bool ShouldSetNoContentHeader(
-            bool? onItemWrite,
-            bool? onItemRead,
+            bool? enableContentResponseOnWrite,
+            bool? enableContentResponseOnRead,
             OperationType operationType)
         {
-            if (onItemRead.HasValue &&
-                onItemRead.Value &&
+            if (enableContentResponseOnRead.HasValue &&
+                !enableContentResponseOnRead.Value &&
                 operationType == OperationType.Read)
             {
                 return true;
             }
 
-            return onItemWrite.HasValue &&
-              onItemWrite.Value &&
+            return enableContentResponseOnWrite.HasValue &&
+              !enableContentResponseOnWrite.Value &&
               (operationType == OperationType.Create ||
               operationType == OperationType.Replace ||
               operationType == OperationType.Upsert);

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosMinimalResponseTests
+    public class CosmosContentResponseTests
     {
         private CosmosClient cosmosClient;
         private Database database;
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                EnableContentResponseOnWrite = true
+                EnableContentResponseOnWrite = false
             };
 
             await this.Validate(
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                EnableContentResponseOnRead = true
+                EnableContentResponseOnRead = false
             };
 
             await this.Validate(
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                EnableContentResponseOnWrite = true
+                EnableContentResponseOnWrite = false
             };
 
             await this.ValidateItemStream(
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                EnableContentResponseOnRead = true
+                EnableContentResponseOnRead = false
             };
 
             await this.ValidateItemStream(
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             TransactionalBatchItemRequestOptions requestOptions = new TransactionalBatchItemRequestOptions()
             {
-                EnableContentResponseOnWrite = true
+                EnableContentResponseOnWrite = false
             };
 
             string pkId = "TestBatchId";
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                EnableContentResponseOnWrite = true
+                EnableContentResponseOnWrite = false
             };
 
             CosmosClient bulkClient = TestCommon.CreateCosmosClient((builder) => builder.WithBulkExecution(true));
