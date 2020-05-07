@@ -393,6 +393,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
             CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder, false);
+            Assert.IsNotNull(camelCaseCosmosClient.ClientOptions.Serializer);
+            Assert.IsTrue(camelCaseCosmosClient.ClientOptions.Serializer is CosmosJsonSerializerWrapper);
+
             Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
             Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
