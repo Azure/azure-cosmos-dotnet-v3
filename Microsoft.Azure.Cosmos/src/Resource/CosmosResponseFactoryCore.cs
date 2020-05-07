@@ -65,9 +65,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             Documents.ResourceType resourceType)
         {
-            //Throw the exception
-            cosmosResponseMessage.EnsureSuccessStatusCode();
-
             QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
             if (queryResponse != null)
             {
