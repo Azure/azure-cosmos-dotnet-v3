@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
 
-        private Dictionary<DocumentServiceRequest, DateTime> RecordRequestStartTime = new Dictionary<DocumentServiceRequest, DateTime>();
+        private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
 
         public List<Uri> ContactedReplicas { get; set; }
 
@@ -63,15 +63,14 @@ namespace Microsoft.Azure.Cosmos
 
         public void RecordRequest(DocumentServiceRequest request)
         {
-            this.RecordRequestStartTime[request] = DateTime.UtcNow;
+            this.RecordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
         }
 
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
-            // One DocumentServiceRequest can map to multiple store results, and the DocumentServiceRequest
-            // is reliably cleaned up else where in the code so no need to clean up the dictionary.
+            // One DocumentServiceRequest can map to multiple store results
             DateTime? startDateTime = null;
-            if (this.RecordRequestStartTime.TryGetValue(request, out DateTime startRequestTime))
+            if (this.RecordRequestHashCodeToStartTime.TryGetValue(request.GetHashCode(), out DateTime startRequestTime))
             {
                 startDateTime = startRequestTime;
             }
