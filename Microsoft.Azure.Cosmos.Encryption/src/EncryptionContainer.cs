@@ -768,7 +768,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     input.CopyTo(memoryStream);
                     ArraySegment<byte> encryptedStream;
-                    Debug.Assert(memoryStream.TryGetBuffer(out encryptedStream));
+                    bool wasBufferReturned = memoryStream.TryGetBuffer(out encryptedStream);
+                    Debug.Assert(wasBufferReturned);
+
                     DecryptionResultHandler(
                         new DecryptionResult(
                             encryptedStream,

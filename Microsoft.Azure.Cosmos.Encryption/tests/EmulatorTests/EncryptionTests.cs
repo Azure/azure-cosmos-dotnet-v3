@@ -12,10 +12,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Encryption;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Encryption;
     using Newtonsoft.Json.Linq;
 
     [TestClass]

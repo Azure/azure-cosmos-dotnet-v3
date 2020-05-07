@@ -39,7 +39,6 @@
     <IncludeSource>false</IncludeSource>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
     <NoWarn>NU5125</NoWarn>
-    <IsPreview>true</IsPreview>
   </PropertyGroup>
 
   <ItemGroup>
