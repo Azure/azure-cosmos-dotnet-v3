@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             Debug.Assert(wasBufferReturned);
 
                             this.DecryptionResultHandler(
-                                new DecryptionResult(
+                                DecryptionResult.CreateFailure(
                                     encryptedStream,
                                     exception));
                         }

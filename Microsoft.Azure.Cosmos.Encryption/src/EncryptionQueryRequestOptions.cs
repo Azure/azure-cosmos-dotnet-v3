@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// The <see cref="QueryRequestOptions"/> that allows to specify options for decryption.
     /// </summary>
-    public class EncryptionQueryRequestOptions : QueryRequestOptions
+    public sealed class EncryptionQueryRequestOptions : QueryRequestOptions
     {
         /// <summary>
         /// Delegate method that will be invoked (if configured) in case of decryption failure.

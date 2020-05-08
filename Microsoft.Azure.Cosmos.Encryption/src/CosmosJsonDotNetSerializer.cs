@@ -15,7 +15,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class CosmosJsonDotNetSerializer
     {
-        private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+        private static readonly Encoding DefaultEncoding = new UTF8Encoding(
+            encoderShouldEmitUTF8Identifier: false, 
+            throwOnInvalidBytes: true);
+
         private readonly JsonSerializerSettings SerializerSettings;
 
         /// <summary>
@@ -25,48 +28,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// This is internal to reduce exposure of JSON.net types so
         /// it is easier to convert to System.Text.Json
         /// </remarks>
-        internal CosmosJsonDotNetSerializer()
+        internal CosmosJsonDotNetSerializer(JsonSerializerSettings jsonSerializerSettings = null)
         {
-            this.SerializerSettings = null;
-        }
-
-        /// <summary>
-        /// Create a serializer that uses the JSON.net serializer
-        /// </summary>
-        /// <remarks>
-        /// This is internal to reduce exposure of JSON.net types so
-        /// it is easier to convert to System.Text.Json
-        /// </remarks>
-        internal CosmosJsonDotNetSerializer(CosmosSerializationOptions cosmosSerializerOptions)
-        {
-            if (cosmosSerializerOptions == null)
-            {
-                this.SerializerSettings = null;
-                return;
-            }
-
-            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
-            {
-                NullValueHandling = cosmosSerializerOptions.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
-                Formatting = cosmosSerializerOptions.Indented ? Formatting.Indented : Formatting.None,
-                ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase
-                    ? new CamelCasePropertyNamesContractResolver()
-                    : null
-            };
-
             this.SerializerSettings = jsonSerializerSettings;
-        }
-
-        /// <summary>
-        /// Create a serializer that uses the JSON.net serializer
-        /// </summary>
-        /// <remarks>
-        /// This is internal to reduce exposure of JSON.net types so
-        /// it is easier to convert to System.Text.Json
-        /// </remarks>
-        internal CosmosJsonDotNetSerializer(JsonSerializerSettings jsonSerializerSettings)
-        {
-            this.SerializerSettings = jsonSerializerSettings ?? throw new ArgumentNullException(nameof(jsonSerializerSettings));
         }
 
         /// <summary>
@@ -77,20 +41,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>The object representing the deserialized stream</returns>
         public T FromStream<T>(Stream stream)
         {
-            using (stream)
+            if (stream == null)
             {
-                if (typeof(Stream).IsAssignableFrom(typeof(T)))
-                {
-                    return (T)(object)stream;
-                }
+                throw new ArgumentNullException(nameof(stream));
+            }
 
-                using (StreamReader sr = new StreamReader(stream))
+            if (typeof(Stream).IsAssignableFrom(typeof(T)))
+            {
+                return (T)(object)stream;
+            }
+
+            using (StreamReader sr = new StreamReader(stream))
+            {
+                using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
                 {
-                    using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
-                    {
-                        JsonSerializer jsonSerializer = this.GetSerializer();
-                        return jsonSerializer.Deserialize<T>(jsonTextReader);
-                    }
+                    JsonSerializer jsonSerializer = this.GetSerializer();
+                    return jsonSerializer.Deserialize<T>(jsonTextReader);
                 }
             }
         }

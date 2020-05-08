@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Options for encryption of data.
     /// </summary>
-    public class EncryptionOptions
+    public sealed class EncryptionOptions
     {
         /// <summary>
         /// Identifier of the data encryption key to be used for encrypting the data in the request payload.

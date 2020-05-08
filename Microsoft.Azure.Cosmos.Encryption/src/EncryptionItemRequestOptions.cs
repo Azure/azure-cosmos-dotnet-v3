@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// The <see cref="ItemRequestOptions"/> that allows to specify options for encryption / decryption.
     /// </summary>
-    public class EncryptionItemRequestOptions : ItemRequestOptions
+    public sealed class EncryptionItemRequestOptions : ItemRequestOptions
     {
         /// <summary>
         /// Options to be provided for encryption of data.

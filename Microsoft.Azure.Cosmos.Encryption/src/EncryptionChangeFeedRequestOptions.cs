@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// The <see cref="ChangeFeedRequestOptions"/> that allows to specify options for decryption.
     /// </summary>
-    public class EncryptionChangeFeedRequestOptions : ChangeFeedRequestOptions
+    public sealed class EncryptionChangeFeedRequestOptions : ChangeFeedRequestOptions
     {
         /// <summary>
         /// Delegate method that will be invoked (if configured) in case of decryption failure.

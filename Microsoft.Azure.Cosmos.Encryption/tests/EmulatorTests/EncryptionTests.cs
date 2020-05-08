@@ -279,15 +279,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testDoc1,
                 EncryptionTests.GetItemRequestOptionsWithDecryptionResultHandler());
 
+            EncryptionQueryRequestOptions queryRequestOptions = new EncryptionQueryRequestOptions
+            {
+                DecryptionResultHandler = EncryptionTests.ErrorHandler
+            };
+
             await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(
                 EncryptionTests.encryptionContainer,
                 testDoc1,
                 testDoc2,
                 query,
-                new EncryptionQueryRequestOptions
-                {
-                    DecryptionResultHandler = EncryptionTests.ErrorHandler
-                });
+                queryRequestOptions);
+
+            // GetItemLinqQueryable
+            await EncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(
+                EncryptionTests.encryptionContainer, 
+                testDoc1, 
+                testDoc2, 
+                query: null,
+                queryRequestOptions);
 
             await this.ValidateChangeFeedIteratorResponse(
                 EncryptionTests.encryptionContainer,
@@ -296,9 +306,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionTests.ErrorHandler);
 
             // await this.ValidateChangeFeedProcessorResponse(EncryptionTests.itemContainerCore, testDoc1, testDoc2, false);
-    }
+            EncryptionTests.encryptor.FailDecryption = false;
+        }
 
-    [TestMethod]
+        [TestMethod]
         public async Task EncryptionDecryptQueryResultMultipleDocs()
         {
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.encryptionContainer, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
@@ -773,7 +784,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         private static void ErrorHandler(DecryptionResult decryptionErrorDetails)
         {
-            Assert.AreEqual(decryptionErrorDetails.Exception.Message, "Null DataEncryptionKey returned from FetchDataEncryptionKeyAsync.");
+            Assert.AreEqual(decryptionErrorDetails.Exception.Message, "Null DataEncryptionKey returned.");
 
             using (MemoryStream memoryStream = new MemoryStream(decryptionErrorDetails.EncryptedStream.ToArray()))
             {
@@ -1119,7 +1130,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 if (this.FailDecryption && dataEncryptionKeyId.Equals("failDek"))
                 {
-                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned.");
                 }
 
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
@@ -1129,7 +1140,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 if (dek == null)
                 {
-                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}." +
+                        $"DekId: {dataEncryptionKeyId}, algo: {encryptionAlgorithm}.");
                 }
 
                 return dek.DecryptData(cipherText);

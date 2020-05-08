@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// The <see cref="TransactionalBatchItemRequestOptions"/> that allows to specify options for encryption / decryption.
     /// </summary>
-    public class EncryptionTransactionalBatchItemRequestOptions : TransactionalBatchItemRequestOptions
+    public sealed class EncryptionTransactionalBatchItemRequestOptions : TransactionalBatchItemRequestOptions
     {
         /// <summary>
         /// Options to be provided for encryption of data.

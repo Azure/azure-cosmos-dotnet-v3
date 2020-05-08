@@ -544,10 +544,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null, 
             QueryRequestOptions requestOptions = null)
         {
-            Action<DecryptionResult> DecryptionResultHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
                 DecryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
+            }
+            else
+            {
+                DecryptionResultHandler = null;
             }
 
             return new EncryptionFeedIterator(
@@ -564,10 +568,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null, 
             QueryRequestOptions requestOptions = null)
         {
-            Action<DecryptionResult> DecryptionResultHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
                 DecryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
+            }
+            else
+            {
+                DecryptionResultHandler = null;
             }
 
             return new EncryptionFeedIterator(
@@ -584,6 +592,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ChangesHandler<T> onChangesDelegate)
         {
             // TODO: need client SDK to expose underlying feedIterator to make decryption work for this scenario
+            // Issue #1484
             return this.container.GetChangeFeedProcessorBuilder(
                 processorName,
                 onChangesDelegate);
@@ -610,10 +619,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null, 
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            Action<DecryptionResult> DecryptionResultHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
                 DecryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
+            }
+            else
+            {
+                DecryptionResultHandler = null;
             }
 
             return new EncryptionFeedIterator(
@@ -628,10 +641,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange feedRange, 
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            Action<DecryptionResult> DecryptionResultHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
                 DecryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
+            }
+            else
+            {
+                DecryptionResultHandler = null;
             }
 
             return new EncryptionFeedIterator(
@@ -646,10 +663,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             PartitionKey partitionKey, 
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            Action<DecryptionResult> DecryptionResultHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
                 DecryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
+            }
+            else
+            {
+                DecryptionResultHandler = null;
             }
 
             return new EncryptionFeedIterator(
@@ -706,10 +727,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken, 
             QueryRequestOptions requestOptions = null)
         {
-            Action<DecryptionResult> DecryptionResultHandler = null;
+            Action<DecryptionResult> DecryptionResultHandler;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
                 DecryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
+            }
+            else
+            {
+                DecryptionResultHandler = null;
             }
 
             return new EncryptionFeedIterator(
@@ -772,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     Debug.Assert(wasBufferReturned);
 
                     DecryptionResultHandler(
-                        new DecryptionResult(
+                        DecryptionResult.CreateFailure(
                             encryptedStream,
                             exception));
                 }
