@@ -3,8 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
@@ -52,7 +50,7 @@
                 JToken previewLocalToken = previewContract[token.Key];
                 if (previewLocalToken != null)
                 {
-                    if(JToken.DeepEquals(previewLocalToken, token.Value))
+                    if (JToken.DeepEquals(previewLocalToken, token.Value))
                     {
                         previewContract.Remove(token.Key);
                     }
