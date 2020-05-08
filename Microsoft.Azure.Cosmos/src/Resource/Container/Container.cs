@@ -1159,10 +1159,10 @@ namespace Microsoft.Azure.Cosmos
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
         /// <summary>
-        /// Deletes PartitionKey
+        /// Deletes all items in a <see cref="PartitionKey"/>
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
+        /// <param name="requestOptions">(Optional) The options for the Parition Key Delete request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/>
