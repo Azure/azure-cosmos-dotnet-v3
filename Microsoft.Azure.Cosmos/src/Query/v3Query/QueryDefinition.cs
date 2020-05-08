@@ -90,7 +90,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Checks for equality of two QueryDefinitions ignoring order of sqlParameters
+        /// Checks for equality of two QueryDefinitions. Two queries are considered equal if
+        /// 1. They are the same object in memory
+        /// 2. Their query text is exactly the same AND they provide the same parameter values.
         /// </summary>
         /// <param name="other"></param>
         /// <returns>Boolean representing the equality</returns>
