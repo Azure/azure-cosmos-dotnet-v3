@@ -330,9 +330,14 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            Container container = this.GetContainer(containerProperties.Id);
-            ResponseMessage readResponse = await container.ReadContainerStreamAsync(
-                cancellationToken: cancellationToken);
+            ContainerInternal container = (ContainerInternal)this.GetContainer(containerProperties.Id);
+            ResponseMessage readResponse = await this.ProcessResourceOperationStreamAsync(
+                null,
+                OperationType.Read,
+                container.LinkUri,
+                ResourceType.Collection,
+                requestOptions,
+                cancellationToken);
 
             if (readResponse.StatusCode != HttpStatusCode.NotFound)
             {
@@ -370,8 +375,13 @@ namespace Microsoft.Azure.Cosmos
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
             // so for the remaining ones we should do a Read instead of throwing Conflict exception
-            ResponseMessage readResponseAfterCreate = await container.ReadContainerStreamAsync(
-                cancellationToken: cancellationToken);
+            ResponseMessage readResponseAfterCreate = await this.ProcessResourceOperationStreamAsync(
+                null,
+                OperationType.Read,
+                container.LinkUri,
+                ResourceType.Collection,
+                requestOptions,
+                cancellationToken);
 
             // Merge the previous message diagnostics
             createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
