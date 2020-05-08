@@ -61,7 +61,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                DatabaseResponse createResponse = await client.CreateDatabaseIfNotExistsAsync(id: "BasicQueryDb1");
+                CosmosDatabaseResponse createResponse = await client.CreateDatabaseIfNotExistsAsync(id: "BasicQueryDb1");
                 deleteList.Add(createResponse.Database);
                 createdIds.Add(createResponse.Database.Id);
 
@@ -74,18 +74,18 @@ namespace Azure.Cosmos.EmulatorTests
                 createdIds.Add(createResponse.Database.Id);
 
                 //Read All
-                List<DatabaseProperties> results = await this.ToListAsync(
+                List<CosmosDatabaseProperties> results = await this.ToListAsync(
                     client.GetDatabaseQueryStreamResultsAsync,
-                    client.GetDatabaseQueryResultsAsync<DatabaseProperties>,
+                    client.GetDatabaseQueryResultsAsync<CosmosDatabaseProperties>,
                     null,
                     CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
                 //Basic query
-                List<DatabaseProperties> queryResults = await this.ToListAsync(
+                List<CosmosDatabaseProperties> queryResults = await this.ToListAsync(
                     client.GetDatabaseQueryStreamResultsAsync,
-                    client.GetDatabaseQueryResultsAsync<DatabaseProperties>,
+                    client.GetDatabaseQueryResultsAsync<CosmosDatabaseProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryDb\")",
                     CosmosBasicQueryTests.RequestOptions);
 
@@ -111,7 +111,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                ContainerResponse createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer1", partitionKeyPath: "/pk");
+                CosmosContainerResponse createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer1", partitionKeyPath: "/pk");
                 createdIds.Add(createResponse.Container.Id);
 
                 createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer2", partitionKeyPath: "/pk2");
@@ -121,18 +121,18 @@ namespace Azure.Cosmos.EmulatorTests
                 createdIds.Add(createResponse.Container.Id);
 
                 //Read All
-                List<ContainerProperties> results = await this.ToListAsync(
+                List<CosmosContainerProperties> results = await this.ToListAsync(
                     database.GetContainerQueryStreamResultsAsync,
-                    database.GetContainerQueryResultsAsync<ContainerProperties>,
+                    database.GetContainerQueryResultsAsync<CosmosContainerProperties>,
                     null,
                     CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
                 //Basic query
-                List<ContainerProperties> queryResults = await this.ToListAsync(
+                List<CosmosContainerProperties> queryResults = await this.ToListAsync(
                     database.GetContainerQueryStreamResultsAsync,
-                    database.GetContainerQueryResultsAsync<ContainerProperties>,
+                    database.GetContainerQueryResultsAsync<CosmosContainerProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryContainer\")",
                     CosmosBasicQueryTests.RequestOptions);
 
@@ -468,7 +468,7 @@ namespace Azure.Cosmos.EmulatorTests
                 Assert.AreEqual((int)HttpStatusCode.Created, createUserResponse.GetRawResponse().Status);
                 user = (UserCore)createUserResponse.User;
 
-                ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                CosmosContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
                 CosmosContainer container = createContainerResponse.Container;
                 PermissionResponse permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission1", PermissionMode.All, container));
                 createdContainerIds.Add(createContainerResponse.Container.Id);

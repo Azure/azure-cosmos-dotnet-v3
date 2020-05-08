@@ -28,11 +28,11 @@ namespace Azure.Cosmos
         /// Here is an example to instantiate HashIndex class passing in the DataType:
         /// <code language="c#">
         /// <![CDATA[
-        /// HashIndex hashIndex = new HashIndex(DataType.String);
+        /// HashIndex hashIndex = new HashIndex(CosmosDataType.String);
         /// ]]>
         /// </code>
         /// </example>
-        public HashIndex(DataType dataType)
+        public HashIndex(CosmosDataType dataType)
             : this()
         {
             this.DataType = dataType;
@@ -48,11 +48,11 @@ namespace Azure.Cosmos
         /// Here is an example to instantiate HashIndex class passing in the DataType and precision:
         /// <code language="c#">
         /// <![CDATA[
-        /// HashIndex hashIndex = new HashIndex(DataType.String, 3);
+        /// HashIndex hashIndex = new HashIndex(CosmosDataType.String, 3);
         /// ]]>
         /// </code>
         /// </example>
-        public HashIndex(DataType dataType, short precision)
+        public HashIndex(CosmosDataType dataType, short precision)
             : this(dataType)
         {
             this.Precision = precision;
@@ -65,7 +65,7 @@ namespace Azure.Cosmos
         /// The data type for which this index should be applied.
         /// </value>
         /// <remarks>Refer to <a href="http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy">Customizing the indexing policy of a collection</a> for valid ranges of values.</remarks>
-        public DataType DataType { get; set; }
+        public CosmosDataType DataType { get; set; }
 
         /// <summary>
         /// Gets or sets the precision for this particular index in the Azure Cosmos DB service.

@@ -68,9 +68,9 @@ namespace Azure.Cosmos.Fluent
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public async Task<ContainerResponse> CreateAsync(int? throughput = null)
+        public async Task<CosmosContainerResponse> CreateAsync(int? throughput = null)
         {
-            ContainerProperties containerProperties = this.Build();
+            CosmosContainerProperties containerProperties = this.Build();
 
             return await this.database.CreateContainerAsync(containerProperties, throughput);
         }
@@ -83,9 +83,9 @@ namespace Azure.Cosmos.Fluent
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public async Task<ContainerResponse> CreateIfNotExistsAsync(int? throughput = null)
+        public async Task<CosmosContainerResponse> CreateIfNotExistsAsync(int? throughput = null)
         {
-            ContainerProperties containerProperties = this.Build();
+            CosmosContainerProperties containerProperties = this.Build();
 
             return await this.database.CreateContainerIfNotExistsAsync(containerProperties, throughput);
         }
@@ -93,10 +93,10 @@ namespace Azure.Cosmos.Fluent
         /// <summary>
         /// Applies the current Fluent definition and creates a container configuration.
         /// </summary>
-        /// <returns>Builds the current Fluent configuration into an instance of <see cref="ContainerProperties"/>.</returns>
-        public new ContainerProperties Build()
+        /// <returns>Builds the current Fluent configuration into an instance of <see cref="CosmosContainerProperties"/>.</returns>
+        public new CosmosContainerProperties Build()
         {
-            ContainerProperties containerProperties = base.Build();
+            CosmosContainerProperties containerProperties = base.Build();
 
             if (this.uniqueKeyPolicy != null)
             {

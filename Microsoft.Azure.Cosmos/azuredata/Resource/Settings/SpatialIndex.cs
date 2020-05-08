@@ -18,16 +18,16 @@ namespace Azure.Cosmos
         /// Initializes a new instance of the <see cref="SpatialIndex"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="dataType">Specifies the target data type for the index path specification</param>
-        /// <seealso cref="DataType"/>
+        /// <seealso cref="CosmosDataType"/>
         /// <example>
         /// Here is an example to instantiate SpatialIndex class passing in the DataType
         /// <code language="c#">
         /// <![CDATA[
-        /// SpatialIndex spatialIndex = new SpatialIndex(DataType.Point);
+        /// SpatialIndex spatialIndex = new SpatialIndex(CosmosDataType.Point);
         /// ]]>
         /// </code>
         /// </example>
-        public SpatialIndex(DataType dataType)
+        public SpatialIndex(CosmosDataType dataType)
             : this()
         {
             this.DataType = dataType;
@@ -40,6 +40,6 @@ namespace Azure.Cosmos
         /// The data type for which this index should be applied.
         /// </value>
         /// <remarks>Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for valid ranges of values.</remarks>
-        public DataType DataType { get; set; }
+        public CosmosDataType DataType { get; set; }
     }
 }

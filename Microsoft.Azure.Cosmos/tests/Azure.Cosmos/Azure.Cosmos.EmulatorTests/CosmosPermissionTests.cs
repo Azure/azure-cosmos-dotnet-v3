@@ -22,7 +22,7 @@ namespace Azure.Cosmos.EmulatorTests
             this.cosmosClient = TestCommon.CreateCosmosClient();
 
             string databaseName = Guid.NewGuid().ToString();
-            DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            CosmosDatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
             this.cosmosDatabase = cosmosDatabaseResponse;
         }
 
@@ -45,7 +45,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task CRUDTest()
         {
             string containerId = Guid.NewGuid().ToString();
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
 
             string userId = Guid.NewGuid().ToString();
@@ -113,7 +113,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             //create resource
             string containerId = Guid.NewGuid().ToString();
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             CosmosContainer container = containerResponse.Container;
             
@@ -131,7 +131,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 try
                 {
-                    ContainerResponse response = await tokenCosmosClient
+                    CosmosContainerResponse response = await tokenCosmosClient
                     .GetDatabase(this.cosmosDatabase.Id)
                     .GetContainer(containerId)
                     .DeleteContainerAsync();
@@ -151,7 +151,7 @@ namespace Azure.Cosmos.EmulatorTests
             //delete resource with PermissionMode.All
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(options: null, resourceToken: permission.Token))
             {
-                ContainerResponse response = await tokenCosmosClient
+                CosmosContainerResponse response = await tokenCosmosClient
                     .GetDatabase(this.cosmosDatabase.Id)
                     .GetContainer(containerId)
                     .DeleteContainerAsync();
@@ -171,7 +171,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             //create resource
             string containerId = Guid.NewGuid().ToString();
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            CosmosContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             CosmosContainer container = containerResponse.Container;
             string itemId = Guid.NewGuid().ToString();

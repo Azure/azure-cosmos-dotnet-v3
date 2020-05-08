@@ -11,9 +11,9 @@ namespace Azure.Cosmos
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
-    internal class TextJsonContainerPropertiesConverter : JsonConverter<ContainerProperties>
+    internal class TextJsonContainerPropertiesConverter : JsonConverter<CosmosContainerProperties>
     {
-        public override ContainerProperties Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override CosmosContainerProperties Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.Null)
             {
@@ -27,7 +27,7 @@ namespace Azure.Cosmos
 
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
-            ContainerProperties setting = new ContainerProperties();
+            CosmosContainerProperties setting = new CosmosContainerProperties();
 
             foreach (JsonProperty property in root.EnumerateObject())
             {
@@ -37,7 +37,7 @@ namespace Azure.Cosmos
             return setting;
         }
 
-        public override void Write(Utf8JsonWriter writer, ContainerProperties setting, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, CosmosContainerProperties setting, JsonSerializerOptions options)
         {
             if (setting == null)
             {
@@ -107,7 +107,7 @@ namespace Azure.Cosmos
             writer.WriteEndObject();
         }
 
-        private static void ReadPropertyValue(ContainerProperties setting, JsonProperty property)
+        private static void ReadPropertyValue(CosmosContainerProperties setting, JsonProperty property)
         {
             if (property.NameEquals(JsonEncodedStrings.Id.EncodedUtf8Bytes))
             {

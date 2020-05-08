@@ -47,7 +47,7 @@ namespace Azure.Cosmos
 
         internal CosmosClientContext ClientContext { get; }
 
-        public override Task<DatabaseResponse> ReadAsync(
+        public override Task<CosmosDatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -58,7 +58,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response, cancellationToken);
         }
 
-        public override Task<DatabaseResponse> DeleteAsync(
+        public override Task<CosmosDatabaseResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -145,8 +145,8 @@ namespace Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(
-                    ContainerProperties containerProperties,
+        public override Task<CosmosContainerResponse> CreateContainerAsync(
+                    CosmosContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
@@ -167,7 +167,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response, cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(
+        public override Task<CosmosContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -184,7 +184,7 @@ namespace Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            ContainerProperties containerProperties = new ContainerProperties(id, partitionKeyPath);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id, partitionKeyPath);
 
             return this.CreateContainerAsync(
                 containerProperties,
@@ -193,8 +193,8 @@ namespace Azure.Cosmos
                 cancellationToken);
         }
 
-        public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
-            ContainerProperties containerProperties,
+        public override async Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
+            CosmosContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -210,7 +210,7 @@ namespace Azure.Cosmos
             Response response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
             if (response.Status != (int)HttpStatusCode.NotFound)
             {
-                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), Task.FromResult(response), cancellationToken);
+                CosmosContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), Task.FromResult(response), cancellationToken);
                 if (!retrivedContainerResponse.Value.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
                 {
                     throw new ArgumentException(
@@ -237,7 +237,7 @@ namespace Azure.Cosmos
             return await container.ReadContainerAsync(cancellationToken: cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+        public override Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -254,7 +254,7 @@ namespace Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            ContainerProperties containerProperties = new ContainerProperties(id, partitionKeyPath);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id, partitionKeyPath);
             return this.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, cancellationToken);
         }
 
@@ -272,7 +272,7 @@ namespace Azure.Cosmos
         }
 
         public override Task<Response> CreateContainerStreamAsync(
-            ContainerProperties containerProperties,
+            CosmosContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -514,7 +514,7 @@ namespace Azure.Cosmos
             return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
-        internal void ValidateContainerProperties(ContainerProperties containerProperties)
+        internal void ValidateContainerProperties(CosmosContainerProperties containerProperties)
         {
             containerProperties.ValidateRequiredProperties();
             this.ClientContext.ValidateResource(containerProperties.Id);
@@ -574,7 +574,7 @@ namespace Azure.Cosmos
 
         internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
+            CosmosDatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
             return databaseResponse.Value?.ResourceId;
         }
 

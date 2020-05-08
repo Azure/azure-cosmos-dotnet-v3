@@ -49,7 +49,7 @@ namespace Azure.Cosmos.Query
             Cosmos.PartitionKey? partitionKey,
             CancellationToken cancellationToken)
         {
-            ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
+            CosmosContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
                 containerLink.OriginalString,
                 cancellationToken);
 

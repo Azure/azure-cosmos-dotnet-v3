@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Common
     using Microsoft.Azure.Cosmos.Core.Trace;
 #if AZURECORE
     using global::Azure.Cosmos;
+    using ContainerProperties = global::Azure.Cosmos.CosmosContainerProperties;
 #endif
 #if !NETSTANDARD16
     using System.Diagnostics;

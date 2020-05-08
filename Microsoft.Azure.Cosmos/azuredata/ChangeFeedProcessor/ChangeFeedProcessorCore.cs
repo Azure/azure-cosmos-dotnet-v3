@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.ChangeFeed
+namespace Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Threading.Tasks;
@@ -85,13 +85,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (documentServiceLeaseStoreManager == null)
             {
-                ContainerProperties containerProperties = await leaseContainer.ReadContainerAsync().ConfigureAwait(false);
+                CosmosContainerProperties containerProperties = await leaseContainer.ReadContainerAsync().ConfigureAwait(false);
 
                 bool isPartitioned =
                     containerProperties.PartitionKey != null &&
                     containerProperties.PartitionKey.Paths != null &&
                     containerProperties.PartitionKey.Paths.Count > 0;
-                bool isMigratedFixed = (containerProperties.PartitionKey?.IsSystemKey == true);
+                bool isMigratedFixed = containerProperties.PartitionKey?.IsSystemKey == true;
                 if (isPartitioned
                     && !isMigratedFixed
                     && (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))

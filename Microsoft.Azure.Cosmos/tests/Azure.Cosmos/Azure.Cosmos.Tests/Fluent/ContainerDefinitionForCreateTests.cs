@@ -42,10 +42,10 @@ namespace Azure.Cosmos.Tests.Fluent
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task MissingPKForReplace_CallsReadAsync()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             mockContainerResponse
                 .Setup(c => c.Value)
-                .Returns(new ContainerProperties() { PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { partitionKey } } });
+                .Returns(new CosmosContainerProperties() { PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { partitionKey } } });
 
             Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
             mockContainer
@@ -55,7 +55,7 @@ namespace Azure.Cosmos.Tests.Fluent
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)), 
+                    It.Is<CosmosContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)), 
                     It.IsAny<int?>(), 
                     It.IsAny<RequestOptions>(), 
                     It.IsAny<CancellationToken>()))
@@ -69,7 +69,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 containerName,
                 null);
 
-            ContainerResponse response = await containerFluentDefinitionForCreate.CreateAsync();
+            CosmosContainerResponse response = await containerFluentDefinitionForCreate.CreateAsync();
 
             mockContainer.Verify(c => c.ReadContainerAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -77,11 +77,11 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithThroughput()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.IsAny<ContainerProperties>(),
+                    It.IsAny<CosmosContainerProperties>(),
                     It.Is<int?>((rus) => rus == throughput),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -100,7 +100,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 .CreateAsync(2400);
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.IsAny<ContainerProperties>(),
+                    It.IsAny<CosmosContainerProperties>(),
                     It.Is<int?>((rus) => rus == throughput),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
@@ -109,11 +109,11 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithDefaultTimeToLiveTimeSpan()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -133,7 +133,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
@@ -142,11 +142,11 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithDefaultTimeToLiveInt()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -166,7 +166,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
@@ -175,11 +175,11 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithIndexingPolicy()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
+                    It.Is<CosmosContainerProperties>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -202,7 +202,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
+                    It.Is<CosmosContainerProperties>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
@@ -211,11 +211,11 @@ namespace Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithUniqueKey()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),
+                    It.Is<CosmosContainerProperties>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -237,7 +237,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),
+                    It.Is<CosmosContainerProperties>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);

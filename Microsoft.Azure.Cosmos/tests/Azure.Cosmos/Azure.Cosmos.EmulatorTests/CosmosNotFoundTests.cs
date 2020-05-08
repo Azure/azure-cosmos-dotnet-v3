@@ -83,14 +83,14 @@ namespace Azure.Cosmos.EmulatorTests
             // Create should fail if the database does not exist
             if (dbNotExist)
             {
-                ContainerProperties newcontainerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
+                CosmosContainerProperties newcontainerSettings = new CosmosContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
                 this.VerifyNotFoundResponse(await database.CreateContainerStreamAsync(newcontainerSettings, throughput: 500));
             }
 
             CosmosContainer doesNotExistContainer = database.GetContainer(DoesNotExist);
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReadContainerStreamAsync());
 
-            ContainerProperties containerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceContainerStreamAsync(containerSettings));
             this.VerifyNotFoundResponse(await doesNotExistContainer.DeleteContainerStreamAsync());
 

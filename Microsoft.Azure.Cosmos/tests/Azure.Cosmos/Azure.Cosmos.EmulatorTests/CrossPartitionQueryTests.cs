@@ -105,7 +105,7 @@ namespace Azure.Cosmos.EmulatorTests
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(apiVersion);
         }
 
-        private async Task<IReadOnlyList<PartitionKeyRange>> GetPartitionKeyRanges(ContainerProperties container)
+        private async Task<IReadOnlyList<PartitionKeyRange>> GetPartitionKeyRanges(CosmosContainerProperties container)
         {
             Range<string> fullRange = new Range<string>(
                 PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -123,7 +123,7 @@ namespace Azure.Cosmos.EmulatorTests
             string partitionKey = "/id",
             Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
+            CosmosContainerResponse containerResponse = await this.CreatePartitionedContainer(
                 throughput: 25000,
                 partitionKey: partitionKey,
                 indexingPolicy: indexingPolicy);
@@ -140,7 +140,7 @@ namespace Azure.Cosmos.EmulatorTests
             string partitionKey = "/id",
             Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
+            CosmosContainerResponse containerResponse = await this.CreatePartitionedContainer(
                 throughput: 4000,
                 partitionKey: partitionKey,
                 indexingPolicy: indexingPolicy);
@@ -168,7 +168,7 @@ namespace Azure.Cosmos.EmulatorTests
             return this.database.GetContainer(containerName);
         }
 
-        private async Task<ContainerResponse> CreatePartitionedContainer(
+        private async Task<CosmosContainerResponse> CreatePartitionedContainer(
             int throughput,
             string partitionKey = "/id",
             Azure.Cosmos.IndexingPolicy indexingPolicy = null)
@@ -177,8 +177,8 @@ namespace Azure.Cosmos.EmulatorTests
             Response responseMessage = await this.database.ReadStreamAsync();
             Assert.AreEqual((int)HttpStatusCode.OK, responseMessage.Status);
 
-            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
-                new ContainerProperties
+            CosmosContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                new CosmosContainerProperties
                 {
                     Id = Guid.NewGuid().ToString() + "container",
                     IndexingPolicy = indexingPolicy == null ? new Cosmos.IndexingPolicy
@@ -190,8 +190,8 @@ namespace Azure.Cosmos.EmulatorTests
                                 Path = "/*",
                                 Indexes = new Collection<Cosmos.Index>
                                 {
-                                    Cosmos.Index.Range(Cosmos.DataType.Number),
-                                    Cosmos.Index.Range(Cosmos.DataType.String),
+                                    Cosmos.Index.Range(Cosmos.CosmosDataType.Number),
+                                    Cosmos.Index.Range(Cosmos.CosmosDataType.String),
                                 }
                             }
                         }
@@ -332,9 +332,9 @@ namespace Azure.Cosmos.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            AsyncPageable<DatabaseProperties> allDatabases = client.GetDatabaseQueryResultsAsync<DatabaseProperties>();
+            AsyncPageable<CosmosDatabaseProperties> allDatabases = client.GetDatabaseQueryResultsAsync<CosmosDatabaseProperties>();
 
-            await foreach (DatabaseProperties db in allDatabases)
+            await foreach (CosmosDatabaseProperties db in allDatabases)
             {
                 await client.GetDatabase(db.Id).DeleteAsync();
             }
@@ -528,7 +528,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                     await Task.WhenAll(queryTasks);
 
-                    List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
+                    List<Task<CosmosContainerResponse>> deleteContainerTasks = new List<Task<CosmosContainerResponse>>();
                     foreach (CosmosContainer container in collectionsAndDocuments.Select(tuple => tuple.Item1))
                     {
                         deleteContainerTasks.Add(container.DeleteContainerAsync());
@@ -3017,7 +3017,7 @@ namespace Azure.Cosmos.EmulatorTests
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
             IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
 
-            ContainerProperties containerSettings = await container.ReadContainerAsync();
+            CosmosContainerProperties containerSettings = await container.ReadContainerAsync();
             foreach (Document document in documents)
             {
                 IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
@@ -3809,7 +3809,7 @@ namespace Azure.Cosmos.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            ContainerProperties containerSettings = await container.ReadContainerAsync();
+            CosmosContainerProperties containerSettings = await container.ReadContainerAsync();
             // For every composite index
             foreach (Collection<Cosmos.CompositePath> compositeIndex in containerSettings.IndexingPolicy.CompositeIndexes)
             {
