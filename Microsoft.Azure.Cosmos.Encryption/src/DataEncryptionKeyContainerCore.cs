@@ -149,8 +149,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 diagnosticsContext,
                 cancellationToken);
 
-            System.Console.WriteLine($"Dek: {id}, dekProperties.Id: {dekProperties.Id}");
-
             InMemoryRawDek inMemoryRawDek = await this.DekProvider.DekCache.GetOrAddRawDekAsync(
                 dekProperties,
                 this.UnwrapAsync,

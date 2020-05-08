@@ -9,16 +9,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
-    /// This class provides extension methods for Encryption Container.
+    /// This class provides extension methods for <see cref="EncryptionContainer"/>.
     /// </summary>
     public static class EncryptionContainerExtensions
     {
         /// <summary>
-        /// Get container for performing operations using client-side encryption.
+        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption.
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
-        /// <returns></returns>
+        /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
         public static Container WithEncryptor(
             this Container container,
             Encryptor encryptor)
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (!(container is EncryptionContainer encryptionContainer))
             {
-                throw new ArgumentOutOfRangeException(nameof(query), "ToEncryptionFeedIterator is only supported with EncryptionContainer.");
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
             }
 
             return new EncryptionFeedIterator<T>(
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (!(container is EncryptionContainer encryptionContainer))
             {
-                throw new ArgumentOutOfRangeException(nameof(query), "ToEncryptionStreamIterator is only supported with EncryptionContainer.");
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
             }
 
             Action<DecryptionResult> decryptionResultHandler;

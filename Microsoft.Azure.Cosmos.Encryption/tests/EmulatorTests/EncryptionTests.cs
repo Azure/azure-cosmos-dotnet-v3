@@ -1140,8 +1140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 if (dek == null)
                 {
-                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}." +
-                        $"DekId: {dataEncryptionKeyId}, algo: {encryptionAlgorithm}.");
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
                 }
 
                 return dek.DecryptData(cipherText);

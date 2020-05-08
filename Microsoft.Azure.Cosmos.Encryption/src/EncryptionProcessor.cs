@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             Debug.Assert(input != null);
             Debug.Assert(encryptor != null);
+            Debug.Assert(encryptionOptions != null);
             Debug.Assert(diagnosticsContext != null);
 
             if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
