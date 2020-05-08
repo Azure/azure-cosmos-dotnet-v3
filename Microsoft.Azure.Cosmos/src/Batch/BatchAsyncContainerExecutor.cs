@@ -229,11 +229,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
-            CosmosDiagnosticScope limiterScope = diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.Limiter");
             SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(serverRequest.PartitionKeyRangeId);
-            using (await limiter.UsingWaitAsync(cancellationToken))
+            using (await limiter.UsingWaitAsync(diagnosticsContext, cancellationToken))
             {
-                limiterScope.Dispose();
                 using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");

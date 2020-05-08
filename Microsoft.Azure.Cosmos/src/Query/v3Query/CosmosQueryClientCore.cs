@@ -115,6 +115,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
+            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
@@ -150,6 +151,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(
+                clientQueryCorrelationId,
                 requestOptions,
                 resourceType,
                 message,
@@ -275,6 +277,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private QueryResponseCore GetCosmosElementResponse(
+            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
@@ -284,6 +287,7 @@ namespace Microsoft.Azure.Cosmos
             using (cosmosResponseMessage)
             {
                 QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
+                    clientQueryCorrelationId: clientQueryCorrelationId,
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],

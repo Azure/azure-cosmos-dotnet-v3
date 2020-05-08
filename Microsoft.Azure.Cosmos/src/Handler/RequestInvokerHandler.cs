@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             // DEVNOTE: Non-Item operations need to be refactored to always pass
             // the diagnostic context in. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1276
-            CosmosDiagnosticScope overallScope = null;
+            IDisposable overallScope = null;
             if (diagnosticsContext == null)
             {
                 diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
