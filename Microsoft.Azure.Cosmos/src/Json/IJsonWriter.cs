@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
@@ -56,8 +57,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Writes a UTF-8 field name to the internal buffer.
         /// </summary>
-        /// <param name="utf8FieldName"></param>
-        void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
+        /// <param name="fieldName"></param>
+        void WriteFieldName(Utf8Span fieldName);
 
         /// <summary>
         /// Writes a string to the internal buffer.
@@ -68,8 +69,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Writes a UTF-8 string value to the internal buffer.
         /// </summary>
-        /// <param name="utf8StringValue"></param>
-        void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
+        /// <param name="value"></param>
+        void WriteStringValue(Utf8Span value);
 
         /// <summary>
         /// Writes a number to the internal buffer.
