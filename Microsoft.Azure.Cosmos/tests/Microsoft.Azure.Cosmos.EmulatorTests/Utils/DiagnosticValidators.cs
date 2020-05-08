@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
             string info = cosmosDiagnosticsContext.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info.ToString());
+            Assert.IsNotNull(jObject["DiagnosticVersion"].ToString()); 
             JToken summary = jObject["Summary"];
             Assert.IsNotNull(summary["UserAgent"].ToString());
             Assert.AreNotEqual(summary["UserAgent"].ToString(), new UserAgentContainer().UserAgent);

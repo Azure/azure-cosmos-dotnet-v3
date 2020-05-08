@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             this.jsonWriter.WriteStartObject();
 
-            this.jsonWriter.WritePropertyName("Version");
+            this.jsonWriter.WritePropertyName("DiagnosticVersion");
             this.jsonWriter.WriteValue(DiagnosticsVersion);
 
             this.jsonWriter.WritePropertyName("Summary");
