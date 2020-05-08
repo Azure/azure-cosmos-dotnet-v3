@@ -19,20 +19,20 @@
         [TestMethod]
         public void ContractChanges()
         {
-            (string baselineJson, string localJson) = ContractEnforcementSharedHelper.GetContracts(
-                "Microsoft.Azure.Cosmos.Client",
-                BaselinePath);
+            string currentJson = ContractEnforcementSharedHelper.GetCurrentContract(
+                "Microsoft.Azure.Cosmos.Client");
 
-            JObject previewLocalJObject = JObject.Parse(localJson);
+            JObject previewLocalJObject = JObject.Parse(currentJson);
             JObject officialBaselineJObject = JObject.Parse(File.ReadAllText(OfficialBaselinePath));
 
             string previewLocalJsonNoOfficialContract = this.GetPreviewContractWithoutOfficialContract(previewLocalJObject, officialBaselineJObject);
             Assert.IsNotNull(previewLocalJsonNoOfficialContract);
 
+            string baselinePreviewJson = ContractEnforcementSharedHelper.GetBaselineContract(BaselinePath);
             File.WriteAllText($"{BreakingChangesPath}", previewLocalJsonNoOfficialContract);
 
             Assert.IsFalse(
-                ContractEnforcementSharedHelper.CompareAndTraceJson(baselineJson, previewLocalJsonNoOfficialContract),
+                ContractEnforcementSharedHelper.CompareAndTraceJson(baselinePreviewJson, previewLocalJsonNoOfficialContract),
                 $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Preview.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
             );
         }

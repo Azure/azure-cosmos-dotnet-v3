@@ -3,6 +3,7 @@
   <PropertyGroup>
     <ClientOfficialVersion>3.8.0</ClientOfficialVersion>
     <ClientPreviewVersion>3.9.0</ClientPreviewVersion>
+	<ClientPreviewVersionSuffix>2</ClientPreviewVersionSuffix>
     <DirectVersion>3.9.0</DirectVersion>
     <EncryptionPreviewVersion>1.0.0</EncryptionPreviewVersion>
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>

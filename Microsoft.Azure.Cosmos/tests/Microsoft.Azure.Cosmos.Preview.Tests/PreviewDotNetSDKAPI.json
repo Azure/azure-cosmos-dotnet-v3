@@ -91,11 +91,6 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
-        },
         "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
@@ -106,20 +101,19 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken)"
         }
-      },
-      "NestedTypes": {}
+      }
     },
     "CosmosClient": {
       "Members": {
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory()"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
-          "Type": "Method",
+        "Microsoft.Azure.Cosmos.CosmosResponseFactory ResponseFactory": {
+          "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": null
         }
       }
     },
@@ -148,29 +142,26 @@
         }
       }
     },
-    "Database": {
+    "CosmosResponseFactory": {
+      "Subclasses": {},
       "Members": {
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "Microsoft.Azure.Cosmos.FeedResponse`1[T] CreateItemFeedResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedResponse`1[T] CreateItemFeedResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "Microsoft.Azure.Cosmos.ItemResponse`1[T] CreateItemResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ItemResponse`1[T] CreateItemResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[T] CreateStoredProcedureExecuteResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
-        },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[T] CreateStoredProcedureExecuteResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
         }
-      }
+      },
+      "NestedTypes": {}
     },
     "EncryptionOptions": {
       "Subclasses": {},
@@ -412,33 +403,6 @@
             }
           }
         }
-      },
-      "Members": {}
-    },
-    "ThroughputProperties": {
-      "Members": {
-        "Microsoft.Azure.Cosmos.ThroughputProperties CreateAutoscaleThroughput(Int32)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ThroughputProperties CreateAutoscaleThroughput(Int32)"
-        },
-        "Microsoft.Azure.Cosmos.ThroughputProperties CreateManualThroughput(Int32)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ThroughputProperties CreateManualThroughput(Int32)"
-        },
-        "System.Nullable`1[System.Int32] get_MaxAutoscaleThroughput()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.Int32] get_MaxAutoscaleThroughput()"
-        },
-        "System.Nullable`1[System.Int32] MaxAutoscaleThroughput[Newtonsoft.Json.JsonIgnoreAttribute()]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
-          "MethodInfo": null
-        }
       }
     },
     "TransactionalBatchItemRequestOptions": {
@@ -464,6 +428,5 @@
         }
       }
     }
-  },
-  "Members": {}
+  }
 }

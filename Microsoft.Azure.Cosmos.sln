@@ -17,6 +17,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Encryption", "Encryption", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption.EmulatorTests", "Microsoft.Azure.Cosmos.Encryption\tests\EmulatorTests\Microsoft.Azure.Cosmos.Encryption.EmulatorTests.csproj", "{D6A405BF-15E1-46D3-8C13-210BA043ADC5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Preview", "Preview", "{C9382FD9-2945-4E21-9625-BA52B32EB98C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Preview", "Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.Preview.csproj", "{2EB5BC87-176C-421D-8F12-28939DDF690B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Preview.Tests", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Preview.Tests\Microsoft.Azure.Cosmos.Preview.Tests.csproj", "{27B2222D-6D33-4BDD-96BD-7CD74E741000}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -99,6 +105,30 @@ Global
 		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Release|x64.ActiveCfg = Release|Any CPU
 		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Release|x64.Build.0 = Release|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Cover|x64.Build.0 = Debug|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Debug|x64.Build.0 = Debug|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Release|x64.ActiveCfg = Release|Any CPU
+		{2EB5BC87-176C-421D-8F12-28939DDF690B}.Release|x64.Build.0 = Release|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Cover|x64.Build.0 = Debug|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Debug|x64.Build.0 = Debug|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Release|x64.ActiveCfg = Release|Any CPU
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -106,6 +136,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{4D0FBC91-268E-44DD-AC10-6851A69C52FB} = {B382B965-7D1B-4DE8-8007-197741C49F88}
 		{D6A405BF-15E1-46D3-8C13-210BA043ADC5} = {B382B965-7D1B-4DE8-8007-197741C49F88}
+		{2EB5BC87-176C-421D-8F12-28939DDF690B} = {C9382FD9-2945-4E21-9625-BA52B32EB98C}
+		{27B2222D-6D33-4BDD-96BD-7CD74E741000} = {C9382FD9-2945-4E21-9625-BA52B32EB98C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6A1D820-CB03-4DE6-87D1-46EF476F0040}

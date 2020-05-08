@@ -106,17 +106,20 @@
             return root;
         }
 
-        public static (string baselineJson, string localJson) GetContracts(string dllName, string baselinePath)
+        public static string GetCurrentContract(string dllName)
         {
             TypeTree locally = new TypeTree(typeof(object));
-            ContractEnforcementSharedHelper.BuildTypeTree(locally, ContractEnforcementSharedHelper.GetAssemblyLocally(dllName).GetExportedTypes());
-
-            TypeTree baseline = JsonConvert.DeserializeObject<TypeTree>(File.ReadAllText(baselinePath));
+            Assembly assembly = ContractEnforcementSharedHelper.GetAssemblyLocally(dllName);
+            Type[] exportedTypes = assembly.GetExportedTypes();
+            ContractEnforcementSharedHelper.BuildTypeTree(locally, exportedTypes);
 
             string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
-            string baselineJson = JsonConvert.SerializeObject(baseline, Formatting.Indented);
+            return localJson;
+        }
 
-            return (baselineJson, localJson);
+        public static string GetBaselineContract(string baselinePath)
+        {
+            return File.ReadAllText(baselinePath);
         }
 
         public static bool CompareAndTraceJson(string baselineJson, string localJson)
@@ -136,9 +139,10 @@
 
         public static bool DoesContractContainBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
         {
-            (string localJson, string baselineJson) = GetContracts(dllName, baselinePath);
+            string localJson = GetCurrentContract(dllName);
             File.WriteAllText($"{breakingChangesPath}", localJson);
 
+            string baselineJson = GetBaselineContract(baselinePath);
             return ContractEnforcementSharedHelper.CompareAndTraceJson(localJson, baselineJson);
         }
 

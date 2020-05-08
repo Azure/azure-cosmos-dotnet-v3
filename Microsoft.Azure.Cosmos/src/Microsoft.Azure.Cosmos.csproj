@@ -1,8 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="Microsoft.Azure.Cosmos.Build.props" />
   <PropertyGroup>
-    <AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
-    <ClientVersion>$(ClientOfficialVersion)</ClientVersion>
-    <FileVersion>$(ClientOfficialVersion)</FileVersion>
+  <ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
+  <!--Preview version is still supported here with Microsoft.Azure.Cosmos.Preview.csproj to avoid breaking all the build/release systems dependencies-->
+  <ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
+  
+  <FileVersion>$(ClientVersion)</FileVersion>
+  
+  <Version Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</Version>
+  
+  <Version Condition=" '$(ClientPreviewVersionSuffix)' == '' ">$(ClientVersion)-preview</Version>
+  <Version Condition=" '$(ClientPreviewVersionSuffix)' != '' ">$(ClientVersion)-preview$(ClientPreviewVersionSuffix)</Version>
+  <DefineConstants Condition="'$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
+
   </PropertyGroup>
 </Project>
