@@ -70,6 +70,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
+        [JsonProperty(PropertyName = "partitionKeyDeleteThroughputFraction", NullValueHandling = NullValueHandling.Ignore)]
+        private double partitionKeyDeleteThroughputFractionInternal = 1;
+
         private string[] partitionKeyPathTokens;
         private string id;
 
@@ -137,6 +140,22 @@ namespace Microsoft.Azure.Cosmos
             }
 
             set => this.conflictResolutionInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
+        }
+
+        /// <summary>
+        /// Gets or sets the PartitionKeyDeleteThroughputFraction for the collection.
+        /// </summary>
+        [JsonIgnore]
+        public double PartitionKeyDeleteThroughputFraction
+        {
+            get
+            {
+                return this.partitionKeyDeleteThroughputFractionInternal;
+            }
+            set
+            {
+                this.partitionKeyDeleteThroughputFractionInternal = value;
+            }
         }
 
         /// <summary>

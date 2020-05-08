@@ -1155,6 +1155,22 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
+        /// <summary>
+        /// Deletes PartitionKey
+        /// </summary>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/>
+        /// </returns>
+        public abstract Task<ResponseMessage> DeleteItemsInPartitionKeyAsync(
+               Cosmos.PartitionKey partitionKey,
+               Stream streamPayload,
+               ItemRequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+
 #if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.

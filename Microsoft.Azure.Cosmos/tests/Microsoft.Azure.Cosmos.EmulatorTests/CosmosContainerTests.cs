@@ -97,6 +97,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ContainerPKDeleteThroughputTest()
+        {
+            string containerName = "PkDeleteContainer";
+            ContainerProperties PkDeleteContainer = new ContainerProperties()
+            {
+                Id = containerName,
+                PartitionKeyPath = "/pk",
+                PartitionKeyDeleteThroughputFraction = 0.5
+            };
+
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(PkDeleteContainer);
+            Assert.AreEqual(containerName, response.Resource.Id);
+            Assert.AreEqual(0.5, response.Resource.PartitionKeyDeleteThroughputFraction);
+        }
+
+        [TestMethod]
         public async Task ContainerBuilderContractTest()
         {
             ContainerResponse response = await this.cosmosDatabase.DefineContainer(Guid.NewGuid().ToString(), "/id").CreateAsync();

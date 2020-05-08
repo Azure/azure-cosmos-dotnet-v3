@@ -485,6 +485,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task PartitionKeyDeletePurgerTest()
+        {
+            string pKString = "PK1";
+            dynamic testItem1 = new
+            {
+                id = "item1",
+                status = pKString
+            };
+
+            ItemResponse<dynamic>  itemResponse = await this.Container.CreateItemAsync<dynamic>(testItem1);
+            Cosmos.PartitionKey partitionKey1 = new Cosmos.PartitionKey(pKString);
+            ResponseMessage pKDeleteResponse = await this.Container.DeleteItemsInPartitionKeyAsync(partitionKey1, streamPayload: TestCommon.SerializerCore.ToStream(testItem1));
+            Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.OK);
+        } 
+
+        [TestMethod]
         public async Task ItemCustomSerialzierTest()
         {
             DateTime createDateTime = DateTime.UtcNow;

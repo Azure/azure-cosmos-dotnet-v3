@@ -280,7 +280,8 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.SqlQuery ||
                 request.OperationType == OperationType.Batch ||
                 request.OperationType == OperationType.ExecuteJavaScript ||
-                request.OperationType == OperationType.QueryPlan)
+                request.OperationType == OperationType.QueryPlan ||
+                (request.ResourceType == ResourceType.PartitionKey && request.OperationType == OperationType.Delete))
             {
                 httpMethod = HttpMethod.Post;
             }

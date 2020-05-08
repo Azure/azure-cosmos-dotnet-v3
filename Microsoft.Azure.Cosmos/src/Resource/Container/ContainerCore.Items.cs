@@ -784,6 +784,42 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public override async Task<ResponseMessage> DeleteItemsInPartitionKeyAsync(
+          Cosmos.PartitionKey partitionKey,
+          Stream streamPayload,
+          ItemRequestOptions requestOptions = null,
+          CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Cosmos.PartitionKey? resultingPartitionKey;
+            if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                resultingPartitionKey = null;
+            }
+            else
+            {
+                resultingPartitionKey = partitionKey;
+            }
+
+            ContainerCore.ValidatePartitionKey(resultingPartitionKey, requestOptions);
+            Uri resourceUri = this.LinkUri;
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+
+            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: ResourceType.PartitionKey,
+                operationType: OperationType.Delete,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this,
+                partitionKey: partitionKey,
+                itemId: null,
+                streamPayload: streamPayload,
+                requestEnricher: null,
+                diagnosticsContext: diagnosticsContext,
+                cancellationToken: cancellationToken);
+
+            return responseMessage;
+        }
+
         private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
         {
             // TODO: Leverage original serialization and avoid re-serialization (bug)
