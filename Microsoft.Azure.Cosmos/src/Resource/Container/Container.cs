@@ -1162,7 +1162,6 @@ namespace Microsoft.Azure.Cosmos
         /// Deletes PartitionKey
         /// </summary>
         /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -1170,7 +1169,6 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public abstract Task<ResponseMessage> DeleteItemsInPartitionKeyAsync(
                Cosmos.PartitionKey partitionKey,
-               Stream streamPayload,
                ItemRequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
 

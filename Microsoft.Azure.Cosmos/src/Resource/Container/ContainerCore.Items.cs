@@ -786,7 +786,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<ResponseMessage> DeleteItemsInPartitionKeyAsync(
           Cosmos.PartitionKey partitionKey,
-          Stream streamPayload,
           ItemRequestOptions requestOptions = null,
           CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -801,18 +800,17 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ContainerCore.ValidatePartitionKey(resultingPartitionKey, requestOptions);
-            Uri resourceUri = this.LinkUri;
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
+                resourceUri: this.LinkUri,
                 resourceType: ResourceType.PartitionKey,
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
                 cosmosContainerCore: this,
-                partitionKey: partitionKey,
+                partitionKey: resultingPartitionKey,
                 itemId: null,
-                streamPayload: streamPayload,
+                streamPayload: null,
                 requestEnricher: null,
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);

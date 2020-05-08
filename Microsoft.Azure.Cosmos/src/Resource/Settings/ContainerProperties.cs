@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
-        [JsonProperty(PropertyName = "partitionKeyDeleteThroughputFraction", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = Constants.Properties.PartitionKeyDeleteThroughputFraction, NullValueHandling = NullValueHandling.Ignore)]
         private double partitionKeyDeleteThroughputFractionInternal = 1;
 
         private string[] partitionKeyPathTokens;
