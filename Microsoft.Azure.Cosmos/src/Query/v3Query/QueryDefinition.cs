@@ -96,29 +96,27 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Boolean representing the equality</returns>
         public bool Equals(QueryDefinition other)
         {
-            if (other == null ||
-                this.SqlParameters.Count != other.SqlParameters.Count ||
-                !string.Equals(this.QueryText, other.QueryText, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
             if (Object.ReferenceEquals(other, this))
             {
                 return true;
             }
 
-            foreach (KeyValuePair<string, SqlParameter> queryParameter in this.SqlParameters)
+            if (other is null)
             {
-                if (!other.SqlParameters.TryGetValue(queryParameter.Key, out SqlParameter value) ||
-                    !value.Name.Equals(queryParameter.Value.Name) ||
-                    (value.Value != null && !value.Value.Equals(queryParameter.Value.Value)))
-                {
-                    return false;
-                }
+                return false;
             }
 
-            return true;
+            if (this.SqlParameters.Count != other.SqlParameters.Count)
+            {
+                return false;
+            }
+
+            if (!string.Equals(this.QueryText, other.QueryText, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return ParameterEquals(this.SqlParameters, other.SqlParameters);
         }
 
         /// <summary>
@@ -139,6 +137,26 @@ namespace Microsoft.Azure.Cosmos
                 hashCode = (hashCode * 16777619) + this.QueryText.GetHashCode();
                 return hashCode;
             }
+        }
+
+        private static bool ParameterEquals(Dictionary<string, SqlParameter> parameters, Dictionary<string, SqlParameter> otherParameters)
+        {
+            if (parameters.Count != otherParameters.Count)
+            {
+                return false;
+            }
+
+            foreach (KeyValuePair<string, SqlParameter> queryParameter in parameters)
+            {
+                if (!otherParameters.TryGetValue(queryParameter.Key, out SqlParameter value) ||
+                    !value.Name.Equals(queryParameter.Value.Name) ||
+                    (value.Value != null && !value.Value.Equals(queryParameter.Value.Value)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         internal SqlQuerySpec ToSqlQuerySpec()
