@@ -103,13 +103,5 @@ namespace Azure.Cosmos
         public readonly static JsonEncodedText TriggerOperation = JsonEncodedText.Encode(Constants.Properties.TriggerOperation);
         public readonly static JsonEncodedText UniqueKeys = JsonEncodedText.Encode(Constants.Properties.UniqueKeys);
         public readonly static JsonEncodedText PermissionsLink = JsonEncodedText.Encode(Constants.Properties.PermissionsLink);
-        public readonly static JsonEncodedText Properties = JsonEncodedText.Encode("properties");
-        public readonly static JsonEncodedText Href = JsonEncodedText.Encode("href");
-        public readonly static JsonEncodedText Crs = JsonEncodedText.Encode("crs");
-        public readonly static JsonEncodedText BoundingBox = JsonEncodedText.Encode("bbox");
-        public readonly static JsonEncodedText Coordinates = JsonEncodedText.Encode("coordinates");
-        public readonly static JsonEncodedText Geometries = JsonEncodedText.Encode("geometries");
-        public readonly static JsonEncodedText Valid = JsonEncodedText.Encode("valid");
-        public readonly static JsonEncodedText Reason = JsonEncodedText.Encode("reason");
     }
 }

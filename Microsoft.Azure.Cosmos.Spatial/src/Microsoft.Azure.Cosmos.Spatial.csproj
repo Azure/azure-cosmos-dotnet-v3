@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Microsoft.Azure.Cosmos.Spatial</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Cosmos.Spatial</RootNamespace>
+    <LangVersion>latest</LangVersion>
+	
+    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+    <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
+    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
+    <Version Condition=" '$(VersionSuffix)' == '' ">$(SpatialVersion)</Version>
+    <Version Condition=" '$(VersionSuffix)' != '' ">$(SpatialVersion)-$(VersionSuffix)</Version>
+    <Company>Microsoft Corporation</Company>
+    <Authors>Microsoft</Authors>
+    <Description>This library provides models to work with GeoJSON.</Description>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Title>Microsoft Azure Cosmos DB spatial types library</Title>
+    <PackageId>Microsoft.Azure.Cosmos.Spatial</PackageId>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+    <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard;client;spatial;geojson</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+    <PackageReference Include="System.Text.Json" Version="4.7.0" />
+  </ItemGroup>
+    
+    
+  <PropertyGroup>
+    <SigningType>Product</SigningType>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  
+</Project>
