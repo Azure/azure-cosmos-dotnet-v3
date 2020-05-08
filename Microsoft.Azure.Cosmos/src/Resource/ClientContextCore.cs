@@ -425,7 +425,11 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: batchItemRequestOptions,
                 diagnosticsContext: diagnosticsContext);
 
-            TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
+            TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(
+                itemBatchOperation,
+                itemRequestOptions,
+                cancellationToken);
+
             return batchOperationResult.ToResponseMessage();
         }
 
