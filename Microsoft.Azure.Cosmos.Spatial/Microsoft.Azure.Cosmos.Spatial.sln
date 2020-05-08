@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30028.174
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Spatial", "src\Microsoft.Azure.Cosmos.Spatial.csproj", "{8EAE187C-83EA-4F8A-8998-7509FEBD0CED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8EAE187C-83EA-4F8A-8998-7509FEBD0CED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EAE187C-83EA-4F8A-8998-7509FEBD0CED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EAE187C-83EA-4F8A-8998-7509FEBD0CED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EAE187C-83EA-4F8A-8998-7509FEBD0CED}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {044CC134-C7DF-4746-B586-24CE0045F1EF}
+	EndGlobalSection
+EndGlobal
