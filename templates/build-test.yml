@@ -8,7 +8,7 @@ parameters:
 
 jobs:
 - job:
-  displayName: Tests ${{ parameters.BuildConfiguration }}
+  displayName: Preview Tests ${{ parameters.BuildConfiguration }}
   pool:
     vmImage: ${{ parameters.VmImage }}
 
