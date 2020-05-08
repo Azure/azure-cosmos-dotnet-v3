@@ -31,15 +31,15 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
+                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Value);
 
-            ContainerResponse largerContainer = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            CosmosContainerResponse largerContainer = await this.database.CreateContainerAsync(
+                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 20000,
                 cancellationToken: this.cancellationToken);
 

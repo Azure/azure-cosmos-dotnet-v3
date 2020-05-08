@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
 #if AZURECORE
     using global::Azure.Cosmos;
+    using ContainerProperties = global::Azure.Cosmos.CosmosContainerProperties;
 #endif
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;

@@ -86,7 +86,7 @@ namespace Azure.Cosmos.Tests
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
-                ContainerResponse response = await container.DeleteContainerAsync(options);
+                CosmosContainerResponse response = await container.DeleteContainerAsync(options);
 
                 Console.WriteLine($"Got status code {response.GetRawResponse().Status}");
                 Assert.AreEqual((int)code, response.GetRawResponse().Status);

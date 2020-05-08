@@ -110,8 +110,8 @@ namespace Azure.Cosmos
                 throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, indexKindElement.GetRawText()));
             }
 
-            DataType dataType = DataType.Number;
-            if (!TextJsonSettingsHelper.TryParseEnum<DataType>(dataTypeElement, type => dataType = type))
+            CosmosDataType dataType = CosmosDataType.Number;
+            if (!TextJsonSettingsHelper.TryParseEnum<CosmosDataType>(dataTypeElement, type => dataType = type))
             {
                 throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, dataTypeElement.GetRawText()));
             }

@@ -86,7 +86,7 @@ namespace Azure.Cosmos
             return new Uri(stringBuilder.ToString(), UriKind.Relative);
         }
 
-        internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(string containerUri, CancellationToken cancellationToken = default)
+        internal override async Task<CosmosContainerProperties> GetCachedContainerPropertiesAsync(string containerUri, CancellationToken cancellationToken = default)
         {
             ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
             try

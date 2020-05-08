@@ -30,7 +30,7 @@ namespace Azure.Cosmos
         /// </summary>
         /// <param name="dataType">Specifies the target data type for the index path specification.</param>
         /// <returns>An instance of <see cref="RangeIndex"/> type.</returns>
-        /// <seealso cref="DataType"/>
+        /// <seealso cref="CosmosDataType"/>
         /// <example>
         /// Here is an example to create RangeIndex instance passing in the DataType:
         /// <code language="c#">
@@ -39,7 +39,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public static RangeIndex Range(DataType dataType)
+        public static RangeIndex Range(CosmosDataType dataType)
         {
             return new RangeIndex(dataType);
         }
@@ -50,16 +50,16 @@ namespace Azure.Cosmos
         /// <param name="dataType">Specifies the target data type for the index path specification.</param>
         /// <param name="precision">Specifies the precision to be used for the data type associated with this index.</param>
         /// <returns>An instance of <see cref="RangeIndex"/> type.</returns>
-        /// <seealso cref="DataType"/>
+        /// <seealso cref="CosmosDataType"/>
         /// <example>
         /// Here is an example to create RangeIndex instance passing in the DataType and precision:
         /// <code language="c#">
         /// <![CDATA[
-        /// RangeIndex rangeIndex = Index.Range(DataType.Number, -1);
+        /// RangeIndex rangeIndex = Index.Range(CosmosDataType.Number, -1);
         /// ]]>
         /// </code>
         /// </example>
-        public static RangeIndex Range(DataType dataType, short precision)
+        public static RangeIndex Range(CosmosDataType dataType, short precision)
         {
             return new RangeIndex(dataType, precision);
         }
@@ -69,16 +69,16 @@ namespace Azure.Cosmos
         /// </summary>
         /// <param name="dataType">Specifies the target data type for the index path specification.</param>
         /// <returns>An instance of <see cref="HashIndex"/> type.</returns>
-        /// <seealso cref="DataType"/>
+        /// <seealso cref="CosmosDataType"/>
         /// <example>
         /// Here is an example to create HashIndex instance passing in the DataType:
         /// <code language="c#">
         /// <![CDATA[
-        /// HashIndex hashIndex = Index.Hash(DataType.String);
+        /// HashIndex hashIndex = Index.Hash(CosmosDataType.String);
         /// ]]>
         /// </code>
         /// </example>
-        public static HashIndex Hash(DataType dataType)
+        public static HashIndex Hash(CosmosDataType dataType)
         {
             return new HashIndex(dataType);
         }
@@ -89,16 +89,16 @@ namespace Azure.Cosmos
         /// <param name="dataType">Specifies the target data type for the index path specification.</param>
         /// <param name="precision">Specifies the precision to be used for the data type associated with this index.</param>
         /// <returns>An instance of <see cref="HashIndex"/> type.</returns>
-        /// <seealso cref="DataType"/>
+        /// <seealso cref="CosmosDataType"/>
         /// <example>
         /// Here is an example to create HashIndex instance passing in the DataType and precision:
         /// <code language="c#">
         /// <![CDATA[
-        /// HashIndex hashIndex = Index.Hash(DataType.String, 3);
+        /// HashIndex hashIndex = Index.Hash(CosmosDataType.String, 3);
         /// ]]>
         /// </code>
         /// </example>
-        public static HashIndex Hash(DataType dataType, short precision)
+        public static HashIndex Hash(CosmosDataType dataType, short precision)
         {
             return new HashIndex(dataType, precision);
         }
@@ -108,16 +108,16 @@ namespace Azure.Cosmos
         /// </summary>
         /// <param name="dataType">Specifies the target data type for the index path specification.</param>
         /// <returns>An instance of <see cref="SpatialIndex"/> type.</returns>
-        /// <seealso cref="DataType"/>
+        /// <seealso cref="CosmosDataType"/>
         /// <example>
         /// Here is an example to create SpatialIndex instance passing in the DataType:
         /// <code language="c#">
         /// <![CDATA[
-        /// SpatialIndex spatialIndex = Index.Spatial(DataType.Point);
+        /// SpatialIndex spatialIndex = Index.Spatial(CosmosDataType.Point);
         /// ]]>
         /// </code>
         /// </example>
-        public static SpatialIndex Spatial(DataType dataType)
+        public static SpatialIndex Spatial(CosmosDataType dataType)
         {
             return new SpatialIndex(dataType);
         }

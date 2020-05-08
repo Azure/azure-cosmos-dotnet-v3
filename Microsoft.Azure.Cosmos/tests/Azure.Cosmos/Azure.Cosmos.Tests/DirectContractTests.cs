@@ -51,7 +51,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void MappedRegionsTest()
         {
-            string[] cosmosRegions = typeof(Regions)
+            string[] cosmosRegions = typeof(CosmosRegions)
                             .GetMembers(BindingFlags.Static | BindingFlags.Public)
                             .Select(e => e.Name)
                             .ToArray();

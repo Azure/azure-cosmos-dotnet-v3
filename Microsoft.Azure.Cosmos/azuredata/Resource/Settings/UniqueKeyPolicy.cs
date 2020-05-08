@@ -15,7 +15,7 @@ namespace Azure.Cosmos
     /// unique key policies.
     /// </para>
     /// </remarks>
-    /// <seealso cref="ContainerProperties"/>
+    /// <seealso cref="CosmosContainerProperties"/>
     public sealed class UniqueKeyPolicy
     {
         /// <summary>

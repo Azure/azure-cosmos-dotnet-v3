@@ -269,20 +269,20 @@ namespace Azure.Cosmos.EmulatorTests
             CosmosDatabase createdDatabase = await this.client.CreateDatabaseIfNotExistsAsync(databaseId);
 
             string collectionId = Guid.NewGuid().ToString();
-            ContainerProperties collection = new ContainerProperties(collectionId, "/id");
+            CosmosContainerProperties collection = new CosmosContainerProperties(collectionId, "/id");
 
-            ContainerProperties createdCollection = await createdDatabase.CreateContainerIfNotExistsAsync(collection);
+            CosmosContainerProperties createdCollection = await createdDatabase.CreateContainerIfNotExistsAsync(collection);
 
             // CreateDocumentCollectionIfNotExistsAsync should create the new collection
             Assert.AreEqual(collectionId, createdCollection.Id);
 
             string collectionId2 = Guid.NewGuid().ToString();
-            collection = new ContainerProperties(collectionId2, "/id");
+            collection = new CosmosContainerProperties(collectionId2, "/id");
 
             // Pre-create the collection with this unique id
             createdCollection = await createdDatabase.CreateContainerIfNotExistsAsync(collection);
 
-            ContainerProperties readCollection = await createdDatabase.CreateContainerIfNotExistsAsync(collection);
+            CosmosContainerProperties readCollection = await createdDatabase.CreateContainerIfNotExistsAsync(collection);
 
             // CreateDocumentCollectionIfNotExistsAsync should return the same collection
             Assert.AreEqual(createdCollection.Id, readCollection.Id);

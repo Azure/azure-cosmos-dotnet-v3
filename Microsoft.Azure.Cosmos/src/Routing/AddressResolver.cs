@@ -20,6 +20,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
+#if AZURECORE
+    using ContainerProperties = CosmosContainerProperties;
+#endif
 
     /// <summary>
     /// Abstracts out the logic to resolve physical replica addresses for the given <see cref="DocumentServiceRequest"/>.

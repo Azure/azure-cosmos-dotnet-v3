@@ -46,13 +46,13 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task DatabaseContractTest()
         {
-            DatabaseResponse response = await this.CreateDatabaseHelper();
+            CosmosDatabaseResponse response = await this.CreateDatabaseHelper();
             Assert.IsNotNull(response);
             Assert.IsTrue(response.GetRawResponse().Headers.GetRequestCharge() > 0);
             Assert.IsNotNull(response.GetRawResponse().Headers);
             Assert.IsNotNull(response.GetRawResponse().Headers.GetActivityId());
 
-            DatabaseProperties databaseSettings = response.Value;
+            CosmosDatabaseProperties databaseSettings = response.Value;
             Assert.IsNotNull(databaseSettings.Id);
             Assert.IsNotNull(databaseSettings.ResourceId);
             Assert.IsNotNull(databaseSettings.ETag);
@@ -71,7 +71,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task CreateDropDatabase()
         {
-            DatabaseResponse response = await this.CreateDatabaseHelper();
+            CosmosDatabaseResponse response = await this.CreateDatabaseHelper();
             Assert.AreEqual((int)HttpStatusCode.Created, response.GetRawResponse().Status);
             //Assert.IsNotNull(response.Diagnostics);
             //string diagnostics = response.Diagnostics.ToString();
@@ -115,7 +115,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task StreamCreateConflictTestAsync()
         {
-            DatabaseProperties databaseSettings = new DatabaseProperties()
+            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties()
             {
                 Id = Guid.NewGuid().ToString()
             };
@@ -155,7 +155,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task CreateConflict()
         {
-            DatabaseResponse response = await this.CreateDatabaseHelper();
+            CosmosDatabaseResponse response = await this.CreateDatabaseHelper();
             Assert.AreEqual((int)HttpStatusCode.Created, response.GetRawResponse().Status);
 
             try
@@ -175,9 +175,9 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task ImplicitConversion()
         {
-            DatabaseResponse cosmosDatabaseResponse = await this.CreateDatabaseHelper();
+            CosmosDatabaseResponse cosmosDatabaseResponse = await this.CreateDatabaseHelper();
             Cosmos.CosmosDatabase cosmosDatabase = cosmosDatabaseResponse;
-            DatabaseProperties cosmosDatabaseSettings = cosmosDatabaseResponse;
+            CosmosDatabaseProperties cosmosDatabaseSettings = cosmosDatabaseResponse;
             Assert.IsNotNull(cosmosDatabase);
             Assert.IsNotNull(cosmosDatabaseSettings);
 
@@ -193,7 +193,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             try
             {
-                DatabaseResponse response = await this.cosmosClient.GetDatabase(Guid.NewGuid().ToString()).DeleteAsync(cancellationToken: this.cancellationToken);
+                CosmosDatabaseResponse response = await this.cosmosClient.GetDatabase(Guid.NewGuid().ToString()).DeleteAsync(cancellationToken: this.cancellationToken);
                 Assert.Fail();
             }
             catch (CosmosException ex)
@@ -205,8 +205,8 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task ReadDatabase()
         {
-            DatabaseResponse createResponse = await this.CreateDatabaseHelper();
-            DatabaseResponse readResponse = await createResponse.Database.ReadAsync(cancellationToken: this.cancellationToken);
+            CosmosDatabaseResponse createResponse = await this.CreateDatabaseHelper();
+            CosmosDatabaseResponse readResponse = await createResponse.Database.ReadAsync(cancellationToken: this.cancellationToken);
 
             Assert.AreEqual(createResponse.Database.Id, readResponse.Database.Id);
             Assert.AreEqual(createResponse.Value.Id, readResponse.Value.Id);
@@ -218,7 +218,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task CreateIfNotExists()
         {
-            DatabaseResponse createResponse = await this.CreateDatabaseHelper();
+            CosmosDatabaseResponse createResponse = await this.CreateDatabaseHelper();
             Assert.AreEqual((int)HttpStatusCode.Created, createResponse.GetRawResponse().Status);
 
             createResponse = await this.CreateDatabaseHelper(createResponse.Value.Id, databaseExists: true);
@@ -233,7 +233,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task NoThroughputTests()
         {
             string databaseId = Guid.NewGuid().ToString();
-            DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false);
+            CosmosDatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false);
             Assert.AreEqual((int)HttpStatusCode.Created, createResponse.GetRawResponse().Status);
 
             Cosmos.CosmosDatabase cosmosDatabase = createResponse;
@@ -260,7 +260,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             string databaseId = Guid.NewGuid().ToString();
             int throughput = 10000;
-            DatabaseResponse createResponse = await client.CreateDatabaseAsync(databaseId, throughput, null);
+            CosmosDatabaseResponse createResponse = await client.CreateDatabaseAsync(databaseId, throughput, null);
             Assert.AreEqual((int)HttpStatusCode.Created, createResponse.GetRawResponse().Status);
 
             Cosmos.CosmosDatabase cosmosDatabase = createResponse;
@@ -283,7 +283,7 @@ namespace Azure.Cosmos.EmulatorTests
             // Database must have a container before it can be scaled
             string containerId = Guid.NewGuid().ToString();
             string partitionPath = "/users";
-            ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath, throughput: null);
+            CosmosContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath, throughput: null);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
 
             ThroughputResponse replaceThroughputResponse = await cosmosDatabase.ReplaceThroughputAsync(readThroughputResponse.Value.Throughput.Value + 1000);
@@ -330,12 +330,12 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    DatabaseResponse createResponse = await this.CreateDatabaseHelper();
+                    CosmosDatabaseResponse createResponse = await this.CreateDatabaseHelper();
                     deleteList.Add(createResponse.Database);
                     databaseIds.Add(createResponse.Value.Id);
                 }
 
-                await foreach(DatabaseProperties databaseSettings in this.cosmosClient.GetDatabaseQueryResultsAsync<DatabaseProperties>(
+                await foreach(CosmosDatabaseProperties databaseSettings in this.cosmosClient.GetDatabaseQueryResultsAsync<CosmosDatabaseProperties>(
                     queryDefinition: null,
                     continuationToken: null,
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 2 }))
@@ -367,15 +367,15 @@ namespace Azure.Cosmos.EmulatorTests
                 string secondDb = "Bcdefgh";
                 string thirdDb = "Zoo";
 
-                DatabaseResponse createResponse2 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(secondDb);
+                CosmosDatabaseResponse createResponse2 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(secondDb);
                 deleteList.Add(createResponse2.Database);
-                DatabaseResponse createResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(firstDb);
+                CosmosDatabaseResponse createResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(firstDb);
                 deleteList.Add(createResponse.Database);
-                DatabaseResponse createResponse3 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(thirdDb);
+                CosmosDatabaseResponse createResponse3 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(thirdDb);
                 deleteList.Add(createResponse3.Database);
 
                 int iterations = 0;
-                await foreach(Page<DatabaseProperties> iterator in this.cosmosClient.GetDatabaseQueryResultsAsync<DatabaseProperties>(
+                await foreach(Page<CosmosDatabaseProperties> iterator in this.cosmosClient.GetDatabaseQueryResultsAsync<CosmosDatabaseProperties>(
                         new QueryDefinition("select c.id From c where c.id = @id ")
                         .WithParameter("@id", createResponse.Database.Id),
                         requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }).AsPages())
@@ -396,17 +396,17 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
-        private Task<DatabaseResponse> CreateDatabaseHelper()
+        private Task<CosmosDatabaseResponse> CreateDatabaseHelper()
         {
             return this.CreateDatabaseHelper(Guid.NewGuid().ToString(), databaseExists: false);
         }
 
-        private async Task<DatabaseResponse> CreateDatabaseHelper(
+        private async Task<CosmosDatabaseResponse> CreateDatabaseHelper(
             string databaseId,
             int? throughput = null,
             bool databaseExists = false)
         {
-            DatabaseResponse response = null;
+            CosmosDatabaseResponse response = null;
             if (databaseExists)
             {
                 response = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
@@ -444,7 +444,7 @@ namespace Azure.Cosmos.EmulatorTests
                 databaseId = Guid.NewGuid().ToString();
             }
 
-            DatabaseProperties databaseSettings = new DatabaseProperties() { Id = databaseId };
+            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties() { Id = databaseId };
             Response response = await this.cosmosClient.CreateDatabaseStreamAsync(
                 databaseSettings,
                 throughput: 400);
@@ -458,7 +458,7 @@ namespace Azure.Cosmos.EmulatorTests
             return this.cosmosClient.GetDatabase(databaseId);
         }
 
-        private void ValidateHeaders(DatabaseResponse cosmosDatabaseResponse)
+        private void ValidateHeaders(CosmosDatabaseResponse cosmosDatabaseResponse)
         {
             // Test emulator is regression and commented out to unblock
             // Assert.IsNotNull(cosmosDatabaseResponse.MaxResourceQuota);

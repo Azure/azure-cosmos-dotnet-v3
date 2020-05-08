@@ -37,7 +37,7 @@ namespace Azure.Cosmos
         public ETag? ETag { get; internal set; }
 
         /// <summary>
-        /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
+        /// Gets the last modified time stamp associated with <see cref="CosmosDatabaseProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         public DateTime? LastModified { get; internal set; }
