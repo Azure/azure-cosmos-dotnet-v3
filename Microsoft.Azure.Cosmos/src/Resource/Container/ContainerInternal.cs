@@ -93,6 +93,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if !PREVIEW
+        public abstract Task<ResponseMessage> DeleteItemsInPartitionKeyAsync(
+               Cosmos.PartitionKey partitionKey,
+               ItemRequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
