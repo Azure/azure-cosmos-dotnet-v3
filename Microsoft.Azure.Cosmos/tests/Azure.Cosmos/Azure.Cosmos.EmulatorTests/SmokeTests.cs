@@ -90,7 +90,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
 
             int count = 0;
-            await foreach(dynamic item in container.GetItemQueryIterator<dynamic>())
+            await foreach(dynamic item in container.GetItemQueryResultsAsync<dynamic>())
             {
                 count++;
             }
@@ -133,7 +133,7 @@ namespace Azure.Cosmos.EmulatorTests
             QueryRequestOptions options = new QueryRequestOptions { MaxItemCount = 1 };
 
             int smithFamilyCount = 0;
-            await foreach (Person person in container.GetItemQueryIterator<Person>("SELECT * FROM d WHERE d.LastName = 'Smith'", requestOptions: options))
+            await foreach (Person person in container.GetItemQueryResultsAsync<Person>("SELECT * FROM d WHERE d.LastName = 'Smith'", requestOptions: options))
             {
                 smithFamilyCount++;
             }
@@ -141,7 +141,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(2, smithFamilyCount);
 
             List<Person> personsList = new List<Person>();
-            await foreach (Page<Person> page in container.GetItemQueryIterator<Person>(requestOptions: options).AsPages())
+            await foreach (Page<Person> page in container.GetItemQueryResultsAsync<Person>(requestOptions: options).AsPages())
             {
                 int maxItemCount = options.MaxItemCount ?? default(int);
                 Assert.IsTrue(page.Values.Count >= 0 && page.Values.Count <= maxItemCount);
@@ -186,7 +186,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
 
             List<dynamic> list = new List<dynamic>();
-            await foreach(Page<dynamic> page in container.GetItemQueryIterator<dynamic>("SELECT TOP 10 * FROM coll").AsPages())
+            await foreach(Page<dynamic> page in container.GetItemQueryResultsAsync<dynamic>("SELECT TOP 10 * FROM coll").AsPages())
             {
                 list.AddRange(page.Values);
             }
@@ -305,7 +305,7 @@ namespace Azure.Cosmos.EmulatorTests
 
         private async Task CleanupDocumentCollection(CosmosContainer container)
         {
-            await foreach(JsonElement doc in container.GetItemQueryIterator<JsonElement>())
+            await foreach(JsonElement doc in container.GetItemQueryResultsAsync<JsonElement>())
             {
                 string id = doc.GetProperty("id").GetString();
                 await container.DeleteItemAsync<JsonElement>(id, new PartitionKey(id));

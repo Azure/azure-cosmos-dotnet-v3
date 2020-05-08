@@ -412,7 +412,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
 
             HashSet<string> containerIds = new HashSet<string>();
-            await foreach (CosmosContainerProperties setting in this.cosmosDatabase.GetContainerQueryIterator<CosmosContainerProperties>())
+            await foreach (CosmosContainerProperties setting in this.cosmosDatabase.GetContainerQueryResultsAsync<CosmosContainerProperties>())
             {
                 if (!containerIds.Contains(setting.Id))
                 {
@@ -423,7 +423,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.IsTrue(containerIds.Count > 0, "The iterator did not find any containers.");
             Assert.IsTrue(containerIds.Contains(containerName), "The iterator did not find the created container");
 
-            await foreach (Page<CosmosContainerProperties> page in this.cosmosDatabase.GetContainerQueryIterator<CosmosContainerProperties>($"select * from c where c.id = \"{containerName}\"").AsPages())
+            await foreach (Page<CosmosContainerProperties> page in this.cosmosDatabase.GetContainerQueryResultsAsync<CosmosContainerProperties>($"select * from c where c.id = \"{containerName}\"").AsPages())
             {
                 Assert.AreEqual(1, page.Values.Count);
                 Assert.AreEqual(containerName, page.Values.First().Id);
@@ -451,7 +451,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
 
             HashSet<string> containerIds = new HashSet<string>();
-            await foreach(Response message in this.cosmosDatabase.GetContainerQueryStreamIterator(
+            await foreach(Response message in this.cosmosDatabase.GetContainerQueryStreamResultsAsync(
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }))
              {
                 Assert.AreEqual((int)HttpStatusCode.OK, message.Status);

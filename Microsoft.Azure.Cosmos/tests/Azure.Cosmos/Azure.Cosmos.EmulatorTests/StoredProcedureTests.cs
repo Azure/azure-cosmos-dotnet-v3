@@ -199,7 +199,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 List<string> readSprocIds = new List<string>();
-                await foreach (StoredProcedureProperties storedProcedureSettingsEntry in scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>())
+                await foreach (StoredProcedureProperties storedProcedureSettingsEntry in scripts.GetStoredProcedureQueryResultsAsync<StoredProcedureProperties>())
                 {
                     readSprocIds.Add(storedProcedureSettingsEntry.Id);
                 }

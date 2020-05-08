@@ -71,7 +71,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
 
             string lastKnownContinuationToken = null;
-            IAsyncEnumerable<Response> iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamIterator(
+            IAsyncEnumerable<Response> iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamResultsAsync(
                 continuationToken: lastKnownContinuationToken, 
                 requestOptions: requestOptions);
 
@@ -81,7 +81,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 do
                 {
-                    iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamIterator(
+                    iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamResultsAsync(
                             continuationToken: lastKnownContinuationToken,
                             requestOptions: requestOptions);
                     await foreach (Response response in iter)
@@ -139,7 +139,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             lastKnownContinuationToken = null;
             iter = this.Container.Database.GetContainer(this.Container.Id)
-                    .GetItemQueryStreamIterator(queryDefinition: null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                    .GetItemQueryStreamResultsAsync(queryDefinition: null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
 
 
             if (useStatelessIteration)
@@ -147,7 +147,7 @@ namespace Azure.Cosmos.EmulatorTests
                 do
                 {
                     iter = this.Container.Database.GetContainer(this.Container.Id)
-                            .GetItemQueryStreamIterator(queryDefinition: null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                            .GetItemQueryStreamResultsAsync(queryDefinition: null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
                     await foreach (Response response in iter)
                     {
                         lastKnownContinuationToken = response.Headers.GetContinuationToken();

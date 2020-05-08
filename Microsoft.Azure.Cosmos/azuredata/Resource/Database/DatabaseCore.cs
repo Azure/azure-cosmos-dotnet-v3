@@ -362,7 +362,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response, cancellationToken);
         }
 
-        public override IAsyncEnumerable<Response> GetContainerQueryStreamIterator(
+        public override IAsyncEnumerable<Response> GetContainerQueryStreamResultsAsync(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -374,14 +374,14 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetContainerQueryStreamIterator(
+            return this.GetContainerQueryStreamResultsAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override AsyncPageable<T> GetContainerQueryIterator<T>(
+        public override AsyncPageable<T> GetContainerQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -393,14 +393,14 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetContainerQueryIterator<T>(
+            return this.GetContainerQueryResultsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override AsyncPageable<T> GetContainerQueryIterator<T>(
+        public override AsyncPageable<T> GetContainerQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -414,7 +414,7 @@ namespace Azure.Cosmos
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
 
-        public override async IAsyncEnumerable<Response> GetContainerQueryStreamIterator(
+        public override async IAsyncEnumerable<Response> GetContainerQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -428,12 +428,12 @@ namespace Azure.Cosmos
             }
         }
 
-        public override AsyncPageable<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition,
+        public override AsyncPageable<T> GetUserQueryResultsAsync<T>(QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            FeedIterator userStreamIterator = this.GetUserQueryIterator(
+            FeedIterator userStreamIterator = this.GetUserFeedIterator(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
@@ -445,12 +445,12 @@ namespace Azure.Cosmos
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
 
-        public async IAsyncEnumerable<Response> GetUserQueryStreamIterator(QueryDefinition queryDefinition,
+        public async IAsyncEnumerable<Response> GetUserQueryResultsStreamAsync(QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default(CancellationToken))
         {
-            FeedIterator userStreamIterator = this.GetUserQueryIterator(
+            FeedIterator userStreamIterator = this.GetUserFeedIterator(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
@@ -461,7 +461,7 @@ namespace Azure.Cosmos
             }
         }
 
-        public override AsyncPageable<T> GetUserQueryIterator<T>(string queryText = null,
+        public override AsyncPageable<T> GetUserQueryResultsAsync<T>(string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -472,14 +472,14 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetUserQueryIterator<T>(
+            return this.GetUserQueryResultsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public IAsyncEnumerable<Response> GetUserQueryStreamIterator(string queryText = null,
+        public IAsyncEnumerable<Response> GetUserQueryStreamResultsAsync(string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -490,7 +490,7 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetUserQueryStreamIterator(
+            return this.GetUserQueryResultsStreamAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
@@ -638,7 +638,7 @@ namespace Azure.Cosmos
               cancellationToken: cancellationToken);
         }
 
-        private FeedIterator GetUserQueryIterator(QueryDefinition queryDefinition,
+        private FeedIterator GetUserFeedIterator(QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {

@@ -332,7 +332,7 @@ namespace Azure.Cosmos.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            AsyncPageable<CosmosDatabaseProperties> allDatabases = client.GetDatabaseQueryIterator<CosmosDatabaseProperties>();
+            AsyncPageable<CosmosDatabaseProperties> allDatabases = client.GetDatabaseQueryResultsAsync<CosmosDatabaseProperties>();
 
             await foreach (CosmosDatabaseProperties db in allDatabases)
             {
@@ -616,7 +616,7 @@ namespace Azure.Cosmos.EmulatorTests
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
 
-                IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryIterator<T>(
+                IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryResultsAsync<T>(
                    queryText: query,
                    requestOptions: computeRequestOptions,
                    continuationToken: state).AsPages();
@@ -653,7 +653,7 @@ namespace Azure.Cosmos.EmulatorTests
             string continuationToken = null;
             do
             {
-                IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryIterator<T>(
+                IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryResultsAsync<T>(
                    queryText: query,
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken).AsPages();
@@ -689,7 +689,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
 
             List<T> results = new List<T>();
-            IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryIterator<T>(
+            IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryResultsAsync<T>(
                 queryText: query,
                 requestOptions: queryRequestOptions).AsPages();
 
@@ -777,7 +777,7 @@ namespace Azure.Cosmos.EmulatorTests
             await CrossPartitionQueryTests.NoOp();
             try
             {
-                AsyncPageable<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> resultSetIterator = container.GetItemQueryResultsAsync<Document>(
                     @"SELECT * FROM Root r WHERE a = 1",
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
@@ -818,7 +818,7 @@ namespace Azure.Cosmos.EmulatorTests
                 /// '"code":"SC2001","message":"Identifier 'c' could not be resolved."'
                 string query = "SELECT c._ts, c.id, c.TicketNumber, c.PosCustomerNumber, c.CustomerId, c.CustomerUserId, c.ContactEmail, c.ContactPhone, c.StoreCode, c.StoreUid, c.PoNumber, c.OrderPlacedOn, c.OrderType, c.OrderStatus, c.Customer.UserFirstName, c.Customer.UserLastName, c.Customer.Name, c.UpdatedBy, c.UpdatedOn, c.ExpirationDate, c.TotalAmountFROM c ORDER BY c._ts";
                 List<Document> expectedValues = new List<Document>();
-                AsyncPageable<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> resultSetIterator = container.GetItemQueryResultsAsync<Document>(
                     query,
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 0 });
 
@@ -911,7 +911,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 foreach ((string, string) queryAndExpectedResult in queries)
                 {
-                    AsyncPageable<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
+                    AsyncPageable<Document> resultSetIterator = container.GetItemQueryResultsAsync<Document>(
                         queryText: queryAndExpectedResult.Item1,
                         requestOptions: new QueryRequestOptions()
                         {
@@ -957,7 +957,7 @@ namespace Azure.Cosmos.EmulatorTests
             IEnumerable<Document> documents)
         {
             // Query with partition key should be done in one round trip.
-            IAsyncEnumerable<Page<dynamic>> resultSetIterator = container.GetItemQueryIterator<dynamic>(
+            IAsyncEnumerable<Page<dynamic>> resultSetIterator = container.GetItemQueryResultsAsync<dynamic>(
                 "SELECT * FROM c WHERE c.pk = 'doc5'").AsPages();
 
             await foreach(Page<dynamic> response in resultSetIterator)
@@ -967,7 +967,7 @@ namespace Azure.Cosmos.EmulatorTests
                 break;
             }            
 
-            resultSetIterator = container.GetItemQueryIterator<dynamic>(
+            resultSetIterator = container.GetItemQueryResultsAsync<dynamic>(
                "SELECT * FROM c WHERE c.pk = 'doc10'").AsPages();
 
             await foreach (Page<dynamic> response in resultSetIterator)
@@ -1131,7 +1131,7 @@ namespace Azure.Cosmos.EmulatorTests
                     break;
             }
 
-            await foreach(SpecialPropertyDocument doc in container.GetItemQueryIterator<SpecialPropertyDocument>(
+            await foreach(SpecialPropertyDocument doc in container.GetItemQueryResultsAsync<SpecialPropertyDocument>(
                 query,
                 requestOptions: new QueryRequestOptions()
                 {
@@ -1303,7 +1303,7 @@ namespace Azure.Cosmos.EmulatorTests
                 $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").WithParameter("@keys", args.ExpectedPartitionKeyValues);
 
             HashSet<int> actualPartitionKeyValues = new HashSet<int>();
-            AsyncPageable<int> documentQuery = container.GetItemQueryIterator<int>(
+            AsyncPageable<int> documentQuery = container.GetItemQueryResultsAsync<int>(
                     queryDefinition: query,
                     requestOptions: new QueryRequestOptions() { MaxItemCount = -1, MaxConcurrency = 100 });
 
@@ -1701,7 +1701,7 @@ namespace Azure.Cosmos.EmulatorTests
                     //}
 
                     // Make sure ExecuteNextAsync works for unsupported aggregate projection
-                    AsyncPageable<dynamic> asyncPageble = container.GetItemQueryIterator<dynamic>(query, requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 });
+                    AsyncPageable<dynamic> asyncPageble = container.GetItemQueryResultsAsync<dynamic>(query, requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 });
                     await foreach(dynamic doc in asyncPageble)
                     {
                         break;
@@ -2422,7 +2422,7 @@ namespace Azure.Cosmos.EmulatorTests
                 string queryWithoutDistinct = string.Format(query, "");
 
                 QueryRequestOptions requestOptions = new QueryRequestOptions() { MaxItemCount = 100, MaxConcurrency = 100 };
-                AsyncPageable<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
+                AsyncPageable<JToken> documentQueryWithoutDistinct = container.GetItemQueryResultsAsync<JToken>(
                         queryWithoutDistinct,
                         requestOptions: requestOptions);
 
@@ -2444,7 +2444,7 @@ namespace Azure.Cosmos.EmulatorTests
                 {
                     string queryWithDistinct = string.Format(query, "DISTINCT");
                     List<JToken> documentsFromWithDistinct = new List<JToken>();
-                    AsyncPageable<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
+                    AsyncPageable<JToken> documentQueryWithDistinct = container.GetItemQueryResultsAsync<JToken>(
                         queryWithDistinct,
                         requestOptions: requestOptions);
                     await foreach (JToken doc in documentQueryWithDistinct)
@@ -3170,7 +3170,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                                     DateTime startTime = DateTime.Now;
                                     List<Document> result = new List<Document>();
-                                    AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
+                                    AsyncPageable<Document> query = container.GetItemQueryResultsAsync<Document>(
                                         querySpec,
                                         requestOptions: feedOptions);
 
@@ -3350,7 +3350,7 @@ namespace Azure.Cosmos.EmulatorTests
                             // Max DOP needs to be 0 since the query needs to run in serial => 
                             // otherwise the parallel code will prefetch from other partitions,
                             // since the first N-1 partitions might be empty.
-                            AsyncPageable<dynamic> documentQuery = container.GetItemQueryIterator<dynamic>(
+                            AsyncPageable<dynamic> documentQuery = container.GetItemQueryResultsAsync<dynamic>(
                                     query,
                                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 0, MaxItemCount = pageSize });
 
@@ -3448,7 +3448,7 @@ namespace Azure.Cosmos.EmulatorTests
             #region BadContinuations
             try
             {
-                AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> query = container.GetItemQueryResultsAsync<Document>(
                     "SELECT * FROM t",
                     continuationToken: Guid.NewGuid().ToString(),
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 });
@@ -3471,7 +3471,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> query = container.GetItemQueryResultsAsync<Document>(
                     "SELECT TOP 10 * FROM r",
                     continuationToken: "{'top':11}",
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 });
@@ -3490,7 +3490,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> query = container.GetItemQueryResultsAsync<Document>(
                     "SELECT * FROM r ORDER BY r.field1",
                     continuationToken: "{'compositeToken':{'range':{'min':'05C1E9CD673398','max':'FF'}}, 'orderByItems':[{'item':2}, {'item':1}]}",
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 });
@@ -3509,7 +3509,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> query = container.GetItemQueryResultsAsync<Document>(
                    "SELECT * FROM r ORDER BY r.field1, r.field2",
                    continuationToken: "{'compositeToken':{'range':{'min':'05C1E9CD673398','max':'FF'}}, 'orderByItems':[{'item':2}, {'item':1}]}",
                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 });
@@ -3527,7 +3527,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
             #endregion
 
-            IAsyncEnumerable<Page<Document>> responseWithEmptyContinuationExpected = container.GetItemQueryIterator<Document>(
+            IAsyncEnumerable<Page<Document>> responseWithEmptyContinuationExpected = container.GetItemQueryResultsAsync<Document>(
                 string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 10, MaxItemCount = -1 }).AsPages();
 
@@ -4354,7 +4354,7 @@ namespace Azure.Cosmos.EmulatorTests
             // Malformed continuation token
             try
             {
-                IAsyncEnumerable<Response> itemQuery = container.GetItemQueryStreamIterator(
+                IAsyncEnumerable<Response> itemQuery = container.GetItemQueryStreamResultsAsync(
                     queryText: query,
                     continuationToken: "is not the continuation token you are looking for");
                 await foreach (Response response in itemQuery)
@@ -4516,7 +4516,7 @@ namespace Azure.Cosmos.EmulatorTests
 
         //    int totalReadCount = 0;
 
-        //    FeedIterator<dynamic> docQuery = coll.Items.GetItemQueryIterator<dynamic>(query, feedOptions);
+        //    FeedIterator<dynamic> docQuery = coll.Items.GetItemQueryResultsAsync<dynamic>(query, feedOptions);
         //        while (docQuery.HasMoreResults && (maxReadItemCount < 0 || maxReadItemCount > totalReadCount))
         //        {
         //            FeedResponse<dynamic> response = await docQuery.FetchNextSetAsync();
@@ -4649,7 +4649,7 @@ namespace Azure.Cosmos.EmulatorTests
             string query,
             QueryRequestOptions requestOptions = null)
         {
-            AsyncPageable<T> resultSetIterator = container.GetItemQueryIterator<T>(
+            AsyncPageable<T> resultSetIterator = container.GetItemQueryResultsAsync<T>(
                 query,
                 requestOptions: requestOptions);
 

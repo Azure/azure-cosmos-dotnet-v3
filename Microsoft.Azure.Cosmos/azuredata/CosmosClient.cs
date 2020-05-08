@@ -97,6 +97,7 @@ namespace Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview" />
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units" />
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "AsyncPageable is not considered Async for checkers.")]
     public class CosmosClient : IDisposable
     {
         private readonly Uri DatabaseRootUri = new Uri(Paths.Databases_Root, UriKind.Relative);
@@ -492,15 +493,15 @@ namespace Azure.Cosmos
         }
 
         /// <summary>
-        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the databases.</returns>
-        public virtual AsyncPageable<T> GetDatabaseQueryIterator<T>(
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the databases.</returns>
+        public virtual AsyncPageable<T> GetDatabaseQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -519,15 +520,15 @@ namespace Azure.Cosmos
         }
 
         /// <summary>
-        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the databases.</returns>
-        public virtual AsyncPageable<T> GetDatabaseQueryIterator<T>(
+        /// <returns>An <see cref="AsyncPageable{T}"/> to go through the databases.</returns>
+        public virtual AsyncPageable<T> GetDatabaseQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -539,7 +540,7 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetDatabaseQueryIterator<T>(
+            return this.GetDatabaseQueryResultsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
@@ -547,15 +548,15 @@ namespace Azure.Cosmos
         }
 
         /// <summary>
-        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the databases</returns>
-        public virtual async IAsyncEnumerable<Response> GetDatabaseQueryStreamIterator(
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to go through the databases</returns>
+        public virtual async IAsyncEnumerable<Response> GetDatabaseQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -573,15 +574,15 @@ namespace Azure.Cosmos
         }
 
         /// <summary>
-        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to go through the databases</returns>
-        public virtual IAsyncEnumerable<Response> GetDatabaseQueryStreamIterator(
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to go through the databases</returns>
+        public virtual IAsyncEnumerable<Response> GetDatabaseQueryStreamResultsAsync(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -593,7 +594,7 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetDatabaseQueryStreamIterator(
+            return this.GetDatabaseQueryStreamResultsAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
