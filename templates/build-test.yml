@@ -27,7 +27,6 @@ jobs:
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Preview.Tests
 
-jobs:
 - job:
   displayName: Tests ${{ parameters.BuildConfiguration }}
   pool:
