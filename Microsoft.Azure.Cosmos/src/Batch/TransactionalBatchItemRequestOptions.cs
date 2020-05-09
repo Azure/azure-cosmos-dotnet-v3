@@ -40,16 +40,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal bool? EnableContentResponseOnRead { get; set; }
 
-        /// <summary>
-        /// Options to encrypt properties of the item.
-        /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        EncryptionOptions EncryptionOptions { get; set; }
-
         internal static TransactionalBatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             if (itemRequestOptions == null)
@@ -57,6 +47,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
+            RequestOptions requestOptions = itemRequestOptions as RequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = new TransactionalBatchItemRequestOptions();
             batchItemRequestOptions.IndexingDirective = itemRequestOptions.IndexingDirective;
             batchItemRequestOptions.IfMatchEtag = itemRequestOptions.IfMatchEtag;

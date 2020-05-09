@@ -140,16 +140,6 @@ namespace Microsoft.Azure.Cosmos
         internal bool? EnableContentResponseOnRead { get; set; }
 
         /// <summary>
-        /// Options to encrypt properties of the item.
-        /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        EncryptionOptions EncryptionOptions { get; set; }
-
-        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>

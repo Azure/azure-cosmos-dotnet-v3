@@ -2,23 +2,22 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal class EncryptionProperties
     {
-        [JsonProperty(PropertyName = Constants.Properties.EncryptionFormatVersion)]
+        [JsonProperty(PropertyName = Constants.EncryptionFormatVersion)]
         public int EncryptionFormatVersion { get; }
 
-        [JsonProperty(PropertyName = "_en")]
+        [JsonProperty(PropertyName = Constants.EncryptionDekId)]
         public string DataEncryptionKeyId { get; }
 
-        [JsonProperty(PropertyName = "_ea")]
+        [JsonProperty(PropertyName = Constants.EncryptionAlgorithm)]
         public string EncryptionAlgorithm { get;  }
 
-        [JsonProperty(PropertyName = Constants.Properties.EncryptedData)]
+        [JsonProperty(PropertyName = Constants.EncryptedData)]
         public byte[] EncryptedData { get; }
 
         public EncryptionProperties(
