@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <DefineConstants>CLIENT_ENCRYPTION</DefineConstants>
     <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
   </PropertyGroup>
   
@@ -38,5 +39,11 @@
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="..\..\Microsoft.Azure.Cosmos\src\Routing\AsyncCache.cs" Link="AsyncCache.cs" />
+    <Compile Include="..\..\Microsoft.Azure.Cosmos\src\Routing\AsyncLazy.cs" Link="AsyncLazy.cs" />
+    <Compile Include="..\..\Microsoft.Azure.Cosmos\src\TaskHelper.cs" Link="TaskHelper.cs" />
+  </ItemGroup>
   
 </Project>

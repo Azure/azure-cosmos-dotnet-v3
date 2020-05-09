@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class TaskHelper
     {
+#if !CLIENT_ENCRYPTION        
         static public Task InlineIfPossibleAsync(Func<Task> function, IRetryPolicy retryPolicy, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (SynchronizationContext.Current == null)
@@ -84,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
         }
-
+#endif 
         static public Task<TResult> RunInlineIfNeededAsync<TResult>(Func<Task<TResult>> task)
         {
             if (SynchronizationContext.Current == null)
