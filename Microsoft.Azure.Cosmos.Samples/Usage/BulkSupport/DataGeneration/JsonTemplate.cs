@@ -27,7 +27,7 @@ public partial class BingTemplate
     public Ingestion Ingestion { get; set; }
 
     [JsonProperty("Source")]
-    public Source Source { get; set; }
+    public Source[] Source { get; set; }
 
     [JsonProperty("User")]
     public User User { get; set; }
@@ -118,6 +118,9 @@ public partial class Source
 
     [JsonProperty("Culture")]
     public string Culture { get; set; }
+
+    [JsonProperty("CultureList")]
+    public string[] CultureList { get; set; }
 
     [JsonProperty("DeploymentId")]
     public string DeploymentId { get; set; }

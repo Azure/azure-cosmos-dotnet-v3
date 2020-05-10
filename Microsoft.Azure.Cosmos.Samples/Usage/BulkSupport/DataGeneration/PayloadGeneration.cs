@@ -6,6 +6,7 @@ namespace Cosmos.Samples.Shared
     using System.Threading.Tasks;
     using System.IO;
     using Newtonsoft.Json;
+    using System.Linq;
 
     /// <summary>
     /// Payload Generator
@@ -34,7 +35,7 @@ namespace Cosmos.Samples.Shared
 
         String[] state = new String[] { "suspend", "start" };
 
-        BingTemplate m_template;
+        //BingTemplate m_template;
 
         public PayloadGenerator(string[] keys, int numCharsPerStringValue)
         {
@@ -96,7 +97,7 @@ namespace Cosmos.Samples.Shared
               ""id"": ""(Type:Guid)""
             }";
 
-            m_template = JsonConvert.DeserializeObject<BingTemplate>(jsonDocument);
+            //m_template = JsonConvert.DeserializeObject<BingTemplate>(jsonDocument);
         }
 
         /// <summary>
@@ -105,8 +106,10 @@ namespace Cosmos.Samples.Shared
         /// <returns></returns>
         public string GeneratePayload(string partitionKey)
         {
+            BingTemplate m_template = new BingTemplate();
             m_template.Partitionkey = partitionKey;
 
+            m_template.Device = new Device();
             m_template.Device.Architecture = devicesArch[m_random.Next(0, devicesArch.Length)];
             m_template.Device.Os = os[m_random.Next(0, os.Length)];
 
@@ -115,9 +118,11 @@ namespace Cosmos.Samples.Shared
             m_template.SessionId = Guid.NewGuid().ToString();
             m_template.Level = level[m_random.Next(0, level.Length)];
 
+            m_template.Timestamp = new Timestamp();
             m_template.Timestamp.Offset = offset[m_random.Next(0, offset.Length)];
             m_template.Timestamp.Time = DateTime.Now.AddDays(m_random.Next(10000)).ToString();
 
+            m_template.Ingestion = new Ingestion();
             m_template.Ingestion.Datacenter = datacenter[m_random.Next(0, datacenter.Length)];
             m_template.Ingestion.Environment = "PROD";
             m_template.Ingestion.Ip = "127.0.0.1";
@@ -127,18 +132,34 @@ namespace Cosmos.Samples.Shared
             m_template.Ingestion.TimeCorrection = 6199;
             m_template.Ingestion.Version = "1.0.52528.0";
 
-            m_template.Source.App = app[m_random.Next(0, app.Length)];
-            m_template.Source.Culture = culture[m_random.Next(0, culture.Length)];
-            m_template.Source.DeploymentId = Guid.NewGuid().ToString();
-            m_template.Source.Group = "OSD/Appex";
-            m_template.Source.Market = culture[m_random.Next(0, culture.Length)];
-            m_template.Source.Publisher = "Microsoft";
-            m_template.Source.Version = "1.5.1.245";
+            int randArrayLength = m_random.Next(0, 12);
+            m_template.Source = new Source[randArrayLength];
 
+            for (int i = 0; i < randArrayLength; i++)
+            {
+                m_template.Source[i] = new Source();
 
+                m_template.Source[i].App = app[m_random.Next(0, app.Length)];
+                m_template.Source[i].Culture = culture[m_random.Next(0, culture.Length)];
+
+                int localLenght = m_random.Next(0, culture.Length);
+                string[] localResult = new string[localLenght];
+                Array.Copy(culture, culture.Length - localLenght, localResult, 0, localLenght);
+
+                m_template.Source[i].CultureList = localResult;
+
+                m_template.Source[i].DeploymentId = Guid.NewGuid().ToString();
+                m_template.Source[i].Group = "OSD/Appex";
+                m_template.Source[i].Market = culture[m_random.Next(0, culture.Length)];
+                m_template.Source[i].Publisher = "Microsoft";
+                m_template.Source[i].Version = "1.5.1.245";
+            }
+
+            m_template.User = new User();
             m_template.User.Ceip = "os";
             m_template.User.UserId = Guid.NewGuid().ToString();
 
+            m_template.Location = new Location();
             m_template.Location.City = city[m_random.Next(0, city.Length)];
             m_template.Location.Country = country[m_random.Next(0, country.Length)];
 
@@ -151,6 +172,7 @@ namespace Cosmos.Samples.Shared
 
             m_template.Type = "Session";
 
+            m_template.Session = new Session();
             m_template.Session.Count = m_random.Next(0, 20);
             m_template.Session.Duration = m_random.Next(10, 3600);
             m_template.Session.State = state[m_random.Next(0, state.Length)];
