@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -31,6 +32,20 @@ namespace Microsoft.Azure.Cosmos
         /// Most commonly used to detect changes to the resource
         /// </remarks>
         public string IfNoneMatchEtag { get; set; }
+
+        /// <summary>
+        /// Application opted Cosmos request headers which are sent to Cosmos service part of request execution.
+        /// Provided headers are the final values for the headers.
+        /// </summary>
+        /// <remarks>
+        /// Only Cosmos service supported reqeust headers will be sent to service, others might get discarded.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        IImmutableDictionary<string, string> CustomRequestHeaders { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -79,6 +94,15 @@ namespace Microsoft.Azure.Cosmos
             if (this.IfNoneMatchEtag != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
+            }
+
+            // Include custom headers if-any
+            if (this.CustomRequestHeaders != null)
+            {
+                foreach (KeyValuePair<string, string> entry in this.CustomRequestHeaders)
+                {
+                    request.Headers.Add(entry.Key, entry.Value);
+                }
             }
         }
 

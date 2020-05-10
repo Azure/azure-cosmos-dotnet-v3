@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Globalization;
@@ -1734,6 +1735,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsNotNull(createdItem.id);
             Assert.AreEqual(itemWithoutId.status, createdItem.status);
+        }
+
+        [TestMethod]
+        public async Task CustomHeaderItemReqeuestOptionsTest()
+        {
+            string customHearName = "custom-header1";
+            string customHeaderValue = "value1";
+
+            CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
+               builder =>
+               {
+                   builder.WithTransportClientHandlerFactory(transportClient => new TransportClientHelper.TransportClientWrapper(
+                       transportClient,
+                       (uri, resourceOperation, request) =>
+                           {
+                               if (resourceOperation.resourceType == ResourceType.Document &&
+                                    resourceOperation.operationType == OperationType.Create)
+                               {
+                                   string value = request.Headers.Get(customHearName);
+
+                                   Assert.IsNotNull(value);
+                                   Assert.AreEqual(customHeaderValue, value);
+                               }
+                           }));
+               });
+
+            Container container = clientWithIntercepter.GetContainer(this.database.Id, this.Container.Id);
+
+            ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
+
+            ImmutableDictionary<string, string>.Builder customHeaderBuilder = ImmutableDictionary.CreateBuilder<string, string>();
+            customHeaderBuilder.Add(customHearName, customHeaderValue);
+
+            ItemRequestOptions ro = new ItemRequestOptions();
+            ro.CustomRequestHeaders = customHeaderBuilder.ToImmutable();
+
+            ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(
+                partitionKey: new Cosmos.PartitionKey(temp.status),
+                item: temp,
+                requestOptions: ro);
+
+            Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
