@@ -443,21 +443,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await response.Container.DeleteContainerAsync();
         }
 
+        [Ignore] // Lack of emulator support
         [TestMethod]
         public async Task AnalyticalContainerCustomTest()
         {
             string containerId = Guid.NewGuid().ToString();
-            int analyticalTtlInSec = (int)TimeSpan.FromDays(6 * 30).TotalSeconds;
+            int analyticalTtlInSec = (int)TimeSpan.FromDays(6 * 30).TotalSeconds; // 6 months
+            int defaultTtl = (int)TimeSpan.FromDays(30).TotalSeconds; // 1 month
             ContainerProperties cpInput = new ContainerProperties()
             {
                 Id = containerId,
                 PartitionKeyPath = "/id",
+                DefaultTimeToLive = defaultTtl,
                 AnalyticalStoreTimeToLiveInSeconds = analyticalTtlInSec,
             };
 
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cpInput);
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             Assert.IsNotNull(response.Resource.AnalyticalStoreTimeToLiveInSeconds);
             Assert.AreEqual(analyticalTtlInSec, response.Resource.AnalyticalStoreTimeToLiveInSeconds);
+            Assert.AreEqual(defaultTtl, response.Resource.DefaultTimeToLive);
 
             await response.Container.DeleteContainerAsync();
         }
