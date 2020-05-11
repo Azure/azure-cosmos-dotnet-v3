@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\..\Microsoft.Azure.Cosmos.Preview\tests\Microsoft.Azure.Cosmos.Preview.Tests\ContractEnforcement.cs" Link="ContractEnforcement.cs" />
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\ContractEnforcementSharedHelper.cs" Link="ContractEnforcementSharedHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">

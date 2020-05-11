@@ -18,7 +18,7 @@
         public void ContractChanges()
         {
             string currentJson = ContractEnforcementSharedHelper.GetCurrentContract(
-                "Microsoft.Azure.Cosmos.Client");
+                "Microsoft.Azure.Cosmos.Encryption");
 
             JObject previewLocalJObject = JObject.Parse(currentJson);
             JObject officialBaselineJObject = JObject.Parse(File.ReadAllText(OfficialBaselinePath));

@@ -32,9 +32,19 @@
   
    <ItemGroup>
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ConfigurationManager.cs" Link="Utils\ConfigurationManager.cs" />
+    <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\ContractEnforcementSharedHelper.cs" Link="ContractEnforcementSharedHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\settings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DotNetSDKAPI.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\Microsoft.Azure.Cosmos.Preview\tests\Microsoft.Azure.Cosmos.Preview.Tests\DotNetSDKAPI.json">
+      <Link>OfficialDotNetSDKAPI.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
