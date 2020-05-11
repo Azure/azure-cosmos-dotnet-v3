@@ -634,7 +634,7 @@ namespace Azure.Cosmos.EmulatorTests
             // First we make sure that all the queries are inserted
             {
                 List<dynamic> queriedDocuments = new List<dynamic>();
-                await foreach (Page<dynamic> queryResultsPage in container.GetItemQueryIterator<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = pageSize }).AsPages())
+                await foreach (Page<dynamic> queryResultsPage in container.GetItemQueryResultsAsync<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = pageSize }).AsPages())
                 {
                     System.Diagnostics.Trace.TraceInformation("ReadFeed continuation token: {0}, SessionToken: {1}", queryResultsPage.ContinuationToken, queryResultsPage.GetRawResponse().Headers.GetSession());
                     queriedDocuments.AddRange(queryResultsPage.Values);
@@ -681,7 +681,7 @@ namespace Azure.Cosmos.EmulatorTests
                                            totalQueryLatencyAllPages.TotalMilliseconds / numberOfQueries, numberOfQueries);
                 }
 
-                await foreach (Page<dynamic> queryResultsPage in container.GetItemQueryIterator<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = pageSize, EnableScanInQuery = allowScan }).AsPages())
+                await foreach (Page<dynamic> queryResultsPage in container.GetItemQueryResultsAsync<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = pageSize, EnableScanInQuery = allowScan }).AsPages())
                 {
                     DateTime startTime = DateTime.Now;
                     activityIDsAllQueryPages.Add(queryResultsPage.GetRawResponse().Headers.GetActivityId());

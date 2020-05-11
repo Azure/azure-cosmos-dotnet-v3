@@ -54,7 +54,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public async Task VerifyClientMock()
         {
-            Mock<DatabaseResponse> mockDbResponse = new Mock<DatabaseResponse>();
+            Mock<CosmosDatabaseResponse> mockDbResponse = new Mock<CosmosDatabaseResponse>();
 
             Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
             mockClient.Setup(x => x.CreateDatabaseAsync(
@@ -65,7 +65,7 @@ namespace Azure.Cosmos.Tests
                 .Returns(Task.FromResult(mockDbResponse.Object));
 
             CosmosClient client = mockClient.Object;
-            DatabaseResponse response = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            CosmosDatabaseResponse response = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             Assert.IsTrue(object.ReferenceEquals(mockDbResponse.Object, response));
         }
     }

@@ -55,7 +55,7 @@ namespace Azure.Cosmos
 
         internal abstract void ValidateResource(string id);
 
-        internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+        internal abstract Task<CosmosContainerProperties> GetCachedContainerPropertiesAsync(
             string containerUri,
             CancellationToken cancellationToken = default(CancellationToken));
 

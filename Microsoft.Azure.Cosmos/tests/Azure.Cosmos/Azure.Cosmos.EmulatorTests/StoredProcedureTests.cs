@@ -28,7 +28,7 @@ namespace Azure.Cosmos.EmulatorTests
             await base.TestInit();
 
             string containerName = Guid.NewGuid().ToString();
-            ContainerResponse cosmosContainerResponse = await this.database
+            CosmosContainerResponse cosmosContainerResponse = await this.database
                 .CreateContainerIfNotExistsAsync(containerName, "/user");
             this.container = cosmosContainerResponse;
             this.scripts = this.container.Scripts;
@@ -199,7 +199,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 List<string> readSprocIds = new List<string>();
-                await foreach (StoredProcedureProperties storedProcedureSettingsEntry in scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>())
+                await foreach (StoredProcedureProperties storedProcedureSettingsEntry in scripts.GetStoredProcedureQueryResultsAsync<StoredProcedureProperties>())
                 {
                     readSprocIds.Add(storedProcedureSettingsEntry.Id);
                 }

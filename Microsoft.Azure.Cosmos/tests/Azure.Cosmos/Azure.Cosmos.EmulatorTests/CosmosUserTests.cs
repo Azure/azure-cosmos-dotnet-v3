@@ -22,7 +22,7 @@ namespace Azure.Cosmos.EmulatorTests
             this.cosmosClient = TestCommon.CreateCosmosClient();
 
             string databaseName = Guid.NewGuid().ToString();
-            DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            CosmosDatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
             this.cosmosDatabase = cosmosDatabaseResponse;
         }
 

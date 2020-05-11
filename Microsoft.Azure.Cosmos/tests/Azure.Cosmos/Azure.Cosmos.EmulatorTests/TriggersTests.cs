@@ -27,8 +27,8 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
+                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -154,7 +154,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(1, createdItem.JobNumber);
 
             List<Job> result = new List<Job>();
-            await foreach(Job job in this.container.GetItemQueryIterator<Job>("select * from x where x.investigationKey = 'investigation~1'"))
+            await foreach(Job job in this.container.GetItemQueryResultsAsync<Job>("select * from x where x.investigationKey = 'investigation~1'"))
             {
                 result.Add(job);
             }
@@ -180,7 +180,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(2, createdItem2.JobNumber);
 
             result.Clear();
-            await foreach (Job job in this.container.GetItemQueryIterator<Job>("select * from x where x.investigationKey = 'investigation~1'"))
+            await foreach (Job job in this.container.GetItemQueryResultsAsync<Job>("select * from x where x.investigationKey = 'investigation~1'"))
             {
                 result.Add(job);
             }
@@ -251,7 +251,7 @@ namespace Azure.Cosmos.EmulatorTests
                 TriggerProperties cosmosTrigger = await this.CreateRandomTrigger();
 
                 HashSet<string> settings = new HashSet<string>();
-                await foreach (TriggerProperties storedProcedureSettingsEntry in scripts.GetTriggerQueryIterator<TriggerProperties>())
+                await foreach (TriggerProperties storedProcedureSettingsEntry in scripts.GetTriggerQueryResultsAsync<TriggerProperties>())
                 {
                     settings.Add(storedProcedureSettingsEntry.Id);
                 }

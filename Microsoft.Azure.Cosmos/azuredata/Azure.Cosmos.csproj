@@ -54,7 +54,7 @@
 
   <!--SDK V3 dependencies-->
   <ItemGroup>
-    <Compile Include="..\src\Resource\Settings\Enums\*.cs">
+    <Compile Include="..\src\Resource\Settings\Enums\*.cs" Exclude="..\src\Resource\Settings\Enums\DataType.cs">
       <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;">
@@ -99,9 +99,6 @@
     <Compile Include="..\src\RetryOptions.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Regions.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\DocumentClientEventSource.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
@@ -111,7 +108,7 @@
     <Compile Include="..\src\CosmosElements\**\*.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseContainerCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseUpdaterCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseStoreCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseCore.cs">
+    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\ChangeFeedProcessorCore.cs;..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseContainerCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseUpdaterCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseStoreCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseCore.cs">
       <Link>ChangeFeedProcessor\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Headers\*.cs" Exclude="..\src\Headers\Headers.cs;..\src\Headers\CosmosMessageHeadersInternal.cs">
@@ -235,7 +232,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="System.Text.Json" Version="4.7.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.4.16" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.6.13" PrivateAssets="All" />
 
     <!--Direct Dependencies-->
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />

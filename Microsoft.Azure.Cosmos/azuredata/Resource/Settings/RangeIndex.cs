@@ -28,11 +28,11 @@ namespace Azure.Cosmos
         /// Here is an example to instantiate RangeIndex class passing in the DataType:
         /// <code language="c#">
         /// <![CDATA[
-        /// RangeIndex rangeIndex = new RangeIndex(DataType.Number);
+        /// RangeIndex rangeIndex = new RangeIndex(CosmosDataType.Number);
         /// ]]>
         /// </code>
         /// </example>
-        public RangeIndex(DataType dataType)
+        public RangeIndex(CosmosDataType dataType)
             : this()
         {
             this.DataType = dataType;
@@ -48,11 +48,11 @@ namespace Azure.Cosmos
         /// Here is an example to instantiate RangeIndex class passing in the DataType and precision:
         /// <code language="c#">
         /// <![CDATA[
-        /// RangeIndex rangeIndex = new RangeIndex(DataType.Number, -1);
+        /// RangeIndex rangeIndex = new RangeIndex(CosmosDataType.Number, -1);
         /// ]]>
         /// </code>
         /// </example>
-        public RangeIndex(DataType dataType, short precision)
+        public RangeIndex(CosmosDataType dataType, short precision)
             : this(dataType)
         {
             this.Precision = precision;
@@ -65,7 +65,7 @@ namespace Azure.Cosmos
         /// The data type for which this index should be applied.
         /// </value>
         /// <remarks>Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for valid ranges of values.</remarks>
-        public DataType DataType { get; set; }
+        public CosmosDataType DataType { get; set; }
 
         /// <summary>
         /// Gets or sets the precision for this particular index in the Azure Cosmos DB service.

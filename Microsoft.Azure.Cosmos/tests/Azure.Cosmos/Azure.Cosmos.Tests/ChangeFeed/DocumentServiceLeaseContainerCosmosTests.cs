@@ -85,7 +85,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
             mockEnumerable.Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>())).Returns(new MockAsyncEnumerator<Response>(new List<Response>() { mockFeedResponse }));
 
             Mock<CosmosContainer> mockedItems = new Mock<CosmosContainer>();
-            mockedItems.Setup(i => i.GetItemQueryStreamIterator(
+            mockedItems.Setup(i => i.GetItemQueryStreamResultsAsync(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),
                 It.IsAny<string>(), 

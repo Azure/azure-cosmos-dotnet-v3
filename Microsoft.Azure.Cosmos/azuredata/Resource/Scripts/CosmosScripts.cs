@@ -15,6 +15,7 @@ namespace Azure.Cosmos.Scripts
     /// <seealso cref="StoredProcedureProperties"/>
     /// <seealso cref="TriggerProperties"/>
     /// <seealso cref="UserDefinedFunctionProperties"/>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "AsyncPageable is not considered Async for checkers.")]
     public abstract class CosmosScripts
     {
         /// <summary>
@@ -88,104 +89,112 @@ namespace Azure.Cosmos.Scripts
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for stored procedures under a container using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to read through the existing stored procedures.</returns>
         /// <example>
-        /// This create the type feed iterator for sproc with queryDefinition as input.
+        /// This creates the enumerable for sproc with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testSprocId");
-        /// AsyncPageable<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryDefinition);
+        /// await foreach(StoredProcedureProperties storedProcedure in this.scripts.GetStoredProcedureQueryResultsAsync<StoredProcedureProperties>(queryDefinition))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetStoredProcedureQueryIterator<T>(
+        public abstract AsyncPageable<T> GetStoredProcedureQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for stored procedures under a container using a SQL statement. It returns an <see cref="IAsyncEnumerable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{T}"/> to read through the existing stored procedures.</returns>
         /// <example>
-        /// This create the stream feed iterator for sproc with queryDefinition as input.
+        /// This creates the enumerable for sproc with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testSprocId");
-        /// IAsyncEnumerable<Response> iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryDefinition);
+        /// await foreach(Response storedProcedureStream in this.scripts.GetStoredProcedureQueryStreamResultsAsync(queryDefinition))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetStoredProcedureQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetStoredProcedureQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for stored procedures under a container using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to read through the existing stored procedures.</returns>
         /// <example>
-        /// This create the type feed iterator for sproc with queryText as input.
+        /// This creates the enumerable for sproc with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
-        /// AsyncPageable<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryText);
+        /// await foreach(StoredProcedureProperties storedProcedure in this.scripts.GetStoredProcedureQueryResultsAsync<StoredProcedureProperties>(queryText))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetStoredProcedureQueryIterator<T>(
+        public abstract AsyncPageable<T> GetStoredProcedureQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for stored procedures under a container using a SQL statement. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to read through the existing stored procedures.</returns>
         /// <example>
-        /// This create the stream feed iterator for sproc with queryText as input.
+        /// This creates the enumerable for sproc with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
-        /// IAsyncEnumerable<Response> iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryText);
+        /// await foreach(Response storedProcedureStream in this.scripts.GetStoredProcedureQueryStreamResultsAsync(queryText))
+        /// {
+        /// };
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetStoredProcedureQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetStoredProcedureQueryStreamResultsAsync(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -492,104 +501,112 @@ namespace Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for triggers under a container using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to read through the existing triggers.</returns>
         /// <example>
-        /// This create the type feed iterator for Trigger with queryDefinition as input.
+        /// This creates the enumerable for Trigger with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM t where t.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testTriggerId");
-        /// AsyncPageable<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryDefinition);
+        /// await forach(TriggerProperties trigger in this.scripts.GetTriggerQueryResultsAsync<TriggerProperties>(queryDefinition))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetTriggerQueryIterator<T>(
+        public abstract AsyncPageable<T> GetTriggerQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for triggers under a container using a SQL statement. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to read through the existing triggers.</returns>
         /// <example>
-        /// This create the stream feed iterator for Trigger with queryDefinition as input.
+        /// This creates the enumerable for Triggers with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM t where t.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testTriggerId");
-        /// IAsyncEnumerable<Response> iter = this.scripts.GetTriggerQueryStreamIterator(queryDefinition);
+        /// await foreach(Response triggerStream in this.scripts.GetTriggerQueryStreamResultsAsync(queryDefinition))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetTriggerQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetTriggerQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for triggers under a container using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to read through the existing triggers.</returns>
         /// <example>
-        /// This create the type feed iterator for Trigger with queryText as input.
+        /// This creates the enumerable for Trigger with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM t where t.id like '%testId%'";
-        /// AsyncPageable<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryText);
+        /// await foreach(TriggerProperties trigger in this.scripts.GetTriggerQueryResultsAsync<TriggerProperties>(queryText))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetTriggerQueryIterator<T>(
+        public abstract AsyncPageable<T> GetTriggerQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for triggers under a container using a SQL statement. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to read through the existing triggers.</returns>
         /// <example>
-        /// This create the stream feed iterator for Trigger with queryText as input.
+        /// This creates the enumerable for Trigger with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM t where t.id like '%testId%'";
-        /// IAsyncEnumerable<Response> iter = this.scripts.GetTriggerQueryStreamIterator(queryText);
+        /// await foreach(Response triggerStream in this.scripts.GetTriggerQueryStreamResultsAsync(queryText))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetTriggerQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetTriggerQueryStreamResultsAsync(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -735,7 +752,7 @@ namespace Azure.Cosmos.Scripts
         ///     .WithParameter("@expensive", 9000)
         ///     .WithParameter("@status", "Done");
         ///
-        /// await foreach (double tax in this.container.Items.GetItemsQueryIterator<double>(
+        /// await foreach (double tax in this.container.Items.GetItemsQueryResultsAsync<double>(
         ///     sqlQueryDefinition: sqlQuery,
         ///     partitionKey: "Done"))
         /// {
@@ -750,104 +767,112 @@ namespace Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for user defined functions under a container using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to read through the existing user defined functions.</returns>
         /// <example>
-        /// This create the type feed iterator for UDF with queryDefinition as input.
+        /// This creates the enumerable for UDF with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM u where u.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testUDFId");
-        /// AsyncPageable<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// await foreach(UserDefinedFunctionProperties udf in this.scripts.GetUserDefinedFunctionQueryResultsAsync<UserDefinedFunctionProperties>(queryDefinition))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetUserDefinedFunctionQueryIterator<T>(
+        public abstract AsyncPageable<T> GetUserDefinedFunctionQueryResultsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for user defined functions under a container using a SQL statement. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to read through the existing user defined functions.</returns>
         /// <example>
-        /// This create the stream feed iterator for UDF with queryDefinition as input.
+        /// This creates the enumerable for UDF with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM u where u.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testUdfId");
-        /// IAsyncEnumerable<Response> iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// await foreach(Response udfStream in this.scripts.GetUserDefinedFunctionQueryStreamResultsAsync(queryDefinition))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetUserDefinedFunctionQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetUserDefinedFunctionQueryStreamResultsAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for user defined functions under a container using a SQL statement. It returns an <see cref="AsyncPageable{T}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="AsyncPageable{T}"/> to read through the existing user defined functions.</returns>
         /// <example>
-        /// This create the type feed iterator for UDF with queryText as input.
+        /// This creates the enumerable for UDF with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like '%testId%'");
-        /// AsyncPageable<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// await foreach(UserDefinedFunctionProperties udf in this.scripts.GetUserDefinedFunctionQueryResultsAsync<UserDefinedFunctionProperties>(queryDefinition))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetUserDefinedFunctionQueryIterator<T>(
+        public abstract AsyncPageable<T> GetUserDefinedFunctionQueryResultsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for user defined functions under a container using a SQL statement. It returns an <see cref="IAsyncEnumerable{Response}"/>.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{Response}"/> to read through the existing user defined functions.</returns>
         /// <example>
-        /// This create the stream feed iterator for UDF with queryText as input.
+        /// This creates the enumerable for UDF with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.Scripts;
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like '%testId%'");
-        /// IAsyncEnumerable<Response> iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// await foreach(Response udfStream in this.scripts.GetUserDefinedFunctionQueryStreamResultsAsync(queryDefinition))
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetUserDefinedFunctionQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetUserDefinedFunctionQueryStreamResultsAsync(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,

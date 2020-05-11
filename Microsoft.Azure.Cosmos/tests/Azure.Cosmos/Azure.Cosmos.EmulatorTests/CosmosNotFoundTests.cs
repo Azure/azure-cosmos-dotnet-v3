@@ -53,13 +53,13 @@ namespace Azure.Cosmos.EmulatorTests
 
             await container.DeleteContainerAsync();
 
-            IAsyncEnumerable<Response> crossPartitionQueryIterator = container.GetItemQueryStreamIterator(
+            IAsyncEnumerable<Response> crossPartitionQueryIterator = container.GetItemQueryStreamResultsAsync(
                 "select * from t where true",
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
             await this.VerifyQueryNotFoundResponse(crossPartitionQueryIterator);
 
-            IAsyncEnumerable<Response> queryIterator = container.GetItemQueryStreamIterator(
+            IAsyncEnumerable<Response> queryIterator = container.GetItemQueryStreamResultsAsync(
                 "select * from t where true",
                 requestOptions: new QueryRequestOptions()
                 {
@@ -69,7 +69,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             await this.VerifyQueryNotFoundResponse(queryIterator);
 
-            IAsyncEnumerable<Response> crossPartitionQueryIterator2 = container.GetItemQueryStreamIterator(
+            IAsyncEnumerable<Response> crossPartitionQueryIterator2 = container.GetItemQueryStreamResultsAsync(
                 "select * from t where true",
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
@@ -83,14 +83,14 @@ namespace Azure.Cosmos.EmulatorTests
             // Create should fail if the database does not exist
             if (dbNotExist)
             {
-                ContainerProperties newcontainerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
+                CosmosContainerProperties newcontainerSettings = new CosmosContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
                 this.VerifyNotFoundResponse(await database.CreateContainerStreamAsync(newcontainerSettings, throughput: 500));
             }
 
             CosmosContainer doesNotExistContainer = database.GetContainer(DoesNotExist);
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReadContainerStreamAsync());
 
-            ContainerProperties containerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceContainerStreamAsync(containerSettings));
             this.VerifyNotFoundResponse(await doesNotExistContainer.DeleteContainerStreamAsync());
 
@@ -116,14 +116,14 @@ namespace Azure.Cosmos.EmulatorTests
                 Stream create = TestCommon.Serializer.Value.ToStream<dynamic>(randomItem);
                 this.VerifyNotFoundResponse(await container.CreateItemStreamAsync(create, new PartitionKey(randomItem.pk)));
 
-                IAsyncEnumerable<Response> queryIterator = container.GetItemQueryStreamIterator(
+                IAsyncEnumerable<Response> queryIterator = container.GetItemQueryStreamResultsAsync(
                     "select * from t where true",
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
 
                 this.VerifyNotFoundResponse(await queryIterator.GetFirstResponse());
 
-                IAsyncEnumerable<Response> feedIterator = container.GetItemQueryStreamIterator();
+                IAsyncEnumerable<Response> feedIterator = container.GetItemQueryStreamResultsAsync();
                 this.VerifyNotFoundResponse(await feedIterator.GetFirstResponse());
 
                 dynamic randomUpsertItem = new { id = DoesNotExist, pk = DoesNotExist, status = 42 };

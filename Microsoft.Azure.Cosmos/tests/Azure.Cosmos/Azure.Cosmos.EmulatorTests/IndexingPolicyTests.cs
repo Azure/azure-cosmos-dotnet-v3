@@ -130,8 +130,8 @@ namespace Azure.Cosmos.EmulatorTests
                     Path = DefaultPath,
                     Indexes = new Collection<Cosmos.Index>()
                     {
-                        new Cosmos.RangeIndex(Cosmos.DataType.Number, -1),
-                        new Cosmos.HashIndex(Cosmos.DataType.String, 3),
+                        new Cosmos.RangeIndex(Cosmos.CosmosDataType.Number, -1),
+                        new Cosmos.HashIndex(Cosmos.CosmosDataType.String, 3),
                     }
                 }
             };
@@ -150,8 +150,8 @@ namespace Azure.Cosmos.EmulatorTests
                     Path = DefaultPath,
                     Indexes = new Collection<Cosmos.Index>()
                     {
-                        new Cosmos.RangeIndex(Cosmos.DataType.Number, -1),
-                        new Cosmos.RangeIndex(Cosmos.DataType.String, -1),
+                        new Cosmos.RangeIndex(Cosmos.CosmosDataType.Number, -1),
+                        new Cosmos.RangeIndex(Cosmos.CosmosDataType.String, -1),
                     }
                 }
             };
@@ -170,8 +170,8 @@ namespace Azure.Cosmos.EmulatorTests
                     Path = DefaultPath,
                     Indexes = new Collection<Cosmos.Index>()
                     {
-                        new Cosmos.HashIndex(Cosmos.DataType.Number, -1),
-                        new Cosmos.HashIndex(Cosmos.DataType.String, -1),
+                        new Cosmos.HashIndex(Cosmos.CosmosDataType.Number, -1),
+                        new Cosmos.HashIndex(Cosmos.CosmosDataType.String, -1),
                     }
                 }
             };
@@ -190,8 +190,8 @@ namespace Azure.Cosmos.EmulatorTests
                     Path = DefaultPath,
                     Indexes = new Collection<Cosmos.Index>()
                     {
-                        new Cosmos.HashIndex(Cosmos.DataType.Number, 3),
-                        new Cosmos.RangeIndex(Cosmos.DataType.String, -1),
+                        new Cosmos.HashIndex(Cosmos.CosmosDataType.Number, 3),
+                        new Cosmos.RangeIndex(Cosmos.CosmosDataType.String, -1),
                     }
                 }
             };
@@ -210,7 +210,7 @@ namespace Azure.Cosmos.EmulatorTests
                     Path = DefaultPath,
                     Indexes = new Collection<Cosmos.Index>()
                     {
-                        new Cosmos.SpatialIndex(Cosmos.DataType.Point),
+                        new Cosmos.SpatialIndex(Cosmos.CosmosDataType.Point),
                     }
                 }
             };
@@ -229,9 +229,9 @@ namespace Azure.Cosmos.EmulatorTests
                     Path = DefaultPath,
                     Indexes = new Collection<Cosmos.Index>()
                     {
-                        new  Cosmos.SpatialIndex(Cosmos.DataType.LineString),
-                        new  Cosmos.SpatialIndex(Cosmos.DataType.Point),
-                        new  Cosmos.SpatialIndex(Cosmos.DataType.Polygon),
+                        new  Cosmos.SpatialIndex(Cosmos.CosmosDataType.LineString),
+                        new  Cosmos.SpatialIndex(Cosmos.CosmosDataType.Point),
+                        new  Cosmos.SpatialIndex(Cosmos.CosmosDataType.Polygon),
                     }
                 }
             };
@@ -323,7 +323,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await cosmosClient.CreateDatabaseIfNotExistsAsync(database.Id);
             Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            ContainerProperties cosmosContainerSettings = new ContainerProperties()
+            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
@@ -335,7 +335,7 @@ namespace Azure.Cosmos.EmulatorTests
         private static async Task RoundTripWithLocal(Cosmos.IndexingPolicy indexingPolicy)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-            ContainerProperties containerSetting = new ContainerProperties()
+            CosmosContainerProperties containerSetting = new CosmosContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
@@ -343,7 +343,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             Cosmos.CosmosDatabase cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
-            ContainerResponse cosmosContainerResponse = await cosmosDatabase.CreateContainerAsync(containerSetting);
+            CosmosContainerResponse cosmosContainerResponse = await cosmosDatabase.CreateContainerAsync(containerSetting);
 
             Assert.IsTrue(IndexingPolicyTests.indexingPolicyEqualityComparer.Equals(indexingPolicy, containerSetting.IndexingPolicy));
         }
@@ -384,8 +384,8 @@ namespace Azure.Cosmos.EmulatorTests
                         Path = DefaultPath,
                         Indexes = new Collection<Cosmos.Index>()
                         {
-                            new  Cosmos.RangeIndex( Cosmos.DataType.Number, -1),
-                            new  Cosmos.RangeIndex( Cosmos.DataType.String, -1),
+                            new  Cosmos.RangeIndex( Cosmos.CosmosDataType.Number, -1),
+                            new  Cosmos.RangeIndex( Cosmos.CosmosDataType.String, -1),
                         }
                     }
                 },

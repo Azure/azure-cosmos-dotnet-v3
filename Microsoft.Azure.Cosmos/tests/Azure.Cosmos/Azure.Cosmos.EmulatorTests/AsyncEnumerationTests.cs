@@ -26,8 +26,8 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
-            ContainerResponse response = await this.database.CreateContainerAsync(
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
                 containerSettings,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -53,7 +53,7 @@ namespace Azure.Cosmos.EmulatorTests
             await this.Container.CreateItemAsync<ToDoActivity>(item: testItem2);
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            IAsyncEnumerable<Response> enumerable = this.Container.GetItemQueryStreamIterator(requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }, cancellationToken: cancellationTokenSource.Token);
+            IAsyncEnumerable<Response> enumerable = this.Container.GetItemQueryStreamResultsAsync(requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }, cancellationToken: cancellationTokenSource.Token);
             int iterations = 0;
             await foreach (Response response in enumerable)
             {
@@ -78,7 +78,7 @@ namespace Azure.Cosmos.EmulatorTests
             await this.Container.CreateItemAsync<ToDoActivity>(item: testItem2);
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            AsyncPageable<ToDoActivity> enumerable = this.Container.GetItemQueryIterator<ToDoActivity>(requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }, cancellationToken: cancellationTokenSource.Token);
+            AsyncPageable<ToDoActivity> enumerable = this.Container.GetItemQueryResultsAsync<ToDoActivity>(requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }, cancellationToken: cancellationTokenSource.Token);
             int iterations = 0;
             await foreach (ToDoActivity item in enumerable)
             {
@@ -102,7 +102,7 @@ namespace Azure.Cosmos.EmulatorTests
             await this.Container.CreateItemAsync<ToDoActivity>(item: testItem2);
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            IAsyncEnumerable<Page<ToDoActivity>> enumerable = this.Container.GetItemQueryIterator<ToDoActivity>(requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }, cancellationToken: cancellationTokenSource.Token).AsPages();
+            IAsyncEnumerable<Page<ToDoActivity>> enumerable = this.Container.GetItemQueryResultsAsync<ToDoActivity>(requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }, cancellationToken: cancellationTokenSource.Token).AsPages();
             int iterations = 0;
             await foreach (Page<ToDoActivity> item in enumerable)
             {

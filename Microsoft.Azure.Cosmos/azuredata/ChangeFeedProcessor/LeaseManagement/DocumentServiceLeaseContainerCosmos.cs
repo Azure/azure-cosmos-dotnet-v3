@@ -48,7 +48,7 @@ namespace Azure.Cosmos.ChangeFeed
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>();
-            await foreach (Response page in this.container.GetItemQueryStreamIterator(
+            await foreach (Response page in this.container.GetItemQueryStreamResultsAsync(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
                 continuationToken: null,
                 requestOptions: queryRequestOptions))

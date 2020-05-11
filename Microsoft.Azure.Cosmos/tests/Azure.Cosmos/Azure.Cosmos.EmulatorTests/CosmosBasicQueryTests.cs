@@ -61,7 +61,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                DatabaseResponse createResponse = await client.CreateDatabaseIfNotExistsAsync(id: "BasicQueryDb1");
+                CosmosDatabaseResponse createResponse = await client.CreateDatabaseIfNotExistsAsync(id: "BasicQueryDb1");
                 deleteList.Add(createResponse.Database);
                 createdIds.Add(createResponse.Database.Id);
 
@@ -74,18 +74,18 @@ namespace Azure.Cosmos.EmulatorTests
                 createdIds.Add(createResponse.Database.Id);
 
                 //Read All
-                List<DatabaseProperties> results = await this.ToListAsync(
-                    client.GetDatabaseQueryStreamIterator,
-                    client.GetDatabaseQueryIterator<DatabaseProperties>,
+                List<CosmosDatabaseProperties> results = await this.ToListAsync(
+                    client.GetDatabaseQueryStreamResultsAsync,
+                    client.GetDatabaseQueryResultsAsync<CosmosDatabaseProperties>,
                     null,
                     CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
                 //Basic query
-                List<DatabaseProperties> queryResults = await this.ToListAsync(
-                    client.GetDatabaseQueryStreamIterator,
-                    client.GetDatabaseQueryIterator<DatabaseProperties>,
+                List<CosmosDatabaseProperties> queryResults = await this.ToListAsync(
+                    client.GetDatabaseQueryStreamResultsAsync,
+                    client.GetDatabaseQueryResultsAsync<CosmosDatabaseProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryDb\")",
                     CosmosBasicQueryTests.RequestOptions);
 
@@ -111,7 +111,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                ContainerResponse createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer1", partitionKeyPath: "/pk");
+                CosmosContainerResponse createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer1", partitionKeyPath: "/pk");
                 createdIds.Add(createResponse.Container.Id);
 
                 createResponse = await database.CreateContainerIfNotExistsAsync(id: "BasicQueryContainer2", partitionKeyPath: "/pk2");
@@ -121,18 +121,18 @@ namespace Azure.Cosmos.EmulatorTests
                 createdIds.Add(createResponse.Container.Id);
 
                 //Read All
-                List<ContainerProperties> results = await this.ToListAsync(
-                    database.GetContainerQueryStreamIterator,
-                    database.GetContainerQueryIterator<ContainerProperties>,
+                List<CosmosContainerProperties> results = await this.ToListAsync(
+                    database.GetContainerQueryStreamResultsAsync,
+                    database.GetContainerQueryResultsAsync<CosmosContainerProperties>,
                     null,
                     CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
                 //Basic query
-                List<ContainerProperties> queryResults = await this.ToListAsync(
-                    database.GetContainerQueryStreamIterator,
-                    database.GetContainerQueryIterator<ContainerProperties>,
+                List<CosmosContainerProperties> queryResults = await this.ToListAsync(
+                    database.GetContainerQueryStreamResultsAsync,
+                    database.GetContainerQueryResultsAsync<CosmosContainerProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryContainer\")",
                     CosmosBasicQueryTests.RequestOptions);
 
@@ -163,8 +163,8 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             List<dynamic> queryResults = await this.ToListAsync(
-                  container.GetItemQueryStreamIterator,
-                 container.GetItemQueryIterator<dynamic>,
+                  container.GetItemQueryStreamResultsAsync,
+                 container.GetItemQueryResultsAsync<dynamic>,
                  "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
                  CosmosBasicQueryTests.RequestOptions);
 
@@ -182,8 +182,8 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 queryResults = await this.ToListAsync(
-                  container.GetItemQueryStreamIterator,
-                 container.GetItemQueryIterator<dynamic>,
+                  container.GetItemQueryStreamResultsAsync,
+                 container.GetItemQueryResultsAsync<dynamic>,
                  "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
                  CosmosBasicQueryTests.RequestOptions);
             }
@@ -193,8 +193,8 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Read All
             List<dynamic> results = await this.ToListAsync(
-                container.GetItemQueryStreamIterator,
-                container.GetItemQueryIterator<dynamic>,
+                container.GetItemQueryStreamResultsAsync,
+                container.GetItemQueryResultsAsync<dynamic>,
                 null,
                 CosmosBasicQueryTests.RequestOptions);
 
@@ -204,8 +204,8 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Read All with partition key
             results = await this.ToListAsync(
-               container.GetItemQueryStreamIterator,
-               container.GetItemQueryIterator<dynamic>,
+               container.GetItemQueryStreamResultsAsync,
+               container.GetItemQueryResultsAsync<dynamic>,
                null,
                new QueryRequestOptions()
                {
@@ -262,8 +262,8 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Basic query
             List<StoredProcedureProperties> queryResults = await this.ToListAsync(
-                scripts.GetStoredProcedureQueryStreamIterator,
-                scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
+                scripts.GetStoredProcedureQueryStreamResultsAsync,
+                scripts.GetStoredProcedureQueryResultsAsync<StoredProcedureProperties>,
                 "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")",
                 CosmosBasicQueryTests.RequestOptions);
 
@@ -279,8 +279,8 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 queryResults = await this.ToListAsync(
-                    scripts.GetStoredProcedureQueryStreamIterator,
-                    scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
+                    scripts.GetStoredProcedureQueryStreamResultsAsync,
+                    scripts.GetStoredProcedureQueryResultsAsync<StoredProcedureProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")",
                     CosmosBasicQueryTests.RequestOptions);
             }
@@ -289,8 +289,8 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Read All
             List<StoredProcedureProperties> results = await this.ToListAsync(
-                scripts.GetStoredProcedureQueryStreamIterator,
-                scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
+                scripts.GetStoredProcedureQueryStreamResultsAsync,
+                scripts.GetStoredProcedureQueryResultsAsync<StoredProcedureProperties>,
                 null,
                 CosmosBasicQueryTests.RequestOptions);
 
@@ -314,8 +314,8 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Basic query
             List<UserDefinedFunctionProperties> queryResults = await this.ToListAsync(
-                scripts.GetUserDefinedFunctionQueryStreamIterator,
-                scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
+                scripts.GetUserDefinedFunctionQueryStreamResultsAsync,
+                scripts.GetUserDefinedFunctionQueryResultsAsync<UserDefinedFunctionProperties>,
                 "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")",
                 CosmosBasicQueryTests.RequestOptions);
 
@@ -331,8 +331,8 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 queryResults = await this.ToListAsync(
-                    scripts.GetUserDefinedFunctionQueryStreamIterator,
-                    scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
+                    scripts.GetUserDefinedFunctionQueryStreamResultsAsync,
+                    scripts.GetUserDefinedFunctionQueryResultsAsync<UserDefinedFunctionProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")",
                     CosmosBasicQueryTests.RequestOptions);
             }
@@ -341,8 +341,8 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Read All
             List<UserDefinedFunctionProperties> results = await this.ToListAsync(
-                scripts.GetUserDefinedFunctionQueryStreamIterator,
-                scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
+                scripts.GetUserDefinedFunctionQueryStreamResultsAsync,
+                scripts.GetUserDefinedFunctionQueryResultsAsync<UserDefinedFunctionProperties>,
                 null,
                 CosmosBasicQueryTests.RequestOptions);
 
@@ -366,8 +366,8 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Basic query
             List<TriggerProperties> queryResults = await this.ToListAsync(
-                scripts.GetTriggerQueryStreamIterator,
-                scripts.GetTriggerQueryIterator<TriggerProperties>,
+                scripts.GetTriggerQueryStreamResultsAsync,
+                scripts.GetTriggerQueryResultsAsync<TriggerProperties>,
                 "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")",
                 CosmosBasicQueryTests.RequestOptions);
 
@@ -383,8 +383,8 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 queryResults = await this.ToListAsync(
-                    scripts.GetTriggerQueryStreamIterator,
-                    scripts.GetTriggerQueryIterator<TriggerProperties>,
+                    scripts.GetTriggerQueryStreamResultsAsync,
+                    scripts.GetTriggerQueryResultsAsync<TriggerProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")",
                     CosmosBasicQueryTests.RequestOptions);
             }
@@ -393,8 +393,8 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Read All
             List<TriggerProperties> results = await this.ToListAsync(
-                scripts.GetTriggerQueryStreamIterator,
-                scripts.GetTriggerQueryIterator<TriggerProperties>,
+                scripts.GetTriggerQueryStreamResultsAsync,
+                scripts.GetTriggerQueryResultsAsync<TriggerProperties>,
                 null,
                 CosmosBasicQueryTests.RequestOptions);
 
@@ -423,8 +423,8 @@ namespace Azure.Cosmos.EmulatorTests
 
                 //Read All
                 List<UserProperties> results = await this.ToListAsync(
-                    database.GetUserQueryStreamIterator,
-                    database.GetUserQueryIterator<UserProperties>,
+                    database.GetUserQueryStreamResultsAsync,
+                    database.GetUserQueryResultsAsync<UserProperties>,
                     null,
                     CosmosBasicQueryTests.RequestOptions
                 );
@@ -433,8 +433,8 @@ namespace Azure.Cosmos.EmulatorTests
 
                 //Basic query
                 List<UserProperties> queryResults = await this.ToListAsync(
-                    database.GetUserQueryStreamIterator,
-                    database.GetUserQueryIterator<UserProperties>,
+                    database.GetUserQueryStreamResultsAsync,
+                    database.GetUserQueryResultsAsync<UserProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")",
                     CosmosBasicQueryTests.RequestOptions
                 );
@@ -468,7 +468,7 @@ namespace Azure.Cosmos.EmulatorTests
                 Assert.AreEqual((int)HttpStatusCode.Created, createUserResponse.GetRawResponse().Status);
                 user = (UserCore)createUserResponse.User;
 
-                ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                CosmosContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
                 CosmosContainer container = createContainerResponse.Container;
                 PermissionResponse permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission1", PermissionMode.All, container));
                 createdContainerIds.Add(createContainerResponse.Container.Id);
@@ -489,8 +489,8 @@ namespace Azure.Cosmos.EmulatorTests
 
                 //Read All
                 List<PermissionProperties> results = await this.ToListAsync(
-                    user.GetPermissionQueryStreamIterator,
-                    user.GetPermissionQueryIterator<PermissionProperties>,
+                    user.GetPermissionQueryStreamResultsAsync,
+                    user.GetPermissionQueryResultsAsync<PermissionProperties>,
                     null,
                     CosmosBasicQueryTests.RequestOptions
                 );
@@ -499,8 +499,8 @@ namespace Azure.Cosmos.EmulatorTests
 
                 //Basic query
                 List<PermissionProperties> queryResults = await this.ToListAsync(
-                    user.GetPermissionQueryStreamIterator,
-                    user.GetPermissionQueryIterator<PermissionProperties>,
+                    user.GetPermissionQueryStreamResultsAsync,
+                    user.GetPermissionQueryResultsAsync<PermissionProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryPermission\")",
                     CosmosBasicQueryTests.RequestOptions
                 );

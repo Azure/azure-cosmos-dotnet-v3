@@ -75,36 +75,36 @@ namespace Azure.Cosmos
                        serializer);
         }
 
-        internal Task<ContainerResponse> CreateContainerResponseAsync(
+        internal Task<CosmosContainerResponse> CreateContainerResponseAsync(
             CosmosContainer container,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                ContainerProperties containerProperties = CosmosResponseFactory.ToObjectInternal<ContainerProperties>(
+                CosmosContainerProperties containerProperties = CosmosResponseFactory.ToObjectInternal<CosmosContainerProperties>(
                     cosmosResponseMessage,
                     this.propertiesSerializer);
 
-                return new ContainerResponse(
+                return new CosmosContainerResponse(
                     cosmosResponseMessage,
                     containerProperties,
                     container);
             });
         }
 
-        internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
+        internal Task<CosmosDatabaseResponse> CreateDatabaseResponseAsync(
             CosmosDatabase database,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                DatabaseProperties databaseProperties = CosmosResponseFactory.ToObjectInternal<DatabaseProperties>(
+                CosmosDatabaseProperties databaseProperties = CosmosResponseFactory.ToObjectInternal<CosmosDatabaseProperties>(
                     cosmosResponseMessage,
                     this.propertiesSerializer);
 
-                return new DatabaseResponse(
+                return new CosmosDatabaseResponse(
                     cosmosResponseMessage,
                     databaseProperties,
                     database);

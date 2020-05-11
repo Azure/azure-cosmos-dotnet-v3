@@ -24,7 +24,7 @@ namespace Azure.Cosmos
     /// <code language="c#">
     /// <![CDATA[
     ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
-    ///     ContainerProperties containerProperties = container.Resource;
+    ///     CosmosContainerProperties containerProperties = container.Resource;
     /// ]]>
     /// </code>
     /// </example>
@@ -32,12 +32,12 @@ namespace Azure.Cosmos
     /// The example below creates a new container with a custom indexing policy.
     /// <code language="c#">
     /// <![CDATA[
-    ///     ContainerProperties containerProperties = new ContainerProperties("MyCollection", "/country");
+    ///     CosmosContainerProperties containerProperties = new ContainerProperties("MyCollection", "/country");
     ///     containerProperties.IndexingPolicy.Automatic = true;
     ///     containerProperties.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
     ///     
     ///     CosmosContainerResponse containerCreateResponse = await client.GetDatabase("dbName"].CreateContainerAsync(containerProperties, 50000);
-    ///     ContainerProperties createdContainerProperties = containerCreateResponse.Container;
+    ///     CosmosContainerProperties createdContainerProperties = containerCreateResponse.Container;
     /// ]]>
     /// </code>
     /// </example>
@@ -45,14 +45,14 @@ namespace Azure.Cosmos
     /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     Container container = client.GetDatabase("dbName"].Containers["MyCollection"];
+    ///     CosmosContainer container = client.GetDatabase("dbName"].Containers["MyCollection"];
     ///     await container.DeleteAsync();
     /// ]]>
     /// </code>
     /// </example>
     /// <seealso cref="IndexingPolicy"/>
     /// <seealso cref="UniqueKeyPolicy"/>
-    public class ContainerProperties
+    public class CosmosContainerProperties
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
@@ -66,18 +66,18 @@ namespace Azure.Cosmos
         private string id;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
-        public ContainerProperties()
+        public CosmosContainerProperties()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        public ContainerProperties(string id, string partitionKeyPath)
+        public CosmosContainerProperties(string id, string partitionKeyPath)
         {
             this.Id = id;
             this.PartitionKeyPath = partitionKeyPath;
@@ -186,7 +186,7 @@ namespace Azure.Cosmos
         public ETag? ETag { get; internal set; }
 
         /// <summary>
-        /// Gets the last modified time stamp associated with <see cref="ContainerProperties" /> from the Azure Cosmos DB service.
+        /// Gets the last modified time stamp associated with <see cref="CosmosContainerProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         public DateTime? LastModified { get; internal set; }
@@ -321,26 +321,26 @@ namespace Azure.Cosmos
         /// Only collection cache needs this contract. None are expected to use it. 
         /// </summary>
         /// <param name="resourceId">The resource identifier for the container.</param>
-        /// <returns>An instance of <see cref="ContainerProperties"/>.</returns>
-        internal static ContainerProperties CreateWithResourceId(string resourceId)
+        /// <returns>An instance of <see cref="CosmosContainerProperties"/>.</returns>
+        internal static CosmosContainerProperties CreateWithResourceId(string resourceId)
         {
             if (string.IsNullOrEmpty(resourceId))
             {
                 throw new ArgumentNullException(nameof(resourceId));
             }
 
-            return new ContainerProperties()
+            return new CosmosContainerProperties()
             {
                 ResourceId = resourceId,
             };
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
-        internal ContainerProperties(string id, PartitionKeyDefinition partitionKeyDefinition)
+        internal CosmosContainerProperties(string id, PartitionKeyDefinition partitionKeyDefinition)
         {
             this.Id = id;
             this.PartitionKey = partitionKeyDefinition;
@@ -390,7 +390,7 @@ namespace Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(CosmosContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
                 return this.partitionKeyPathTokens;
             }
         }

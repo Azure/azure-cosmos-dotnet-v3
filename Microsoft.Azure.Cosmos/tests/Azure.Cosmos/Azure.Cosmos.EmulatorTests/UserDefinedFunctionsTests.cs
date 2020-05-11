@@ -27,8 +27,8 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
+                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -133,7 +133,7 @@ namespace Azure.Cosmos.EmulatorTests
                  .WithParameter("@status", "Done");
 
             HashSet<string> iterIds = new HashSet<string>();
-            await foreach(JsonElement response in this.container.GetItemQueryIterator<JsonElement>(
+            await foreach(JsonElement response in this.container.GetItemQueryResultsAsync<JsonElement>(
                  queryDefinition: sqlQuery))
             {
                 Assert.IsTrue(response.GetProperty("cost").GetInt32() > 9000);
@@ -159,7 +159,7 @@ namespace Azure.Cosmos.EmulatorTests
                 UserDefinedFunctionProperties cosmosUserDefinedFunction = await this.CreateRandomUdf();
 
                 HashSet<string> settings = new HashSet<string>();
-                await foreach (UserDefinedFunctionProperties iter in scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>())
+                await foreach (UserDefinedFunctionProperties iter in scripts.GetUserDefinedFunctionQueryResultsAsync<UserDefinedFunctionProperties>())
                 {
                     settings.Add(iter.Id);
                 }

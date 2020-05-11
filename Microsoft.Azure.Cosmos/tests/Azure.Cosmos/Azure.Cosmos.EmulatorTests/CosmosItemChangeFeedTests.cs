@@ -31,15 +31,15 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            CosmosContainerResponse response = await this.database.CreateContainerAsync(
+                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Value);
 
-            ContainerResponse largerContainer = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            CosmosContainerResponse largerContainer = await this.database.CreateContainerAsync(
+                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 20000,
                 cancellationToken: this.cancellationToken);
 
@@ -74,7 +74,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = (ContainerCore)this.Container;
-            IAsyncEnumerable<Response> feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            IAsyncEnumerable<Response> feedIterator = itemsCore.GetStandByFeedIteratorAsync(requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             await foreach(Response responseMessage in feedIterator)
             {
@@ -111,7 +111,7 @@ namespace Azure.Cosmos.EmulatorTests
             // Insert another batch of 25 and use the last continuation token from the first cycle
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             IAsyncEnumerable<Response> setIteratorNew =
-                itemsCore.GetStandByFeedIterator(lastcontinuation);
+                itemsCore.GetStandByFeedIteratorAsync(lastcontinuation);
 
             await foreach(Response responseMessage in setIteratorNew)
             {
@@ -158,7 +158,7 @@ namespace Azure.Cosmos.EmulatorTests
             int visitedPkRanges = 0;
 
             ContainerCore itemsCore = (ContainerCore)this.Container;
-            IAsyncEnumerable<Response> feedIterator = itemsCore.GetStandByFeedIterator();
+            IAsyncEnumerable<Response> feedIterator = itemsCore.GetStandByFeedIteratorAsync();
 
             await foreach(Response responseMessage in feedIterator)
             {
@@ -216,7 +216,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             ContainerCore itemsCore = (ContainerCore)this.Container;
             IAsyncEnumerable<Response> setIteratorNew =
-                itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
+                itemsCore.GetStandByFeedIteratorAsync(corruptedTokenSerialized);
 
             await foreach (Response response in setIteratorNew) { }
 
@@ -231,7 +231,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
             ContainerCore itemsCore = (ContainerCore)this.Container;
-            IAsyncEnumerable<Response> feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            IAsyncEnumerable<Response> feedIterator = itemsCore.GetStandByFeedIteratorAsync(maxItemCount: 1, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             await foreach(Response responseMessage in feedIterator)
             {
@@ -267,7 +267,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
 
-                IAsyncEnumerable<Response> feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
+                IAsyncEnumerable<Response> feedIterator = itemsCore.GetStandByFeedIteratorAsync(continuationToken, requestOptions: requestOptions);
 
                 await foreach(Response responseMessage in feedIterator)
                 {
@@ -338,7 +338,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 int count = 0;
                 IAsyncEnumerable<Response> iteratorForToken =
-                    itemsCore.GetStandByFeedIterator(continuationToken: token, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+                    itemsCore.GetStandByFeedIteratorAsync(continuationToken: token, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
                 await foreach(Response responseMessage in iteratorForToken)
                 {
                     if (!responseMessage.IsSuccessStatusCode())
