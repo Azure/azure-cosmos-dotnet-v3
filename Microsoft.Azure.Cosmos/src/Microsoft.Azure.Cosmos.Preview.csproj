@@ -1,13 +1,6 @@
 ﻿<Project>
   <Import Project="..\src\Microsoft.Azure.Cosmos.Build.props" />
   <PropertyGroup>
-  <ClientVersion>$(ClientPreviewVersion)</ClientVersion>
-	<FileVersion>$(ClientPreviewVersion)</FileVersion>
-	<Version Condition=" '$(ClientPreviewVersionSuffix)' == '' ">$(ClientVersion)-preview</Version>
-    <Version Condition=" '$(ClientPreviewVersionSuffix)' != '' ">$(ClientVersion)-preview$(ClientPreviewVersionSuffix)</Version>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <DefineConstants>$(DefineConstants);PREVIEW</DefineConstants>
   </PropertyGroup>
 

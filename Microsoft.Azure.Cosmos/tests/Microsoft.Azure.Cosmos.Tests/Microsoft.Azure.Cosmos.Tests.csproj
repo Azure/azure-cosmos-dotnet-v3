@@ -58,6 +58,9 @@
     <None Include="..\..\src\Microsoft.Azure.Cosmos.csproj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\..\src\Microsoft.Azure.Cosmos.Build.props">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

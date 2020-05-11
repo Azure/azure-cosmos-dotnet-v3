@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void PackageDependenciesTest()
         {
-            string csprojFile = "Microsoft.Azure.Cosmos.csproj";
+            string csprojFile = "Microsoft.Azure.Cosmos.Build.props";
             Dictionary<string, string> projDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
 
             string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.nuspec");
