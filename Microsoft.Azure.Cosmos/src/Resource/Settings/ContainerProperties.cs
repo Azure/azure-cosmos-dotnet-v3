@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is a nonzero positive integer, all the items
-        /// changes will be captured by analytical store and exired after the specified time to live. 
+        /// changes will be captured by analytical store and expired after the specified time to live. 
         /// </para>
         /// </remarks>
         /// <example>
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// The example below enables analytical store on container capturing all changes and expire after 6months.
+        /// The example below enables analytical store on container capturing all changes and expire after 180days.
         /// <code language="c#">
         /// <![CDATA[
         ///     container.AnalyticalStoreTimeToLiveInSeconds = (int)TimeSpan.FromDays(6 * 30).TotalSeconds;
