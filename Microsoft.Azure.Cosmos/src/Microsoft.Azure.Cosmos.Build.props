@@ -46,26 +46,26 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<AdditionalFiles Include="$(SolutionDir)\Microsoft.Azure.Cosmos\src\stylecop.json" />
+		<AdditionalFiles Include="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\stylecop.json" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="$(SolutionDir)\Microsoft.Azure.Cosmos\src\RuntimePerfCounters.cs" />
+		<Compile Remove="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\RuntimePerfCounters.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
-	<EmbeddedResource Include="$(SolutionDir)\Microsoft.Azure.Cosmos\src\Batch\HybridRowBatchSchemas.json">
+	<EmbeddedResource Include="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\Batch\HybridRowBatchSchemas.json">
 	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
-	<Compile Update="$(SolutionDir)\Microsoft.Azure.Cosmos\src\ClientResources.Designer.cs">
+	<Compile Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\ClientResources.Designer.cs">
 	  <DesignTime>True</DesignTime>
 	  <AutoGen>True</AutoGen>
 	  <DependentUpon>ClientResources.resx</DependentUpon>
 	</Compile>
-	<Compile Update="$(SolutionDir)\Microsoft.Azure.Cosmos\src\CosmosElements\Numbers\CosmosNumberCodeGenerator.cs">
+	<Compile Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\CosmosElements\Numbers\CosmosNumberCodeGenerator.cs">
 	  <DesignTime>True</DesignTime>
 	  <AutoGen>True</AutoGen>
 	  <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
@@ -115,7 +115,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="$(SolutionDir)\Microsoft.Azure.Cosmos\src\CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
+		<None Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
 		  <Generator>TextTemplatingFileGenerator</Generator>
 		  <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
 		</None>

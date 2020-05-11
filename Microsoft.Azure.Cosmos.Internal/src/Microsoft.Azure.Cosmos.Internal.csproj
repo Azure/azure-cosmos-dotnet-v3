@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.Build.props" />
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);PREVIEW;INTERNAL</DefineConstants>
   </PropertyGroup>
@@ -9,4 +8,5 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
   </PropertyGroup>
+  <Import Project="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.Build.props" />
 </Project>
