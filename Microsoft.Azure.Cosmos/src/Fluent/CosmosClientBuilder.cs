@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -145,6 +146,33 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
         }
+        
+        /// <summary>
+        /// Set the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="applicationPreferredRegions">A list of preferred Azure regions used for SDK to define failover order.</param>
+        /// <remarks>
+        ///  This function is an alternative to <see cref="WithApplicationRegion"/>, either one can be set but not both.
+        /// </remarks>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> with a of preferred regions.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceToken: "SuperSecretKey")
+        /// .WithApplicationPreferredRegions(new[] {Regions.EastUS, Regions.EastUS2});
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.ApplicationPreferredRegions"/>
+        public CosmosClientBuilder WithApplicationPreferredRegions(IReadOnlyList<string> applicationPreferredRegions)
+        {
+            this.clientOptions.ApplicationPreferredRegions = applicationPreferredRegions;
+            return this;
+        }
 
         /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClientBuilder constructor.
@@ -244,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
-        internal CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
+        public CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
             TimeSpan? openTcpConnectionTimeout = null,
             int? maxRequestsPerTcpConnection = null,
             int? maxTcpConnectionsPerEndpoint = null,
@@ -409,23 +437,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithHttpClientFactory(Func<HttpClient> httpClientFactory)
         {
             this.clientOptions.HttpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-            return this;
-        }
-
-        /// <summary>
-        /// Provider that allows encrypting and decrypting data.
-        /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
-        /// </summary>
-        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithEncryptor(Encryptor encryptor)
-        {
-            this.clientOptions.Encryptor = encryptor;
             return this;
         }
 
