@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="Microsoft.Azure.Cosmos.Build.props" />
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);PREVIEW</DefineConstants>
+    <DefineConstants>$(DefineConstants);PREVIEW;INTERNAL</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>bld\preview\</OutputPath>
+    <OutputPath>bld\internal\</OutputPath>
   </PropertyGroup>
 
 </Project>
