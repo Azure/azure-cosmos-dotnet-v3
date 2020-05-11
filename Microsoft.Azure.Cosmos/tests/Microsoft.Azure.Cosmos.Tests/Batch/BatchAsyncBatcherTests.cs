@@ -71,7 +71,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
-                    false,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
@@ -114,7 +113,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
-                    false,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
@@ -153,7 +151,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
-                    false,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
@@ -222,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task HasFixedByteSize()
         {
             ItemBatchOperation itemBatchOperation = this.CreateItemBatchOperation(true);
-            await itemBatchOperation.EncryptAndMaterializeResourceAsync(MockCosmosUtil.Serializer, default(CancellationToken));
+            await itemBatchOperation.MaterializeResourceAsync(MockCosmosUtil.Serializer, default(CancellationToken));
             // Each operation is 2 bytes
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(itemBatchOperation));

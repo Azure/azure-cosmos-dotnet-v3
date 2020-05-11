@@ -701,16 +701,6 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            if (requestOptions?.EncryptionOptions != null)
-            {
-                streamPayload = await this.ClientContext.EncryptItemAsync(
-                    streamPayload,
-                    requestOptions.EncryptionOptions,
-                    (DatabaseInternal)this.Database,
-                    diagnosticsContext,
-                    cancellationToken);
-            }
-
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Document,
@@ -723,15 +713,6 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
-
-            if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
-            {
-                responseMessage.Content = await this.ClientContext.DecryptItemAsync(
-                    responseMessage.Content,
-                    (DatabaseInternal)this.Database,
-                    diagnosticsContext,
-                    cancellationToken);
-            }
 
             return responseMessage;
         }

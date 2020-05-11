@@ -441,23 +441,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Provider that allows encrypting and decrypting data.
-        /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
-        /// </summary>
-        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithEncryptor(Encryptor encryptor)
-        {
-            this.clientOptions.Encryptor = encryptor;
-            return this;
-        }
-
-        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
