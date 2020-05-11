@@ -60,7 +60,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	<Compile Update="$(SolutionDir)\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos\src\ClientResources.Designer.cs">
+	<Compile Update="$(SolutionDir)\Microsoft.Azure.Cosmos\src\ClientResources.Designer.cs">
 	  <DesignTime>True</DesignTime>
 	  <AutoGen>True</AutoGen>
 	  <DependentUpon>ClientResources.resx</DependentUpon>
