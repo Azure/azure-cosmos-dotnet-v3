@@ -12,13 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\ContractEnforcementSharedHelper.cs" Link="ContractEnforcementSharedHelper.cs" />
+    <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\ContractEnforcementSharedHelper.cs" Link="ContractEnforcementSharedHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
   </ItemGroup>
-  <ItemGroup Condition="$(OS) != 'Linux' AND '$(ProjectRef)' != 'True' ">
+    <ItemGroup Condition="$(OS) != 'Linux' AND '$(ProjectRef)' != 'True' ">
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\microsoft.azure.cosmos.serialization.hybridrow.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -34,19 +34,19 @@
     <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Internal.csproj" />
-  </ItemGroup>  
 
   <ItemGroup>
     <None Include="DotNetSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\Microsoft.Azure.Cosmos.Tests\DotNetSDKAPI.json">
+    <None Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\DotNetSDKAPI.json">
       <Link>OfficialDotNetSDKAPI.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Internal.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

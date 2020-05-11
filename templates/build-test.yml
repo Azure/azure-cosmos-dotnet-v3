@@ -21,7 +21,7 @@ jobs:
     condition: succeeded()
     inputs:
       command: test
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Preview.Tests/*.csproj'
+      projects: 'Microsoft.Azure.Cosmos.Preview/tests/Microsoft.Azure.Cosmos.Preview.Tests/*.csproj'
       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
@@ -41,7 +41,7 @@ jobs:
     condition: succeeded()
     inputs:
       command: test
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Internal.Tests/*.csproj'
+      projects: 'Microsoft.Azure.Cosmos.Internal/tests/Microsoft.Azure.Cosmos.Internal.Tests/*.csproj'
       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config

@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.Build.props" />
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);PREVIEW;INTERNAL</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Microsoft.Azure.Cosmos\src\**\*.cs;"
+             Exclude="..\..\Microsoft.Azure.Cosmos\src\obj\**;..\..\Microsoft.Azure.Cosmos\src\bin\**;..\..\Microsoft.Azure.Cosmos\src\bld\**;..\..\Microsoft.Azure.Cosmos\src\RuntimePerfCounters.cs"/>
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+  </PropertyGroup>
+</Project>

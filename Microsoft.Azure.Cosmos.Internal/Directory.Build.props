@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
+	<DefineConstants>$(DefineConstants);PREVIEW</DefineConstants>
+  </PropertyGroup>
+  <Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
+</Project>
