@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
 
             set => this.conflictResolutionInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
         }
-
+#if PREVIEW
         /// <summary>
         /// Gets or sets the PartitionKeyDeleteThroughputFraction for the collection.
         /// </summary>
@@ -158,6 +158,23 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#else
+        /// <summary>
+        /// Gets or sets the PartitionKeyDeleteThroughputFraction for the collection.
+        /// </summary>
+        [JsonIgnore]
+        internal double PartitionKeyDeleteThroughputFraction
+        {
+            get
+            {
+                return this.partitionKeyDeleteThroughputFractionInternal;
+            }
+            set
+            {
+                this.partitionKeyDeleteThroughputFractionInternal = value;
+            }
+        }
+#endif
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
