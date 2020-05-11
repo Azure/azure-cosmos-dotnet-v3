@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
-        Action<DecryptionResult> decryptionResultHandler;
+        private readonly Action<DecryptionResult> decryptionResultHandler;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
@@ -33,21 +33,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
+            using (ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken))
             {
-                using (ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken))
+                if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
-                    if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
-                    {
-                        Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
-                            responseMessage.Content,
-                            diagnosticsContext,
-                            cancellationToken);
-                        
-                        return new DecryptedResponseMessage(responseMessage, decryptedContent);
-                    }
+                    Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
+                        responseMessage.Content,
+                        diagnosticsContext,
+                        cancellationToken);
 
-                    return responseMessage;
+                    return new DecryptedResponseMessage(responseMessage, decryptedContent);
                 }
+
+                return responseMessage;
             }
         }
 
@@ -71,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     result.Add(value);
                     continue;
                 }
-                
+
                 try
                 {
                     JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
@@ -103,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             exception));
                 }
             }
-            
+
             JObject decryptedResponse = new JObject();
             foreach (JProperty property in contentJObj.Properties())
             {
@@ -117,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            return EncryptionProcessor.baseSerializer.ToStream(decryptedResponse); 
+            return EncryptionProcessor.baseSerializer.ToStream(decryptedResponse);
         }
     }
 }

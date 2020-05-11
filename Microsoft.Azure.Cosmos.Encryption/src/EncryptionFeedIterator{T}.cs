@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -17,11 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionFeedIterator feedIterator,
             CosmosResponseFactory responseFactory)
         {
-            if (!(feedIterator is EncryptionFeedIterator))
-            {
-                throw new ArgumentOutOfRangeException($"{nameof(feedIterator)} must be of type {nameof(EncryptionFeedIterator)}.");
-            }
-
             this.feedIterator = feedIterator;
             this.responseFactory = responseFactory;
         }

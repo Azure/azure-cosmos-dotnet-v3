@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.KeyVault;
@@ -16,37 +17,56 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// it using the Azure Key Vault key provided during the creation of each Data Encryption Key.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public sealed class AzureKeyVaultCosmosEncryptor : Encryptor
+    public sealed class AzureKeyVaultCosmosEncryptor : Encryptor, IDisposable
     {
+        private bool isDisposed = false;
+
         private CosmosEncryptor cosmosEncryptor;
 
         private CosmosDataEncryptionKeyProvider cosmosDekProvider;
 
+        /// <summary>
+        /// Container for data encryption keys.
+        /// </summary>
         public DataEncryptionKeyContainer DataEncryptionKeyContainer => this.cosmosDekProvider.DataEncryptionKeyContainer;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AzureKeyVaultCosmosEncryptor"/> class.
+        /// </summary>
+        /// <param name="clientId">Client id for authentication</param>
+        /// <param name="certificateThumbprint">Certificte thumbprint for authentication</param>
         public AzureKeyVaultCosmosEncryptor(
-            string clientId, 
+            string clientId,
             string certificateThumbprint)
         {
             EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(
-                clientId, 
+                clientId,
                 certificateThumbprint);
 
             this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
 
+        /// <summary>
+        /// Initialize Cosmos DB container to store wrapped DEKs
+        /// </summary>
+        /// <param name="dekStorageDatabase">DEK storage database</param>
+        /// <param name="dekStorageContainerId">DEK storage container id</param>
+        /// <returns>A task to await on.</returns>
         public Task InitializeAsync(
             Database dekStorageDatabase,
             string dekStorageContainerId)
         {
-            return this.cosmosDekProvider.InitializeAsync(dekStorageDatabase, dekStorageContainerId);
+            return this.cosmosDekProvider.InitializeAsync(
+                dekStorageDatabase,
+                dekStorageContainerId);
         }
 
+        /// <inheritdoc/>
         public override Task<byte[]> EncryptAsync(
-            byte[] plainText, 
-            string dataEncryptionKeyId, 
-            string encryptionAlgorithm, 
+            byte[] plainText,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
             return this.cosmosEncryptor.EncryptAsync(
@@ -56,10 +76,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
         }
 
+        /// <inheritdoc/>
         public override Task<byte[]> DecryptAsync(
-            byte[] cipherText, 
-            string dataEncryptionKeyId, 
-            string encryptionAlgorithm, 
+            byte[] cipherText,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
             return this.cosmosEncryptor.DecryptAsync(
@@ -67,6 +88,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
                 cancellationToken);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing && !this.isDisposed)
+            {
+                this.cosmosEncryptor.Dispose();
+                this.cosmosDekProvider.Dispose();
+                this.isDisposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose of unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }

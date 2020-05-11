@@ -69,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return dekResponse;
         }
 
-
         /// <inheritdoc/>
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> ReadDataEncryptionKeyAsync(
             string id,
@@ -199,7 +198,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             DataEncryptionKey dek = DataEncryptionKey.Create(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithm);
 
-            return new InMemoryRawDek(dek, unwrapResult.ClientCacheTimeToLive);
+            InMemoryRawDek inMemoryRawDek = new InMemoryRawDek(
+                dek,
+                unwrapResult.ClientCacheTimeToLive);
+            this.DekProvider.DekCache.ExpiredRawDekCleaner.EnqueueInMemoryRawDek(inMemoryRawDek);
+            return inMemoryRawDek;
         }
 
         private async Task<DataEncryptionKeyProperties> ReadResourceAsync(

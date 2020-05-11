@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.IO;
     using System.Text;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
 
     /// <summary>
     /// The default Cosmos JSON.NET serializer.
@@ -16,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class CosmosJsonDotNetSerializer
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(
-            encoderShouldEmitUTF8Identifier: false, 
+            encoderShouldEmitUTF8Identifier: false,
             throwOnInvalidBytes: true);
 
         private readonly JsonSerializerSettings SerializerSettings;
@@ -52,12 +51,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             using (StreamReader sr = new StreamReader(stream))
+            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
             {
-                using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
-                {
-                    JsonSerializer jsonSerializer = this.GetSerializer();
-                    return jsonSerializer.Deserialize<T>(jsonTextReader);
-                }
+                JsonSerializer jsonSerializer = this.GetSerializer();
+                return jsonSerializer.Deserialize<T>(jsonTextReader);
             }
         }
 
@@ -71,15 +68,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             MemoryStream streamPayload = new MemoryStream();
             using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (JsonWriter writer = new JsonTextWriter(streamWriter))
             {
-                using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    JsonSerializer jsonSerializer = this.GetSerializer();
-                    jsonSerializer.Serialize(writer, input);
-                    writer.Flush();
-                    streamWriter.Flush();
-                }
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                JsonSerializer jsonSerializer = this.GetSerializer();
+                jsonSerializer.Serialize(writer, input);
+                writer.Flush();
+                streamWriter.Flush();
             }
 
             streamPayload.Position = 0;

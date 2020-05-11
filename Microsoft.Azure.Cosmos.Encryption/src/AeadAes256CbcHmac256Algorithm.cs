@@ -17,8 +17,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// This (and AeadAes256CbcHmac256EncryptionKey) implementation for Cosmos DB is same as the existing
     /// SQL client implementation with StyleCop related changes - also, we restrict to randomized encryption to start with.
     /// </summary>
-    internal class AeadAes256CbcHmac256Algorithm : DataEncryptionKey
+    internal class AeadAes256CbcHmac256Algorithm : DataEncryptionKey, IDisposable
     {
+        private bool isDisposed = false;
+
         internal const string AlgorithmNameConstant = @"AEAD_AES_256_CBC_HMAC_SHA256";
 
         /// <summary>
@@ -364,18 +366,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 // Create the streams used for decryption. 
                 using (MemoryStream msDecrypt = new MemoryStream())
+                // Create an encryptor to perform the stream transform.
+                using (ICryptoTransform decryptor = aesAlg.CreateDecryptor())
+                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
                 {
-                    // Create an encryptor to perform the stream transform.
-                    using (ICryptoTransform decryptor = aesAlg.CreateDecryptor())
-                    {
-                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
-                        {
-                            // Decrypt the secret message and get the plain text data
-                            csDecrypt.Write(cipherText, offset, count);
-                            csDecrypt.FlushFinalBlock();
-                            plainText = msDecrypt.ToArray();
-                        }
-                    }
+                    // Decrypt the secret message and get the plain text data
+                    csDecrypt.Write(cipherText, offset, count);
+                    csDecrypt.FlushFinalBlock();
+                    plainText = msDecrypt.ToArray();
                 }
             }
             finally
@@ -419,6 +417,30 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing && !this.isDisposed)
+            {
+                while (this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesCryptoServiceProvider))
+                {
+                    // This disposes the Key and IV values held by the AesCryptoServiceProvider instance
+                    aesCryptoServiceProvider.Dispose();
+                }
+
+                this.dataEncryptionKey.Dispose();
+                this.isDisposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose of unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }

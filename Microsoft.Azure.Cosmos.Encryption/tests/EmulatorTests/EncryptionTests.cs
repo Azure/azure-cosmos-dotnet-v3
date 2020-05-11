@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     {
         private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
         private const string metadataUpdateSuffix = "updated";
-        private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private const string dekId = "mydek";
         private static CosmosClient client;
         private static Database database;
@@ -145,6 +144,65 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task EncryptionCleanupRawDekOnExpiry()
+        {
+            TestKeyWrapProvider testKeyWrapProvider = new TestKeyWrapProvider();
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(
+                testKeyWrapProvider, 
+                dekPropertiesTimeToLive: null, 
+                cleanupIterationDelayInSeconds: 1, 
+                cleanupBufferTimeAfterExpiry: TimeSpan.FromSeconds(0));
+            TestEncryptor encryptor = new TestEncryptor(dekProvider);
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            await dekProvider.InitializeAsync(database, Guid.NewGuid().ToString());
+            Container itemContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            Container encryptionContainer = itemContainer.WithEncryptor(encryptor);
+
+            const string dekId1 = "dekId1", dekId2 = "dekId2";
+            testKeyWrapProvider.UnwrapCallCount = 0;
+            testKeyWrapProvider.cacheTTL = TimeSpan.FromSeconds(1.5);
+            
+            await EncryptionTests.CreateDekAsync(dekProvider, dekId1); // dekId1 TTL is set to 1.5 sec & raw DEK for dekId1 is added in cache
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(1));
+
+            TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(encryptionContainer, dekId1, TestDoc.PathsToEncrypt);
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(1)); // Raw DEK for dekId1 exists in cache, hence no new Unwrap call is needed
+
+            Thread.Sleep(TimeSpan.FromSeconds(0.5));
+
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc1);
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(1)); // Raw DEK for dekId1 exists in cache
+
+            testKeyWrapProvider.cacheTTL = TimeSpan.FromSeconds(0.4);
+            await EncryptionTests.CreateDekAsync(dekProvider, dekId2); // dekId2 TTL is set to 0.4 sec & raw DEK for dekId2 is added in cache
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(2));
+
+            TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(encryptionContainer, dekId2, TestDoc.PathsToEncrypt);
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(2)); // Raw DEK for dekId2 exists in cache
+
+            Thread.Sleep(TimeSpan.FromSeconds(0.75)); // Raw DEK for dekId2 should be cleaned up from memory
+
+            testKeyWrapProvider.cacheTTL = TimeSpan.FromSeconds(0.5); // now cache TTL will be set to 0.5 sec
+
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc1);
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(2)); // Raw DEK for dekId1 exists in cache
+
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc2);
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(3)); // Raw DEK for dekId2 doesn't exist in cache, hence new Unwrap call is needed
+            // raw DEK for dekId2 is added to cache with TTL 0.5 sec
+
+            Thread.Sleep(TimeSpan.FromSeconds(1)); // allow cleanup process to run and delete raw DEKs from memory
+
+            // Raw DEK should have been cleaned up, hence another Unwrap call is needed now for read request
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc1);
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(4));
+
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc2);
+            Assert.IsTrue(testKeyWrapProvider.UnwrapCallCount.Equals(5)); // Raw DEK for dekId2 exists in cache, hence new Unwrap call is needed
+        }
+        
         [TestMethod]
         public async Task EncryptionCreateItemWithoutEncryptionOptions()
         {
@@ -1096,10 +1154,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         private class TestKeyWrapProvider : EncryptionKeyWrapProvider
         {
+            public int UnwrapCallCount { get; set; }
+            public TimeSpan cacheTTL { get; set; }
+
+            public TestKeyWrapProvider()
+            {
+                this.cacheTTL = TimeSpan.FromDays(1);
+                this.UnwrapCallCount = 0;
+            }
+
             public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
+                this.UnwrapCallCount++;
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix ? 1 : 2;
-                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), EncryptionTests.cacheTTL));
+                return Task.FromResult(
+                    new EncryptionKeyUnwrapResult(
+                        wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), 
+                        this.cacheTTL));
             }
 
             public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)

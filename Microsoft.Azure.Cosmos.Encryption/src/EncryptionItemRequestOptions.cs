@@ -24,6 +24,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// If DecryptionResultHandler is configured, we invoke the delegate method and return the encrypted document as is (without decryption) in case of failure. 
         /// </remarks>
         public Action<DecryptionResult> DecryptionResultHandler { get; set; }
-        
     }
 }

@@ -40,6 +40,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default);
-
     }
 }

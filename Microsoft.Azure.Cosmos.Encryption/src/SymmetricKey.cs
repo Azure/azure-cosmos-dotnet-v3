@@ -10,12 +10,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Base class containing raw key bytes for symmetric key algorithms. Some encryption algorithms can use the key directly while others derive sub keys from this.
     /// If an algorithm needs to derive more keys, have a derived class from this and use it in the corresponding encryption algorithm.
     /// </summary>
-    internal class SymmetricKey
+    internal class SymmetricKey : IDisposable
     {
         /// <summary>
         /// The underlying key material
         /// </summary>
         protected readonly byte[] rootKey;
+
+        private bool isDisposed = false;
 
         /// <summary>
         /// Constructor that initializes the root key.
@@ -62,6 +64,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal virtual int Length()
         {
             return this.rootKey.Length;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing && !this.isDisposed)
+            {
+                Array.Clear(this.rootKey, 0, this.rootKey.Length);
+                this.isDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }
