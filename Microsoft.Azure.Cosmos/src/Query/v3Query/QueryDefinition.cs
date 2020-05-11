@@ -93,6 +93,8 @@ namespace Microsoft.Azure.Cosmos
         /// Checks for equality of two QueryDefinitions. Two queries are considered equal if
         /// 1. They are the same object in memory
         /// 2. Their query text is exactly the same AND they provide the same parameter values.
+        /// Following are NOT Equal: (SELECT * FROM c WHERE c.A= @param1 AND c.B=@param2 , param1=val1, param2=val2), (SELECT * FROM c WHERE c.B= @param2 AND c.A=@param1 , param1=val1, param2=val2)
+        /// Following are Equal: (SELECT * FROM c WHERE c.A= @param1 AND c.B=@param2 , param1=val1, param2=val2), (SELECT * FROM c WHERE c.A= @param1 AND c.B=@param2 , param2=val2, param1=val1)
         /// </summary>
         /// <param name="other"></param>
         /// <returns>Boolean representing the equality</returns>
