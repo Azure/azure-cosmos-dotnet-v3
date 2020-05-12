@@ -43,10 +43,6 @@
     <None Include="DotNetSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\..\Microsoft.Azure.Cosmos.Preview\tests\Microsoft.Azure.Cosmos.Preview.Tests\DotNetSDKAPI.json">
-      <Link>OfficialDotNetSDKAPI.json</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj" />

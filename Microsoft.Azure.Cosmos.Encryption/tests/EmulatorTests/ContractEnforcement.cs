@@ -20,17 +20,11 @@
             string currentJson = ContractEnforcementSharedHelper.GetCurrentContract(
                 "Microsoft.Azure.Cosmos.Encryption");
 
-            JObject previewLocalJObject = JObject.Parse(currentJson);
-            JObject officialBaselineJObject = JObject.Parse(File.ReadAllText(OfficialBaselinePath));
-
-            string previewLocalJsonNoOfficialContract = this.GetPreviewContractWithoutOfficialContract(previewLocalJObject, officialBaselineJObject);
-            Assert.IsNotNull(previewLocalJsonNoOfficialContract);
-
-            string baselinePreviewJson = ContractEnforcementSharedHelper.GetBaselineContract(BaselinePath);
-            File.WriteAllText($"{BreakingChangesPath}", previewLocalJsonNoOfficialContract);
+            string baselineJson = ContractEnforcementSharedHelper.GetBaselineContract(BaselinePath);
+            File.WriteAllText($"{BreakingChangesPath}", currentJson);
 
             Assert.IsFalse(
-                ContractEnforcementSharedHelper.CompareAndTraceJson(baselinePreviewJson, previewLocalJsonNoOfficialContract),
+                ContractEnforcementSharedHelper.CompareAndTraceJson(baselineJson, currentJson),
                 $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
             );
         }
@@ -43,8 +37,6 @@
 
         private void GetPreviewContractHelper(JObject previewContract, JObject officialContract)
         {
-            string p = previewContract.ToString();
-            string o = officialContract.ToString();
             foreach (KeyValuePair<string, JToken> token in officialContract)
             {
                 JToken previewLocalToken = previewContract[token.Key];
