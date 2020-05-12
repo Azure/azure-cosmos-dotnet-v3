@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [SDK.EmulatorTests.TestClass]
@@ -71,6 +72,36 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the FeedRange represents a single range.");
                 }
+            }
+            finally
+            {
+                await container?.DeleteContainerAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task InexistentPKRangeId()
+        {
+            ContainerInternal container = null;
+            try
+            {
+                // Create a container large enough to have at least 2 partitions
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+                container = (ContainerInlineCore)containerResponse;
+
+                string feedRangeSerialization = JsonConvert.SerializeObject(new { PKRangeId = "10" });
+                FeedRange feedRange = FeedRange.FromJsonString(feedRangeSerialization);
+
+                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                        queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
+                        feedRange: feedRange,
+                        continuationToken: null);
+
+                CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => feedIterator.ReadNextAsync());
+                Assert.AreEqual(HttpStatusCode.Gone, exception.StatusCode);
+                Assert.AreEqual((int)Documents.SubStatusCodes.PartitionKeyRangeGone, exception.SubStatusCode);
             }
             finally
             {
