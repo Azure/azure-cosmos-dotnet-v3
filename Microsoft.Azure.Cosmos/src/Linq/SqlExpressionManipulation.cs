@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         SqlScalarExpression replleft = Substitute(replacement, toReplace, binaryExp.LeftExpression);
                         SqlScalarExpression replright = Substitute(replacement, toReplace, binaryExp.RightExpression);
-                        return SqlBinaryScalarExpression.Create(replleft, binaryExp.OperatorKind, replright);
+                        return SqlBinaryScalarExpression.Create(binaryExp.OperatorKind, replleft, replright);
                     }
                 case SqlUnaryScalarExpression unaryExp:
                     {

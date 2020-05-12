@@ -139,15 +139,15 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 nameof(SqlBetweenScalarExpression),
                 SqlBetweenScalarExpression.Create(
                     somePath,
-                    not: false,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)),
+                    not: false)));
 
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlBinaryScalarExpression),
                 SqlBinaryScalarExpression.Create(
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)),
                     SqlBinaryScalarOperatorKind.Add,
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3)))));
 
             inputs.Add(new SqlObjectVisitorInput(
@@ -235,8 +235,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 inputs.Add(new SqlObjectVisitorInput(
                     sqlBinaryScalarOperatorKind.ToString(),
                     SqlBinaryScalarExpression.Create(
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0xDEADBEEF)),
                         sqlBinaryScalarOperatorKind,
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0xDEADBEEF)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0xBAAAAAAD)))));
             }
 
@@ -860,8 +860,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             // WHERE
             SqlWhereClause sqlWhereClause = SqlWhereClause.Create(
                 SqlBinaryScalarExpression.Create(
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("this path")),
                     SqlBinaryScalarOperatorKind.LessThan,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("this path")),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42))));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlWhereClause), sqlWhereClause));
 

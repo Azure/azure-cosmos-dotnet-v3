@@ -3,8 +3,7 @@
     <Input>
       <Description>SqlArrayCreateScalarExpressionEmpty</Description>
       <SqlObject><![CDATA[{
-  "Items": [],
-  "Kind": "ArrayCreateScalarExpression"
+  "Items": []
 }]]></SqlObject>
     </Input>
     <Output>
@@ -22,13 +21,9 @@
       <SqlObject><![CDATA[{
   "Items": [
     {
-      "Literal": {
-        "Kind": "NullLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+      "Literal": {}
     }
-  ],
-  "Kind": "ArrayCreateScalarExpression"
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -46,25 +41,15 @@
       <SqlObject><![CDATA[{
   "Items": [
     {
-      "Literal": {
-        "Kind": "NullLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+      "Literal": {}
     },
     {
-      "Literal": {
-        "Kind": "NullLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+      "Literal": {}
     },
     {
-      "Literal": {
-        "Kind": "NullLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+      "Literal": {}
     }
-  ],
-  "Kind": "ArrayCreateScalarExpression"
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -85,58 +70,42 @@
       <Description>SqlBetweenScalarExpression</Description>
       <SqlObject><![CDATA[{
   "Expression": {
-    "MemberExpression": {
-      "MemberExpression": {
-        "MemberExpression": {
+    "Member": {
+      "Member": {
+        "Member": {
           "Literal": {
-            "Value": "some",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": "some"
+          }
         },
-        "IndexExpression": {
+        "Indexer": {
           "Literal": {
-            "Value": "random",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "MemberIndexerScalarExpression"
+            "Value": "random"
+          }
+        }
       },
-      "IndexExpression": {
+      "Indexer": {
         "Literal": {
-          "Value": "path",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "MemberIndexerScalarExpression"
+          "Value": "path"
+        }
+      }
     },
-    "IndexExpression": {
+    "Indexer": {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    "Kind": "MemberIndexerScalarExpression"
+        "Value": 42
+      }
+    }
   },
-  "LeftExpression": {
+  "Not": false,
+  "StartInclusive": {
     "Literal": {
-      "Value": 42,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 42
+    }
   },
-  "RightExpression": {
+  "EndInclusive": {
     "Literal": {
-      "Value": 1337,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "IsNot": false,
-  "Kind": "BetweenScalarExpression"
+      "Value": 1337
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -152,22 +121,17 @@
     <Input>
       <Description>SqlBinaryScalarExpression</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Add",
   "LeftExpression": {
     "Literal": {
-      "Value": 5,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 5
+    }
   },
+  "OperatorKind": "Add",
   "RightExpression": {
     "Literal": {
-      "Value": 3,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -183,21 +147,16 @@
     <Input>
       <Description>SqlCoalesceScalarExpression</Description>
       <SqlObject><![CDATA[{
-  "LeftExpression": {
+  "Left": {
     "Literal": {
-      "Value": "if this is null",
-      "Kind": "StringLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": "if this is null"
+    }
   },
-  "RightExpression": {
+  "Right": {
     "Literal": {
-      "Value": "then return this",
-      "Kind": "StringLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "CoalesceScalarExpression"
+      "Value": "then return this"
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -213,28 +172,21 @@
     <Input>
       <Description>SqlConditionalScalarExpression</Description>
       <SqlObject><![CDATA[{
-  "ConditionExpression": {
+  "Condition": {
     "Literal": {
-      "Value": "if true",
-      "Kind": "StringLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": "if true"
+    }
   },
-  "FirstExpression": {
+  "Consequent": {
     "Literal": {
-      "Value": "then this",
-      "Kind": "StringLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": "then this"
+    }
   },
-  "SecondExpression": {
+  "Alternative": {
     "Literal": {
-      "Value": "else this",
-      "Kind": "StringLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "ConditionalScalarExpression"
+      "Value": "else this"
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -250,45 +202,34 @@
     <Input>
       <Description>SqlInScalarExpression Not: True</Description>
       <SqlObject><![CDATA[{
-  "Not": true,
-  "Expression": {
+  "Needle": {
     "Literal": {
-      "Value": "is this",
-      "Kind": "StringLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Items": [
-    {
-      "Literal": {
-        "Value": "this",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    {
-      "Literal": {
-        "Value": "set",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    {
-      "Literal": {
-        "Value": "of",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    {
-      "Literal": {
-        "Value": "values",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+      "Value": "is this"
     }
-  ],
-  "Kind": "InScalarExpression"
+  },
+  "Not": true,
+  "Haystack": [
+    {
+      "Literal": {
+        "Value": "this"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "set"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "of"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "values"
+      }
+    }
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -309,45 +250,34 @@
     <Input>
       <Description>SqlInScalarExpression Not: False</Description>
       <SqlObject><![CDATA[{
-  "Not": false,
-  "Expression": {
+  "Needle": {
     "Literal": {
-      "Value": "is this",
-      "Kind": "StringLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Items": [
-    {
-      "Literal": {
-        "Value": "this",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    {
-      "Literal": {
-        "Value": "set",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    {
-      "Literal": {
-        "Value": "of",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    {
-      "Literal": {
-        "Value": "values",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+      "Value": "is this"
     }
-  ],
-  "Kind": "InScalarExpression"
+  },
+  "Not": false,
+  "Haystack": [
+    {
+      "Literal": {
+        "Value": "this"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "set"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "of"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "values"
+      }
+    }
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -368,8 +298,7 @@
     <Input>
       <Description>SqlObjectCreateScalarExpression Empty</Description>
       <SqlObject><![CDATA[{
-  "Properties": [],
-  "Kind": "ObjectCreateScalarExpression"
+  "Properties": []
 }]]></SqlObject>
     </Input>
     <Output>
@@ -388,20 +317,15 @@
   "Properties": [
     {
       "Name": {
-        "Value": "Hello",
-        "Kind": "PropertyName"
+        "Value": "Hello"
       },
-      "Expression": {
+      "Value": {
         "Literal": {
-          "Value": "World",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "ObjectProperty"
+          "Value": "World"
+        }
+      }
     }
-  ],
-  "Kind": "ObjectCreateScalarExpression"
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -420,48 +344,35 @@
   "Properties": [
     {
       "Name": {
-        "Value": "Hello",
-        "Kind": "PropertyName"
+        "Value": "Hello"
       },
-      "Expression": {
+      "Value": {
         "Literal": {
-          "Value": "World",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "ObjectProperty"
+          "Value": "World"
+        }
+      }
     },
     {
       "Name": {
-        "Value": "Hello",
-        "Kind": "PropertyName"
+        "Value": "Hello"
       },
-      "Expression": {
+      "Value": {
         "Literal": {
-          "Value": "World",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "ObjectProperty"
+          "Value": "World"
+        }
+      }
     },
     {
       "Name": {
-        "Value": "Hello",
-        "Kind": "PropertyName"
+        "Value": "Hello"
       },
-      "Expression": {
+      "Value": {
         "Literal": {
-          "Value": "World",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "ObjectProperty"
+          "Value": "World"
+        }
+      }
     }
-  ],
-  "Kind": "ObjectCreateScalarExpression"
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -482,10 +393,8 @@
       <Description>SqlParameterRefScalarExpression</Description>
       <SqlObject><![CDATA[{
   "Parameter": {
-    "Name": "@param0",
-    "Kind": "Parameter"
-  },
-  "Kind": "ParameterRefScalarExpression"
+    "Name": "@param0"
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -501,18 +410,14 @@
     <Input>
       <Description>SqlPropertyRefScalarExpression</Description>
       <SqlObject><![CDATA[{
-  "PropertyIdentifier": {
-    "Value": "path",
-    "Kind": "Identifier"
+  "Identifer": {
+    "Value": "path"
   },
-  "MemberExpression": {
+  "Member": {
     "Literal": {
-      "Value": "some",
-      "Kind": "StringLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "PropertyRefScalarExpression"
+      "Value": "some"
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -531,12 +436,9 @@
   "OperatorKind": "BitwiseNot",
   "Expression": {
     "Literal": {
-      "Value": 42,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "UnaryScalarExpression"
+      "Value": 42
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -553,20 +455,16 @@
       <Description>SqlFunctionCallScalarExpression</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ABS",
-    "Kind": "Identifier"
+    "Value": "ABS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": -42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": -42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>

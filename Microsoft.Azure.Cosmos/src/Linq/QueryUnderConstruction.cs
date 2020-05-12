@@ -748,7 +748,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             SqlScalarExpression previousFilter = first.FilterExpression;
             SqlScalarExpression currentFilter = second.FilterExpression;
-            SqlBinaryScalarExpression and = SqlBinaryScalarExpression.Create(previousFilter, SqlBinaryScalarOperatorKind.And, currentFilter);
+            SqlBinaryScalarExpression and = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.And, previousFilter, currentFilter);
             SqlWhereClause result = SqlWhereClause.Create(and);
             return result;
         }

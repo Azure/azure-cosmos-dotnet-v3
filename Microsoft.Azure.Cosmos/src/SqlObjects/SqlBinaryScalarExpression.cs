@@ -8,8 +8,8 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlBinaryScalarExpression : SqlScalarExpression
     {
         private SqlBinaryScalarExpression(
-            SqlScalarExpression left,
             SqlBinaryScalarOperatorKind operatorKind,
+            SqlScalarExpression left,
             SqlScalarExpression right)
         {
             this.LeftExpression = left ?? throw new ArgumentNullException(nameof(left));
@@ -24,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.Sql
         public SqlScalarExpression RightExpression { get; }
 
         public static SqlBinaryScalarExpression Create(
-            SqlScalarExpression left,
             SqlBinaryScalarOperatorKind operatorKind,
-            SqlScalarExpression right) => new SqlBinaryScalarExpression(left, operatorKind, right);
+            SqlScalarExpression left,
+            SqlScalarExpression right) => new SqlBinaryScalarExpression(operatorKind, left, right);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

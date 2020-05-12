@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 left = ExpressionToSql.ApplyCustomConverters(inputExpression.Right, sqlLiteralScalarExpression);
             }
 
-            return SqlBinaryScalarExpression.Create(left, op, right);
+            return SqlBinaryScalarExpression.Create(op, left, right);
         }
 
         private static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
@@ -640,7 +640,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression leftExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Object, context);
             SqlScalarExpression rightExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Arguments[0], context);
 
-            return SqlBinaryScalarExpression.Create(leftExpression, op, rightExpression);
+            return SqlBinaryScalarExpression.Create(op, leftExpression, rightExpression);
         }
 
         private static SqlScalarExpression VisitTypeIs(TypeBinaryExpression inputExpression, TranslationContext context)
@@ -958,10 +958,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(
                 SqlBinaryScalarExpression.Create(
+                    SqlBinaryScalarOperatorKind.GreaterThan,
                     SqlFunctionCallScalarExpression.CreateBuiltin(
                         SqlFunctionCallScalarExpression.Names.Count,
                         SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterExpression.Name))),
-                    SqlBinaryScalarOperatorKind.GreaterThan,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0))));
             SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec);
             context.currentQuery.AddSelectClause(selectClause);
