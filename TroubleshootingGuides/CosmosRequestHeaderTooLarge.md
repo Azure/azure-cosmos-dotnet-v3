@@ -12,7 +12,7 @@ The size of the header has grown to large and is exceeding the maximum allowed s
 ## Troubleshooting steps
 
 ### 1. Session Token too large
-    Symptoms: The 400 bad request is happening on point operations where the continuation token is not being used.
+    Symptoms: The 400 bad request is happening on point operations where the continuation token is not being used. The exception started without making any changes to the application.
 
     Cause: The session token grows as the number of partitions increase in the container. The numbers of partition increase as the amount of data increase or if the thoughput is increased.
 
@@ -25,7 +25,9 @@ The size of the header has grown to large and is exceeding the maximum allowed s
 
 ### 2. Continuation token too large
     Symptoms: The 400 bad request is happening on query operations where the continuation token is being passed in.
+
     Cause: The continuation token has grown to large. Different queries will have different continuation token sizes.
+    
     Fixes:
      1. Follow the performance tips and convert the application to Direct + TCP connection mode. Direct + TCP does not have the header size restriction like HTTP does which avoids this issue.
      2. If the application cannot be converted to Direct + TCP and the continuation token is the cause, then try setting the ResponseContinuationTokenLimitInKb option. The option can be found in the FeedOptions for v2 or the QueryRequestOptions in v3.

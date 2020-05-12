@@ -10,7 +10,7 @@
 
 This status code represents that the resource no longer exists. 
 
-## Known issues
+## Known causes
 
 The document does exists, but still returns a 404. 
 
