@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
         /// The example below enables time-to-live on a container. By default, all the items never expire.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.DefaultTimeToLive = (int)TimeSpan.FromDays(2).TotalSeconds;
+        ///     container.DefaultTimeToLive = -1;
         /// ]]>
         /// </code>
         /// </example>
