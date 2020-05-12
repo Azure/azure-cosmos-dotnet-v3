@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ReplaceThroughputPropertiesAsync(
                 targetRID,
-                ThroughputProperties.CreateFixedThroughput(throughput),
+                ThroughputProperties.CreateManualThroughput(throughput),
                 requestOptions,
                 cancellationToken);
         }
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ReplaceThroughputPropertiesIfExistsAsync(
                 targetRID,
-                ThroughputProperties.CreateFixedThroughput(throughput),
+                ThroughputProperties.CreateManualThroughput(throughput),
                 requestOptions,
                 cancellationToken);
         }
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.ClientContext,
                resourceLink: this.OfferRootUri,
                resourceType: ResourceType.Offer,
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: linkUri,
               resourceType: resourceType,
               operationType: operationType,
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
               requestEnricher: null,
               diagnosticsContext: null,
               cancellationToken: cancellationToken);
-            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
+            return this.ClientContext.ResponseFactory.CreateThroughputResponse(responseMessage);
         }
     }
 }

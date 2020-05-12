@@ -26,14 +26,14 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore cosmosContainerCore;
+        private readonly ContainerInternal cosmosContainerCore;
         private readonly DocumentClient documentClient;
         private readonly SemaphoreSlim semaphore;
         private QueryPartitionProvider queryPartitionProvider;
 
         internal CosmosQueryClientCore(
             CosmosClientContext clientContext,
-            ContainerCore cosmosContainerCore)
+            ContainerInternal cosmosContainerCore)
         {
             this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
             this.cosmosContainerCore = cosmosContainerCore;
@@ -115,6 +115,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
+            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
@@ -150,6 +151,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(
+                clientQueryCorrelationId,
                 requestOptions,
                 resourceType,
                 message,
@@ -209,6 +211,21 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
+        internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
+            string resourceLink,
+            string collectionResourceId,
+            PartitionKeyDefinition partitionKeyDefinition,
+            FeedRangeInternal feedRangeInternal)
+        {
+            IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
+            List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
+
+            return await this.GetTargetPartitionKeyRangesAsync(
+                resourceLink,
+                collectionResourceId,
+                ranges);
+        }
+
         internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
@@ -260,6 +277,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private QueryResponseCore GetCosmosElementResponse(
+            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
@@ -269,6 +287,7 @@ namespace Microsoft.Azure.Cosmos
             using (cosmosResponseMessage)
             {
                 QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
+                    clientQueryCorrelationId: clientQueryCorrelationId,
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],

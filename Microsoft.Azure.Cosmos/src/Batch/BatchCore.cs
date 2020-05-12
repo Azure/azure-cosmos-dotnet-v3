@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly PartitionKey partitionKey;
 
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
 
         private List<ItemBatchOperation> operations;
 
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="container">Container that has items on which batch operations are to be performed.</param>
         /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
         internal BatchCore(
-            ContainerCore container,
+            ContainerInternal container,
             PartitionKey partitionKey)
         {
             this.container = container;

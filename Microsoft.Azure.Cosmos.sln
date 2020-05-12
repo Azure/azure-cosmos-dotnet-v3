@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Perf
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption", "Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj", "{4D0FBC91-268E-44DD-AC10-6851A69C52FB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Encryption", "Encryption", "{B382B965-7D1B-4DE8-8007-197741C49F88}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption.EmulatorTests", "Microsoft.Azure.Cosmos.Encryption\tests\EmulatorTests\Microsoft.Azure.Cosmos.Encryption.EmulatorTests.csproj", "{D6A405BF-15E1-46D3-8C13-210BA043ADC5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -83,9 +87,25 @@ Global
 		{4D0FBC91-268E-44DD-AC10-6851A69C52FB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4D0FBC91-268E-44DD-AC10-6851A69C52FB}.Release|x64.ActiveCfg = Release|Any CPU
 		{4D0FBC91-268E-44DD-AC10-6851A69C52FB}.Release|x64.Build.0 = Release|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Cover|x64.Build.0 = Debug|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Debug|x64.Build.0 = Debug|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Release|x64.ActiveCfg = Release|Any CPU
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4D0FBC91-268E-44DD-AC10-6851A69C52FB} = {B382B965-7D1B-4DE8-8007-197741C49F88}
+		{D6A405BF-15E1-46D3-8C13-210BA043ADC5} = {B382B965-7D1B-4DE8-8007-197741C49F88}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6A1D820-CB03-4DE6-87D1-46EF476F0040}

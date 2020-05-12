@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (RequestOptions batchOptions in badBatchOptionsList)
             {
                 BatchCore batch = (BatchCore)
-                        new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+                        new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                             .ReadItem("someId");
 
                 await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (TransactionalBatchItemRequestOptions itemOptions in badItemOptionsList)
             {
-                TransactionalBatch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+                TransactionalBatch batch = new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                         .ReplaceItem("someId", new TestItem("repl"), itemOptions);
 
                 await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task BatchNoOperationsAsync()
         {
             Container container = BatchUnitTests.GetContainer();
-            TransactionalBatch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
+            TransactionalBatch batch = new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
             await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
                 batch,
                 typeof(ArgumentException),
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Container container = BatchUnitTests.GetContainer(testHandler);
 
-            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .CreateItem(createItem)
                 .ReadItem(readId)
                 .ReplaceItem(replaceItem.Id, replaceItem)
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Container container = BatchUnitTests.GetContainer(testHandler);
 
-            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .ReadItem("id1")
                 .ReadItem("id2")
                 .ExecuteAsync();
@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Container container = BatchUnitTests.GetContainer(testHandler);
 
-            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .ReadItem("id1")
                 .ReadItem("id2")
                 .ExecuteAsync();
@@ -519,8 +519,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 client = MockCosmosUtil.CreateMockCosmosClient();
             }
 
-            DatabaseCore database = new DatabaseCore(client.ClientContext, BatchUnitTests.DatabaseId);
-            ContainerCore container = new ContainerCore(client.ClientContext, database, BatchUnitTests.ContainerId);
+            DatabaseInternal database = new DatabaseInlineCore(client.ClientContext, BatchUnitTests.DatabaseId);
+            ContainerInternal container = new ContainerInlineCore(client.ClientContext, database, BatchUnitTests.ContainerId);
             return container;
         }
 

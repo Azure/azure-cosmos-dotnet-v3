@@ -70,19 +70,14 @@ namespace Microsoft.Azure.Cosmos
         public int? Throughput
         {
             get => this.Content?.OfferThroughput;
-            private set => this.Content = OfferContentProperties.CreateFixedOfferConent(value.Value);
+            private set => this.Content = OfferContentProperties.CreateManualOfferConent(value.Value);
         }
 
         /// <summary>
         /// The maximum throughput the autoscale will scale to.
         /// </summary>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? MaxAutoscaleThroughput => this.Content?.OfferAutoscaleSettings?.MaxThroughput;
+        public int? AutoscaleMaxThroughput => this.Content?.OfferAutoscaleSettings?.MaxThroughput;
 
         /// <summary>
         /// The amount to increment if the maximum RUs is getting throttled.
@@ -91,39 +86,39 @@ namespace Microsoft.Azure.Cosmos
         internal int? AutoUpgradeMaxThroughputIncrementPercentage => this.Content?.OfferAutoscaleSettings?.AutoscaleAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
 
         /// <summary>
-        /// The Throughput properties for autoscale provisioned throughput offering
+        /// The Throughput properties for manual provisioned throughput offering
         /// </summary>
         /// <param name="throughput">The current provisioned throughput for the resource.</param>
-        /// <returns>Returns a ThroughputProperties for fixed throughput</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static ThroughputProperties CreateFixedThroughput(int throughput)
+        /// <returns>Returns a ThroughputProperties for manual throughput</returns>
+        public static ThroughputProperties CreateManualThroughput(int throughput)
         {
-            return new ThroughputProperties(OfferContentProperties.CreateFixedOfferConent(throughput));
+            if (throughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(throughput)} must be greater than 0");
+            }
+
+            return new ThroughputProperties(OfferContentProperties.CreateManualOfferConent(throughput));
         }
 
         /// <summary>
         /// The Throughput properties for autoscale provisioned throughput offering
         /// </summary>
-        /// <param name="maxAutoscaleThroughput">The staring maximum throughput the resource can scale to.</param>
+        /// <param name="autoscaleMaxThroughput">The maximum throughput the resource can scale to.</param>
         /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static ThroughputProperties CreateAutoscaleProvionedThroughput(
-            int maxAutoscaleThroughput)
+        public static ThroughputProperties CreateAutoscaleThroughput(
+            int autoscaleMaxThroughput)
         {
+            if (autoscaleMaxThroughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(autoscaleMaxThroughput)} must be greater than 0");
+            }
+
             return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
-                startingMaxThroughput: maxAutoscaleThroughput,
+                startingMaxThroughput: autoscaleMaxThroughput,
                 autoUpgradeMaxThroughputIncrementPercentage: null));
         }
 
-        internal static ThroughputProperties CreateAutoscaleProvionedThroughput(
+        internal static ThroughputProperties CreateAutoscaleThroughput(
             int maxAutoscaleThroughput,
             int? autoUpgradeMaxThroughputIncrementPercentage = null)
         {

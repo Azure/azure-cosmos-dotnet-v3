@@ -58,10 +58,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                diagnosticsContext)
+                new QueryPageDiagnostics(
+                    Guid.NewGuid(),
+                    "0",
+                    "SomeQueryMetricText",
+                    "SomeIndexUtilText",
+                    diagnosticsContext)
             };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
@@ -115,10 +117,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                diagnosticsContext)
+                new QueryPageDiagnostics(
+                    Guid.NewGuid(),
+                    "0",
+                    "SomeQueryMetricText",
+                    "SomeIndexUtilText",
+                    diagnosticsContext)
             };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
@@ -158,10 +162,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                diagnosticsContext)
+                new QueryPageDiagnostics(
+                    Guid.NewGuid(),
+                    "0",
+                    "SomeQueryMetricText",
+                    "SomeIndexUtilText",
+                    diagnosticsContext)
             };
 
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(

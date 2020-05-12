@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Default implementation for a provider to get a data encryption key - wrapped keys are stored in a Cosmos DB container.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider
+    public sealed class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider
     {
         private const string ContainerPartitionKeyPath = "/id";
 

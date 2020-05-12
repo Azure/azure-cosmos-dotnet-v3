@@ -24,7 +24,7 @@
 
         public MockCosmosQueryClient(
             CosmosClientContext clientContext,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             bool forceQueryPlanGatewayElseServiceInterop) : base(
                 clientContext,
                 cosmosContainerCore)
@@ -65,6 +65,7 @@
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
+            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
@@ -81,6 +82,7 @@
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
+                clientQueryCorrelationId: clientQueryCorrelationId,
                 requestOptions: requestOptions,
                 queryPageDiagnostics: queryPageDiagnostics,
                 sqlQuerySpec: sqlQuerySpec,

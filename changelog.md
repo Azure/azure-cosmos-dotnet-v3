@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Reduced memory allocations on query deserialization.
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Diagnostics: Add CPU monitoring for .Net Core
+
+## <a name="3.9.0-preview3"/> [3.9.0-preview3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.0-preview3) - 2020-05-11
+
+### Added
+
+- [#1356](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1356) & [#1407](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1407) & [#1428](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1428) Autoscale Preview: Add to public preview release
+- [#1407](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1407) Autoscale: Add CreateDatabaseIfNotExistsAsync and CreateContainerIfNotExistsAsync
+- [#1410](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1410) FeedRange: Add Json serialization support
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Diagnostics: Add CPU monitoring for .Net Core
+- [#1441](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1441) Transport: Add HttpClientFactory support on CosmosClientOptions
+- [#1457](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1457) Container: Add Database reference to the container
+- [#1453](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1453) Response Factory: Add a response factory to the public API
+- [#1455](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1454) Serializer: Add SDK serializer to Client.ClientOptions.Serializer
+- [#1397](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1397) CosmosClientBuilder: Add preferred regions and public internal func WithConnectionModeDirect()
+- [#1439](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1439) No content on Response: Add the ability to have operation return no content from Cosmos DB
+- [#1439](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1469) Diagnostics: Fix InvalidOperationException and converts elapsed time to millisecond
+
+### Fixed
+
+- [#1398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1398) Reduced memory allocations on query deserialization.
+- [#1401](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1401) & [#1437](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1437): Response type: Fix deadlock on scenarios with SynchronizationContext when using Response.Container
+- [#1445](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1445) Transport: Fix ServicePoint for WebAssembly
+- [#1462](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1462) UserAgent: Fix feature usage tracking
+
+## <a name="3.9.0-preview"/> [3.9.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.0-preview) - 2020-04-17
+
+### Added
+
+- [#1356](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1356) Autoscale Preview: Add to public preview release
+
+## <a name="3.8.0-preview"/> [3.8.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.8.0-preview) - 2020-04-16
+
 ### Added
 
 - [#1331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1331) Enable client encryption / decryption for transactional batch requests

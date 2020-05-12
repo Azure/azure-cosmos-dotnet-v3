@@ -194,6 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null));
 
             QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                clientQueryCorrelationId: Guid.NewGuid(),
                 partitionKeyRangeId: "0",
                 queryMetricText: "SomeRandomQueryMetricText",
                 indexUtilizationText: null,
@@ -247,6 +248,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null));
 
             diagnostics = new QueryPageDiagnostics(
+                clientQueryCorrelationId: Guid.NewGuid(),
                 partitionKeyRangeId: "0",
                 queryMetricText: null,
                 indexUtilizationText: null,

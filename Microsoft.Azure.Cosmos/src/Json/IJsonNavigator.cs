@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
@@ -40,15 +41,15 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A double that represents the number value in the node.</returns>
-        Number64 GetNumberValue(IJsonNavigatorNode numberNode);
+        Number64 GetNumber64Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Tries to get the buffered string value from a node.
         /// </summary>
         /// <param name="stringNode">The node to get the buffered string from.</param>
-        /// <param name="bufferedUtf8StringValue">The buffered string value if possible</param>
+        /// <param name="value">The buffered string value if possible</param>
         /// <returns><code>true</code> if the JsonNavigator successfully got the buffered string value; <code>false</code> if the JsonNavigator failed to get the buffered string value.</returns>
-        bool TryGetBufferedUtf8StringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedUtf8StringValue);
+        bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Memory value);
 
         /// <summary>
         /// Gets a string value from a node.

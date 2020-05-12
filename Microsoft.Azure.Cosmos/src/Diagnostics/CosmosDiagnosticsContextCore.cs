@@ -64,17 +64,24 @@ namespace Microsoft.Azure.Cosmos
             return this.overallScope.IsComplete();
         }
 
-        internal override CosmosDiagnosticScope GetOverallScope()
+        internal override IDisposable GetOverallScope()
         {
             return this.overallScope;
         }
 
-        internal override CosmosDiagnosticScope CreateScope(string name)
+        internal override IDisposable CreateScope(string name)
         {
             CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
 
             this.ContextList.Add(scope);
             return scope;
+        }
+
+        internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
+        {
+            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
+            this.ContextList.Add(requestHandlerScope);
+            return requestHandlerScope;
         }
 
         internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
@@ -107,6 +114,11 @@ namespace Microsoft.Azure.Cosmos
         internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
             this.ContextList.Add(clientSideRequestStatistics);
+        }
+
+        internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
+        {
+            this.ContextList.Add(feedRangeStatistics);
         }
 
         internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
@@ -149,7 +161,13 @@ namespace Microsoft.Azure.Cosmos
 
         public override IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
         {
-            return this.ContextList.GetEnumerator();
+            // Using a for loop with a yield prevents Issue #1467 which causes
+            // ThrowInvalidOperationException if a new diagnostics is getting added
+            // while the enumerator is being used.
+            for (int i = 0; i < this.ContextList.Count; i++)
+            {
+                yield return this.ContextList[i];
+            }
         }
 
         private void AddRequestCount(int statusCode)

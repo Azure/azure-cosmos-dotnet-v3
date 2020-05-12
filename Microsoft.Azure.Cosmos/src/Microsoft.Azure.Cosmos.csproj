@@ -61,6 +61,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ClientResources.resx</DependentUpon>
     </Compile>
+    <Compile Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -102,6 +107,13 @@
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
     </None>
   </ItemGroup>
 

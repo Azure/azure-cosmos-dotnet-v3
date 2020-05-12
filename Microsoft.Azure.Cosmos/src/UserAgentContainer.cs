@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
         {
             // Regenerate base user agent to account for features
             this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(features);
+            this.Suffix = string.Empty;
         }
 
         private string CreateBaseUserAgentString(string features = null)
