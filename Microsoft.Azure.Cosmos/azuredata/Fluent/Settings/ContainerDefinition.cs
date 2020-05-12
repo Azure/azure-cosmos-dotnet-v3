@@ -53,13 +53,13 @@ namespace Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// <see cref="CosmosContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// <see cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <param name="defaultTtlTimeSpan">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLive"/>
-        public T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
+        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/>
+        public T WithDefaultTimeToLiveInSeconds(TimeSpan defaultTtlTimeSpan)
         {
             if (defaultTtlTimeSpan == null)
             {
@@ -71,13 +71,13 @@ namespace Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// <see cref="CosmosContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// <see cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <param name="defaulTtlInSeconds">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLive"/>
-        public T WithDefaultTimeToLive(int defaulTtlInSeconds)
+        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/>
+        public T WithDefaultTimeToLiveInSeconds(int defaulTtlInSeconds)
         {
             if (defaulTtlInSeconds < -1)
             {
@@ -119,7 +119,7 @@ namespace Azure.Cosmos.Fluent
 
             if (this.defaultTimeToLive.HasValue)
             {
-                containerProperties.DefaultTimeToLive = this.defaultTimeToLive.Value;
+                containerProperties.DefaultTimeToLiveInSeconds = this.defaultTimeToLive.Value;
             }
 
             if (this.partitionKeyDefinitionVersion.HasValue)

@@ -71,9 +71,9 @@ namespace Azure.Cosmos
                 TextJsonConflictResolutionPolicyConverter.WritePropertyValues(writer, setting.conflictResolutionInternal, options);
             }
 
-            if (setting.DefaultTimeToLive.HasValue)
+            if (setting.DefaultTimeToLiveInSeconds.HasValue)
             {
-                writer.WriteNumber(JsonEncodedStrings.DefaultTimeToLive, setting.DefaultTimeToLive.Value);
+                writer.WriteNumber(JsonEncodedStrings.DefaultTimeToLive, setting.DefaultTimeToLiveInSeconds.Value);
             }
 
             if (setting.PartitionKey != null)
@@ -139,7 +139,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(JsonEncodedStrings.DefaultTimeToLive.EncodedUtf8Bytes))
             {
-                setting.DefaultTimeToLive = property.Value.GetInt32();
+                setting.DefaultTimeToLiveInSeconds = property.Value.GetInt32();
             }
             else if (property.NameEquals(JsonEncodedStrings.PartitionKey.EncodedUtf8Bytes))
             {
