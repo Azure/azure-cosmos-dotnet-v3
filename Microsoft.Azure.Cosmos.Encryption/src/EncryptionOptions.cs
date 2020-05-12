@@ -1,20 +1,15 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System.Collections.Generic;
 
     /// <summary>
-    /// Options around encryption / decryption of data.
-    /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
+    /// Options for encryption of data.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class EncryptionOptions
+    public sealed class EncryptionOptions
     {
         /// <summary>
         /// Identifier of the data encryption key to be used for encrypting the data in the request payload.
@@ -28,6 +23,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Algorithm to be used for encrypting the data in the request payload.
         /// </summary>
+        /// <remarks>
+        /// Authenticated Encryption algorithm based on https://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05
+        /// is the only one supported and is represented by "AEAes256CbcHmacSha256Randomized" value.
+        /// </remarks>
         public string EncryptionAlgorithm { get; set; }
 
         /// <summary>
@@ -35,6 +34,6 @@ namespace Microsoft.Azure.Cosmos
         /// Only top level paths are supported.
         /// Example of a path specification: /sensitive
         /// </summary>
-        public List<string> PathsToEncrypt { get; set; }
+        public IEnumerable<string> PathsToEncrypt { get; set; }
     }
 }

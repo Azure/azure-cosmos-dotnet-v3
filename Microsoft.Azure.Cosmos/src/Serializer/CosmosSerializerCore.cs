@@ -91,6 +91,16 @@ namespace Microsoft.Azure.Cosmos
             return serializer.ToStream<SqlQuerySpec>(input);
         }
 
+        internal CosmosSerializer GetCustomOrDefaultSerializer()
+        {
+            if (this.customSerializer != null)
+            {
+                return this.customSerializer;
+            }
+
+            return CosmosSerializerCore.propertiesSerializer;
+        }
+
         internal IEnumerable<T> FromFeedResponseStream<T>(
             Stream stream,
             ResourceType resourceType)

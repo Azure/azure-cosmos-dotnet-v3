@@ -5,9 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
@@ -29,42 +31,39 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            using (request.DiagnosticsContext.CreateScope("TransportHandler"))
+            try
             {
-                try
+                using (new ActivityScope(Guid.NewGuid()))
                 {
-                    using (new ActivityScope(Guid.NewGuid()))
-                    {
-                        DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
-                        return response.ToCosmosResponseMessage(request);
-                    }
+                    DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
+                    return response.ToCosmosResponseMessage(request);
                 }
-                //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request
-                catch (DocumentClientException ex)
+            }
+            //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request
+            catch (DocumentClientException ex)
+            {
+                return ex.ToCosmosResponseMessage(request);
+            }
+            catch (CosmosException ce)
+            {
+                return ce.ToCosmosResponseMessage(request);
+            }
+            catch (AggregateException ex)
+            {
+                // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
+                // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
+                // is removed this catch can be safely removed.
+                ResponseMessage errorMessage = AggregateExceptionConverter(ex, request);
+                if (errorMessage != null)
                 {
-                    return ex.ToCosmosResponseMessage(request);
+                    return errorMessage;
                 }
-                catch (CosmosException ce)
-                {
-                    return ce.ToCosmosResponseMessage(request);
-                }
-                catch (AggregateException ex)
-                {
-                    // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
-                    // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
-                    // is removed this catch can be safely removed.
-                    ResponseMessage errorMessage = AggregateExceptionConverter(ex, request);
-                    if (errorMessage != null)
-                    {
-                        return errorMessage;
-                    }
 
-                    throw;
-                }
+                throw;
             }
         }
 
-        internal Task<DocumentServiceResponse> ProcessMessageAsync(
+        internal async Task<DocumentServiceResponse> ProcessMessageAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -87,13 +86,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
-            if (request.OperationType == OperationType.Upsert)
+            using (request.DiagnosticsContext.CreateScope(storeProxy.GetType().FullName))
             {
-                return this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
-            }
-            else
-            {
-                return storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+                if (request.OperationType == OperationType.Upsert)
+                {
+                    return await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
+                }
+                else
+                {
+                    return await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+                }
             }
         }
 
