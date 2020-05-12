@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     streamPayload = await EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOption,
+                        encryptionItemRequestOptions.EncryptionOptions,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     streamPayload = await EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOption,
+                        encryptionItemRequestOptions.EncryptionOptions,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     streamPayload = await EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOption,
+                        encryptionItemRequestOptions.EncryptionOptions,
                         diagnosticsContext,
                         cancellationToken);
 

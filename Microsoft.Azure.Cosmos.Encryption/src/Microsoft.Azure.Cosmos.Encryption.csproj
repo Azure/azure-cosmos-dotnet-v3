@@ -7,10 +7,7 @@
     <IsPreview>true</IsPreview>
     
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
-    <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
-    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
-    <Version Condition=" '$(VersionSuffix)' == '' ">$(EncryptionPreviewVersion)</Version>
-    <Version Condition=" '$(VersionSuffix)' != '' ">$(EncryptionPreviewVersion)-$(VersionSuffix)</Version>
+    <Version>$(EncryptionVersion)</Version>
     <Company>Microsoft Corporation</Company>
     <Authors>Microsoft</Authors>
     <Description>This library provides an implementation for client-side encryption for Azure Cosmos's SQL API. For more information, refer to https://aka.ms/CosmosClientEncryption</Description>
@@ -25,7 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.9.0-preview2" />  
+     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.9.0-preview3" />  
   </ItemGroup>
 
   <PropertyGroup>
