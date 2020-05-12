@@ -25,7 +25,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.9.0-preview2" />  
+     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.9.0-preview3" />  
   </ItemGroup>
 
   <PropertyGroup>
