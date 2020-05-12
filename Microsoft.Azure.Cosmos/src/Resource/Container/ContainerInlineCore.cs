@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangesStreamHandler onChangesDelegate)
         {
-            return this.container.GetChangeFeedProcessorBuilder(processorName, onChangesDelegate);
+            return base.GetChangeFeedProcessorBuilder(processorName, onChangesDelegate);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName,

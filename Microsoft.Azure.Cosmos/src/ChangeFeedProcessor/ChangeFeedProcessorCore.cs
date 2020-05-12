@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedProcessorCore : ChangeFeedProcessor
     {
         private readonly ChangeFeedObserverFactory observerFactory;
-        private ContainerCore leaseContainer;
+        private ContainerInternal leaseContainer;
         private string monitoredContainerRid;
         private string instanceName;
         private ContainerInternal monitoredContainer;
