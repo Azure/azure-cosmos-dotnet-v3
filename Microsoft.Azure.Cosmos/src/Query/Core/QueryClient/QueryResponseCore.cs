@@ -5,7 +5,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -19,41 +22,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 #else
     internal
 #endif
-    struct QueryResponseCore
+    readonly struct QueryResponseCore
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
         internal static readonly string EmptyGuidString = Guid.Empty.ToString();
-        internal static readonly IReadOnlyCollection<QueryPageDiagnostics> EmptyDiagnostics = new List<QueryPageDiagnostics>();
-
+        
         private QueryResponseCore(
             IReadOnlyList<CosmosElement> result,
             bool isSuccess,
             HttpStatusCode statusCode,
             double requestCharge,
             string activityId,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
-            string errorMessage,
+            CosmosException cosmosException,
             SubStatusCodes? subStatusCode)
         {
             this.IsSuccess = isSuccess;
             this.CosmosElements = result;
             this.StatusCode = statusCode;
             this.ActivityId = activityId;
-            this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.ResponseLengthBytes = responseLengthBytes;
             this.RequestCharge = requestCharge;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.ContinuationToken = continuationToken;
-            this.ErrorMessage = errorMessage;
+            this.CosmosException = cosmosException;
             this.SubStatusCode = subStatusCode;
         }
 
         internal IReadOnlyList<CosmosElement> CosmosElements { get; }
 
-        internal string ErrorMessage { get; }
+        internal CosmosException CosmosException { get; }
 
         internal SubStatusCodes? SubStatusCode { get; }
 
@@ -67,8 +67,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal string ActivityId { get; }
 
-        internal IReadOnlyCollection<QueryPageDiagnostics> Diagnostics { get; }
-
         internal long ResponseLengthBytes { get; }
 
         internal bool IsSuccess { get; }
@@ -79,8 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string activityId,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
-            string continuationToken,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
+            string continuationToken)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                result: result,
@@ -88,11 +85,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                statusCode: HttpStatusCode.OK,
                requestCharge: requestCharge,
                activityId: activityId,
-               diagnostics: diagnostics,
                responseLengthBytes: responseLengthBytes,
                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                continuationToken: continuationToken,
-               errorMessage: null,
+               cosmosException: null,
                subStatusCode: null);
 
             return cosmosQueryResponse;
@@ -101,10 +97,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         internal static QueryResponseCore CreateFailure(
             HttpStatusCode statusCode,
             SubStatusCodes? subStatusCodes,
-            string errorMessage,
+            CosmosException cosmosException,
             double requestCharge,
-            string activityId,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
+            string activityId)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                 result: QueryResponseCore.EmptyList,
@@ -112,11 +107,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                 statusCode: statusCode,
                 requestCharge: requestCharge,
                 activityId: activityId,
-                diagnostics: diagnostics,
                 responseLengthBytes: 0,
                 disallowContinuationTokenMessage: null,
                 continuationToken: null,
-                errorMessage: errorMessage,
+                cosmosException: cosmosException,
                 subStatusCode: subStatusCodes);
 
             return cosmosQueryResponse;

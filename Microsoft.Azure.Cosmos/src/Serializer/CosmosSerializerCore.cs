@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// This is an interface to allow a custom serializer to be used by the CosmosClient
@@ -92,6 +91,16 @@ namespace Microsoft.Azure.Cosmos
             return serializer.ToStream<SqlQuerySpec>(input);
         }
 
+        internal CosmosSerializer GetCustomOrDefaultSerializer()
+        {
+            if (this.customSerializer != null)
+            {
+                return this.customSerializer;
+            }
+
+            return CosmosSerializerCore.propertiesSerializer;
+        }
+
         internal IEnumerable<T> FromFeedResponseStream<T>(
             Stream stream,
             ResourceType resourceType)
@@ -135,11 +144,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
 #if DEBUG
+            // This check is used to stop internal developers from deserializing an internal with the user's serialier that doesn't know how to materialize said type.
             string clientAssemblyName = typeof(DatabaseProperties).Assembly.GetName().Name;
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
-            if (string.Equals(inputAssemblyName, clientAssemblyName) ||
-                string.Equals(inputAssemblyName, directAssemblyName)) 
+            bool inputIsClientOrDirect = string.Equals(inputAssemblyName, clientAssemblyName) || string.Equals(inputAssemblyName, directAssemblyName);
+            bool typeIsWhiteListed = inputType == typeof(Document);
+
+            if (!typeIsWhiteListed && inputIsClientOrDirect)
             {
                 throw new ArgumentException($"User serializer is being used for internal type:{inputType.FullName}.");
             }

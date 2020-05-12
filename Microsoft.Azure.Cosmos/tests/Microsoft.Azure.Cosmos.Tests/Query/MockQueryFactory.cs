@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -149,13 +150,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                           It.IsAny<Uri>(),
                           ResourceType.Document,
                           OperationType.Query,
+                          It.IsAny<Guid>(),
                           It.IsAny<QueryRequestOptions>(),
+                          It.IsAny<Action<QueryPageDiagnostics>>(),
                           It.Is<SqlQuerySpec>(specInput => MockItemProducerFactory.IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                           previousContinuationToken,
                           It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, containerRid)),
                           It.IsAny<bool>(),
                           maxPageSize,
-                          It.IsAny<SchedulingStopwatch>(),
                           cancellationTokenForMocks))
                           .Returns(Task.FromResult(queryResponse));
 
@@ -177,13 +179,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                          It.IsAny<Uri>(),
                          ResourceType.Document,
                          OperationType.Query,
+                         It.IsAny<Guid>(),
                          It.IsAny<QueryRequestOptions>(),
+                         It.IsAny<Action<QueryPageDiagnostics>>(),
                          It.Is<SqlQuerySpec>(specInput => MockItemProducerFactory.IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                          previousContinuationToken,
                          It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, containerRid)),
                          It.IsAny<bool>(),
                          maxPageSize,
-                         It.IsAny<SchedulingStopwatch>(),
                          cancellationTokenForMocks))
                          .Returns(Task.FromResult(querySplitResponse));
 
@@ -216,6 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 correlatedActivityId: Guid.NewGuid(),
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
+                diagnosticsContext: new CosmosDiagnosticsContextCore(),
                 containerResourceId: DefaultCollectionRid);
         }
 

@@ -1030,7 +1030,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionPolicy = connectionPolicy ?? ConnectionPolicy.Default;
 
 #if !NETSTANDARD16
-            ServicePoint servicePoint = ServicePointManager.FindServicePoint(this.ServiceEndpoint);
+            ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(this.ServiceEndpoint);
             servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
 #endif
 
@@ -1117,7 +1117,23 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
+            GatewayStoreModel gatewayStoreModel;
+            if (this.ConnectionPolicy.HttpClientFactory != null)
+            {
+                gatewayStoreModel = new GatewayStoreModel(
+                    this.GlobalEndpointManager,
+                    this.sessionContainer,
+                    this.ConnectionPolicy.RequestTimeout,
+                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                    this.eventSource,
+                    this.serializerSettings,
+                    this.ConnectionPolicy.UserAgentContainer,
+                    this.ApiType,
+                    this.ConnectionPolicy.HttpClientFactory);
+            }
+            else
+            {
+                gatewayStoreModel = new GatewayStoreModel(
                     this.GlobalEndpointManager,
                     this.sessionContainer,
                     this.ConnectionPolicy.RequestTimeout,
@@ -1127,6 +1143,7 @@ namespace Microsoft.Azure.Cosmos
                     this.ConnectionPolicy.UserAgentContainer,
                     this.ApiType,
                     this.httpMessageHandler);
+            }
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -6705,7 +6722,8 @@ namespace Microsoft.Azure.Cosmos
             if (resourceType == ResourceType.Offer ||
                 (resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript) ||
                 resourceType == ResourceType.PartitionKeyRange ||
-                resourceType == ResourceType.Snapshot)
+                resourceType == ResourceType.Snapshot ||
+                resourceType == ResourceType.ClientEncryptionKey)
             {
                 return this.GatewayStoreModel;
             }
@@ -6800,6 +6818,18 @@ namespace Microsoft.Azure.Cosmos
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
         {
+            this.AddressResolver = new GlobalAddressResolver(
+                this.GlobalEndpointManager,
+                this.ConnectionPolicy.ConnectionProtocol,
+                this,
+                this.collectionCache,
+                this.partitionKeyRangeCache,
+                this.ConnectionPolicy.UserAgentContainer,
+                this.accountServiceConfiguration,
+                this.httpMessageHandler,
+                this.ConnectionPolicy,
+                this.ApiType);
+
             // Check if we have a store client factory in input and if we do, do not initialize another store client
             // The purpose is to reuse store client factory across all document clients inside compute gateway
             if (storeClientFactory != null)
@@ -6828,7 +6858,9 @@ namespace Microsoft.Azure.Cosmos
                     receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
                     sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
                     enableCpuMonitor: this.enableCpuMonitor,
-                    retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration());
+                    retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
+                    enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
+                    addressResolver: this.AddressResolver);
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6838,18 +6870,6 @@ namespace Microsoft.Azure.Cosmos
                 this.storeClientFactory = newClientFactory;
                 this.isStoreClientFactoryCreatedInternally = true;
             }
-
-            this.AddressResolver = new GlobalAddressResolver(
-                this.GlobalEndpointManager,
-                this.ConnectionPolicy.ConnectionProtocol,
-                this,
-                this.collectionCache,
-                this.partitionKeyRangeCache,
-                this.ConnectionPolicy.UserAgentContainer,
-                this.accountServiceConfiguration,
-                this.httpMessageHandler,
-                this.ConnectionPolicy,
-                this.ApiType);
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }

@@ -9,8 +9,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Reflection;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -586,9 +588,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void SystemStringTest()
         {
             int systemStringId = 0;
-            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out string systemString))
+            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
-                string input = "\"" + systemString + "\"";
+                string input = "\"" + systemString.Utf16String + "\"";
                 byte[] binaryInput =
                 {
                     BinaryFormat,
@@ -597,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                 JsonToken[] expectedTokens =
                 {
-                    JsonToken.String(systemString)
+                    JsonToken.String(systemString.Utf16String)
                 };
 
                 this.VerifyReader(input, expectedTokens);
@@ -664,7 +666,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             for (int i = 0; i < OneByteCount + 1; i++)
             {
                 string userEncodedString = "a" + i.ToString();
-                Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes(userEncodedString).AsSpan(), out int index));
+                Assert.IsTrue(jsonStringDictionary.TryAddString(Utf8Span.TranscodeUtf16(userEncodedString), out int index));
                 Assert.AreEqual(i, index);
             }
 
@@ -1174,6 +1176,54 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.VerifyReader(binaryInput, expectedTokens);
         }
 
+        [TestMethod]
+        [Owner("brchon")]
+        public void ExtendedTypeArrayTest()
+        {
+            string input = @"[I1,H2,L3,LL4,UL5,S6,D7,BbilGgyjThtuSzs5Md/5Dew==,G00000000-0000-0000-0000-000000000000]";
+
+            List<byte> bytes = new List<byte>();
+            bytes.Add(BinaryFormat);
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Array1ByteLength);
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Int8);
+            bytes.Add((byte)1);
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Int16);
+            bytes.AddRange(BitConverter.GetBytes((short)2));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Int32);
+            bytes.AddRange(BitConverter.GetBytes((int)3));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Int64);
+            bytes.AddRange(BitConverter.GetBytes((long)4));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.UInt32);
+            bytes.AddRange(BitConverter.GetBytes((uint)5));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Float32);
+            bytes.AddRange(BitConverter.GetBytes((float)6));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Float64);
+            bytes.AddRange(BitConverter.GetBytes((double)7));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Binary1ByteLength);
+            bytes.Add((byte)Convert.FromBase64String("bilGgyjThtuSzs5Md/5Dew==").Length);
+            bytes.AddRange(Convert.FromBase64String("bilGgyjThtuSzs5Md/5Dew=="));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Guid);
+            bytes.AddRange(Guid.Empty.ToByteArray());
+            bytes.Insert(2, (byte)(bytes.Count - 2));
+
+            JsonToken[] expectedTokens =
+            {
+                JsonToken.ArrayStart(),
+                JsonToken.Int8(1),
+                JsonToken.Int16(2),
+                JsonToken.Int32(3),
+                JsonToken.Int64(4),
+                JsonToken.UInt32(5),
+                JsonToken.Float32(6),
+                JsonToken.Float64(7),
+                JsonToken.Binary(Convert.FromBase64String("bilGgyjThtuSzs5Md/5Dew==")),
+                JsonToken.Guid(Guid.Empty),
+                JsonToken.ArrayEnd(),
+            };
+
+            this.VerifyReader(input, expectedTokens);
+            this.VerifyReader(bytes.ToArray(), expectedTokens);
+        }
         #endregion
         #region Escaping
         [TestMethod]
@@ -1443,8 +1493,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
-            Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes("GlossDiv").AsSpan(), out int index1));
-            Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes("title").AsSpan(), out int index2));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("GlossDiv", out int index1));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("title", out int index2));
             this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 
@@ -2275,7 +2325,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 Encoding.UTF8);
         }
 
-        private void VerifyReader(byte[] input, JsonToken[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
+        private void VerifyReader(ReadOnlyMemory<byte> input, JsonToken[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
         {
             // Test binary reader created with the array API
             this.VerifyReader(() => JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);

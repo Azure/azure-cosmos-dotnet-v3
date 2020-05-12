@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// This class is used to get access to different client level operations without directly referencing the client object.
     /// This makes it easy to pass a reference to the client, and it makes it easy to mock for unit tests.
     /// </summary>
-    internal abstract class CosmosClientContext
+    internal abstract class CosmosClientContext : IDisposable
     {
         /// <summary>
         /// The Cosmos client that is used for the request
@@ -29,13 +29,16 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosSerializerCore SerializerCore { get; }
 
-        internal abstract CosmosResponseFactory ResponseFactory { get; }
+        internal abstract CosmosResponseFactoryInternal ResponseFactory { get; }
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 
         internal abstract CosmosClientOptions ClientOptions { get; }
 
         internal abstract string UserAgent { get; }
+
+        internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
+            ContainerInternal container);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -64,12 +67,12 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsScope,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -81,11 +84,11 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsScope,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -97,12 +100,14 @@ namespace Microsoft.Azure.Cosmos
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,
-           ContainerCore cosmosContainerCore,
+           ContainerInternal cosmosContainerCore,
            PartitionKey? partitionKey,
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,
-           CosmosDiagnosticsContext diagnosticsScope,
+           CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
+
+        public abstract void Dispose();
     }
 }

@@ -139,7 +139,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 matched,
                 $@"
                     Expected: {baselineTextSuffix},
-                    Actual:   {outputTextSuffix}");
+                    Actual:   {outputTextSuffix},
+                    OutputPath: {outputPath},
+                    BaselinePath: {baselinePath}");
         }
 
         /// <summary>
@@ -153,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         /// <summary>
         /// Utility struct that just holds together an input and output together to make a result.
         /// </summary>
-        private struct BaselineTestResult
+        private readonly struct BaselineTestResult
         {
             /// <summary>
             /// Initializes a new instance of the BaselineTestResult struct.
@@ -214,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             private JsonSerializer serializer;
             public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
-                serializer = JsonSerializer.Create(jsonSerializerSettings);
+                this.serializer = JsonSerializer.Create(jsonSerializerSettings);
             }
 
             public override T FromStream<T>(Stream stream)
@@ -223,14 +225,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 {
                     if (typeof(Stream).IsAssignableFrom(typeof(T)))
                     {
-                        return (T)(object)(stream);
+                        return (T)(object)stream;
                     }
 
                     using (StreamReader sr = new StreamReader(stream))
                     {
                         using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
                         {
-                            return serializer.Deserialize<T>(jsonTextReader);
+                            return this.serializer.Deserialize<T>(jsonTextReader);
                         }
                     }
                 }
@@ -244,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                     using (JsonWriter writer = new JsonTextWriter(streamWriter))
                     {
                         writer.Formatting = Newtonsoft.Json.Formatting.None;
-                        serializer.Serialize(writer, input);
+                        this.serializer.Serialize(writer, input);
                         writer.Flush();
                         streamWriter.Flush();
                     }

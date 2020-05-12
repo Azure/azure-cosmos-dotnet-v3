@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private ContainerCore leaseContainer;
         private string monitoredContainerRid;
         private string instanceName;
-        private ContainerCore monitoredContainer;
+        private ContainerInternal monitoredContainer;
         private PartitionManager partitionManager;
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
@@ -37,12 +37,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            ContainerCore leaseContainer,
+            ContainerInternal leaseContainer,
             string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            ContainerCore monitoredContainer)
+            ContainerInternal monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (customDocumentServiceLeaseStoreManager == null && leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         internal static async Task<DocumentServiceLeaseStoreManager> InitializeLeaseStoreManagerAsync(
             DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager,
-            ContainerCore leaseContainer,
+            ContainerInternal leaseContainer,
             string leaseContainerPrefix,
             string instanceName)
         {

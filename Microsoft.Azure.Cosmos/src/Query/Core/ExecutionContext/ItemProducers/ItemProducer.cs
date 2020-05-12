@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Documents;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
 
@@ -45,11 +47,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         /// Once a document producer tree finishes fetching document they should call on this function so that the higher level execution context can aggregate the number of documents fetched, the request charge, and the query metrics.
         /// </summary>
         private readonly ProduceAsyncCompleteDelegate produceAsyncCompleteCallback;
-
-        /// <summary>
-        /// Keeps track of when a fetch happens and ends to calculate scheduling metrics.
-        /// </summary>
-        private readonly SchedulingStopwatch fetchSchedulingMetrics;
 
         /// <summary>
         /// Equality comparer to determine if you have come across a distinct document according to the sort order.
@@ -135,9 +132,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 this.IsActive = true;
             }
 
-            this.fetchSchedulingMetrics = new SchedulingStopwatch();
-            this.fetchSchedulingMetrics.Ready();
-
             this.testFlags = testFlags;
 
             this.HasMoreResults = true;
@@ -146,7 +140,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         public delegate void ProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 
@@ -278,7 +271,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             this.PartitionKeyRange.Id),
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
                     pageSize: pageSize,
-                    schedulingStopwatch: this.fetchSchedulingMetrics,
                     cancellationToken: token);
 
                 if ((this.testFlags != null) && this.testFlags.SimulateThrottles)
@@ -289,10 +281,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                         feedResponse = QueryResponseCore.CreateFailure(
                             statusCode: (System.Net.HttpStatusCode)429,
                             subStatusCodes: null,
-                            errorMessage: "Request Rate Too Large",
+                            cosmosException: CosmosExceptionFactory.CreateThrottledException("Request Rate Too Large"),
                             requestCharge: 0,
-                            activityId: QueryResponseCore.EmptyGuidString,
-                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            activityId: QueryResponseCore.EmptyGuidString);
                     }
                 }
 
@@ -308,8 +299,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             activityId: QueryResponseCore.EmptyGuidString,
                             responseLengthBytes: 0,
                             disallowContinuationTokenMessage: null,
-                            continuationToken: this.BackendContinuationToken,
-                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            continuationToken: this.BackendContinuationToken);
                     }
                 }
 
@@ -332,14 +322,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 this.produceAsyncCompleteCallback(
                     feedResponse.CosmosElements.Count,
                     feedResponse.RequestCharge,
-                    feedResponse.Diagnostics,
                     feedResponse.ResponseLengthBytes,
                     token);
 
             }
             finally
             {
-                this.fetchSchedulingMetrics.Stop();
                 this.fetchSemaphore.Release();
             }
         }

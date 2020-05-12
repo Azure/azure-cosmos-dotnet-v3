@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary> 
     internal sealed class CosmosLinqQueryProvider : IQueryProvider
     {
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly CosmosQueryClientCore queryClient;
-        private readonly CosmosResponseFactory responseFactory;
+        private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution;
         private readonly Action<IQueryable> onExecuteScalarQueryCallback;
@@ -26,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosSerializationOptions serializationOptions;
 
         public CosmosLinqQueryProvider(
-           ContainerCore container,
-           CosmosResponseFactory responseFactory,
+           ContainerInternal container,
+           CosmosResponseFactoryInternal responseFactory,
            CosmosQueryClientCore queryClient,
            string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,

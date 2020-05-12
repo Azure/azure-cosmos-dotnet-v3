@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -107,6 +108,39 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
         {
             return new EagerCosmosObject(properties);
+        }
+
+        public static new CosmosObject CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            return CosmosElement.CreateFromBuffer<CosmosObject>(buffer);
+        }
+
+        public static new CosmosObject Parse(string json)
+        {
+            return CosmosElement.Parse<CosmosObject>(json);
+        }
+
+        public static bool TryCreateFromBuffer(ReadOnlyMemory<byte> buffer, out CosmosObject cosmosObject)
+        {
+            return CosmosElement.TryCreateFromBuffer<CosmosObject>(buffer, out cosmosObject);
+        }
+
+        public static bool TryParse(string json, out CosmosObject cosmosObject)
+        {
+            return CosmosElement.TryParse<CosmosObject>(json, out cosmosObject);
+        }
+
+        public static new class Monadic
+        {
+            public static TryCatch<CosmosObject> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+            {
+                return CosmosElement.Monadic.CreateFromBuffer<CosmosObject>(buffer);
+            }
+
+            public static TryCatch<CosmosObject> Parse(string json)
+            {
+                return CosmosElement.Monadic.Parse<CosmosObject>(json);
+            }
         }
     }
 #if INTERNAL

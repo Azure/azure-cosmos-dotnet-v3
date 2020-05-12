@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
             Headers responseMessageHeaders,
             CosmosDiagnostics diagnostics)
         {
-            this.Count = cosmosArray.Count;
+            this.Count = cosmosArray != null ? cosmosArray.Count : 0;
             this.Headers = responseMessageHeaders;
             this.StatusCode = httpStatusCode;
             this.Diagnostics = diagnostics;
@@ -51,7 +51,11 @@ namespace Microsoft.Azure.Cosmos
         {
             using (responseMessage)
             {
-                responseMessage.EnsureSuccessStatusCode();
+                // ReadFeed can return 304 on some scenarios (Change Feed for example)
+                if (responseMessage.StatusCode != HttpStatusCode.NotModified)
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                }
 
                 CosmosArray cosmosArray = null;
                 if (responseMessage.Content != null)

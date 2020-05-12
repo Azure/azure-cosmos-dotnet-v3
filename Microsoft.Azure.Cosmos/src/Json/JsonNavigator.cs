@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Base abstract class for JSON navigators.
@@ -39,6 +40,11 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonStringDictionary jsonStringDictionary = null,
             bool skipValidation = false)
         {
+            if (buffer.IsEmpty)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(buffer)} can not be empty.");
+            }
+
             // Examine the first buffer byte to determine the serialization format
             byte firstByte = buffer.Span[0];
 
@@ -60,12 +66,10 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract JsonNodeType GetNodeType(IJsonNavigatorNode node);
 
         /// <inheritdoc />
-        public abstract Number64 GetNumberValue(IJsonNavigatorNode numberNode);
+        public abstract Number64 GetNumber64Value(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetBufferedUtf8StringValue(
-            IJsonNavigatorNode stringNode,
-            out ReadOnlyMemory<byte> bufferedStringValue);
+        public abstract bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Memory bufferedStringValue);
 
         /// <inheritdoc />
         public abstract string GetStringValue(IJsonNavigatorNode stringNode);
@@ -98,9 +102,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract ReadOnlyMemory<byte> GetBinaryValue(IJsonNavigatorNode binaryNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetBufferedBinaryValue(
-            IJsonNavigatorNode binaryNode,
-            out ReadOnlyMemory<byte> bufferedBinaryValue);
+        public abstract bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out ReadOnlyMemory<byte> bufferedBinaryValue);
 
         /// <inheritdoc />
         public abstract int GetArrayItemCount(IJsonNavigatorNode arrayNode);

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
+    internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
 
@@ -111,6 +111,24 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             IAddressResolver resolver = this.GetAddressResolver(request);
             return resolver.ResolveAsync(request, forceRefresh, cancellationToken);
+        }
+
+        public async Task UpdateAsync(
+            IReadOnlyList<AddressCacheToken> addressCacheTokens,
+            CancellationToken cancellationToken)
+        {
+            List<Task> tasks = new List<Task>();
+
+            foreach (AddressCacheToken cacheToken in addressCacheTokens)
+            {
+                EndpointCache endpointCache;
+                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out endpointCache))
+                {
+                    tasks.Add(endpointCache.AddressCache.UpdateAsync(cacheToken.PartitionKeyRangeIdentity, cancellationToken));
+                }
+            }
+
+            await Task.WhenAll(tasks);
         }
 
         /// <summary>

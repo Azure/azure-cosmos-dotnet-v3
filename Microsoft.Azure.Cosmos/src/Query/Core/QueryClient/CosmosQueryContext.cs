@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using OperationType = Documents.OperationType;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
     using ResourceType = Documents.ResourceType;
@@ -49,13 +51,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.CorrelatedActivityId = (correlatedActivityId == Guid.Empty) ? throw new ArgumentOutOfRangeException(nameof(correlatedActivityId)) : correlatedActivityId;
         }
 
+        internal abstract IDisposable CreateDiagnosticScope(string name);
+
         internal abstract Task<QueryResponseCore> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
-            SchedulingStopwatch schedulingStopwatch,
+            CancellationToken cancellationToken);
+
+        internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            Documents.ResourceType resourceType,
+            Documents.OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKey? partitionKey,
+            string supportedQueryFeatures,
             CancellationToken cancellationToken);
     }
 }

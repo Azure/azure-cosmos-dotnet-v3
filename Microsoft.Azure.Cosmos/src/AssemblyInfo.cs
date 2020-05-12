@@ -17,7 +17,10 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table.Tests" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table.Tests" + AssemblyKeys.TestPublicKey)]
-
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Encryption.KeyVault" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Encryption.KeyVault" + AssemblyKeys.TestPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Encryption" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Encryption" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Tests" + AssemblyKeys.ProductPublicKey)]

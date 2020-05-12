@@ -215,9 +215,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             public string id { get; set; }
         }
 
-        private static ContainerCore GetMockedContainer(string containerName = null)
+        private static ContainerInternal GetMockedContainer(string containerName = null)
         {
-            Mock<ContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
+            Mock<ContainerInternal> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             mockedContainer.Setup(c => c.ClientContext).Returns(ChangeFeedProcessorCoreTests.GetMockedClientContext());
             return mockedContainer.Object;
         }

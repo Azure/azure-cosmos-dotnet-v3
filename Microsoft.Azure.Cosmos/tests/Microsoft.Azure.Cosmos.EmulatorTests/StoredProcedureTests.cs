@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
@@ -211,6 +212,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CollectionAssert.AreEquivalent(sprocIds, readSprocIds);
             }
+        }
+
+        [TestMethod]
+        public async Task ExecuteNonePkTest()
+        {
+            // Create a container in v2 without a partition key
+            string containerId = "SprocPkNone" + Guid.NewGuid().ToString();
+            ContainerInternal containerNonePk = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(this.database, containerId);
+            Scripts scriptsNonePk = containerNonePk.Scripts;
+
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function() {
+                var context = getContext();
+                var response = context.getResponse();
+                var collection = context.getCollection();
+                var collectionLink = collection.getSelfLink();
+
+                var filterQuery = 'SELECT * FROM c';
+
+                collection.queryDocuments(collectionLink, filterQuery, { },
+                    function(err, documents) {
+                        response.setBody(documents);
+                    }
+                );
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await scriptsNonePk.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await containerNonePk.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            StoredProcedureProperties storedProcedure = storedProcedureResponse;
+            StoredProcedureExecuteResponse<JArray> sprocResponse = await scriptsNonePk.ExecuteStoredProcedureAsync<JArray>(
+                sprocId,
+                Cosmos.PartitionKey.None,
+                parameters: null);
+
+            Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
+
+            JArray jArray = sprocResponse;
+            Assert.AreEqual(1, jArray.Count);
+            Assert.AreEqual(testPartitionId, jArray[0]["id"]);
+
+            StoredProcedureResponse deleteResponse = await scriptsNonePk.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
         [TestMethod]

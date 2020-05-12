@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -46,12 +47,14 @@ namespace Microsoft.Azure.Cosmos
         public ItemBatchOperation(
             OperationType operationType,
             int operationIndex,
+            ContainerInternal containerCore,
             string id = null,
             Stream resourceStream = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
+            this.ContainerInternal = containerCore;
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
@@ -70,7 +73,9 @@ namespace Microsoft.Azure.Cosmos
 
         public int OperationIndex { get; internal set; }
 
-        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
+        internal ContainerInternal ContainerInternal { get; }
+
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
         internal string PartitionKeyJson { get; set; }
 
@@ -160,6 +165,18 @@ namespace Microsoft.Azure.Cosmos
                 {
                     string indexingDirectiveString = IndexingDirectiveStrings.FromIndexingDirective(options.IndexingDirective.Value);
                     r = writer.WriteString("indexingDirective", indexingDirectiveString);
+                    if (r != Result.Success)
+                    {
+                        return r;
+                    }
+                }
+
+                if (ItemRequestOptions.ShouldSetNoContentHeader(
+                    options.EnableContentResponseOnWrite,
+                    options.EnableContentResponseOnRead,
+                    operation.OperationType))
+                {
+                    r = writer.WriteBool("minimalReturnPreference", true);
                     if (r != Result.Success)
                     {
                         return r;
@@ -372,9 +389,10 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             int operationIndex,
             T resource,
+            ContainerInternal containerCore,
             string id = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
-            : base(operationType, operationIndex, id: id, requestOptions: requestOptions)
+            : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;
         }
@@ -394,7 +412,7 @@ namespace Microsoft.Azure.Cosmos
                 return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 
-            return Task.FromResult(true);
+            return Task.CompletedTask;
         }
     }
 }

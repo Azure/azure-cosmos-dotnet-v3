@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -431,6 +432,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
 
+        [TestMethod]
+        public async Task AnalyticalContainerDefaultsTest()
+        {
+            string containerId = Guid.NewGuid().ToString();
+
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            Assert.IsNull(response.Resource.AnalyticalStoreTimeToLiveInSeconds);
+
+            await response.Container.DeleteContainerAsync();
+        }
+
+        [Ignore] // Lack of emulator support
+        [TestMethod]
+        public async Task AnalyticalContainerCustomTest()
+        {
+            string containerId = Guid.NewGuid().ToString();
+            int analyticalTtlInSec = (int)TimeSpan.FromDays(6 * 30).TotalSeconds; // 6 months
+            int defaultTtl = (int)TimeSpan.FromDays(30).TotalSeconds; // 1 month
+            ContainerProperties cpInput = new ContainerProperties()
+            {
+                Id = containerId,
+                PartitionKeyPath = "/id",
+                DefaultTimeToLive = defaultTtl,
+                AnalyticalStoreTimeToLiveInSeconds = analyticalTtlInSec,
+            };
+
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cpInput);
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            Assert.IsNotNull(response.Resource.AnalyticalStoreTimeToLiveInSeconds);
+            Assert.AreEqual(analyticalTtlInSec, response.Resource.AnalyticalStoreTimeToLiveInSeconds);
+            Assert.AreEqual(defaultTtl, response.Resource.DefaultTimeToLive);
+
+            await response.Container.DeleteContainerAsync();
+        }
 
         [TestMethod]
         public async Task CreateHashV1Container()
@@ -829,7 +864,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(readThroughput);
 
             await container.ReplaceThroughputAsync(readThroughput.Value + 1000);
-            int? replaceThroughput = await ((ContainerCore)(ContainerInlineCore)container).ReadThroughputAsync();
+            int? replaceThroughput = await ((ContainerInternal)(ContainerInlineCore)container).ReadThroughputAsync();
             Assert.IsNotNull(replaceThroughput);
             Assert.AreEqual(readThroughput.Value + 1000, replaceThroughput);
 
@@ -853,7 +888,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer));
 
             int databaseThroughput = 10000;
-            Cosmos.Database databaseNoThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), null);
+            Cosmos.Database databaseNoThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), throughput: null);
             Cosmos.Database databaseWithThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), databaseThroughput, null);
 
 
@@ -1024,7 +1059,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens.Length);
             Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0]);
 
-            ContainerCore containerCore = containerResponse.Container as ContainerInlineCore;
+            ContainerInternal containerCore = containerResponse.Container as ContainerInlineCore;
             Assert.IsNotNull(containerCore);
             Assert.IsNotNull(containerCore.LinkUri);
             Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));
