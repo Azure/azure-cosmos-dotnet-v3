@@ -34,11 +34,7 @@
     <NoWarn>NU5125</NoWarn>
     <ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
     <ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
-    <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
-    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersionSuffix)</VersionSuffix>
     <Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
-    <Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
-    <FileVersion>$(ClientVersion)</FileVersion>
   </PropertyGroup>
 
   <!--The $(ProjectDir) is used to give an absolute location so the files can still be found when other projects import props file -->
