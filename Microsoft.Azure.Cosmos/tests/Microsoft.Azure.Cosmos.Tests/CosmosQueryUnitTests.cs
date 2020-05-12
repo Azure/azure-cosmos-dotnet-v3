@@ -362,6 +362,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics(
+                    Guid.NewGuid(),
                     "0",
                     "SomeQueryMetricText",
                     "SomeIndexUtilText",

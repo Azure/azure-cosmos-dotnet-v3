@@ -233,6 +233,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<Uri>(),
                         ResourceType.Document,
                         OperationType.Query,
+                        It.IsAny<Guid>(),
                         It.IsAny<QueryRequestOptions>(),
                         It.IsAny<Action<QueryPageDiagnostics>>(),
                         It.Is<SqlQuerySpec>(specInput => IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),

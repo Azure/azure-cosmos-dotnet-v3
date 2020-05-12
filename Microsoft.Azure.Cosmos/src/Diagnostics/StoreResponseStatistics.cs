@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class StoreResponseStatistics : CosmosDiagnosticsInternal
     {
+        public readonly DateTime? RequestStartTime;
         public readonly DateTime RequestResponseTime;
         public readonly StoreResult StoreResult;
         public readonly ResourceType RequestResourceType;
@@ -16,12 +17,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public readonly bool IsSupplementalResponse;
 
         public StoreResponseStatistics(
+            DateTime? requestStartTime,
             DateTime requestResponseTime,
             StoreResult storeResult,
             ResourceType resourceType,
             OperationType operationType,
             Uri locationEndpoint)
         {
+            this.RequestStartTime = requestStartTime;
             this.RequestResponseTime = requestResponseTime;
             this.StoreResult = storeResult;
             this.RequestResourceType = resourceType;

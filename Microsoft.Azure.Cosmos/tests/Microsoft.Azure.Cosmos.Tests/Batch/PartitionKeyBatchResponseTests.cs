@@ -48,7 +48,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
-                false,
                 CancellationToken.None);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
@@ -104,7 +103,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
-                false,
                 CancellationToken.None);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
