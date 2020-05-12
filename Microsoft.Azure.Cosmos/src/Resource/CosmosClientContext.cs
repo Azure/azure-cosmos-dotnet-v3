@@ -29,15 +29,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosSerializerCore SerializerCore { get; }
 
-        internal abstract CosmosResponseFactory ResponseFactory { get; }
+        internal abstract CosmosResponseFactoryInternal ResponseFactory { get; }
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 
         internal abstract CosmosClientOptions ClientOptions { get; }
 
         internal abstract string UserAgent { get; }
-
-        internal abstract EncryptionProcessor EncryptionProcessor { get; }
 
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerInternal container);
@@ -109,19 +107,6 @@ namespace Microsoft.Azure.Cosmos
            Func<ResponseMessage, T> responseCreator,
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
-
-        internal abstract Task<Stream> EncryptItemAsync(
-            Stream input,
-            EncryptionOptions encryptionOptions,
-            DatabaseInternal database,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken);
-
-        internal abstract Task<Stream> DecryptItemAsync(
-            Stream input,
-            DatabaseInternal database,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken);
 
         public abstract void Dispose();
     }

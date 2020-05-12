@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (throughputProperties.Throughput.HasValue &&
-                (throughputProperties.MaxAutoscaleThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
+                (throughputProperties.AutoscaleMaxThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
             {
                 throw new InvalidOperationException("Autoscale provisioned throughput can not be configured with fixed offer");
             }

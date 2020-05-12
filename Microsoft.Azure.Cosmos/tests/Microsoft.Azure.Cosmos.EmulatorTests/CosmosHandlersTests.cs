@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -57,6 +58,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(response.RequestMessage);
                 Assert.IsNotNull(response.RequestMessage.Properties);
                 Assert.AreEqual(randomGuid, response.RequestMessage.Properties[propertyKey]);
+            }
+        }
+
+        [TestMethod]
+        public async Task TestBatchRequiredHeadersWithHandler()
+        {
+            RequestHandlerHelper testHandler = new RequestHandlerHelper();
+
+            // Get the headers from request message for testing.
+            Headers requestHeaders = null;
+            testHandler.UpdateRequestMessage = x => requestHeaders = x.Headers;
+
+            CosmosClient customClient = TestCommon.CreateCosmosClient(
+                (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler).WithBulkExecution(true));
+
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
+            using (ResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(testItem.status),
+                streamPayload: TestCommon.SerializerCore.ToStream(testItem)))
+            {
+                Assert.IsNotNull(response);
+                Assert.IsNotNull(requestHeaders);
+
+                string isBatchAtomic = requestHeaders[HttpConstants.HttpHeaders.IsBatchAtomic];
+                Assert.IsNotNull(isBatchAtomic);
+                Assert.IsFalse(bool.Parse(isBatchAtomic));
+
+                string isBatchRequest = requestHeaders[HttpConstants.HttpHeaders.IsBatchRequest];
+                Assert.IsNotNull(isBatchRequest);
+                Assert.IsTrue(bool.Parse(isBatchRequest));
+
+                string shouldBatchContinueOnError = requestHeaders[HttpConstants.HttpHeaders.ShouldBatchContinueOnError];
+                Assert.IsNotNull(shouldBatchContinueOnError);
+                Assert.IsTrue(bool.Parse(shouldBatchContinueOnError));
             }
         }
 
