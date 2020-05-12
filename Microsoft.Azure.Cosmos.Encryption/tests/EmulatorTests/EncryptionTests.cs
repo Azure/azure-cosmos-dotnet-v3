@@ -1005,7 +1005,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             return new EncryptionItemRequestOptions
             {
-                EncryptionOption = EncryptionTests.GetEncryptionOptions(dekId, pathsToEncrypt),
+                EncryptionOptions = EncryptionTests.GetEncryptionOptions(dekId, pathsToEncrypt),
                 IfMatchEtag = ifMatchEtag
             };
         }
@@ -1017,7 +1017,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             return new EncryptionTransactionalBatchItemRequestOptions
             {
-                EncryptionOption = EncryptionTests.GetEncryptionOptions(dekId, pathsToEncrypt),
+                EncryptionOptions = EncryptionTests.GetEncryptionOptions(dekId, pathsToEncrypt),
                 IfMatchEtag = ifMatchEtag
             };
         }

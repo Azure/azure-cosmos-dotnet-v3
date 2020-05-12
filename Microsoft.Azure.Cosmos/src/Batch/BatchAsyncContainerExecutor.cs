@@ -186,6 +186,7 @@ namespace Microsoft.Azure.Cosmos
         {
             requestMessage.Headers.PartitionKeyRangeId = partitionKeyRangeId;
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.FalseString);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
         }
 

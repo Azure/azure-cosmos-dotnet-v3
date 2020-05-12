@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Options to be provided for encryption of data.
         /// </summary>
-        public EncryptionOptions EncryptionOption { get; set; }
+        public EncryptionOptions EncryptionOptions { get; set; }
 
         /// <summary>
         /// Delegate method that will be invoked (if configured) in case of decryption failure.
