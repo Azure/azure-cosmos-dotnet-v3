@@ -1,6 +1,4 @@
-﻿
-
-namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;

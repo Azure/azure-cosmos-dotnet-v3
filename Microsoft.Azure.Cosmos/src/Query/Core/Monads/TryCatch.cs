@@ -7,7 +7,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
     using System;
     using System.Threading.Tasks;
 
-    internal readonly struct TryCatch
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    readonly struct TryCatch
     {
         private readonly TryCatch<Void> voidTryCatch;
 
@@ -19,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
         public Exception Exception => this.voidTryCatch.Exception;
 
         public bool Succeeded => this.voidTryCatch.Succeeded;
+
+        public bool Failed => this.voidTryCatch.Failed;
 
         public void Match(
             Action onSuccess,

@@ -25,17 +25,17 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosLinqQueryProvider queryProvider;
         private readonly Guid correlatedActivityId;
 
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly CosmosQueryClientCore queryClient;
-        private readonly CosmosResponseFactory responseFactory;
+        private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
         private readonly string continuationToken;
         private readonly CosmosSerializationOptions serializationOptions;
 
         public CosmosLinqQuery(
-           ContainerCore container,
-           CosmosResponseFactory responseFactory,
+           ContainerInternal container,
+           CosmosResponseFactoryInternal responseFactory,
            CosmosQueryClientCore queryClient,
            string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         public CosmosLinqQuery(
-          ContainerCore container,
-          CosmosResponseFactory responseFactory,
+          ContainerInternal container,
+          CosmosResponseFactoryInternal responseFactory,
           CosmosQueryClientCore queryClient,
           string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 sqlQuerySpec: querySpec,
                 isContinuationExcpected: isContinuationExcpected,
                 continuationToken: this.continuationToken,
-                feedToken: null,
+                feedRange: null,
                 requestOptions: this.cosmosQueryRequestOptions);
         }
 

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
     using System.Text;
@@ -14,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Bson;
 
     internal class ClientContextCore : CosmosClientContext
     {
@@ -22,24 +22,20 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClient client;
         private readonly DocumentClient documentClient;
         private readonly CosmosSerializerCore serializerCore;
-        private readonly CosmosResponseFactory responseFactory;
+        private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
         private readonly string userAgent;
-        private readonly EncryptionProcessor encryptionProcessor;
-        private readonly DekCache dekCache;
         private bool isDisposed = false;
 
         private ClientContextCore(
             CosmosClient client,
             CosmosClientOptions clientOptions,
             CosmosSerializerCore serializerCore,
-            CosmosResponseFactory cosmosResponseFactory,
+            CosmosResponseFactoryInternal cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            EncryptionProcessor encryptionProcessor,
-            DekCache dekCache,
             BatchAsyncContainerExecutorCache batchExecutorCache)
         {
             this.client = client;
@@ -49,8 +45,6 @@ namespace Microsoft.Azure.Cosmos
             this.requestHandler = requestHandler;
             this.documentClient = documentClient;
             this.userAgent = userAgent;
-            this.encryptionProcessor = encryptionProcessor;
-            this.dekCache = dekCache;
             this.batchExecutorCache = batchExecutorCache;
         }
 
@@ -117,7 +111,10 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions.Serializer,
                 clientOptions.SerializerOptions);
 
-            CosmosResponseFactory responseFactory = new CosmosResponseFactory(serializerCore);
+            // This sets the serializer on client options which gives users access to it if a custom one is not configured.
+            clientOptions.SetSerializerIfNotConfigured(serializerCore.GetCustomOrDefaultSerializer());
+
+            CosmosResponseFactoryInternal responseFactory = new CosmosResponseFactoryCore(serializerCore);
 
             return new ClientContextCore(
                 client: cosmosClient,
@@ -127,8 +124,6 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                encryptionProcessor: new EncryptionProcessor(),
-                dekCache: new DekCache(),
                 batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
@@ -141,17 +136,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosSerializerCore SerializerCore => this.ThrowIfDisposed(this.serializerCore);
 
-        internal override CosmosResponseFactory ResponseFactory => this.ThrowIfDisposed(this.responseFactory);
+        internal override CosmosResponseFactoryInternal ResponseFactory => this.ThrowIfDisposed(this.responseFactory);
 
         internal override RequestInvokerHandler RequestHandler => this.ThrowIfDisposed(this.requestHandler);
 
         internal override CosmosClientOptions ClientOptions => this.ThrowIfDisposed(this.clientOptions);
 
         internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
-
-        internal override EncryptionProcessor EncryptionProcessor => this.ThrowIfDisposed(this.encryptionProcessor);
-
-        internal override DekCache DekCache => this.ThrowIfDisposed(this.dekCache);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -193,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
@@ -245,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
@@ -271,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
@@ -317,9 +308,15 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerCore container)
+        internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerInternal container)
         {
             this.ThrowIfDisposed();
+
+            if (!this.ClientOptions.AllowBulkExecution)
+            {
+                return null;
+            }
+
             return this.batchExecutorCache.GetExecutorForContainer(container, this);
         }
 
@@ -351,7 +348,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey partitionKey,
             string itemId,
             Stream streamPayload,
@@ -370,7 +367,11 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: batchItemRequestOptions,
                 diagnosticsContext: diagnosticsContext);
 
-            TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
+            TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(
+                itemBatchOperation,
+                itemRequestOptions,
+                cancellationToken);
+
             return batchOperationResult.ToResponseMessage();
         }
 
@@ -394,7 +395,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
         {
-            if (clientOptions == null || (clientOptions.WebProxy == null))
+            if (clientOptions == null || clientOptions.WebProxy == null)
             {
                 return null;
             }

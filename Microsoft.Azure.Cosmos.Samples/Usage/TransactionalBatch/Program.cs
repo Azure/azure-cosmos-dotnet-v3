@@ -15,7 +15,7 @@
     // Prerequisites - 
     // 
     // 1. An Azure Cosmos account - 
-    //    https://docs.microsoft.com/en-us/azure/cosmos-db/create-cosmosdb-resources-portal
+    //    https://docs.microsoft.com/azure/cosmos-db/create-cosmosdb-resources-portal
     //
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 

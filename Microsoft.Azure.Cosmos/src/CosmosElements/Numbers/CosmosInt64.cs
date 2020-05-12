@@ -1,6 +1,9 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 33
+
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;

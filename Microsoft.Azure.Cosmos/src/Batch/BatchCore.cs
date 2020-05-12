@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly PartitionKey partitionKey;
 
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
 
         private List<ItemBatchOperation> operations;
 
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="container">Container that has items on which batch operations are to be performed.</param>
         /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
         internal BatchCore(
-            ContainerCore container,
+            ContainerInternal container,
             PartitionKey partitionKey)
         {
             this.container = container;
@@ -46,7 +46,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resource: item,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -64,7 +65,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -82,7 +84,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Read,
                     operationIndex: this.operations.Count,
                     id: id,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -100,7 +103,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resource: item,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -118,7 +122,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -143,7 +148,8 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     id: id,
                     resource: item,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -168,7 +174,8 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     id: id,
                     resourceStream: streamPayload,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -186,7 +193,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Delete,
                     operationIndex: this.operations.Count,
                     id: id,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -238,7 +246,8 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     id: id,
                     resourceStream: patchStream,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }

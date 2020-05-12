@@ -30,9 +30,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosDiagnostics Diagnostics { get; }
 
-        internal abstract CosmosDiagnosticScope GetOverallScope();
+        internal abstract IDisposable GetOverallScope();
 
-        internal abstract CosmosDiagnosticScope CreateScope(string name);
+        internal abstract IDisposable CreateScope(string name);
+
+        internal abstract IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler);
 
         public abstract TimeSpan GetClientElapsedTime();
 
@@ -47,6 +49,8 @@ namespace Microsoft.Azure.Cosmos
         internal abstract void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics);
 
         internal abstract void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics);
+
+        internal abstract void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics);
 
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 

@@ -1,0 +1,176 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<# List<int> stringLengths = new List<int>() { 8, 32, 256, 1024, 4096 }; #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
+{
+    using System;
+    using System.Text;
+    using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
+
+    [MemoryDiagnoser]
+    public class Utf8vsUtf16StringBenchmark
+    {
+<#  foreach (int stringLength in stringLengths) { #>
+        private static readonly Payload StringLength<#= stringLength #>Payload =  Payload.CreateStringLength(length: <#= stringLength #>);
+<# } #>
+
+<#  foreach (int stringLength in stringLengths) { #>
+<#  foreach (bool useUtf8 in new bool[] { false, true }) { #>
+        [Benchmark]
+        public void ReadUtf<#= useUtf8 ? "8" : "16" #>StringLength<#= stringLength #>()
+        {
+            Utf8vsUtf16StringBenchmark.RunReadBenchmark(
+                payload: Utf8vsUtf16StringBenchmark.StringLength<#= stringLength #>Payload,
+                useUtf8: <#= useUtf8 ? "true" : "false" #>);
+        }
+
+<# } #>
+<# } #>
+
+<#  foreach (int stringLength in stringLengths) { #>
+<#  foreach (bool useUtf8 in new bool[] { false, true }) { #>
+        [Benchmark]
+        public void WriteUtf<#= useUtf8 ? "8" : "16" #>StringLength<#= stringLength #>()
+        {
+            Utf8vsUtf16StringBenchmark.RunWriteBenchmark(
+                payload: Utf8vsUtf16StringBenchmark.StringLength<#= stringLength #>Payload,
+                useUtf8: <#= useUtf8 ? "true" : "false" #>);
+        }
+
+<# } #>
+<# } #>
+
+        private static void RunReadBenchmark(
+            Payload payload,
+            bool useUtf8)
+        {
+            // Don't really need to test both serialization formats, since they are similiar.
+            IJsonReader jsonReader = JsonReader.Create(payload.Binary);
+
+            while (jsonReader.Read())
+            {
+                // Materialize the value
+                switch (jsonReader.CurrentTokenType)
+                {
+                    case JsonTokenType.BeginArray:
+                    case JsonTokenType.EndArray:
+                        // Single byte tokens
+                        break;
+
+                    case JsonTokenType.String:
+                        if (useUtf8)
+                        {
+                            if (!jsonReader.TryGetBufferedStringValue(out Utf8Memory value))
+                            {
+                                throw new InvalidOperationException("Failed to get utf8 string.");
+                            }
+                        }
+                        else
+                        {
+                            string value = jsonReader.GetStringValue();
+                        }
+                        break;
+
+                    default:
+                        throw new ArgumentException("$Unknown token type.");
+                }
+            }
+        }
+
+        private static void RunWriteBenchmark(
+            Payload payload,
+            bool useUtf8)
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+
+            jsonWriter.WriteArrayStart();
+
+            for (int i = 0; i < 100000; i++)
+            {
+                if (useUtf8)
+                {
+                    jsonWriter.WriteStringValue(payload.Utf8StringToken.Span);
+                }
+                else
+                {
+                    jsonWriter.WriteStringValue(payload.Utf16StringToken);
+                }
+            }
+
+            jsonWriter.WriteArrayEnd();
+        }
+
+        private readonly struct Payload
+        {
+            private Payload(
+                ReadOnlyMemory<byte> text,
+                ReadOnlyMemory<byte> binary,
+                Utf8Memory utf8StringToken,
+                string utf16StringToken)
+            {
+                this.Text = text;
+                this.Binary = binary;
+                this.Utf8StringToken = utf8StringToken;
+                this.Utf16StringToken = utf16StringToken;
+            }
+
+            public ReadOnlyMemory<byte> Text { get; }
+
+            public ReadOnlyMemory<byte> Binary { get; }
+
+            public Utf8Memory Utf8StringToken { get; }
+
+            public string Utf16StringToken { get; }
+
+            public static Payload CreateStringLength(int length)
+            {
+                string stringValue = new string('a', length);
+                IJsonWriter jsonTextWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                IJsonWriter jsonBinaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+
+                jsonTextWriter.WriteArrayStart();
+                jsonBinaryWriter.WriteArrayStart();
+
+                for (int i = 0; i < 100000; i++)
+                {
+                    jsonTextWriter.WriteStringValue(stringValue);
+                }
+
+                jsonTextWriter.WriteArrayEnd();
+                jsonBinaryWriter.WriteArrayEnd();
+
+                ReadOnlyMemory<byte> text = jsonTextWriter.GetResult();
+                ReadOnlyMemory<byte> binary = jsonTextWriter.GetResult();
+
+                return new Payload(
+                    text: text, 
+                    binary: binary,
+                    utf8StringToken: Utf8Memory.UnsafeCreateNoValidation(Encoding.UTF8.GetBytes(stringValue)),
+                    utf16StringToken: stringValue);
+            }
+        }
+    }
+}
+<#+
+private static string ModificationInstructions(
+                        [CallerFilePath] string file = "",
+                        [CallerLineNumber] int line = 0)
+{
+    return $"This is auto-generated code. Modify: {Path.GetFileName(file)}: {line}";
+}
+#>

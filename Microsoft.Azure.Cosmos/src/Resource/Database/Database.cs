@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///
-    /// See <see cref="CosmosClient"/> for creating new databases, and reading/querying all databases; use `client.Databases`.
+    /// See <see cref="Client"/> for creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
     /// <remarks>
     /// Note: all these operations make calls against a fixed budget.
@@ -26,6 +26,11 @@ namespace Microsoft.Azure.Cosmos
         /// The Id of the Cosmos database
         /// </summary>
         public abstract string Id { get; }
+
+        /// <summary>
+        /// The parent Cosmos client instance related the database instance
+        /// </summary>
+        public abstract CosmosClient Client { get; }
 
         /// <summary>
         /// Reads a <see cref="DatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -156,6 +161,197 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="throughputProperties">The Cosmos database throughput expressed in Request Units per second.</param>
+        /// <param name="requestOptions">(Optional) The options for the throughput request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The throughput response.</returns>
+        /// <value>
+        /// The provisioned throughput for this database.
+        /// </value>
+        /// <example>
+        /// The following example shows how to replace the manual throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
+        ///     ThroughputProperties.CreateManualThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The following example shows how to replace the autoscale provisioned throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// </remarks>
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Creates a container as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
+        /// <param name="throughputProperties">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="containerProperties"/> is not set.</exception>
+        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new container.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for containers. Contact support to have this quota increased.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="ContainerProperties"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ContainerProperties containerProperties = new ContainerProperties()
+        /// {
+        ///     Id = Guid.NewGuid().ToString(),
+        ///     PartitionKeyPath = "/pk",
+        ///     IndexingPolicy = new IndexingPolicy()
+        ///    {
+        ///         Automatic = false,
+        ///         IndexingMode = IndexingMode.Lazy,
+        ///    };
+        /// };
+        ///
+        /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(
+        ///     containerProperties,
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000));
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        public abstract Task<ContainerResponse> CreateContainerAsync(
+                    ContainerProperties containerProperties,
+                    ThroughputProperties throughputProperties,
+                    RequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// <para>Check if a container exists, and if it doesn't, create it.
+        /// Only the container id is used to verify if there is an existing container. Other container properties such as throughput are not validated and can be different then the passed properties.</para>
+        /// </summary>
+        /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
+        /// <param name="throughputProperties">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Common success StatusCodes for the CreateDatabaseIfNotExistsAsync operation</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>201</term><description>Created - New database is created.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///     </item>
+        /// </list>
+        /// </returns>
+        /// <exception cref="ArgumentNullException">If either <paramref name="containerProperties"/> is not set.</exception>
+        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new container.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for containers. Contact support to have this quota increased.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="ContainerProperties"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ContainerProperties containerProperties = new ContainerProperties()
+        /// {
+        ///     Id = Guid.NewGuid().ToString(),
+        ///     PartitionKeyPath = "/pk",
+        ///     IndexingPolicy = new IndexingPolicy()
+        ///    {
+        ///         Automatic = false,
+        ///         IndexingMode = IndexingMode.Lazy,
+        ///    };
+        /// };
+        ///
+        /// ContainerResponse response = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+        ///      containerProperties,
+        ///      ThroughputProperties.CreateAutoscaleThroughput(5000));
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+            ContainerProperties containerProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Creates a container as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
+        /// <param name="throughputProperties">(Optional) The throughput provisioned for a container in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the created resource record.</returns>
+        /// <example>
+        /// Creates a container as an asynchronous operation in the Azure Cosmos service and return stream response.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ContainerProperties containerProperties = new ContainerProperties()
+        /// {
+        ///     Id = Guid.NewGuid().ToString(),
+        ///     PartitionKeyPath = "/pk",
+        /// };
+        ///
+        /// using(ResponseMessage response = await this.cosmosDatabase.CreateContainerStreamAsync(
+        ///     containerProperties,
+        ///     ThroughputProperties.CreateAutoscaleThroughput(10000)))
+        /// {
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="DefineContainer(string, string)"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        public abstract Task<ResponseMessage> CreateContainerStreamAsync(
+            ContainerProperties containerProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -874,105 +1070,5 @@ namespace Microsoft.Azure.Cosmos
         public abstract ContainerBuilder DefineContainer(
             string name,
             string partitionKeyPath);
-
-#if PREVIEW
-        /// <summary>
-        /// Returns a reference to a data encryption key object.
-        /// </summary>
-        /// <param name="id">Unique identifier for the data encryption key.</param>
-        /// <returns>Data encryption key reference.</returns>
-        /// <remarks>
-        /// The reference returned doesn't guarantee existence of the data encryption key.
-        /// Please ensure it already exists or is created through <see cref="CreateDataEncryptionKeyAsync"/>.
-        /// </remarks>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId");
-        /// DataEncryptionKey key = await db.GetDataEncryptionKey("keyId");
-        /// DataEncryptionKeyProperties keyProperties = await key.ReadAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract DataEncryptionKey GetDataEncryptionKey(string id);
-
-        /// <summary>
-        /// Returns an iterator that can be iterated to get properties of data encryption keys.
-        /// </summary>
-        /// <param name="startId">(Optional) Starting value of the range (inclusive) of ids of data encryption keys for which properties needs to be returned.</param>
-        /// <param name="endId">(Optional) Ending value of the range (inclusive) of ids of data encryption keys for which properties needs to be returned.</param>
-        /// <param name="isDescending">Whether the results should be returned sorted in descending order of id.</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the request. Set <see cref="QueryRequestOptions.MaxItemCount"/> to restrict the number of results returned.</param>
-        /// <returns>An iterator over data encryption keys.</returns>
-        /// <example>
-        /// This create the type feed iterator for containers with queryDefinition as input.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedIterator<DataEncryptionKeyProperties> resultSet = this.cosmosDatabase.GetDataEncryptionKeyIterator();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     foreach (DataEncryptionKeyProperties properties in await feedIterator.ReadNextAsync())
-        ///     {
-        ///         Console.WriteLine(properties.Id);
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <remarks>
-        /// <see cref="DataEncryptionKey.ReadAsync" /> is recommended for single data encryption key look-up.
-        /// </remarks>
-        public abstract FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
-            string startId = null,
-            string endId = null,
-            bool isDescending = false,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
-
-        /// <summary>
-        /// Generates a data encryption key, wraps it using the key wrap metadata provided
-        /// with the key wrapping provider in the EncryptionSerializer configured on the client via <see cref="CosmosClientBuilder.WithCustomSerializer"/>,
-        /// and saves the wrapped data encryption key as an asynchronous operation in the Azure Cosmos service.
-        /// </summary>
-        /// <param name="id">Unique identifier for the data encryption key.</param>
-        /// <param name="encryptionAlgorithm">Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.</param>
-        /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to wrap the key.</param>
-        /// <param name="requestOptions">(Optional) The options for the request.</param>
-        /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
-        /// <returns>An awaitable response which wraps a <see cref="DataEncryptionKeyProperties"/> containing the read resource record.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
-        /// <exception cref="CosmosException">
-        /// This exception can encapsulate many different types of errors.
-        /// To determine the specific error always look at the StatusCode property.
-        /// Some common codes you may get when creating a data encryption key are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new encryption key.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>409</term><description>Conflict - This means an <see cref="DataEncryptionKeyProperties"/> with an id matching the id you supplied already existed.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
-        /// <example>
-        ///
-        /// <code language="c#">
-        /// <![CDATA[
-        /// AzureKeyVaultKeyWrapMetadata wrapMetadata = new AzureKeyVaultKeyWrapMetadata("/path/to/my/akv/secret/v1");
-        /// await this.cosmosDatabase.CreateDataEncryptionKeyAsync("myKey", wrapMetadata);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
-            string id,
-            CosmosEncryptionAlgorithm encryptionAlgorithm,
-            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-#endif
     }
 }

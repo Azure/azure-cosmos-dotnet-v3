@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -69,6 +70,39 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             jsonWriter.WriteBoolValue(this.Value);
+        }
+
+        public static new CosmosBoolean CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            return CosmosElement.CreateFromBuffer<CosmosBoolean>(buffer);
+        }
+
+        public static new CosmosBoolean Parse(string json)
+        {
+            return CosmosElement.Parse<CosmosBoolean>(json);
+        }
+
+        public static bool TryCreateFromBuffer(ReadOnlyMemory<byte> buffer, out CosmosBoolean cosmosBoolean)
+        {
+            return CosmosElement.TryCreateFromBuffer<CosmosBoolean>(buffer, out cosmosBoolean);
+        }
+
+        public static bool TryParse(string json, out CosmosBoolean cosmosBoolean)
+        {
+            return CosmosElement.TryParse<CosmosBoolean>(json, out cosmosBoolean);
+        }
+
+        public static new class Monadic
+        {
+            public static TryCatch<CosmosBoolean> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+            {
+                return CosmosElement.Monadic.CreateFromBuffer<CosmosBoolean>(buffer);
+            }
+
+            public static TryCatch<CosmosBoolean> Parse(string json)
+            {
+                return CosmosElement.Monadic.Parse<CosmosBoolean>(json);
+            }
         }
     }
 }

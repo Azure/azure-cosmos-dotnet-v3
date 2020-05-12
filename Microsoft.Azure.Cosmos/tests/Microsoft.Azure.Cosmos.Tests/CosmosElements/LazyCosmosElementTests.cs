@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void TestQuickNavigation()
         {
-            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer<CosmosArray>(LazyCosmosElementTests.bufferedSerializedPeople);
             LazilyDeserializedPerson lazilyDeserializedFirstPerson = new LazilyDeserializedPerson(lazilyDeserializedPeople[0] as CosmosObject);
 
             Assert.AreEqual(people.First().Name, lazilyDeserializedFirstPerson.Name);
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void WriteToWriter()
         {
-            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer<CosmosArray>(LazyCosmosElementTests.bufferedSerializedPeople);
             IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
             lazilyDeserializedPeople.WriteTo(jsonWriter);
             byte[] bufferedResult = jsonWriter.GetResult().ToArray();
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void TestCaching()
         {
-            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer<CosmosArray>(LazyCosmosElementTests.bufferedSerializedPeople);
             Assert.IsTrue(
                 object.ReferenceEquals(lazilyDeserializedPeople[0], lazilyDeserializedPeople[0]),
                 "Array did not return the item from the cache.");
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 
         private static void VisitCosmosNumber(CosmosNumber cosmosNumber, IJsonWriter jsonWriter)
         {
-            jsonWriter.WriteNumberValue(cosmosNumber.Value);
+            jsonWriter.WriteNumber64Value(cosmosNumber.Value);
         }
 
         private static void VisitCosmosObjectIndexer(CosmosObject cosmosObject, IJsonWriter jsonWriter)

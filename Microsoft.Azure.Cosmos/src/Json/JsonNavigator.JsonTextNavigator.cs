@@ -69,8 +69,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException("node");
                 }
 
-                JsonTextNode jsonTextNode = node as JsonTextNode;
-                if (jsonTextNode == null)
+                if (!(node is JsonTextNode jsonTextNode))
                 {
                     throw new ArgumentException("node must actually be a text node.");
                 }
@@ -79,15 +78,14 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override Number64 GetNumberValue(IJsonNavigatorNode numberNavigatorNode)
+            public override Number64 GetNumber64Value(IJsonNavigatorNode numberNavigatorNode)
             {
                 if (numberNavigatorNode == null)
                 {
                     throw new ArgumentNullException("numberNavigatorNode");
                 }
 
-                NumberNode numberNode = numberNavigatorNode as NumberNode;
-                if (numberNode == null)
+                if (!(numberNavigatorNode is NumberNode numberNode))
                 {
                     throw new ArgumentException("numberNavigatorNode must actually be a number node.");
                 }
@@ -96,9 +94,9 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryGetBufferedUtf8StringValue(
+            public override bool TryGetBufferedStringValue(
                 IJsonNavigatorNode navigatorNode,
-                out ReadOnlyMemory<byte> bufferedStringValue)
+                out Utf8Memory value)
             {
                 if (navigatorNode == null)
                 {
@@ -111,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 // For text we materialize the strings into UTF-16, so we can't get the buffered UTF-8 string.
-                bufferedStringValue = default;
+                value = default;
                 return false;
             }
 
@@ -123,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException("stringNode");
                 }
 
-                StringNodeBase stringValueNode = stringNode as StringNodeBase;
-                if (stringValueNode == null)
+                if (!(stringNode is StringNodeBase stringValueNode))
                 {
                     throw new ArgumentException("stringNode must actually be a number node.");
                 }
@@ -293,8 +290,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException("arrayNavigatorNode");
                 }
 
-                ArrayNode arrayNode = arrayNavigatorNode as ArrayNode;
-                if (arrayNode == null)
+                if (!(arrayNavigatorNode is ArrayNode arrayNode))
                 {
                     throw new ArgumentException("arrayNavigatorNode must actually be an array node");
                 }
@@ -344,8 +340,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException("objectNode");
                 }
 
-                ObjectNode objectNode = objectNavigatorNode as ObjectNode;
-                if (objectNode == null)
+                if (!(objectNavigatorNode is ObjectNode objectNode))
                 {
                     throw new ArgumentException("objectNavigatorNode must actually be an array node");
                 }
@@ -393,8 +388,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException("objectNode");
                 }
 
-                ObjectNode objectNode = objectNavigatorNode as ObjectNode;
-                if (objectNode == null)
+                if (!(objectNavigatorNode is ObjectNode objectNode))
                 {
                     throw new ArgumentException("objectNavigatorNode must actually be an array node");
                 }
@@ -866,13 +860,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 private readonly Lazy<Number64> value;
 
                 private NumberNode(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Number)
+                    : base(JsonNodeType.Number64)
                 {
                     this.value = new Lazy<Number64>(() => JsonTextParser.GetNumberValue(bufferedToken.Span));
                 }
 
                 private NumberNode(Number64 value)
-                    : base(JsonNodeType.Number)
+                    : base(JsonNodeType.Number64)
                 {
                     this.value = new Lazy<Number64>(() => value);
                 }

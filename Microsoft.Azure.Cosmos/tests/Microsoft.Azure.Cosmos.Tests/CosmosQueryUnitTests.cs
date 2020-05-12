@@ -40,8 +40,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
+            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage, diagnosticsContext: diagnostics);
+            
+            diagnostics.GetOverallScope().Dispose();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         cosmosException: cosmosException,
@@ -58,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         diagnostics: diagnostics);
 
             Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
-            Assert.AreEqual(cosmosException.ToString(includeDiagnostics: false), queryResponse.ErrorMessage);
+            Assert.AreEqual(cosmosException.Message, queryResponse.ErrorMessage);
             Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
             Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
             Assert.AreEqual(diagnostics, queryResponse.DiagnosticsContext);
@@ -257,6 +259,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
                 initialUserContinuationToken: null,
+                initialFeedRange: null,
                 maxConcurrency: queryRequestOptions?.MaxConcurrency,
                 maxItemCount: queryRequestOptions?.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions?.MaxBufferedItemCount,
@@ -358,6 +361,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics(
+                    Guid.NewGuid(),
                     "0",
                     "SomeQueryMetricText",
                     "SomeIndexUtilText",

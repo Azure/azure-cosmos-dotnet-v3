@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -74,6 +75,39 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+
+        public static new CosmosArray CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            return CosmosElement.CreateFromBuffer<CosmosArray>(buffer);
+        }
+
+        public static new CosmosArray Parse(string json)
+        {
+            return CosmosElement.Parse<CosmosArray>(json);
+        }
+
+        public static bool TryCreateFromBuffer(ReadOnlyMemory<byte> buffer, out CosmosArray cosmosArray)
+        {
+            return CosmosElement.TryCreateFromBuffer<CosmosArray>(buffer, out cosmosArray);
+        }
+
+        public static bool TryParse(string json, out CosmosArray cosmosArray)
+        {
+            return CosmosElement.TryParse<CosmosArray>(json, out cosmosArray);
+        }
+
+        public static new class Monadic
+        {
+            public static TryCatch<CosmosArray> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+            {
+                return CosmosElement.Monadic.CreateFromBuffer<CosmosArray>(buffer);
+            }
+
+            public static TryCatch<CosmosArray> Parse(string json)
+            {
+                return CosmosElement.Monadic.Parse<CosmosArray>(json);
+            }
         }
     }
 }

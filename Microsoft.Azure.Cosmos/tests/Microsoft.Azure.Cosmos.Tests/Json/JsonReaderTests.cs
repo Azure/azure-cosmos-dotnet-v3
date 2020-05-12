@@ -6,12 +6,11 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
-    using System.Buffers.Text;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Reflection;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
@@ -589,9 +588,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void SystemStringTest()
         {
             int systemStringId = 0;
-            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out string systemString))
+            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
-                string input = "\"" + systemString + "\"";
+                string input = "\"" + systemString.Utf16String + "\"";
                 byte[] binaryInput =
                 {
                     BinaryFormat,
@@ -600,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                 JsonToken[] expectedTokens =
                 {
-                    JsonToken.String(systemString)
+                    JsonToken.String(systemString.Utf16String)
                 };
 
                 this.VerifyReader(input, expectedTokens);
@@ -667,7 +666,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             for (int i = 0; i < OneByteCount + 1; i++)
             {
                 string userEncodedString = "a" + i.ToString();
-                Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes(userEncodedString).AsSpan(), out int index));
+                Assert.IsTrue(jsonStringDictionary.TryAddString(Utf8Span.TranscodeUtf16(userEncodedString), out int index));
                 Assert.AreEqual(i, index);
             }
 
@@ -1494,8 +1493,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
-            Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes("GlossDiv").AsSpan(), out int index1));
-            Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes("title").AsSpan(), out int index2));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("GlossDiv", out int index1));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("title", out int index2));
             this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 

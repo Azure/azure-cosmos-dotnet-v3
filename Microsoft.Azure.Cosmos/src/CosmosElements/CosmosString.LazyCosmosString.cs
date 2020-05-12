@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -55,9 +56,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
             }
 
-            public override bool TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value)
+            public override bool TryGetBufferedValue(out Utf8Memory bufferedValue)
             {
-                return this.jsonNavigator.TryGetBufferedUtf8StringValue(this.jsonNavigatorNode, out bufferedUtf8Value);
+                return this.jsonNavigator.TryGetBufferedStringValue(this.jsonNavigatorNode, out bufferedValue);
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)
