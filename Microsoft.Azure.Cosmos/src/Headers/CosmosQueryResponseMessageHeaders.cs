@@ -52,18 +52,18 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual string ContainerRid { get; }
 
-        public virtual ResourceType ResourceType { get; }
+        internal virtual ResourceType ResourceType { get; }
 
         public string InternalContinuationToken => base.ContinuationToken;
 
-        public CosmosQueryResponseMessageHeaders CloneKnownProperties()
+        internal CosmosQueryResponseMessageHeaders CloneKnownProperties()
         {
             return this.CloneKnownProperties(
                 this.InternalContinuationToken,
                 this.DisallowContinuationTokenMessage);
         }
 
-        public CosmosQueryResponseMessageHeaders CloneKnownProperties(
+        internal CosmosQueryResponseMessageHeaders CloneKnownProperties(
             string continauationToken,
             string disallowContinuationTokenMessage)
         {
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
             };
         }
 
-        public static CosmosQueryResponseMessageHeaders ConvertToQueryHeaders(
+        internal static CosmosQueryResponseMessageHeaders ConvertToQueryHeaders(
             Headers sourceHeaders,
             ResourceType resourceType,
             string containerRid)
