@@ -9,6 +9,7 @@
     using System.Runtime.CompilerServices;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Linq;
 
     public static class ContractEnforcementSharedHelper
     {
@@ -119,7 +120,41 @@
 
         public static string GetBaselineContract(string baselinePath)
         {
-            return File.ReadAllText(baselinePath);
+            string baselineFile = File.ReadAllText(baselinePath);
+            return NormalizeJsonString(baselineFile);
+        }
+
+        public static string RemoveDuplicateContractElements(JObject localContract, JObject officialContract)
+        {
+            RemoveDuplicateContractHelper(localContract, officialContract);
+            string noDuplicates = localContract.ToString();
+            return NormalizeJsonString(noDuplicates);
+        }
+
+        private static string NormalizeJsonString(string file)
+        {
+            TypeTree baseline = JsonConvert.DeserializeObject<TypeTree>(file);
+            string updatedString = JsonConvert.SerializeObject(baseline, Formatting.Indented);
+            return updatedString;
+        }
+
+        private static void RemoveDuplicateContractHelper(JObject previewContract, JObject officialContract)
+        {
+            foreach (KeyValuePair<string, JToken> token in officialContract)
+            {
+                JToken previewLocalToken = previewContract[token.Key];
+                if (previewLocalToken != null)
+                {
+                    if (JToken.DeepEquals(previewLocalToken, token.Value))
+                    {
+                        previewContract.Remove(token.Key);
+                    }
+                    else if (previewLocalToken.Type == JTokenType.Object && token.Value.Type == JTokenType.Object)
+                    {
+                        RemoveDuplicateContractHelper(previewLocalToken as JObject, token.Value as JObject);
+                    }
+                }
+            }
         }
 
         public static bool CompareAndTraceJson(string baselineJson, string localJson)
