@@ -1,135 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<PropertyGroup>
-		<Company>Microsoft Corporation</Company>
-		<Product>Microsoft(R) Azure Cosmos</Product>
-		<Description>This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/. </Description>
-		<Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-		<NeutralLanguage>en-US</NeutralLanguage>
-		<CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
-		<Authors>Microsoft</Authors>
-		<TargetFramework>netstandard2.0</TargetFramework>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
-		<Title>Microsoft Azure Cosmos DB Client library</Title>
-		<PackageId>Microsoft.Azure.Cosmos</PackageId>
-		<PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard</PackageTags>
-		<PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md at the time of release.</PackageReleaseNotes>
-		<PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
-		<PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
-		<PublishRepositoryUrl Condition=" '$(ProjectRef)' != 'True' ">true</PublishRepositoryUrl>
-		<PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
-		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<PlatformTarget>AnyCPU</PlatformTarget>
-		<ShippingScope>External</ShippingScope>
-		<SigningType>Product</SigningType>
-		<DebugType>portable</DebugType>
-		<IncludeSymbols>false</IncludeSymbols>
-		<IncludeSource>false</IncludeSource>
-		<RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
-		<NoWarn>NU5125</NoWarn>
-		<ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
-		<!--Preview version is still supported here with Microsoft.Azure.Cosmos.Preview.csproj to avoid breaking all the build/release systems dependencies-->
-		<ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
+  <PropertyGroup>
+    <Company>Microsoft Corporation</Company>
+    <Product>Microsoft(R) Azure Cosmos</Product>
+    <Description>This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/. </Description>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+    <Authors>Microsoft</Authors>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
+    <Title>Microsoft Azure Cosmos DB Client library</Title>
+    <PackageId>Microsoft.Azure.Cosmos</PackageId>
+    <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard</PackageTags>
+    <PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md at the time of release.</PackageReleaseNotes>
+    <PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
+    <PublishRepositoryUrl Condition=" '$(ProjectRef)' != 'True' ">true</PublishRepositoryUrl>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ShippingScope>External</ShippingScope>
+    <SigningType>Product</SigningType>
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>false</IncludeSymbols>
+    <IncludeSource>false</IncludeSource>
+    <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
+    <NoWarn>NU5125</NoWarn>
+    <ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
+    <ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
+    <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
+    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersionSuffix)</VersionSuffix>
+    <Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
+    <Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
+    <FileVersion>$(ClientVersion)</FileVersion>
+  </PropertyGroup>
 
-		<FileVersion>$(ClientVersion)</FileVersion>
+  <!--The $(ProjectDir) is used to give an absolute location so the files can still be found when other projects import props file -->
+  <ItemGroup>
+    <AdditionalFiles Include="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\stylecop.json" />
+  </ItemGroup>
 
-		<Version Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</Version>
-		<Version Condition=" '$(ClientPreviewVersionSuffix)' == '' ">$(ClientVersion)-preview</Version>
-		<Version Condition=" '$(ClientPreviewVersionSuffix)' != '' ">$(ClientVersion)-preview$(ClientPreviewVersionSuffix)</Version>
+  <ItemGroup>
+    <Compile Remove="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\RuntimePerfCounters.cs" />
+  </ItemGroup>
 
-		<DefineConstants Condition="'$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
-	</PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\Batch\HybridRowBatchSchemas.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
 
-	<ItemGroup>
-		<AdditionalFiles Include="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\stylecop.json" />
-	</ItemGroup>
+  <ItemGroup>
+    <Compile Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\ClientResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ClientResources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\CosmosElements\Numbers\CosmosNumberCodeGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
 
-	<ItemGroup>
-		<Compile Remove="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\RuntimePerfCounters.cs" />
-	</ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="ClientResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
 
-	<ItemGroup>
-	<EmbeddedResource Include="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\Batch\HybridRowBatchSchemas.json">
-	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	</EmbeddedResource>
-	</ItemGroup>
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
 
-	<ItemGroup>
-	<Compile Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\ClientResources.Designer.cs">
-	  <DesignTime>True</DesignTime>
-	  <AutoGen>True</AutoGen>
-	  <DependentUpon>ClientResources.resx</DependentUpon>
-	</Compile>
-	<Compile Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\CosmosElements\Numbers\CosmosNumberCodeGenerator.cs">
-	  <DesignTime>True</DesignTime>
-	  <AutoGen>True</AutoGen>
-	  <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
-	</Compile>
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
 
-	<ItemGroup>
-	<EmbeddedResource Update="ClientResources.resx">
-	  <Generator>ResXFileCodeGenerator</Generator>
-	  <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
-	</EmbeddedResource>
-	</ItemGroup>
+    <!--Direct Dependencies-->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
 
-	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
-		<PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-	</ItemGroup>
+    <!--HybridRow Dependencies-->
+    <PackageReference Include="System.Memory" Version="4.5.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.1" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.1" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
-		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
-		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="ref/netstandard2.0" />
+    <None Include="$(OutputPath)\$(AssemblyName).xml" Pack="true" PackagePath="ref/netstandard2.0" />
+    <None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+    <None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
-		<!--Direct Dependencies-->
-		<PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
-		<PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
+  <ItemGroup>
+    <None Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
 
-		<!--HybridRow Dependencies-->
-		<PackageReference Include="System.Memory" Version="4.5.1" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.1" />
-		<PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.1" />
-		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="ref/netstandard2.0" />
-		<None Include="$(OutputPath)\$(AssemblyName).xml" Pack="true" PackagePath="ref/netstandard2.0" />
-		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
-		<None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
-		<None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-		<None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-		<None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="$(ProjectDir)..\..\Microsoft.Azure.Cosmos\src\CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
-		  <Generator>TextTemplatingFileGenerator</Generator>
-		  <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
-		</None>
-	</ItemGroup>
-
-	<PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<SignAssembly>true</SignAssembly>
-		<DelaySign>true</DelaySign>
-		<AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
-		</PropertyGroup>
-		<PropertyGroup>
-		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
-		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
-		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20;</DefineConstants>
-		<LangVersion>8.0</LangVersion>
-	</PropertyGroup>
+  <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
+    <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+    <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
+    <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
+    <LangVersion>8.0</LangVersion>
+  </PropertyGroup>
 </Project>
