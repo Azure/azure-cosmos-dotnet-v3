@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         class CosmosQueryResponseMessageHeaders : Headers
     {
-        public CosmosQueryResponseMessageHeaders(
+        internal CosmosQueryResponseMessageHeaders(
             string continauationToken,
             string disallowContinuationTokenMessage,
             ResourceType resourceType,

@@ -11,14 +11,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
-#if INTERNAL
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable SA1600 // Elements should be documented
-    public
-#else
-    internal
-#endif
-    static class CosmosElementSerializer
+    internal static class CosmosElementSerializer
     {
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
@@ -32,8 +25,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {
-            MemoryStream memoryStream = stream as MemoryStream;
-            if (memoryStream == null)
+            if (!(stream is MemoryStream memoryStream))
             {
                 memoryStream = new MemoryStream();
                 stream.CopyTo(memoryStream);
