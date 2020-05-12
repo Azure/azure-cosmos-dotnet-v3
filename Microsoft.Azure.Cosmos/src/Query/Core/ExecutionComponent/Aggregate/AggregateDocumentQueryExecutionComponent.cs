@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
         /// <summary>
         /// Struct for getting the payload out of the rewritten projection.
         /// </summary>
-        private struct RewrittenAggregateProjections
+        private readonly struct RewrittenAggregateProjections
         {
             public RewrittenAggregateProjections(bool isValueAggregateQuery, CosmosElement raw)
             {

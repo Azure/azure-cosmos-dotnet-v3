@@ -10,44 +10,35 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
-    internal sealed partial class ContainerInlineCore : Container
+    internal sealed partial class ContainerInlineCore : ContainerCore
     {
-        private readonly ContainerCore container;
-
-        public override string Id => this.container.Id;
-
-        public override Conflicts Conflicts => this.container.Conflicts;
-
-        public override Scripts.Scripts Scripts => this.container.Scripts;
-
-        internal CosmosClientContext ClientContext => this.container.ClientContext;
-
-        internal Uri LinkUri => this.container.LinkUri;
-
-        internal ContainerInlineCore(ContainerCore container)
+        internal ContainerInlineCore(
+            CosmosClientContext clientContext,
+            DatabaseInternal database,
+            string containerId,
+            CosmosQueryClient cosmosQueryClient = null)
+            : base(clientContext,
+                database,
+                containerId,
+                cosmosQueryClient)
         {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            this.container = container;
         }
 
         public override Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadContainerAsync(requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadContainerAsync(requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReadContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadContainerStreamAsync(requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadContainerStreamAsync(requestOptions, cancellationToken));
         }
 
         public override Task<ContainerResponse> ReplaceContainerAsync(
@@ -55,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceContainerAsync(containerProperties, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceContainerAsync(containerProperties, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReplaceContainerStreamAsync(
@@ -63,33 +54,33 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceContainerStreamAsync(containerProperties, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceContainerStreamAsync(containerProperties, requestOptions, cancellationToken));
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.DeleteContainerAsync(requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteContainerAsync(requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.DeleteContainerStreamAsync(requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteContainerStreamAsync(requestOptions, cancellationToken));
         }
 
         public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadThroughputAsync(cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadThroughputAsync(cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadThroughputAsync(requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadThroughputAsync(requestOptions, cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -97,7 +88,12 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
+        }
+
+        public override Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceThroughputAsync(throughputProperties, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> CreateItemStreamAsync(
@@ -106,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.CreateItemStreamAsync(streamPayload, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.CreateItemStreamAsync(streamPayload, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(T item,
@@ -114,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.CreateItemAsync<T>(item, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.CreateItemAsync<T>(item, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
@@ -123,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadItemStreamAsync(id, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadItemStreamAsync(id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -132,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReadItemAsync<T>(id, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadItemAsync<T>(id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
@@ -141,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.UpsertItemStreamAsync(streamPayload, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.UpsertItemStreamAsync(streamPayload, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(
@@ -150,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.UpsertItemAsync<T>(item, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.UpsertItemAsync<T>(item, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReplaceItemStreamAsync(
@@ -160,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceItemStreamAsync(streamPayload, id, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceItemStreamAsync(streamPayload, id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
@@ -170,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.ReplaceItemAsync<T>(item, id, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceItemAsync<T>(item, id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> DeleteItemStreamAsync(
@@ -179,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.DeleteItemStreamAsync(id, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteItemStreamAsync(id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> DeleteItemAsync<T>(
@@ -188,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.DeleteItemAsync<T>(id, partitionKey, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteItemAsync<T>(id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -196,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorInlineCore(this.container.GetItemQueryStreamIterator(
+            return new FeedIteratorInlineCore(base.GetItemQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
                     requestOptions));
@@ -207,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorInlineCore<T>(this.container.GetItemQueryIterator<T>(
+            return new FeedIteratorInlineCore<T>(base.GetItemQueryIterator<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions));
@@ -217,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorInlineCore(this.container.GetItemQueryStreamIterator(
+            return new FeedIteratorInlineCore(base.GetItemQueryStreamIterator(
                 queryText,
                 continuationToken,
                 requestOptions));
@@ -228,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorInlineCore<T>(this.container.GetItemQueryIterator<T>(
+            return new FeedIteratorInlineCore<T>(base.GetItemQueryIterator<T>(
                 queryText,
                 continuationToken,
                 requestOptions));
@@ -238,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemLinqQueryable<T>(
+            return base.GetItemLinqQueryable<T>(
                 allowSynchronousQueryExecution,
                 continuationToken,
                 requestOptions);
@@ -248,103 +244,91 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangesHandler<T> onChangesDelegate)
         {
-            return this.container.GetChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
+            return base.GetChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
-            return this.container.GetChangeFeedEstimatorBuilder(processorName, estimationDelegate, estimationPeriod);
+            return base.GetChangeFeedEstimatorBuilder(processorName, estimationDelegate, estimationPeriod);
         }
 
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
-            return this.container.CreateTransactionalBatch(partitionKey);
-        }
-#if PREVIEW
-        public override Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(cancellationToken));
+            return base.CreateTransactionalBatch(partitionKey);
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.container.GetChangeFeedStreamIterator(changeFeedRequestOptions);
+            return TaskHelper.RunInlineIfNeededAsync(() => base.GetFeedRangesAsync(cancellationToken));
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
-            FeedToken feedToken,
+            string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return this.container.GetChangeFeedStreamIterator(feedToken, changeFeedRequestOptions);
+            return base.GetChangeFeedStreamIterator(continuationToken, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator GetChangeFeedStreamIterator(
+            FeedRange feedRange,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return base.GetChangeFeedStreamIterator(feedRange, changeFeedRequestOptions);
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return this.container.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return this.container.GetChangeFeedIterator<T>(changeFeedRequestOptions);
+            return base.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedToken feedToken,
+            string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return this.container.GetChangeFeedIterator<T>(feedToken, changeFeedRequestOptions);
+            return base.GetChangeFeedIterator<T>(continuationToken, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
+            FeedRange feedRange,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return base.GetChangeFeedIterator<T>(feedRange, changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return this.container.GetChangeFeedIterator<T>(partitionKey, changeFeedRequestOptions);
+            return base.GetChangeFeedIterator<T>(partitionKey, changeFeedRequestOptions);
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedToken feedToken,
+            FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetPartitionKeyRangesAsync(feedToken, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => base.GetPartitionKeyRangesAsync(feedRange, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            string queryText = null,
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemQueryStreamIterator(feedToken, queryText, requestOptions);
+            return base.GetItemQueryStreamIterator(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            string queryText = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            return this.container.GetItemQueryIterator<T>(feedToken, queryText, requestOptions);
-        }
-
-        public override FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
+            FeedRange feedRange,
             QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemQueryStreamIterator(feedToken, queryDefinition, requestOptions);
+            return base.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
         }
-
-        public override FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,
-            QueryRequestOptions requestOptions = null)
-        {
-            return this.container.GetItemQueryIterator<T>(feedToken, queryDefinition, requestOptions);
-        }
-#endif
-        public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }
 }

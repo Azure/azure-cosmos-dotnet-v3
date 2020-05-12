@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultDispatchTimerInSeconds = 1;
         private const int MinimumDispatchTimerInSeconds = 1;
 
-        private readonly ContainerCore cosmosContainer;
+        private readonly ContainerInternal cosmosContainer;
         private readonly CosmosClientContext cosmosClientContext;
         private readonly int maxServerRequestBodyLength;
         private readonly int maxServerRequestOperationCount;
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public BatchAsyncContainerExecutor(
-            ContainerCore cosmosContainer,
+            ContainerInternal cosmosContainer,
             CosmosClientContext cosmosClientContext,
             int maxServerRequestOperationCount,
             int maxServerRequestBodyLength,
@@ -186,6 +186,7 @@ namespace Microsoft.Azure.Cosmos
         {
             requestMessage.Headers.PartitionKeyRangeId = partitionKeyRangeId;
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.FalseString);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
         }
 
@@ -229,11 +230,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
-            CosmosDiagnosticScope limiterScope = diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.Limiter");
             SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(serverRequest.PartitionKeyRangeId);
-            using (await limiter.UsingWaitAsync(cancellationToken))
+            using (await limiter.UsingWaitAsync(diagnosticsContext, cancellationToken))
             {
-                limiterScope.Dispose();
                 using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
@@ -251,7 +250,12 @@ namespace Microsoft.Azure.Cosmos
 
                     using (diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.ToResponse"))
                     {
-                        TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.SerializerCore).ConfigureAwait(false);
+                        TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                            responseMessage,
+                            serverRequest,
+                            this.cosmosClientContext.SerializerCore,
+                            shouldPromoteOperationStatus: true,
+                            cancellationToken).ConfigureAwait(false);
 
                         return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                     }

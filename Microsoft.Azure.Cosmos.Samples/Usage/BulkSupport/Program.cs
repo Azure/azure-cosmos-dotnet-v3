@@ -19,7 +19,7 @@
     // Prerequisites - 
     // 
     // 1. An Azure Cosmos account - 
-    //    https://azure.microsoft.com/en-us/itemation/articles/itemdb-create-account/
+    //    https://docs.microsoft.com/azure/cosmos-db/create-cosmosdb-resources-portal
     //
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 

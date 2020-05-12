@@ -1,6 +1,9 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 33
+
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;
@@ -67,9 +70,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return new EagerCosmosInt64(number);
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore SA1600 // Elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(databaseSettings.LastModified.HasValue);
             Assert.IsTrue(databaseSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), databaseSettings.LastModified.Value.ToString());
 
-            DatabaseCore databaseCore = response.Database as DatabaseInlineCore;
+            DatabaseInternal databaseCore = response.Database as DatabaseInlineCore;
             Assert.IsNotNull(databaseCore);
             Assert.IsNotNull(databaseCore.LinkUri);
             Assert.IsFalse(databaseCore.LinkUri.ToString().StartsWith("/"));
@@ -76,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string diagnostics = response.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(response.Database is DatabaseInlineCore);
 
             response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
@@ -83,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             diagnostics = response.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(response.Database is DatabaseInlineCore);
         }
 
         [TestMethod]

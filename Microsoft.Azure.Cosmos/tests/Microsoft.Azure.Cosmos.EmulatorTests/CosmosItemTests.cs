@@ -58,11 +58,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public void ParentResourceTest()
+        {
+            Assert.AreEqual(this.database, this.Container.Database);
+            Assert.AreEqual(this.cosmosClient, this.Container.Database.Client);
+        }
+
+        [TestMethod]
         public async Task CreateDropItemTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
             Assert.IsNotNull(response);
+            Assert.IsNotNull(response.Resource);
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
@@ -77,6 +85,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNull(response.Content);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task MemoryStreamBufferIsAccessibleOnResponse()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.SerializerCore.ToStream(testItem), partitionKey: new Cosmos.PartitionKey(testItem.status));
+            Assert.IsNotNull(response);
+            Assert.IsTrue((response.Content as MemoryStream).TryGetBuffer(out _));
         }
 
         [TestMethod]
@@ -265,14 +282,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
-            ContainerCore testContainer = (ContainerInlineCore)client.GetContainer(dbName, containerName);
+            ContainerInternal testContainer = (ContainerInlineCore)client.GetContainer(dbName, containerName);
 
             int loopCount = 2;
             for (int i = 0; i < loopCount; i++)
             {
                 try
                 {
-                    await testContainer.GetNonePartitionKeyValueAsync();
+                    await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
                     Assert.Fail();
                 }
                 catch (CosmosException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
@@ -290,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetNonePartitionKeyValueAsync();
+                await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
             }
 
             // expected once post create 
@@ -1023,7 +1040,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemEpkQuerySingleKeyRangeValidation()
         {
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            ContainerCore container = null;
+            ContainerInternal container = null;
             try
             {
                 // Create a container large enough to have at least 2 partitions
@@ -1056,7 +1073,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     properties: new Dictionary<string, object>()
                     {
                         {"x-ms-effective-partition-key-string", "AA" }
-                    });
+                    },
+                    feedRangeInternal: null);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
             }
@@ -1230,10 +1248,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 IfMatchEtag = Guid.NewGuid().ToString(),
             };
 
+            using (ResponseMessage responseMessage = await this.Container.UpsertItemStreamAsync(
+                    streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
+                    partitionKey: new Cosmos.PartitionKey(testItem.status),
+                    requestOptions: itemRequestOptions))
+            {
+                Assert.IsNotNull(responseMessage);
+                Assert.IsNull(responseMessage.Content);
+                Assert.AreEqual(HttpStatusCode.PreconditionFailed, responseMessage.StatusCode, responseMessage.ErrorMessage);
+                Assert.AreNotEqual(responseMessage.Headers.ActivityId, Guid.Empty);
+                Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
+                Assert.IsFalse(string.IsNullOrEmpty(responseMessage.ErrorMessage));
+                Assert.IsTrue(responseMessage.ErrorMessage.Contains("One of the specified pre-condition is not met"));
+            }
+
             try
             {
-                ItemResponse<ToDoActivity> response = await this.Container.ReplaceItemAsync<ToDoActivity>(
-                    id: testItem.id,
+                ItemResponse<ToDoActivity> response = await this.Container.UpsertItemAsync<ToDoActivity>(
                     item: testItem,
                     requestOptions: itemRequestOptions);
                 Assert.Fail("Access condition should have failed");
@@ -1242,8 +1273,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsNotNull(e);
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
-                Assert.IsNotNull(e.ActivityId);
+                Assert.AreNotEqual(e.ActivityId, Guid.Empty);
                 Assert.IsTrue(e.RequestCharge > 0);
+                Assert.AreEqual($"{{{Environment.NewLine}  \"Errors\": [{Environment.NewLine}    \"One of the specified pre-condition is not met\"{Environment.NewLine}  ]{Environment.NewLine}}}", e.ResponseBody);
+                string expectedMessage = $"Response status code does not indicate success: PreconditionFailed (412); Substatus: 0; ActivityId: {e.ActivityId}; Reason: ({{{Environment.NewLine}  \"Errors\": [{Environment.NewLine}    \"One of the specified pre-condition is not met\"{Environment.NewLine}  ]{Environment.NewLine}}});";
+                Assert.AreEqual(expectedMessage, e.Message);
             }
             finally
             {
@@ -1288,7 +1322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadNonPartitionItemAsync()
         {
-            ContainerCore fixedContainer = null;
+            ContainerInternal fixedContainer = null;
             try
             {
                 fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -1418,7 +1452,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task MigrateDataInNonPartitionContainer()
         {
-            ContainerCore fixedContainer = null;
+            ContainerInternal fixedContainer = null;
             try
             {
                 fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -1639,7 +1673,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string containerName = Guid.NewGuid().ToString();
 
                 db1 = await cc1.CreateDatabaseAsync(dbName);
-                ContainerCore container1 = (ContainerInlineCore)await db1.CreateContainerAsync(containerName, "/id");
+                ContainerInternal container1 = (ContainerInlineCore)await db1.CreateContainerAsync(containerName, "/id");
 
                 await operation(container1, HttpStatusCode.OK);
 

@@ -80,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            resourceUri: this.ResourceLink,
                            resourceType: this.ResourceTypeEnum,
                            operationType: this.OperationTypeEnum,
+                           clientQueryCorrelationId: this.CorrelatedActivityId,
                            requestOptions: requestOptions,
                            sqlQuerySpec: querySpecForInit,
                            continuationToken: continuationToken,

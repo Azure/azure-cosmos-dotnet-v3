@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos
     // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
     internal class ConflictsCore : Conflicts
     {
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly CosmosClientContext clientContext;
 
         public ConflictsCore(
             CosmosClientContext clientContext,
-            ContainerCore container)
+            ContainerInternal container)
         {
             if (clientContext == null)
             {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return FeedIteratorCore.CreateForNonPartitionedResource(
+            return new FeedIteratorCore(
                clientContext: this.clientContext,
                this.container.LinkUri,
                resourceType: ResourceType.Conflict,
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
-            DatabaseCore databaseCore = (DatabaseCore)this.container.Database;
+            DatabaseInternal databaseCore = (DatabaseInternal)this.container.Database;
             string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
             string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
 
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
                 uriPathSegment: Paths.DocumentsPathSegment,
                 id: cosmosConflict.SourceResourceId);
 
-            Task<ResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: itemLink,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.Read,
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
-            return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)

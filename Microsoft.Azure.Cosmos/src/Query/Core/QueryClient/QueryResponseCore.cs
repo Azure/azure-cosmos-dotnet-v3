@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 #else
     internal
 #endif
-    struct QueryResponseCore
+    readonly struct QueryResponseCore
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
         internal static readonly string EmptyGuidString = Guid.Empty.ToString();

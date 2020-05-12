@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// This is an interface to allow a custom serializer to be used by the CosmosClient
@@ -92,6 +91,16 @@ namespace Microsoft.Azure.Cosmos
             return serializer.ToStream<SqlQuerySpec>(input);
         }
 
+        internal CosmosSerializer GetCustomOrDefaultSerializer()
+        {
+            if (this.customSerializer != null)
+            {
+                return this.customSerializer;
+            }
+
+            return CosmosSerializerCore.propertiesSerializer;
+        }
+
         internal IEnumerable<T> FromFeedResponseStream<T>(
             Stream stream,
             ResourceType resourceType)
@@ -121,7 +130,6 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(TriggerProperties) ||
                 inputType == typeof(UserDefinedFunctionProperties) ||
                 inputType == typeof(UserProperties) ||
-                inputType == typeof(DataEncryptionKeyProperties) ||
                 inputType == typeof(ConflictProperties) ||
                 inputType == typeof(ThroughputProperties) ||
                 inputType == typeof(OfferV2) ||

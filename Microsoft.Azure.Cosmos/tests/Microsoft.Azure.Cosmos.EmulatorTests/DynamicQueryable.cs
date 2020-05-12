@@ -148,26 +148,17 @@ namespace System.Linq.Dynamic
 
     public class DynamicProperty
     {
-        string name;
-        Type type;
-
         public DynamicProperty(string name, Type type)
         {
             if (name == null) throw new ArgumentNullException("name");
             if (type == null) throw new ArgumentNullException("type");
-            this.name = name;
-            this.type = type;
+            this.Name = name;
+            this.Type = type;
         }
 
-        public string Name
-        {
-            get { return name; }
-        }
+        public string Name { get; }
 
-        public Type Type
-        {
-            get { return type; }
-        }
+        public Type Type { get; }
     }
 
     public static class DynamicExpression
@@ -219,30 +210,30 @@ namespace System.Linq.Dynamic
         public Signature(IEnumerable<DynamicProperty> properties)
         {
             this.properties = properties.ToArray();
-            hashCode = 0;
+            this.hashCode = 0;
             foreach (DynamicProperty p in properties)
             {
-                hashCode ^= p.Name.GetHashCode() ^ p.Type.GetHashCode();
+                this.hashCode ^= p.Name.GetHashCode() ^ p.Type.GetHashCode();
             }
         }
 
         public override int GetHashCode()
         {
-            return hashCode;
+            return this.hashCode;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is Signature ? Equals((Signature)obj) : false;
+            return obj is Signature ? this.Equals((Signature)obj) : false;
         }
 
         public bool Equals(Signature other)
         {
-            if (properties.Length != other.properties.Length) return false;
-            for (int i = 0; i < properties.Length; i++)
+            if (this.properties.Length != other.properties.Length) return false;
+            for (int i = 0; i < this.properties.Length; i++)
             {
-                if (properties[i].Name != other.properties[i].Name ||
-                    properties[i].Type != other.properties[i].Type) return false;
+                if (this.properties[i].Name != other.properties[i].Name ||
+                    this.properties[i].Type != other.properties[i].Type) return false;
             }
             return true;
         }
@@ -268,7 +259,7 @@ namespace System.Linq.Dynamic
 #endif
             try
             {
-                module = assembly.DefineDynamicModule("Module");
+                this.module = assembly.DefineDynamicModule("Module");
             }
             finally
             {
@@ -276,36 +267,36 @@ namespace System.Linq.Dynamic
                 PermissionSet.RevertAssert();
 #endif
             }
-            classes = new Dictionary<Signature, Type>();
-            rwLock = new ReaderWriterLock();
+            this.classes = new Dictionary<Signature, Type>();
+            this.rwLock = new ReaderWriterLock();
         }
 
         public Type GetDynamicClass(IEnumerable<DynamicProperty> properties)
         {
-            rwLock.AcquireReaderLock(Timeout.Infinite);
+            this.rwLock.AcquireReaderLock(Timeout.Infinite);
             try
             {
                 Signature signature = new Signature(properties);
                 Type type;
-                if (!classes.TryGetValue(signature, out type))
+                if (!this.classes.TryGetValue(signature, out type))
                 {
-                    type = CreateDynamicClass(signature.properties);
-                    classes.Add(signature, type);
+                    type = this.CreateDynamicClass(signature.properties);
+                    this.classes.Add(signature, type);
                 }
                 return type;
             }
             finally
             {
-                rwLock.ReleaseReaderLock();
+                this.rwLock.ReleaseReaderLock();
             }
         }
 
         Type CreateDynamicClass(DynamicProperty[] properties)
         {
-            LockCookie cookie = rwLock.UpgradeToWriterLock(Timeout.Infinite);
+            LockCookie cookie = this.rwLock.UpgradeToWriterLock(Timeout.Infinite);
             try
             {
-                string typeName = "DynamicClass" + (classCount + 1);
+                string typeName = "DynamicClass" + (this.classCount + 1);
 #if ENABLE_LINQ_PARTIAL_TRUST
                 new ReflectionPermission(PermissionState.Unrestricted).Assert();
 #endif
@@ -313,11 +304,11 @@ namespace System.Linq.Dynamic
                 {
                     TypeBuilder tb = this.module.DefineType(typeName, TypeAttributes.Class |
                         TypeAttributes.Public, typeof(DynamicClass));
-                    FieldInfo[] fields = GenerateProperties(tb, properties);
-                    GenerateEquals(tb, fields);
-                    GenerateGetHashCode(tb, fields);
+                    FieldInfo[] fields = this.GenerateProperties(tb, properties);
+                    this.GenerateEquals(tb, fields);
+                    this.GenerateGetHashCode(tb, fields);
                     Type result = tb.CreateType();
-                    classCount++;
+                    this.classCount++;
                     return result;
                 }
                 finally
@@ -329,7 +320,7 @@ namespace System.Linq.Dynamic
             }
             finally
             {
-                rwLock.DowngradeFromWriterLock(ref cookie);
+                this.rwLock.DowngradeFromWriterLock(ref cookie);
             }
         }
 
@@ -424,22 +415,17 @@ namespace System.Linq.Dynamic
 
     public sealed class ParseException : Exception
     {
-        int position;
-
         public ParseException(string message, int position)
             : base(message)
         {
-            this.position = position;
+            this.Position = position;
         }
 
-        public int Position
-        {
-            get { return position; }
-        }
+        public int Position { get; }
 
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, Res.ParseExceptionFormat, Message, position);
+            return string.Format(CultureInfo.CurrentCulture, Res.ParseExceptionFormat, this.Message, this.Position);
         }
     }
 
@@ -642,23 +628,23 @@ namespace System.Linq.Dynamic
         {
             if (expression == null) throw new ArgumentNullException("expression");
             if (keywords == null) keywords = CreateKeywords();
-            symbols = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            literals = new Dictionary<Expression, string>();
-            if (parameters != null) ProcessParameters(parameters);
-            if (values != null) ProcessValues(values);
-            text = expression;
-            textLen = text.Length;
-            SetTextPos(0);
-            NextToken();
+            this.symbols = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            this.literals = new Dictionary<Expression, string>();
+            if (parameters != null) this.ProcessParameters(parameters);
+            if (values != null) this.ProcessValues(values);
+            this.text = expression;
+            this.textLen = this.text.Length;
+            this.SetTextPos(0);
+            this.NextToken();
         }
 
         void ProcessParameters(ParameterExpression[] parameters)
         {
             foreach (ParameterExpression pe in parameters)
                 if (!String.IsNullOrEmpty(pe.Name))
-                    AddSymbol(pe.Name, pe);
+                    this.AddSymbol(pe.Name, pe);
             if (parameters.Length == 1 && String.IsNullOrEmpty(parameters[0].Name))
-                it = parameters[0];
+                this.it = parameters[0];
         }
 
         void ProcessValues(object[] values)
@@ -668,30 +654,30 @@ namespace System.Linq.Dynamic
                 object value = values[i];
                 if (i == values.Length - 1 && value is IDictionary<string, object>)
                 {
-                    externals = (IDictionary<string, object>)value;
+                    this.externals = (IDictionary<string, object>)value;
                 }
                 else
                 {
-                    AddSymbol("@" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), value);
+                    this.AddSymbol("@" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), value);
                 }
             }
         }
 
         void AddSymbol(string name, object value)
         {
-            if (symbols.ContainsKey(name))
-                throw ParseError(Res.DuplicateIdentifier, name);
-            symbols.Add(name, value);
+            if (this.symbols.ContainsKey(name))
+                throw this.ParseError(Res.DuplicateIdentifier, name);
+            this.symbols.Add(name, value);
         }
 
         public Expression Parse(Type resultType)
         {
-            int exprPos = token.pos;
-            Expression expr = ParseExpression();
+            int exprPos = this.token.pos;
+            Expression expr = this.ParseExpression();
             if (resultType != null)
-                if ((expr = PromoteExpression(expr, resultType, true)) == null)
-                    throw ParseError(exprPos, Res.ExpressionTypeMismatch, GetTypeName(resultType));
-            ValidateToken(TokenId.End, Res.SyntaxError);
+                if ((expr = this.PromoteExpression(expr, resultType, true)) == null)
+                    throw this.ParseError(exprPos, Res.ExpressionTypeMismatch, GetTypeName(resultType));
+            this.ValidateToken(TokenId.End, Res.SyntaxError);
             return expr;
         }
 
@@ -701,22 +687,22 @@ namespace System.Linq.Dynamic
             List<DynamicOrdering> orderings = new List<DynamicOrdering>();
             while (true)
             {
-                Expression expr = ParseExpression();
+                Expression expr = this.ParseExpression();
                 bool ascending = true;
-                if (TokenIdentifierIs("asc") || TokenIdentifierIs("ascending"))
+                if (this.TokenIdentifierIs("asc") || this.TokenIdentifierIs("ascending"))
                 {
-                    NextToken();
+                    this.NextToken();
                 }
-                else if (TokenIdentifierIs("desc") || TokenIdentifierIs("descending"))
+                else if (this.TokenIdentifierIs("desc") || this.TokenIdentifierIs("descending"))
                 {
-                    NextToken();
+                    this.NextToken();
                     ascending = false;
                 }
                 orderings.Add(new DynamicOrdering { Selector = expr, Ascending = ascending });
-                if (token.id != TokenId.Comma) break;
-                NextToken();
+                if (this.token.id != TokenId.Comma) break;
+                this.NextToken();
             }
-            ValidateToken(TokenId.End, Res.SyntaxError);
+            this.ValidateToken(TokenId.End, Res.SyntaxError);
             return orderings;
         }
 #pragma warning restore 0219
@@ -724,16 +710,16 @@ namespace System.Linq.Dynamic
         // ?: operator
         Expression ParseExpression()
         {
-            int errorPos = token.pos;
-            Expression expr = ParseLogicalOr();
-            if (token.id == TokenId.Question)
+            int errorPos = this.token.pos;
+            Expression expr = this.ParseLogicalOr();
+            if (this.token.id == TokenId.Question)
             {
-                NextToken();
-                Expression expr1 = ParseExpression();
-                ValidateToken(TokenId.Colon, Res.ColonExpected);
-                NextToken();
-                Expression expr2 = ParseExpression();
-                expr = GenerateConditional(expr, expr1, expr2, errorPos);
+                this.NextToken();
+                Expression expr1 = this.ParseExpression();
+                this.ValidateToken(TokenId.Colon, Res.ColonExpected);
+                this.NextToken();
+                Expression expr2 = this.ParseExpression();
+                expr = this.GenerateConditional(expr, expr1, expr2, errorPos);
             }
             return expr;
         }
@@ -741,13 +727,13 @@ namespace System.Linq.Dynamic
         // ||, or operator
         Expression ParseLogicalOr()
         {
-            Expression left = ParseLogicalAnd();
-            while (token.id == TokenId.DoubleBar || TokenIdentifierIs("or"))
+            Expression left = this.ParseLogicalAnd();
+            while (this.token.id == TokenId.DoubleBar || this.TokenIdentifierIs("or"))
             {
-                Token op = token;
-                NextToken();
-                Expression right = ParseLogicalAnd();
-                CheckAndPromoteOperands(typeof(ILogicalSignatures), op.text, ref left, ref right, op.pos);
+                Token op = this.token;
+                this.NextToken();
+                Expression right = this.ParseLogicalAnd();
+                this.CheckAndPromoteOperands(typeof(ILogicalSignatures), op.text, ref left, ref right, op.pos);
                 left = Expression.OrElse(left, right);
             }
             return left;
@@ -756,13 +742,13 @@ namespace System.Linq.Dynamic
         // &&, and operator
         Expression ParseLogicalAnd()
         {
-            Expression left = ParseComparison();
-            while (token.id == TokenId.DoubleAmphersand || TokenIdentifierIs("and"))
+            Expression left = this.ParseComparison();
+            while (this.token.id == TokenId.DoubleAmphersand || this.TokenIdentifierIs("and"))
             {
-                Token op = token;
-                NextToken();
-                Expression right = ParseComparison();
-                CheckAndPromoteOperands(typeof(ILogicalSignatures), op.text, ref left, ref right, op.pos);
+                Token op = this.token;
+                this.NextToken();
+                Expression right = this.ParseComparison();
+                this.CheckAndPromoteOperands(typeof(ILogicalSignatures), op.text, ref left, ref right, op.pos);
                 left = Expression.AndAlso(left, right);
             }
             return left;
@@ -771,15 +757,15 @@ namespace System.Linq.Dynamic
         // =, ==, !=, <>, >, >=, <, <= operators
         Expression ParseComparison()
         {
-            Expression left = ParseAdditive();
-            while (token.id == TokenId.Equal || token.id == TokenId.DoubleEqual ||
-                token.id == TokenId.ExclamationEqual || token.id == TokenId.LessGreater ||
-                token.id == TokenId.GreaterThan || token.id == TokenId.GreaterThanEqual ||
-                token.id == TokenId.LessThan || token.id == TokenId.LessThanEqual)
+            Expression left = this.ParseAdditive();
+            while (this.token.id == TokenId.Equal || this.token.id == TokenId.DoubleEqual ||
+                this.token.id == TokenId.ExclamationEqual || this.token.id == TokenId.LessGreater ||
+                this.token.id == TokenId.GreaterThan || this.token.id == TokenId.GreaterThanEqual ||
+                this.token.id == TokenId.LessThan || this.token.id == TokenId.LessThanEqual)
             {
-                Token op = token;
-                NextToken();
-                Expression right = ParseAdditive();
+                Token op = this.token;
+                this.NextToken();
+                Expression right = this.ParseAdditive();
                 bool isEquality = op.id == TokenId.Equal || op.id == TokenId.DoubleEqual ||
                     op.id == TokenId.ExclamationEqual || op.id == TokenId.LessGreater;
                 if (isEquality && !left.Type.IsValueType && !right.Type.IsValueType)
@@ -796,7 +782,7 @@ namespace System.Linq.Dynamic
                         }
                         else
                         {
-                            throw IncompatibleOperandsError(op.text, left, right, op.pos);
+                            throw this.IncompatibleOperandsError(op.text, left, right, op.pos);
                         }
                     }
                 }
@@ -805,46 +791,46 @@ namespace System.Linq.Dynamic
                     if (left.Type != right.Type)
                     {
                         Expression e;
-                        if ((e = PromoteExpression(right, left.Type, true)) != null)
+                        if ((e = this.PromoteExpression(right, left.Type, true)) != null)
                         {
                             right = e;
                         }
-                        else if ((e = PromoteExpression(left, right.Type, true)) != null)
+                        else if ((e = this.PromoteExpression(left, right.Type, true)) != null)
                         {
                             left = e;
                         }
                         else
                         {
-                            throw IncompatibleOperandsError(op.text, left, right, op.pos);
+                            throw this.IncompatibleOperandsError(op.text, left, right, op.pos);
                         }
                     }
                 }
                 else
                 {
-                    CheckAndPromoteOperands(isEquality ? typeof(IEqualitySignatures) : typeof(IRelationalSignatures),
+                    this.CheckAndPromoteOperands(isEquality ? typeof(IEqualitySignatures) : typeof(IRelationalSignatures),
                         op.text, ref left, ref right, op.pos);
                 }
                 switch (op.id)
                 {
                     case TokenId.Equal:
                     case TokenId.DoubleEqual:
-                        left = GenerateEqual(left, right);
+                        left = this.GenerateEqual(left, right);
                         break;
                     case TokenId.ExclamationEqual:
                     case TokenId.LessGreater:
-                        left = GenerateNotEqual(left, right);
+                        left = this.GenerateNotEqual(left, right);
                         break;
                     case TokenId.GreaterThan:
-                        left = GenerateGreaterThan(left, right);
+                        left = this.GenerateGreaterThan(left, right);
                         break;
                     case TokenId.GreaterThanEqual:
-                        left = GenerateGreaterThanEqual(left, right);
+                        left = this.GenerateGreaterThanEqual(left, right);
                         break;
                     case TokenId.LessThan:
-                        left = GenerateLessThan(left, right);
+                        left = this.GenerateLessThan(left, right);
                         break;
                     case TokenId.LessThanEqual:
-                        left = GenerateLessThanEqual(left, right);
+                        left = this.GenerateLessThanEqual(left, right);
                         break;
                 }
             }
@@ -854,27 +840,27 @@ namespace System.Linq.Dynamic
         // +, -, & operators
         Expression ParseAdditive()
         {
-            Expression left = ParseMultiplicative();
-            while (token.id == TokenId.Plus || token.id == TokenId.Minus ||
-                token.id == TokenId.Amphersand)
+            Expression left = this.ParseMultiplicative();
+            while (this.token.id == TokenId.Plus || this.token.id == TokenId.Minus ||
+                this.token.id == TokenId.Amphersand)
             {
-                Token op = token;
-                NextToken();
-                Expression right = ParseMultiplicative();
+                Token op = this.token;
+                this.NextToken();
+                Expression right = this.ParseMultiplicative();
                 switch (op.id)
                 {
                     case TokenId.Plus:
                         if (left.Type == typeof(string) || right.Type == typeof(string))
                             goto case TokenId.Amphersand;
-                        CheckAndPromoteOperands(typeof(IAddSignatures), op.text, ref left, ref right, op.pos);
-                        left = GenerateAdd(left, right);
+                        this.CheckAndPromoteOperands(typeof(IAddSignatures), op.text, ref left, ref right, op.pos);
+                        left = this.GenerateAdd(left, right);
                         break;
                     case TokenId.Minus:
-                        CheckAndPromoteOperands(typeof(ISubtractSignatures), op.text, ref left, ref right, op.pos);
-                        left = GenerateSubtract(left, right);
+                        this.CheckAndPromoteOperands(typeof(ISubtractSignatures), op.text, ref left, ref right, op.pos);
+                        left = this.GenerateSubtract(left, right);
                         break;
                     case TokenId.Amphersand:
-                        left = GenerateStringConcat(left, right);
+                        left = this.GenerateStringConcat(left, right);
                         break;
                 }
             }
@@ -884,14 +870,14 @@ namespace System.Linq.Dynamic
         // *, /, %, mod operators
         Expression ParseMultiplicative()
         {
-            Expression left = ParseUnary();
-            while (token.id == TokenId.Asterisk || token.id == TokenId.Slash ||
-                token.id == TokenId.Percent || TokenIdentifierIs("mod"))
+            Expression left = this.ParseUnary();
+            while (this.token.id == TokenId.Asterisk || this.token.id == TokenId.Slash ||
+                this.token.id == TokenId.Percent || this.TokenIdentifierIs("mod"))
             {
-                Token op = token;
-                NextToken();
-                Expression right = ParseUnary();
-                CheckAndPromoteOperands(typeof(IArithmeticSignatures), op.text, ref left, ref right, op.pos);
+                Token op = this.token;
+                this.NextToken();
+                Expression right = this.ParseUnary();
+                this.CheckAndPromoteOperands(typeof(IArithmeticSignatures), op.text, ref left, ref right, op.pos);
                 switch (op.id)
                 {
                     case TokenId.Asterisk:
@@ -912,47 +898,47 @@ namespace System.Linq.Dynamic
         // -, !, not unary operators
         Expression ParseUnary()
         {
-            if (token.id == TokenId.Minus || token.id == TokenId.Exclamation ||
-                TokenIdentifierIs("not"))
+            if (this.token.id == TokenId.Minus || this.token.id == TokenId.Exclamation ||
+                this.TokenIdentifierIs("not"))
             {
-                Token op = token;
-                NextToken();
-                if (op.id == TokenId.Minus && (token.id == TokenId.IntegerLiteral ||
-                    token.id == TokenId.RealLiteral))
+                Token op = this.token;
+                this.NextToken();
+                if (op.id == TokenId.Minus && (this.token.id == TokenId.IntegerLiteral ||
+                    this.token.id == TokenId.RealLiteral))
                 {
-                    token.text = "-" + token.text;
-                    token.pos = op.pos;
-                    return ParsePrimary();
+                    this.token.text = "-" + this.token.text;
+                    this.token.pos = op.pos;
+                    return this.ParsePrimary();
                 }
-                Expression expr = ParseUnary();
+                Expression expr = this.ParseUnary();
                 if (op.id == TokenId.Minus)
                 {
-                    CheckAndPromoteOperand(typeof(INegationSignatures), op.text, ref expr, op.pos);
+                    this.CheckAndPromoteOperand(typeof(INegationSignatures), op.text, ref expr, op.pos);
                     expr = Expression.Negate(expr);
                 }
                 else
                 {
-                    CheckAndPromoteOperand(typeof(INotSignatures), op.text, ref expr, op.pos);
+                    this.CheckAndPromoteOperand(typeof(INotSignatures), op.text, ref expr, op.pos);
                     expr = Expression.Not(expr);
                 }
                 return expr;
             }
-            return ParsePrimary();
+            return this.ParsePrimary();
         }
 
         Expression ParsePrimary()
         {
-            Expression expr = ParsePrimaryStart();
+            Expression expr = this.ParsePrimaryStart();
             while (true)
             {
-                if (token.id == TokenId.Dot)
+                if (this.token.id == TokenId.Dot)
                 {
-                    NextToken();
-                    expr = ParseMemberAccess(null, expr);
+                    this.NextToken();
+                    expr = this.ParseMemberAccess(null, expr);
                 }
-                else if (token.id == TokenId.OpenBracket)
+                else if (this.token.id == TokenId.OpenBracket)
                 {
-                    expr = ParseElementAccess(expr);
+                    expr = this.ParseElementAccess(expr);
                 }
                 else
                 {
@@ -964,28 +950,28 @@ namespace System.Linq.Dynamic
 
         Expression ParsePrimaryStart()
         {
-            switch (token.id)
+            switch (this.token.id)
             {
                 case TokenId.Identifier:
-                    return ParseIdentifier();
+                    return this.ParseIdentifier();
                 case TokenId.StringLiteral:
-                    return ParseStringLiteral();
+                    return this.ParseStringLiteral();
                 case TokenId.IntegerLiteral:
-                    return ParseIntegerLiteral();
+                    return this.ParseIntegerLiteral();
                 case TokenId.RealLiteral:
-                    return ParseRealLiteral();
+                    return this.ParseRealLiteral();
                 case TokenId.OpenParen:
-                    return ParseParenExpression();
+                    return this.ParseParenExpression();
                 default:
-                    throw ParseError(Res.ExpressionExpected);
+                    throw this.ParseError(Res.ExpressionExpected);
             }
         }
 
         Expression ParseStringLiteral()
         {
-            ValidateToken(TokenId.StringLiteral);
-            char quote = token.text[0];
-            string s = token.text.Substring(1, token.text.Length - 2);
+            this.ValidateToken(TokenId.StringLiteral);
+            char quote = this.token.text[0];
+            string s = this.token.text.Substring(1, this.token.text.Length - 2);
             int start = 0;
             while (true)
             {
@@ -997,45 +983,45 @@ namespace System.Linq.Dynamic
             if (quote == '\'')
             {
                 if (s.Length != 1)
-                    throw ParseError(Res.InvalidCharacterLiteral);
-                NextToken();
-                return CreateLiteral(s[0], s);
+                    throw this.ParseError(Res.InvalidCharacterLiteral);
+                this.NextToken();
+                return this.CreateLiteral(s[0], s);
             }
-            NextToken();
-            return CreateLiteral(s, s);
+            this.NextToken();
+            return this.CreateLiteral(s, s);
         }
 
         Expression ParseIntegerLiteral()
         {
-            ValidateToken(TokenId.IntegerLiteral);
-            string text = token.text;
+            this.ValidateToken(TokenId.IntegerLiteral);
+            string text = this.token.text;
             if (text[0] != '-')
             {
                 ulong value;
                 if (!UInt64.TryParse(text, out value))
-                    throw ParseError(Res.InvalidIntegerLiteral, text);
-                NextToken();
-                if (value <= (ulong)Int32.MaxValue) return CreateLiteral((int)value, text);
-                if (value <= (ulong)UInt32.MaxValue) return CreateLiteral((uint)value, text);
-                if (value <= (ulong)Int64.MaxValue) return CreateLiteral((long)value, text);
-                return CreateLiteral(value, text);
+                    throw this.ParseError(Res.InvalidIntegerLiteral, text);
+                this.NextToken();
+                if (value <= (ulong)Int32.MaxValue) return this.CreateLiteral((int)value, text);
+                if (value <= (ulong)UInt32.MaxValue) return this.CreateLiteral((uint)value, text);
+                if (value <= (ulong)Int64.MaxValue) return this.CreateLiteral((long)value, text);
+                return this.CreateLiteral(value, text);
             }
             else
             {
                 long value;
                 if (!Int64.TryParse(text, out value))
-                    throw ParseError(Res.InvalidIntegerLiteral, text);
-                NextToken();
+                    throw this.ParseError(Res.InvalidIntegerLiteral, text);
+                this.NextToken();
                 if (value >= Int32.MinValue && value <= Int32.MaxValue)
-                    return CreateLiteral((int)value, text);
-                return CreateLiteral(value, text);
+                    return this.CreateLiteral((int)value, text);
+                return this.CreateLiteral(value, text);
             }
         }
 
         Expression ParseRealLiteral()
         {
-            ValidateToken(TokenId.RealLiteral);
-            string text = token.text;
+            this.ValidateToken(TokenId.RealLiteral);
+            string text = this.token.text;
             object value = null;
             char last = text[text.Length - 1];
             if (last == 'F' || last == 'f')
@@ -1048,43 +1034,43 @@ namespace System.Linq.Dynamic
                 double d;
                 if (Double.TryParse(text, out d)) value = d;
             }
-            if (value == null) throw ParseError(Res.InvalidRealLiteral, text);
-            NextToken();
-            return CreateLiteral(value, text);
+            if (value == null) throw this.ParseError(Res.InvalidRealLiteral, text);
+            this.NextToken();
+            return this.CreateLiteral(value, text);
         }
 
         Expression CreateLiteral(object value, string text)
         {
             ConstantExpression expr = Expression.Constant(value);
-            literals.Add(expr, text);
+            this.literals.Add(expr, text);
             return expr;
         }
 
         Expression ParseParenExpression()
         {
-            ValidateToken(TokenId.OpenParen, Res.OpenParenExpected);
-            NextToken();
-            Expression e = ParseExpression();
-            ValidateToken(TokenId.CloseParen, Res.CloseParenOrOperatorExpected);
-            NextToken();
+            this.ValidateToken(TokenId.OpenParen, Res.OpenParenExpected);
+            this.NextToken();
+            Expression e = this.ParseExpression();
+            this.ValidateToken(TokenId.CloseParen, Res.CloseParenOrOperatorExpected);
+            this.NextToken();
             return e;
         }
 
         Expression ParseIdentifier()
         {
-            ValidateToken(TokenId.Identifier);
+            this.ValidateToken(TokenId.Identifier);
             object value;
-            if (keywords.TryGetValue(token.text, out value))
+            if (keywords.TryGetValue(this.token.text, out value))
             {
-                if (value is Type) return ParseTypeAccess((Type)value);
-                if (value == (object)keywordIt) return ParseIt();
-                if (value == (object)keywordIif) return ParseIif();
-                if (value == (object)keywordNew) return ParseNew();
-                NextToken();
+                if (value is Type) return this.ParseTypeAccess((Type)value);
+                if (value == (object)keywordIt) return this.ParseIt();
+                if (value == (object)keywordIif) return this.ParseIif();
+                if (value == (object)keywordNew) return this.ParseNew();
+                this.NextToken();
                 return (Expression)value;
             }
-            if (symbols.TryGetValue(token.text, out value) ||
-                externals != null && externals.TryGetValue(token.text, out value))
+            if (this.symbols.TryGetValue(this.token.text, out value) ||
+                (this.externals != null && this.externals.TryGetValue(this.token.text, out value)))
             {
                 Expression expr = value as Expression;
                 if (expr == null)
@@ -1094,41 +1080,41 @@ namespace System.Linq.Dynamic
                 else
                 {
                     LambdaExpression lambda = expr as LambdaExpression;
-                    if (lambda != null) return ParseLambdaInvocation(lambda);
+                    if (lambda != null) return this.ParseLambdaInvocation(lambda);
                 }
-                NextToken();
+                this.NextToken();
                 return expr;
             }
-            if (it != null) return ParseMemberAccess(null, it);
-            throw ParseError(Res.UnknownIdentifier, token.text);
+            if (this.it != null) return this.ParseMemberAccess(null, this.it);
+            throw this.ParseError(Res.UnknownIdentifier, this.token.text);
         }
 
         Expression ParseIt()
         {
-            if (it == null)
-                throw ParseError(Res.NoItInScope);
-            NextToken();
-            return it;
+            if (this.it == null)
+                throw this.ParseError(Res.NoItInScope);
+            this.NextToken();
+            return this.it;
         }
 
         Expression ParseIif()
         {
-            int errorPos = token.pos;
-            NextToken();
-            Expression[] args = ParseArgumentList();
+            int errorPos = this.token.pos;
+            this.NextToken();
+            Expression[] args = this.ParseArgumentList();
             if (args.Length != 3)
-                throw ParseError(errorPos, Res.IifRequiresThreeArgs);
-            return GenerateConditional(args[0], args[1], args[2], errorPos);
+                throw this.ParseError(errorPos, Res.IifRequiresThreeArgs);
+            return this.GenerateConditional(args[0], args[1], args[2], errorPos);
         }
 
         Expression GenerateConditional(Expression test, Expression expr1, Expression expr2, int errorPos)
         {
             if (test.Type != typeof(bool))
-                throw ParseError(errorPos, Res.FirstExprMustBeBool);
+                throw this.ParseError(errorPos, Res.FirstExprMustBeBool);
             if (expr1.Type != expr2.Type)
             {
-                Expression expr1as2 = expr2 != nullLiteral ? PromoteExpression(expr1, expr2.Type, true) : null;
-                Expression expr2as1 = expr1 != nullLiteral ? PromoteExpression(expr2, expr1.Type, true) : null;
+                Expression expr1as2 = expr2 != nullLiteral ? this.PromoteExpression(expr1, expr2.Type, true) : null;
+                Expression expr2as1 = expr1 != nullLiteral ? this.PromoteExpression(expr2, expr1.Type, true) : null;
                 if (expr1as2 != null && expr2as1 == null)
                 {
                     expr1 = expr1as2;
@@ -1142,8 +1128,8 @@ namespace System.Linq.Dynamic
                     string type1 = expr1 != nullLiteral ? expr1.Type.Name : "null";
                     string type2 = expr2 != nullLiteral ? expr2.Type.Name : "null";
                     if (expr1as2 != null && expr2as1 != null)
-                        throw ParseError(errorPos, Res.BothTypesConvertToOther, type1, type2);
-                    throw ParseError(errorPos, Res.NeitherTypeConvertsToOther, type1, type2);
+                        throw this.ParseError(errorPos, Res.BothTypesConvertToOther, type1, type2);
+                    throw this.ParseError(errorPos, Res.NeitherTypeConvertsToOther, type1, type2);
                 }
             }
             return Expression.Condition(test, expr1, expr2);
@@ -1151,35 +1137,35 @@ namespace System.Linq.Dynamic
 
         Expression ParseNew()
         {
-            NextToken();
-            ValidateToken(TokenId.OpenParen, Res.OpenParenExpected);
-            NextToken();
+            this.NextToken();
+            this.ValidateToken(TokenId.OpenParen, Res.OpenParenExpected);
+            this.NextToken();
             List<DynamicProperty> properties = new List<DynamicProperty>();
             List<Expression> expressions = new List<Expression>();
             while (true)
             {
-                int exprPos = token.pos;
-                Expression expr = ParseExpression();
+                int exprPos = this.token.pos;
+                Expression expr = this.ParseExpression();
                 string propName;
-                if (TokenIdentifierIs("as"))
+                if (this.TokenIdentifierIs("as"))
                 {
-                    NextToken();
-                    propName = GetIdentifier();
-                    NextToken();
+                    this.NextToken();
+                    propName = this.GetIdentifier();
+                    this.NextToken();
                 }
                 else
                 {
                     MemberExpression me = expr as MemberExpression;
-                    if (me == null) throw ParseError(exprPos, Res.MissingAsClause);
+                    if (me == null) throw this.ParseError(exprPos, Res.MissingAsClause);
                     propName = me.Member.Name;
                 }
                 expressions.Add(expr);
                 properties.Add(new DynamicProperty(propName, expr.Type));
-                if (token.id != TokenId.Comma) break;
-                NextToken();
+                if (this.token.id != TokenId.Comma) break;
+                this.NextToken();
             }
-            ValidateToken(TokenId.CloseParen, Res.CloseParenOrCommaExpected);
-            NextToken();
+            this.ValidateToken(TokenId.CloseParen, Res.CloseParenOrCommaExpected);
+            this.NextToken();
             Type type = DynamicExpression.CreateClass(properties);
             MemberBinding[] bindings = new MemberBinding[properties.Count];
             for (int i = 0; i < bindings.Length; i++)
@@ -1189,45 +1175,45 @@ namespace System.Linq.Dynamic
 
         Expression ParseLambdaInvocation(LambdaExpression lambda)
         {
-            int errorPos = token.pos;
-            NextToken();
-            Expression[] args = ParseArgumentList();
+            int errorPos = this.token.pos;
+            this.NextToken();
+            Expression[] args = this.ParseArgumentList();
             MethodBase method;
-            if (FindMethod(lambda.Type, "Invoke", false, args, out method) != 1)
-                throw ParseError(errorPos, Res.ArgsIncompatibleWithLambda);
+            if (this.FindMethod(lambda.Type, "Invoke", false, args, out method) != 1)
+                throw this.ParseError(errorPos, Res.ArgsIncompatibleWithLambda);
             return Expression.Invoke(lambda, args);
         }
 
         Expression ParseTypeAccess(Type type)
         {
-            int errorPos = token.pos;
-            NextToken();
-            if (token.id == TokenId.Question)
+            int errorPos = this.token.pos;
+            this.NextToken();
+            if (this.token.id == TokenId.Question)
             {
                 if (!type.IsValueType || IsNullableType(type))
-                    throw ParseError(errorPos, Res.TypeHasNoNullableForm, GetTypeName(type));
+                    throw this.ParseError(errorPos, Res.TypeHasNoNullableForm, GetTypeName(type));
                 type = typeof(Nullable<>).MakeGenericType(type);
-                NextToken();
+                this.NextToken();
             }
-            if (token.id == TokenId.OpenParen)
+            if (this.token.id == TokenId.OpenParen)
             {
-                Expression[] args = ParseArgumentList();
+                Expression[] args = this.ParseArgumentList();
                 MethodBase method;
-                switch (FindBestMethod(type.GetConstructors(), args, out method))
+                switch (this.FindBestMethod(type.GetConstructors(), args, out method))
                 {
                     case 0:
                         if (args.Length == 1)
-                            return GenerateConversion(args[0], type, errorPos);
-                        throw ParseError(errorPos, Res.NoMatchingConstructor, GetTypeName(type));
+                            return this.GenerateConversion(args[0], type, errorPos);
+                        throw this.ParseError(errorPos, Res.NoMatchingConstructor, GetTypeName(type));
                     case 1:
                         return Expression.New((ConstructorInfo)method, args);
                     default:
-                        throw ParseError(errorPos, Res.AmbiguousConstructorInvocation, GetTypeName(type));
+                        throw this.ParseError(errorPos, Res.AmbiguousConstructorInvocation, GetTypeName(type));
                 }
             }
-            ValidateToken(TokenId.Dot, Res.DotOrOpenParenExpected);
-            NextToken();
-            return ParseMemberAccess(type, null);
+            this.ValidateToken(TokenId.Dot, Res.DotOrOpenParenExpected);
+            this.NextToken();
+            return this.ParseMemberAccess(type, null);
         }
 
         Expression GenerateConversion(Expression expr, Type type, int errorPos)
@@ -1239,24 +1225,24 @@ namespace System.Linq.Dynamic
                 if ((IsNullableType(exprType) || IsNullableType(type)) &&
                     GetNonNullableType(exprType) == GetNonNullableType(type))
                     return Expression.Convert(expr, type);
-                if ((IsNumericType(exprType) || IsEnumType(exprType)) &&
-                    (IsNumericType(type)) || IsEnumType(type))
+                if (((IsNumericType(exprType) || IsEnumType(exprType)) &&
+                    IsNumericType(type)) || IsEnumType(type))
                     return Expression.ConvertChecked(expr, type);
             }
             if (exprType.IsAssignableFrom(type) || type.IsAssignableFrom(exprType) ||
                 exprType.IsInterface || type.IsInterface)
                 return Expression.Convert(expr, type);
-            throw ParseError(errorPos, Res.CannotConvertValue,
+            throw this.ParseError(errorPos, Res.CannotConvertValue,
                 GetTypeName(exprType), GetTypeName(type));
         }
 
         Expression ParseMemberAccess(Type type, Expression instance)
         {
             if (instance != null) type = instance.Type;
-            int errorPos = token.pos;
-            string id = GetIdentifier();
-            NextToken();
-            if (token.id == TokenId.OpenParen)
+            int errorPos = this.token.pos;
+            string id = this.GetIdentifier();
+            this.NextToken();
+            if (this.token.id == TokenId.OpenParen)
             {
                 if (instance != null && type != typeof(string))
                 {
@@ -1264,34 +1250,34 @@ namespace System.Linq.Dynamic
                     if (enumerableType != null)
                     {
                         Type elementType = enumerableType.GetGenericArguments()[0];
-                        return ParseAggregate(instance, elementType, id, errorPos);
+                        return this.ParseAggregate(instance, elementType, id, errorPos);
                     }
                 }
-                Expression[] args = ParseArgumentList();
+                Expression[] args = this.ParseArgumentList();
                 MethodBase mb;
-                switch (FindMethod(type, id, instance == null, args, out mb))
+                switch (this.FindMethod(type, id, instance == null, args, out mb))
                 {
                     case 0:
-                        throw ParseError(errorPos, Res.NoApplicableMethod,
+                        throw this.ParseError(errorPos, Res.NoApplicableMethod,
                             id, GetTypeName(type));
                     case 1:
                         MethodInfo method = (MethodInfo)mb;
                         if (!IsPredefinedType(method.DeclaringType))
-                            throw ParseError(errorPos, Res.MethodsAreInaccessible, GetTypeName(method.DeclaringType));
+                            throw this.ParseError(errorPos, Res.MethodsAreInaccessible, GetTypeName(method.DeclaringType));
                         if (method.ReturnType == typeof(void))
-                            throw ParseError(errorPos, Res.MethodIsVoid,
+                            throw this.ParseError(errorPos, Res.MethodIsVoid,
                                 id, GetTypeName(method.DeclaringType));
                         return Expression.Call(instance, (MethodInfo)method, args);
                     default:
-                        throw ParseError(errorPos, Res.AmbiguousMethodInvocation,
+                        throw this.ParseError(errorPos, Res.AmbiguousMethodInvocation,
                             id, GetTypeName(type));
                 }
             }
             else
             {
-                MemberInfo member = FindPropertyOrField(type, id, instance == null);
+                MemberInfo member = this.FindPropertyOrField(type, id, instance == null);
                 if (member == null)
-                    throw ParseError(errorPos, Res.UnknownPropertyOrField,
+                    throw this.ParseError(errorPos, Res.UnknownPropertyOrField,
                         id, GetTypeName(type));
                 return member is PropertyInfo ?
                     Expression.Property(instance, (PropertyInfo)member) :
@@ -1319,14 +1305,14 @@ namespace System.Linq.Dynamic
 
         Expression ParseAggregate(Expression instance, Type elementType, string methodName, int errorPos)
         {
-            ParameterExpression outerIt = it;
+            ParameterExpression outerIt = this.it;
             ParameterExpression innerIt = Expression.Parameter(elementType, "");
-            it = innerIt;
-            Expression[] args = ParseArgumentList();
-            it = outerIt;
+            this.it = innerIt;
+            Expression[] args = this.ParseArgumentList();
+            this.it = outerIt;
             MethodBase signature;
-            if (FindMethod(typeof(IEnumerableSignatures), methodName, false, args, out signature) != 1)
-                throw ParseError(errorPos, Res.NoApplicableAggregate, methodName);
+            if (this.FindMethod(typeof(IEnumerableSignatures), methodName, false, args, out signature) != 1)
+                throw this.ParseError(errorPos, Res.NoApplicableAggregate, methodName);
             Type[] typeArgs;
             if (signature.Name == "Min" || signature.Name == "Max")
             {
@@ -1349,11 +1335,11 @@ namespace System.Linq.Dynamic
 
         Expression[] ParseArgumentList()
         {
-            ValidateToken(TokenId.OpenParen, Res.OpenParenExpected);
-            NextToken();
-            Expression[] args = token.id != TokenId.CloseParen ? ParseArguments() : new Expression[0];
-            ValidateToken(TokenId.CloseParen, Res.CloseParenOrCommaExpected);
-            NextToken();
+            this.ValidateToken(TokenId.OpenParen, Res.OpenParenExpected);
+            this.NextToken();
+            Expression[] args = this.token.id != TokenId.CloseParen ? this.ParseArguments() : new Expression[0];
+            this.ValidateToken(TokenId.CloseParen, Res.CloseParenOrCommaExpected);
+            this.NextToken();
             return args;
         }
 
@@ -1362,42 +1348,42 @@ namespace System.Linq.Dynamic
             List<Expression> argList = new List<Expression>();
             while (true)
             {
-                argList.Add(ParseExpression());
-                if (token.id != TokenId.Comma) break;
-                NextToken();
+                argList.Add(this.ParseExpression());
+                if (this.token.id != TokenId.Comma) break;
+                this.NextToken();
             }
             return argList.ToArray();
         }
 
         Expression ParseElementAccess(Expression expr)
         {
-            int errorPos = token.pos;
-            ValidateToken(TokenId.OpenBracket, Res.OpenParenExpected);
-            NextToken();
-            Expression[] args = ParseArguments();
-            ValidateToken(TokenId.CloseBracket, Res.CloseBracketOrCommaExpected);
-            NextToken();
+            int errorPos = this.token.pos;
+            this.ValidateToken(TokenId.OpenBracket, Res.OpenParenExpected);
+            this.NextToken();
+            Expression[] args = this.ParseArguments();
+            this.ValidateToken(TokenId.CloseBracket, Res.CloseBracketOrCommaExpected);
+            this.NextToken();
             if (expr.Type.IsArray)
             {
                 if (expr.Type.GetArrayRank() != 1 || args.Length != 1)
-                    throw ParseError(errorPos, Res.CannotIndexMultiDimArray);
-                Expression index = PromoteExpression(args[0], typeof(int), true);
+                    throw this.ParseError(errorPos, Res.CannotIndexMultiDimArray);
+                Expression index = this.PromoteExpression(args[0], typeof(int), true);
                 if (index == null)
-                    throw ParseError(errorPos, Res.InvalidIndex);
+                    throw this.ParseError(errorPos, Res.InvalidIndex);
                 return Expression.ArrayIndex(expr, index);
             }
             else
             {
                 MethodBase mb;
-                switch (FindIndexer(expr.Type, args, out mb))
+                switch (this.FindIndexer(expr.Type, args, out mb))
                 {
                     case 0:
-                        throw ParseError(errorPos, Res.NoApplicableIndexer,
+                        throw this.ParseError(errorPos, Res.NoApplicableIndexer,
                             GetTypeName(expr.Type));
                     case 1:
                         return Expression.Call(expr, (MethodInfo)mb, args);
                     default:
-                        throw ParseError(errorPos, Res.AmbiguousIndexerInvocation,
+                        throw this.ParseError(errorPos, Res.AmbiguousIndexerInvocation,
                             GetTypeName(expr.Type));
                 }
             }
@@ -1477,8 +1463,8 @@ namespace System.Linq.Dynamic
         {
             Expression[] args = new Expression[] { expr };
             MethodBase method;
-            if (FindMethod(signatures, "F", false, args, out method) != 1)
-                throw ParseError(errorPos, Res.IncompatibleOperand,
+            if (this.FindMethod(signatures, "F", false, args, out method) != 1)
+                throw this.ParseError(errorPos, Res.IncompatibleOperand,
                     opName, GetTypeName(args[0].Type));
             expr = args[0];
         }
@@ -1487,15 +1473,15 @@ namespace System.Linq.Dynamic
         {
             Expression[] args = new Expression[] { left, right };
             MethodBase method;
-            if (FindMethod(signatures, "F", false, args, out method) != 1)
-                throw IncompatibleOperandsError(opName, left, right, errorPos);
+            if (this.FindMethod(signatures, "F", false, args, out method) != 1)
+                throw this.IncompatibleOperandsError(opName, left, right, errorPos);
             left = args[0];
             right = args[1];
         }
 
         Exception IncompatibleOperandsError(string opName, Expression left, Expression right, int pos)
         {
-            return ParseError(pos, Res.IncompatibleOperands,
+            return this.ParseError(pos, Res.IncompatibleOperands,
                 opName, GetTypeName(left.Type), GetTypeName(right.Type));
         }
 
@@ -1520,7 +1506,7 @@ namespace System.Linq.Dynamic
             {
                 MemberInfo[] members = t.FindMembers(MemberTypes.Method,
                     flags, Type.FilterNameIgnoreCase, methodName);
-                int count = FindBestMethod(members.Cast<MethodBase>(), args, out method);
+                int count = this.FindBestMethod(members.Cast<MethodBase>(), args, out method);
                 if (count != 0) return count;
             }
             method = null;
@@ -1538,7 +1524,7 @@ namespace System.Linq.Dynamic
                         OfType<PropertyInfo>().
                         Select(p => (MethodBase)p.GetGetMethod()).
                         Where(m => m != null);
-                    int count = FindBestMethod(methods, args, out method);
+                    int count = this.FindBestMethod(methods, args, out method);
                     if (count != 0) return count;
                 }
             }
@@ -1586,7 +1572,7 @@ namespace System.Linq.Dynamic
         {
             MethodData[] applicable = methods.
                 Select(m => new MethodData { MethodBase = m, Parameters = m.GetParameters() }).
-                Where(m => IsApplicable(m, args)).
+                Where(m => this.IsApplicable(m, args)).
                 ToArray();
             if (applicable.Length > 1)
             {
@@ -1615,7 +1601,7 @@ namespace System.Linq.Dynamic
             {
                 ParameterInfo pi = method.Parameters[i];
                 if (pi.IsOut) return false;
-                Expression promoted = PromoteExpression(args[i], pi.ParameterType, false);
+                Expression promoted = this.PromoteExpression(args[i], pi.ParameterType, false);
                 if (promoted == null) return false;
                 promotedArgs[i] = promoted;
             }
@@ -1637,7 +1623,7 @@ namespace System.Linq.Dynamic
                 else
                 {
                     string text;
-                    if (literals.TryGetValue(ce, out text))
+                    if (this.literals.TryGetValue(ce, out text))
                     {
                         Type target = GetNonNullableType(type);
                         Object value = null;
@@ -1903,7 +1889,7 @@ namespace System.Linq.Dynamic
             if (left.Type == typeof(string))
             {
                 return Expression.GreaterThan(
-                    GenerateStaticMethodCall("Compare", left, right),
+                    this.GenerateStaticMethodCall("Compare", left, right),
                     Expression.Constant(0)
                 );
             }
@@ -1915,7 +1901,7 @@ namespace System.Linq.Dynamic
             if (left.Type == typeof(string))
             {
                 return Expression.GreaterThanOrEqual(
-                    GenerateStaticMethodCall("Compare", left, right),
+                    this.GenerateStaticMethodCall("Compare", left, right),
                     Expression.Constant(0)
                 );
             }
@@ -1927,7 +1913,7 @@ namespace System.Linq.Dynamic
             if (left.Type == typeof(string))
             {
                 return Expression.LessThan(
-                    GenerateStaticMethodCall("Compare", left, right),
+                    this.GenerateStaticMethodCall("Compare", left, right),
                     Expression.Constant(0)
                 );
             }
@@ -1939,7 +1925,7 @@ namespace System.Linq.Dynamic
             if (left.Type == typeof(string))
             {
                 return Expression.LessThanOrEqual(
-                    GenerateStaticMethodCall("Compare", left, right),
+                    this.GenerateStaticMethodCall("Compare", left, right),
                     Expression.Constant(0)
                 );
             }
@@ -1950,7 +1936,7 @@ namespace System.Linq.Dynamic
         {
             if (left.Type == typeof(string) && right.Type == typeof(string))
             {
-                return GenerateStaticMethodCall("Concat", left, right);
+                return this.GenerateStaticMethodCall("Concat", left, right);
             }
             return Expression.Add(left, right);
         }
@@ -1975,33 +1961,33 @@ namespace System.Linq.Dynamic
 
         Expression GenerateStaticMethodCall(string methodName, Expression left, Expression right)
         {
-            return Expression.Call(null, GetStaticMethod(methodName, left, right), new[] { left, right });
+            return Expression.Call(null, this.GetStaticMethod(methodName, left, right), new[] { left, right });
         }
 
         void SetTextPos(int pos)
         {
-            textPos = pos;
-            ch = textPos < textLen ? text[textPos] : '\0';
+            this.textPos = pos;
+            this.ch = this.textPos < this.textLen ? this.text[this.textPos] : '\0';
         }
 
         void NextChar()
         {
-            if (textPos < textLen) textPos++;
-            ch = textPos < textLen ? text[textPos] : '\0';
+            if (this.textPos < this.textLen) this.textPos++;
+            this.ch = this.textPos < this.textLen ? this.text[this.textPos] : '\0';
         }
 
         void NextToken()
         {
-            while (Char.IsWhiteSpace(ch)) NextChar();
+            while (Char.IsWhiteSpace(this.ch)) this.NextChar();
             TokenId t;
-            int tokenPos = textPos;
-            switch (ch)
+            int tokenPos = this.textPos;
+            switch (this.ch)
             {
                 case '!':
-                    NextChar();
-                    if (ch == '=')
+                    this.NextChar();
+                    if (this.ch == '=')
                     {
-                        NextChar();
+                        this.NextChar();
                         t = TokenId.ExclamationEqual;
                     }
                     else
@@ -2010,14 +1996,14 @@ namespace System.Linq.Dynamic
                     }
                     break;
                 case '%':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Percent;
                     break;
                 case '&':
-                    NextChar();
-                    if (ch == '&')
+                    this.NextChar();
+                    if (this.ch == '&')
                     {
-                        NextChar();
+                        this.NextChar();
                         t = TokenId.DoubleAmphersand;
                     }
                     else
@@ -2026,51 +2012,51 @@ namespace System.Linq.Dynamic
                     }
                     break;
                 case '(':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.OpenParen;
                     break;
                 case ')':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.CloseParen;
                     break;
                 case '*':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Asterisk;
                     break;
                 case '+':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Plus;
                     break;
                 case ',':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Comma;
                     break;
                 case '-':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Minus;
                     break;
                 case '.':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Dot;
                     break;
                 case '/':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Slash;
                     break;
                 case ':':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Colon;
                     break;
                 case '<':
-                    NextChar();
-                    if (ch == '=')
+                    this.NextChar();
+                    if (this.ch == '=')
                     {
-                        NextChar();
+                        this.NextChar();
                         t = TokenId.LessThanEqual;
                     }
-                    else if (ch == '>')
+                    else if (this.ch == '>')
                     {
-                        NextChar();
+                        this.NextChar();
                         t = TokenId.LessGreater;
                     }
                     else
@@ -2079,10 +2065,10 @@ namespace System.Linq.Dynamic
                     }
                     break;
                 case '=':
-                    NextChar();
-                    if (ch == '=')
+                    this.NextChar();
+                    if (this.ch == '=')
                     {
-                        NextChar();
+                        this.NextChar();
                         t = TokenId.DoubleEqual;
                     }
                     else
@@ -2091,10 +2077,10 @@ namespace System.Linq.Dynamic
                     }
                     break;
                 case '>':
-                    NextChar();
-                    if (ch == '=')
+                    this.NextChar();
+                    if (this.ch == '=')
                     {
-                        NextChar();
+                        this.NextChar();
                         t = TokenId.GreaterThanEqual;
                     }
                     else
@@ -2103,22 +2089,22 @@ namespace System.Linq.Dynamic
                     }
                     break;
                 case '?':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.Question;
                     break;
                 case '[':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.OpenBracket;
                     break;
                 case ']':
-                    NextChar();
+                    this.NextChar();
                     t = TokenId.CloseBracket;
                     break;
                 case '|':
-                    NextChar();
-                    if (ch == '|')
+                    this.NextChar();
+                    if (this.ch == '|')
                     {
-                        NextChar();
+                        this.NextChar();
                         t = TokenId.DoubleBar;
                     }
                     else
@@ -2128,101 +2114,101 @@ namespace System.Linq.Dynamic
                     break;
                 case '"':
                 case '\'':
-                    char quote = ch;
+                    char quote = this.ch;
                     do
                     {
-                        NextChar();
-                        while (textPos < textLen && ch != quote) NextChar();
-                        if (textPos == textLen)
-                            throw ParseError(textPos, Res.UnterminatedStringLiteral);
-                        NextChar();
-                    } while (ch == quote);
+                        this.NextChar();
+                        while (this.textPos < this.textLen && this.ch != quote) this.NextChar();
+                        if (this.textPos == this.textLen)
+                            throw this.ParseError(this.textPos, Res.UnterminatedStringLiteral);
+                        this.NextChar();
+                    } while (this.ch == quote);
                     t = TokenId.StringLiteral;
                     break;
                 default:
-                    if (Char.IsLetter(ch) || ch == '@' || ch == '_')
+                    if (Char.IsLetter(this.ch) || this.ch == '@' || this.ch == '_')
                     {
                         do
                         {
-                            NextChar();
-                        } while (Char.IsLetterOrDigit(ch) || ch == '_');
+                            this.NextChar();
+                        } while (Char.IsLetterOrDigit(this.ch) || this.ch == '_');
                         t = TokenId.Identifier;
                         break;
                     }
-                    if (Char.IsDigit(ch))
+                    if (Char.IsDigit(this.ch))
                     {
                         t = TokenId.IntegerLiteral;
                         do
                         {
-                            NextChar();
-                        } while (Char.IsDigit(ch));
-                        if (ch == '.')
+                            this.NextChar();
+                        } while (Char.IsDigit(this.ch));
+                        if (this.ch == '.')
                         {
                             t = TokenId.RealLiteral;
-                            NextChar();
-                            ValidateDigit();
+                            this.NextChar();
+                            this.ValidateDigit();
                             do
                             {
-                                NextChar();
-                            } while (Char.IsDigit(ch));
+                                this.NextChar();
+                            } while (Char.IsDigit(this.ch));
                         }
-                        if (ch == 'E' || ch == 'e')
+                        if (this.ch == 'E' || this.ch == 'e')
                         {
                             t = TokenId.RealLiteral;
-                            NextChar();
-                            if (ch == '+' || ch == '-') NextChar();
-                            ValidateDigit();
+                            this.NextChar();
+                            if (this.ch == '+' || this.ch == '-') this.NextChar();
+                            this.ValidateDigit();
                             do
                             {
-                                NextChar();
-                            } while (Char.IsDigit(ch));
+                                this.NextChar();
+                            } while (Char.IsDigit(this.ch));
                         }
-                        if (ch == 'F' || ch == 'f') NextChar();
+                        if (this.ch == 'F' || this.ch == 'f') this.NextChar();
                         break;
                     }
-                    if (textPos == textLen)
+                    if (this.textPos == this.textLen)
                     {
                         t = TokenId.End;
                         break;
                     }
-                    throw ParseError(textPos, Res.InvalidCharacter, ch);
+                    throw this.ParseError(this.textPos, Res.InvalidCharacter, this.ch);
             }
-            token.id = t;
-            token.text = text.Substring(tokenPos, textPos - tokenPos);
-            token.pos = tokenPos;
+            this.token.id = t;
+            this.token.text = this.text.Substring(tokenPos, this.textPos - tokenPos);
+            this.token.pos = tokenPos;
         }
 
         bool TokenIdentifierIs(string id)
         {
-            return token.id == TokenId.Identifier && String.Equals(id, token.text, StringComparison.OrdinalIgnoreCase);
+            return this.token.id == TokenId.Identifier && String.Equals(id, this.token.text, StringComparison.OrdinalIgnoreCase);
         }
 
         string GetIdentifier()
         {
-            ValidateToken(TokenId.Identifier, Res.IdentifierExpected);
-            string id = token.text;
+            this.ValidateToken(TokenId.Identifier, Res.IdentifierExpected);
+            string id = this.token.text;
             if (id.Length > 1 && id[0] == '@') id = id.Substring(1);
             return id;
         }
 
         void ValidateDigit()
         {
-            if (!Char.IsDigit(ch)) throw ParseError(textPos, Res.DigitExpected);
+            if (!Char.IsDigit(this.ch)) throw this.ParseError(this.textPos, Res.DigitExpected);
         }
 
         void ValidateToken(TokenId t, string errorMessage)
         {
-            if (token.id != t) throw ParseError(errorMessage);
+            if (this.token.id != t) throw this.ParseError(errorMessage);
         }
 
         void ValidateToken(TokenId t)
         {
-            if (token.id != t) throw ParseError(Res.SyntaxError);
+            if (this.token.id != t) throw this.ParseError(Res.SyntaxError);
         }
 
         Exception ParseError(string format, params object[] args)
         {
-            return ParseError(token.pos, format, args);
+            return this.ParseError(this.token.pos, format, args);
         }
 
         Exception ParseError(int pos, string format, params object[] args)

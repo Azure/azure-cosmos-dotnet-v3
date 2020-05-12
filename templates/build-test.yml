@@ -40,9 +40,9 @@ jobs:
     displayName: Microsoft.Azure.Cosmos.PerformanceTests
     condition: succeeded()
     inputs:
-      command: run
+      command: build
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
-      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -c Release -- -j short -f * -m --allStats --join
+      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
@@ -70,3 +70,27 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+
+- job:
+  displayName: Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
+  timeoutInMinutes: 90
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - template:  emulator-setup.yml
+
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.Encryption.EmulatorTests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/*.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
+      testRunTitle: Microsoft.Azure.Cosmos.Encryption.EmulatorTests

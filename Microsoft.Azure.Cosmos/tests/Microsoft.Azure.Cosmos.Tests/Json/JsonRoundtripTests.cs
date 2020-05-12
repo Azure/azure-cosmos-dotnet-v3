@@ -7,9 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Diagnostics;
-    using System.Linq;
     using System.Text;
-    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Tests;
@@ -941,26 +939,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        private string FormatJson(string json)
-        {
-            // Feed the json through our reader and writer once to remove and formatting and escaping differences
-            IJsonReader jsonReaderFormatter = JsonReader.Create(Encoding.UTF8.GetBytes(json));
-            IJsonWriter jsonWriterFormatter = JsonWriter.Create(JsonSerializationFormat.Text);
-            jsonWriterFormatter.WriteAll(jsonReaderFormatter);
-            string formattedJson = Encoding.UTF8.GetString(jsonWriterFormatter.GetResult().ToArray());
-            return formattedJson;
-        }
-
-        private void TextRoundTrip(string input)
-        {
-            string formattedJson = this.FormatJson(input);
-
-            IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(formattedJson));
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            jsonWriter.WriteAll(jsonReader);
-            string jsonFromWriter = Encoding.UTF8.GetString(jsonWriter.GetResult().ToArray());
-            Assert.AreEqual(formattedJson, jsonFromWriter);
-        }
 
         private string NewtonsoftFormat(string json)
         {
@@ -974,34 +952,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             // Do the actual roundtrips
             this.MultiSerializationRoundTrip(input);
-        }
-
-        /// <summary>
-        /// Reads all the tokens from the input string using a JsonReader and writes them to a JsonReader and sees if we get back the same result.
-        /// </summary>
-        /// <param name="input">The input to read from.</param>
-        private void TestReaderToWriter(string input)
-        {
-            IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(input));
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-
-            jsonWriter.WriteAll(jsonReader);
-            string output = Encoding.UTF8.GetString(jsonWriter.GetResult().ToArray());
-
-            string inputNoWhitespace = Regex.Replace(input, @"\s+", "");
-            string outputNoWhitespace = Regex.Replace(output, @"\s+", "");
-
-            Assert.AreEqual(inputNoWhitespace, outputNoWhitespace);
-        }
-
-        private void TestWriterToReader(JsonToken[] tokens)
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            JsonPerfMeasurement.MeasureWritePerformance(tokens, jsonWriter);
-            string writerResults = Encoding.UTF8.GetString(jsonWriter.GetResult().ToArray());
-            IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(writerResults));
-            JsonToken[] tokenArrayFromReader = JsonPerfMeasurement.Tokenize(jsonReader, writerResults);
-            tokenArrayFromReader.SequenceEqual(tokens);
         }
     }
 }

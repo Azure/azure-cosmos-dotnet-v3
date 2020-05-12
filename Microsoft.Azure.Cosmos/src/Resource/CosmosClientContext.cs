@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosSerializerCore SerializerCore { get; }
 
-        internal abstract CosmosResponseFactory ResponseFactory { get; }
+        internal abstract CosmosResponseFactoryInternal ResponseFactory { get; }
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 
@@ -37,12 +37,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract string UserAgent { get; }
 
-        internal abstract EncryptionProcessor EncryptionProcessor { get; }
-
-        internal abstract DekCache DekCache { get; }
-
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
-            ContainerCore container);
+            ContainerInternal container);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -71,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
@@ -88,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
@@ -104,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,
-           ContainerCore cosmosContainerCore,
+           ContainerInternal cosmosContainerCore,
            PartitionKey? partitionKey,
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,

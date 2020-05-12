@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Uri resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
+            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
@@ -73,6 +74,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string resourceLink,
             string collectionResourceId,
             string effectivePartitionKeyString);
+
+        internal abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
+            string resourceLink,
+            string collectionResourceId,
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            FeedRangeInternal feedRangeInternal);
 
         internal abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
