@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly IReadOnlyList<CosmosDiagnosticsInternal> EmptyList = new List<CosmosDiagnosticsInternal>();
         private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope");
-
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
 
         private static readonly DateTime DefaultStartUtc = DateTime.MinValue;
@@ -36,12 +35,17 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosDiagnostics Diagnostics { get; }
 
-        internal override CosmosDiagnosticScope GetOverallScope()
+        internal override IDisposable GetOverallScope()
         {
             return EmptyCosmosDiagnosticsContext.DefaultScope;
         }
 
-        internal override CosmosDiagnosticScope CreateScope(string name)
+        internal override IDisposable CreateScope(string name)
+        {
+            return EmptyCosmosDiagnosticsContext.DefaultScope;
+        }
+
+        internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
             return EmptyCosmosDiagnosticsContext.DefaultScope;
         }

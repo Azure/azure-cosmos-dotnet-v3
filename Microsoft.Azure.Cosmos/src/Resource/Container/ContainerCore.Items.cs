@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
             {
-                Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+                ResponseMessage response = await this.ExtractPartitionKeyAndProcessItemStreamAsync(
                     partitionKey: partitionKey,
                     itemId: null,
                     item: item,
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                     diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);
 
-                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
             }
         }
 
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
             {
-                Task<ResponseMessage> response = this.ProcessItemStreamAsync(
+                ResponseMessage response = await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
                     itemId: id,
                     streamPayload: null,
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
                     diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);
 
-                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
             }
         }
 
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
             {
-                Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+                ResponseMessage response = await this.ExtractPartitionKeyAndProcessItemStreamAsync(
                     partitionKey: partitionKey,
                     itemId: null,
                     item: item,
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                     diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);
 
-                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
             }
         }
 
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
             {
-                Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+                ResponseMessage response = await this.ExtractPartitionKeyAndProcessItemStreamAsync(
                    partitionKey: partitionKey,
                    itemId: id,
                    item: item,
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
                    diagnosticsContext: diagnosticsContext,
                    cancellationToken: cancellationToken);
 
-                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
             }
         }
 
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.GetOverallScope())
             {
-                Task<ResponseMessage> response = this.ProcessItemStreamAsync(
+                ResponseMessage response = await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
                     itemId: id,
                     streamPayload: null,
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
                     diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);
 
-                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
             }
         }
 
@@ -701,16 +701,6 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            if (requestOptions?.EncryptionOptions != null)
-            {
-                streamPayload = await this.ClientContext.EncryptItemAsync(
-                    streamPayload,
-                    requestOptions.EncryptionOptions,
-                    (DatabaseInternal)this.Database,
-                    diagnosticsContext,
-                    cancellationToken);
-            }
-
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Document,
@@ -723,15 +713,6 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
-
-            if (responseMessage.Content != null && this.ClientContext.ClientOptions.Encryptor != null)
-            {
-                responseMessage.Content = await this.ClientContext.DecryptItemAsync(
-                    responseMessage.Content,
-                    (DatabaseInternal)this.Database,
-                    diagnosticsContext,
-                    cancellationToken);
-            }
 
             return responseMessage;
         }
