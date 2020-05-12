@@ -1980,11 +1980,6 @@
           "Attributes": [],
           "MethodInfo": "T WithDefaultTimeToLiveInSeconds(Int32)"
         },
-        "T WithDefaultTimeToLiveInSeconds(System.TimeSpan)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T WithDefaultTimeToLiveInSeconds(System.TimeSpan)"
-        },
         "T WithPartitionKeyDefinitionVersion(Azure.Cosmos.PartitionKeyDefinitionVersion)": {
           "Type": "Method",
           "Attributes": [],

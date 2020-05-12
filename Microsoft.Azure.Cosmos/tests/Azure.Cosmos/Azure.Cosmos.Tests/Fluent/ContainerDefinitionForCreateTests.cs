@@ -107,39 +107,6 @@ namespace Azure.Cosmos.Tests.Fluent
         }
 
         [TestMethod]
-        public async Task WithDefaultTimeToLiveTimeSpan()
-        {
-            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
-            mockContainers
-                .Setup(c => c.CreateContainerAsync(
-                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
-                    It.IsAny<int?>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(mockContainerResponse.Object);
-            mockContainers
-                .Setup(c => c.Id)
-                .Returns(Guid.NewGuid().ToString());
-
-            ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
-                mockContainers.Object,
-                GetContext(),
-                containerName,
-                partitionKey);
-
-            await containerFluentDefinitionForCreate
-                .WithDefaultTimeToLiveInSeconds(timeToLive)
-                .CreateAsync();
-
-            mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
-                    It.IsAny<int?>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [TestMethod]
         public async Task WithDefaultTimeToLiveInt()
         {
             Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();

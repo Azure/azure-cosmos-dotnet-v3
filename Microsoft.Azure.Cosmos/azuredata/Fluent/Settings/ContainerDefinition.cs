@@ -56,24 +56,6 @@ namespace Azure.Cosmos.Fluent
         /// <see cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
-        /// <param name="defaultTtlTimeSpan">The default Time To Live.</param>
-        /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/>
-        public T WithDefaultTimeToLiveInSeconds(TimeSpan defaultTtlTimeSpan)
-        {
-            if (defaultTtlTimeSpan == null)
-            {
-                throw new ArgumentNullException(nameof(defaultTtlTimeSpan));
-            }
-
-            this.defaultTimeToLive = (int)defaultTtlTimeSpan.TotalSeconds;
-            return (T)this;
-        }
-
-        /// <summary>
-        /// <see cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
-        /// The individual item could override the default time-to-live policy by setting its time to live.
-        /// </summary>
         /// <param name="defaulTtlInSeconds">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
         /// <seealso cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/>
