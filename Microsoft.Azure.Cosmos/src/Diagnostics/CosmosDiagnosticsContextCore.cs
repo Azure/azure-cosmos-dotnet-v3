@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string UserAgent { get; protected set; } = CosmosDiagnosticsContextCore.DefaultUserAgentString;
 
-        internal override CosmosDiagnostics Diagnostics { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
 
         public override TimeSpan GetClientElapsedTime()
         {
@@ -61,12 +61,12 @@ namespace Microsoft.Azure.Cosmos
             return this.overallScope.IsComplete();
         }
 
-        internal override IDisposable GetOverallScope()
+        public override IDisposable GetOverallScope()
         {
             return this.overallScope;
         }
 
-        internal override IDisposable CreateScope(string name)
+        public override IDisposable CreateScope(string name)
         {
             CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
 
@@ -74,14 +74,14 @@ namespace Microsoft.Azure.Cosmos
             return scope;
         }
 
-        internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
+        public override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
             RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
             this.ContextList.Add(requestHandlerScope);
             return requestHandlerScope;
         }
 
-        internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
+        public override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
         {
             if (pointOperationStatistics == null)
             {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
             this.ContextList.Add(pointOperationStatistics);
         }
 
-        internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
+        public override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
         {
             if (storeResponseStatistics.StoreResult != null)
             {
@@ -103,22 +103,22 @@ namespace Microsoft.Azure.Cosmos
             this.ContextList.Add(storeResponseStatistics);
         }
 
-        internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
+        public override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
         {
             this.ContextList.Add(addressResolutionStatistics);
         }
 
-        internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        public override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
             this.ContextList.Add(clientSideRequestStatistics);
         }
 
-        internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
+        public override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
         {
             this.ContextList.Add(feedRangeStatistics);
         }
 
-        internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
+        public override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
         {
             if (queryPageDiagnostics == null)
             {
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
             this.ContextList.Add(queryPageDiagnostics);
         }
 
-        internal override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
+        public override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
         {
             this.AddSummaryInfo(newContext);
 

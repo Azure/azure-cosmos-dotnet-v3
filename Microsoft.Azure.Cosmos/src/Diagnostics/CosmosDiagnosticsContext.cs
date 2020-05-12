@@ -11,14 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
     /// </summary>
-#if INTERNAL
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable SA1600 // Elements should be documented
-    public
-#else
-    internal
-#endif
-    abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
+    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
     {
         public abstract DateTime StartUtc { get; }
 
@@ -28,31 +21,31 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract string UserAgent { get; protected set; }
 
-        internal abstract CosmosDiagnostics Diagnostics { get; }
+        public abstract CosmosDiagnostics Diagnostics { get; }
 
-        internal abstract IDisposable GetOverallScope();
+        public abstract IDisposable GetOverallScope();
 
-        internal abstract IDisposable CreateScope(string name);
+        public abstract IDisposable CreateScope(string name);
 
-        internal abstract IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler);
+        public abstract IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler);
 
         public abstract TimeSpan GetClientElapsedTime();
 
         public abstract bool IsComplete();
 
-        internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
+        public abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 
-        internal abstract void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics);
+        public abstract void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics);
 
-        internal abstract void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics);
+        public abstract void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics);
 
-        internal abstract void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics);
+        public abstract void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics);
 
-        internal abstract void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics);
+        public abstract void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics);
 
-        internal abstract void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics);
+        public abstract void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics);
 
-        internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
+        public abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 
         public abstract void SetSdkUserAgent(string userAgent);
 

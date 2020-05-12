@@ -32,52 +32,52 @@ namespace Microsoft.Azure.Cosmos
 
         public override string UserAgent { get; protected set; } = "Empty Context";
 
-        internal override CosmosDiagnostics Diagnostics { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
 
-        internal override IDisposable GetOverallScope()
+        public override IDisposable GetOverallScope()
         {
             return EmptyCosmosDiagnosticsContext.DefaultScope;
         }
 
-        internal override IDisposable CreateScope(string name)
+        public override IDisposable CreateScope(string name)
         {
             return EmptyCosmosDiagnosticsContext.DefaultScope;
         }
 
-        internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
+        public override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
             return EmptyCosmosDiagnosticsContext.DefaultScope;
         }
 
-        internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
+        public override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
+        public override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
+        public override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
         {
         }
 
-        internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
+        public override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
+        public override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        public override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
+        public override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
         {
         }
 
-        internal override void SetSdkUserAgent(string userAgent)
+        public override void SetSdkUserAgent(string userAgent)
         {
         }
 
