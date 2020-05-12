@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
@@ -936,14 +935,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 string normalizedResult = JsonRoundTripsTests.NewtonsoftFormat(result);
                 string normalizedJson = JsonRoundTripsTests.NewtonsoftFormat(json);
 
-                try
-                {
-                    Assert.AreEqual(normalizedJson, normalizedResult);
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("asdf");
-                }
+                Assert.AreEqual(normalizedJson, normalizedResult);
             }
         }
 

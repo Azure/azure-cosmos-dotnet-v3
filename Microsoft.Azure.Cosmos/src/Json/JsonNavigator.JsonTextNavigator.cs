@@ -40,16 +40,43 @@ namespace Microsoft.Azure.Cosmos.Json
                 ReadOnlyMemory<byte> buffer,
                 bool skipValidation = false)
             {
-                IJsonReader jsonTextReader = JsonReader.Create(
-                    buffer: buffer,
-                    jsonStringDictionary: null,
-                    skipValidation: skipValidation);
-                if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
+                byte firstByte = buffer.Span[0];
+                byte lastByte = buffer.Span[buffer.Span.Length - 1];
+
+                bool objectRoot = (firstByte == '{') && (lastByte == '}');
+                bool arrayRoot = (firstByte == '[') && (lastByte == ']');
+
+                bool lazyInit = objectRoot || arrayRoot;
+
+                JsonTextNavigatorNode CreateRootNode()
                 {
-                    throw new InvalidOperationException($"{jsonTextReader}'s serialization format must actually be {JsonSerializationFormat.Text}.");
+                    IJsonReader jsonTextReader = JsonReader.Create(
+                                buffer: buffer,
+                                jsonStringDictionary: null,
+                                skipValidation: skipValidation);
+
+                    if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
+                    {
+                        throw new InvalidOperationException($"{jsonTextReader}'s serialization format must actually be {JsonSerializationFormat.Text}.");
+                    }
+
+                    return Parser.Parse(jsonTextReader);
                 }
 
-                this.rootNode = Parser.Parse(jsonTextReader);
+                JsonTextNavigatorNode rootNode;
+                if (lazyInit)
+                {
+                    rootNode = new LazyNode(
+                        lazyNode: new Lazy<JsonTextNavigatorNode>(CreateRootNode),
+                        type: arrayRoot ? JsonNodeType.Array : JsonNodeType.Object,
+                        bufferedValue: buffer);
+                }
+                else
+                {
+                    rootNode = CreateRootNode();
+                }
+
+                this.rootNode = rootNode;
                 this.skipValidation = skipValidation;
             }
 
@@ -245,6 +272,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override int GetArrayItemCount(IJsonNavigatorNode node)
             {
+                if (node is LazyNode lazyNode)
+                {
+                    node = lazyNode.Value;
+                }
+
                 if (!(node is ArrayNode arrayNode))
                 {
                     throw new ArgumentException($"{node} was not of type: {nameof(ArrayNode)}.");
@@ -256,6 +288,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode node, int index)
             {
+                if (node is LazyNode lazyNode)
+                {
+                    node = lazyNode.Value;
+                }
+
                 if (!(node is ArrayNode arrayNode))
                 {
                     throw new ArgumentException($"{node} was not of type: {nameof(ArrayNode)}.");
@@ -267,6 +304,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override IEnumerable<IJsonNavigatorNode> GetArrayItems(IJsonNavigatorNode node)
             {
+                if (node is LazyNode lazyNode)
+                {
+                    node = lazyNode.Value;
+                }
+
                 if (!(node is ArrayNode arrayNode))
                 {
                     throw new ArgumentException($"{node} was not of type: {nameof(ArrayNode)}.");
@@ -278,6 +320,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override int GetObjectPropertyCount(IJsonNavigatorNode node)
             {
+                if (node is LazyNode lazyNode)
+                {
+                    node = lazyNode.Value;
+                }
+
                 if (!(node is ObjectNode objectNode))
                 {
                     throw new ArgumentException($"{node} was not of type: {nameof(ObjectNode)}.");
@@ -289,6 +336,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override bool TryGetObjectProperty(IJsonNavigatorNode node, string propertyName, out ObjectProperty objectProperty)
             {
+                if (node is LazyNode lazyNode)
+                {
+                    node = lazyNode.Value;
+                }
+
                 if (!(node is ObjectNode objectNode))
                 {
                     throw new ArgumentException($"{node} was not of type: {nameof(ObjectNode)}.");
@@ -317,6 +369,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode node)
             {
+                if (node is LazyNode lazyNode)
+                {
+                    node = lazyNode.Value;
+                }
+
                 if (!(node is ObjectNode objectNode))
                 {
                     throw new ArgumentException($"{node} was not of type: {nameof(ObjectNode)}.");
@@ -367,24 +424,13 @@ namespace Microsoft.Azure.Cosmos.Json
                         bufferedRawJson = guidNode.BufferedToken;
                         return true;
 
+                    case LazyNode lazyNode:
+                        bufferedRawJson = lazyNode.BufferedValue;
+                        return true;
+
                     default:
                         throw new ArgumentOutOfRangeException($"Unknown {nameof(IJsonNavigatorNode)} type: {jsonNode.GetType()}.");
                 }
-            }
-
-            private static TNode As<TNode>(IJsonNavigatorNode node)
-            {
-                if (node == null)
-                {
-                    throw new ArgumentNullException(nameof(node));
-                }
-
-                if (!(node is TNode jsonTextNavigatorNode))
-                {
-                    throw new ArgumentException($"{nameof(node)} must be a {nameof(TNode)}");
-                }
-
-                return jsonTextNavigatorNode;
             }
 
             #region JsonTextParser
@@ -1116,6 +1162,25 @@ namespace Microsoft.Azure.Cosmos.Json
                 public override JsonNodeType Type => JsonNodeType.Binary;
 
                 public static BinaryNode Create(ReadOnlyMemory<byte> value) => new BinaryNode(value);
+            }
+
+            private sealed class LazyNode : JsonTextNavigatorNode
+            {
+                private readonly Lazy<JsonTextNavigatorNode> lazyNode;
+                private readonly JsonNodeType type;
+
+                public LazyNode(Lazy<JsonTextNavigatorNode> lazyNode, JsonNodeType type, ReadOnlyMemory<byte> bufferedValue)
+                {
+                    this.lazyNode = lazyNode;
+                    this.type = type;
+                    this.BufferedValue = bufferedValue;
+                }
+
+                public ReadOnlyMemory<byte> BufferedValue { get; }
+
+                public JsonTextNavigatorNode Value => this.lazyNode.Value;
+                
+                public override JsonNodeType Type => this.type;
             }
             #endregion
         }
