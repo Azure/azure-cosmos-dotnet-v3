@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines a Cosmos SQL query
     /// </summary>
-    public class QueryDefinition : IEquatable<QueryDefinition>
+    public class QueryDefinition
     {
-        private Dictionary<string, SqlParameter> SqlParameters { get; }
+        internal Dictionary<string, SqlParameter> SqlParameters { get; }
 
         /// <summary>
         /// Create a <see cref="QueryDefinition"/>
@@ -87,80 +87,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.SqlParameters[name] = new SqlParameter(name, value);
             return this;
-        }
-
-        /// <summary>
-        /// Checks for equality of two QueryDefinitions. Two queries are considered equal if
-        /// 1. They are the same object in memory
-        /// 2. Their query text is exactly the same AND they provide the same parameter values.
-        /// Following are NOT Equal: (SELECT * FROM c WHERE c.A= @param1 AND c.B=@param2 , param1=val1, param2=val2), (SELECT * FROM c WHERE c.B= @param2 AND c.A=@param1 , param1=val1, param2=val2)
-        /// Following are Equal: (SELECT * FROM c WHERE c.A= @param1 AND c.B=@param2 , param1=val1, param2=val2), (SELECT * FROM c WHERE c.A= @param1 AND c.B=@param2 , param2=val2, param1=val1)
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns>Boolean representing the equality</returns>
-        public bool Equals(QueryDefinition other)
-        {
-            if (Object.ReferenceEquals(other, this))
-            {
-                return true;
-            }
-
-            if (other is null)
-            {
-                return false;
-            }
-
-            if (this.SqlParameters.Count != other.SqlParameters.Count)
-            {
-                return false;
-            }
-
-            if (!string.Equals(this.QueryText, other.QueryText, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            return ParameterEquals(this.SqlParameters, other.SqlParameters);
-        }
-
-        /// <summary>
-        /// Caculates a hashcode of QueryDefinition, ignoring order of sqlParameters.
-        /// </summary>
-        /// <returns>Hash code of the object.</returns>
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hashCode = 23;
-                foreach (KeyValuePair<string, SqlParameter> queryParameter in this.SqlParameters)
-                {
-                    // xor is associative so we generate the same hash code if order of parameters is different
-                    hashCode ^= queryParameter.Value.GetHashCode();
-                }
-
-                hashCode = (hashCode * 16777619) + this.QueryText.GetHashCode();
-                return hashCode;
-            }
-        }
-
-        private static bool ParameterEquals(Dictionary<string, SqlParameter> parameters, Dictionary<string, SqlParameter> otherParameters)
-        {
-            if (parameters.Count != otherParameters.Count)
-            {
-                return false;
-            }
-
-            foreach (KeyValuePair<string, SqlParameter> queryParameter in parameters)
-            {
-                if (!otherParameters.TryGetValue(queryParameter.Key, out SqlParameter value) ||
-                    !value.Name.Equals(queryParameter.Value.Name) ||
-                    (value.Value != null && !value.Value.Equals(queryParameter.Value.Value)))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         internal SqlQuerySpec ToSqlQuerySpec()

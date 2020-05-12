@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Linq;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -66,57 +64,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from s where s.Account = 1234");
             sqlQueryDefinition.WithParameter(null, null);
-        }
-
-
-        [TestMethod]
-        public void ValidateHashWithSameParameter()
-        {
-            QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from s where s.Account = 1234");
-            sqlQueryDefinition.WithParameter("@account", "12345");
-            sqlQueryDefinition.WithParameter("@name", "ABC");
-
-            int hashCode = sqlQueryDefinition.GetHashCode();
-
-            // Reverse the order
-            sqlQueryDefinition = new QueryDefinition("select * from s where s.Account = 1234");
-            sqlQueryDefinition.WithParameter("@name", "ABC");
-            sqlQueryDefinition.WithParameter("@account", "12345");
-
-            Assert.AreEqual(hashCode, sqlQueryDefinition.GetHashCode());
-        }
-
-        [TestMethod]
-        public void ValidateHashWithNullValue()
-        {
-            QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from s where s.Account = 1234");
-            sqlQueryDefinition.WithParameter("@account", null);
-
-            int hashCode = sqlQueryDefinition.GetHashCode();
-
-            // Reverse the order
-            sqlQueryDefinition = new QueryDefinition("select * from s where s.Account = 1234");
-            sqlQueryDefinition.WithParameter("@account", null);
-
-            Assert.AreEqual(hashCode, sqlQueryDefinition.GetHashCode());
-        }
-
-        [TestMethod]
-        public void ValidateEqualsWithParameters()
-        {
-            QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from s where s.Account = 1234");
-            sqlQueryDefinition.WithParameter("@account", "12345");
-            sqlQueryDefinition.WithParameter("@name", "ABC");
-
-            // Reverse the order
-            QueryDefinition sqlQueryDefinition2 = new QueryDefinition("select * from s where s.Account = 1234");
-
-            Assert.IsFalse(sqlQueryDefinition.Equals(sqlQueryDefinition2));
-
-            sqlQueryDefinition2.WithParameter("@name", "ABC");
-            sqlQueryDefinition2.WithParameter("@account", "12345");
-
-            Assert.IsTrue(sqlQueryDefinition.Equals(sqlQueryDefinition2));
         }
     }
 }
