@@ -51,21 +51,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
-        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        /// <param name="cleanupIterationDelayInSeconds">Iteration delay for job cleaning up expired raw DEK from cache.</param>
-        /// <param name="cleanupBufferTimeAfterExpiry">Additional buffer time before cleaning up raw DEK.</param>
+        /// <param name="dekCacheOptions">Options for DekCache properties.</param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            TimeSpan? dekPropertiesTimeToLive = null,
-            int? cleanupIterationDelayInSeconds = null,
-            TimeSpan? cleanupBufferTimeAfterExpiry = null)
+            DekCacheOptions? dekCacheOptions = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = new DekCache(
-                dekPropertiesTimeToLive,
-                cleanupIterationDelayInSeconds,
-                cleanupBufferTimeAfterExpiry);
+            this.DekCache = new DekCache(dekCacheOptions);
         }
 
         /// <summary>
@@ -80,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string containerId,
             CancellationToken cancellationToken = default)
         {
+            this.ThrowIfDisposed();
             if (this.container != null)
             {
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
@@ -105,12 +99,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
                 id,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 
             return inMemoryRawDek.DataEncryptionKey;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(CosmosDataEncryptionKeyProvider));
+            }
         }
 
         private void Dispose(bool disposing)

@@ -17,12 +17,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private bool timerStarted;
 
         public PooledTimer(
-            int timeout,
+            TimeSpan timeout,
             TimerPool timerPool)
         {
-            this.timeoutPeriod = TimeSpan.FromSeconds((double)timeout);
+            this.timeoutPeriod = timeout;
             this.tcs = new TaskCompletionSource<object>();
-            this.timerPool = timerPool;
+            this.timerPool = timerPool ?? throw new ArgumentNullException(nameof(timerPool));
             this.memberLock = new object();
         }
 
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 this.beginTicks = this.timerPool.SubscribeForTimeouts(this);
                 this.timerStarted = true;
-                return (Task)this.tcs.Task;
+                return this.tcs.Task;
             }
         }
 
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.tcs.TrySetCanceled();
         }
 
-        internal bool FireTimeout()
+        public bool FireTimeout()
         {
             return this.tcs.TrySetResult((object)null);
         }

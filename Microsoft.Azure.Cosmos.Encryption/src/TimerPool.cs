@@ -83,7 +83,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     ConcurrentQueue<PooledTimer> concurrentQueue = keyValuePair.Value;
                     int count = keyValuePair.Value.Count;
-                    long num = 0;
                     for (int index = 0; index < count; ++index)
                     {
                         PooledTimer result1;
@@ -95,7 +94,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             }
 
                             result1.FireTimeout();
-                            num = result1.TimeoutTicks;
                             PooledTimer result2;
                             if (concurrentQueue.TryDequeue(out result2) && result2 != result1)
                             {
@@ -117,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        public PooledTimer GetPooledTimer(int timeoutInSeconds)
+        public PooledTimer GetPooledTimer(TimeSpan timeoutInSeconds)
         {
             this.ThrowIfDisposed();
             return new PooledTimer(
@@ -131,11 +129,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TimeSpan timeSpan;
             if (pooledTimer.Timeout < this.minSupportedTimeout)
             {
-                object[] objArray = new object[2];
-                timeSpan = pooledTimer.Timeout;
-                objArray[0] = (object)timeSpan.TotalSeconds;
-                timeSpan = this.minSupportedTimeout;
-                objArray[1] = (object)timeSpan.TotalSeconds;
                 pooledTimer.Timeout = this.minSupportedTimeout;
             }
             lock (this.subscriptionLock)

@@ -37,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
+            this.ThrowIfDisposed();
+
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
@@ -57,6 +59,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
+            this.ThrowIfDisposed();
+
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
@@ -68,6 +72,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return dek.EncryptData(plainText);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(CosmosEncryptor));
+            }
         }
 
         private void Dispose(bool disposing)

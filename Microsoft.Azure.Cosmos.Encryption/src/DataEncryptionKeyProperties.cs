@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Linq;
     using Newtonsoft.Json;
 
-    /// <summary> 
+    /// <summary>
     /// Details of an encryption key for use with the Azure Cosmos DB service.
     /// </summary>
     public class DataEncryptionKeyProperties : IEquatable<DataEncryptionKeyProperties>
@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptionAlgorithm">Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.</param>
         /// <param name="wrappedDataEncryptionKey">Wrapped (encrypted) form of the data encryption key.</param>
         /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
+        /// <param name="createdTime">Created time.</param>
         public DataEncryptionKeyProperties(
             string id,
             string encryptionAlgorithm,

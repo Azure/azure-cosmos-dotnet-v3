@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly PriorityQueue<InMemoryRawDek> inMemoryRawDeks;
         private readonly int minimumDispatchTimerInSeconds = 1;
-        private readonly int iterationDelayInSeconds = 60;
+        private readonly TimeSpan iterationDelayInSeconds = TimeSpan.FromSeconds(60);
         private readonly TimeSpan bufferTimeAfterExpiry = TimeSpan.FromSeconds(60);
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly TimerPool timerPool;
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private bool isDisposed = false;
 
         public ExpiredRawDekCleaner(
-            int? iterationDelayInSeconds = null,
+            TimeSpan? iterationDelayInSeconds = null,
             TimeSpan? bufferTimeAfterExpiry = null)
         {
             if (iterationDelayInSeconds.HasValue)

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             return this.dataEncryptionKeyContainerCore.GetDataEncryptionKeyQueryIterator<T>(
-                queryText, 
+                queryText,
                 continuationToken, 
                 requestOptions);
         }

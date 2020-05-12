@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Converts an object to a open readable stream
+        /// Converts an object to a open readable stream.
         /// </summary>
         /// <typeparam name="T">The type of object being serialized</typeparam>
         /// <param name="input">The object to be serialized</param>

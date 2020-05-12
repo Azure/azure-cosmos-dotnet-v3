@@ -20,23 +20,28 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal ExpiredRawDekCleaner ExpiredRawDekCleaner { get; set; }
 
-        public DekCache(
-            TimeSpan? dekPropertiesTimeToLive = null,
-            int? cleanupIterationDelayInSeconds = null,
-            TimeSpan? cleanupBufferTimeAfterExpiry = null)
+        public DekCache(DekCacheOptions? dekCacheOptions)
         {
-            if (dekPropertiesTimeToLive.HasValue)
+            if (dekCacheOptions.HasValue)
             {
-                this.dekPropertiesTimeToLive = dekPropertiesTimeToLive.Value;
+                if (dekCacheOptions.Value.DekPropertiesTimeToLive.HasValue)
+                {
+                    this.dekPropertiesTimeToLive = dekCacheOptions.Value.DekPropertiesTimeToLive.Value;
+                }
+                else
+                {
+                    this.dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
+                }
+
+                this.ExpiredRawDekCleaner = new ExpiredRawDekCleaner(
+                    dekCacheOptions.Value.CleanupIterationDelayInSeconds,
+                    dekCacheOptions.Value.CleanupBufferTimeAfterExpiry);
             }
             else
             {
                 this.dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
+                this.ExpiredRawDekCleaner = new ExpiredRawDekCleaner();
             }
-
-            this.ExpiredRawDekCleaner = new ExpiredRawDekCleaner(
-                cleanupIterationDelayInSeconds,
-                cleanupBufferTimeAfterExpiry);
         }
 
         public async Task<DataEncryptionKeyProperties> GetOrAddDekPropertiesAsync(

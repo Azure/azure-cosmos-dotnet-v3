@@ -102,7 +102,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="algorithmVersion">
         /// Algorithm version
         /// </param>
-        internal AeadAes256CbcHmac256Algorithm(AeadAes256CbcHmac256EncryptionKey encryptionKey, EncryptionType encryptionType, byte algorithmVersion)
+        internal AeadAes256CbcHmac256Algorithm(
+            AeadAes256CbcHmac256EncryptionKey encryptionKey,
+            EncryptionType encryptionType,
+            byte algorithmVersion)
         {
             this.dataEncryptionKey = encryptionKey;
             this.algorithmVersion = algorithmVersion;
@@ -132,7 +135,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
         public override byte[] EncryptData(byte[] plainText)
         {
-            return this.EncryptData(plainText, hasAuthenticationTag: true);
+            this.ThrowIfDisposed();
+            return this.EncryptData(
+                plainText,
+                hasAuthenticationTag: true);
         }
 
         /// <summary>
@@ -145,7 +151,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="plainText">Plaintext data to be encrypted</param>
         /// <param name="hasAuthenticationTag">Does the algorithm require authentication tag.</param>
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
-        protected byte[] EncryptData(byte[] plainText, bool hasAuthenticationTag)
+        protected byte[] EncryptData(
+            byte[] plainText,
+            bool hasAuthenticationTag)
         {
             // Empty values get encrypted and decrypted properly for both Deterministic and Randomized encryptions.
             Debug.Assert(plainText != null);
@@ -261,7 +269,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         public override byte[] DecryptData(byte[] cipherText)
         {
-            return this.DecryptData(cipherText, hasAuthenticationTag: true);
+            this.ThrowIfDisposed();
+            return this.DecryptData(
+                cipherText,
+                hasAuthenticationTag: true);
         }
 
         /// <summary>
@@ -270,7 +281,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// 2. (optional) Validate Authentication tag
         /// 3. Decrypt the message
         /// </summary>
-        protected byte[] DecryptData(byte[] cipherText, bool hasAuthenticationTag)
+        protected byte[] DecryptData(
+            byte[] cipherText,
+            bool hasAuthenticationTag)
         {
             Debug.Assert(cipherText != null);
 
@@ -326,7 +339,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Decrypts plain text data using AES in CBC mode
         /// </summary>
-        private byte[] DecryptData(byte[] iv, byte[] cipherText, int offset, int count)
+        private byte[] DecryptData(
+            byte[] iv,
+            byte[] cipherText,
+            int offset,
+            int count)
         {
             Debug.Assert((iv != null) && (cipherText != null));
             Debug.Assert(offset > -1 && count > -1);
@@ -389,7 +406,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Prepares an authentication tag.
         /// Authentication Tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
         /// </summary>
-        private byte[] PrepareAuthenticationTag(byte[] iv, byte[] cipherText, int offset, int length)
+        private byte[] PrepareAuthenticationTag(
+            byte[] iv,
+            byte[] cipherText,
+            int offset,
+            int length)
         {
             Debug.Assert(cipherText != null);
 
@@ -417,6 +438,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(AeadAes256CbcHmac256Algorithm));
+            }
         }
 
         protected virtual void Dispose(bool disposing)
