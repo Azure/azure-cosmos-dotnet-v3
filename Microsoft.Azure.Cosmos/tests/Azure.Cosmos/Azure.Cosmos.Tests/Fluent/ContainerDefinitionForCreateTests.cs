@@ -113,7 +113,7 @@ namespace Azure.Cosmos.Tests.Fluent
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -133,7 +133,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
@@ -146,7 +146,7 @@ namespace Azure.Cosmos.Tests.Fluent
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -166,7 +166,7 @@ namespace Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<CosmosContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);

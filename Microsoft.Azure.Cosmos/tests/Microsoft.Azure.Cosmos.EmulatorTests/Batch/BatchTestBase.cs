@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = BatchTestBase.PartitionKeyDefinition,
-                DefaultTimeToLive = (int)TimeSpan.FromDays(1).TotalSeconds // allow for TTL testing
+                DefaultTimeToLiveInSeconds = (int)TimeSpan.FromDays(1).TotalSeconds // allow for TTL testing
             };
 
             SchemaPolicy schemaPolicy = new SchemaPolicy()

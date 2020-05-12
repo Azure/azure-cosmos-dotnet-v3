@@ -887,7 +887,7 @@
           ],
           "MethodInfo": null
         },
-        "System.Nullable`1[System.Int32] DefaultTimeToLive[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"defaultTtl\")]": {
+        "System.Nullable`1[System.Int32] DefaultTimeToLiveInSeconds[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"defaultTtl\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"

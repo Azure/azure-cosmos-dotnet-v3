@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
+                    It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLiveInSeconds.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);

@@ -246,35 +246,35 @@ namespace Azure.Cosmos
         /// <value>
         /// It is an optional property.
         /// A valid value must be either a nonzero positive timespan or <c>null</c>.
-        /// By default, DefaultTimeToLive is set to null meaning the time to live is turned off for the container.
+        /// By default, DefaultTimeToLiveInSeconds is set to null meaning the time to live is turned off for the container.
         /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
         /// </value>
         /// <remarks>
         /// <para>
-        /// The <see cref="DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// The <see cref="DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </para>
         /// <para>
-        /// When the <see cref="DefaultTimeToLive"/> is <c>null</c>, the time-to-live will be turned off for the container.
+        /// When the <see cref="DefaultTimeToLiveInSeconds"/> is <c>null</c>, the time-to-live will be turned off for the container.
         /// It means all the items will never expire. The individual item's  time to live will be disregarded.
         /// </para>
         /// <para>
-        /// When the <see cref="DefaultTimeToLive"/> is '-1', the time-to-live will be turned on for the container.
+        /// When the <see cref="DefaultTimeToLiveInSeconds"/> is '-1', the time-to-live will be turned on for the container.
         /// By default, all the items will never expire. The individual item could be given a specific time-to-live value by setting its
         /// time to live. The item's time to live will be honored, and the expired items
         /// will be deleted in background.
         /// </para>
         /// <para>
-        /// When the <see cref="DefaultTimeToLive"/> is a nonzero positive integer, the time-to-live will be turned on for the container.
+        /// When the <see cref="DefaultTimeToLiveInSeconds"/> is a nonzero positive integer, the time-to-live will be turned on for the container.
         /// And a default time-to-live in seconds will be applied to all the items. A item will be expired after the
-        /// specified <see cref="DefaultTimeToLive"/> value in seconds since its last write time.
+        /// specified <see cref="DefaultTimeToLiveInSeconds"/> value in seconds since its last write time.
         /// </para>
         /// </remarks>
         /// <example>
         /// The example below disables time-to-live on a container.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.DefaultTimeToLive = null;
+        ///     container.DefaultTimeToLiveInSeconds = null;
         /// ]]>
         /// </code>
         /// </example>
@@ -282,7 +282,7 @@ namespace Azure.Cosmos
         /// The example below enables time-to-live on a container. By default, all the items never expire.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.DefaultTimeToLive = TimeSpan.FromDays(2);
+        ///     container.DefaultTimeToLiveInSeconds = TimeSpan.FromDays(2);
         /// ]]>
         /// </code>
         /// </example>
@@ -291,11 +291,11 @@ namespace Azure.Cosmos
         /// since its last write time.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.DefaultTimeToLive = TimeSpan.FromSeconds(1000);
+        ///     container.DefaultTimeToLiveInSeconds = TimeSpan.FromSeconds(1000);
         /// ]]>
         /// </code>
         /// </example>
-        public int? DefaultTimeToLive { get; set; }
+        public int? DefaultTimeToLiveInSeconds { get; set; }
 
         /// <summary>
         /// The function selects the right partition key constant mapping for <see cref="PartitionKey.None"/>

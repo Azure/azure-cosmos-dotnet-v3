@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     {
         private readonly string containerName;
         private string partitionKeyPath;
-        private int? defaultTimeToLive;
+        private int? DefaultTimeToLiveInSeconds;
         private IndexingPolicy indexingPolicy;
         private string timeToLivePropertyPath;
         private PartitionKeyDefinitionVersion? partitionKeyDefinitionVersion = null;
@@ -54,12 +54,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// <see cref="ContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// <see cref="ContainerProperties.DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <param name="defaultTtlTimeSpan">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="ContainerProperties.DefaultTimeToLive"/>
+        /// <seealso cref="ContainerProperties.DefaultTimeToLiveInSeconds"/>
         public T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
         {
             if (defaultTtlTimeSpan == null)
@@ -67,17 +67,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 throw new ArgumentNullException(nameof(defaultTtlTimeSpan));
             }
 
-            this.defaultTimeToLive = (int)defaultTtlTimeSpan.TotalSeconds;
+            this.DefaultTimeToLiveInSeconds = (int)defaultTtlTimeSpan.TotalSeconds;
             return (T)this;
         }
 
         /// <summary>
-        /// <see cref="ContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// <see cref="ContainerProperties.DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <param name="defaulTtlInSeconds">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="ContainerProperties.DefaultTimeToLive"/>
+        /// <seealso cref="ContainerProperties.DefaultTimeToLiveInSeconds"/>
         public T WithDefaultTimeToLive(int defaulTtlInSeconds)
         {
             if (defaulTtlInSeconds < -1)
@@ -85,14 +85,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 throw new ArgumentOutOfRangeException(nameof(defaulTtlInSeconds));
             }
 
-            this.defaultTimeToLive = defaulTtlInSeconds;
+            this.DefaultTimeToLiveInSeconds = defaulTtlInSeconds;
             return (T)this;
         }
 
         /// <summary>
         /// Sets the time to live base timestamp property path.
         /// </summary>
-        /// <param name="propertyPath">This property should be only present when DefaultTimeToLive is set. When this property is present, time to live for a item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
+        /// <param name="propertyPath">This property should be only present when DefaultTimeToLiveInSeconds is set. When this property is present, time to live for a item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
         /// <returns>An instance of the current Fluent builder.</returns>
         /// <seealso cref="ContainerProperties.TimeToLivePropertyPath"/>
         public T WithTimeToLivePropertyPath(string propertyPath)
@@ -135,9 +135,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 containerProperties.IndexingPolicy = this.indexingPolicy;
             }
 
-            if (this.defaultTimeToLive.HasValue)
+            if (this.DefaultTimeToLiveInSeconds.HasValue)
             {
-                containerProperties.DefaultTimeToLive = this.defaultTimeToLive.Value;
+                containerProperties.DefaultTimeToLiveInSeconds = this.DefaultTimeToLiveInSeconds.Value;
             }
 
             if (this.timeToLivePropertyPath != null)

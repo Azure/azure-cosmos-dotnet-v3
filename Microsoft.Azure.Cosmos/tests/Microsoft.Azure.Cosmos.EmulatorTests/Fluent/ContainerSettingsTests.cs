@@ -463,11 +463,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = containerResponse;
             ContainerProperties responseSettings = containerResponse;
 
-            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
+            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLiveInSeconds);
 
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.AreEqual(timeToLiveInSeconds, readResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual(timeToLiveInSeconds, readResponse.Resource.DefaultTimeToLiveInSeconds);
 
             JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
             ItemResponse<JObject> createResponse = await container.CreateItemAsync<JObject>(item: itemTest);
@@ -507,11 +507,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithTimeToLivePropertyPath("/creationDate")
                     .CreateAsync();
-                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
+                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLiveInSeconds should have failed.");
             }
             catch (CosmosException exeption)
             {
-                // expected because DefaultTimeToLive was not specified
+                // expected because DefaultTimeToLiveInSeconds was not specified
                 Assert.AreEqual(HttpStatusCode.BadRequest, exeption.StatusCode);
             }
 
@@ -521,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
                    .CreateAsync();
             Container container = containerResponse;
-            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLiveInSeconds);
 #pragma warning disable 0612
             Assert.AreEqual("/creationDate", containerResponse.Resource.TimeToLivePropertyPath);
 #pragma warning restore 0612

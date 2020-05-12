@@ -478,11 +478,11 @@ namespace Azure.Cosmos.EmulatorTests
                 CosmosContainer container = containerResponse;
                 CosmosContainerProperties responseSettings = containerResponse;
 
-                Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
+                Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLiveInSeconds);
 
                 CosmosContainerResponse readResponse = await container.ReadContainerAsync();
                 Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-                Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLive);
+                Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLiveInSeconds);
 
                 Dictionary<string, object> itemTest = new Dictionary<string, object>();
                 itemTest["id"] = Guid.NewGuid().ToString();

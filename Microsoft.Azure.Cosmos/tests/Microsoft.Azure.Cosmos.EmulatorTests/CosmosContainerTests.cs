@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = containerName,
                 PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
-                DefaultTimeToLive = timeToLiveInSeconds,
+                DefaultTimeToLiveInSeconds = timeToLiveInSeconds,
             };
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
@@ -553,11 +553,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = containerResponse;
             ContainerProperties responseSettings = containerResponse;
 
-            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
+            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLiveInSeconds);
 
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.AreEqual(timeToLiveInSeconds, readResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual(timeToLiveInSeconds, readResponse.Resource.DefaultTimeToLiveInSeconds);
 
             JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
             ItemResponse<JObject> createResponse = await container.CreateItemAsync<JObject>(item: itemTest);
@@ -716,26 +716,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
-                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
+                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLiveInSeconds should have failed.");
             }
             catch (CosmosException exeption)
             {
-                // expected because DefaultTimeToLive was not specified
+                // expected because DefaultTimeToLiveInSeconds was not specified
                 Assert.AreEqual(HttpStatusCode.BadRequest, exeption.StatusCode);
             }
 
             // Verify the container content.
-            setting.DefaultTimeToLive = timeToLivetimeToLiveInSeconds;
+            setting.DefaultTimeToLiveInSeconds = timeToLivetimeToLiveInSeconds;
             containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
             Container container = containerResponse;
-            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLiveInSeconds);
             Assert.AreEqual("/creationDate", containerResponse.Resource.TimeToLivePropertyPath);
 
             //verify removing the ttl property path
             setting.TimeToLivePropertyPath = null;
             containerResponse = await container.ReplaceContainerAsync(setting);
             container = containerResponse;
-            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLiveInSeconds);
             Assert.IsNull(containerResponse.Resource.TimeToLivePropertyPath);
 
             //adding back the ttl property path

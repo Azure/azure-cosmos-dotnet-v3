@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             SettingsContractTests.TypeAccessorGuard(typeof(ContainerProperties),
                 "Id",
                 "UniqueKeyPolicy",
-                "DefaultTimeToLive",
+                "DefaultTimeToLiveInSeconds",
                 "IndexingPolicy",
                 "TimeToLivePropertyPath",
                 "PartitionKeyPath",
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(cosmosContainerSettings.ResourceId);
             Assert.IsNull(cosmosContainerSettings.LastModified);
             Assert.IsNull(cosmosContainerSettings.ETag);
-            Assert.IsNull(cosmosContainerSettings.DefaultTimeToLive);
+            Assert.IsNull(cosmosContainerSettings.DefaultTimeToLiveInSeconds);
 
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy);
             Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);

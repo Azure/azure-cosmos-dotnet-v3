@@ -14,7 +14,7 @@ namespace Azure.Cosmos.Fluent
     {
         private readonly string containerName;
         private string partitionKeyPath;
-        private int? defaultTimeToLive;
+        private int? DefaultTimeToLiveInSeconds;
         private IndexingPolicy indexingPolicy;
         private PartitionKeyDefinitionVersion? partitionKeyDefinitionVersion = null;
 
@@ -53,12 +53,12 @@ namespace Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// <see cref="CosmosContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// <see cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <param name="defaultTtlTimeSpan">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLive"/>
+        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/>
         public T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
         {
             if (defaultTtlTimeSpan == null)
@@ -66,17 +66,17 @@ namespace Azure.Cosmos.Fluent
                 throw new ArgumentNullException(nameof(defaultTtlTimeSpan));
             }
 
-            this.defaultTimeToLive = (int)defaultTtlTimeSpan.TotalSeconds;
+            this.DefaultTimeToLiveInSeconds = (int)defaultTtlTimeSpan.TotalSeconds;
             return (T)this;
         }
 
         /// <summary>
-        /// <see cref="CosmosContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// <see cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <param name="defaulTtlInSeconds">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLive"/>
+        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLiveInSeconds"/>
         public T WithDefaultTimeToLive(int defaulTtlInSeconds)
         {
             if (defaulTtlInSeconds < -1)
@@ -84,7 +84,7 @@ namespace Azure.Cosmos.Fluent
                 throw new ArgumentOutOfRangeException(nameof(defaulTtlInSeconds));
             }
 
-            this.defaultTimeToLive = defaulTtlInSeconds;
+            this.DefaultTimeToLiveInSeconds = defaulTtlInSeconds;
             return (T)this;
         }
 
@@ -117,9 +117,9 @@ namespace Azure.Cosmos.Fluent
                 containerProperties.IndexingPolicy = this.indexingPolicy;
             }
 
-            if (this.defaultTimeToLive.HasValue)
+            if (this.DefaultTimeToLiveInSeconds.HasValue)
             {
-                containerProperties.DefaultTimeToLive = this.defaultTimeToLive.Value;
+                containerProperties.DefaultTimeToLiveInSeconds = this.DefaultTimeToLiveInSeconds.Value;
             }
 
             if (this.partitionKeyDefinitionVersion.HasValue)

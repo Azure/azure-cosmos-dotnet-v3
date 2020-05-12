@@ -1055,7 +1055,7 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[System.Int32] DefaultTimeToLive": {
+        "System.Nullable`1[System.Int32] DefaultTimeToLiveInSeconds": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
