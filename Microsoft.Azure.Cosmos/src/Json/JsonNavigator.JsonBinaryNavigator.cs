@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -583,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
 
-                if (buffer.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     throw new ArgumentException($"Node must not be empty.");
                 }
