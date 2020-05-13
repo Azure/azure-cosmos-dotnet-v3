@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: Utf8vsUtf16StringBenchmark2.tt: 16
+// This is auto-generated code. Modify: Utf8vsUtf16StringBenchmark.tt: 16
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 {

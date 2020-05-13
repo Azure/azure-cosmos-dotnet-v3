@@ -78,20 +78,15 @@ namespace Microsoft.Azure.Cosmos.Sql
         };
 
         private SqlIdentifier(string value)
-            : base(SqlObjectKind.Identifier)
         {
             this.Value = value;
         }
 
-        public string Value
-        {
-            get;
-        }
+        public string Value { get; }
 
         public static SqlIdentifier Create(string value)
         {
-            SqlIdentifier sqlIdentifier;
-            if (!SqlIdentifier.FrequentIdentifiers.TryGetValue(value, out sqlIdentifier))
+            if (!SqlIdentifier.FrequentIdentifiers.TryGetValue(value, out SqlIdentifier sqlIdentifier))
             {
                 sqlIdentifier = new SqlIdentifier(value);
             }
@@ -99,19 +94,10 @@ namespace Microsoft.Azure.Cosmos.Sql
             return sqlIdentifier;
         }
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

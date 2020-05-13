@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -113,7 +114,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-                if (queryPlanFromContinuationToken != null)
+                if (inputParameters.ForcePassthrough)
+                {
+                    partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
+                    {
+                        QueryInfo = new QueryInfo()
+                        {
+                            Aggregates = null,
+                            DistinctType = DistinctQueryType.None,
+                            GroupByAliases = null,
+                            GroupByAliasToAggregateType = null,
+                            GroupByExpressions = null,
+                            HasSelectValue = false,
+                            Limit = null,
+                            Offset = null,
+                            OrderBy = null,
+                            OrderByExpressions = null,
+                            RewrittenQuery = null,
+                            Top = null,
+                        },
+                        QueryRanges = new List<Documents.Routing.Range<string>>(),
+                    };
+                }
+                else if (queryPlanFromContinuationToken != null)
                 {
                     partitionedQueryExecutionInfo = queryPlanFromContinuationToken;
                 }
@@ -220,7 +243,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
                 }
 
-                tryCreateContextTask = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContextAsync(cosmosQueryContext,
+                tryCreateContextTask = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContextAsync(
+                    cosmosQueryContext,
                     inputParameters,
                     partitionedQueryExecutionInfo,
                     targetRanges,
@@ -256,6 +280,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         inputParameters.PartitionedQueryExecutionInfo,
                         inputParameters.ExecutionEnvironment,
                         inputParameters.ReturnResultsInDeterministicOrder,
+                        inputParameters.ForcePassthrough,
                         inputParameters.TestInjections);
                 }
 
@@ -449,6 +474,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
+                bool forcePassthrough,
                 TestInjections testInjections)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
@@ -481,6 +507,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
                 this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
+                this.ForcePassthrough = forcePassthrough;
                 this.TestInjections = testInjections;
             }
 
@@ -496,6 +523,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public ExecutionEnvironment ExecutionEnvironment { get; }
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
+            public bool ForcePassthrough { get; }
         }
     }
 }

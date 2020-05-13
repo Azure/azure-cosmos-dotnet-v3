@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Uri resourceLink,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool forcePassthrough,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             if (queryRequestOptions == null)
@@ -118,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
+                forcePassthrough: forcePassthrough,
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(
@@ -184,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }

@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlBinaryScalarExpression scalarExpression,
                 (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
             {
-                SqlScalarExpression replleft = scalarExpression.LeftExpression.Accept(this, input);
-                SqlScalarExpression replright = scalarExpression.RightExpression.Accept(this, input);
+                SqlScalarExpression replleft = scalarExpression.Left.Accept(this, input);
+                SqlScalarExpression replright = scalarExpression.Right.Accept(this, input);
                 return SqlBinaryScalarExpression.Create(scalarExpression.OperatorKind, replleft, replright);
             }
 
@@ -81,9 +81,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlConditionalScalarExpression scalarExpression,
                 (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
             {
-                SqlScalarExpression condition = scalarExpression.ConditionExpression.Accept(this, input);
-                SqlScalarExpression first = scalarExpression.FirstExpression.Accept(this, input);
-                SqlScalarExpression second = scalarExpression.SecondExpression.Accept(this, input);
+                SqlScalarExpression condition = scalarExpression.Condition.Accept(this, input);
+                SqlScalarExpression first = scalarExpression.Consequent.Accept(this, input);
+                SqlScalarExpression second = scalarExpression.Alternative.Accept(this, input);
 
                 return SqlConditionalScalarExpression.Create(condition, first, second);
             }
@@ -112,12 +112,12 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             public override SqlScalarExpression Visit(SqlInScalarExpression scalarExpression, (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
             {
-                SqlScalarExpression expression = scalarExpression.Expression.Accept(this, input);
+                SqlScalarExpression expression = scalarExpression.Needle.Accept(this, input);
 
-                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Items.Count];
+                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Haystack.Count];
                 for (int i = 0; i < items.Length; i++)
                 {
-                    items[i] = scalarExpression.Items[i].Accept(this, input);
+                    items[i] = scalarExpression.Haystack[i].Accept(this, input);
                 }
 
                 return SqlInScalarExpression.Create(expression, scalarExpression.Not, items);
@@ -132,8 +132,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             public override SqlScalarExpression Visit(SqlMemberIndexerScalarExpression scalarExpression, (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
             {
-                SqlScalarExpression replMember = scalarExpression.MemberExpression.Accept(this, input);
-                SqlScalarExpression replIndex = scalarExpression.IndexExpression.Accept(this, input);
+                SqlScalarExpression replMember = scalarExpression.Member.Accept(this, input);
+                SqlScalarExpression replIndex = scalarExpression.Indexer.Accept(this, input);
                 return SqlMemberIndexerScalarExpression.Create(replMember, replIndex);
             }
 
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlObjectCreateScalarExpression.Create(
                     scalarExpression
                         .Properties
-                        .Select(prop => SqlObjectProperty.Create(prop.Name, prop.Expression.Accept(this, input))));
+                        .Select(prop => SqlObjectProperty.Create(prop.Name, prop.Value.Accept(this, input))));
             }
 
             public override SqlScalarExpression Visit(
@@ -159,13 +159,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                 (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
             {
                 // This is the leaf of the recursion
-                if (scalarExpression.MemberExpression != null)
+                if (scalarExpression.Member != null)
                 {
-                    SqlScalarExpression replMember = scalarExpression.MemberExpression.Accept(this, input);
-                    return SqlPropertyRefScalarExpression.Create(replMember, scalarExpression.PropertyIdentifier);
+                    SqlScalarExpression replMember = scalarExpression.Member.Accept(this, input);
+                    return SqlPropertyRefScalarExpression.Create(replMember, scalarExpression.Identifer);
                 }
 
-                if (scalarExpression.PropertyIdentifier.Value != input.toReplace.Value)
+                if (scalarExpression.Identifer.Value != input.toReplace.Value)
                 {
                     return scalarExpression;
                 }
