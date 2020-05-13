@@ -26,20 +26,21 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonTextNavigator : JsonNavigator
         {
-            private static readonly Utf8Memory ReverseSoldiusUtf8Memory = Utf8Memory.Create("\\");
+            private static readonly Utf8Memory ReverseSoldius = Utf8Memory.Create("\\");
 
             private readonly JsonTextNavigatorNode rootNode;
-            private readonly bool skipValidation;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JsonTextNavigator"/> class.
             /// </summary>
             /// <param name="buffer">The (UTF-8) buffer to navigate.</param>
-            /// <param name="skipValidation">whether to skip validation or not.</param>
-            public JsonTextNavigator(
-                ReadOnlyMemory<byte> buffer,
-                bool skipValidation = false)
+            public JsonTextNavigator(ReadOnlyMemory<byte> buffer)
             {
+                if (buffer.IsEmpty)
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(buffer)} can not be empty.");
+                }
+
                 byte firstByte = buffer.Span[0];
                 byte lastByte = buffer.Span[buffer.Span.Length - 1];
 
@@ -52,8 +53,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     IJsonReader jsonTextReader = JsonReader.Create(
                                 buffer: buffer,
-                                jsonStringDictionary: null,
-                                skipValidation: skipValidation);
+                                jsonStringDictionary: null);
 
                     if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
                     {
@@ -77,7 +77,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 this.rootNode = rootNode;
-                this.skipValidation = skipValidation;
             }
 
             /// <inheritdoc />
@@ -128,9 +127,10 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"{node} was not of type: {nameof(StringNodeBase)}.");
                 }
 
-                if (stringNodeBase.BufferedValue.Span.Contains(ReverseSoldiusUtf8Memory.Span))
+                // TODO: consider cacheing whether or not the string is escaped in the node itself.
+                if (stringNodeBase.BufferedValue.Span.Contains(ReverseSoldius.Span))
                 {
-                    // unencountered escaped string that can't be returned
+                    // encountered escaped string that can't be returned
                     value = default;
                     return false;
                 }
@@ -1179,7 +1179,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public ReadOnlyMemory<byte> BufferedValue { get; }
 
                 public JsonTextNavigatorNode Value => this.lazyNode.Value;
-                
+
                 public override JsonNodeType Type => this.type;
             }
             #endregion

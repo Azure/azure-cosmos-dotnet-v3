@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         private NewtonsoftToCosmosDBWriter(
             Newtonsoft.Json.JsonWriter writer,
             Func<byte[]> getResultCallback)
-            : base(true)
         {
             this.writer = writer ?? throw new ArgumentNullException(nameof(writer));
             this.getResultCallback = getResultCallback ?? throw new ArgumentNullException(nameof(getResultCallback));

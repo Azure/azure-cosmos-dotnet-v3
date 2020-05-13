@@ -47,9 +47,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public JsonBinaryReader(
                 ReadOnlyMemory<byte> buffer,
-                JsonStringDictionary jsonStringDictionary = null,
-                bool skipValidation = false)
-                : base(skipValidation)
+                JsonStringDictionary jsonStringDictionary = null)
             {
                 if (buffer.Length < 2)
                 {

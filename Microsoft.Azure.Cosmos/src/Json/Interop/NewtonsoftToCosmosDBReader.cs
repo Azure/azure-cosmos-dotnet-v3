@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         private readonly Newtonsoft.Json.JsonReader reader;
 
         private NewtonsoftToCosmosDBReader(Newtonsoft.Json.JsonReader reader)
-            : base(true)
         {
             this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
         }
