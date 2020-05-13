@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTestUtils.cs" Link="JsonTestUtils.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTokenInfo.cs" Link="Json\JsonTokenInfo.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Poco\Person.cs" Link="Models\Person.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Utils\TextFileConcatenation.cs" Link="TextFileConcatenation.cs" />
   </ItemGroup>
 
