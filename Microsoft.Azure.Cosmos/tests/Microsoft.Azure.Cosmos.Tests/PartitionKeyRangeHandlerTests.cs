@@ -219,6 +219,52 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task GetTargetRangeFromContinuationTokenNonExistentContainer()
+        {
+            List<Range<string>> providedRanges = new List<Range<string>> {
+                    new Range<string>(
+                        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                        isMinInclusive: true,
+                        isMaxInclusive: false)
+                };
+
+            //Not empty
+            Range<string> range = new Range<string>("A", "B", true, false);
+            List<CompositeContinuationToken> suppliedTokens = new List<CompositeContinuationToken>
+                {
+                    new CompositeContinuationToken{ Range = range }
+                };
+
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = new List<PartitionKeyRange> {
+                new PartitionKeyRange { Id = "0", MinInclusive = "A", MaxExclusive = "B" },
+                new PartitionKeyRange { Id = "1", MinInclusive = "B", MaxExclusive = "C" }
+            }.AsReadOnly();
+
+            Mock<IRoutingMapProvider> routingMapProvider = new Mock<IRoutingMapProvider>();
+            routingMapProvider
+                .SetupSequence(m => m.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(),
+                    It.Is<Range<string>>(x => x.Min == range.Min),
+                    It.IsAny<bool>()))
+                .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Skip(1).ToList()))
+                .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)null));
+
+            PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
+            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+                providedRanges,
+                routingMapProvider.Object,
+                CollectionId,
+                range,
+                suppliedTokens,
+                RntdbEnumerationDirection.Reverse);
+
+            Assert.IsNotNull(resolvedRangeInfo);
+            Assert.IsNull(resolvedRangeInfo.ResolvedRange);
+            Assert.IsNull(resolvedRangeInfo.ContinuationTokens);
+        }
+
+        [TestMethod]
         public async Task GetTargetRangeFromContinuationTokenOnSplit()
         {
             const string Token = "token";
