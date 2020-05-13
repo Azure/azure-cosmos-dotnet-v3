@@ -132,25 +132,15 @@ namespace Microsoft.Azure.Cosmos.Sql
         };
 
         private SqlStringLiteral(string value)
-            : base(SqlObjectKind.StringLiteral)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException("value");
-            }
-
-            this.Value = value;
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public string Value
-        {
-            get;
-        }
+        public string Value { get; }
 
         public static SqlStringLiteral Create(string value)
         {
-            SqlStringLiteral sqlStringLiteral;
-            if (!SqlStringLiteral.FrequentlyUsedStrings.TryGetValue(value, out sqlStringLiteral))
+            if (!SqlStringLiteral.FrequentlyUsedStrings.TryGetValue(value, out SqlStringLiteral sqlStringLiteral))
             {
                 sqlStringLiteral = new SqlStringLiteral(value);
             }
@@ -158,29 +148,14 @@ namespace Microsoft.Azure.Cosmos.Sql
             return sqlStringLiteral;
         }
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlLiteralVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlLiteralVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor) => visitor.Visit(this);
     }
 }

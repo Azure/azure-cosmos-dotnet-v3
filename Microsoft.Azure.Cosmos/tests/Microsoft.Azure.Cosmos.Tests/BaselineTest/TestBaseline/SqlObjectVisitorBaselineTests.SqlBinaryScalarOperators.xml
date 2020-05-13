@@ -3,22 +3,17 @@
     <Input>
       <Description>Add</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Add",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "Add",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -34,22 +29,17 @@
     <Input>
       <Description>And</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "And",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "And",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -65,22 +55,17 @@
     <Input>
       <Description>BitwiseAnd</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "BitwiseAnd",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "BitwiseAnd",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -96,22 +81,17 @@
     <Input>
       <Description>BitwiseOr</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "BitwiseOr",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "BitwiseOr",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -127,22 +107,17 @@
     <Input>
       <Description>BitwiseXor</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "BitwiseXor",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "BitwiseXor",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -158,22 +133,17 @@
     <Input>
       <Description>Coalesce</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Coalesce",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "Coalesce",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -189,22 +159,17 @@
     <Input>
       <Description>Divide</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Divide",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "Divide",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -220,22 +185,17 @@
     <Input>
       <Description>Equal</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Equal",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "Equal",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -251,22 +211,17 @@
     <Input>
       <Description>GreaterThan</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "GreaterThan",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "GreaterThan",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -282,22 +237,17 @@
     <Input>
       <Description>GreaterThanOrEqual</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "GreaterThanOrEqual",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "GreaterThanOrEqual",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -313,22 +263,17 @@
     <Input>
       <Description>LessThan</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "LessThan",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "LessThan",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -344,22 +289,17 @@
     <Input>
       <Description>LessThanOrEqual</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "LessThanOrEqual",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "LessThanOrEqual",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -375,22 +315,17 @@
     <Input>
       <Description>Modulo</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Modulo",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "Modulo",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -406,22 +341,17 @@
     <Input>
       <Description>Multiply</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Multiply",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "Multiply",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -437,22 +367,17 @@
     <Input>
       <Description>NotEqual</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "NotEqual",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "NotEqual",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -468,22 +393,17 @@
     <Input>
       <Description>Or</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Or",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "Or",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -499,22 +419,17 @@
     <Input>
       <Description>StringConcat</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "StringConcat",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "StringConcat",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -530,22 +445,17 @@
     <Input>
       <Description>Subtract</Description>
       <SqlObject><![CDATA[{
-  "OperatorKind": "Subtract",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
+      "Value": 3735928559
+    }
   },
+  "OperatorKind": "Subtract",
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "BinaryScalarExpression"
+      "Value": 3131746989
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
