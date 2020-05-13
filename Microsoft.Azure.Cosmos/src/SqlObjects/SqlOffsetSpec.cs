@@ -17,20 +17,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             .ToArray();
 
         private SqlOffsetSpec(SqlScalarExpression offsetExpression)
-            : base(SqlObjectKind.OffsetSpec)
         {
-            if (offsetExpression == null)
-            {
-                throw new ArgumentNullException(nameof(offsetExpression));
-            }
-
-            this.OffsetExpression = offsetExpression;
+            this.OffsetExpression = offsetExpression ?? throw new ArgumentNullException(nameof(offsetExpression));
         }
 
-        public SqlScalarExpression OffsetExpression
-        {
-            get;
-        }
+        public SqlScalarExpression OffsetExpression { get; }
 
         public static SqlOffsetSpec Create(SqlNumberLiteral sqlNumberLiteral)
         {
@@ -68,19 +59,10 @@ namespace Microsoft.Azure.Cosmos.Sql
             return new SqlOffsetSpec(sqlParameterRefScalarExpression);
         }
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

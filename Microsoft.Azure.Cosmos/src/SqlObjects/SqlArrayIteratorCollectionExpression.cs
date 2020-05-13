@@ -9,69 +9,31 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlArrayIteratorCollectionExpression : SqlCollectionExpression
     {
         private SqlArrayIteratorCollectionExpression(
-           SqlIdentifier alias,
+           SqlIdentifier identifier,
            SqlCollection collection)
-            : base(SqlObjectKind.ArrayIteratorCollectionExpression)
         {
-            if (alias == null)
-            {
-                throw new ArgumentNullException("alias");
-            }
-
-            if (collection == null)
-            {
-                throw new ArgumentNullException("collection");
-            }
-
-            this.Alias = alias;
-            this.Collection = collection;
+            this.Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
+            this.Collection = collection ?? throw new ArgumentNullException(nameof(collection));
         }
 
-        public SqlIdentifier Alias
-        {
-            get;
-        }
+        public SqlIdentifier Identifier { get; }
 
-        public SqlCollection Collection
-        {
-            get;
-        }
+        public SqlCollection Collection { get; }
 
         public static SqlArrayIteratorCollectionExpression Create(
-            SqlIdentifier alias,
-            SqlCollection collection)
-        {
-            return new SqlArrayIteratorCollectionExpression(alias, collection);
-        }
+            SqlIdentifier identifier,
+            SqlCollection collection) => new SqlArrayIteratorCollectionExpression(identifier, collection);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlCollectionExpressionVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlCollectionExpressionVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlCollectionExpressionVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlCollectionExpressionVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlCollectionExpressionVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlCollectionExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }
