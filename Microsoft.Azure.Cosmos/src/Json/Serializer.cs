@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Json
             object value,
             JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
         {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: false);
+            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
             Serializer.SerializeInternal(value, jsonWriter);
             return jsonWriter.GetResult();
         }
