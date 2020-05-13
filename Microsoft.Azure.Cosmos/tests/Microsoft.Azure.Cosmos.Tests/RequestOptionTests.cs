@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Text;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -18,11 +17,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string customHeaderName = "custom-header1";
             string customHeaderValue = "value1";
-            ImmutableDictionary<string, string>.Builder builder = ImmutableDictionary.CreateBuilder<string, string>();
-            builder.Add(customHeaderName, customHeaderValue);
 
             RequestOptions ro = new RequestOptions();
-            ro.CustomRequestHeaders = builder.ToImmutable();
+            ro.CustomRequestHeaders = new Dictionary<string, string>()
+                {
+                    { customHeaderName, customHeaderValue},
+                };
 
             RequestMessage message = new RequestMessage();
             ro.PopulateRequestOptions(message);

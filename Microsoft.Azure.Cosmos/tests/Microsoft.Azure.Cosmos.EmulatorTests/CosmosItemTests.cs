@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Globalization;
@@ -1773,11 +1772,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
 
-            ImmutableDictionary<string, string>.Builder customHeaderBuilder = ImmutableDictionary.CreateBuilder<string, string>();
-            customHeaderBuilder.Add(customHeaderName, customHeaderValue);
-
             ItemRequestOptions ro = new ItemRequestOptions();
-            ro.CustomRequestHeaders = customHeaderBuilder.ToImmutable();
+            ro.CustomRequestHeaders = new Dictionary<string, string>()
+                {
+                    { customHeaderName, customHeaderValue},
+                };
 
             ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(
                 partitionKey: new Cosmos.PartitionKey(temp.status),

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -45,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        IImmutableDictionary<string, string> CustomRequestHeaders { get; set; }
+        IReadOnlyDictionary<string, string> CustomRequestHeaders { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
