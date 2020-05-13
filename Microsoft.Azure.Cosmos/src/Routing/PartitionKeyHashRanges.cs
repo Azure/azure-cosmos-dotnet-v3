@@ -10,6 +10,14 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Text;
 
+    /// <summary>
+    /// Represent a list of ranges with the following properties
+    /// * no duplicates
+    /// * non empty members
+    /// * non empty itself
+    /// * contiguous
+    /// * non overlapping
+    /// </summary>
     internal sealed class PartitionKeyHashRanges : IOrderedEnumerable<PartitionKeyHashRange>
     {
         private readonly SortedSet<PartitionKeyHashRange> partitionKeyHashRanges;

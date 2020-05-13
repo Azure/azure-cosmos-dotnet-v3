@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="endExclusive">The exclusive end hash. If null this means that the range goes until positive infinity.</param>
         public PartitionKeyHashRange(PartitionKeyHash? startInclusive, PartitionKeyHash? endExclusive)
         {
-            if (endExclusive.HasValue && startInclusive.HasValue && (endExclusive.Value.CompareTo(startInclusive.Value) < 0))
+            if (endExclusive.HasValue && startInclusive.HasValue && (endExclusive.Value.CompareTo(startInclusive.Value) <= 0))
             {
-                throw new ArgumentOutOfRangeException($"{nameof(startInclusive)} must be less than {nameof(endExclusive)}.");
+                throw new ArgumentOutOfRangeException($"{nameof(startInclusive)} must be less than or equal to {nameof(endExclusive)}.");
             }
 
             this.StartInclusive = startInclusive;
@@ -92,8 +92,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public override int GetHashCode()
         {
-            int startHashCode = this.StartInclusive.GetHashCode();
-            int endHashCode = this.EndExclusive.GetHashCode();
+            int startHashCode = this.StartInclusive?.GetHashCode() ?? 0;
+            int endHashCode = this.EndExclusive?.GetHashCode() ?? 0;
             return startHashCode ^ endHashCode;
         }
 

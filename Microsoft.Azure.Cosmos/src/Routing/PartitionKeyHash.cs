@@ -5,19 +5,20 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
-    using System.Drawing;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// There are many kinds of documents partitioning schemes (Range, Hash, Range+Hash, Hash+Hash etc.)
     /// All these partitioning schemes are abstracted by effective partition key.
-    /// Effective partition key is just BYTE*. There is function which maps partition key to effective partition key based on partitioning scheme used.
-    /// In case of range partitioning effective partition key corresponds one-to-one to partition key extracted from the document and relationship between effective partition keys is the same as relationship between partitionkeys from which they were calculated.
+    /// Effective partition key is just BYTE*.
+    /// There is function which maps partition key to effective partition key based on partitioning scheme used.
+    /// In case of range partitioning
+    /// effective partition key corresponds one-to-one to partition key extracted from the document and
+    /// relationship between effective partition keys is the same as relationship between partitionkeys from which they were calculated.
     /// In case of Hash partitioning, values of all paths are hashed together and resulting hash is prepended to the partition key.
-    /// We have single global index on [effective partition key + name]
+    /// We have single global index on [effective partition key + id]
     /// </summary>
     /// <example>
     /// With the following definition:
@@ -28,6 +29,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// With the following definition:
     ///     "partitionKey" : {"paths":["/address/country", "address/zipcode"], "kind" : "Range"}
     /// partition key ["USA", 98052] corresponds to effective partition key binaryencode(["USA", 98052]).
+    ///
+    /// In general this struct represents that hashing logic, which used to generate EPK Ranges on the client side.
     /// </example>
     internal readonly struct PartitionKeyHash : IComparable<PartitionKeyHash>, IEquatable<PartitionKeyHash>
     {
@@ -78,9 +81,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             private static readonly PartitionKeyHash Undefined = PartitionKeyHash.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.Undefined });
             private static readonly PartitionKeyHash EmptyString = PartitionKeyHash.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.String });
 
-            public static PartitionKeyHash Hash(bool boolean)
+            public static PartitionKeyHash Hash(bool value)
             {
-                return boolean ? PartitionKeyHash.V1.True : PartitionKeyHash.V1.False;
+                return value ? PartitionKeyHash.V1.True : PartitionKeyHash.V1.False;
             }
 
             public static PartitionKeyHash Hash(double value)
@@ -142,9 +145,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             private static readonly PartitionKeyHash Undefined = PartitionKeyHash.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.Undefined });
             private static readonly PartitionKeyHash EmptyString = PartitionKeyHash.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.String });
 
-            public static PartitionKeyHash Hash(bool boolean)
+            public static PartitionKeyHash Hash(bool value)
             {
-                return boolean ? PartitionKeyHash.V2.True : PartitionKeyHash.V2.False;
+                return value ? PartitionKeyHash.V2.True : PartitionKeyHash.V2.False;
             }
 
             public static PartitionKeyHash Hash(double value)

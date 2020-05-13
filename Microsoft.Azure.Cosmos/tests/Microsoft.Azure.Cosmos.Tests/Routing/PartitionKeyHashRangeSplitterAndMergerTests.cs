@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class PartitionKeyHashRangeFactoryTests
+    public sealed class PartitionKeyHashRangeSplitterAndMergerTests
     {
         [TestMethod]
         public void TestSplit()
@@ -18,14 +18,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 // Empty partition
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.RangeNotWideEnough,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.RangeNotWideEnough,
                     range: CreateRange(0, 0));
             }
 
             {
                 // Range Not Wide Enough
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.RangeNotWideEnough,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.RangeNotWideEnough,
                     range: CreateRange(0, 1),
                     numRanges: 2);
             }
@@ -33,12 +33,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 // Ranges Need to Be Positive
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.NumRangesNeedsToBePositive,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.NumRangesNeedsToBeGreaterThanZero,
                     range: CreateRange(0, 2),
                     numRanges: 0);
 
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.NumRangesNeedsToBePositive,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.NumRangesNeedsToBeGreaterThanZero,
                     range: CreateRange(0, 2),
                     numRanges: -1);
             }
@@ -46,19 +46,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 // Success
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.Success,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
                     range: CreateRange(0, 2),
                     numRanges: 2,
                     CreateRange(0, 1), CreateRange(1, 2));
 
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.Success,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
                     range: CreateRange(0, 3),
                     numRanges: 2,
                     CreateRange(0, 1), CreateRange(1, 3));
 
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.Success,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
                     range: CreateRange(0, 3),
                     numRanges: 1,
                     CreateRange(0, 3));
@@ -67,37 +67,37 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 // Split with open ranges
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.Success,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
                     range: CreateRange(0, null),
                     numRanges: 2,
                     CreateRange(0, UInt128.MaxValue / 2), CreateRange(UInt128.MaxValue / 2, null));
 
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.Success,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
                     range: CreateRange(null, 4),
                     numRanges: 2,
                     CreateRange(null, 2), CreateRange(2, 4));
 
                 VerifySplit(
-                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.Success,
+                    splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
                     range: CreateRange(null, null),
                     numRanges: 2,
                     CreateRange(null, UInt128.MaxValue / 2), CreateRange(UInt128.MaxValue / 2, null));
             }
 
             void VerifySplit(
-                PartitionKeyHashRangeFactory.SplitOutcome splitOutcome,
+                PartitionKeyHashRangeSplitterAndMerger.SplitOutcome splitOutcome,
                 PartitionKeyHashRange range,
                 int numRanges = 1,
                 params PartitionKeyHashRange[] splitRanges)
             {
-                PartitionKeyHashRangeFactory.SplitOutcome actualSplitOutcome = PartitionKeyHashRangeFactory.TrySplitRange(
+                PartitionKeyHashRangeSplitterAndMerger.SplitOutcome actualSplitOutcome = PartitionKeyHashRangeSplitterAndMerger.TrySplitRange(
                     partitionKeyHashRange: range,
-                    numRanges: numRanges,
+                    rangeCount: numRanges,
                     splitRanges: out PartitionKeyHashRanges splitRangesActual);
 
                 Assert.AreEqual(splitOutcome, actualSplitOutcome);
-                if (splitOutcome == PartitionKeyHashRangeFactory.SplitOutcome.Success)
+                if (splitOutcome == PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success)
                 {
                     Assert.AreEqual(numRanges, splitRangesActual.Count());
                     Assert.AreEqual(splitRanges.Count(), splitRangesActual.Count());
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 PartitionKeyHashRange expectedMergedRange,
                 params PartitionKeyHashRange[] rangesToMerge)
             {
-                PartitionKeyHashRange actualMergedRange = PartitionKeyHashRangeFactory.MergeRanges(
+                PartitionKeyHashRange actualMergedRange = PartitionKeyHashRangeSplitterAndMerger.MergeRanges(
                     PartitionKeyHashRanges.Create(rangesToMerge));
                 Assert.AreEqual(expectedMergedRange, actualMergedRange);
             }
