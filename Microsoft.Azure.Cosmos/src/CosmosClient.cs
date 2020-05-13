@@ -257,6 +257,21 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
         /// <summary>
+        /// The response factory used to create CosmosClient response types.
+        /// </summary>
+        /// <remarks>
+        /// This can be used for generating responses for tests, and allows users to create
+        /// a custom container that modifies the response. For example the client encryption
+        /// uses this to decrypt responses before returning to the caller.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
+
+        /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -392,12 +407,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual Task<DatabaseResponse> CreateDatabaseAsync(
+        public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
@@ -447,12 +457,7 @@ namespace Microsoft.Azure.Cosmos
         /// </list>
         /// </returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
+        public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
@@ -474,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (readResponse.StatusCode != HttpStatusCode.NotFound)
                 {
-                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(readResponse));
+                    return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
                 }
 
                 ResponseMessage createResponse = await this.CreateDatabaseStreamAsync(databaseProperties, throughputProperties, requestOptions, cancellationToken);
@@ -483,7 +488,7 @@ namespace Microsoft.Azure.Cosmos
                 createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
                 if (createResponse.StatusCode != HttpStatusCode.Conflict)
                 {
-                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(createResponse));
+                    return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
                 }
 
                 // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -492,7 +497,7 @@ namespace Microsoft.Azure.Cosmos
                     requestOptions: requestOptions,
                     cancellationToken: cancellationToken);
                 readResponseAfterConflict.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
-                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(readResponseAfterConflict));
+                return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
             });
         }
 
@@ -840,13 +845,13 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken));
         }
 
-        internal Task<DatabaseResponse> CreateDatabaseAsync(
+        internal async Task<DatabaseResponse> CreateDatabaseAsync(
                     DatabaseProperties databaseProperties,
                     ThroughputProperties throughputProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ClientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
@@ -858,22 +863,22 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), response);
         }
 
-        internal Task<DatabaseResponse> CreateDatabaseAsync(
+        internal async Task<DatabaseResponse> CreateDatabaseAsync(
                     DatabaseProperties databaseProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
+            ResponseMessage response = await this.CreateDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), response);
         }
 
         private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(

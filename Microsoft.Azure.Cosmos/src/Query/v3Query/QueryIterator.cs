@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Uri resourceLink,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool forcePassthrough,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             if (queryRequestOptions == null)
@@ -118,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
+                forcePassthrough: forcePassthrough,
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(
@@ -143,14 +145,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (responseCore.IsSuccess)
                 {
-                    List<CosmosElement> decryptedCosmosElements = null;
-                    if (this.clientContext.ClientOptions.Encryptor != null)
-                    {
-                        decryptedCosmosElements = await this.GetDecryptedElementResponseAsync(responseCore.CosmosElements, diagnostics, cancellationToken);
-                    }
-
                     return QueryResponse.CreateSuccess(
-                        result: decryptedCosmosElements ?? responseCore.CosmosElements,
+                        result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
                         diagnostics: diagnostics,
@@ -193,35 +189,6 @@ namespace Microsoft.Azure.Cosmos.Query
         public override CosmosElement GetCosmsoElementContinuationToken()
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
-        }
-
-        private async Task<List<CosmosElement>> GetDecryptedElementResponseAsync(
-            IReadOnlyList<CosmosElement> encryptedCosmosElements,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            List<CosmosElement> decryptedCosmosElements = new List<CosmosElement>();
-            using (diagnosticsContext.CreateScope("Decrypt"))
-            {
-                foreach (CosmosElement document in encryptedCosmosElements)
-                {
-                    if (!(document is CosmosObject documentObject))
-                    {
-                        decryptedCosmosElements.Add(document);
-                        continue;
-                    }
-
-                    CosmosObject decryptedDocument = await this.clientContext.EncryptionProcessor.DecryptAsync(
-                        documentObject,
-                        this.clientContext.ClientOptions.Encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-
-                    decryptedCosmosElements.Add(decryptedDocument);
-                }
-            }
-
-            return decryptedCosmosElements;
         }
     }
 }

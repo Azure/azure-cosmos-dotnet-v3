@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -89,6 +90,16 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return serializer.ToStream<SqlQuerySpec>(input);
+        }
+
+        internal CosmosSerializer GetCustomOrDefaultSerializer()
+        {
+            if (this.customSerializer != null)
+            {
+                return this.customSerializer;
+            }
+
+            return CosmosSerializerCore.propertiesSerializer;
         }
 
         internal IEnumerable<T> FromFeedResponseStream<T>(
