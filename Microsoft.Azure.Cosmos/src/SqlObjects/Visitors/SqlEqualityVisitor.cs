@@ -134,12 +134,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.LeftExpression, second.LeftExpression))
+            if (!Equals(first.Left, second.Left))
             {
                 return false;
             }
 
-            if (!Equals(first.RightExpression, second.RightExpression))
+            if (!Equals(first.Right, second.Right))
             {
                 return false;
             }
