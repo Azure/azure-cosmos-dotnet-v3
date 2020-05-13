@@ -42,62 +42,6 @@ namespace Cosmos.Samples.Shared
             m_random = new Random();
             m_keys = keys;
             m_numCharsPerStringValue = numCharsPerStringValue;
-
-            jsonDocument = @"
-            {
-                ""partitionKey"": ""lol"",
-              ""Device"": {
-                                ""Architecture"": ""(Type:String, Values:x64$x86$arm)"",
-                ""OS"": ""(Type:String, Values:Windows/8$Windows/8.1)""
-              },
-              ""EventId"": ""(Type:Guid,IncludedPath:true)"",
-              ""N"": 1,
-              ""SessionId"": ""(Type:Guid,Uniqueness:10)"",
-              ""Level"": 1,
-              ""Timestamp"": {
-                                ""Offset"": 1,
-                ""Time"": ""(Type:DateTime, DateType:Ticks)""
-              },
-              ""Ingestion"": {
-                                ""Datacenter"": ""(Type:String, Values:East US$West US$East Europe$West Europe)"",
-                ""Environment"": ""PROD"",
-                ""IP"": ""127.0.0.1"",
-                ""Instance"": 1,
-                ""Role"": ""Collector"",
-                ""Time"": 1,
-                ""TimeCorrection"": 6199,
-                ""Version"": ""1.0.52528.0""
-              },
-              ""Source"": {
-                                ""App"": ""(Type:String, Values:BingWeather$BingNews$BingTravel$BingSports)"",
-                ""Culture"": ""(Type:String, Values:en-GB$fr-FR$sr-Latn-RS$de-DE$pt-PT$pl-pl$nl-NL$tr-tr$ru-ru$it-IT$nl-BE$es-ES)"",
-                ""DeploymentId"": ""(Type:Guid)"",
-                ""Group"": ""OSD/Appex"",
-                ""Market"": ""(Type:String, Values:en-GB$fr-FR$sr-Latn-RS$de-DE$pt-PT$pl-pl$nl-NL$tr-tr$ru-ru$it-IT$nl-BE$es-ES)"",
-                ""Publisher"": ""Microsoft"",
-                ""Version"": ""1.5.1.245""
-              },
-              ""User"": {
-                                ""CEIP"": ""os"",
-                ""UserId"": ""(Type:Guid)""
-              },
-              ""Location"": {
-                                ""City"": ""(Type:String, Values:monheim am rhein$Belgrade$Monterrey$Buenos Aires$Rome$Florence)"",
-                ""Country"": ""(Type:String, Values:Germany$Serbia$Mexico$Argentina$Italy)"",
-                ""Lat"": 1.11143436789,
-                ""Lon"": 2.22454647637,
-                ""Source"": ""server""
-              },
-              ""Type"": ""Session"",
-              ""Session"": {
-                                ""Count"": 1,
-                ""Duration"": 1,
-                ""State"": ""(Type:String, Values:suspend$start)""
-              },
-              ""id"": ""(Type:Guid)""
-            }";
-
-            //m_template = JsonConvert.DeserializeObject<BingTemplate>(jsonDocument);
         }
 
         /// <summary>

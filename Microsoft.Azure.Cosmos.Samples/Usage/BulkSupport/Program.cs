@@ -37,7 +37,7 @@
         private static int runtimeInSeconds;
         private static bool shouldCleanupOnFinish;
         private static int numWorkers;
-
+        private static bool runCRDWorkload;
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
         public static async Task Main(string[] args)
@@ -48,7 +48,11 @@
                 Container container = await Program.Initialize();
                 List<Task> workerTasks = new List<Task>();
 
-                workerTasks.Add(Task.Run(() =>  Program.BatchTestingAsync(container))); // CRD workload
+                if(Program.runCRDWorkload)
+                {
+                    workerTasks.Add(Task.Run(() => Program.BatchTestingAsync(container))); // CRD workload
+                }
+
                 workerTasks.Add(Task.Run(() => Program.CreateItemsConcurrentlyAsync(container))); // Pure ingestion workload
 
                 await Task.WhenAll(workerTasks);
@@ -89,7 +93,7 @@
 
                 for (int i = 0; i < numberOfOperationsPerBatch; i++)
                 {
-                    Stream documentGeneratorOutput = dataSource.CreateTempDocItemStream(pk);
+                    Stream documentGeneratorOutput = dataSource.GetNextDocItemForPartitionkey(pk);
                     cosmosBatch.CreateItemStream(documentGeneratorOutput);
                 }
 
@@ -258,17 +262,6 @@
             Console.WriteLine($"Inserted {created} items in {(stopwatch.ElapsedMilliseconds - startMilliseconds) /1000} seconds");
         }
 
-        // <Model>
-        private class MyDocument
-        {
-            public string id { get; set; }
-
-            public string pk { get; set; }
-
-            public string other { get; set; }
-        }
-        // </Model>
-
         private static async Task<Container> Initialize()
         {
             // Read the Cosmos endpointUrl and authorization keys from configuration
@@ -307,6 +300,7 @@
             Program.itemSize = int.Parse(string.IsNullOrEmpty(configuration["ItemSize"]) ? "1024" : configuration["ItemSize"]);
             Program.runtimeInSeconds = int.Parse(string.IsNullOrEmpty(configuration["RuntimeInSeconds"]) ? "30" : configuration["RuntimeInSeconds"]);
             Program.numWorkers = int.Parse(string.IsNullOrEmpty(configuration["numWorkers"]) ? "1" : configuration["numWorkers"]);
+            Program.runCRDWorkload = bool.Parse(string.IsNullOrEmpty(configuration["RunCRDWorkload"]) ? "false" : configuration["RunCRDWorkload"]);
 
             Program.shouldCleanupOnFinish = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnFinish"]) ? "false" : configuration["ShouldCleanupOnFinish"]);
             bool shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
@@ -372,30 +366,28 @@
 
             // We create a partitioned collection here which needs a partition key. Partitioned collections
             // can be created with very high values of provisioned throughput and used to store 100's of GBs of data. 
-            Console.WriteLine($"The demo will create a {throughput} RU/s container");
-            //Console.ReadKey();
+            Console.WriteLine($"The demo will create a {throughput} RU/s container, press any key to continue.");
+            Console.ReadKey();
 
-            // Indexing Policy to exclude all attributes to maximize RU/s usage
-            Container container = await database.DefineContainer(containerName, "/partitionKey")
-                    .WithIndexingPolicy()
-                        .WithIndexingMode(IndexingMode.Consistent)
-                        .WithIncludedPaths()
-                            .Attach()
-                        .WithExcludedPaths()
-                            .Path("/*")
-                            .Attach()
-                    .Attach()
-                .CreateAsync(throughput);
+            string containerId = containerName;
+            int analyticalTtlInSec = (int)TimeSpan.FromDays(6 * 30).TotalSeconds; // 6 months
+            int defaultTtl = (int)TimeSpan.FromDays(30).TotalSeconds; // 1 month
+            ContainerProperties cpInput = new AnalyticalProperties()
+            {
+                Id = containerId,
+                PartitionKeyPath = "/partitionKey",
+                DefaultTimeToLive = defaultTtl,
+                AnalyticalStoreTimeToLiveInSeconds = analyticalTtlInSec,
+            };
 
-            return container;
+            ContainerResponse response = await database.CreateContainerAsync(cpInput);
+
+            return response.Container;
         }
 
         private class DataSource
         {
             private readonly int itemSize;
-            private const long maxStoredSizeInBytes = 100 * 1024 * 1024;
-            private Queue<KeyValuePair<PartitionKey, MemoryStream>> documentsToImportInBatch;
-            string padding = string.Empty;
             private PayloadGenerator payloadGenerator;
 
             public DataSource(int itemCount, int itemSize, int numWorkers)
@@ -410,7 +402,6 @@
                 // generate numKeys - 1 GUIDs that will be used as key values in addition to partitionKey
                 string[] keys = new string[numKeys];
                 keys[0] = "partitionKey";
-
                 string keynameprefix = "longkeyname";
 
                 for (int count = 1; count < numKeys; ++count)
@@ -421,24 +412,7 @@
                 return keys;
             }
 
-            private MemoryStream CreateNextDocItem(out PartitionKey partitionKeyValue)
-            {
-                string partitionKey = Guid.NewGuid().ToString();
-                string payloadToUse = payloadGenerator.GeneratePayload(partitionKey);
-                partitionKeyValue = new PartitionKey(partitionKey);
-
-                return new MemoryStream(Encoding.UTF8.GetBytes(payloadToUse));
-            }
-
-            public JObject CreateTempDocItem(string partitionKey)
-            {
-                string id = Guid.NewGuid().ToString();
-                MyDocument myDocument = new MyDocument() { id = id, pk = partitionKey, other = padding };
-
-                return JObject.FromObject(myDocument);
-            }
-
-            public MemoryStream CreateTempDocItemStream(string partitionKey)
+            public MemoryStream GetNextDocItemForPartitionkey(string partitionKey)
             {
                 string payloadToUse = payloadGenerator.GeneratePayload(partitionKey);
                 return new MemoryStream(Encoding.UTF8.GetBytes(payloadToUse));
@@ -446,18 +420,11 @@
 
             public MemoryStream GetNextDocItem(out PartitionKey partitionKeyValue)
             {
-                if (documentsToImportInBatch != null && documentsToImportInBatch.Count > 0)
-                {
-                    KeyValuePair<PartitionKey, MemoryStream> pair = documentsToImportInBatch.Dequeue();
-                    partitionKeyValue = pair.Key;
-                    return pair.Value;
-                }
-                else
-                {
-                    MemoryStream value = CreateNextDocItem(out PartitionKey pkValue);
-                    partitionKeyValue = pkValue;
-                    return value;
-                }
+                string partitionKey = Guid.NewGuid().ToString();
+                string payloadToUse = payloadGenerator.GeneratePayload(partitionKey);
+                partitionKeyValue = new PartitionKey(partitionKey);
+
+                return new MemoryStream(Encoding.UTF8.GetBytes(payloadToUse));
             }
         }
     }
