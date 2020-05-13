@@ -10,9 +10,9 @@
         public void ContractChanges()
         {
             ContractEnforcementSharedHelper.ValidateContractContainBreakingChanges(
-                "Microsoft.Azure.Cosmos.Client",
-                "DotNetSDKAPI.json",
-                "CurrentDotNetSDKAPI.json");
+                dllName: "Microsoft.Azure.Cosmos.Client",
+                baselinePath: "DotNetSDKAPI.json",
+                currentChangesPath: "CurrentDotNetSDKAPI.json");
         }
 
         [TestMethod]

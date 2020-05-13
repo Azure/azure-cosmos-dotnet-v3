@@ -122,14 +122,14 @@
         public static string GetBaselineContract(string baselinePath)
         {
             string baselineFile = File.ReadAllText(baselinePath);
-            return baselineFile;
+            return NormalizeJsonString(baselineFile);
         }
 
         public static string RemoveDuplicateContractElements(JObject localContract, JObject officialContract)
         {
             RemoveDuplicateContractHelper(localContract, officialContract);
             string noDuplicates = localContract.ToString();
-            return noDuplicates;
+            return NormalizeJsonString(noDuplicates);
         }
 
         private static string NormalizeJsonString(string file)

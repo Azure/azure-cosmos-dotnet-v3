@@ -10,9 +10,9 @@
         public void ContractChanges()
         {
             ContractEnforcementSharedHelper.ValidateContractContainBreakingChanges(
-                "Microsoft.Azure.Cosmos.Encryption",
-                "EncryptionSDKAPI.json",
-                "CurrentEncryptionSDKAPI.json");
+                dllName: "Microsoft.Azure.Cosmos.Encryption",
+                baselinePath: "EncryptionSDKAPI.json",
+                currentChangesPath: "CurrentEncryptionSDKAPI.json");
         }
     }
 }
