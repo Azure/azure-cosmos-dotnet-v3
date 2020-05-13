@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlArrayCreateScalarExpression : SqlScalarExpression
     {
-        private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(new ImmutableArray<SqlScalarExpression>());
+        private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(ImmutableArray<SqlScalarExpression>.Empty);
 
         private SqlArrayCreateScalarExpression(ImmutableArray<SqlScalarExpression> items)
         {
