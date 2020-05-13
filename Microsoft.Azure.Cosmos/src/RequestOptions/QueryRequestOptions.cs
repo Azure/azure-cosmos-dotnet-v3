@@ -208,6 +208,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
             }
+            else
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.CosmosBinary.ToString());
+            }
 
             if (this.StartId != null)
             {
