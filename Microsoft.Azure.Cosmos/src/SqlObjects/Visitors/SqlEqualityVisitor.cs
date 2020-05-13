@@ -942,12 +942,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         private static bool BothNull(SqlObject first, SqlObject second)
         {
-            return (first == null) && (second == null);
+            return (first is null) && (second is null);
         }
 
         private static bool DifferentNullality(SqlObject first, SqlObject second)
         {
-            return ((first == null) && (second != null)) || ((first != null) && (second == null));
+            return (first is null && !(second is null)) || (!(first is null) && (second is null));
         }
 
         private static bool Equals(SqlObject first, SqlObject second)
