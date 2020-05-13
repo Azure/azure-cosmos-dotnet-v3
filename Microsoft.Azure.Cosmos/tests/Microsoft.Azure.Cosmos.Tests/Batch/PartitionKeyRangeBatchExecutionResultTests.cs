@@ -63,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
-                false,
                 CancellationToken.None);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(
@@ -144,7 +143,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
-                false,
                 CancellationToken.None);
 
             PartitionKeyRangeBatchExecutionResult result = new PartitionKeyRangeBatchExecutionResult("0", arrayOperations, batchresponse);

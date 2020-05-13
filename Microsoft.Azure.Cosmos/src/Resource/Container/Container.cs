@@ -33,6 +33,11 @@ namespace Microsoft.Azure.Cosmos
         public abstract string Id { get; }
 
         /// <summary>
+        /// Returns the parent Database reference
+        /// </summary>
+        public abstract Database Database { get; }
+
+        /// <summary>
         /// Returns the conflicts
         /// </summary>
         public abstract Conflicts Conflicts { get; }
@@ -293,7 +298,6 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
-#if PREVIEW
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
@@ -326,7 +330,6 @@ namespace Microsoft.Azure.Cosmos
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
-#endif
 
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.

@@ -6,7 +6,7 @@
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Performance.Tests.Models;
+    using Microsoft.Azure.Cosmos.Tests.Poco;
     using Newtonsoft.Json;
 
     [MemoryDiagnoser]
@@ -38,27 +38,27 @@
         [Benchmark]
         public void CosmosElementDeserializer_TryDeserialize_Text()
         {
-            IReadOnlyList<Person> deserializedPeople = CosmosElementDeserializer.Deserialize<IReadOnlyList<Person>>(this.textBuffer);
+            _ = Cosmos.Json.JsonSerializer.Deserialize<IReadOnlyList<Person>>(this.textBuffer);
         }
 
         [Benchmark]
         public void CosmosElementDeserializer_TryDeserialize_Binary()
         {
-            IReadOnlyList<Person> deserializedPeople = CosmosElementDeserializer.Deserialize<IReadOnlyList<Person>>(this.binaryBuffer);
+            _ = Cosmos.Json.JsonSerializer.Deserialize<IReadOnlyList<Person>>(this.binaryBuffer);
         }
 
         [Benchmark]
         public void JsonConvert_DeserializeObject_Text()
         {
-            IReadOnlyList<Person> deserializedPeople = JsonConvert.DeserializeObject<IReadOnlyList<Person>>(this.json);
+            _ = JsonConvert.DeserializeObject<IReadOnlyList<Person>>(this.json);
         }
 
         [Benchmark]
         public void JsonConvert_DeserializeObject_Binary()
         {
-            JsonSerializer jsonSerializer = JsonSerializer.CreateDefault();
+            Newtonsoft.Json.JsonSerializer jsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault();
             CosmosDBToNewtonsoftReader cosmosDBToNewtonsoftReader = new CosmosDBToNewtonsoftReader(this.binaryBuffer);
-            IReadOnlyList<Person> deserializedPeople = jsonSerializer.Deserialize<IReadOnlyList<Person>>(cosmosDBToNewtonsoftReader);
+            _ = jsonSerializer.Deserialize<IReadOnlyList<Person>>(cosmosDBToNewtonsoftReader);
         }
     }
 }

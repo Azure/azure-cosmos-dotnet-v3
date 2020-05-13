@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ReadOnlySpan<byte> guidTokenWithoutPrefix = guidToken.Slice(
                 prefix.Length,
                 guidToken.Length - prefix.Length);
-            if (!Utf8Parser.TryParse(guidTokenWithoutPrefix, out Guid value, out int bytesConsumed))
+            if (!Utf8Parser.TryParse(guidTokenWithoutPrefix, out Guid value, out _))
             {
                 throw new JsonInvalidTokenException();
             }
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private static double GetDoubleValue(ReadOnlySpan<byte> token)
         {
-            if (!Utf8Parser.TryParse(token, out double value, out int bytesConsumed))
+            if (!Utf8Parser.TryParse(token, out double value, out _))
             {
                 throw new JsonNotNumberTokenException();
             }
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private static float GetFloatValue(ReadOnlySpan<byte> token)
         {
-            if (!Utf8Parser.TryParse(token, out float value, out int bytesConsumed))
+            if (!Utf8Parser.TryParse(token, out float value, out _))
             {
                 throw new JsonNotNumberTokenException();
             }
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private static long GetIntegerValue(ReadOnlySpan<byte> token)
         {
-            if (!Utf8Parser.TryParse(token, out long value, out int bytesConsumed))
+            if (!Utf8Parser.TryParse(token, out long value, out _))
             {
                 throw new JsonNotNumberTokenException();
             }

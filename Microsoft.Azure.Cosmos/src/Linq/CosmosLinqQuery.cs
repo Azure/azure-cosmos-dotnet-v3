@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private readonly ContainerInternal container;
         private readonly CosmosQueryClientCore queryClient;
-        private readonly CosmosResponseFactory responseFactory;
+        private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
         private readonly string continuationToken;
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public CosmosLinqQuery(
            ContainerInternal container,
-           CosmosResponseFactory responseFactory,
+           CosmosResponseFactoryInternal responseFactory,
            CosmosQueryClientCore queryClient,
            string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public CosmosLinqQuery(
           ContainerInternal container,
-          CosmosResponseFactory responseFactory,
+          CosmosResponseFactoryInternal responseFactory,
           CosmosQueryClientCore queryClient,
           string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,

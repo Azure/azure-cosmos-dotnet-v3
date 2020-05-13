@@ -1,6 +1,7 @@
-﻿namespace Microsoft.Azure.Cosmos.Performance.Tests.Models
+﻿namespace Microsoft.Azure.Cosmos.Tests.Poco
 {
     using System;
+    using System.Collections.Generic;
     using Newtonsoft.Json;
 
     public sealed class Person
@@ -60,10 +61,11 @@
             "Sunny Fenton",
         };
 
-        public Person(string name, int age)
+        public Person(string name, int age, IReadOnlyList<Person> children)
         {
             this.Name = name;
             this.Age = age;
+            this.Children = new List<Person>(children);
         }
 
         [JsonProperty("name")]
@@ -71,6 +73,9 @@
 
         [JsonProperty("age")]
         public int Age { get; }
+
+        [JsonProperty("children")]
+        public IReadOnlyList<Person> Children { get; }
 
         public override bool Equals(object obj)
         {
@@ -97,7 +102,17 @@
             string name = Person.names[Person.random.Next(0, Person.names.Length)];
             int age = Person.random.Next(0, 100);
 
-            return new Person(name, age);
+            List<Person> children = new List<Person>();
+            if (Person.random.Next() % 2 == 0)
+            {
+                int numChildren = Person.random.Next(0, 5);
+                for (int i = 0; i < numChildren; i++)
+                {
+                    children.Add(Person.GetRandomPerson());
+                }
+            }
+
+            return new Person(name, age, children);
         }
     }
 }

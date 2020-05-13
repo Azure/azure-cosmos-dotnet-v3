@@ -39,8 +39,8 @@ namespace Microsoft.Azure.Cosmos
                 id: containerId);
 
             this.Database = database;
-            this.Conflicts = new ConflictsInlineCore(new ConflictsCore(this.ClientContext, this));
-            this.Scripts = new ScriptsInlineCore(new ScriptsCore(this, this.ClientContext));
+            this.Conflicts = new ConflictsInlineCore(this.ClientContext, this);
+            this.Scripts = new ScriptsInlineCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
             this.lazyBatchExecutor = new Lazy<BatchAsyncContainerExecutor>(() => this.ClientContext.GetExecutorForContainer(this));
@@ -50,28 +50,28 @@ namespace Microsoft.Azure.Cosmos
 
         public override Database Database { get; }
 
-        internal override Uri LinkUri { get; }
+        public override Uri LinkUri { get; }
 
-        internal override CosmosClientContext ClientContext { get; }
+        public override CosmosClientContext ClientContext { get; }
 
-        internal override BatchAsyncContainerExecutor BatchExecutor => this.lazyBatchExecutor.Value;
+        public override BatchAsyncContainerExecutor BatchExecutor => this.lazyBatchExecutor.Value;
 
         public override Conflicts Conflicts { get; }
 
         public override Scripts.Scripts Scripts { get; }
 
-        public override Task<ContainerResponse> ReadContainerAsync(
+        public override async Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadContainerStreamAsync(
+            ResponseMessage response = await this.ReadContainerStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
-        public override Task<ContainerResponse> ReplaceContainerAsync(
+        public override async Task<ContainerResponse> ReplaceContainerAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -82,23 +82,23 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(containerProperties.Id);
-            Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
+            ResponseMessage response = await this.ReplaceStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
-        public override Task<ContainerResponse> DeleteContainerAsync(
+        public override async Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteContainerStreamAsync(
+            ResponseMessage response = await this.DeleteContainerStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
         public override async Task<int?> ReadThroughputAsync(
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
         }
 
-        internal override async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+        public override async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal override async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+        public override async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
             ThroughputProperties throughput,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="ContainerProperties"/> for this container.</returns>
-        internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             try
@@ -310,13 +310,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Name based look-up, needs re-computation and can't be cached
-        internal override async Task<string> GetRIDAsync(CancellationToken cancellationToken)
+        public override async Task<string> GetRIDAsync(CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             return containerProperties?.ResourceId;
         }
 
-        internal override Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetCachedContainerPropertiesAsync(cancellationToken)
                             .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>Returns the partition key path</returns>
-        internal override async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             if (containerProperties == null)
@@ -353,13 +353,13 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// For non-existing container will throw <see cref="DocumentClientException"/> with 404 as status code
         /// </remarks>
-        internal override async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             return containerProperties.GetNoneValue();
         }
 
-        internal override Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
+        public override Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
             string collectionRID = null;
             return this.GetRIDAsync(cancellationToken)

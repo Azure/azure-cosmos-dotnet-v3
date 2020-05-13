@@ -8,69 +8,31 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlCoalesceScalarExpression : SqlScalarExpression
     {
         private SqlCoalesceScalarExpression(
-            SqlScalarExpression leftExpression,
-            SqlScalarExpression rightExpression)
-            : base(SqlObjectKind.CoalesceScalarExpression)
+            SqlScalarExpression left,
+            SqlScalarExpression right)
         {
-            if (leftExpression == null)
-            {
-                throw new ArgumentNullException("leftExpression");
-            }
-
-            if (rightExpression == null)
-            {
-                throw new ArgumentNullException("rightExpression");
-            }
-
-            this.LeftExpression = leftExpression;
-            this.RightExpression = rightExpression;
+            this.Left = left ?? throw new ArgumentNullException(nameof(left));
+            this.Right = right ?? throw new ArgumentNullException(nameof(right));
         }
 
-        public SqlScalarExpression LeftExpression
-        {
-            get;
-        }
+        public SqlScalarExpression Left { get; }
 
-        public SqlScalarExpression RightExpression
-        {
-            get;
-        }
+        public SqlScalarExpression Right { get; }
 
         public static SqlCoalesceScalarExpression Create(
-            SqlScalarExpression leftExpression,
-            SqlScalarExpression rightExpression)
-        {
-            return new SqlCoalesceScalarExpression(leftExpression, rightExpression);
-        }
+            SqlScalarExpression left,
+            SqlScalarExpression right) => new SqlCoalesceScalarExpression(left, right);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlScalarExpressionVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlScalarExpressionVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

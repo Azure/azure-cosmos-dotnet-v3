@@ -4,27 +4,21 @@
       <Description>_COMPARE_BSON_BINARYDATA</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_COMPARE_BSON_BINARYDATA",
-    "Kind": "Identifier"
+    "Value": "_COMPARE_BSON_BINARYDATA"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -44,27 +38,21 @@ _COMPARE_BSON_BINARYDATA(
       <Description>_COMPARE_OBJECTS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_COMPARE_OBJECTS",
-    "Kind": "Identifier"
+    "Value": "_COMPARE_OBJECTS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -84,19 +72,14 @@ _COMPARE_OBJECTS(
       <Description>_ObjectToArray</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_ObjectToArray",
-    "Kind": "Identifier"
+    "Value": "_ObjectToArray"
   },
   "Arguments": [
     {
-      "Literal": {
-        "Kind": "NullLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+      "Literal": {}
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -113,34 +96,26 @@ _ObjectToArray(null)
       <Description>_PROXY_PROJECTION</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_PROXY_PROJECTION",
-    "Kind": "Identifier"
+    "Value": "_PROXY_PROJECTION"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     },
     {
       "Literal": {
-        "Value": 1234,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1234
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -161,27 +136,21 @@ _PROXY_PROJECTION(
       <Description>_REGEX_MATCH</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_REGEX_MATCH",
-    "Kind": "Identifier"
+    "Value": "_REGEX_MATCH"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -201,27 +170,21 @@ _REGEX_MATCH(
       <Description>_ST_DISTANCE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_ST_DISTANCE",
-    "Kind": "Identifier"
+    "Value": "_ST_DISTANCE"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -241,27 +204,21 @@ _ST_DISTANCE(
       <Description>_ST_INTERSECTS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_ST_INTERSECTS",
-    "Kind": "Identifier"
+    "Value": "_ST_INTERSECTS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -281,27 +238,21 @@ _ST_INTERSECTS(
       <Description>_ST_WITHIN</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_ST_WITHIN",
-    "Kind": "Identifier"
+    "Value": "_ST_WITHIN"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -321,27 +272,21 @@ _ST_WITHIN(
       <Description>_TRY_ARRAY_CONTAINS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "_TRY_ARRAY_CONTAINS",
-    "Kind": "Identifier"
+    "Value": "_TRY_ARRAY_CONTAINS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -361,20 +306,16 @@ _TRY_ARRAY_CONTAINS(
       <Description>ABS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ABS",
-    "Kind": "Identifier"
+    "Value": "ABS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -391,20 +332,16 @@ ABS(42)
       <Description>ACOS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ACOS",
-    "Kind": "Identifier"
+    "Value": "ACOS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -421,20 +358,16 @@ ACOS(42)
       <Description>ALL</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ALL",
-    "Kind": "Identifier"
+    "Value": "ALL"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -451,20 +384,16 @@ ALL(42)
       <Description>ANY</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ANY",
-    "Kind": "Identifier"
+    "Value": "ANY"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -481,20 +410,16 @@ ANY(42)
       <Description>ARRAY</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ARRAY",
-    "Kind": "Identifier"
+    "Value": "ARRAY"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -511,65 +436,49 @@ ARRAY(42)
       <Description>ARRAY_CONCAT</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ARRAY_CONCAT",
-    "Kind": "Identifier"
+    "Value": "ARRAY_CONCAT"
   },
   "Arguments": [
     {
       "Items": [
         {
           "Literal": {
-            "Value": 1,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 1
+          }
         },
         {
           "Literal": {
-            "Value": 2,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 2
+          }
         },
         {
           "Literal": {
-            "Value": 3,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 3
+          }
         }
-      ],
-      "Kind": "ArrayCreateScalarExpression"
+      ]
     },
     {
       "Items": [
         {
           "Literal": {
-            "Value": 4,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 4
+          }
         },
         {
           "Literal": {
-            "Value": 5,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 5
+          }
         },
         {
           "Literal": {
-            "Value": 6,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 6
+          }
         }
-      ],
-      "Kind": "ArrayCreateScalarExpression"
+      ]
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -597,53 +506,40 @@ ARRAY_CONCAT(
       <Description>ARRAY_CONTAINS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ARRAY_CONTAINS",
-    "Kind": "Identifier"
+    "Value": "ARRAY_CONTAINS"
   },
   "Arguments": [
     {
       "Items": [
         {
           "Literal": {
-            "Value": 1,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 1
+          }
         },
         {
           "Literal": {
-            "Value": 2,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 2
+          }
         },
         {
           "Literal": {
-            "Value": 3,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 3
+          }
         }
-      ],
-      "Kind": "ArrayCreateScalarExpression"
+      ]
     },
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": true,
-        "Kind": "BooleanLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": true
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -668,39 +564,30 @@ ARRAY_CONTAINS(
       <Description>ARRAY_LENGTH</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ARRAY_LENGTH",
-    "Kind": "Identifier"
+    "Value": "ARRAY_LENGTH"
   },
   "Arguments": [
     {
       "Items": [
         {
           "Literal": {
-            "Value": 1,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 1
+          }
         },
         {
           "Literal": {
-            "Value": 2,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 2
+          }
         },
         {
           "Literal": {
-            "Value": 3,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 3
+          }
         }
-      ],
-      "Kind": "ArrayCreateScalarExpression"
+      ]
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -721,53 +608,40 @@ ARRAY_LENGTH([
       <Description>ARRAY_SLICE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ARRAY_SLICE",
-    "Kind": "Identifier"
+    "Value": "ARRAY_SLICE"
   },
   "Arguments": [
     {
       "Items": [
         {
           "Literal": {
-            "Value": 1,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 1
+          }
         },
         {
           "Literal": {
-            "Value": 2,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 2
+          }
         },
         {
           "Literal": {
-            "Value": 3,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": 3
+          }
         }
-      ],
-      "Kind": "ArrayCreateScalarExpression"
+      ]
     },
     {
       "Literal": {
-        "Value": 4,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 4
+      }
     },
     {
       "Literal": {
-        "Value": 5,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 5
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -792,20 +666,16 @@ ARRAY_SLICE(
       <Description>ASIN</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ASIN",
-    "Kind": "Identifier"
+    "Value": "ASIN"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -822,20 +692,16 @@ ASIN(42)
       <Description>ATAN</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ATAN",
-    "Kind": "Identifier"
+    "Value": "ATAN"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -852,20 +718,16 @@ ATAN(42)
       <Description>ATN2</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ATN2",
-    "Kind": "Identifier"
+    "Value": "ATN2"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -882,20 +744,16 @@ ATN2(42)
       <Description>AVG</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "AVG",
-    "Kind": "Identifier"
+    "Value": "AVG"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -912,20 +770,16 @@ AVG(42)
       <Description>CEILING</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "CEILING",
-    "Kind": "Identifier"
+    "Value": "CEILING"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -942,27 +796,21 @@ CEILING(42)
       <Description>CONCAT</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "CONCAT",
-    "Kind": "Identifier"
+    "Value": "CONCAT"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "Hello",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "Hello"
+      }
     },
     {
       "Literal": {
-        "Value": "World",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "World"
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -982,27 +830,21 @@ CONCAT(
       <Description>CONTAINS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "CONTAINS",
-    "Kind": "Identifier"
+    "Value": "CONTAINS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "strstr",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "strstr"
+      }
     },
     {
       "Literal": {
-        "Value": "str",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "str"
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1022,20 +864,16 @@ CONTAINS(
       <Description>COS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "COS",
-    "Kind": "Identifier"
+    "Value": "COS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1052,20 +890,16 @@ COS(42)
       <Description>COT</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "COT",
-    "Kind": "Identifier"
+    "Value": "COT"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1082,20 +916,16 @@ COT(42)
       <Description>COUNT</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "COUNT",
-    "Kind": "Identifier"
+    "Value": "COUNT"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1112,20 +942,16 @@ COUNT(42)
       <Description>DEGREES</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "DEGREES",
-    "Kind": "Identifier"
+    "Value": "DEGREES"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1142,20 +968,16 @@ DEGREES(42)
       <Description>DOCUMENTID</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "DOCUMENTID",
-    "Kind": "Identifier"
+    "Value": "DOCUMENTID"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1172,27 +994,21 @@ DOCUMENTID(42)
       <Description>ENDSWITH</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ENDSWITH",
-    "Kind": "Identifier"
+    "Value": "ENDSWITH"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "Does this string endswith endswith",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "Does this string endswith endswith"
+      }
     },
     {
       "Literal": {
-        "Value": "endswith",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "endswith"
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1212,20 +1028,16 @@ ENDSWITH(
       <Description>EXP</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "EXP",
-    "Kind": "Identifier"
+    "Value": "EXP"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1242,20 +1054,16 @@ EXP(42)
       <Description>FLOOR</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "FLOOR",
-    "Kind": "Identifier"
+    "Value": "FLOOR"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1272,27 +1080,21 @@ FLOOR(42)
       <Description>INDEX_OF</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "INDEX_OF",
-    "Kind": "Identifier"
+    "Value": "INDEX_OF"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "banana",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "banana"
+      }
     },
     {
       "Literal": {
-        "Value": "ana",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "ana"
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1312,20 +1114,16 @@ INDEX_OF(
       <Description>IS_ARRAY</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_ARRAY",
-    "Kind": "Identifier"
+    "Value": "IS_ARRAY"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1342,20 +1140,16 @@ IS_ARRAY(42)
       <Description>IS_BOOL</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_BOOL",
-    "Kind": "Identifier"
+    "Value": "IS_BOOL"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": true,
-        "Kind": "BooleanLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": true
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1372,20 +1166,16 @@ IS_BOOL(true)
       <Description>IS_DEFINED</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_DEFINED",
-    "Kind": "Identifier"
+    "Value": "IS_DEFINED"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1402,20 +1192,16 @@ IS_DEFINED(42)
       <Description>IS_FINITE_NUMBER</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_FINITE_NUMBER",
-    "Kind": "Identifier"
+    "Value": "IS_FINITE_NUMBER"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1432,19 +1218,14 @@ IS_FINITE_NUMBER(42)
       <Description>IS_NULL</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_NULL",
-    "Kind": "Identifier"
+    "Value": "IS_NULL"
   },
   "Arguments": [
     {
-      "Literal": {
-        "Kind": "NullLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+      "Literal": {}
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1461,20 +1242,16 @@ IS_NULL(null)
       <Description>IS_NUMBER</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_NUMBER",
-    "Kind": "Identifier"
+    "Value": "IS_NUMBER"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1491,20 +1268,16 @@ IS_NUMBER(42)
       <Description>IS_OBJECT</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_OBJECT",
-    "Kind": "Identifier"
+    "Value": "IS_OBJECT"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1521,20 +1294,16 @@ IS_OBJECT(42)
       <Description>IS_PRIMITIVE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_PRIMITIVE",
-    "Kind": "Identifier"
+    "Value": "IS_PRIMITIVE"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1551,20 +1320,16 @@ IS_PRIMITIVE(42)
       <Description>IS_STRING</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "IS_STRING",
-    "Kind": "Identifier"
+    "Value": "IS_STRING"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "hello",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "hello"
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1581,27 +1346,21 @@ IS_STRING("hello")
       <Description>LEFT</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "LEFT",
-    "Kind": "Identifier"
+    "Value": "LEFT"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "Hello",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "Hello"
+      }
     },
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1621,20 +1380,16 @@ LEFT(
       <Description>LENGTH</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "LENGTH",
-    "Kind": "Identifier"
+    "Value": "LENGTH"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1651,34 +1406,26 @@ LENGTH(42)
       <Description>LIKE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "LIKE",
-    "Kind": "Identifier"
+    "Value": "LIKE"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "blah",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "blah"
+      }
     },
     {
       "Literal": {
-        "Value": "blah",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "blah"
+      }
     },
     {
       "Literal": {
-        "Value": "blah",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "blah"
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1699,20 +1446,16 @@ LIKE(
       <Description>LOG</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "LOG",
-    "Kind": "Identifier"
+    "Value": "LOG"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1729,20 +1472,16 @@ LOG(42)
       <Description>LOG10</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "LOG10",
-    "Kind": "Identifier"
+    "Value": "LOG10"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1759,20 +1498,16 @@ LOG10(42)
       <Description>LOWER</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "LOWER",
-    "Kind": "Identifier"
+    "Value": "LOWER"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1789,20 +1524,16 @@ LOWER(42)
       <Description>LTRIM</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "LTRIM",
-    "Kind": "Identifier"
+    "Value": "LTRIM"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1819,20 +1550,16 @@ LTRIM(42)
       <Description>MAX</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "MAX",
-    "Kind": "Identifier"
+    "Value": "MAX"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1849,20 +1576,16 @@ MAX(42)
       <Description>MIN</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "MIN",
-    "Kind": "Identifier"
+    "Value": "MIN"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1879,12 +1602,10 @@ MIN(42)
       <Description>PI</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "PI",
-    "Kind": "Identifier"
+    "Value": "PI"
   },
   "Arguments": [],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1901,27 +1622,21 @@ PI()
       <Description>POWER</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "POWER",
-    "Kind": "Identifier"
+    "Value": "POWER"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 1337,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1337
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1941,20 +1656,16 @@ POWER(
       <Description>RADIANS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "RADIANS",
-    "Kind": "Identifier"
+    "Value": "RADIANS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1971,12 +1682,10 @@ RADIANS(42)
       <Description>RAND</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "RAND",
-    "Kind": "Identifier"
+    "Value": "RAND"
   },
   "Arguments": [],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1993,34 +1702,26 @@ RAND()
       <Description>REPLACE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "REPLACE",
-    "Kind": "Identifier"
+    "Value": "REPLACE"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "banana",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "banana"
+      }
     },
     {
       "Literal": {
-        "Value": "ana",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "ana"
+      }
     },
     {
       "Literal": {
-        "Value": "banana",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "banana"
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2041,27 +1742,21 @@ REPLACE(
       <Description>REPLICATE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "REPLICATE",
-    "Kind": "Identifier"
+    "Value": "REPLICATE"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "hello",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "hello"
+      }
     },
     {
       "Literal": {
-        "Value": 5,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 5
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2081,20 +1776,16 @@ REPLICATE(
       <Description>REVERSE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "REVERSE",
-    "Kind": "Identifier"
+    "Value": "REVERSE"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2111,27 +1802,21 @@ REVERSE(42)
       <Description>RIGHT</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "RIGHT",
-    "Kind": "Identifier"
+    "Value": "RIGHT"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "hello",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "hello"
+      }
     },
     {
       "Literal": {
-        "Value": 2,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 2
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2151,20 +1836,16 @@ RIGHT(
       <Description>ROUND</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ROUND",
-    "Kind": "Identifier"
+    "Value": "ROUND"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2181,20 +1862,16 @@ ROUND(42)
       <Description>RTRIM</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "RTRIM",
-    "Kind": "Identifier"
+    "Value": "RTRIM"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2211,20 +1888,16 @@ RTRIM(42)
       <Description>SIGN</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "SIGN",
-    "Kind": "Identifier"
+    "Value": "SIGN"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2241,20 +1914,16 @@ SIGN(42)
       <Description>SIN</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "SIN",
-    "Kind": "Identifier"
+    "Value": "SIN"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2271,20 +1940,16 @@ SIN(42)
       <Description>SQRT</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "SQRT",
-    "Kind": "Identifier"
+    "Value": "SQRT"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2301,20 +1966,16 @@ SQRT(42)
       <Description>SQUARE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "SQUARE",
-    "Kind": "Identifier"
+    "Value": "SQUARE"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2331,27 +1992,21 @@ SQUARE(42)
       <Description>STARTSWITH</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "STARTSWITH",
-    "Kind": "Identifier"
+    "Value": "STARTSWITH"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "does this string startswith does",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "does this string startswith does"
+      }
     },
     {
       "Literal": {
-        "Value": "does",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "does"
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2371,27 +2026,21 @@ STARTSWITH(
       <Description>ST_DISTANCE</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ST_DISTANCE",
-    "Kind": "Identifier"
+    "Value": "ST_DISTANCE"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2411,27 +2060,21 @@ ST_DISTANCE(
       <Description>ST_INTERSECTS</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ST_INTERSECTS",
-    "Kind": "Identifier"
+    "Value": "ST_INTERSECTS"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2451,20 +2094,16 @@ ST_INTERSECTS(
       <Description>ST_ISVALID</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ST_ISVALID",
-    "Kind": "Identifier"
+    "Value": "ST_ISVALID"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2481,20 +2120,16 @@ ST_ISVALID(42)
       <Description>ST_ISVALIDDETAILED</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ST_ISVALIDDETAILED",
-    "Kind": "Identifier"
+    "Value": "ST_ISVALIDDETAILED"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2511,27 +2146,21 @@ ST_ISVALIDDETAILED(42)
       <Description>ST_WITHIN</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "ST_WITHIN",
-    "Kind": "Identifier"
+    "Value": "ST_WITHIN"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     },
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2551,34 +2180,26 @@ ST_WITHIN(
       <Description>SUBSTRING</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "SUBSTRING",
-    "Kind": "Identifier"
+    "Value": "SUBSTRING"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": "Hello",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "Hello"
+      }
     },
     {
       "Literal": {
-        "Value": 1,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 1
+      }
     },
     {
       "Literal": {
-        "Value": 2,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 2
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2599,20 +2220,16 @@ SUBSTRING(
       <Description>SUM</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "SUM",
-    "Kind": "Identifier"
+    "Value": "SUM"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2629,20 +2246,16 @@ SUM(42)
       <Description>TAN</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "TAN",
-    "Kind": "Identifier"
+    "Value": "TAN"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2659,20 +2272,16 @@ TAN(42)
       <Description>TRUNC</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "TRUNC",
-    "Kind": "Identifier"
+    "Value": "TRUNC"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -2689,20 +2298,16 @@ TRUNC(42)
       <Description>UPPER</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "UPPER",
-    "Kind": "Identifier"
+    "Value": "UPPER"
   },
   "Arguments": [
     {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": 42
+      }
     }
   ],
-  "IsUdf": false,
-  "Kind": "FunctionCallScalarExpression"
+  "IsUdf": false
 }]]></SqlObject>
     </Input>
     <Output>

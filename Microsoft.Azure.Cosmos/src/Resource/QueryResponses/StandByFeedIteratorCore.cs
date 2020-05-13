@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }

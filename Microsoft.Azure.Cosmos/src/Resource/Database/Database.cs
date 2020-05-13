@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///
-    /// See <see cref="CosmosClient"/> for creating new databases, and reading/querying all databases; use `client.Databases`.
+    /// See <see cref="Client"/> for creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
     /// <remarks>
     /// Note: all these operations make calls against a fixed budget.
@@ -26,6 +26,11 @@ namespace Microsoft.Azure.Cosmos
         /// The Id of the Cosmos database
         /// </summary>
         public abstract string Id { get; }
+
+        /// <summary>
+        /// The parent Cosmos client instance related the database instance
+        /// </summary>
+        public abstract CosmosClient Client { get; }
 
         /// <summary>
         /// Reads a <see cref="DatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -157,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken));
-#if PREVIEW
+
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
@@ -348,7 +353,6 @@ namespace Microsoft.Azure.Cosmos
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
-#endif
 
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.

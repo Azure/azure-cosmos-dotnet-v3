@@ -70,13 +70,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JArray contextList = jObject["Context"].ToObject<JArray>();
             JObject customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
             Assert.IsNotNull(customHandler);
-            TimeSpan elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(elapsedTime.TotalSeconds > 1);
+            double elapsedTime = customHandler["HandlerElapsedTimeInMs"].ToObject<double>();
+            Assert.IsTrue(elapsedTime > 1);
 
             customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
             Assert.IsNotNull(customHandler);
-            elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(elapsedTime > delayTime);
+            elapsedTime = customHandler["HandlerElapsedTimeInMs"].ToObject<double>();
+            Assert.IsTrue(elapsedTime > delayTime.TotalMilliseconds);
 
             await databaseResponse.Database.DeleteAsync();
         }

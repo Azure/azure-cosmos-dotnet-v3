@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTestUtils.cs" Link="JsonTestUtils.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTokenInfo.cs" Link="Json\JsonTokenInfo.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Poco\Person.cs" Link="Models\Person.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Utils\TextFileConcatenation.cs" Link="TextFileConcatenation.cs" />
   </ItemGroup>
 
@@ -221,6 +222,10 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>JsonRoundtripBenchmark.cs</LastGenOutput>
     </None>
+    <None Update="Json\Utf8vsUtf16StringBenchmark.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Utf8vsUtf16StringBenchmark.cs</LastGenOutput>
+    </None>
     <None Update="Json\Utf8vsUtf16StringBenchmarkGenerator.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Utf8vsUtf16StringBenchmarkGenerator.cs</LastGenOutput>
@@ -249,6 +254,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>JsonRoundtripBenchmark.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\Utf8vsUtf16StringBenchmark.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Utf8vsUtf16StringBenchmark.tt</DependentUpon>
     </Compile>
     <Compile Update="Json\Utf8vsUtf16StringBenchmarkGenerator.cs">
       <DesignTime>True</DesignTime>

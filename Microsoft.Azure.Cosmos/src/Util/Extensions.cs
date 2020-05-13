@@ -154,10 +154,14 @@ namespace Microsoft.Azure.Cosmos
 
         public static async Task<IDisposable> UsingWaitAsync(
             this SemaphoreSlim semaphoreSlim,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
-            return new UsableSemaphoreWrapper(semaphoreSlim);
+            using (diagnosticsContext?.CreateScope(nameof(UsingWaitAsync)))
+            {
+                await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
+                return new UsableSemaphoreWrapper(semaphoreSlim);
+            }
         }
 
         private static void TraceExceptionInternal(Exception exception)
