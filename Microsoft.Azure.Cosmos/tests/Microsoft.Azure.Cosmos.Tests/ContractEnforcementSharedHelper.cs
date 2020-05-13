@@ -66,6 +66,14 @@
             );
         }
 
+        private static string GetSortedSpecificAttributes(IEnumerable<CustomAttributeData> attributes)
+        {
+            IEnumerable<CustomAttributeData> filteredAttributes = ContractEnforcementSharedHelper.RemoveDebugSpecificAttributes(attributes);
+            IEnumerable<string> filteredString = filteredAttributes.Select(x => x.ToString()).OrderBy(x => x, invariantComparer);
+
+            return string.Join("-", filteredString);
+        }
+
         private static TypeTree BuildTypeTree(TypeTree root, Type[] types)
         {
             IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName, invariantComparer);
@@ -76,7 +84,7 @@
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
                 root.Type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                    .Select(memberInfo => new KeyValuePair<string, MemberInfo>($"{memberInfo.ToString()}{string.Join("-", ContractEnforcementSharedHelper.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes))}", memberInfo))
+                    .Select(memberInfo => new KeyValuePair<string, MemberInfo>($"{memberInfo.ToString()}{string.Join("-", ContractEnforcementSharedHelper.GetSortedSpecificAttributes(memberInfo.CustomAttributes))}", memberInfo))
                     .OrderBy(o => o.Key, invariantComparer);
             foreach (KeyValuePair<string, MemberInfo> memberInfo in memberInfos)
             {
@@ -90,6 +98,11 @@
                 if (memberInfo.Value.MemberType == MemberTypes.Constructor | memberInfo.Value.MemberType == MemberTypes.Method | memberInfo.Value.MemberType == MemberTypes.Event)
                 {
                     methodSignature = memberInfo.Value.ToString();
+                }
+
+                if (memberInfo.ToString().Contains("Byte[] WrappedDataEncryptionKey"))
+                {
+                    Console.WriteLine(memberInfo.ToString());
                 }
 
                 root.Members[
