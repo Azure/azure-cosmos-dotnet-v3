@@ -5,9 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Linq;
-    using System.Numerics;
     using System.Runtime.InteropServices;
-    using System.Xml;
 
     /// <summary>
     /// Struct that represents a 128 bit unsigned integer.

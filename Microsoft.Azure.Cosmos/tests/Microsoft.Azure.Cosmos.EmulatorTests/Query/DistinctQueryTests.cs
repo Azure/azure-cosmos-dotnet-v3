@@ -84,7 +84,7 @@
                         FeedResponse<CosmosElement> cosmosQueryResponse = await documentQueryWithoutDistinct.ReadNextAsync();
                         foreach (CosmosElement document in cosmosQueryResponse)
                         {
-                            if (documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
+                            if (documentsSeen.Add(document, out UInt128 hash))
                             {
                                 documentsFromWithoutDistinct.Add(document);
                             }
@@ -152,7 +152,7 @@
                         },
                         QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
                     documentsFromWithoutDistinct = documentsFromWithoutDistinct
-                        .Where(document => documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
+                        .Where(document => documentsSeen.Add(document, out UInt128 hash))
                         .ToList();
 
                     foreach (int pageSize in new int[] { 1, 10, 100 })
@@ -209,7 +209,7 @@
                         },
                         QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
                     documentsFromWithoutDistinct = documentsFromWithoutDistinct
-                        .Where(document => documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
+                        .Where(document => documentsSeen.Add(document, out UInt128 hash))
                         .ToList();
 
                     foreach (int pageSize in new int[] { 1, 10, 100 })
@@ -275,7 +275,7 @@
         {
             private readonly HashSet<CosmosElement> elementSet = new HashSet<CosmosElement>();
 
-            public bool Add(CosmosElement element, out Cosmos.Query.Core.UInt128 hash)
+            public bool Add(CosmosElement element, out UInt128 hash)
             {
                 hash = default;
                 return this.elementSet.Add(element);
