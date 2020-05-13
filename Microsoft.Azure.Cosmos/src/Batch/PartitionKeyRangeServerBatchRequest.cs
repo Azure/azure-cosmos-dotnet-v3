@@ -9,9 +9,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
+    using Microsoft.IO;
 
     internal sealed class PartitionKeyRangeServerBatchRequest : ServerBatchRequest
     {
+        private static RecyclableMemoryStreamManager memoryStreamManager = new RecyclableMemoryStreamManager();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionKeyRangeServerBatchRequest"/> class.
         /// </summary>
@@ -57,7 +60,11 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             PartitionKeyRangeServerBatchRequest request = new PartitionKeyRangeServerBatchRequest(partitionKeyRangeId, maxBodyLength, maxOperationCount, serializerCore);
-            ArraySegment<ItemBatchOperation> pendingOperations = await request.CreateBodyStreamAsync(operations, cancellationToken, ensureContinuousOperationIndexes);
+            ArraySegment<ItemBatchOperation> pendingOperations = await request.CreateBodyStreamAsync(
+                operations,
+                cancellationToken,
+                ensureContinuousOperationIndexes,
+                memoryStreamManager);
             return new Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>(request, pendingOperations);
         }
     }
