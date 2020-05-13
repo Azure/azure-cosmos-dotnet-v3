@@ -121,13 +121,13 @@
     <Input>
       <Description>SqlBinaryScalarExpression</Description>
       <SqlObject><![CDATA[{
-  "LeftExpression": {
+  "Left": {
     "Literal": {
       "Value": 5
     }
   },
   "OperatorKind": "Add",
-  "RightExpression": {
+  "Right": {
     "Literal": {
       "Value": 3
     }
