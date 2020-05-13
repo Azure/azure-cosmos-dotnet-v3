@@ -12,23 +12,37 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class RequestOptionTests
     {
+        private static readonly string CustomHeaderName = "custom-header1";
+        private static readonly string CustomHeaderValue = "value1";
+
         [TestMethod]
         public void CustomHeadersTests()
         {
-            string customHeaderName = "custom-header1";
-            string customHeaderValue = "value1";
 
-            RequestOptions ro = new RequestOptions();
-            ro.CustomRequestHeaders = new Dictionary<string, string>()
+            RequestOptions reqeustOptions = new RequestOptions();
+            reqeustOptions.CustomRequestHeaders = new Dictionary<string, string>()
                 {
-                    { customHeaderName, customHeaderValue},
+                    { RequestOptionTests.CustomHeaderName, RequestOptionTests.CustomHeaderValue},
                 };
 
             RequestMessage message = new RequestMessage();
-            ro.PopulateRequestOptions(message);
+            reqeustOptions.PopulateRequestOptions(message);
 
-            Assert.IsTrue(message.Headers.TryGetValue(customHeaderName, out string headerValue));
-            Assert.AreEqual(customHeaderValue, headerValue);
+            Assert.IsTrue(message.Headers.TryGetValue(CustomHeaderName, out string headerValue));
+            Assert.AreEqual(CustomHeaderValue, headerValue);
+        }
+
+        [TestMethod]
+        public void TransactionalbatchCustomHeaderTest()
+        {
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+            itemRequestOptions.CustomRequestHeaders = new Dictionary<string, string>()
+                {
+                    { RequestOptionTests.CustomHeaderName, RequestOptionTests.CustomHeaderValue},
+                };
+
+            TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
+            Assert.AreSame(itemRequestOptions.CustomRequestHeaders, batchItemRequestOptions.CustomRequestHeaders);
         }
     }
 }
