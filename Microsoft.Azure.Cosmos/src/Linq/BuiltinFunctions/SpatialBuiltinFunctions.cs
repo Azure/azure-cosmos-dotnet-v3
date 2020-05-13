@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             {
                 nameof(Geometry.Distance),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.StDistance,
                     new ImmutableArray<Type>[]
                     {
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Geometry.Within),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.StWithin,
                     new ImmutableArray<Type>[]
                     {
@@ -36,19 +36,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Geometry.IsValidDetailed),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.StIsvaliddetailed,
                     new ImmutableArray<Type>[]{}.ToImmutableArray())
             },
             {
                 nameof(Geometry.IsValid),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.StIsvalid,
                     new ImmutableArray<Type>[]{}.ToImmutableArray())
             },
             {
                 nameof(Geometry.Intersects),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.StIntersects,
                     new ImmutableArray<Type>[]
                     {

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(string.EndsWith),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Endswith,
                     new List<ImmutableArray<Type>>
                     {
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(string.IndexOf),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.IndexOf,
                     new List<ImmutableArray<Type>>
                     {
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(string.ToLower),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Lower,
                     new List<ImmutableArray<Type>>
                     {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(string.Replace),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Replace,
                     new List<ImmutableArray<Type>>
                     {
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(string.StartsWith),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Startswith,
                     new List<ImmutableArray<Type>>
                     {
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(string.Substring),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Substring,
                     new List<ImmutableArray<Type>>
                     {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(string.ToUpper),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Upper,
                     new List<ImmutableArray<Type>>
                     {
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
         }.ToImmutableDictionary();
 
-        private class StringVisitConcat : SqlBuiltinFunctionVisitor
+        private class StringVisitConcat : CosmosBuiltinFunctionVisitor
         {
             public StringVisitConcat()
                 : base(
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class StringVisitContains : SqlBuiltinFunctionVisitor
+        private class StringVisitContains : CosmosBuiltinFunctionVisitor
         {
             public StringVisitContains()
                 : base(
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class StringVisitCount : SqlBuiltinFunctionVisitor
+        private class StringVisitCount : CosmosBuiltinFunctionVisitor
         {
             public StringVisitCount()
                 : base(SqlFunctionCallScalarExpression.Names.Length, argumentLists: null)
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class StringVisitTrimStart : SqlBuiltinFunctionVisitor
+        private class StringVisitTrimStart : CosmosBuiltinFunctionVisitor
         {
             public StringVisitTrimStart()
                 : base(SqlFunctionCallScalarExpression.Names.Ltrim, argumentLists: null)
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class StringVisitReverse : SqlBuiltinFunctionVisitor
+        private class StringVisitReverse : CosmosBuiltinFunctionVisitor
         {
             public StringVisitReverse()
                 : base(SqlFunctionCallScalarExpression.Names.Reverse, argumentLists: null)
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class StringVisitTrimEnd : SqlBuiltinFunctionVisitor
+        private class StringVisitTrimEnd : CosmosBuiltinFunctionVisitor
         {
             public StringVisitTrimEnd()
                 : base(SqlFunctionCallScalarExpression.Names.Rtrim, argumentLists: null)

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             {
                 nameof(CosmosLinqExtensions.IsDefined),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.IsDefined,
                     new List<ImmutableArray<Type>>()
                     {
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(CosmosLinqExtensions.IsNull),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.IsNull,
                     new List<ImmutableArray<Type>>()
                     {
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(CosmosLinqExtensions.IsPrimitive),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.IsPrimitive,
                     new List<ImmutableArray<Type>>()
                     {

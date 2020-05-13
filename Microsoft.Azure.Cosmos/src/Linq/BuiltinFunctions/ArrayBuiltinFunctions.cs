@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }.ToImmutableDictionary();
 
-        private sealed class ArrayConcatVisitor : SqlBuiltinFunctionVisitor
+        private sealed class ArrayConcatVisitor : CosmosBuiltinFunctionVisitor
         {
             public ArrayConcatVisitor()
                 : base(
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private sealed class ArrayContainsVisitor : SqlBuiltinFunctionVisitor
+        private sealed class ArrayContainsVisitor : CosmosBuiltinFunctionVisitor
         {
             public ArrayContainsVisitor()
                 : base(
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class ArrayCountVisitor : SqlBuiltinFunctionVisitor
+        private class ArrayCountVisitor : CosmosBuiltinFunctionVisitor
         {
             public ArrayCountVisitor()
                 : base(

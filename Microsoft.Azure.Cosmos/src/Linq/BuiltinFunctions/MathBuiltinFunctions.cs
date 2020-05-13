@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             {
                 nameof(Math.Abs),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Abs,
                     new ImmutableArray<Type>[]
                     {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Acos),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Acos,
                     new ImmutableArray<Type>[]
                     {
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Asin),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Asin,
                     new ImmutableArray<Type>[]
                     {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Atan),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Atan,
                     new ImmutableArray<Type>[]
                     {
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Atan2),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Atn2,
                     new ImmutableArray<Type>[]
                     {
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Ceiling),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Ceiling,
                     new ImmutableArray<Type>[]
                     {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Cos),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Cos,
                     new ImmutableArray<Type>[]
                     {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Exp),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Exp,
                     new ImmutableArray<Type>[]
                     {
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Floor),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Floor,
                     new ImmutableArray<Type>[]
                     {
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Log),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Log,
                     new ImmutableArray<Type>[]
                     {
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Log10),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Log10,
                     new ImmutableArray<Type>[]
                     {
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Pow),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Power,
                     new ImmutableArray<Type>[]
                     {
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Round),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Round,
                     new ImmutableArray<Type>[]
                     {
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Sign),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Sign,
                     new ImmutableArray<Type>[]
                     {
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Sin),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Sin,
                     new ImmutableArray<Type>[]
                     {
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Sqrt),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Sin,
                     new ImmutableArray<Type>[]
                     {
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Tan),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Tan,
                     new ImmutableArray<Type>[]
                     {
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             },
             {
                 nameof(Math.Truncate),
-                new SqlBuiltinFunctionVisitor(
+                new CosmosBuiltinFunctionVisitor(
                     SqlFunctionCallScalarExpression.Names.Trunc,
                     new ImmutableArray<Type>[]
                     {
