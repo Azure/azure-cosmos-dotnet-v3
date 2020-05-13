@@ -7,6 +7,7 @@
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
@@ -121,14 +122,14 @@
         public static string GetBaselineContract(string baselinePath)
         {
             string baselineFile = File.ReadAllText(baselinePath);
-            return NormalizeJsonString(baselineFile);
+            return baselineFile;
         }
 
         public static string RemoveDuplicateContractElements(JObject localContract, JObject officialContract)
         {
             RemoveDuplicateContractHelper(localContract, officialContract);
             string noDuplicates = localContract.ToString();
-            return NormalizeJsonString(noDuplicates);
+            return noDuplicates;
         }
 
         private static string NormalizeJsonString(string file)
@@ -157,28 +158,51 @@
             }
         }
 
-        public static bool CompareAndTraceJson(string baselineJson, string localJson)
+        public static void ValidateJsonAreSame(string baselineJson, string currentJson)
         {
-            System.Diagnostics.Trace.TraceWarning($"String length Expected: {baselineJson.Length};Actual:{localJson.Length}");
-            if (string.Equals(localJson, baselineJson, StringComparison.InvariantCulture))
+            // This prevents failures caused by it being serialized slightly different order
+            string normalizedBaselineJson = NormalizeJsonString(baselineJson);
+            string normalizedCurrentJson = NormalizeJsonString(currentJson);
+            System.Diagnostics.Trace.TraceWarning($"String length Expected: {normalizedBaselineJson.Length};Actual:{normalizedCurrentJson.Length}");
+            if (!string.Equals(normalizedCurrentJson, normalizedBaselineJson, StringComparison.InvariantCulture))
             {
-                return false;
-            }
-            else
-            {
-                System.Diagnostics.Trace.TraceWarning($"Expected: {baselineJson}");
-                System.Diagnostics.Trace.TraceWarning($"Actual: {localJson}");
-                return true;
+                System.Diagnostics.Trace.TraceWarning($"Expected: {normalizedBaselineJson}");
+                System.Diagnostics.Trace.TraceWarning($"Actual: {normalizedCurrentJson}");
+                Assert.Fail($@"Public API has changed. If this is expected, then run (EnlistmentRoot)\UpdateContracts.ps1 . To see the differences run the update script and use git diff.");
             }
         }
 
-        public static bool DoesContractContainBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
+        public static void ValidateContractContainBreakingChanges(string dllName, string baselinePath, string currentChangesPath)
         {
             string localJson = GetCurrentContract(dllName);
-            File.WriteAllText($"{breakingChangesPath}", localJson);
+            File.WriteAllText($"{currentChangesPath}", localJson);
 
             string baselineJson = GetBaselineContract(baselinePath);
-            return ContractEnforcementSharedHelper.CompareAndTraceJson(localJson, baselineJson);
+            ContractEnforcementSharedHelper.ValidateJsonAreSame(localJson, baselineJson);
+        }
+
+        public static void ValidateContractContainBreakingChangesExcludeOfficialBaseline(
+            string dllName,
+            string baselinePath,
+            string currentPath,
+            string officialBaselinePath)
+        {
+            string currentJson = ContractEnforcementSharedHelper.GetCurrentContract(
+              dllName);
+
+            JObject currentJObject = JObject.Parse(currentJson);
+            JObject officialBaselineJObject = JObject.Parse(File.ReadAllText(officialBaselinePath));
+
+            string currentJsonNoOfficialContract = ContractEnforcementSharedHelper.RemoveDuplicateContractElements(
+                localContract: currentJObject,
+                officialContract: officialBaselineJObject);
+
+            Assert.IsNotNull(currentJsonNoOfficialContract);
+
+            string baselinePreviewJson = ContractEnforcementSharedHelper.GetBaselineContract(baselinePath);
+            File.WriteAllText($"{currentPath}", currentJsonNoOfficialContract);
+
+            ContractEnforcementSharedHelper.ValidateJsonAreSame(baselinePreviewJson, currentJsonNoOfficialContract);
         }
 
         private class InvariantComparer : IComparer<string>

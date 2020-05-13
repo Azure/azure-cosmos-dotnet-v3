@@ -8,11 +8,10 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>Microsoft.Azure.Cosmos.Internal.Tests</RootNamespace>
+    <RootNamespace>Microsoft.Azure.Cosmos.Preview.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\..\Microsoft.Azure.Cosmos.Preview\tests\Microsoft.Azure.Cosmos.Preview.Tests\ContractEnforcement.cs" Link="ContractEnforcement.cs" />
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\ContractEnforcementSharedHelper.cs" Link="ContractEnforcementSharedHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
@@ -37,17 +36,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="DotNetSDKAPI.json">
+    <None Include="PreviewDotNetSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\DotNetSDKAPI.json">
-      <Link>OfficialDotNetSDKAPI.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Internal.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Preview.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

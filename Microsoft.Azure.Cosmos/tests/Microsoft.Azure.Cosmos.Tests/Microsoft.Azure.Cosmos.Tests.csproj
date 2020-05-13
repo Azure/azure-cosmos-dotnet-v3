@@ -64,9 +64,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="testbaseline.cmd">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="DotNetSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

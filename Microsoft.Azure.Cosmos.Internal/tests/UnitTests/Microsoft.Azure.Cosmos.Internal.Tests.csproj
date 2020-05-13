@@ -8,7 +8,7 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>Microsoft.Azure.Cosmos.Preview.Tests</RootNamespace>
+    <RootNamespace>Microsoft.Azure.Cosmos.Internal.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,17 +36,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="DotNetSDKAPI.json">
+    <None Include="InternalDotNetSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\DotNetSDKAPI.json">
-      <Link>OfficialDotNetSDKAPI.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Preview.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Internal.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
