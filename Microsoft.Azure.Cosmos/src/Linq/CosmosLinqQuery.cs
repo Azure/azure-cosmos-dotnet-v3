@@ -25,17 +25,17 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosLinqQueryProvider queryProvider;
         private readonly Guid correlatedActivityId;
 
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly CosmosQueryClientCore queryClient;
-        private readonly CosmosResponseFactory responseFactory;
+        private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
         private readonly string continuationToken;
         private readonly CosmosSerializationOptions serializationOptions;
 
         public CosmosLinqQuery(
-           ContainerCore container,
-           CosmosResponseFactory responseFactory,
+           ContainerInternal container,
+           CosmosResponseFactoryInternal responseFactory,
            CosmosQueryClientCore queryClient,
            string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         public CosmosLinqQuery(
-          ContainerCore container,
-          CosmosResponseFactory responseFactory,
+          ContainerInternal container,
+          CosmosResponseFactoryInternal responseFactory,
           CosmosQueryClientCore queryClient,
           string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
@@ -184,15 +184,15 @@ namespace Microsoft.Azure.Cosmos.Linq
                 headers.RequestCharge += response.RequestCharge;
 
                 // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
-                if (response.Diagnostics is CosmosDiagnosticsContext responseDiagnosticContext)
+                if (response.Diagnostics is CosmosDiagnosticsCore diagnosticsCore)
                 {
                     if (diagnosticsContext == null)
                     {
-                        diagnosticsContext = responseDiagnosticContext;
+                        diagnosticsContext = diagnosticsCore.Context;
                     }
                     else
                     {
-                        diagnosticsContext.AddDiagnosticsInternal(responseDiagnosticContext);
+                        diagnosticsContext.AddDiagnosticsInternal(diagnosticsCore.Context);
                     }
                     
                 }
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                diagnosticsContext);
+                diagnosticsContext.Diagnostics);
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
@@ -219,6 +219,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 sqlQuerySpec: querySpec,
                 isContinuationExcpected: isContinuationExcpected,
                 continuationToken: this.continuationToken,
+                feedRange: null,
                 requestOptions: this.cosmosQueryRequestOptions);
         }
 

@@ -9,6 +9,190 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTestUtils.cs" Link="JsonTestUtils.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTokenInfo.cs" Link="Json\JsonTokenInfo.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Poco\Person.cs" Link="Models\Person.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Utils\TextFileConcatenation.cs" Link="TextFileConcatenation.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\CombinedScriptsData.json" Link="TestJsons\CombinedScriptsData.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\countries\x00.txt" Link="TestJsons\countries\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\countries\x01.txt" Link="TestJsons\countries\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\countries\x02.txt" Link="TestJsons\countries\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\devtestcoll.json" Link="TestJsons\devtestcoll.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\lastfm\x00.txt" Link="TestJsons\lastfm\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\lastfm\x01.txt" Link="TestJsons\lastfm\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\lastfm\x02.txt" Link="TestJsons\lastfm\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\lastfm\x03.txt" Link="TestJsons\lastfm\x03.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\lastfm\x04.txt" Link="TestJsons\lastfm\x04.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\LogData.json" Link="TestJsons\LogData.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\MillionSong1KDocuments.json" Link="TestJsons\MillionSong1KDocuments.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\MsnCollection.json" Link="TestJsons\MsnCollection.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x00.txt" Link="TestJsons\NutritionData\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x01.txt" Link="TestJsons\NutritionData\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x02.txt" Link="TestJsons\NutritionData\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x03.txt" Link="TestJsons\NutritionData\x03.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x04.txt" Link="TestJsons\NutritionData\x04.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x05.txt" Link="TestJsons\NutritionData\x05.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\runsCollection\x00.txt" Link="TestJsons\runsCollection\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\runsCollection\x01.txt" Link="TestJsons\runsCollection\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\runsCollection\x02.txt" Link="TestJsons\runsCollection\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\runsCollection\x03.txt" Link="TestJsons\runsCollection\x03.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\runsCollection\x04.txt" Link="TestJsons\runsCollection\x04.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\states_committees.json" Link="TestJsons\states_committees.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\states_legislators\x00.txt" Link="TestJsons\states_legislators\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\states_legislators\x01.txt" Link="TestJsons\states_legislators\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\states_legislators\x02.txt" Link="TestJsons\states_legislators\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\states_legislators\x03.txt" Link="TestJsons\states_legislators\x03.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\states_legislators\x04.txt" Link="TestJsons\states_legislators\x04.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\store01C.json" Link="TestJsons\store01C.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x00.txt" Link="TestJsons\TicinoErrorBuckets\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x01.txt" Link="TestJsons\TicinoErrorBuckets\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x02.txt" Link="TestJsons\TicinoErrorBuckets\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x03.txt" Link="TestJsons\TicinoErrorBuckets\x03.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x04.txt" Link="TestJsons\TicinoErrorBuckets\x04.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x05.txt" Link="TestJsons\TicinoErrorBuckets\x05.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x06.txt" Link="TestJsons\TicinoErrorBuckets\x06.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x07.txt" Link="TestJsons\TicinoErrorBuckets\x07.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\TicinoErrorBuckets\x08.txt" Link="TestJsons\TicinoErrorBuckets\x08.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\twitter_data\x00.txt" Link="TestJsons\twitter_data\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\twitter_data\x01.txt" Link="TestJsons\twitter_data\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\twitter_data\x02.txt" Link="TestJsons\twitter_data\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\twitter_data\x03.txt" Link="TestJsons\twitter_data\x03.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\twitter_data\x04.txt" Link="TestJsons\twitter_data\x04.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\twitter_data\x05.txt" Link="TestJsons\twitter_data\x05.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\twitter_data\x06.txt" Link="TestJsons\twitter_data\x06.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\twitter_data\x07.txt" Link="TestJsons\twitter_data\x07.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\ups1\x00.txt" Link="TestJsons\ups1\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\ups1\x01.txt" Link="TestJsons\ups1\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\ups1\x02.txt" Link="TestJsons\ups1\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\ups1\x03.txt" Link="TestJsons\ups1\x03.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\ups1\x04.txt" Link="TestJsons\ups1\x04.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\ups1\x05.txt" Link="TestJsons\ups1\x05.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\ups1\x06.txt" Link="TestJsons\ups1\x06.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\XpertEvents\x00.txt" Link="TestJsons\XpertEvents\x00.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\XpertEvents\x01.txt" Link="TestJsons\XpertEvents\x01.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\XpertEvents\x02.txt" Link="TestJsons\XpertEvents\x02.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.12.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.0.0" />
@@ -26,9 +210,73 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Json\CuratedDocsBenchmark.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CuratedDocsBenchmark.cs</LastGenOutput>
+    </None>
+    <None Update="Json\JsonMicroBenchmarks.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>JsonMicroBenchmarks.cs</LastGenOutput>
+    </None>
+    <None Update="Json\JsonRoundtripBenchmark.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>JsonRoundtripBenchmark.cs</LastGenOutput>
+    </None>
+    <None Update="Json\Utf8vsUtf16StringBenchmark.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Utf8vsUtf16StringBenchmark.cs</LastGenOutput>
+    </None>
+    <None Update="Json\Utf8vsUtf16StringBenchmarkGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Utf8vsUtf16StringBenchmarkGenerator.cs</LastGenOutput>
+    </None>
     <None Update="samplepayload.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Json\CuratedDocsBenchmark.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CuratedDocsBenchmark.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\JsonMicroBenchmarks.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>JsonMicroBenchmarks.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\JsonRoundtripBenchmark.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>JsonRoundtripBenchmark.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\Utf8vsUtf16StringBenchmark.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Utf8vsUtf16StringBenchmark.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\Utf8vsUtf16StringBenchmarkGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Utf8vsUtf16StringBenchmarkGenerator.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="TestJsons\countries\" />
+    <Folder Include="TestJsons\lastfm\" />
+    <Folder Include="TestJsons\XpertEvents\" />
+    <Folder Include="TestJsons\ups1\" />
+    <Folder Include="TestJsons\twitter_data\" />
+    <Folder Include="TestJsons\TicinoErrorBuckets\" />
+    <Folder Include="TestJsons\states_legislators\" />
+    <Folder Include="TestJsons\runsCollection\" />
+    <Folder Include="TestJsons\NutritionData\" />
   </ItemGroup>
 
   <PropertyGroup>

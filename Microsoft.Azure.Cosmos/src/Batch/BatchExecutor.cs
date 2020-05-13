@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class BatchExecutor
     {
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
 
         private readonly CosmosClientContext clientContext;
 
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosDiagnosticsContext diagnosticsContext;
 
         public BatchExecutor(
-            ContainerCore container,
+            ContainerInternal container,
             PartitionKey partitionKey,
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,
@@ -44,9 +44,14 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            using (this.diagnosticsContext.CreateOverallScope("BatchExecuteAsync"))
+            using (this.diagnosticsContext.GetOverallScope())
             {
                 BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
+
+                foreach (ItemBatchOperation operation in this.inputOperations)
+                {
+                    operation.DiagnosticsContext = this.diagnosticsContext;
+                }
 
                 PartitionKey? serverRequestPartitionKey = this.partitionKey;
                 if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
@@ -95,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
                     },
-                    diagnosticsScope: this.diagnosticsContext,
+                    diagnosticsContext: this.diagnosticsContext,
                     cancellationToken);
 
                 using (this.diagnosticsContext.CreateScope("TransactionalBatchResponse"))
@@ -103,7 +108,9 @@ namespace Microsoft.Azure.Cosmos
                     return await TransactionalBatchResponse.FromResponseMessageAsync(
                         responseMessage,
                         serverRequest,
-                        this.clientContext.SerializerCore);
+                        this.clientContext.SerializerCore,
+                        shouldPromoteOperationStatus: true,
+                        cancellationToken);
                 }
             }
         }

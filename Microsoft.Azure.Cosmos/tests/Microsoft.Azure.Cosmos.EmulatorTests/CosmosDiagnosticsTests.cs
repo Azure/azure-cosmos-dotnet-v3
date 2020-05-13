@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -12,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Net;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -21,9 +24,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private Container Container = null;
         private ContainerProperties containerSettings = null;
-        private static RequestOptions DisableDiagnosticOptions = new RequestOptions()
+
+        private static readonly ItemRequestOptions RequestOptionDisableDiagnostic = new ItemRequestOptions()
         {
-            DiagnosticContext = EmptyCosmosDiagnosticsContext.Singleton
+            DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
+        };
+
+        private static readonly ChangeFeedRequestOptions ChangeFeedRequestOptionDisableDiagnostic = new ChangeFeedRequestOptions()
+        {
+            DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
         };
 
         [TestInitialize]
@@ -61,13 +70,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JArray contextList = jObject["Context"].ToObject<JArray>();
             JObject customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
             Assert.IsNotNull(customHandler);
-            TimeSpan elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(elapsedTime.TotalSeconds > 1);
+            double elapsedTime = customHandler["HandlerElapsedTimeInMs"].ToObject<double>();
+            Assert.IsTrue(elapsedTime > 1);
 
             customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
             Assert.IsNotNull(customHandler);
-            elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(elapsedTime > delayTime);
+            elapsedTime = customHandler["HandlerElapsedTimeInMs"].ToObject<double>();
+            Assert.IsTrue(elapsedTime > delayTime.TotalMilliseconds);
 
             await databaseResponse.Database.DeleteAsync();
         }
@@ -77,9 +86,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task PointOperationRequestTimeoutDiagnostic(bool disableDiagnostics)
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            if (disableDiagnostics)
             {
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             Guid exceptionActivityId = Guid.NewGuid();
@@ -99,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                   requestOptions: requestOptions);
                 Assert.Fail("Should have thrown a request timeout exception");
             }
-            catch(CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+            catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
             {
                 string exception = ce.ToString();
                 Assert.IsNotNull(exception);
@@ -124,9 +134,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            if (disableDiagnostics)
             {
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             //Checking point operation diagnostics on typed operations
@@ -134,14 +145,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync<ToDoActivity>(
                 item: testItem,
                 requestOptions: requestOptions);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(createResponse.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                createResponse.Diagnostics,
+                disableDiagnostics);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status),
                 requestOptions);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(readResponse.Diagnostics, disableDiagnostics);
-            Assert.IsNotNull(readResponse.Diagnostics);
+
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                readResponse.Diagnostics,
+                disableDiagnostics);
 
             testItem.description = "NewDescription";
             ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(
@@ -151,7 +166,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: requestOptions);
 
             Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceResponse.Diagnostics, disableDiagnostics);
+
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                replaceResponse.Diagnostics,
+                disableDiagnostics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
@@ -159,33 +177,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: requestOptions);
 
             Assert.IsNotNull(deleteResponse);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteResponse.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                deleteResponse.Diagnostics,
+                disableDiagnostics);
 
             //Checking point operation diagnostics on stream operations
             ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
                 requestOptions: requestOptions);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(createStreamResponse.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                createStreamResponse.Diagnostics,
+                disableDiagnostics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status),
                 requestOptions: requestOptions);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(readStreamResponse.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                readStreamResponse.Diagnostics,
+                disableDiagnostics);
 
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status),
                requestOptions: requestOptions);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceStreamResponse.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                replaceStreamResponse.Diagnostics,
+                disableDiagnostics);
 
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status),
                requestOptions: requestOptions);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteStreamResponse.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                deleteStreamResponse.Diagnostics,
+                disableDiagnostics);
 
             // Ensure diagnostics are set even on failed operations
             testItem.description = new string('x', Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
@@ -194,7 +222,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
                 requestOptions: requestOptions);
             Assert.IsFalse(createTooBigStreamResponse.IsSuccessStatusCode);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(createTooBigStreamResponse.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                createTooBigStreamResponse.Diagnostics,
+                disableDiagnostics);
         }
 
         [TestMethod]
@@ -206,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TransactionalBatch batch = this.Container.CreateTransactionalBatch(new PartitionKey(pkValue));
 
             List<ToDoActivity> createItems = new List<ToDoActivity>();
-            for(int i = 0; i < 50; i++)
+            for (int i = 0; i < 50; i++)
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                 createItems.Add(item);
@@ -218,11 +248,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 batch.ReadItem(createItems[i].id);
             }
 
-            RequestOptions requestOptions = disableDiagnostics ? DisableDiagnosticOptions : null;
+            RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
             TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
-            
+
             Assert.IsNotNull(response);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(response.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                diagnostics: response.Diagnostics,
+                disableDiagnostics: disableDiagnostics);
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task ChangeFeedDiagnostics(bool disableDiagnostics)
+        {
+            string pkValue = "ChangeFeedDiagnostics";
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Container container = client.GetContainer(this.database.Id, this.Container.Id);
+            List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
+            for (int i = 0; i < 100; i++)
+            {
+
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+                createItemsTasks.Add(container.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.status)));
+            }
+
+            await Task.WhenAll(createItemsTasks);
+
+            ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
+            FeedIterator changeFeedIterator = ((ContainerInternal)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
+            while (changeFeedIterator.HasMoreResults)
+            {
+                using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())
+                {
+                    CosmosDiagnosticsTests.VerifyChangeFeedDiagnostics(
+                       diagnostics: response.Diagnostics,
+                        disableDiagnostics: disableDiagnostics);
+                }
+            }
         }
 
         [TestMethod]
@@ -245,7 +308,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ItemResponse<ToDoActivity> itemResponse = await createTask;
                 Assert.IsNotNull(itemResponse);
-                CosmosDiagnosticsTests.VerifyBulkPointDiagnostics(itemResponse.Diagnostics);
+
+                CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                    diagnostics: itemResponse.Diagnostics,
+                    disableDiagnostics: false);
+            }
+        }
+
+        [TestMethod]
+        public async Task GatewayQueryPlanDiagnostic()
+        {
+            int totalItems = 3;
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(
+                this.Container,
+                pkCount: totalItems,
+                perPKItemCount: 1,
+                randomPartitionKey: true);
+
+            ContainerInternal containerCore = (ContainerInlineCore)this.Container;
+            MockCosmosQueryClient gatewayQueryPlanClient = new MockCosmosQueryClient(
+                   clientContext: containerCore.ClientContext,
+                   cosmosContainerCore: containerCore,
+                   forceQueryPlanGatewayElseServiceInterop: true);
+
+            Container gatewayQueryPlanContainer = new ContainerInlineCore(
+                containerCore.ClientContext,
+                (DatabaseInternal)containerCore.Database,
+                containerCore.Id,
+                gatewayQueryPlanClient);
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1,
+                MaxBufferedItemCount = 0
+            };
+
+            FeedIterator<ToDoActivity> feedIterator = gatewayQueryPlanContainer.GetItemQueryIterator<ToDoActivity>(
+                    "select * from ToDoActivity t ORDER BY t.cost",
+                    requestOptions: queryRequestOptions);
+
+            List<ToDoActivity> results = new List<ToDoActivity>();
+            bool isFirstPage = true;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                results.AddRange(response);
+                CosmosDiagnosticsContext diagnosticsContext = (response.Diagnostics as CosmosDiagnosticsCore).Context;
+                DiagnosticValidator.ValidateQueryGatewayPlanDiagnostics(diagnosticsContext, isFirstPage);
+                isFirstPage = false;
             }
         }
 
@@ -260,6 +370,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 pkCount: totalItems,
                 perPKItemCount: 1,
                 randomPartitionKey: true);
+
+            long readFeedTotalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
+                queryText: null,
+                expectedItemCount: totalItems,
+                disableDiagnostics: disableDiagnostics);
+
+            Assert.AreEqual(totalItems, readFeedTotalOutputDocumentCount);
 
             //Checking query metrics on typed query
             long totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
@@ -296,9 +413,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task NonDataPlaneDiagnosticTest(bool disableDiagnostics)
         {
-            RequestOptions requestOptions = new RequestOptions()
+            RequestOptions requestOptions = new RequestOptions();
+            if (disableDiagnostics)
             {
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseAsync(
@@ -316,6 +434,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
             Assert.IsTrue(diagnostics.Contains("SubStatusCode"));
             Assert.IsTrue(diagnostics.Contains("RequestUri"));
+
+            await databaseResponse.Database.DeleteAsync();
+
+            databaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
+              id: Guid.NewGuid().ToString(),
+              requestOptions: requestOptions);
+            Assert.IsNotNull(databaseResponse.Diagnostics);
+            diagnostics = databaseResponse.Diagnostics.ToString();
+            if (disableDiagnostics)
+            {
+                Assert.AreEqual(string.Empty, diagnostics);
+                return;
+            }
+
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+
+            await databaseResponse.Database.DeleteAsync();
         }
 
         public static void VerifyQueryDiagnostics(
@@ -330,57 +465,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return;
             }
 
-            Assert.IsNotNull(info);
-            JObject jObject = JObject.Parse(info);
-            JToken summary = jObject["Summary"];
-            Assert.IsNotNull(summary["UserAgent"].ToString());
-            Assert.IsNotNull(summary["StartUtc"].ToString());
+            CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
 
-            JArray contextList = jObject["Context"].ToObject<JArray>();
-            Assert.IsTrue(contextList.Count > 0);
-
-            // Find the PointOperationStatistics object
-            JObject page = GetJObjectInContextList(
-                contextList,
-                "0",
-                "PKRangeId");
-
-            // First page will have a request
-            // Query might use cache pages which don't have the following info. It was returned in the previous call.
-            if(isFirstPage || page != null)
+            // If all the pages are buffered then several of the normal summary validation will fail.
+            if (diagnosticsContext.TotalRequestCount > 0)
             {
-                string queryMetrics = page["QueryMetric"].ToString();
-                Assert.IsNotNull(queryMetrics);
-                Assert.IsNotNull(page["IndexUtilization"].ToString());
-                Assert.IsNotNull(page["PKRangeId"].ToString());
-                JArray requestDiagnostics = page["Context"].ToObject<JArray>();
-                Assert.IsNotNull(requestDiagnostics);
+                DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }
+
+            DiagnosticValidator.ValidateQueryDiagnostics(diagnosticsContext, isFirstPage);
         }
 
-        public static void VerifyBulkPointDiagnostics(CosmosDiagnostics diagnostics)
-        {
-            string info = diagnostics.ToString();
-            Assert.IsNotNull(info);
-            JObject jObject = JObject.Parse(info);
-
-            JToken summary = jObject["Summary"];
-            Assert.IsNotNull(summary["UserAgent"].ToString());
-            Assert.IsNotNull(summary["StartUtc"].ToString());
-
-            Assert.IsNotNull(jObject["Context"].ToString());
-            JArray contextList = jObject["Context"].ToObject<JArray>();
-            Assert.IsTrue(contextList.Count > 2);
-
-            // Find the PointOperationStatistics object
-            JObject pointStatistics = GetJObjectInContextList(
-                contextList,
-                "PointOperationStatistics");
-
-            ValidatePointOperation(pointStatistics);
-        }
-
-        public static void VerifyPointDiagnostics(CosmosDiagnostics diagnostics, bool disableDiagnostics)
+        public static void VerifyPointDiagnostics(
+            CosmosDiagnostics diagnostics,
+            bool disableDiagnostics)
         {
             string info = diagnostics.ToString();
 
@@ -390,63 +488,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return;
             }
 
-            Assert.IsNotNull(info);
-            JObject jObject = JObject.Parse(info);
-            JToken summary = jObject["Summary"];
-            Assert.IsNotNull(summary["UserAgent"].ToString());
-            Assert.IsNotNull(summary["StartUtc"].ToString());
-            Assert.IsNotNull(summary["ElapsedTime"].ToString());
-
-            Assert.IsNotNull(jObject["Context"].ToString());
-            JArray contextList = jObject["Context"].ToObject<JArray>();
-            Assert.IsTrue(contextList.Count > 3);
-
-            // Find the PointOperationStatistics object
-            JObject pointStatistics = GetJObjectInContextList(
-                contextList,
-                "PointOperationStatistics");
-
-            ValidatePointOperation(pointStatistics);
+            CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
+            DiagnosticValidator.ValidatePointOperationDiagnostics(diagnosticsContext);
         }
 
-        private static void ValidatePointOperation(JObject pointStatistics)
+        public static void VerifyChangeFeedDiagnostics(
+            CosmosDiagnostics diagnostics,
+            bool disableDiagnostics)
         {
-            Assert.IsNotNull(pointStatistics, $"Context list does not contain PointOperationStatistics.");
-            int statusCode = pointStatistics["StatusCode"].ToObject<int>();
-            Assert.IsNotNull(pointStatistics["ActivityId"].ToString());
-            Assert.IsNotNull(pointStatistics["StatusCode"].ToString());
-            Assert.IsNotNull(pointStatistics["RequestCharge"].ToString());
-            Assert.IsNotNull(pointStatistics["RequestUri"].ToString());
-            Assert.IsNotNull(pointStatistics["ClientRequestStats"].ToString());
-            JObject clientJObject = pointStatistics["ClientRequestStats"].ToObject<JObject>();
-            Assert.IsNotNull(clientJObject["RequestStartTimeUtc"].ToString());
-            Assert.IsNotNull(clientJObject["ContactedReplicas"].ToString());
-            Assert.IsNotNull(clientJObject["RequestLatency"].ToString());
+            string info = diagnostics.ToString();
 
-            // Not all request have these fields. If the field exists then it should not be null
-            if (clientJObject["EndpointToAddressResolutionStatistics"] != null)
+            if (disableDiagnostics)
             {
-                Assert.IsNotNull(clientJObject["EndpointToAddressResolutionStatistics"].ToString());
+                Assert.AreEqual(string.Empty, info);
+                return;
             }
 
-            if (clientJObject["SupplementalResponseStatisticsListLast10"] != null)
-            {
-                Assert.IsNotNull(clientJObject["SupplementalResponseStatisticsListLast10"].ToString());
-            }
-
-            if (clientJObject["FailedReplicas"] != null)
-            {
-                Assert.IsNotNull(clientJObject["FailedReplicas"].ToString());
-            }
-
-            // Session token only expected on success
-            if (statusCode >= 200 && statusCode < 300)
-            {
-                Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());
-                Assert.IsNotNull(clientJObject["RegionsContacted"].ToString());
-                Assert.IsNotNull(clientJObject["RequestEndTimeUtc"].ToString());
-                Assert.IsNotNull(pointStatistics["ResponseSessionToken"].ToString());
-            }
+            CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
+            DiagnosticValidator.ValidateChangeFeedOperationDiagnostics(diagnosticsContext);
         }
 
         private static JObject GetJObjectInContextList(JArray contextList, string value, string key = "Id")
@@ -464,26 +523,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return null;
         }
 
-        private static JObject GetPropertyInContextList(JArray contextList, string id)
+
+        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(
+            string queryText,
+            int expectedItemCount,
+            bool disableDiagnostics)
         {
-            JObject jObject = GetJObjectInContextList(contextList, id);
-            if (jObject == null)
+            QueryDefinition sql = null;
+            if (queryText != null)
             {
-                return null;
+                sql = new QueryDefinition(queryText);
             }
-
-            return jObject["Value"].ToObject<JObject>();
-        }
-
-        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount, bool disableDiagnostics)
-        {
-            QueryDefinition sql = new QueryDefinition(queryText);
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
                 MaxItemCount = 1,
                 MaxConcurrency = 1,
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+            };
+
+            if (disableDiagnostics)
+            {
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             // Verify the typed query iterator
@@ -498,7 +558,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                VerifyQueryDiagnostics(response.Diagnostics, isFirst, disableDiagnostics);
+                if (queryText == null)
+                {
+                    CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                        response.Diagnostics,
+                        disableDiagnostics);
+                }
+                else
+                {
+                    VerifyQueryDiagnostics(
+                       response.Diagnostics,
+                       isFirst,
+                       disableDiagnostics);
+                }
+
                 isFirst = false;
             }
 
@@ -517,7 +590,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 Collection<ToDoActivity> result = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
-                VerifyQueryDiagnostics(response.Diagnostics, isFirst, disableDiagnostics);
+                if (queryText == null)
+                {
+                    CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                        response.Diagnostics,
+                        disableDiagnostics);
+                }
+                else
+                {
+                    VerifyQueryDiagnostics(
+                       response.Diagnostics,
+                       isFirst,
+                       disableDiagnostics);
+                }
+
                 isFirst = false;
             }
 

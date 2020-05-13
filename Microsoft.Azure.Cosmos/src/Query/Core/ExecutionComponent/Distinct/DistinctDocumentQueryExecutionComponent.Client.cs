@@ -89,12 +89,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 CosmosElement sourceToken;
                 if (distinctContinuationToken.SourceToken != null)
                 {
-                    if (!CosmosElement.TryParse(distinctContinuationToken.SourceToken, out sourceToken))
+                    TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(distinctContinuationToken.SourceToken);
+                    if (tryParse.Failed)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException(
-                                $"Invalid Source Token: {distinctContinuationToken.SourceToken}"));
+                                message: $"Invalid Source Token: {distinctContinuationToken.SourceToken}",
+                                innerException: tryParse.Exception));
                     }
+
+                    sourceToken = tryParse.Result;
                 }
                 else
                 {
@@ -162,7 +166,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         disallowContinuationTokenMessage: null,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
-                        diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
                 }
                 else
@@ -173,7 +176,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         disallowContinuationTokenMessage: ClientDistinctDocumentQueryExecutionComponent.DisallowContinuationTokenMessage,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
-                        diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
                 }
 

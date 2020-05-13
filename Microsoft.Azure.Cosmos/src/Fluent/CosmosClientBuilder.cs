@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -144,6 +146,33 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
         }
+        
+        /// <summary>
+        /// Set the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="applicationPreferredRegions">A list of preferred Azure regions used for SDK to define failover order.</param>
+        /// <remarks>
+        ///  This function is an alternative to <see cref="WithApplicationRegion"/>, either one can be set but not both.
+        /// </remarks>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> with a of preferred regions.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceToken: "SuperSecretKey")
+        /// .WithApplicationPreferredRegions(new[] {Regions.EastUS, Regions.EastUS2});
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.ApplicationPreferredRegions"/>
+        public CosmosClientBuilder WithApplicationPreferredRegions(IReadOnlyList<string> applicationPreferredRegions)
+        {
+            this.clientOptions.ApplicationPreferredRegions = applicationPreferredRegions;
+            return this;
+        }
 
         /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClientBuilder constructor.
@@ -234,22 +263,31 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
         /// The default value is PortReuseMode.ReuseUnicastPort.
         /// </param>
+        /// /// <param name="enableTcpConnectionEndpointRediscovery">
+        /// (Direct/TCP) Controls the address cache refresh on TCP connection reset notification.
+        /// The default value is false.
+        /// </param>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
-        internal CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
+        public CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
             TimeSpan? openTcpConnectionTimeout = null,
             int? maxRequestsPerTcpConnection = null,
             int? maxTcpConnectionsPerEndpoint = null,
-            Cosmos.PortReuseMode? portReuseMode = null)
+            Cosmos.PortReuseMode? portReuseMode = null,
+            bool? enableTcpConnectionEndpointRediscovery = null)
         {
             this.clientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout;
             this.clientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout;
             this.clientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection;
             this.clientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint;
             this.clientOptions.PortReuseMode = portReuseMode;
+            if (enableTcpConnectionEndpointRediscovery.HasValue)
+            {
+                this.clientOptions.EnableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery.Value;
+            }
 
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
@@ -320,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets the minimum time to wait between retry and the max number of times to retry on throttled requests.
+        /// Sets the maximum time to wait between retry and the max number of times to retry on throttled requests.
         /// </summary>
         /// <param name="maxRetryWaitTimeOnThrottledRequests">The maximum retry time in seconds for the Azure Cosmos DB service. Any interval that is smaller than a second will be ignored.</param>
         /// <param name="maxRetryAttemptsOnThrottledRequests">The number specifies the times retry requests for throttled requests.</param>
@@ -383,19 +421,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Provider to wrap/unwrap data encryption keys for client side encryption.
-        /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
+        /// Sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
         /// </summary>
-        /// <param name="encryptionKeyWrapProvider">Provider to wrap/unwrap data encryption keys.</param>
+        /// <param name="httpClientFactory">A delegate function to generate instances of HttpClient.</param>
+        /// <remarks>
+        /// <para>
+        /// HTTPS communication is used when <see cref="ConnectionMode"/> is set to <see cref="ConnectionMode.Gateway"/> for all operations and when <see cref="ConnectionMode"/> is <see cref="ConnectionMode.Direct"/> (default) for metadata operations.
+        /// </para>
+        /// <para>
+        /// Useful in scenarios where the application is using a pool of HttpClient instances to be shared, like ASP.NET Core applications with IHttpClientFactory or Blazor WebAssembly applications.
+        /// </para>
+        /// </remarks>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithEncryptionKeyWrapProvider(EncryptionKeyWrapProvider encryptionKeyWrapProvider)
+        /// <seealso cref="CosmosClientOptions.HttpClientFactory"/>
+        public CosmosClientBuilder WithHttpClientFactory(Func<HttpClient> httpClientFactory)
         {
-            this.clientOptions.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
+            this.clientOptions.HttpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             return this;
         }
 

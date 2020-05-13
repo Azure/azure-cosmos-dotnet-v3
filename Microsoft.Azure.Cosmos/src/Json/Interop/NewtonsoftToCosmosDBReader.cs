@@ -4,8 +4,9 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
+    using System.Runtime.InteropServices;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -16,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         private readonly Newtonsoft.Json.JsonReader reader;
 
         private NewtonsoftToCosmosDBReader(Newtonsoft.Json.JsonReader reader)
-            : base(true)
         {
             this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
         }
@@ -96,49 +96,70 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             {
                 switch (this.reader.TokenType)
                 {
-                    case Newtonsoft.Json.JsonToken.None:
-                    case Newtonsoft.Json.JsonToken.StartConstructor:
-                    case Newtonsoft.Json.JsonToken.EndConstructor:
-                        throw new InvalidOperationException();
                     case Newtonsoft.Json.JsonToken.StartObject:
                         this.JsonObjectState.RegisterToken(JsonTokenType.BeginObject);
                         break;
+
                     case Newtonsoft.Json.JsonToken.StartArray:
                         this.JsonObjectState.RegisterToken(JsonTokenType.BeginArray);
                         break;
+
                     case Newtonsoft.Json.JsonToken.PropertyName:
                         this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
                         break;
-                    case Newtonsoft.Json.JsonToken.Comment:
-                    case Newtonsoft.Json.JsonToken.Raw:
+
                     case Newtonsoft.Json.JsonToken.String:
-                    case Newtonsoft.Json.JsonToken.Date:
-                    case Newtonsoft.Json.JsonToken.Bytes:
                         this.JsonObjectState.RegisterToken(JsonTokenType.String);
                         break;
+
                     case Newtonsoft.Json.JsonToken.Integer:
                     case Newtonsoft.Json.JsonToken.Float:
                         this.JsonObjectState.RegisterToken(JsonTokenType.Number);
                         break;
+
                     case Newtonsoft.Json.JsonToken.Boolean:
-                        this.JsonObjectState.RegisterToken(this.reader.Value.ToString() == true.ToString() ? JsonTokenType.True : JsonTokenType.False);
+                        this.JsonObjectState.RegisterToken(this.reader.Value is true ? JsonTokenType.True : JsonTokenType.False);
                         break;
+
                     case Newtonsoft.Json.JsonToken.Null:
-                    case Newtonsoft.Json.JsonToken.Undefined:
                         this.JsonObjectState.RegisterToken(JsonTokenType.Null);
                         break;
+
                     case Newtonsoft.Json.JsonToken.EndObject:
                         this.JsonObjectState.RegisterToken(JsonTokenType.EndObject);
                         break;
+
                     case Newtonsoft.Json.JsonToken.EndArray:
                         this.JsonObjectState.RegisterToken(JsonTokenType.EndArray);
                         break;
+
                     default:
                         throw new ArgumentException("Got an invalid newtonsoft type");
                 }
             }
 
             return succesfullyRead;
+        }
+
+        public static NewtonsoftToCosmosDBReader CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            MemoryStream stream;
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
+            {
+                stream = new MemoryStream(segment.Array, segment.Offset, segment.Count);
+            }
+            else
+            {
+                stream = new MemoryStream(buffer.ToArray());
+            }
+
+            StreamReader streamReader = new StreamReader(stream, Encoding.UTF8);
+            Newtonsoft.Json.JsonTextReader newtonsoftReader = new Newtonsoft.Json.JsonTextReader(streamReader)
+            {
+                DateParseHandling = Newtonsoft.Json.DateParseHandling.None
+            };
+
+            return NewtonsoftToCosmosDBReader.CreateFromReader(newtonsoftReader);
         }
 
         public static NewtonsoftToCosmosDBReader CreateFromString(string json)
@@ -149,8 +170,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             }
 
             StringReader stringReader = new StringReader(json);
-            Newtonsoft.Json.JsonTextReader newtonsoftReader = new Newtonsoft.Json.JsonTextReader(stringReader);
-            return new NewtonsoftToCosmosDBReader(newtonsoftReader);
+            Newtonsoft.Json.JsonTextReader newtonsoftReader = new Newtonsoft.Json.JsonTextReader(stringReader)
+            {
+                DateParseHandling = Newtonsoft.Json.DateParseHandling.None
+            };
+
+            return NewtonsoftToCosmosDBReader.CreateFromReader(newtonsoftReader);
         }
 
         public static NewtonsoftToCosmosDBReader CreateFromReader(Newtonsoft.Json.JsonReader reader)
@@ -163,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return new NewtonsoftToCosmosDBReader(reader);
         }
 
-        public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+        public override bool TryGetBufferedStringValue(out Utf8Memory bufferedUtf8StringValue)
         {
             bufferedUtf8StringValue = default;
             return false;

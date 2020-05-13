@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
         public const string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+        public Func<HttpClient> HttpClientFactoryDelegate = () => new HttpClient();
 
         [TestMethod]
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
@@ -35,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ApiType apiType = ApiType.Sql;
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
+            bool enableTcpConnectionEndpointRediscovery = true;
             CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
             {
                 IgnoreNullValues = true,
@@ -59,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Verify the default values are different from the new values
             Assert.AreNotEqual(region, clientOptions.ApplicationRegion);
+            Assert.IsNull(clientOptions.ApplicationPreferredRegions);
             Assert.AreNotEqual(connectionMode, clientOptions.ConnectionMode);
             Assert.AreNotEqual(maxConnections, clientOptions.GatewayModeMaxConnectionLimit);
             Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
@@ -67,9 +71,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(clientOptions.AllowBulkExecution);
             Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
             Assert.IsNull(clientOptions.SerializerOptions);
-            Assert.IsNull(clientOptions.Serializer);
+            Assert.IsNotNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
+            Assert.IsFalse(clientOptions.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsNull(clientOptions.HttpClientFactory);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -82,6 +88,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxRequestsPerTcpConnection);
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
             Assert.IsTrue(policy.EnableEndpointDiscovery);
+            Assert.IsFalse(policy.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsNull(policy.HttpClientFactory);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -98,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Verify all the values are updated
             Assert.AreEqual(region, clientOptions.ApplicationRegion);
+            Assert.IsNull(clientOptions.ApplicationPreferredRegions);
             Assert.AreEqual(connectionMode, clientOptions.ConnectionMode);
             Assert.AreEqual(maxConnections, clientOptions.GatewayModeMaxConnectionLimit);
             Assert.AreEqual(requestTimeout, clientOptions.RequestTimeout);
@@ -124,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
 
+            IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -133,18 +143,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                 openTcpConnectionTimeout,
                 maxRequestsPerTcpConnection,
                 maxTcpConnectionsPerEndpoint,
-                portReuseMode
-            );
+                portReuseMode,
+                enableTcpConnectionEndpointRediscovery)
+                .WithApplicationPreferredRegions(preferredLocations);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
-
             //Verify all the values are updated
             Assert.AreEqual(idleTcpConnectionTimeout, clientOptions.IdleTcpConnectionTimeout);
             Assert.AreEqual(openTcpConnectionTimeout, clientOptions.OpenTcpConnectionTimeout);
             Assert.AreEqual(maxRequestsPerTcpConnection, clientOptions.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, clientOptions.MaxTcpConnectionsPerEndpoint);
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
+            Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
+            CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -153,6 +165,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
+            Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
+            CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
         }
 
         [TestMethod]
@@ -322,8 +336,59 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void VerifyLimitToEndpointSettings()
         {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = LocationNames.EastUS, LimitToEndpoint = true };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = Regions.EastUS, LimitToEndpoint = true };
             cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyLimitToEndpointSettingsWithPreferredRegions()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, LimitToEndpoint = true };
+            cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyApplicationRegionSettingsWithPreferredRegions()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
+            cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyWebProxyHttpClientFactorySet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.WebProxy = Mock.Of<WebProxy>();
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyHttpClientFactoryWebProxySet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+            cosmosClientOptions.WebProxy = Mock.Of<WebProxy>();
+        }
+
+        [TestMethod]
+        public void HttpClientFactoryBuildsConnectionPolicy()
+        {
+            string endpoint = AccountEndpoint;
+            string key = Guid.NewGuid().ToString();
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key)
+                .WithHttpClientFactory(this.HttpClientFactoryDelegate);
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.AreEqual(clientOptions.HttpClientFactory, this.HttpClientFactoryDelegate);
+            ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
+            Assert.AreEqual(policy.HttpClientFactory, this.HttpClientFactoryDelegate);
         }
 
         [TestMethod]

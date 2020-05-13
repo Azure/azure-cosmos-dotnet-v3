@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(payload))
             {
-                JsonSerializer serializer = new JsonSerializer();
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
                 T actualDeserializedValue = serializer.Deserialize<T>(reader);
                 string expected = JsonConvert.SerializeObject(expectedDeserializedValue, jsonSerializerSettings);
                 string actual = JsonConvert.SerializeObject(actualDeserializedValue, jsonSerializerSettings);
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private static void VerifyBinaryReader<T>(T expectedDeserializedValue)
         {
             string stringValue = NewtonsoftInteropTests.NewtonsoftFormat(JsonConvert.SerializeObject(expectedDeserializedValue));
-            ReadOnlyMemory<byte> result = JsonPerfMeasurement.ConvertTextToBinary(stringValue);
+            ReadOnlyMemory<byte> result = JsonTestUtils.ConvertTextToBinary(stringValue);
             NewtonsoftInteropTests.VerifyReader<T>(result, expectedDeserializedValue);
         }
 
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(jsonSerializationFormat))
             {
-                JsonSerializer serializer = new JsonSerializer();
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
                 serializer.Serialize(writer, expectedDeserializedValue);
 
                 byte[] result = writer.GetResult().ToArray();
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             /// <param name="writer">The Newtonsoft.Json.JsonWriter to write to.</param>
             /// <param name="value">The value.</param>
             /// <param name="serializer">The calling serializer.</param>
-            public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, JsonSerializer serializer)
+            public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
             {
                 if (value is DateTime)
                 {
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             /// <returns>
             /// The DateTime object value.
             /// </returns>
-            public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
             {
                 if (reader.TokenType != Newtonsoft.Json.JsonToken.Integer && reader.TokenType != Newtonsoft.Json.JsonToken.Float)
                 {

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Query.Core;
     using RMResources = Documents.RMResources;
 
@@ -26,21 +27,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// The <see cref="JsonObjectState"/>
         /// </summary>
-        internal readonly JsonObjectState JsonObjectState;
-
-        /// <summary>
-        /// Whether to skip validation.
-        /// </summary>
-        protected readonly bool SkipValidation;
+        protected readonly JsonObjectState JsonObjectState;
 
         /// <summary>
         /// Initializes a new instance of the JsonWriter class.
         /// </summary>
-        /// <param name="skipValidation">Whether or not to skip validation.</param>
-        protected JsonWriter(bool skipValidation)
+        protected JsonWriter()
         {
             this.JsonObjectState = new JsonObjectState(false);
-            this.SkipValidation = skipValidation;
         }
 
         /// <inheritdoc />
@@ -54,20 +48,17 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="jsonSerializationFormat">The JsonSerializationFormat of the writer.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
-        /// <param name="skipValidation">Whether or not to skip validation</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
-            JsonStringDictionary jsonStringDictionary = null,
-            bool skipValidation = false)
+            JsonStringDictionary jsonStringDictionary = null)
         {
             switch (jsonSerializationFormat)
             {
                 case JsonSerializationFormat.Text:
-                    return new JsonTextWriter(skipValidation);
+                    return new JsonTextWriter();
                 case JsonSerializationFormat.Binary:
                     return new JsonBinaryWriter(
-                        skipValidation,
                         jsonStringDictionary,
                         serializeCount: false);
                 default:
@@ -91,16 +82,16 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteFieldName(string fieldName);
 
         /// <inheritdoc />
-        public abstract void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
+        public abstract void WriteFieldName(Utf8Span fieldName);
 
         /// <inheritdoc />
         public abstract void WriteStringValue(string value);
 
         /// <inheritdoc />
-        public abstract void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
+        public abstract void WriteStringValue(Utf8Span value);
 
         /// <inheritdoc />
-        public abstract void WriteNumberValue(Number64 value);
+        public abstract void WriteNumber64Value(Number64 value);
 
         /// <inheritdoc />
         public abstract void WriteBoolValue(bool value);
@@ -211,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                 case JsonTokenType.Number:
                                     {
                                         Number64 value = jsonReader.GetNumberValue();
-                                        this.WriteNumberValue(value);
+                                        this.WriteNumber64Value(value);
                                     }
                                     break;
 
@@ -361,25 +352,25 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Either the formats did not match or we couldn't retrieve the buffered raw JSON
                 switch (jsonNodeType)
                 {
-                    case JsonNodeType.Number:
-                        Number64 numberValue = jsonNavigator.GetNumberValue(jsonNavigatorNode);
-                        this.WriteNumberValue(numberValue);
+                    case JsonNodeType.Number64:
+                        Number64 numberValue = jsonNavigator.GetNumber64Value(jsonNavigatorNode);
+                        this.WriteNumber64Value(numberValue);
                         break;
 
                     case JsonNodeType.String:
                     case JsonNodeType.FieldName:
                         bool fieldName = jsonNodeType == JsonNodeType.FieldName;
-                        if (jsonNavigator.TryGetBufferedUtf8StringValue(
+                        if (jsonNavigator.TryGetBufferedStringValue(
                             jsonNavigatorNode,
-                            out ReadOnlyMemory<byte> bufferedStringValue))
+                            out Utf8Memory bufferedValue))
                         {
                             if (fieldName)
                             {
-                                this.WriteFieldName(bufferedStringValue.Span);
+                                this.WriteFieldName(bufferedValue.Span);
                             }
                             else
                             {
-                                this.WriteStringValue(bufferedStringValue.Span);
+                                this.WriteStringValue(bufferedValue.Span);
                             }
                         }
                         else

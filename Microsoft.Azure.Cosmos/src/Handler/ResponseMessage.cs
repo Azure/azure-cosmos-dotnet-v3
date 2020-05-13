@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         public ResponseMessage()
         {
             this.Headers = new Headers();
-            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
             this.CosmosException = null;
         }
 
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.Headers = new Headers();
-            this.DiagnosticsContext = requestMessage?.DiagnosticsContext ?? CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = requestMessage?.DiagnosticsContext ?? new CosmosDiagnosticsContextCore();
 
             if (!string.IsNullOrEmpty(errorMessage))
             {
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the reason for a failure in the current response.
         /// </summary>
-        public virtual string ErrorMessage => this.CosmosException?.ToString(includeDiagnostics: false);
+        public virtual string ErrorMessage => this.CosmosException?.Message;
 
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
@@ -122,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext;
+        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext.Diagnostics;
 
         internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.ServiceModel.Channels;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -58,11 +59,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 CosmosElement sourceToken;
                 if (offsetContinuationToken.SourceToken != null)
                 {
-                    if (!CosmosElement.TryParse(offsetContinuationToken.SourceToken, out sourceToken))
+                    TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(offsetContinuationToken.SourceToken);
+                    if (tryParse.Failed)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException("source token is not valid."));
+                            new MalformedContinuationTokenException(
+                                message: $"source token: '{offsetContinuationToken.SourceToken ?? "<null>"}' is not valid.",
+                                innerException: tryParse.Exception));
                     }
+
+                    sourceToken = tryParse.Result;
                 }
                 else
                 {
@@ -108,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     activityId: sourcePage.ActivityId,
                     requestCharge: sourcePage.RequestCharge,
-                    diagnostics: sourcePage.Diagnostics,
                     responseLengthBytes: sourcePage.ResponseLengthBytes);
             }
 

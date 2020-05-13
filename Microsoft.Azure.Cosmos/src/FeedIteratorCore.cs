@@ -7,16 +7,18 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
-    using System.Text;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
-    /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
+    /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content for non-partitioned results
     /// </summary>
     internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
@@ -45,13 +47,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedToken FeedToken => throw new NotImplementedException();
-
         /// <summary>
         /// The query options for the result set
         /// </summary>
@@ -69,17 +64,28 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnostics.GetOverallScope())
+            {
+                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+            }
+        }
+
+        private async Task<ResponseMessage> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnostics,
+            CancellationToken cancellationToken = default)
+        {
             cancellationToken.ThrowIfCancellationRequested();
 
             Stream stream = null;
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);    
+                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
                 operation = OperationType.Query;
             }
 
-            ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
                operationType: operation,
@@ -96,28 +102,64 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
                },
-               diagnosticsScope: null,
+               diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
-            this.ContinuationToken = response.Headers.ContinuationToken;
-            this.hasMoreResultsInternal = GetHasMoreResults(this.ContinuationToken, response.StatusCode);
-            return response;
+            this.ContinuationToken = responseMessage.Headers.ContinuationToken;
+            this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
+
+            // Rewrite the payload to be in the specified format.
+            // If it's already in the correct format, then the following will be a memcpy.
+            MemoryStream memoryStream;
+            if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
+            {
+                memoryStream = responseContentAsMemoryStream;
+            }
+            else
+            {
+                memoryStream = new MemoryStream();
+                await responseMessage.Content.CopyToAsync(memoryStream);
+            }
+
+            ReadOnlyMemory<byte> buffer;
+            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+            {
+                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
+            }
+            else
+            {
+                buffer = memoryStream.ToArray();
+            }
+
+            IJsonReader jsonReader = JsonReader.Create(buffer);
+            IJsonWriter jsonWriter;
+            if (this.requestOptions?.CosmosSerializationFormatOptions != null)
+            {
+                jsonWriter = this.requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
+            }
+            else
+            {
+                jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+            }
+
+            jsonWriter.WriteAll(jsonReader);
+
+            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+            MemoryStream rewrittenMemoryStream;
+            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
+            {
+                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count);
+            }
+            else
+            {
+                rewrittenMemoryStream = new MemoryStream(result.ToArray());
+            }
+
+            responseMessage.Content = rewrittenMemoryStream;
+            return responseMessage;
         }
 
-        internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
-        {
-            return httpResponseMessage.Headers.ContinuationToken;
-        }
-
-        internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)
-        {
-            // this logic might not be sufficient composite continuation token https://msdata.visualstudio.com/CosmosDB/SDK/_workitems/edit/269099
-            // in the case where this is a result set iterator for a change feed, not modified indicates that
-            // the enumeration is done for now.
-            return continuationToken != null && statusCode != HttpStatusCode.NotModified;
-        }
-
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }
@@ -144,12 +186,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
-            return this.feedIterator.GetCosmsoElementContinuationToken();
+            return this.feedIterator.GetCosmosElementContinuationToken();
         }
-
-#if PREVIEW
-        public override FeedToken FeedToken => this.feedIterator.FeedToken;
-#endif
 
         /// <summary>
         /// Get the next set of results from the cosmos service

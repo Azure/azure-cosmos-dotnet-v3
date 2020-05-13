@@ -6,12 +6,9 @@
   "OperatorKind": "BitwiseNot",
   "Expression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "UnaryScalarExpression"
+      "Value": 3735928559
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -30,12 +27,9 @@
   "OperatorKind": "Not",
   "Expression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "UnaryScalarExpression"
+      "Value": 3735928559
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -54,12 +48,9 @@
   "OperatorKind": "Minus",
   "Expression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "UnaryScalarExpression"
+      "Value": 3735928559
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -78,12 +69,9 @@
   "OperatorKind": "Plus",
   "Expression": {
     "Literal": {
-      "Value": 3735928559,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "UnaryScalarExpression"
+      "Value": 3735928559
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>

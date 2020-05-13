@@ -31,6 +31,20 @@ namespace Microsoft.Azure.Cosmos
         private GatewayStoreClient gatewayStoreClient;
         private CookieContainer cookieJar;
 
+        private GatewayStoreModel(
+            GlobalEndpointManager endpointManager,
+            ISessionContainer sessionContainer,
+            ConsistencyLevel defaultConsistencyLevel,
+            DocumentClientEventSource eventSource)
+        {
+            // CookieContainer is not really required, but is helpful in debugging.
+            this.cookieJar = new CookieContainer();
+            this.endpointManager = endpointManager;
+            this.sessionContainer = sessionContainer;
+            this.defaultConsistencyLevel = defaultConsistencyLevel;
+            this.eventSource = eventSource;
+        }
+
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
             ISessionContainer sessionContainer,
@@ -39,16 +53,58 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             UserAgentContainer userAgent,
-            ApiType apiType = ApiType.None,
-            HttpMessageHandler messageHandler = null)
+            ApiType apiType,
+            HttpMessageHandler messageHandler)
+            : this(endpointManager,
+                  sessionContainer,
+                  defaultConsistencyLevel,
+                  eventSource)
         {
-            // CookieContainer is not really required, but is helpful in debugging.
-            this.cookieJar = new CookieContainer();
-            this.endpointManager = endpointManager;
-            HttpClient httpClient = new HttpClient(messageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar });
-            this.sessionContainer = sessionContainer;
-            this.defaultConsistencyLevel = defaultConsistencyLevel;
+            this.InitializeGatewayStoreClient(
+                requestTimeout,
+                serializerSettings,
+                userAgent,
+                apiType,
+                new HttpClient(messageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar }));
+        }
 
+        public GatewayStoreModel(
+            GlobalEndpointManager endpointManager,
+            ISessionContainer sessionContainer,
+            TimeSpan requestTimeout,
+            ConsistencyLevel defaultConsistencyLevel,
+            DocumentClientEventSource eventSource,
+            JsonSerializerSettings serializerSettings,
+            UserAgentContainer userAgent,
+            ApiType apiType,
+            Func<HttpClient> httpClientFactory)
+            : this(endpointManager,
+                  sessionContainer,
+                  defaultConsistencyLevel,
+                  eventSource)
+        {
+            HttpClient httpClient = httpClientFactory();
+            if (httpClient == null)
+            {
+                throw new InvalidOperationException("HttpClientFactory did not produce an HttpClient");
+            }
+
+            this.InitializeGatewayStoreClient(
+                requestTimeout,
+                serializerSettings,
+                userAgent,
+                apiType,
+                httpClient);
+
+        }
+
+        private void InitializeGatewayStoreClient(
+            TimeSpan requestTimeout,
+            JsonSerializerSettings serializerSettings,
+            UserAgentContainer userAgent,
+            ApiType apiType,
+            HttpClient httpClient)
+        {
             // Use max of client specified and our own request timeout value when sending
             // requests to gateway. Otherwise, we will have gateway's transient
             // error hiding retries are of no use.
@@ -65,12 +121,10 @@ namespace Microsoft.Azure.Cosmos
 
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
 
-            this.eventSource = eventSource;
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
                 serializerSettings);
-
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))

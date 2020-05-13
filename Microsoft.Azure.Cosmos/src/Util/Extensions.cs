@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Net;
     using System.Net.Sockets;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -29,20 +28,25 @@ namespace Microsoft.Azure.Cosmos
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse documentServiceResponse, RequestMessage requestMessage)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
-
             Headers headers = documentServiceResponse.Headers.ToCosmosHeaders();
-            CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
-            requestMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
-                activityId: headers.ActivityId,
-                statusCode: documentServiceResponse.StatusCode,
-                subStatusCode: documentServiceResponse.SubStatusCode,
-                requestCharge: headers.RequestCharge,
-                errorMessage: null,
-                method: requestMessage?.Method,
-                requestUri: requestMessage?.RequestUri,
-                requestSessionToken: requestMessage?.Headers?.Session,
-                responseSessionToken: headers.Session,
-                clientSideRequestStatistics: cosmosClientSideRequestStatistics));
+
+            // Only record point operation stats if ClientSideRequestStats did not record the response.
+            CosmosClientSideRequestStatistics clientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
+            if (clientSideRequestStatistics == null ||
+                (clientSideRequestStatistics.ContactedReplicas.Count == 0 && clientSideRequestStatistics.FailedReplicas.Count == 0))
+            {
+                requestMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                    activityId: headers.ActivityId,
+                    responseTimeUtc: DateTime.UtcNow,
+                    statusCode: documentServiceResponse.StatusCode,
+                    subStatusCode: documentServiceResponse.SubStatusCode,
+                    requestCharge: headers.RequestCharge,
+                    errorMessage: null,
+                    method: requestMessage?.Method,
+                    requestUri: requestMessage?.RequestUri,
+                    requestSessionToken: requestMessage?.Headers?.Session,
+                    responseSessionToken: headers.Session));
+            }
 
             // If it's considered a failure create the corresponding CosmosException
             if (!documentServiceResponse.StatusCode.IsSuccess())
@@ -71,9 +75,18 @@ namespace Microsoft.Azure.Cosmos
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException documentClientException, RequestMessage requestMessage)
         {
             CosmosDiagnosticsContext diagnosticsContext = requestMessage?.DiagnosticsContext;
-            if (diagnosticsContext == null)
+            if (requestMessage != null)
             {
-                diagnosticsContext = CosmosDiagnosticsContextCore.Create();
+                diagnosticsContext = requestMessage.DiagnosticsContext;
+
+                if (diagnosticsContext == null)
+                {
+                    throw new ArgumentNullException("Request message should contain a DiagnosticsContext");
+                }
+            }
+            else
+            {
+                diagnosticsContext = new CosmosDiagnosticsContextCore();
             }
 
             CosmosException cosmosException = CosmosExceptionFactory.Create(
@@ -84,13 +97,13 @@ namespace Microsoft.Azure.Cosmos
                 activityId: cosmosException.Headers.ActivityId,
                 statusCode: cosmosException.StatusCode,
                 subStatusCode: (int)SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: cosmosException.Headers.RequestCharge,
-                errorMessage: cosmosException.Message,
+                errorMessage: documentClientException.ToString(),
                 method: requestMessage?.Method,
                 requestUri: requestMessage?.RequestUri,
                 requestSessionToken: requestMessage?.Headers?.Session,
-                responseSessionToken: cosmosException.Headers.Session,
-                clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
+                responseSessionToken: cosmosException.Headers.Session);
 
             diagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
 
@@ -102,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
 
             // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
             ResponseMessage responseMessage = cosmosException.ToCosmosResponseMessage(requestMessage);
-            
+
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));
@@ -110,39 +123,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return responseMessage;
-        }
-
-        internal static ResponseMessage ToCosmosResponseMessage(this StoreResponse storeResponse, RequestMessage requestMessage)
-        {
-            // If it's considered a failure create the corresponding CosmosException
-            if (!storeResponse.StatusCode.IsSuccess())
-            {
-                CosmosException cosmosException = CosmosExceptionFactory.Create(
-                    storeResponse,
-                    requestMessage);
-
-                return cosmosException.ToCosmosResponseMessage(requestMessage);
-            }
-
-            // Is status code conversion lossy? 
-            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)storeResponse.Status, requestMessage);
-            if (storeResponse.ResponseBody != null)
-            {
-                responseMessage.Content = storeResponse.ResponseBody;
-            }
-
-            return responseMessage;
-        }
-
-        internal static Headers ToCosmosHeaders(this StoreResponse storeResponse)
-        {
-            Headers headers = new Headers();
-            for (int i = 0; i < storeResponse.ResponseHeaderNames.Length; i++)
-            {
-                headers.Add(storeResponse.ResponseHeaderNames[i], storeResponse.ResponseHeaderValues[i]);
-            }
-
-            return headers;
         }
 
         internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)
@@ -174,10 +154,14 @@ namespace Microsoft.Azure.Cosmos
 
         public static async Task<IDisposable> UsingWaitAsync(
             this SemaphoreSlim semaphoreSlim,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
-            return new UsableSemaphoreWrapper(semaphoreSlim);
+            using (diagnosticsContext?.CreateScope(nameof(UsingWaitAsync)))
+            {
+                await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
+                return new UsableSemaphoreWrapper(semaphoreSlim);
+            }
         }
 
         private static void TraceExceptionInternal(Exception exception)

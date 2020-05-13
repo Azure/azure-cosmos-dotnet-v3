@@ -19,24 +19,24 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             activityId: Guid.NewGuid().ToString(),
             statusCode: HttpStatusCode.OK,
             subStatusCode: Documents.SubStatusCodes.Unknown,
+            responseTimeUtc: DateTime.UtcNow,
             requestCharge: 0,
             errorMessage: string.Empty,
             method: HttpMethod.Get,
             requestUri: new Uri("http://localhost"),
             requestSessionToken: null,
-            responseSessionToken: null,
-            clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
+            responseSessionToken: null);
 
         private static readonly QueryPageDiagnostics MockQueryPageDiagnostics = new QueryPageDiagnostics(
+            clientQueryCorrelationId: Guid.NewGuid(),
             partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
             queryMetricText: BackendMetricsTests.MockBackendMetrics.ToString(),
             indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
-            diagnosticsContext: default(CosmosDiagnosticsContext),
-            schedulingStopwatch: new SchedulingStopwatch());
+            diagnosticsContext: default(CosmosDiagnosticsContext));
 
         private static readonly CosmosDiagnosticScope MockCosmosDiagnosticScope = new CosmosDiagnosticScope(name: "asdf");
 
-        private static readonly CosmosDiagnosticsContext MockCosmosDiagnosticsContext = CosmosDiagnosticsContext.Create();
+        private static readonly CosmosDiagnosticsContext MockCosmosDiagnosticsContext = new CosmosDiagnosticsContextCore();
 
         [TestMethod]
         public void TestPointOperationStatistics()
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             (BackendMetricsExtractor.ParseFailureReason parseFailureReason, BackendMetrics extractedBackendMetrics) notFoundResult = MockCosmosDiagnosticScope.Accept(BackendMetricsExtractor.Singleton);
             Assert.AreEqual(BackendMetricsExtractor.ParseFailureReason.MetricsNotFound, notFoundResult.parseFailureReason);
 
-            CosmosDiagnosticsContext contextWithQueryMetrics = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext contextWithQueryMetrics = new CosmosDiagnosticsContextCore();
             contextWithQueryMetrics.AddDiagnosticsInternal(MockQueryPageDiagnostics);
             (BackendMetricsExtractor.ParseFailureReason parseFailureReason, BackendMetrics extractedBackendMetrics) foundResult = contextWithQueryMetrics.Accept(BackendMetricsExtractor.Singleton);
             Assert.AreEqual(BackendMetricsExtractor.ParseFailureReason.None, foundResult.parseFailureReason);
@@ -78,11 +78,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             string malformedString = "totalExecutionTimeInMs=asdf";
             QueryPageDiagnostics queryPageDiagnostics = new QueryPageDiagnostics(
+                clientQueryCorrelationId: Guid.NewGuid(),
                 partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
                 queryMetricText: malformedString,
                 indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
-                diagnosticsContext: default(CosmosDiagnosticsContext),
-                schedulingStopwatch: new SchedulingStopwatch());
+                diagnosticsContext: default(CosmosDiagnosticsContext));
             (BackendMetricsExtractor.ParseFailureReason parseFailureReason, BackendMetrics extractedBackendMetrics) = queryPageDiagnostics.Accept(BackendMetricsExtractor.Singleton);
             Assert.AreEqual(BackendMetricsExtractor.ParseFailureReason.MalformedString, parseFailureReason);
         }

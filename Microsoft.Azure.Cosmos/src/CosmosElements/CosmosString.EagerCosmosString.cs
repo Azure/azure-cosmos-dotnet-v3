@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -31,10 +32,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override string Value { get; }
 
-            public override bool TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value)
+            public override bool TryGetBufferedValue(out Utf8Memory bufferedValue)
             {
                 // Eager string only has the materialized value, so this method will always return false.
-                bufferedUtf8Value = default;
+                bufferedValue = default;
                 return false;
             }
 

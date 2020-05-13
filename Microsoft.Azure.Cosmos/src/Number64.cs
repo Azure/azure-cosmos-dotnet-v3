@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    struct Number64 : IComparable<Number64>, IEquatable<Number64>
+    readonly struct Number64 : IComparable<Number64>, IEquatable<Number64>
     {
         /// <summary>
         /// Size of the Number64 when compared as a DoubleEx

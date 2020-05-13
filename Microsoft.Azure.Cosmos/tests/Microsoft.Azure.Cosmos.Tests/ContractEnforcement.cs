@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -16,6 +17,8 @@
         private const string BaselinePath = "DotNetSDKAPI.json";
         private const string BreakingChangesPath = "DotNetSDKAPIChanges.json";
 
+        private static readonly InvariantComparer invariantComparer = new InvariantComparer();
+
         [TestMethod]
         public void ContractChanges()
         {
@@ -23,6 +26,12 @@
                 ContractEnforcement.DoesContractContainBreakingChanges("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
                 $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
             );
+        }
+
+        [TestMethod]
+        public void UniqueKeyUnsealed()
+        {
+            Assert.IsFalse(typeof(UniqueKey).IsSealed);
         }
 
         private static Assembly GetAssemblyLocally(string name)
@@ -77,7 +86,7 @@
 
         private static TypeTree BuildTypeTree(TypeTree root, Type[] types)
         {
-            IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName);
+            IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName, invariantComparer);
             foreach (Type subclassType in subclassTypes)
             {
                 root.Subclasses[subclassType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types);
@@ -86,13 +95,13 @@
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
                 root.Type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
                     .Select(memberInfo => new KeyValuePair<string, MemberInfo>($"{memberInfo.ToString()}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes))}", memberInfo))
-                    .OrderBy(o => o.Key);
+                    .OrderBy(o => o.Key, invariantComparer);
             foreach (KeyValuePair<string, MemberInfo> memberInfo in memberInfos)
             {
                 List<string> attributes = ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.Value.CustomAttributes)
                         .Select((customAttribute) => customAttribute.AttributeType.Name)
                         .ToList();
-                attributes.Sort();
+                attributes.Sort(invariantComparer);
 
                 string methodSignature = null;
 
@@ -139,6 +148,11 @@
                 System.Diagnostics.Trace.TraceWarning($"Actual: {localJson}");
                 return true;
             }
+        }
+
+        private class InvariantComparer : IComparer<string>
+        {
+            public int Compare(string a, string b) => Comparer.DefaultInvariant.Compare(a, b);
         }
     }
 }

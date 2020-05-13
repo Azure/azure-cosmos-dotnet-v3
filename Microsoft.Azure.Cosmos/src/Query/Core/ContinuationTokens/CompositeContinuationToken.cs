@@ -10,12 +10,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     /// <summary>
     /// A composite continuation token that has both backend continuation token and partition range information. 
     /// </summary>
-    internal sealed class CompositeContinuationToken
+    internal sealed class CompositeContinuationToken : IPartitionedToken
     {
         private static class PropertyNames
         {
@@ -40,6 +41,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             get;
             set;
         }
+
+        [JsonIgnore]
+        public Range<string> PartitionRange => this.Range;
 
         public object ShallowCopy()
         {

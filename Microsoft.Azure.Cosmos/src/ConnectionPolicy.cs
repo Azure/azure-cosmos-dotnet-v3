@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Net.Http;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -67,6 +68,20 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.preferredLocations.Add(preferredLocation);
                 }
+            }
+        }
+
+        public void SetPreferredLocations(IReadOnlyList<string> regions)
+        {
+            if (regions == null)
+            {
+                throw new ArgumentNullException(nameof(regions));
+            }
+
+            this.preferredLocations.Clear();
+            foreach (string preferredLocation in regions)
+            {
+                this.preferredLocations.Add(preferredLocation);
             }
         }
 
@@ -174,6 +189,18 @@ namespace Microsoft.Azure.Cosmos
         /// 2. the Azure Cosmos DB account has more than one region
         /// </remarks>
         public bool? EnableReadRequestsFallback
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the flag to enable address cache refresh on connection reset notification.
+        /// </summary>
+        /// <value>
+        /// The default value is false
+        /// </value>
+        public bool EnableTcpConnectionEndpointRediscovery
         {
             get;
             set;
@@ -392,6 +419,15 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is PortReuseMode.ReuseUnicastPort.
         /// </value>
         public PortReuseMode? PortReuseMode
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
+        /// </summary>
+        public Func<HttpClient> HttpClientFactory
         {
             get;
             set;

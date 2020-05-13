@@ -108,7 +108,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         disallowContinuationTokenMessage: ComputeDistinctDocumentQueryExecutionComponent.UseTryGetContinuationTokenMessage,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
-                        diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
             }
 

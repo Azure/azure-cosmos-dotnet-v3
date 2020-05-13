@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
                     It.IsAny<Uri>(), It.IsAny<DocumentServiceRequest>()))
-                    .Returns((Uri uri, DocumentServiceRequest documentServiceRequest) => MockRequestHelper.GetStoreResponse(documentServiceRequest));
+                    .Returns((Uri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
 
             return mockTransportClient.Object;
         }
@@ -179,7 +179,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             gatewayStoreModel.Setup(
                 storeModel => storeModel.ProcessMessageAsync(
                     It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
-                    .Returns((DocumentServiceRequest documentServiceRequest, CancellationToken cancellationToken) => MockRequestHelper.GetDocumentServiceResponse(documentServiceRequest));
+                    .Returns((DocumentServiceRequest documentServiceRequest, CancellationToken cancellationToken) =>
+                        Task.FromResult(MockRequestHelper.GetDocumentServiceResponse(documentServiceRequest)));
 
             return gatewayStoreModel.Object;
         }

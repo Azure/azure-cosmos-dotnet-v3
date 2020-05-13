@@ -8,39 +8,18 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlWhereClause : SqlObject
     {
         private SqlWhereClause(SqlScalarExpression filterExpression)
-            : base(SqlObjectKind.WhereClause)
         {
-            if (filterExpression == null)
-            {
-                throw new ArgumentNullException("filterExpression");
-            }
-
-            this.FilterExpression = filterExpression;
+            this.FilterExpression = filterExpression ?? throw new ArgumentNullException(nameof(filterExpression));
         }
 
-        public SqlScalarExpression FilterExpression
-        {
-            get;
-        }
+        public SqlScalarExpression FilterExpression { get; }
 
-        public static SqlWhereClause Create(SqlScalarExpression filterExpression)
-        {
-            return new SqlWhereClause(filterExpression);
-        }
+        public static SqlWhereClause Create(SqlScalarExpression filterExpression) => new SqlWhereClause(filterExpression);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

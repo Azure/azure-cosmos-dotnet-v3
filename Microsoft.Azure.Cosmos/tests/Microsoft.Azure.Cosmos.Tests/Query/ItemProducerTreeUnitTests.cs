@@ -167,7 +167,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ItemProducerTree producer,
                 int itemsBuffered,
                 double resourceUnitUsage,
-                IReadOnlyCollection<QueryPageDiagnostics> queryPageDiagnostics,
                 long responseLengthBytes,
                 CancellationToken token)
             { callBackCount++; }
@@ -181,25 +180,25 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<CosmosElement>(CosmosElementType.Object).Object
             };
 
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
             diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                 Guid.NewGuid().ToString(),
                 System.Net.HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
 
             QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                clientQueryCorrelationId: Guid.NewGuid(),
                 partitionKeyRangeId: "0",
                 queryMetricText: "SomeRandomQueryMetricText",
                 indexUtilizationText: null,
-                diagnosticsContext: diagnosticsContext,
-                schedulingStopwatch: new SchedulingStopwatch());
+                diagnosticsContext: diagnosticsContext);
             IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
             mockQueryContext.Setup(x => x.ContainerResourceId).Returns("MockCollectionRid");
@@ -209,13 +208,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
-                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponseCore.CreateSuccess(
                     result: cosmosElements,
                     requestCharge: 42,
                     activityId: "AA470D71-6DEF-4D61-9A08-272D8C9ABCFE",
-                    diagnostics: pageDiagnostics,
                     responseLengthBytes: 500,
                     disallowContinuationTokenMessage: null,
                     continuationToken: "TestToken")));
@@ -237,25 +234,25 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
-            CosmosDiagnosticsContext diagnosticsContextInternalServerError = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext diagnosticsContextInternalServerError = new CosmosDiagnosticsContextCore();
             diagnosticsContextInternalServerError.AddDiagnosticsInternal(new PointOperationStatistics(
                 Guid.NewGuid().ToString(),
                 System.Net.HttpStatusCode.InternalServerError,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 10.2,
                 errorMessage: "Error message",
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
 
             diagnostics = new QueryPageDiagnostics(
+                clientQueryCorrelationId: Guid.NewGuid(),
                 partitionKeyRangeId: "0",
                 queryMetricText: null,
                 indexUtilizationText: null,
-                diagnosticsContext: diagnosticsContextInternalServerError,
-                schedulingStopwatch: new SchedulingStopwatch());
+                diagnosticsContext: diagnosticsContextInternalServerError);
             pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
             // Buffer a failure
@@ -265,7 +262,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
-                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponseCore.CreateFailure(
                     statusCode: HttpStatusCode.InternalServerError,
@@ -273,8 +269,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cosmosException: CosmosExceptionFactory.CreateInternalServerErrorException(
                         "Error message"),
                     requestCharge: 10.2,
-                    activityId: Guid.NewGuid().ToString(),
-                    diagnostics: pageDiagnostics)));
+                    activityId: Guid.NewGuid().ToString())));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
@@ -313,7 +308,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
-                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).
                 Throws(new Exception("Previous buffer failed. Operation should return original failure and not try again"));
 

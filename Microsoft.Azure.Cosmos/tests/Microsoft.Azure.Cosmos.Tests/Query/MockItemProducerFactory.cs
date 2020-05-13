@@ -106,7 +106,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static void DefaultProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -191,7 +190,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -235,13 +233,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<Uri>(),
                         ResourceType.Document,
                         OperationType.Query,
+                        It.IsAny<Guid>(),
                         It.IsAny<QueryRequestOptions>(),
+                        It.IsAny<Action<QueryPageDiagnostics>>(),
                         It.Is<SqlQuerySpec>(specInput => IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                         previousContinuationToken,
                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),
                         It.IsAny<bool>(),
                         maxPageSize,
-                        It.IsAny<SchedulingStopwatch>(),
                         cancellationToken))
                         .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
@@ -295,7 +294,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),
                         It.IsAny<bool>(),
                         maxPageSize,
-                        It.IsAny<SchedulingStopwatch>(),
                         cancellationToken))
                         .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));

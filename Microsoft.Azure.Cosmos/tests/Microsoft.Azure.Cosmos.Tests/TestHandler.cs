@@ -7,8 +7,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal class TestHandler : RequestHandler
@@ -18,26 +16,27 @@
 
         public TestHandler()
         {
-            _handlerFunc = (r, c) => ReturnSuccess();
+            this._handlerFunc = (r, c) => ReturnSuccess();
         }
 
         public TestHandler(Func<RequestMessage,
             CancellationToken, Task<ResponseMessage>> handlerFunc)
         {
-            _handlerFunc = handlerFunc;
+            this._handlerFunc = handlerFunc;
         }
 
         public override Task<ResponseMessage> SendAsync(
             RequestMessage request, CancellationToken cancellationToken)
         {
-            return _handlerFunc(request, cancellationToken);
+            return this._handlerFunc(request, cancellationToken);
         }
 
         public static Task<ResponseMessage> ReturnSuccess()
         {
             return Task.Factory.StartNew(
-                () => {
-                    ResponseMessage responseMessage =  new ResponseMessage(HttpStatusCode.OK);
+                () =>
+                {
+                    ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
                     responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Documents"": [{ ""id"": ""Test""}]}"));
                     return responseMessage;
                 });
@@ -51,8 +50,10 @@
                     ResponseMessage httpResponse = new ResponseMessage(statusCode);
                     if (subStatusCode != SubStatusCodes.Unknown)
                     {
-                        httpResponse.Headers.Add(WFConstants.BackendHeaders.SubStatus,((uint)subStatusCode).ToString(CultureInfo.InvariantCulture));
+                        httpResponse.Headers.Add(WFConstants.BackendHeaders.SubStatus, ((uint)subStatusCode).ToString(CultureInfo.InvariantCulture));
                     }
+
+                    httpResponse.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
                     return httpResponse;
                 });

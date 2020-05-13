@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.RetryAfter = retryAfter;
             this.ActivityId = activityId;
-            this.Diagnostics = diagnosticsContext;
+            this.Diagnostics = diagnosticsContext.Diagnostics;
             this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 
@@ -217,7 +218,8 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializerCore serializer,
-            bool shouldPromoteOperationStatus = true)
+            bool shouldPromoteOperationStatus,
+            CancellationToken cancellationToken)
         {
             using (responseMessage)
             {

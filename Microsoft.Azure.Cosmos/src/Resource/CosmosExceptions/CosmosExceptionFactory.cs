@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             }
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(storeResponse.ResponseBody);
-            Headers headers = storeResponse.ToCosmosHeaders();
+            Headers headers = storeResponse.Headers.ToCosmosHeaders();
 
             return CosmosExceptionFactory.Create(
                 statusCode: storeResponse.StatusCode,
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                         if (error != null)
                         {
                             // Error format is not consistent across modes
-                            return (error, null);
+                            return (error, error.ToString());
                         }
                     }
                     catch (Newtonsoft.Json.JsonReaderException)

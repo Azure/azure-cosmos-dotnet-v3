@@ -677,6 +677,16 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.Database Database": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.Database get_Database()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Database get_Database()"
+        },
         "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
@@ -816,6 +826,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Int32, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] ReadThroughputAsync(System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1008,12 +1023,26 @@
           ],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Int32] AnalyticalStoreTimeToLiveInSeconds[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"analyticalStorageTtl\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
+        },
         "System.Nullable`1[System.Int32] DefaultTimeToLive[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"defaultTtl\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
+        },
+        "System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds()"
         },
         "System.Nullable`1[System.Int32] get_DefaultTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1098,6 +1127,13 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor(System.String, System.String)"
+        },
+        "Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32])"
         },
         "Void set_ConflictResolutionPolicy(Microsoft.Azure.Cosmos.ConflictResolutionPolicy)": {
           "Type": "Method",
@@ -1295,11 +1331,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()"
         },
         "Microsoft.Azure.Cosmos.Database GetDatabase(System.String)": {
@@ -1332,10 +1366,20 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.AccountProperties] ReadAccountAsync()"
         },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1385,12 +1429,24 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Boolean EnableTcpConnectionEndpointRediscovery": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Boolean get_AllowBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_AllowBulkExecution()"
+        },
+        "Boolean get_EnableTcpConnectionEndpointRediscovery()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_EnableTcpConnectionEndpointRediscovery()"
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1446,6 +1502,18 @@
           ],
           "MethodInfo": null
         },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] ApplicationPreferredRegions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] get_ApplicationPreferredRegions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_ApplicationPreferredRegions()"
+        },
         "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] CustomHandlers[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
           "Type": "Property",
           "Attributes": [
@@ -1459,6 +1527,18 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] get_CustomHandlers()"
+        },
+        "System.Func`1[System.Net.Http.HttpClient] get_HttpClientFactory()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Func`1[System.Net.Http.HttpClient] get_HttpClientFactory()"
+        },
+        "System.Func`1[System.Net.Http.HttpClient] HttpClientFactory[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": null
         },
         "System.Net.IWebProxy get_WebProxy()": {
           "Type": "Method",
@@ -1613,6 +1693,13 @@
           ],
           "MethodInfo": "Void set_ApplicationName(System.String)"
         },
+        "Void set_ApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])"
+        },
         "Void set_ApplicationRegion(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1632,10 +1719,22 @@
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
         },
+        "Void set_EnableTcpConnectionEndpointRediscovery(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableTcpConnectionEndpointRediscovery(Boolean)"
+        },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_GatewayModeMaxConnectionLimit(Int32)"
+        },
+        "Void set_HttpClientFactory(System.Func`1[System.Net.Http.HttpClient])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_HttpClientFactory(System.Func`1[System.Net.Http.HttpClient])"
         },
         "Void set_IdleTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])": {
           "Type": "Method",
@@ -1715,6 +1814,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String ToString()"
+        },
+        "System.TimeSpan GetClientElapsedTime()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan GetClientElapsedTime()"
         }
       },
       "NestedTypes": {}
@@ -1957,6 +2061,16 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Container GetContainer(System.String)"
         },
+        "Microsoft.Azure.Cosmos.CosmosClient Client": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosClient get_Client()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosClient get_Client()"
+        },
         "Microsoft.Azure.Cosmos.FeedIterator GetContainerQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
@@ -2007,6 +2121,11 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
@@ -2016,6 +2135,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerAsync(System.String, System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -2036,6 +2160,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] ReadAsync(Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -2061,6 +2190,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Int32, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.UserResponse] CreateUserAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -2569,6 +2703,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)": {
           "Type": "Method",
           "Attributes": [],
@@ -2584,6 +2723,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect(System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.Int32], System.Nullable`1[System.Int32], System.Nullable`1[Microsoft.Azure.Cosmos.PortReuseMode], System.Nullable`1[System.Boolean])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect(System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.Int32], System.Nullable`1[System.Int32], System.Nullable`1[Microsoft.Azure.Cosmos.PortReuseMode], System.Nullable`1[System.Boolean])"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], System.Net.IWebProxy)": {
           "Type": "Method",
           "Attributes": [],
@@ -2598,6 +2742,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Microsoft.Azure.Cosmos.CosmosSerializer)"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithHttpClientFactory(System.Func`1[System.Net.Http.HttpClient])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithHttpClientFactory(System.Func`1[System.Net.Http.HttpClient])"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)": {
           "Type": "Method",
@@ -3248,6 +3397,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()"
+        },
         "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3269,6 +3430,13 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+        },
+        "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])"
         },
         "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3635,6 +3803,31 @@
     "PartitionKey": {
       "Subclasses": {},
       "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object)"
+        },
+        "Boolean op_Equality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean op_Equality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Boolean op_Inequality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean op_Inequality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
         "Microsoft.Azure.Cosmos.PartitionKey None": {
           "Type": "Field",
           "Attributes": [],
@@ -4696,6 +4889,18 @@
               "Attributes": [],
               "MethodInfo": null
             },
+            "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()"
+            },
             "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
@@ -4717,6 +4922,13 @@
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+            },
+            "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])"
             },
             "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -5006,10 +5218,29 @@
               "Attributes": [],
               "MethodInfo": null
             },
+            "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()"
+            },
             "Void .ctor()": {
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "Void .ctor()"
+            },
+            "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])"
             },
             "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -6477,6 +6708,52 @@
           },
           "NestedTypes": {}
         },
+        "MultiPolygon": {
+          "Subclasses": {},
+          "Members": {
+            "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)"
+            },
+            "Boolean Equals(System.Object)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Boolean Equals(System.Object)"
+            },
+            "Int32 GetHashCode()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Int32 GetHashCode()"
+            },
+            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons()"
+            },
+            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = 1, Required = 2)]": {
+              "Type": "Property",
+              "Attributes": [
+                "DataMemberAttribute",
+                "JsonPropertyAttribute"
+              ],
+              "MethodInfo": null
+            },
+            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])"
+            },
+            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)"
+            }
+          },
+          "NestedTypes": {}
+        },
         "Point": {
           "Subclasses": {},
           "Members": {
@@ -7017,6 +7294,52 @@
       },
       "NestedTypes": {}
     },
+    "MultiPolygon": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons()"
+        },
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = 1, Required = 2)]": {
+          "Type": "Property",
+          "Attributes": [
+            "DataMemberAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])"
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)"
+        }
+      },
+      "NestedTypes": {}
+    },
     "NamedCrs": {
       "Subclasses": {},
       "Members": {
@@ -7150,6 +7473,46 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "PolygonCoordinates": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates)"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] get_Rings()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] get_Rings()"
+        },
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] Rings[System.Runtime.Serialization.DataMemberAttribute(Name = \"rings\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "DataMemberAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])"
         }
       },
       "NestedTypes": {}
@@ -7333,6 +7696,16 @@
     "ThroughputProperties": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.ThroughputProperties CreateAutoscaleThroughput(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ThroughputProperties CreateAutoscaleThroughput(Int32)"
+        },
+        "Microsoft.Azure.Cosmos.ThroughputProperties CreateManualThroughput(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ThroughputProperties CreateManualThroughput(Int32)"
+        },
         "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -7348,14 +7721,28 @@
           ],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Int32] AutoscaleMaxThroughput[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.Int32] get_AutoscaleMaxThroughput()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_AutoscaleMaxThroughput()"
+        },
         "System.Nullable`1[System.Int32] get_Throughput()": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Int32] get_Throughput()"
         },
-        "System.Nullable`1[System.Int32] Throughput": {
+        "System.Nullable`1[System.Int32] Throughput[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
           "MethodInfo": null
         },
         "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
@@ -7385,11 +7772,6 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}
@@ -7569,10 +7951,29 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()"
+        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
+        },
+        "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])"
         },
         "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

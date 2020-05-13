@@ -19,17 +19,31 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract int FailedRequestCount { get; protected set; }
 
-        public abstract TimeSpan? TotalElapsedTime { get; protected set; }
-
         public abstract string UserAgent { get; protected set; }
 
-        internal abstract CosmosDiagnosticScope CreateOverallScope(string name);
+        internal abstract CosmosDiagnostics Diagnostics { get; }
 
-        internal abstract CosmosDiagnosticScope CreateScope(string name);
+        internal abstract IDisposable GetOverallScope();
+
+        internal abstract IDisposable CreateScope(string name);
+
+        internal abstract IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler);
+
+        internal abstract TimeSpan GetClientElapsedTime();
+
+        internal abstract bool IsComplete();
 
         internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 
         internal abstract void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics);
+
+        internal abstract void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics);
+
+        internal abstract void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics);
+
+        internal abstract void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics);
+
+        internal abstract void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics);
 
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 
@@ -44,12 +58,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
         {
-            return requestOptions?.DiagnosticContext ?? CosmosDiagnosticsContext.Create();
-        }
-
-        internal static CosmosDiagnosticsContext Create()
-        {
-            return new CosmosDiagnosticsContextCore();
+            return requestOptions?.DiagnosticContextFactory?.Invoke() ?? new CosmosDiagnosticsContextCore();
         }
     }
 }

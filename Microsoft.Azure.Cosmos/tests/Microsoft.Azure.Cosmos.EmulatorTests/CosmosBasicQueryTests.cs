@@ -9,11 +9,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -23,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static CosmosClient DirectCosmosClient;
         private static CosmosClient GatewayCosmosClient;
         private const string DatabaseId = "CosmosBasicQueryTests";
-        private const string ContainerId = "ContainerBasicQueryTests";
+        private static readonly string ContainerId = "ContainerBasicQueryTests" + Guid.NewGuid();
 
         [ClassInitialize]
         public static async Task TestInit(TestContext textContext)
@@ -150,10 +153,146 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
+        public async Task QueryRequestRateTest(bool directMode)
+        {
+            string firstItemIdAndPk = "BasicQueryItem" + Guid.NewGuid();
+
+            // Prevent the test from changing the static client
+            {
+                CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+                Container container = client.GetContainer(DatabaseId, ContainerId);
+
+                List<string> createdIds = new List<string>()
+                {
+                    firstItemIdAndPk,
+                    "BasicQueryItem2"+ Guid.NewGuid(),
+                    "BasicQueryItem3"+ Guid.NewGuid()
+                };
+
+                foreach (string id in createdIds)
+                {
+                    dynamic item = new
+                    {
+                        id = id,
+                        pk = id,
+                    };
+
+                    await container.CreateItemAsync<dynamic>(item: item);
+                }
+            }
+
+            CosmosClient clientWithThrottle;
+            if (directMode)
+            {
+                clientWithThrottle = TestCommon.CreateCosmosClient();
+            }
+            else
+            {
+                clientWithThrottle = TestCommon.CreateCosmosClient((builder) => builder.WithConnectionModeGateway());
+            }
+
+            Container containerWithThrottle = clientWithThrottle.GetContainer(DatabaseId, ContainerId);
+
+            // Do a read to warm up all the caches to prevent them from getting the throttle errors
+            using (await containerWithThrottle.ReadItemStreamAsync(firstItemIdAndPk, new PartitionKey(firstItemIdAndPk))) { }
+
+            Documents.IStoreModel storeModel = clientWithThrottle.ClientContext.DocumentClient.StoreModel;
+            Mock<Documents.IStoreModel> mockStore = new Mock<Documents.IStoreModel>();
+            clientWithThrottle.ClientContext.DocumentClient.StoreModel = mockStore.Object;
+
+            // Cause 429 after the first call
+            int callCount = 0;
+            string activityId = null;
+            string errorMessage = "QueryRequestRateTest Resource Not Found";
+            mockStore.Setup(x => x.ProcessMessageAsync(It.IsAny<Documents.DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
+                .Returns<Documents.DocumentServiceRequest, CancellationToken>((dsr, token) =>
+                {
+                    callCount++;
+
+                    if (callCount > 1)
+                    {
+                        INameValueCollection headers = new DictionaryNameValueCollection();
+                        headers.Add(Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "42");
+                        activityId = Guid.NewGuid().ToString();
+                        headers.Add(Documents.HttpConstants.HttpHeaders.ActivityId, activityId);
+                        Documents.DocumentServiceResponse response = new Documents.DocumentServiceResponse(
+                            body: TestCommon.GenerateStreamFromString(@"{""Errors"":[""" + errorMessage + @"""]}"),
+                            headers: headers,
+                            statusCode: (HttpStatusCode)429,
+                            clientSideRequestStatistics: dsr.RequestContext.ClientRequestStatistics);
+
+                        return Task.FromResult(response);
+                    }
+
+                    return storeModel.ProcessMessageAsync(dsr, token);
+                });
+
+            List<dynamic> results = new List<dynamic>();
+            try
+            {
+                FeedIterator<dynamic> feedIterator = containerWithThrottle.GetItemQueryIterator<dynamic>(
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxItemCount = 1,
+                        MaxConcurrency = 1
+                    });
+
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
+                    Assert.IsTrue(response.Count <= 1);
+                    Assert.IsTrue(response.Resource.Count() <= 1);
+
+                    results.AddRange(response);
+                }
+                Assert.Fail("Should throw 429 exception after the first page.");
+            }
+            catch (CosmosException ce)
+            {
+                Assert.IsTrue(ce.RetryAfter.HasValue);
+                Assert.AreEqual(42, ce.RetryAfter.Value.TotalMilliseconds);
+                Assert.AreEqual(activityId, ce.ActivityId);
+                Assert.IsNotNull(ce.DiagnosticsContext);
+                Assert.IsTrue(ce.Message.Contains(errorMessage));
+            }
+
+            callCount = 0;
+            FeedIterator streamIterator = containerWithThrottle.GetItemQueryStreamIterator(
+                "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    MaxConcurrency = 1
+                });
+
+            // First request should be a success
+            using (ResponseMessage response = await streamIterator.ReadNextAsync())
+            {
+                response.EnsureSuccessStatusCode();
+                Assert.IsNotNull(response.Content);
+            }
+
+            // Second page should be a failure
+            using (ResponseMessage response = await streamIterator.ReadNextAsync())
+            {
+                Assert.AreEqual(429, (int)response.StatusCode);
+                Assert.AreEqual("42", response.Headers.RetryAfterLiteral);
+                Assert.AreEqual(activityId, response.Headers.ActivityId);
+                Assert.IsNotNull(response.DiagnosticsContext);
+                Assert.IsTrue(response.ErrorMessage.Contains(errorMessage));
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         public async Task ItemTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Container container = client.GetContainer(DatabaseId, ContainerId);
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+
             List<string> createdIds = new List<string>()
             {
                 "BasicQueryItem",
@@ -250,7 +389,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ScriptsStoredProcedureTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+            Scripts scripts = container.Scripts;
 
             List<string> createdIds = new List<string>()
             {
@@ -302,7 +443,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ScriptsUserDefinedFunctionTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+            Scripts scripts = container.Scripts;
 
             List<string> createdIds = new List<string>()
             {
@@ -354,7 +497,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ScriptsTriggerTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+            Scripts scripts = container.Scripts;
 
             List<string> createdIds = new List<string>()
             {
@@ -406,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task UserTests(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            DatabaseCore database = (DatabaseInlineCore)client.GetDatabase(DatabaseId);
+            DatabaseInternal database = (DatabaseInlineCore)client.GetDatabase(DatabaseId);
             List<string> createdIds = new List<string>();
 
             try
@@ -434,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<UserProperties> queryResults = await this.ToListAsync(
                     database.GetUserQueryStreamIterator,
                     database.GetUserQueryIterator<UserProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")",
+                    "SELECT * FROM T where STARTSWITH(T.id, \"BasicQueryUser\")",
                     CosmosBasicQueryTests.RequestOptions
                 );
 

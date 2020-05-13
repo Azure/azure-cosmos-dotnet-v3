@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
-            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Method = method;
             this.RequestUri = requestUri;
-            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -169,6 +169,29 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal void AddThroughputPropertiesHeader(ThroughputProperties throughputProperties)
+        {
+            if (throughputProperties == null)
+            {
+                return;
+            }
+
+            if (throughputProperties.Throughput.HasValue &&
+                (throughputProperties.AutoscaleMaxThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
+            {
+                throw new InvalidOperationException("Autoscale provisioned throughput can not be configured with fixed offer");
+            }
+
+            if (throughputProperties.Throughput.HasValue)
+            {
+                this.AddThroughputHeader(throughputProperties.Throughput);
+            }
+            else if (throughputProperties?.Content?.OfferAutoscaleSettings != null)
+            {
+                this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, throughputProperties.Content.OfferAutoscaleSettings.GetJsonString());
+            }
+        }
+
         internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
         {
             if (this.IsMasterOperation())
@@ -222,6 +245,7 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
+                serviceRequest.RequestContext.ClientRequestStatistics = new CosmosClientSideRequestStatistics(this.DiagnosticsContext);
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;

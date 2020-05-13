@@ -4,8 +4,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
@@ -23,9 +25,9 @@ namespace Microsoft.Azure.Cosmos
 
         private static readonly string DefaultUserAgentString;
 
-        private bool IsDefaultUserAgent = true;
+        private readonly CosmosDiagnosticScope overallScope;
 
-        private bool isOverallScopeSet = false;
+        private bool IsDefaultUserAgent = true;
 
         static CosmosDiagnosticsContextCore()
         {
@@ -38,6 +40,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StartUtc = DateTime.UtcNow;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
+            this.Diagnostics = new CosmosDiagnosticsCore(this);
+            this.overallScope = new CosmosDiagnosticScope("Overall");
         }
 
         public override DateTime StartUtc { get; }
@@ -46,34 +50,38 @@ namespace Microsoft.Azure.Cosmos
 
         public override int FailedRequestCount { get; protected set; }
 
-        public override TimeSpan? TotalElapsedTime { get; protected set; }
-
         public override string UserAgent { get; protected set; } = CosmosDiagnosticsContextCore.DefaultUserAgentString;
 
-        internal override CosmosDiagnosticScope CreateOverallScope(string name)
-        {
-            CosmosDiagnosticScope scope;
-            // If overall is already set then let the original set the elapsed time.
-            if (this.isOverallScopeSet)
-            {
-                scope = new CosmosDiagnosticScope(name);
-            }
-            else
-            {
-                scope = new CosmosDiagnosticScope(name, this.SetElapsedTime);
-                this.isOverallScopeSet = true;
-            }
+        internal override CosmosDiagnostics Diagnostics { get; }
 
-            this.ContextList.Add(scope);
-            return scope;
+        internal override TimeSpan GetClientElapsedTime()
+        {
+            return this.overallScope.GetElapsedTime();
         }
 
-        internal override CosmosDiagnosticScope CreateScope(string name)
+        internal override bool IsComplete()
+        {
+            return this.overallScope.IsComplete();
+        }
+
+        internal override IDisposable GetOverallScope()
+        {
+            return this.overallScope;
+        }
+
+        internal override IDisposable CreateScope(string name)
         {
             CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
 
             this.ContextList.Add(scope);
             return scope;
+        }
+
+        internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
+        {
+            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
+            this.ContextList.Add(requestHandlerScope);
+            return requestHandlerScope;
         }
 
         internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
@@ -83,14 +91,34 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(pointOperationStatistics));
             }
 
-            this.TotalRequestCount++;
-            int statusCode = (int)pointOperationStatistics.StatusCode;
-            if (statusCode < 200 || statusCode > 299)
-            {
-                this.FailedRequestCount++;
-            }
+            this.AddRequestCount((int)pointOperationStatistics.StatusCode);
 
             this.ContextList.Add(pointOperationStatistics);
+        }
+
+        internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
+        {
+            if (storeResponseStatistics.StoreResult != null)
+            {
+                this.AddRequestCount((int)storeResponseStatistics.StoreResult.StatusCode);
+            }
+
+            this.ContextList.Add(storeResponseStatistics);
+        }
+
+        internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
+        {
+            this.ContextList.Add(addressResolutionStatistics);
+        }
+
+        internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        {
+            this.ContextList.Add(clientSideRequestStatistics);
+        }
+
+        internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
+        {
+            this.ContextList.Add(feedRangeStatistics);
         }
 
         internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
@@ -117,6 +145,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override void SetSdkUserAgent(string userAgent)
         {
+            this.IsDefaultUserAgent = false;
             this.UserAgent = userAgent;
         }
 
@@ -132,12 +161,22 @@ namespace Microsoft.Azure.Cosmos
 
         public override IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
         {
-            return this.ContextList.GetEnumerator();
+            // Using a for loop with a yield prevents Issue #1467 which causes
+            // ThrowInvalidOperationException if a new diagnostics is getting added
+            // while the enumerator is being used.
+            for (int i = 0; i < this.ContextList.Count; i++)
+            {
+                yield return this.ContextList[i];
+            }
         }
 
-        private void SetElapsedTime(TimeSpan totalElapsedTime)
+        private void AddRequestCount(int statusCode)
         {
-            this.TotalElapsedTime = totalElapsedTime;
+            this.TotalRequestCount++;
+            if (statusCode < 200 || statusCode > 299)
+            {
+                this.FailedRequestCount++;
+            }
         }
 
         private void AddSummaryInfo(CosmosDiagnosticsContext newContext)
@@ -150,12 +189,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.IsDefaultUserAgent && newContext.UserAgent != null)
             {
                 this.SetSdkUserAgent(newContext.UserAgent);
-            }
-
-            // Use the larger of the total elapsed times
-            if (this.TotalElapsedTime < newContext.TotalElapsedTime)
-            {
-                this.TotalElapsedTime = newContext.TotalElapsedTime;
             }
 
             this.TotalRequestCount += newContext.TotalRequestCount;
