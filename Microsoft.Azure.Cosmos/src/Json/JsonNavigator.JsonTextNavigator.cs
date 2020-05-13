@@ -66,10 +66,15 @@ namespace Microsoft.Azure.Cosmos.Json
                 JsonTextNavigatorNode rootNode;
                 if (lazyInit)
                 {
-                    rootNode = new LazyNode(
-                        lazyNode: new Lazy<JsonTextNavigatorNode>(CreateRootNode),
-                        type: arrayRoot ? JsonNodeType.Array : JsonNodeType.Object,
-                        bufferedValue: buffer);
+                    Lazy<JsonTextNavigatorNode> lazyNode = new Lazy<JsonTextNavigatorNode>(CreateRootNode);
+                    if (arrayRoot)
+                    {
+                        rootNode = new LazyArrayNode(lazyNode, buffer);
+                    }
+                    else
+                    {
+                        rootNode = new LazyObjectNode(lazyNode, buffer);
+                    }
                 }
                 else
                 {
@@ -1164,23 +1169,45 @@ namespace Microsoft.Azure.Cosmos.Json
                 public static BinaryNode Create(ReadOnlyMemory<byte> value) => new BinaryNode(value);
             }
 
-            private sealed class LazyNode : JsonTextNavigatorNode
+            private abstract class LazyNode : JsonTextNavigatorNode
             {
                 private readonly Lazy<JsonTextNavigatorNode> lazyNode;
-                private readonly JsonNodeType type;
 
-                public LazyNode(Lazy<JsonTextNavigatorNode> lazyNode, JsonNodeType type, ReadOnlyMemory<byte> bufferedValue)
+                protected LazyNode(
+                    Lazy<JsonTextNavigatorNode> lazyNode,
+                    ReadOnlyMemory<byte> bufferedValue)
                 {
                     this.lazyNode = lazyNode;
-                    this.type = type;
                     this.BufferedValue = bufferedValue;
                 }
 
                 public ReadOnlyMemory<byte> BufferedValue { get; }
 
                 public JsonTextNavigatorNode Value => this.lazyNode.Value;
+            }
 
-                public override JsonNodeType Type => this.type;
+            private sealed class LazyArrayNode : LazyNode
+            {
+                public LazyArrayNode(
+                    Lazy<JsonTextNavigatorNode> lazyNode,
+                    ReadOnlyMemory<byte> bufferedValue)
+                    : base(lazyNode, bufferedValue)
+                {
+                }
+
+                public override JsonNodeType Type => JsonNodeType.Array;
+            }
+
+            private sealed class LazyObjectNode : LazyNode
+            {
+                public LazyObjectNode(
+                    Lazy<JsonTextNavigatorNode> lazyNode,
+                    ReadOnlyMemory<byte> bufferedValue)
+                    : base(lazyNode, bufferedValue)
+                {
+                }
+
+                public override JsonNodeType Type => JsonNodeType.Object;
             }
             #endregion
         }
