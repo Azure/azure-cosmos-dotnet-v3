@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlOrderbyClause : SqlObject
     {
         private SqlOrderbyClause(IReadOnlyList<SqlOrderByItem> orderbyItems)
-            : base(SqlObjectKind.OrderByClause)
         {
             if (orderbyItems == null)
             {
@@ -27,34 +26,16 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.OrderbyItems = orderbyItems;
         }
 
-        public IReadOnlyList<SqlOrderByItem> OrderbyItems
-        {
-            get;
-        }
+        public IReadOnlyList<SqlOrderByItem> OrderbyItems { get; }
 
-        public static SqlOrderbyClause Create(params SqlOrderByItem[] orderbyItems)
-        {
-            return new SqlOrderbyClause(orderbyItems);
-        }
+        public static SqlOrderbyClause Create(params SqlOrderByItem[] orderbyItems) => new SqlOrderbyClause(orderbyItems);
 
-        public static SqlOrderbyClause Create(IReadOnlyList<SqlOrderByItem> orderbyItems)
-        {
-            return new SqlOrderbyClause(orderbyItems);
-        }
+        public static SqlOrderbyClause Create(IReadOnlyList<SqlOrderByItem> orderbyItems) => new SqlOrderbyClause(orderbyItems);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }
