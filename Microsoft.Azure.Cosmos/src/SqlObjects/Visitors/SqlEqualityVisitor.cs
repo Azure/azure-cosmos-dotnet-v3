@@ -44,11 +44,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.Items.Count != second.Items.Count)
-            {
-                return false;
-            }
-
             if (!SequenceEquals(first.Items, second.Items))
             {
                 return false;
@@ -265,11 +260,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override bool Visit(SqlGroupByClause first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlGroupByClause second))
-            {
-                return false;
-            }
-
-            if (first.Expressions.Count != second.Expressions.Count)
             {
                 return false;
             }
