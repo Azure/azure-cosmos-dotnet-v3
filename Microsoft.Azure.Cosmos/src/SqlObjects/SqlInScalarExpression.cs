@@ -13,18 +13,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlScalarExpression needle,
             bool not,
             ImmutableArray<SqlScalarExpression> haystack)
-            : base(SqlObjectKind.InScalarExpression)
         {
-            if (needle == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
-            if (haystack == null)
-            {
-                throw new ArgumentNullException("items");
-            }
-
             if (haystack.IsEmpty)
             {
                 throw new ArgumentException("items can't be empty.");
@@ -38,64 +27,37 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
             }
 
-            this.Needle = needle;
+            this.Needle = needle ?? throw new ArgumentNullException(nameof(needle));
             this.Not = not;
             this.Haystack = haystack;
         }
 
-        public SqlScalarExpression Needle
-        {
-            get;
-        }
+        public SqlScalarExpression Needle { get; }
 
-        public bool Not
-        {
-            get;
-        }
+        public bool Not { get; }
 
-        public ImmutableArray<SqlScalarExpression> Haystack
-        {
-            get;
-        }
+        public ImmutableArray<SqlScalarExpression> Haystack { get; }
 
-        public static SqlInScalarExpression Create(SqlScalarExpression needle, bool not, params SqlScalarExpression[] haystack)
-        {
-            return new SqlInScalarExpression(needle, not, haystack.ToImmutableArray());
-        }
+        public static SqlInScalarExpression Create(
+            SqlScalarExpression needle,
+            bool not,
+            params SqlScalarExpression[] haystack) => new SqlInScalarExpression(needle, not, haystack.ToImmutableArray());
 
-        public static SqlInScalarExpression Create(SqlScalarExpression needle, bool not, ImmutableArray<SqlScalarExpression> haystack)
-        {
-            return new SqlInScalarExpression(needle, not, haystack);
-        }
+        public static SqlInScalarExpression Create(
+            SqlScalarExpression needle,
+            bool not,
+            ImmutableArray<SqlScalarExpression> haystack) => new SqlInScalarExpression(needle, not, haystack);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlScalarExpressionVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlScalarExpressionVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

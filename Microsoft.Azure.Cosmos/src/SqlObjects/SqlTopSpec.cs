@@ -18,20 +18,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             .ToImmutableArray();
 
         private SqlTopSpec(SqlScalarExpression topExpression)
-            : base(SqlObjectKind.TopSpec)
         {
-            if (topExpression == null)
-            {
-                throw new ArgumentNullException(nameof(topExpression));
-            }
-
-            this.TopExpresion = topExpression;
+            this.TopExpresion = topExpression ?? throw new ArgumentNullException(nameof(topExpression));
         }
 
-        public SqlScalarExpression TopExpresion
-        {
-            get;
-        }
+        public SqlScalarExpression TopExpresion { get; }
 
         public static SqlTopSpec Create(SqlNumberLiteral sqlNumberLiteral)
         {
@@ -69,19 +60,10 @@ namespace Microsoft.Azure.Cosmos.Sql
             return new SqlTopSpec(sqlParameterRefScalarExpression);
         }
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlScalarExpression left = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
                     SqlScalarExpression right = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
 
-                    return SqlBinaryScalarExpression.Create(left, SqlBinaryScalarOperatorKind.Equal, right);
+                    return SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Equal, left, right);
                 }
 
                 return null;

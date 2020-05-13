@@ -9,13 +9,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlOrderbyClause : SqlObject
     {
         private SqlOrderbyClause(ImmutableArray<SqlOrderByItem> orderbyItems)
-            : base(SqlObjectKind.OrderByClause)
         {
-            if (orderbyItems == null)
-            {
-                throw new ArgumentNullException("orderbyItems");
-            }
-
             foreach (SqlOrderByItem sqlOrderbyItem in orderbyItems)
             {
                 if (sqlOrderbyItem == null)
@@ -27,34 +21,16 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.OrderbyItems = orderbyItems;
         }
 
-        public ImmutableArray<SqlOrderByItem> OrderbyItems
-        {
-            get;
-        }
+        public ImmutableArray<SqlOrderByItem> OrderbyItems { get; }
 
-        public static SqlOrderbyClause Create(params SqlOrderByItem[] orderbyItems)
-        {
-            return new SqlOrderbyClause(orderbyItems.ToImmutableArray());
-        }
+        public static SqlOrderbyClause Create(params SqlOrderByItem[] orderbyItems) => new SqlOrderbyClause(orderbyItems.ToImmutableArray());
 
-        public static SqlOrderbyClause Create(ImmutableArray<SqlOrderByItem> orderbyItems)
-        {
-            return new SqlOrderbyClause(orderbyItems);
-        }
+        public static SqlOrderbyClause Create(ImmutableArray<SqlOrderByItem> orderbyItems) => new SqlOrderbyClause(orderbyItems);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

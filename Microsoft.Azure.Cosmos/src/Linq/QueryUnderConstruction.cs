@@ -378,10 +378,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return SqlSelectClause.Create(selValueReplacement, topSpec, selectClause.HasDistinct || inputSelectClause.HasDistinct);
                 }
 
-                throw new DocumentQueryException("Unexpected SQL select clause type: " + intoSpec.Kind);
+                throw new DocumentQueryException("Unexpected SQL select clause type: " + intoSpec.GetType());
             }
 
-            throw new DocumentQueryException("Unexpected SQL select clause type: " + selectSpec.Kind);
+            throw new DocumentQueryException("Unexpected SQL select clause type: " + selectSpec.GetType());
         }
 
         private SqlWhereClause Substitute(SqlSelectSpec spec, SqlIdentifier inputParam, SqlWhereClause whereClause)
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.Kind);
+            throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.GetType());
         }
 
         private SqlOrderbyClause Substitute(SqlSelectSpec spec, SqlIdentifier inputParam, SqlOrderbyClause orderByClause)
@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return result;
             }
 
-            throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.Kind);
+            throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.GetType());
         }
 
         /// <summary>
@@ -749,7 +749,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             SqlScalarExpression previousFilter = first.FilterExpression;
             SqlScalarExpression currentFilter = second.FilterExpression;
-            SqlBinaryScalarExpression and = SqlBinaryScalarExpression.Create(previousFilter, SqlBinaryScalarOperatorKind.And, currentFilter);
+            SqlBinaryScalarExpression and = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.And, previousFilter, currentFilter);
             SqlWhereClause result = SqlWhereClause.Create(and);
             return result;
         }

@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 items.Add(item.Accept(this) as SqlScalarExpression);
             }
 
-            return SqlArrayCreateScalarExpression.Create(items);
+            return SqlArrayCreateScalarExpression.Create(items.ToImmutableArray());
         }
 
         public override SqlObject Visit(SqlArrayIteratorCollectionExpression sqlArrayIteratorCollectionExpression)
@@ -72,16 +72,16 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             return SqlBetweenScalarExpression.Create(
                 sqlBetweenScalarExpression.Expression.Accept(this) as SqlScalarExpression,
-                sqlBetweenScalarExpression.Not,
                 sqlBetweenScalarExpression.StartInclusive.Accept(this) as SqlScalarExpression,
-                sqlBetweenScalarExpression.EndInclusive.Accept(this) as SqlScalarExpression);
+                sqlBetweenScalarExpression.EndInclusive.Accept(this) as SqlScalarExpression,
+                sqlBetweenScalarExpression.Not);
         }
 
         public override SqlObject Visit(SqlBinaryScalarExpression sqlBinaryScalarExpression)
         {
             return SqlBinaryScalarExpression.Create(
-                sqlBinaryScalarExpression.LeftExpression.Accept(this) as SqlScalarExpression,
                 sqlBinaryScalarExpression.OperatorKind,
+                sqlBinaryScalarExpression.LeftExpression.Accept(this) as SqlScalarExpression,
                 sqlBinaryScalarExpression.RightExpression.Accept(this) as SqlScalarExpression);
         }
 

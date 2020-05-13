@@ -12,13 +12,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(new ImmutableArray<SqlScalarExpression>());
 
         private SqlArrayCreateScalarExpression(ImmutableArray<SqlScalarExpression> items)
-            : base(SqlObjectKind.ArrayCreateScalarExpression)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException($"{nameof(items)} must not be null.");
-            }
-
             foreach (SqlScalarExpression item in items)
             {
                 if (item == null)
@@ -30,54 +24,24 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.Items = items;
         }
 
-        public ImmutableArray<SqlScalarExpression> Items
-        {
-            get;
-        }
+        public ImmutableArray<SqlScalarExpression> Items { get; }
 
-        public static SqlArrayCreateScalarExpression Create()
-        {
-            return SqlArrayCreateScalarExpression.Empty;
-        }
+        public static SqlArrayCreateScalarExpression Create() => SqlArrayCreateScalarExpression.Empty;
 
-        public static SqlArrayCreateScalarExpression Create(params SqlScalarExpression[] items)
-        {
-            return new SqlArrayCreateScalarExpression(items.ToImmutableArray());
-        }
+        public static SqlArrayCreateScalarExpression Create(params SqlScalarExpression[] items) => new SqlArrayCreateScalarExpression(items.ToImmutableArray());
 
-        public static SqlArrayCreateScalarExpression Create(IReadOnlyList<SqlScalarExpression> items)
-        {
-            return new SqlArrayCreateScalarExpression(items.ToImmutableArray());
-        }
+        public static SqlArrayCreateScalarExpression Create(ImmutableArray<SqlScalarExpression> items) => new SqlArrayCreateScalarExpression(items);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlScalarExpressionVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlScalarExpressionVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

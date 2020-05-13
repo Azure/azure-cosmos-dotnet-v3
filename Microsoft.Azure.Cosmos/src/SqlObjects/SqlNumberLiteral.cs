@@ -3,31 +3,25 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System.Collections.Immutable;
+    using System.Collections.Generic;
     using System.Linq;
 
     internal sealed class SqlNumberLiteral : SqlLiteral
     {
         private const int Capacity = 256;
-        private static readonly ImmutableDictionary<long, SqlNumberLiteral> FrequentLongs = Enumerable
+        private static readonly Dictionary<long, SqlNumberLiteral> FrequentLongs = Enumerable
             .Range(-Capacity, Capacity)
-            .ToDictionary(x => (long)x, x => new SqlNumberLiteral((long)x))
-            .ToImmutableDictionary();
-        private static readonly ImmutableDictionary<double, SqlNumberLiteral> FrequentDoubles = Enumerable
+            .ToDictionary(x => (long)x, x => new SqlNumberLiteral((long)x));
+        private static readonly Dictionary<double, SqlNumberLiteral> FrequentDoubles = Enumerable
             .Range(-Capacity, Capacity)
-            .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x))
-            .ToImmutableDictionary();
+            .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x));
 
         private SqlNumberLiteral(Number64 value)
-            : base(SqlObjectKind.NumberLiteral)
         {
             this.Value = value;
         }
 
-        public Number64 Value
-        {
-            get;
-        }
+        public Number64 Value { get; }
 
         public static SqlNumberLiteral Create(Number64 number64)
         {
@@ -50,29 +44,14 @@ namespace Microsoft.Azure.Cosmos.Sql
             return sqlNumberLiteral;
         }
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlLiteralVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlLiteralVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor) => visitor.Visit(this);
     }
 }

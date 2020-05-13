@@ -18,20 +18,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             .ToImmutableArray();
 
         private SqlLimitSpec(SqlScalarExpression limitExpression)
-            : base(SqlObjectKind.LimitSpec)
         {
-            if (limitExpression == null)
-            {
-                throw new ArgumentNullException(nameof(limitExpression));
-            }
-
-            this.LimitExpression = limitExpression;
+            this.LimitExpression = limitExpression ?? throw new ArgumentNullException(nameof(limitExpression));
         }
 
-        public SqlScalarExpression LimitExpression
-        {
-            get;
-        }
+        public SqlScalarExpression LimitExpression { get; }
 
         public static SqlLimitSpec Create(SqlNumberLiteral sqlNumberLiteral)
         {
@@ -69,19 +60,10 @@ namespace Microsoft.Azure.Cosmos.Sql
             return new SqlLimitSpec(sqlParameterRefScalarExpression);
         }
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }
