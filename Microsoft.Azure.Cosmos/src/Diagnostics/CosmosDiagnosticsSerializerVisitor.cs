@@ -8,10 +8,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal sealed class CosmosDiagnosticsSerializerVisitor : CosmosDiagnosticsInternalVisitor
     {
+        private const string DiagnosticsVersion = "2";
         private readonly JsonWriter jsonWriter;
 
         public CosmosDiagnosticsSerializerVisitor(TextWriter textWriter)
@@ -62,6 +64,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             this.jsonWriter.WriteStartObject();
 
+            this.jsonWriter.WritePropertyName("DiagnosticVersion");
+            this.jsonWriter.WriteValue(DiagnosticsVersion);
+
             this.jsonWriter.WritePropertyName("Summary");
             this.jsonWriter.WriteStartObject();
             this.jsonWriter.WritePropertyName("StartUtc");
@@ -69,14 +74,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             if (cosmosDiagnosticsContext.IsComplete())
             {
-                this.jsonWriter.WritePropertyName("RunningElapsedTime");
+                this.jsonWriter.WritePropertyName("TotalElapsedTimeInMs");
             }
             else
             {
-                this.jsonWriter.WritePropertyName("TotalElapsedTime");
+                this.jsonWriter.WritePropertyName("RunningElapsedTimeInMs");
             }
             
-            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetClientElapsedTime());
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetClientElapsedTime().TotalMilliseconds);
 
             this.jsonWriter.WritePropertyName("UserAgent");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserAgent);
@@ -111,14 +116,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             if (cosmosDiagnosticScope.IsComplete())
             {
-                this.jsonWriter.WritePropertyName("RunningElapsedTime");
+                this.jsonWriter.WritePropertyName("ElapsedTimeInMs");
             }
             else
             {
-                this.jsonWriter.WritePropertyName("ElapsedTime");
+                this.jsonWriter.WritePropertyName("RunningElapsedTimeInMs");
             }
 
-            this.jsonWriter.WriteValue(cosmosDiagnosticScope.GetElapsedTime());
+            this.jsonWriter.WriteValue(cosmosDiagnosticScope.GetElapsedTime().TotalMilliseconds);
 
             this.jsonWriter.WriteEndObject();
         }
@@ -138,6 +143,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             this.jsonWriter.WritePropertyName("IndexUtilization");
             this.jsonWriter.WriteValue(queryPageDiagnostics.IndexUtilizationText);
+
+            this.jsonWriter.WritePropertyName("ClientCorrelationId");
+            this.jsonWriter.WriteValue(queryPageDiagnostics.ClientCorrelationId);
 
             this.jsonWriter.WritePropertyName("Context");
             this.jsonWriter.WriteStartArray();
@@ -166,6 +174,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             if (addressResolutionStatistics.EndTime.HasValue)
             {
                 this.jsonWriter.WriteValue(addressResolutionStatistics.EndTime.Value.ToString("o", CultureInfo.InvariantCulture));
+
+                this.jsonWriter.WritePropertyName("ElapsedTimeInMs");
+                TimeSpan totaltime = addressResolutionStatistics.EndTime.Value - addressResolutionStatistics.StartTime;
+                this.jsonWriter.WriteValue(totaltime.TotalMilliseconds);
             }
             else
             {
@@ -185,8 +197,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("Id");
             this.jsonWriter.WriteValue("StoreResponseStatistics");
 
+            this.jsonWriter.WritePropertyName("StartTimeUtc");
+            if (storeResponseStatistics.RequestStartTime.HasValue)
+            {
+                this.jsonWriter.WriteValue(storeResponseStatistics.RequestStartTime.Value.ToString("o", CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                this.jsonWriter.WriteValue("Start time never set");
+            }
+
             this.jsonWriter.WritePropertyName("ResponseTimeUtc");
             this.jsonWriter.WriteValue(storeResponseStatistics.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
+
+            if (storeResponseStatistics.RequestStartTime.HasValue)
+            {
+                this.jsonWriter.WritePropertyName("ElapsedTimeInMs");
+                TimeSpan totaltime = storeResponseStatistics.RequestResponseTime - storeResponseStatistics.RequestStartTime.Value;
+                this.jsonWriter.WriteValue(totaltime.TotalMilliseconds);
+            }
 
             this.jsonWriter.WritePropertyName("ResourceType");
             this.jsonWriter.WriteValue(storeResponseStatistics.RequestResourceType.ToString());
@@ -225,6 +254,27 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteStartObject();
             this.jsonWriter.WritePropertyName("FeedRange");
             this.jsonWriter.WriteValue(feedRangeStatistics.FeedRange.ToString());
+            this.jsonWriter.WriteEndObject();
+        }
+
+        public override void Visit(RequestHandlerScope requestHandlerScope)
+        {
+            this.jsonWriter.WriteStartObject();
+
+            this.jsonWriter.WritePropertyName("Id");
+            this.jsonWriter.WriteValue(requestHandlerScope.Id);
+
+            if (requestHandlerScope.TryGetTotalElapsedTime(out TimeSpan handlerOnlyElapsedTime))
+            {
+                this.jsonWriter.WritePropertyName("HandlerElapsedTimeInMs");
+                this.jsonWriter.WriteValue(handlerOnlyElapsedTime.TotalMilliseconds);
+            }
+            else
+            {
+                this.jsonWriter.WritePropertyName("HandlerRunningElapsedTimeInMs");
+                this.jsonWriter.WriteValue(requestHandlerScope.GetCurrentElapsedTime());
+            }
+
             this.jsonWriter.WriteEndObject();
         }
 

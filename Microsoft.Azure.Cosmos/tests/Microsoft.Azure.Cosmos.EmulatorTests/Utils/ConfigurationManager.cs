@@ -14,18 +14,18 @@ namespace Microsoft.Azure.Cosmos.Utils
     /// </summary>
     internal static class ConfigurationManager
     {
-        const string GatewayEndpointSettingName = "GatewayEndpoint";
-        const string GatewayEndpointEnvironmentName = "COSMOSDBEMULATOR_ENDPOINT";
+        private const string GatewayEndpointSettingName = "GatewayEndpoint";
+        private const string GatewayEndpointEnvironmentName = "COSMOSDBEMULATOR_ENDPOINT";
 
         static ConfigurationManager()
         {
             AppSettings = new Dictionary<string, string>();
 
-            var builder = new ConfigurationBuilder()
+            IConfigurationBuilder builder = new ConfigurationBuilder()
                 .AddJsonFile($"settings.json", true, true);
 
-            var configuration = builder.Build();
-            foreach(var configurationSetting in configuration.GetSection("AppSettings").GetChildren())
+            IConfigurationRoot configuration = builder.Build();
+            foreach (IConfigurationSection configurationSetting in configuration.GetSection("AppSettings").GetChildren())
             {
                 string configurationValue = configurationSetting.Value;
                 if (string.Equals(GatewayEndpointSettingName, configurationSetting.Key))

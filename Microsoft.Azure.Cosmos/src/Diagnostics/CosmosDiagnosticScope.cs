@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         internal bool IsComplete()
         {
-            return this.ElapsedTimeStopWatch.IsRunning;
+            return !this.ElapsedTimeStopWatch.IsRunning;
         }
 
         public void Dispose()

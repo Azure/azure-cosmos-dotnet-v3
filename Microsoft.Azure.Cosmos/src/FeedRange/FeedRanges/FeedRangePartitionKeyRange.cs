@@ -6,9 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// FeedRange that represents a Partition Key Range.
@@ -44,7 +47,18 @@ namespace Microsoft.Azure.Cosmos
 
             if (pkRange == null)
             {
-                throw new InvalidOperationException($"The PartitionKeyRangeId: \"{this.PartitionKeyRangeId}\" is not valid for the current container {containerRid} .");
+                throw CosmosExceptionFactory.Create(
+                    statusCode: HttpStatusCode.Gone,
+                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                    message: $"The PartitionKeyRangeId: \"{this.PartitionKeyRangeId}\" is not valid for the current container {containerRid} .",
+                    stackTrace: string.Empty,
+                    activityId: string.Empty,
+                    requestCharge: 0,
+                    retryAfter: null,
+                    headers: null,
+                    diagnosticsContext: null,
+                    error: null,
+                    innerException: null);
             }
 
             return new List<Documents.Routing.Range<string>> { pkRange.ToRange() };
