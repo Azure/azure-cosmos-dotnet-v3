@@ -9,14 +9,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal abstract class SqlObject : IEquatable<SqlObject>
     {
-        protected SqlObject(SqlObjectKind kind)
+        protected SqlObject()
         {
-            this.Kind = kind;
-        }
-
-        public SqlObjectKind Kind
-        {
-            get;
         }
 
         public abstract void Accept(SqlObjectVisitor visitor);
@@ -25,15 +19,9 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public abstract TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input);
 
-        public override string ToString()
-        {
-            return this.Serialize(prettyPrint: false);
-        }
+        public override string ToString() => this.Serialize(prettyPrint: false);
 
-        public override int GetHashCode()
-        {
-            return this.Accept(SqlObjectHasher.Singleton);
-        }
+        public override int GetHashCode() => this.Accept(SqlObjectHasher.Singleton);
 
         public override bool Equals(object obj)
         {
@@ -45,21 +33,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             return this.Equals(sqlObject);
         }
 
-        public bool Equals(SqlObject other)
-        {
-            return SqlObject.Equals(this, other);
-        }
+        public bool Equals(SqlObject other) => SqlObject.Equals(this, other);
 
-        public string PrettyPrint()
-        {
-            return this.Serialize(prettyPrint: true);
-        }
+        public string PrettyPrint() => this.Serialize(prettyPrint: true);
 
-        public SqlObject GetObfuscatedObject()
-        {
-            SqlObjectObfuscator sqlObjectObfuscator = new SqlObjectObfuscator();
-            return this.Accept(sqlObjectObfuscator);
-        }
+        public SqlObject GetObfuscatedObject() => this.Accept(new SqlObjectObfuscator());
 
         private string Serialize(bool prettyPrint)
         {

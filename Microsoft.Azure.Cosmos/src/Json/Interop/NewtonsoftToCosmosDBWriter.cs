@@ -71,37 +71,37 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override void WriteFloat32Value(float value)
         {
-            throw new NotImplementedException();
+            this.writer.WriteValue(value);
         }
 
         public override void WriteFloat64Value(double value)
         {
-            throw new NotImplementedException();
+            this.writer.WriteValue(value);
         }
 
         public override void WriteGuidValue(Guid value)
         {
-            throw new NotImplementedException();
+            this.writer.WriteValue(value);
         }
 
         public override void WriteInt16Value(short value)
         {
-            throw new NotImplementedException();
+            this.writer.WriteValue(value);
         }
 
         public override void WriteInt32Value(int value)
         {
-            throw new NotImplementedException();
+            this.writer.WriteValue(value);
         }
 
         public override void WriteInt64Value(long value)
         {
-            throw new NotImplementedException();
+            this.writer.WriteValue(value);
         }
 
         public override void WriteInt8Value(sbyte value)
         {
-            throw new NotImplementedException();
+            this.writer.WriteValue(value);
         }
 
         public override void WriteNullValue()
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override void WriteUInt32Value(uint value)
         {
-            throw new NotImplementedException();
+            this.writer.WriteValue(value);
         }
 
         protected override void WriteRawJsonToken(

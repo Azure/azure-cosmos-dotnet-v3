@@ -579,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<UserProperties> queryResults = await this.ToListAsync(
                     database.GetUserQueryStreamIterator,
                     database.GetUserQueryIterator<UserProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")",
+                    "SELECT * FROM T where STARTSWITH(T.id, \"BasicQueryUser\")",
                     CosmosBasicQueryTests.RequestOptions
                 );
 

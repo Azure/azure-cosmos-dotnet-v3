@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.Alias, second.Alias))
+            if (!Equals(first.Identifier, second.Identifier))
             {
                 return false;
             }
@@ -104,17 +104,17 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.IsNot != second.IsNot)
+            if (first.Not != second.Not)
             {
                 return false;
             }
 
-            if (!Equals(first.LeftExpression, second.LeftExpression))
+            if (!Equals(first.StartInclusive, second.StartInclusive))
             {
                 return false;
             }
 
-            if (!Equals(first.RightExpression, second.RightExpression))
+            if (!Equals(first.EndInclusive, second.EndInclusive))
             {
                 return false;
             }
@@ -169,12 +169,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.LeftExpression, second.LeftExpression))
+            if (!Equals(first.Left, second.Left))
             {
                 return false;
             }
 
-            if (!Equals(first.RightExpression, second.RightExpression))
+            if (!Equals(first.Right, second.Right))
             {
                 return false;
             }
@@ -189,17 +189,17 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.ConditionExpression, second.ConditionExpression))
+            if (!Equals(first.Condition, second.Condition))
             {
                 return false;
             }
 
-            if (!Equals(first.FirstExpression, second.FirstExpression))
+            if (!Equals(first.Consequent, second.Consequent))
             {
                 return false;
             }
 
-            if (!Equals(first.SecondExpression, second.SecondExpression))
+            if (!Equals(first.Alternative, second.Alternative))
             {
                 return false;
             }
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.SqlQuery, second.SqlQuery))
+            if (!Equals(first.Subquery, second.Subquery))
             {
                 return false;
             }
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.Expression, second.Expression))
+            if (!Equals(first.Needle, second.Needle))
             {
                 return false;
             }
@@ -354,12 +354,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.Items.Count != second.Items.Count)
-            {
-                return false;
-            }
-
-            if (!SequenceEquals(first.Items, second.Items))
+            if (!SequenceEquals(first.Haystack, second.Haystack))
             {
                 return false;
             }
@@ -374,12 +369,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.LeftExpression, second.LeftExpression))
+            if (!Equals(first.Left, second.Left))
             {
                 return false;
             }
 
-            if (!Equals(first.RightExpression, second.RightExpression))
+            if (!Equals(first.Right, second.Right))
             {
                 return false;
             }
@@ -395,21 +390,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
 
             return Equals(first.LimitExpression, second.LimitExpression);
-        }
-
-        public override bool Visit(SqlLiteralArrayCollection first, SqlObject secondAsObject)
-        {
-            if (!(secondAsObject is SqlLiteralArrayCollection second))
-            {
-                return false;
-            }
-
-            if (!SequenceEquals(first.Items, second.Items))
-            {
-                return false;
-            }
-
-            return true;
         }
 
         public override bool Visit(SqlLiteralScalarExpression first, SqlObject secondAsObject)
@@ -429,12 +409,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.MemberExpression, second.MemberExpression))
+            if (!Equals(first.Member, second.Member))
             {
                 return false;
             }
 
-            if (!Equals(first.IndexExpression, second.IndexExpression))
+            if (!Equals(first.Indexer, second.Indexer))
             {
                 return false;
             }
@@ -519,7 +499,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.Expression, second.Expression))
+            if (!Equals(first.Value, second.Value))
             {
                 return false;
             }
@@ -664,7 +644,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.PropertyIdentifier, second.PropertyIdentifier))
+            if (!Equals(first.Identifer, second.Identifer))
             {
                 return false;
             }
