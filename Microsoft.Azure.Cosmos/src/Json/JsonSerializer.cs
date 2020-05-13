@@ -12,14 +12,14 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal static class Serializer
+    internal static class JsonSerializer
     {
         public static ReadOnlyMemory<byte> Serialize(
             object value,
             JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
         {
-            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat, skipValidation: false);
-            Serializer.SerializeInternal(value, jsonWriter);
+            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            JsonSerializer.SerializeInternal(value, jsonWriter);
             return jsonWriter.GetResult();
         }
 
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                     foreach (object arrayItem in enumerableValue)
                     {
-                        Serializer.SerializeInternal(arrayItem, jsonWriter);
+                        JsonSerializer.SerializeInternal(arrayItem, jsonWriter);
                     }
 
                     jsonWriter.WriteArrayEnd();
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         jsonWriter.WriteFieldName(propertyInfo.Name);
                         object propertyValue = propertyInfo.GetValue(value);
-                        Serializer.SerializeInternal(propertyValue, jsonWriter);
+                        JsonSerializer.SerializeInternal(propertyValue, jsonWriter);
                     }
 
                     jsonWriter.WriteObjectEnd();
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static T Deserialize<T>(ReadOnlyMemory<byte> buffer)
         {
-            TryCatch<T> tryDeserialize = Serializer.Monadic.Deserialize<T>(buffer);
+            TryCatch<T> tryDeserialize = JsonSerializer.Monadic.Deserialize<T>(buffer);
             tryDeserialize.ThrowIfFailed();
             return tryDeserialize.Result;
         }
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryDeserialize<T>(ReadOnlyMemory<byte> buffer, out T result)
         {
-            TryCatch<T> tryDeserialize = Serializer.Monadic.Deserialize<T>(buffer);
+            TryCatch<T> tryDeserialize = JsonSerializer.Monadic.Deserialize<T>(buffer);
             return TryCatch<T>.ConvertToTryGet<T>(tryDeserialize, out result);
         }
 

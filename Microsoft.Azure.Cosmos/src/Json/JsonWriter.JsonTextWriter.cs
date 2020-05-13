@@ -93,9 +93,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Initializes a new instance of the JsonTextWriter class.
             /// </summary>
-            /// <param name="skipValidation">Whether or not to skip validation</param>
-            public JsonTextWriter(bool skipValidation)
-                : base(skipValidation)
+            public JsonTextWriter()
             {
                 this.firstValue = true;
                 this.jsonTextMemoryWriter = new JsonTextMemoryWriter();
