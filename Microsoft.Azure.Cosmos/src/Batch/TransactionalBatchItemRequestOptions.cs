@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
             batchItemRequestOptions.EnableContentResponseOnWrite = itemRequestOptions.EnableContentResponseOnWrite;
             batchItemRequestOptions.EnableContentResponseOnRead = itemRequestOptions.EnableContentResponseOnRead;
             batchItemRequestOptions.IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting;
+            batchItemRequestOptions.CustomRequestHeaders = itemRequestOptions.CustomRequestHeaders;
+
             return batchItemRequestOptions;
         }
     }

@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Provided headers are the final values for the headers.
         /// </summary>
         /// <remarks>
-        /// Only Cosmos service supported reqeust headers will be sent to service, others might get discarded.
+        /// Only Cosmos service supported request headers will be sent to service, others might get discarded.
         /// </remarks>
 #if PREVIEW
         public

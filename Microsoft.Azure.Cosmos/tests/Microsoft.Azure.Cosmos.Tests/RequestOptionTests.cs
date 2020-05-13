@@ -16,10 +16,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CustomHeadersTests()
         {
-            string customHearName = "custom-header1";
+            string customHeaderName = "custom-header1";
             string customHeaderValue = "value1";
             ImmutableDictionary<string, string>.Builder builder = ImmutableDictionary.CreateBuilder<string, string>();
-            builder.Add(customHearName, customHeaderValue);
+            builder.Add(customHeaderName, customHeaderValue);
 
             RequestOptions ro = new RequestOptions();
             ro.CustomRequestHeaders = builder.ToImmutable();
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage message = new RequestMessage();
             ro.PopulateRequestOptions(message);
 
-            Assert.IsTrue(message.Headers.TryGetValue(customHearName, out string headerValue));
+            Assert.IsTrue(message.Headers.TryGetValue(customHeaderName, out string headerValue));
             Assert.AreEqual(customHeaderValue, headerValue);
         }
     }

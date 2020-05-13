@@ -1748,7 +1748,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CustomHeaderItemReqeuestOptionsTest()
         {
-            string customHearName = "custom-header1";
+            string customHeaderName = "custom-header1";
             string customHeaderValue = "value1";
 
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
@@ -1761,7 +1761,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                if (resourceOperation.resourceType == ResourceType.Document &&
                                     resourceOperation.operationType == OperationType.Create)
                                {
-                                   string value = request.Headers.Get(customHearName);
+                                   string value = request.Headers.Get(customHeaderName);
 
                                    Assert.IsNotNull(value);
                                    Assert.AreEqual(customHeaderValue, value);
@@ -1774,7 +1774,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
 
             ImmutableDictionary<string, string>.Builder customHeaderBuilder = ImmutableDictionary.CreateBuilder<string, string>();
-            customHeaderBuilder.Add(customHearName, customHeaderValue);
+            customHeaderBuilder.Add(customHeaderName, customHeaderValue);
 
             ItemRequestOptions ro = new ItemRequestOptions();
             ro.CustomRequestHeaders = customHeaderBuilder.ToImmutable();
