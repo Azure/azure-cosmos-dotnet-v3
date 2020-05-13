@@ -58,7 +58,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
-                    false,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);

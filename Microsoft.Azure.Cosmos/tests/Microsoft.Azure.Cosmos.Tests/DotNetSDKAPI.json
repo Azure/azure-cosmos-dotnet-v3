@@ -1023,12 +1023,26 @@
           ],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Int32] AnalyticalStoreTimeToLiveInSeconds[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"analyticalStorageTtl\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
+        },
         "System.Nullable`1[System.Int32] DefaultTimeToLive[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"defaultTtl\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
+        },
+        "System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds()"
         },
         "System.Nullable`1[System.Int32] get_DefaultTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1113,6 +1127,13 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor(System.String, System.String)"
+        },
+        "Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32])"
         },
         "Void set_ConflictResolutionPolicy(Microsoft.Azure.Cosmos.ConflictResolutionPolicy)": {
           "Type": "Method",
@@ -3376,6 +3397,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()"
+        },
         "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3397,6 +3430,13 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+        },
+        "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])"
         },
         "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -4849,6 +4889,18 @@
               "Attributes": [],
               "MethodInfo": null
             },
+            "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()"
+            },
             "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
@@ -4870,6 +4922,13 @@
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+            },
+            "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])"
             },
             "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -5159,10 +5218,29 @@
               "Attributes": [],
               "MethodInfo": null
             },
+            "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()"
+            },
             "Void .ctor()": {
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "Void .ctor()"
+            },
+            "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])"
             },
             "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -7873,10 +7951,29 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()"
+        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
+        },
+        "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])"
         },
         "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

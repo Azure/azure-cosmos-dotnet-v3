@@ -19,6 +19,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal : FeedIterator
     {
-        public abstract CosmosElement GetCosmsoElementContinuationToken();
+        public abstract CosmosElement GetCosmosElementContinuationToken();
     }
 }

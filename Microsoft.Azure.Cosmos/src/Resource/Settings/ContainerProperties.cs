@@ -304,13 +304,15 @@ namespace Microsoft.Azure.Cosmos
         public string TimeToLivePropertyPath { get; set; }
 
         /// <summary>
-        /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
+        /// Gets or sets the default time to live in seconds for item in a container from the Azure Cosmos service.
         /// </summary>
         /// <value>
         /// It is an optional property.
-        /// A valid value must be either a nonzero positive timespan or <c>null</c>.
-        /// By default, DefaultTimeToLive is set to null meaning the time to live is turned off for the container.
+        /// 
         /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
+        /// A valid value must be either a nonzero positive integer, '-1' or <c>null</c>.
+        /// 
+        /// By default, DefaultTimeToLive is set to null meaning the time to live is turned off for the container.
         /// </value>
         /// <remarks>
         /// <para>
@@ -345,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
         /// The example below enables time-to-live on a container. By default, all the items never expire.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.DefaultTimeToLive = TimeSpan.FromDays(2);
+        ///     container.DefaultTimeToLive = -1;
         /// ]]>
         /// </code>
         /// </example>
@@ -354,12 +356,71 @@ namespace Microsoft.Azure.Cosmos
         /// since its last write time.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.DefaultTimeToLive = TimeSpan.FromSeconds(1000);
+        ///     container.DefaultTimeToLive = 1000;
         /// ]]>
         /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
         public int? DefaultTimeToLive { get; set; }
+
+        /// <summary>
+        /// Gets or sets the time to live for analytical store in seconds at container scope for the Azure Cosmos service.
+        ///
+        /// Analytical store when enabled captures all the item changes in the container. AnalyticalStoreTimeToLiveInSeconds
+        /// defines the time to live for the changes in analytical store.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// 
+        /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
+        /// A valid value must be either a nonzero positive integer, '-1' or <c>null</c>.
+        /// 
+        /// By default, AnalyticalStoreTimeToLiveInSeconds is set to null meaning analytical store is turned-off.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is applicable to all the item changes in the container.
+        /// It cannot be overriden or customizable per item.
+        /// </para>
+        /// <para>
+        /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is <c>null</c> analytical store is turned-off.
+        /// It means all the item changes in the container are disregarded.
+        /// </para>
+        /// <para>
+        /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is '-1', all the items changes will be captured
+        /// by analytical store and will never expire. 
+        /// </para>
+        /// <para>
+        /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is a nonzero positive integer, all the items
+        /// changes will be captured by analytical store and expired after the specified time to live. 
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// The example below disables analytical store on a container.
+        /// <code language="c#">
+        /// <![CDATA[
+        ///     container.AnalyticalStoreTimeToLiveInSeconds = null;
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The example below enables analytical store on container capturing all changes and never expire.
+        /// <code language="c#">
+        /// <![CDATA[
+        ///     container.AnalyticalStoreTimeToLiveInSeconds = -1;
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The example below enables analytical store on container capturing all changes and expire after 180days.
+        /// <code language="c#">
+        /// <![CDATA[
+        ///     container.AnalyticalStoreTimeToLiveInSeconds = (int)TimeSpan.FromDays(6 * 30).TotalSeconds;
+        /// ]]>
+        /// </code>
+        /// </example>
+        [JsonProperty(PropertyName = Constants.Properties.AnalyticalStorageTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
+        public int? AnalyticalStoreTimeToLiveInSeconds { get; set; }
 
         /// <summary>
         /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
