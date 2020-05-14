@@ -94,6 +94,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.SerializerCore.ToStream(testItem), partitionKey: new Cosmos.PartitionKey(testItem.status));
             Assert.IsNotNull(response);
             Assert.IsTrue((response.Content as MemoryStream).TryGetBuffer(out _));
+            FeedIterator feedIteratorQuery = this.Container.GetItemQueryStreamIterator(queryText: "SELECT * FROM c");
+
+            while (feedIteratorQuery.HasMoreResults)
+            {
+                ResponseMessage feedResponseQuery = await feedIteratorQuery.ReadNextAsync();
+                Assert.IsTrue((feedResponseQuery.Content as MemoryStream).TryGetBuffer(out _));
+            }
+
+            FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(requestOptions: new QueryRequestOptions()
+            {
+                PartitionKey = new Cosmos.PartitionKey(testItem.status)
+            });
+
+            while (feedIterator.HasMoreResults)
+            {
+                ResponseMessage feedResponse = await feedIterator.ReadNextAsync();
+                Assert.IsTrue((feedResponse.Content as MemoryStream).TryGetBuffer(out _));
+            }
         }
 
         [TestMethod]
