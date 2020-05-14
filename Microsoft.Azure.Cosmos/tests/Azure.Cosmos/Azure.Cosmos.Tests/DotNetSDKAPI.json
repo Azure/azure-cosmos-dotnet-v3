@@ -1055,17 +1055,17 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[System.Int32] DefaultTimeToLive": {
+        "System.Nullable`1[System.Int32] DefaultTimeToLiveInSeconds": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[System.Int32] get_DefaultTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.Int32] get_DefaultTimeToLiveInSeconds()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Nullable`1[System.Int32] get_DefaultTimeToLive()"
+          "MethodInfo": "System.Nullable`1[System.Int32] get_DefaultTimeToLiveInSeconds()"
         },
         "System.String get_Id()": {
           "Type": "Method",
@@ -1102,12 +1102,12 @@
           "Attributes": [],
           "MethodInfo": "Void set_ConflictResolutionPolicy(Azure.Cosmos.ConflictResolutionPolicy)"
         },
-        "Void set_DefaultTimeToLive(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_DefaultTimeToLiveInSeconds(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_DefaultTimeToLive(System.Nullable`1[System.Int32])"
+          "MethodInfo": "Void set_DefaultTimeToLiveInSeconds(System.Nullable`1[System.Int32])"
         },
         "Void set_Id(System.String)": {
           "Type": "Method",
@@ -1975,15 +1975,10 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithIndexingPolicy()"
         },
-        "T WithDefaultTimeToLive(Int32)": {
+        "T WithDefaultTimeToLiveInSeconds(Int32)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "T WithDefaultTimeToLive(Int32)"
-        },
-        "T WithDefaultTimeToLive(System.TimeSpan)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T WithDefaultTimeToLive(System.TimeSpan)"
+          "MethodInfo": "T WithDefaultTimeToLiveInSeconds(Int32)"
         },
         "T WithPartitionKeyDefinitionVersion(Azure.Cosmos.PartitionKeyDefinitionVersion)": {
           "Type": "Method",
