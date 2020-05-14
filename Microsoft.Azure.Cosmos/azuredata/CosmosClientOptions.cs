@@ -90,7 +90,11 @@ namespace Azure.Cosmos
         public string ApplicationName
         {
             get => this.UserAgentContainer.Suffix;
-            set => this.UserAgentContainer.Suffix = value;
+            set
+            {
+                this.UserAgentContainer.Suffix = value;
+                this.Diagnostics.ApplicationId = value;
+            }
         }
 
         /// <summary>
