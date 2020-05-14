@@ -110,17 +110,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(resourceUri));
             }
 
-            // DEVNOTE: Non-Item operations need to be refactored to always pass
-            // the diagnostic context in. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1276
-            IDisposable overallScope = null;
+            bool disposeDiagnosticsContext = false;
             if (diagnosticsContext == null)
             {
-                diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                overallScope = diagnosticsContext.GetOverallScope();
+                diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions, nameof(RequestInvokerHandler));
+                disposeDiagnosticsContext = true;
             }
 
-            using (overallScope)
-            { 
+            try
+            {
                 HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
                 RequestMessage request = new RequestMessage(
                         method,
@@ -171,6 +169,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 requestEnricher?.Invoke(request);
                 return await this.SendAsync(request, cancellationToken);
+            }
+            finally
+            {
+                if (disposeDiagnosticsContext)
+                {
+                    diagnosticsContext.Dispose();
+                }
             }
         }
 

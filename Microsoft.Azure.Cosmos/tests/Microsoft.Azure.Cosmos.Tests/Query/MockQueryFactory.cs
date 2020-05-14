@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 correlatedActivityId: Guid.NewGuid(),
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
-                diagnosticsContext: new CosmosDiagnosticsContextCore(),
+                diagnosticsContext: new CosmosDiagnosticsContextCore(nameof(MockQueryFactory)),
                 containerResourceId: DefaultCollectionRid);
         }
 

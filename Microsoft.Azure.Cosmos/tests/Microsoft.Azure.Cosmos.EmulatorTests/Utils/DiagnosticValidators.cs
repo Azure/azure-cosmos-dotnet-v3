@@ -54,7 +54,11 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent.ToString(), new UserAgentContainer().UserAgent.ToString(), "User agent not set");
             Assert.IsTrue(cosmosDiagnosticsContext.TotalRequestCount > 0, "No request found");
             Assert.IsTrue(cosmosDiagnosticsContext.IsComplete(), "OverallClientRequestTime should be stopped");
-            Assert.IsTrue(cosmosDiagnosticsContext.GetClientElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
+            Assert.IsTrue(cosmosDiagnosticsContext.TryGetClientTotalElapsedTime(out TimeSpan elapsedTime));
+            Assert.IsTrue(elapsedTime > TimeSpan.Zero, "OverallClientRequestTime should have time.");
+            Assert.IsTrue(cosmosDiagnosticsContext.TryGetClientTotalElapsedTime(out TimeSpan elapsedTimeChangeCheck));
+            Assert.AreEqual(elapsedTime, elapsedTimeChangeCheck, "The total elapsed time should not change");
+            Assert.IsTrue(cosmosDiagnosticsContext.GetClientElapsedTime() > elapsedTime);
 
             string info = cosmosDiagnosticsContext.ToString();
             Assert.IsNotNull(info);
@@ -65,27 +69,35 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreNotEqual(summary["UserAgent"].ToString(), new UserAgentContainer().UserAgent);
             Assert.IsNotNull(summary["StartUtc"].ToString());
             Assert.IsNotNull(summary["TotalElapsedTimeInMs"].ToString());
+            string changeCheck = cosmosDiagnosticsContext.ToString();
+            Assert.AreEqual(info, changeCheck);
         }
 
         private static void ValidateScope(CosmosDiagnosticScope scope, TimeSpan? totalElapsedTime)
         {
             Assert.IsFalse(string.IsNullOrWhiteSpace(scope.Id));
-            Assert.IsTrue(scope.TryGetElapsedTime(out TimeSpan elapsedTime));
-            Assert.IsTrue(elapsedTime > TimeSpan.Zero);
+            Assert.IsTrue(scope.TryGetTotalElapsedTime(out TimeSpan scopeTotalElapsedTime));
+            Assert.IsTrue(scopeTotalElapsedTime > TimeSpan.Zero);
 
             if (totalElapsedTime.HasValue)
             {
-                Assert.IsTrue(elapsedTime <= totalElapsedTime, $"Scope should not have larger time than the entire context. Scope: {elapsedTime} Total: {totalElapsedTime.Value}");
+                Assert.IsTrue(scopeTotalElapsedTime <= totalElapsedTime, $"RequestHandlerScope should not have larger time than the entire context. Scope: {totalElapsedTime} Total: {totalElapsedTime.Value}");
             }
 
             string info = scope.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info.ToString());
             Assert.IsNotNull(jObject["Id"].ToString());
+
             string elapsedTimeFromJson = jObject["ElapsedTimeInMs"].ToString();
             Assert.IsNotNull(elapsedTimeFromJson);
             double elapsedInMs = double.Parse(elapsedTimeFromJson);
             Assert.IsTrue(elapsedInMs > 0);
+
+            string startTimeFromJson = jObject["StartTimeInMs"].ToString();
+            Assert.IsNotNull(startTimeFromJson);
+            double startInMs = double.Parse(startTimeFromJson);
+            Assert.IsTrue(startInMs > 0);
         }
 
         private static void ValidateRequestHandlerScope(RequestHandlerScope scope, TimeSpan? totalElapsedTime)
@@ -103,6 +115,12 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info.ToString());
             Assert.IsNotNull(jObject["Id"].ToString());
+
+            string startTimeFromJson = jObject["StartTimeInMs"].ToString();
+            Assert.IsNotNull(startTimeFromJson);
+            double startInMs = double.Parse(startTimeFromJson);
+            Assert.IsTrue(startInMs > 0);
+
             string elapsedTimeFromJson = jObject["HandlerElapsedTimeInMs"].ToString();
             Assert.IsNotNull(elapsedTimeFromJson);
             double elapsedInMs = double.Parse(elapsedTimeFromJson);

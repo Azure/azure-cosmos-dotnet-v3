@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions = new QueryRequestOptions();
             }
 
-            CosmosDiagnosticsContext queryPipelineCreationDiagnostics = CosmosDiagnosticsContext.Create(queryRequestOptions);
+            CosmosDiagnosticsContext queryPipelineCreationDiagnostics = CosmosDiagnosticsContext.Create(queryRequestOptions, nameof(QueryIterator));
 
             CosmosQueryContextCore cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
@@ -134,14 +134,16 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnostics.GetOverallScope())
+            using (CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions, nameof(QueryIterator)))
             {
                 // This catches exception thrown by the pipeline and converts it to QueryResponse
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
 
                 // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
-                diagnostics.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
+                using (CosmosDiagnosticsContext context = this.cosmosQueryContext.GetAndResetDiagnostics())
+                {
+                    diagnostics.AddDiagnosticsInternal(context);
+                }
 
                 if (responseCore.IsSuccess)
                 {

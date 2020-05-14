@@ -213,20 +213,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">Options that apply to the batch. Used only for EPK routing.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
-        public virtual Task<TransactionalBatchResponse> ExecuteAsync(
+        public async virtual Task<TransactionalBatchResponse> ExecuteAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-            BatchExecutor executor = new BatchExecutor(
-                container: this.container,
-                partitionKey: this.partitionKey,
-                operations: this.operations,
-                batchOptions: requestOptions,
-                diagnosticsContext: diagnosticsContext);
+            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions, nameof(BatchCore.ExecuteAsync)))
+            {
+                BatchExecutor executor = new BatchExecutor(
+                    container: this.container,
+                    partitionKey: this.partitionKey,
+                    operations: this.operations,
+                    batchOptions: requestOptions,
+                    diagnosticsContext: diagnosticsContext);
 
-            this.operations = new List<ItemBatchOperation>();
-            return executor.ExecuteAsync(cancellationToken);
+                this.operations = new List<ItemBatchOperation>();
+                return await executor.ExecuteAsync(cancellationToken);
+            }  
         }
 
         /// <summary>

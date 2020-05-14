@@ -11,8 +11,10 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
     /// </summary>
-    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
+    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>, IDisposable
     {
+        public abstract string OperationName { get; }
+
         public abstract DateTime StartUtc { get; }
 
         public abstract int TotalRequestCount { get; protected set; }
@@ -23,13 +25,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosDiagnostics Diagnostics { get; }
 
-        internal abstract IDisposable GetOverallScope();
-
         internal abstract IDisposable CreateScope(string name);
 
         internal abstract IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler);
 
         internal abstract TimeSpan GetClientElapsedTime();
+
+        internal abstract bool TryGetClientTotalElapsedTime(out TimeSpan timeSpan);
 
         internal abstract bool IsComplete();
 
@@ -56,9 +58,11 @@ namespace Microsoft.Azure.Cosmos
             return this.GetEnumerator();
         }
 
-        internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
+        internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions, string operationName)
         {
-            return requestOptions?.DiagnosticContextFactory?.Invoke() ?? new CosmosDiagnosticsContextCore();
+            return requestOptions?.DiagnosticContextFactory?.Invoke() ?? new CosmosDiagnosticsContextCore(operationName);
         }
+
+        public abstract void Dispose();
     }
 }

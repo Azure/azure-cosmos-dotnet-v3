@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     ETag = "ShouldNotContainThis"
                 },
                 cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"),
-                diagnostics: new CosmosDiagnosticsContextCore());
+                diagnostics: new CosmosDiagnosticsContextCore(nameof(ChangeFeedResultSetIteratorTests)));
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
                 It.IsAny<Uri>(),

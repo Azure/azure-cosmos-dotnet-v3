@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class BatchOperationResultTests
     {
-        static readonly CosmosDiagnosticsContext CosmosDiagnostics = new CosmosDiagnosticsContextCore();
+        static readonly CosmosDiagnosticsContext CosmosDiagnostics = new CosmosDiagnosticsContextCore(nameof(BatchOperationResultTests));
         static TransactionalBatchOperationResult CreateTestResult() => new TransactionalBatchOperationResult(HttpStatusCode.Unused)
         {
             SubStatusCode = Documents.SubStatusCodes.CanNotAcquireOfferOwnerLock,

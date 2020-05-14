@@ -21,13 +21,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Detailed view of all the operations.
         /// </summary>
-        private List<CosmosDiagnosticsInternal> ContextList { get; }
+        private readonly List<CosmosDiagnosticsInternal> ContextList;
 
         private static readonly string DefaultUserAgentString;
 
-        private readonly CosmosDiagnosticScope overallScope;
+        private readonly Stopwatch Stopwatch;
+
+        private TimeSpan? TotalElapsedTime = null;
 
         private bool IsDefaultUserAgent = true;
+
+        private bool IsDisposed = false;
 
         static CosmosDiagnosticsContextCore()
         {
@@ -36,12 +40,13 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContextCore.DefaultUserAgentString = userAgentContainer.UserAgent;
         }
 
-        public CosmosDiagnosticsContextCore()
+        public CosmosDiagnosticsContextCore(string operationName)
         {
             this.StartUtc = DateTime.UtcNow;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
             this.Diagnostics = new CosmosDiagnosticsCore(this);
-            this.overallScope = new CosmosDiagnosticScope("Overall");
+            this.Stopwatch = Stopwatch.StartNew();
+            this.OperationName = operationName ?? throw new ArgumentNullException(nameof(operationName));
         }
 
         public override DateTime StartUtc { get; }
@@ -54,24 +59,32 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosDiagnostics Diagnostics { get; }
 
+        public override string OperationName { get; }
+
         internal override TimeSpan GetClientElapsedTime()
         {
-            return this.overallScope.GetElapsedTime();
+            return this.Stopwatch.Elapsed;
+        }
+
+        internal override bool TryGetClientTotalElapsedTime(out TimeSpan timeSpan)
+        {
+            if (this.TotalElapsedTime.HasValue)
+            {
+                timeSpan = this.TotalElapsedTime.Value;
+                return true;
+            }
+
+            return false;
         }
 
         internal override bool IsComplete()
         {
-            return this.overallScope.IsComplete();
-        }
-
-        internal override IDisposable GetOverallScope()
-        {
-            return this.overallScope;
+            return this.IsDisposed;
         }
 
         internal override IDisposable CreateScope(string name)
         {
-            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
+            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name, () => this.Stopwatch.Elapsed);
 
             this.ContextList.Add(scope);
             return scope;
@@ -79,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
-            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
+            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler, () => this.Stopwatch.Elapsed);
             this.ContextList.Add(requestHandlerScope);
             return requestHandlerScope;
         }
@@ -193,6 +206,15 @@ namespace Microsoft.Azure.Cosmos
 
             this.TotalRequestCount += newContext.TotalRequestCount;
             this.FailedRequestCount += newContext.FailedRequestCount;
+        }
+
+        public override void Dispose()
+        {
+            if (!this.IsDisposed)
+            {
+                this.TotalElapsedTime = this.Stopwatch.Elapsed;
+                this.IsDisposed = true;
+            }
         }
     }
 }

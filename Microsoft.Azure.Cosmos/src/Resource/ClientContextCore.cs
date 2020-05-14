@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
-            CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore(nameof(GetCachedContainerPropertiesAsync));
             ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
             try
             {

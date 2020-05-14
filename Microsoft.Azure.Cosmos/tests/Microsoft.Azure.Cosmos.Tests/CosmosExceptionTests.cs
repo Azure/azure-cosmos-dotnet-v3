@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
                 
             };
 
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore(nameof(CosmosExceptionTests));
 
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
                 error.ToString(),
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             string message)
         {
-            exception.DiagnosticsContext.GetOverallScope().Dispose();
+            exception.DiagnosticsContext.Dispose();
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));

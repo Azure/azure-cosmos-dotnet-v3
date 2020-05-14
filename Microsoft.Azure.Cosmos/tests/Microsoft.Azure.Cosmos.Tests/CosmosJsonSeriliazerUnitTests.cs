@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                     disallowContinuationTokenMessage: null,
                     resourceType: Documents.ResourceType.Document,
                     "+o4fAPfXPzw="),
-                new CosmosDiagnosticsContextCore(),
+                new CosmosDiagnosticsContextCore(nameof(CosmosJsonSeriliazerUnitTests)),
                 null);
 
             return cosmosResponse;

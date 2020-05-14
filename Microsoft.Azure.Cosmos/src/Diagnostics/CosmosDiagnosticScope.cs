@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
-    using System.Diagnostics;
 
     /// <summary>
     /// This represents a single scope in the diagnostics.
@@ -14,37 +13,42 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     /// </summary>
     internal sealed class CosmosDiagnosticScope : CosmosDiagnosticsInternal, IDisposable
     {
-        private readonly Stopwatch ElapsedTimeStopWatch;
+        private readonly Func<TimeSpan> getContextElapsedTime;
         private bool isDisposed = false;
+        private TimeSpan? TotalElapsedTime = null;
 
         public CosmosDiagnosticScope(
-            string name)
+            string name,
+            Func<TimeSpan> getContextElapsedTime)
         {
             this.Id = name;
-            this.ElapsedTimeStopWatch = Stopwatch.StartNew();
+            this.getContextElapsedTime = getContextElapsedTime;
+            this.StartTime = getContextElapsedTime();
         }
 
         public string Id { get; }
 
-        public bool TryGetElapsedTime(out TimeSpan elapsedTime)
+        public TimeSpan StartTime { get; }
+
+        public bool TryGetTotalElapsedTime(out TimeSpan timeSpan)
         {
-            if (!this.isDisposed)
+            if (this.TotalElapsedTime.HasValue)
             {
-                return false;
+                timeSpan = this.TotalElapsedTime.Value;
+                return true;
             }
 
-            elapsedTime = this.ElapsedTimeStopWatch.Elapsed;
-            return true;
+            return false;
         }
 
-        internal TimeSpan GetElapsedTime()
+        public TimeSpan GetCurrentElapsedTime()
         {
-            return this.ElapsedTimeStopWatch.Elapsed;
-        }
+            if (this.TotalElapsedTime.HasValue)
+            {
+                return this.TotalElapsedTime.Value;
+            }
 
-        internal bool IsComplete()
-        {
-            return !this.ElapsedTimeStopWatch.IsRunning;
+            return this.getContextElapsedTime() - this.StartTime;
         }
 
         public void Dispose()
@@ -54,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return;
             }
 
-            this.ElapsedTimeStopWatch.Stop();
+            this.TotalElapsedTime = this.getContextElapsedTime() - this.StartTime;
             this.isDisposed = true;
         }
 

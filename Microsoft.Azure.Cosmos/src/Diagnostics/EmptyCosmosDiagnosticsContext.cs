@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class EmptyCosmosDiagnosticsContext : CosmosDiagnosticsContext
     {
         private static readonly IReadOnlyList<CosmosDiagnosticsInternal> EmptyList = new List<CosmosDiagnosticsInternal>();
-        private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope");
+        private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope", () => TimeSpan.Zero);
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
 
         private static readonly DateTime DefaultStartUtc = DateTime.MinValue;
@@ -35,10 +35,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosDiagnostics Diagnostics { get; }
 
-        internal override IDisposable GetOverallScope()
-        {
-            return EmptyCosmosDiagnosticsContext.DefaultScope;
-        }
+        public override string OperationName => "EmptyCosmosDiagnosticsContext";
 
         internal override IDisposable CreateScope(string name)
         {
@@ -104,6 +101,15 @@ namespace Microsoft.Azure.Cosmos
         internal override bool IsComplete()
         {
             return true;
+        }
+
+        internal override bool TryGetClientTotalElapsedTime(out TimeSpan timeSpan)
+        {
+            return false;
+        }
+
+        public override void Dispose()
+        {
         }
     }
 }

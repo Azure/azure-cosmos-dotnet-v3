@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             double requestCharge = 42;
             string activityId = Guid.NewGuid().ToString();
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore(nameof(QueryResponseMessageFactory));
             diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore(nameof(QueryResponseMessageFactory));
             diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage)
         {
             string acitivityId = Guid.NewGuid().ToString();
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore(nameof(QueryResponseMessageFactory));
             diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                 acitivityId,
                 System.Net.HttpStatusCode.Gone,

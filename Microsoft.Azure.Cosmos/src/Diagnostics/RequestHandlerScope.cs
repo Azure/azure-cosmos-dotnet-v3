@@ -5,14 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
-    using System.Diagnostics;
 
     internal sealed class RequestHandlerScope : CosmosDiagnosticsInternal, IDisposable
     {
-        private readonly Stopwatch ElapsedTimeStopWatch;
+        private readonly Func<TimeSpan> getContextElapsedTime;
         private bool isDisposed = false;
+        private TimeSpan? TotalElapsedTime = null;
 
-        public RequestHandlerScope(RequestHandler handler)
+        public RequestHandlerScope(
+            RequestHandler handler,
+            Func<TimeSpan> getContextElapsedTime)
         {
             if (handler == null)
             {
@@ -20,30 +22,33 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.Id = handler.GetType().FullName;
-            this.ElapsedTimeStopWatch = Stopwatch.StartNew();
+            this.getContextElapsedTime = getContextElapsedTime;
+            this.StartTime = getContextElapsedTime();
         }
 
         public string Id { get; }
 
-        public bool TryGetTotalElapsedTime(out TimeSpan elapsedTime)
+        public TimeSpan StartTime { get; }
+
+        public bool TryGetTotalElapsedTime(out TimeSpan timeSpan)
         {
-            if (!this.isDisposed)
+            if (this.TotalElapsedTime.HasValue)
             {
-                return false;
+                timeSpan = this.TotalElapsedTime.Value;
+                return true;
             }
 
-            elapsedTime = this.ElapsedTimeStopWatch.Elapsed;
-            return true;
+            return false;
         }
 
-        internal TimeSpan GetCurrentElapsedTime()
+        public TimeSpan GetCurrentElapsedTime()
         {
-            return this.ElapsedTimeStopWatch.Elapsed;
-        }
+            if (this.TotalElapsedTime.HasValue)
+            {
+                return this.TotalElapsedTime.Value;
+            }
 
-        internal bool IsComplete()
-        {
-            return !this.ElapsedTimeStopWatch.IsRunning;
+            return this.getContextElapsedTime() - this.StartTime;
         }
 
         public void Dispose()
@@ -53,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return;
             }
 
-            this.ElapsedTimeStopWatch.Stop();
+            this.TotalElapsedTime = this.getContextElapsedTime() - this.StartTime;
             this.isDisposed = true;
         }
 

@@ -148,7 +148,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(responseCreator));
             }
 
-            ResponseMessage response = await requestHandler.SendAsync(
+            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions, nameof(ExecUtils)))
+            {
+                ResponseMessage response = await requestHandler.SendAsync(
                 resourceUri,
                 resourceType,
                 operationType,
@@ -160,7 +162,8 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 cancellationToken);
 
-            return responseCreator(response);
+                return responseCreator(response);
+            }
         }
     }
 }

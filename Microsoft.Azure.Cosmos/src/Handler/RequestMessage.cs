@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore(nameof(RequestMessage));
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Method = method;
             this.RequestUri = requestUri;
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore(nameof(RequestMessage));
         }
 
         /// <summary>

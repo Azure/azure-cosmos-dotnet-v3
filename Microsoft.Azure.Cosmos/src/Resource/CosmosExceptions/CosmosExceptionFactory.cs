@@ -38,6 +38,10 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 httpStatusCode = HttpStatusCode.InternalServerError;
             }
 
+            // The request statistics are included in the CosmosException
+            // This removes the diagnostics from DocumentClientException.Message
+            dce.RequestStatistics = null;
+
             return CosmosExceptionFactory.Create(
                 httpStatusCode,
                 (int)dce.GetSubStatus(),

@@ -44,33 +44,30 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            using (this.diagnosticsContext.GetOverallScope())
+            BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
+
+            foreach (ItemBatchOperation operation in this.inputOperations)
             {
-                BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
-
-                foreach (ItemBatchOperation operation in this.inputOperations)
-                {
-                    operation.DiagnosticsContext = this.diagnosticsContext;
-                }
-
-                PartitionKey? serverRequestPartitionKey = this.partitionKey;
-                if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
-                {
-                    serverRequestPartitionKey = null;
-                }
-
-                SinglePartitionKeyServerBatchRequest serverRequest;
-                using (this.diagnosticsContext.CreateScope("CreateBatchRequest"))
-                {
-                    serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                          serverRequestPartitionKey,
-                          new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
-                          this.clientContext.SerializerCore,
-                          cancellationToken);
-                }
-
-                return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
+                operation.DiagnosticsContext = this.diagnosticsContext;
             }
+
+            PartitionKey? serverRequestPartitionKey = this.partitionKey;
+            if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
+            {
+                serverRequestPartitionKey = null;
+            }
+
+            SinglePartitionKeyServerBatchRequest serverRequest;
+            using (this.diagnosticsContext.CreateScope("CreateBatchRequest"))
+            {
+                serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                      serverRequestPartitionKey,
+                      new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
+                      this.clientContext.SerializerCore,
+                      cancellationToken);
+            }
+
+            return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
         }
 
         /// <summary>
