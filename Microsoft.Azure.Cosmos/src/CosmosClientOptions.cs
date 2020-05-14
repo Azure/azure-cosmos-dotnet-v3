@@ -205,18 +205,17 @@ namespace Microsoft.Azure.Cosmos
         /// the same request will be issued for a maximum of 10 times to the server before
         /// an error is returned to the application. If the value of this property is set to 0,
         /// there will be no automatic retry on rate limiting requests from the client and the exception
-        /// needs to handled at the application level.
-        /// For an example on how to set this value, please refer to <see cref="ConnectionPolicy.RetryOptions"/>.
+        /// needs to be handled at the application level.
         /// </value>
         /// <remarks>
         /// <para>
         /// When a client is sending requests faster than the allowed rate,
-        /// the service will return HttpStatusCode 429 (Too Many Request) to rate limit the client. The current
+        /// the service will return HttpStatusCode 429 (Too Many Requests) to rate limit the client. The current
         /// implementation in the SDK will then wait for the amount of time the service tells it to wait and
         /// retry after the time has elapsed.
         /// </para>
         /// <para>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips#throughput">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
@@ -226,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the maximum retry time in seconds for the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// The default value is 30 seconds. For an example on how to set this value, please refer to <see cref="ConnectionPolicy.RetryOptions"/>.
+        /// The default value is 30 seconds. 
         /// </value>
         /// <remarks>
         /// <para>
@@ -234,12 +233,12 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// When a request fails due to a rate limiting error, the service sends back a response that
-        /// contains a value indicating the client should not retry before the <see cref="Microsoft.Azure.Documents.DocumentClientException.RetryAfter"/> time period has
+        /// contains a value indicating the client should not retry before the <see cref="Microsoft.Azure.Cosmos.CosmosException.RetryAfter"/> time period has
         /// elapsed. This property allows the application to set a maximum wait time for all retry attempts.
         /// If the cumulative wait time exceeds the this value, the client will stop retrying and return the error to the application.
         /// </para>
         /// <para>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips#throughput">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
