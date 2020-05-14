@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -18,6 +19,9 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
+        private static readonly byte StartArray = Encoding.UTF8.GetBytes("[")[0];
+        private static readonly byte EndArray = Encoding.UTF8.GetBytes("]")[0];
+
         protected ReadFeedResponse(
             HttpStatusCode httpStatusCode,
             CosmosArray cosmosArray,
@@ -99,41 +103,32 @@ namespace Microsoft.Azure.Cosmos
                     return readFeedResponse;
                 }
 
-                List<TInput> items = new List<TInput>();
+                List<TInput> items = null;
                 if (responseMessage.Content != null)
                 {
-                    using (JsonDocument jDoc = JsonDocument.Parse(responseMessage.Content))
+                    MemoryStream memoryStream = (MemoryStream)responseMessage.Content;
+                    ReadOnlyMemory<byte> content;
+                    if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
                     {
-                        foreach (JsonProperty property in jDoc.RootElement.EnumerateObject())
-                        {
-                            if (property.Value.ValueKind == JsonValueKind.Array)
-                            {
-                                byte[] rented = ArrayPool<byte>.Shared.Rent((int)responseMessage.Content.Length);
-                                int written = 0;
-                                try
-                                {
-                                    using (MemoryStream memory = new MemoryStream(rented, 0, rented.Length, true, true))
-                                    {
-                                        using (Utf8JsonWriter jsonWriter = new Utf8JsonWriter(memory))
-                                        {
-                                            property.Value.WriteTo(jsonWriter);
-                                        }
-
-                                        written = (int)memory.Position;
-                                        memory.Position = 0;
-                                        items = serializerCore.FromStream<List<TInput>>(memory);
-                                    }
-                                }
-                                finally
-                                {
-                                    rented.AsSpan(0, written).Clear();
-                                    ArrayPool<byte>.Shared.Return(rented);
-                                }
-
-                                break;
-                            }
-                        }
+                        content = buffer;
                     }
+                    else
+                    {
+                        content = memoryStream.ToArray();
+                    }
+
+                    int start = GetArrayStartPosition(content);
+                    int end = GetArrayEndPosition(content);
+
+                    ReadOnlyMemory<byte> spanwithOnlyArray = content.Slice(start, end - start + 1);
+                    if (!MemoryMarshal.TryGetArray(spanwithOnlyArray, out ArraySegment<byte> resultAsArray))
+                    {
+                        resultAsArray = new ArraySegment<byte>(spanwithOnlyArray.ToArray());
+                    }
+
+                    MemoryStream arrayOnlyStream = new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count);
+                    arrayOnlyStream.Position = 0;
+                    items = serializerCore.FromStream<List<TInput>>(arrayOnlyStream);
                 }
 
                 return new ReadFeedResponse<TInput>(
@@ -142,6 +137,34 @@ namespace Microsoft.Azure.Cosmos
                         responseMessageHeaders: responseMessage.Headers,
                         diagnostics: responseMessage.Diagnostics);
             }
+        }
+
+        private static int GetArrayStartPosition(ReadOnlyMemory<byte> memoryByte)
+        {
+            ReadOnlySpan<byte> span = memoryByte.Span;
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (span[i] == StartArray)
+                {
+                    return i;
+                }
+            }
+
+            throw new ArgumentException("ArrayStart not found");
+        }
+
+        private static int GetArrayEndPosition(ReadOnlyMemory<byte> memoryByte)
+        {
+            ReadOnlySpan<byte> span = memoryByte.Span;
+            for (int i = span.Length - 1; i < span.Length; i--)
+            {
+                if (span[i] == EndArray)
+                {
+                    return i;
+                }
+            }
+
+            throw new ArgumentException("ArrayEnd not found");
         }
     }
 }

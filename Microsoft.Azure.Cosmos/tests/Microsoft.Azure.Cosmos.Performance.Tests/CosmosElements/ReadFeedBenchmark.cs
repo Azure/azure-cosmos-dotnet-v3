@@ -109,7 +109,7 @@
         }
 
         [Benchmark]
-        public void SystemTextJson()
+        public void ParseByteArrayJson()
         {
             using (MemoryStream ms = new MemoryStream(this.payloadBytes))
             {
