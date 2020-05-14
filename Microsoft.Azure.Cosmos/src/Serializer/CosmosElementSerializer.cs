@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 resultAsArray = new ArraySegment<byte>(result.ToArray());
             }
 
-            return new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count);
+            return new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count, writable: false, publiclyVisible: true);
         }
 
         internal static IEnumerable<T> GetResources<T>(

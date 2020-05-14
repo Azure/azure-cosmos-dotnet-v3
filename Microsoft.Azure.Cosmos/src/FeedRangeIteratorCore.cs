@@ -219,11 +219,12 @@ namespace Microsoft.Azure.Cosmos
                 MemoryStream rewrittenMemoryStream;
                 if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
                 {
-                    rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count);
+                    rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
                 }
                 else
                 {
-                    rewrittenMemoryStream = new MemoryStream(result.ToArray());
+                    byte[] toArray = result.ToArray();
+                    rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
                 }
 
                 responseMessage.Content = rewrittenMemoryStream;
