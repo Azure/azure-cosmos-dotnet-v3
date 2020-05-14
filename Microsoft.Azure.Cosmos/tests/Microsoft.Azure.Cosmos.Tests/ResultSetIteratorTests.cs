@@ -129,8 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             IEnumerable<ConflictProperties> response = CosmosFeedResponseSerializer.FromFeedResponseStream<ConflictProperties>(
                 MockCosmosUtil.Serializer,
-                streamResponse.Content,
-                ResourceType.Conflict);
+                streamResponse.Content);
 
             Assert.AreEqual(1, response.Count());
 

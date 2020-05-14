@@ -120,8 +120,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             {
                 asFeedResponse = CosmosFeedResponseSerializer.FromFeedResponseStream<T>(
                     this.serializerCore,
-                    response.Content,
-                    Documents.ResourceType.Document);
+                    response.Content);
             }
             catch (Exception serializationException)
             {

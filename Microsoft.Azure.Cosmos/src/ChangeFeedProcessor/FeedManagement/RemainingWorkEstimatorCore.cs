@@ -177,8 +177,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
             return CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(
                 CosmosContainerExtensions.DefaultJsonSerializer,
-                response.Content,
-                ResourceType.Document);
+                response.Content);
         }
 
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)

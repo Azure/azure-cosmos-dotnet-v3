@@ -60,8 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     responseMessage.EnsureSuccessStatusCode();
                     leases.AddRange(CosmosFeedResponseSerializer.FromFeedResponseStream<DocumentServiceLeaseCore>(
                         CosmosContainerExtensions.DefaultJsonSerializer,
-                        responseMessage.Content,
-                        Documents.ResourceType.Document));
+                        responseMessage.Content));
                 }   
             }
 

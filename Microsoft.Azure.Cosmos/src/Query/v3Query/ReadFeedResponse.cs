@@ -44,8 +44,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
             ResponseMessage responseMessage,
-            CosmosSerializerCore serializerCore,
-            Documents.ResourceType resourceType)
+            CosmosSerializerCore serializerCore)
         {
             using (responseMessage)
             {
@@ -55,14 +54,9 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.EnsureSuccessStatusCode();
                 }
 
-                IReadOnlyList<TInput> resources = null;
-                if (responseMessage.Content != null)
-                {
-                    resources = CosmosFeedResponseSerializer.FromFeedResponseStream<TInput>(
+                IReadOnlyList<TInput> resources = CosmosFeedResponseSerializer.FromFeedResponseStream<TInput>(
                         serializerCore,
-                        responseMessage.Content,
-                        resourceType);
-                }
+                        responseMessage.Content);
 
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     httpStatusCode: responseMessage.StatusCode,

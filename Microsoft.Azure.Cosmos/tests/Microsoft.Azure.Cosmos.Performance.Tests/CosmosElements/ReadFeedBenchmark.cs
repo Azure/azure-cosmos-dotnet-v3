@@ -115,8 +115,7 @@
             using (MemoryStream ms = new MemoryStream(this.payloadBytes))
             {
                 using (MemoryStream memoryStream = CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(
-                    ms,
-                    Documents.ResourceType.Document))
+                    ms))
                 {
                     if (ms.Length == memoryStream.Length)
                     {
