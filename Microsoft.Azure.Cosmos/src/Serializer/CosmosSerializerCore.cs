@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -59,6 +60,12 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosSerializer serializer = this.GetSerializer<T>();
             return serializer.FromStream<T>(stream);
+        }
+
+        internal IReadOnlyList<T> FromFeedStream<T>(Stream stream)
+        {
+            CosmosSerializer serializer = this.GetSerializer<T>();
+            return serializer.FromStream<List<T>>(stream);
         }
 
         internal Stream ToStream<T>(T input)

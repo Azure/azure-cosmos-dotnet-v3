@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
                 using (MemoryStream stream = GetStreamWithoutServiceEnvelope(
                                 streamWithServiceEnvelope))
                 {
-                    return serializerCore.FromStream<List<T>>(stream);
+                    return serializerCore.FromFeedStream<T>(stream);
                 }
             }
         }
