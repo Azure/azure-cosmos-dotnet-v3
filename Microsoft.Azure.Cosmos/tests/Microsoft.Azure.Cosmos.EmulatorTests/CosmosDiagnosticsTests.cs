@@ -70,13 +70,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JArray contextList = jObject["Context"].ToObject<JArray>();
             JObject customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
             Assert.IsNotNull(customHandler);
-            TimeSpan elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(elapsedTime.TotalSeconds > 1);
+            double elapsedTime = customHandler["HandlerElapsedTimeInMs"].ToObject<double>();
+            Assert.IsTrue(elapsedTime > 1);
 
             customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
             Assert.IsNotNull(customHandler);
-            elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(elapsedTime > delayTime);
+            elapsedTime = customHandler["HandlerElapsedTimeInMs"].ToObject<double>();
+            Assert.IsTrue(elapsedTime > delayTime.TotalMilliseconds);
 
             await databaseResponse.Database.DeleteAsync();
         }
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(createItemsTasks);
 
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
-            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
+            FeedIterator changeFeedIterator = ((ContainerInternal)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
             {
                 using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())
@@ -325,15 +325,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 perPKItemCount: 1,
                 randomPartitionKey: true);
 
-            ContainerCore containerCore = (ContainerInlineCore)this.Container;
+            ContainerInternal containerCore = (ContainerInlineCore)this.Container;
             MockCosmosQueryClient gatewayQueryPlanClient = new MockCosmosQueryClient(
                    clientContext: containerCore.ClientContext,
                    cosmosContainerCore: containerCore,
                    forceQueryPlanGatewayElseServiceInterop: true);
 
-            Container gatewayQueryPlanContainer = new ContainerCore(
+            Container gatewayQueryPlanContainer = new ContainerInlineCore(
                 containerCore.ClientContext,
-                (DatabaseCore)containerCore.Database,
+                (DatabaseInternal)containerCore.Database,
                 containerCore.Id,
                 gatewayQueryPlanClient);
 

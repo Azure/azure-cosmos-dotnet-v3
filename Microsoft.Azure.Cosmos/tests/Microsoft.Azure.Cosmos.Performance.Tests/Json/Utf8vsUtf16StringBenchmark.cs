@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: Utf8vsUtf16StringBenchmarkGenerator.tt: 16
+// This is auto-generated code. Modify: Utf8vsUtf16StringBenchmark.tt: 16
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 {
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                     case JsonTokenType.String:
                         if (useUtf8)
                         {
-                            if (!jsonReader.TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue))
+                            if (!jsonReader.TryGetBufferedStringValue(out Utf8Memory value))
                             {
                                 throw new InvalidOperationException("Failed to get utf8 string.");
                             }
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             private Payload(
                 ReadOnlyMemory<byte> text,
                 ReadOnlyMemory<byte> binary,
-                ReadOnlyMemory<byte> utf8StringToken,
+                Utf8Memory utf8StringToken,
                 string utf16StringToken)
             {
                 this.Text = text;
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 
             public ReadOnlyMemory<byte> Binary { get; }
 
-            public ReadOnlyMemory<byte> Utf8StringToken { get; }
+            public Utf8Memory Utf8StringToken { get; }
 
             public string Utf16StringToken { get; }
 
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                 return new Payload(
                     text: text, 
                     binary: binary,
-                    utf8StringToken: Encoding.UTF8.GetBytes(stringValue),
+                    utf8StringToken: Utf8Memory.UnsafeCreateNoValidation(Encoding.UTF8.GetBytes(stringValue)),
                     utf16StringToken: stringValue);
             }
         }

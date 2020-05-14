@@ -268,6 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionedQueryExecutionInfo: null,
                 executionEnvironment: queryRequestOptions?.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: true,
+                forcePassthrough: false,
                 testInjections: queryRequestOptions?.TestSettings);
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
@@ -361,6 +362,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics(
+                    Guid.NewGuid(),
                     "0",
                     "SomeQueryMetricText",
                     "SomeIndexUtilText",

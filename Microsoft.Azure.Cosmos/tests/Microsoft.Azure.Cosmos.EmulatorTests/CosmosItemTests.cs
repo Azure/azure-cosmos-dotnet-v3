@@ -58,11 +58,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public void ParentResourceTest()
+        {
+            Assert.AreEqual(this.database, this.Container.Database);
+            Assert.AreEqual(this.cosmosClient, this.Container.Database.Client);
+        }
+
+        [TestMethod]
         public async Task CreateDropItemTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
             Assert.IsNotNull(response);
+            Assert.IsNotNull(response.Resource);
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
@@ -86,6 +94,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.SerializerCore.ToStream(testItem), partitionKey: new Cosmos.PartitionKey(testItem.status));
             Assert.IsNotNull(response);
             Assert.IsTrue((response.Content as MemoryStream).TryGetBuffer(out _));
+            FeedIterator feedIteratorQuery = this.Container.GetItemQueryStreamIterator(queryText: "SELECT * FROM c");
+
+            while (feedIteratorQuery.HasMoreResults)
+            {
+                ResponseMessage feedResponseQuery = await feedIteratorQuery.ReadNextAsync();
+                Assert.IsTrue((feedResponseQuery.Content as MemoryStream).TryGetBuffer(out _));
+            }
+
+            FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(requestOptions: new QueryRequestOptions()
+            {
+                PartitionKey = new Cosmos.PartitionKey(testItem.status)
+            });
+
+            while (feedIterator.HasMoreResults)
+            {
+                ResponseMessage feedResponse = await feedIterator.ReadNextAsync();
+                Assert.IsTrue((feedResponse.Content as MemoryStream).TryGetBuffer(out _));
+            }
         }
 
         [TestMethod]
@@ -274,14 +300,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
-            ContainerCore testContainer = (ContainerInlineCore)client.GetContainer(dbName, containerName);
+            ContainerInternal testContainer = (ContainerInlineCore)client.GetContainer(dbName, containerName);
 
             int loopCount = 2;
             for (int i = 0; i < loopCount; i++)
             {
                 try
                 {
-                    await testContainer.GetNonePartitionKeyValueAsync();
+                    await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
                     Assert.Fail();
                 }
                 catch (CosmosException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
@@ -299,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetNonePartitionKeyValueAsync();
+                await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
             }
 
             // expected once post create 
@@ -763,7 +789,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
 
                 Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
-                JsonSerializer serializer = new JsonSerializer();
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
 
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -1032,7 +1058,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemEpkQuerySingleKeyRangeValidation()
         {
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            ContainerCore container = null;
+            ContainerInternal container = null;
             try
             {
                 // Create a container large enough to have at least 2 partitions
@@ -1314,7 +1340,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadNonPartitionItemAsync()
         {
-            ContainerCore fixedContainer = null;
+            ContainerInternal fixedContainer = null;
             try
             {
                 fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -1444,7 +1470,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task MigrateDataInNonPartitionContainer()
         {
-            ContainerCore fixedContainer = null;
+            ContainerInternal fixedContainer = null;
             try
             {
                 fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -1665,7 +1691,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string containerName = Guid.NewGuid().ToString();
 
                 db1 = await cc1.CreateDatabaseAsync(dbName);
-                ContainerCore container1 = (ContainerInlineCore)await db1.CreateContainerAsync(containerName, "/id");
+                ContainerInternal container1 = (ContainerInlineCore)await db1.CreateContainerAsync(containerName, "/id");
 
                 await operation(container1, HttpStatusCode.OK);
 

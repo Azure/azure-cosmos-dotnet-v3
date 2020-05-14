@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosQueryClientCoreTest : BaseCosmosClientHelper
     {
-        private ContainerCore Container = null;
+        private ContainerInternal Container = null;
         private CosmosQueryClientCore queryClientCore = null;
 
         [TestInitialize]

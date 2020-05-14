@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                ContainerCore containerCore = (ContainerInlineCore)container;
+                ContainerInternal containerCore = (ContainerInlineCore)container;
 
                 foreach (bool isGatewayQueryPlan in new bool[] { true, false })
                 {
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         containerCore,
                         isGatewayQueryPlan);
 
-                    ContainerCore containerWithForcedPlan = new ContainerCore(
+                    ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
                         containerCore.ClientContext,
                         (DatabaseCore)containerCore.Database,
                         containerCore.Id,
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
-            ContainerCore conatinerCore = (ContainerInlineCore)container;
+            ContainerInternal conatinerCore = (ContainerInlineCore)container;
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
@@ -356,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         string continuationToken = null;
                         do
                         {
-                            ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
+                            ContainerInternal.TryExecuteQueryResult tryExecuteQueryResult = await conatinerCore.TryExecuteQueryAsync(
                                 supportedQueryFeatures: queryFeatures,
                                 queryDefinition: new QueryDefinition(query),
                                 requestOptions: new QueryRequestOptions()
@@ -367,14 +367,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 feedRangeInternal: null,
                                 continuationToken: continuationToken);
 
-                            Assert.AreEqual(canSupportExpected, canSupportActual);
                             if (canSupportExpected)
                             {
-                                ResponseMessage cosmosQueryResponse = await queryIterator.ReadNextAsync();
-                                continuationToken = cosmosQueryResponse.ContinuationToken;
+                                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanIsSupportedResult);
+                            }
+                            else
+                            {
+                                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanNotSupportedResult);
                             }
 
-                            Assert.IsNotNull(partitionedQueryExecutionInfo);
+                            if (canSupportExpected)
+                            {
+                                ContainerInternal.QueryPlanIsSupportedResult queryPlanIsSupportedResult = (ContainerInternal.QueryPlanIsSupportedResult)tryExecuteQueryResult;
+                                ResponseMessage cosmosQueryResponse = await queryPlanIsSupportedResult.QueryIterator.ReadNextAsync();
+                                continuationToken = cosmosQueryResponse.ContinuationToken;
+                            }
                         } while (continuationToken != null);
                     }
                 }
@@ -382,18 +389,37 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             {
                 // Test the syntax error case
-                ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
-                                supportedQueryFeatures: QueryFeatures.None,
-                                queryDefinition: new QueryDefinition("This is not a valid query."),
-                                requestOptions: new QueryRequestOptions()
-                                {
-                                    MaxConcurrency = 1,
-                                    MaxItemCount = 1,
-                                },
-                                feedRangeInternal: null,
-                                continuationToken: null);
+                ContainerInternal.TryExecuteQueryResult tryExecuteQueryResult = await conatinerCore.TryExecuteQueryAsync(
+                    supportedQueryFeatures: QueryFeatures.None,
+                    queryDefinition: new QueryDefinition("This is not a valid query."),
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 1,
+                        MaxItemCount = 1,
+                    },
+                    feedRangeInternal: null,
+                    continuationToken: null);
 
-                Assert.IsNotNull(exception);
+                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.FailedToGetQueryPlanResult);
+            }
+
+            {
+                // Test that the force passthrough mechanism works
+                ContainerInternal.TryExecuteQueryResult tryExecuteQueryResult = await conatinerCore.TryExecuteQueryAsync(
+                    supportedQueryFeatures: QueryFeatures.None, // Not supporting any features
+                    queryDefinition: new QueryDefinition("SELECT VALUE [{\"item\": {\"sum\": SUM(c.blah), \"count\": COUNT(c.blah)}}] FROM c"), // Query has aggregates
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 1,
+                        MaxItemCount = 1,
+                    },
+                    feedRangeInternal: new FeedRangePartitionKeyRange("0"), // filtering on a PkRangeId.
+                    continuationToken: null);
+
+                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanIsSupportedResult);
+                ContainerInternal.QueryPlanIsSupportedResult queryPlanIsSupportedResult = (ContainerInternal.QueryPlanIsSupportedResult)tryExecuteQueryResult;
+                ResponseMessage response = await queryPlanIsSupportedResult.QueryIterator.ReadNextAsync();
+                Assert.IsTrue(response.IsSuccessStatusCode, response.ErrorMessage);
             }
         }
 
@@ -415,22 +441,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             await this.TestMalformedPipelinedContinuationTokenRunner(
                 container: container,
                 queryText: "SELECT * FROM c",
-                continuationToken: notJsonContinuationToken,
-                expectedResponseMessageError: $"Response status code does not indicate success: BadRequest (400); Substatus: 0; ActivityId: ; Reason: (Malformed Continuation Token: {notJsonContinuationToken});");
+                continuationToken: notJsonContinuationToken);
 
-            string validJsonInvalidFormatContinuationToken = @"{""range"":{""min"":""05C189CD6732"",""max"":""05C18F5D153C""}";
+            string validJsonInvalidFormatContinuationToken = @"{""range"":{""min"":""05C189CD6732"",""max"":""05C18F5D153C""}}";
             await this.TestMalformedPipelinedContinuationTokenRunner(
                 container: container,
                 queryText: "SELECT * FROM c",
-                continuationToken: validJsonInvalidFormatContinuationToken,
-                expectedResponseMessageError: $"Response status code does not indicate success: BadRequest (400); Substatus: 0; ActivityId: ; Reason: (Malformed Continuation Token: {validJsonInvalidFormatContinuationToken});");
+                continuationToken: validJsonInvalidFormatContinuationToken);
         }
 
         private async Task TestMalformedPipelinedContinuationTokenRunner(
             Container container,
             string queryText,
-            string continuationToken,
-            string expectedResponseMessageError)
+            string continuationToken)
         {
             {
                 // Malformed continuation token
@@ -440,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 ResponseMessage cosmosQueryResponse = await itemStreamQuery.ReadNextAsync();
                 Assert.AreEqual(HttpStatusCode.BadRequest, cosmosQueryResponse.StatusCode);
                 string errorMessage = cosmosQueryResponse.ErrorMessage;
-                Assert.AreEqual(expectedResponseMessageError, errorMessage);
+                Assert.IsTrue(errorMessage.Contains(continuationToken));
             }
 
             // Malformed continuation token
@@ -458,7 +481,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 Assert.IsNotNull(ce);
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
-                Assert.IsTrue(message.StartsWith($"Microsoft.Azure.Cosmos.CosmosException : {expectedResponseMessageError}"));
+                Assert.IsTrue(message.Contains(continuationToken));
                 string diagnostics = ce.Diagnostics.ToString();
                 Assert.IsNotNull(diagnostics);
             }

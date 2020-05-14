@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract void Visit(SqlInScalarExpression sqlObject);
         public abstract void Visit(SqlLimitSpec sqlObject);
         public abstract void Visit(SqlJoinCollectionExpression sqlObject);
-        public abstract void Visit(SqlLiteralArrayCollection sqlObject);
         public abstract void Visit(SqlLiteralScalarExpression sqlObject);
         public abstract void Visit(SqlMemberIndexerScalarExpression sqlObject);
         public abstract void Visit(SqlNullLiteral sqlObject);
@@ -78,7 +77,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlInScalarExpression sqlObject);
         public abstract TResult Visit(SqlLimitSpec sqlObject);
         public abstract TResult Visit(SqlJoinCollectionExpression sqlObject);
-        public abstract TResult Visit(SqlLiteralArrayCollection sqlObject);
         public abstract TResult Visit(SqlLiteralScalarExpression sqlObject);
         public abstract TResult Visit(SqlMemberIndexerScalarExpression sqlObject);
         public abstract TResult Visit(SqlNullLiteral sqlObject);
@@ -132,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TOutput Visit(SqlInScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlJoinCollectionExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlLimitSpec sqlObject, TArg input);
-        public abstract TOutput Visit(SqlLiteralArrayCollection sqlObject, TArg input);
         public abstract TOutput Visit(SqlLiteralScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlMemberIndexerScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlNullLiteral sqlObject, TArg input);

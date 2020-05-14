@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [SDK.EmulatorTests.TestClass]
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestMethod]
         public async Task GetTargetPartitionKeyRangesAsyncWithFeedRange()
         {
-            ContainerCore container = null;
+            ContainerInternal container = null;
             try
             {
                 // Create a container large enough to have at least 2 partitions
@@ -79,9 +80,39 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        public async Task InexistentPKRangeId()
+        {
+            ContainerInternal container = null;
+            try
+            {
+                // Create a container large enough to have at least 2 partitions
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+                container = (ContainerInlineCore)containerResponse;
+
+                string feedRangeSerialization = JsonConvert.SerializeObject(new { PKRangeId = "10" });
+                FeedRange feedRange = FeedRange.FromJsonString(feedRangeSerialization);
+
+                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                        queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
+                        feedRange: feedRange,
+                        continuationToken: null);
+
+                CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => feedIterator.ReadNextAsync());
+                Assert.AreEqual(HttpStatusCode.Gone, exception.StatusCode);
+                Assert.AreEqual((int)Documents.SubStatusCodes.PartitionKeyRangeGone, exception.SubStatusCode);
+            }
+            finally
+            {
+                await container?.DeleteContainerAsync();
+            }
+        }
+
+        [TestMethod]
         public async Task ParallelizeQueryThroughTokens()
         {
-            ContainerCore container = null;
+            ContainerInternal container = null;
             try
             {
                 // Create a container large enough to have at least 2 partitions
@@ -114,7 +145,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
                 {
                     List<string> results = new List<string>();
-                    FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
+                    FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(
+                        queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
+                        feedRange: feedToken,
+                        continuationToken: null,
+                        requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
                     string continuation = null;
                     while (feedIterator.HasMoreResults)
                     {
@@ -176,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestMethod]
         public async Task ParallelizeQueryThroughTokens_OfT()
         {
-            ContainerCore container = null;
+            ContainerInternal container = null;
             try
             {
                 // Create a container large enough to have at least 2 partitions

@@ -6,9 +6,13 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -21,14 +25,14 @@ namespace Microsoft.Azure.Cosmos
     {
         internal readonly FeedRangeInternal FeedRangeInternal;
         internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
-        private readonly ContainerCore containerCore;
+        private readonly ContainerInternal containerCore;
         private readonly CosmosClientContext clientContext;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private bool hasMoreResultsInternal;
 
         public static FeedRangeIteratorCore Create(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             FeedRangeInternal feedRangeInternal,
             string continuation,
             QueryRequestOptions options)
@@ -65,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         /// For unit tests
         /// </summary>
         internal FeedRangeIteratorCore(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             FeedRangeContinuation feedRangeContinuation,
             QueryRequestOptions options)
             : this(containerCore, feedRangeContinuation.FeedRange, options)
@@ -74,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private FeedRangeIteratorCore(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions options)
             : this(containerCore, options)
@@ -83,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private FeedRangeIteratorCore(
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             QueryRequestOptions options)
         {
             this.containerCore = containerCore ?? throw new ArgumentNullException(nameof(containerCore));
@@ -150,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.containerCore.LinkUri,
                resourceType: ResourceType.Document,
                operationType: OperationType.ReadFeed,
@@ -167,22 +171,75 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
-            ShouldRetryResult shouldRetryOnSplit = await this.FeedRangeContinuation.HandleSplitAsync(this.containerCore, response, cancellationToken);
+            ShouldRetryResult shouldRetryOnSplit = await this.FeedRangeContinuation.HandleSplitAsync(this.containerCore, responseMessage, cancellationToken);
             if (shouldRetryOnSplit.ShouldRetry)
             {
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
-            if (response.IsSuccessStatusCode)
+            if (responseMessage.Content != null)
             {
-                this.FeedRangeContinuation.ReplaceContinuation(response.Headers.ContinuationToken);
+                // Rewrite the payload to be in the specified format.
+                // If it's already in the correct format, then the following will be a memcpy.
+                MemoryStream memoryStream;
+                if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
+                {
+                    memoryStream = responseContentAsMemoryStream;
+                }
+                else
+                {
+                    memoryStream = new MemoryStream();
+                    await responseMessage.Content.CopyToAsync(memoryStream);
+                }
+
+                ReadOnlyMemory<byte> buffer;
+                if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+                {
+                    buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
+                }
+                else
+                {
+                    buffer = memoryStream.ToArray();
+                }
+
+                IJsonReader jsonReader = JsonReader.Create(buffer);
+                IJsonWriter jsonWriter;
+                if (this.queryRequestOptions?.CosmosSerializationFormatOptions != null)
+                {
+                    jsonWriter = this.queryRequestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
+                }
+                else
+                {
+                    jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                }
+
+                jsonWriter.WriteAll(jsonReader);
+
+                ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+                MemoryStream rewrittenMemoryStream;
+                if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
+                {
+                    rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
+                }
+                else
+                {
+                    byte[] toArray = result.ToArray();
+                    rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
+                }
+
+                responseMessage.Content = rewrittenMemoryStream;
+            }
+
+            if (responseMessage.IsSuccessStatusCode)
+            {
+                this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ContinuationToken);
                 this.hasMoreResultsInternal = !this.FeedRangeContinuation.IsDone;
-                return FeedRangeResponse.CreateSuccess(response, this.FeedRangeContinuation);
+                return FeedRangeResponse.CreateSuccess(responseMessage, this.FeedRangeContinuation);
             }
             else
             {
                 this.hasMoreResultsInternal = false;
-                return FeedRangeResponse.CreateFailure(response);
+                return FeedRangeResponse.CreateFailure(responseMessage);
             }
         }
 
@@ -213,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
                 effectiveRanges);
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }

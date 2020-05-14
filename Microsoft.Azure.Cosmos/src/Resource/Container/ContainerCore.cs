@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -23,18 +21,13 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="Cosmos.Database"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    internal partial class ContainerCore : Container
+    internal partial class ContainerCore : ContainerInternal
     {
-        /// <summary>
-        /// Only used for unit testing
-        /// </summary>
-        internal ContainerCore()
-        {
-        }
+        private readonly Lazy<BatchAsyncContainerExecutor> lazyBatchExecutor;
 
-        internal ContainerCore(
+        protected ContainerCore(
             CosmosClientContext clientContext,
-            DatabaseCore database,
+            DatabaseInternal database,
             string containerId,
             CosmosQueryClient cosmosQueryClient = null)
         {
@@ -46,39 +39,39 @@ namespace Microsoft.Azure.Cosmos
                 id: containerId);
 
             this.Database = database;
-            this.Conflicts = new ConflictsInlineCore(new ConflictsCore(this.ClientContext, this));
-            this.Scripts = new ScriptsInlineCore(new ScriptsCore(this, this.ClientContext));
+            this.Conflicts = new ConflictsInlineCore(this.ClientContext, this);
+            this.Scripts = new ScriptsInlineCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
-            this.BatchExecutor = this.InitializeBatchExecutorForContainer();
+            this.lazyBatchExecutor = new Lazy<BatchAsyncContainerExecutor>(() => this.ClientContext.GetExecutorForContainer(this));
         }
 
         public override string Id { get; }
 
-        public Database Database { get; }
+        public override Database Database { get; }
 
-        internal virtual Uri LinkUri { get; }
+        public override Uri LinkUri { get; }
 
-        internal virtual CosmosClientContext ClientContext { get; }
+        public override CosmosClientContext ClientContext { get; }
 
-        internal virtual BatchAsyncContainerExecutor BatchExecutor { get; }
+        public override BatchAsyncContainerExecutor BatchExecutor => this.lazyBatchExecutor.Value;
 
         public override Conflicts Conflicts { get; }
 
         public override Scripts.Scripts Scripts { get; }
 
-        public override Task<ContainerResponse> ReadContainerAsync(
+        public override async Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadContainerStreamAsync(
+            ResponseMessage response = await this.ReadContainerStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
-        public override Task<ContainerResponse> ReplaceContainerAsync(
+        public override async Task<ContainerResponse> ReplaceContainerAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -89,23 +82,23 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(containerProperties.Id);
-            Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
+            ResponseMessage response = await this.ReplaceStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
-        public override Task<ContainerResponse> DeleteContainerAsync(
+        public override async Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteContainerStreamAsync(
+            ResponseMessage response = await this.DeleteContainerStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
         public override async Task<int?> ReadThroughputAsync(
@@ -124,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
         }
 
-        internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+        public override async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -148,41 +141,22 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
-            int throughput,
+        public override async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+            ThroughputProperties throughput,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             string rid = await this.GetRIDAsync(cancellationToken);
 
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReplaceThroughputIfExistsAsync(
-                targetRID: rid,
-                throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
-            ThroughputProperties throughputProperties,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
             return await cosmosOffers.ReplaceThroughputPropertiesIfExistsAsync(
                 targetRID: rid,
-                throughputProperties: throughputProperties,
+                throughputProperties: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        async Task<ThroughputResponse> ReplaceThroughputAsync(
+        public override async Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -235,12 +209,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRId = await this.GetRIDAsync(cancellationToken);
@@ -261,12 +230,7 @@ namespace Microsoft.Azure.Cosmos
             return feedTokens;
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator GetChangeFeedStreamIterator(
+        public override FeedIterator GetChangeFeedStreamIterator(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -277,12 +241,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator GetChangeFeedStreamIterator(
+        public override FeedIterator GetChangeFeedStreamIterator(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -293,13 +252,7 @@ namespace Microsoft.Azure.Cosmos
                 continuation: null,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator GetChangeFeedStreamIterator(
+        public override FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -310,12 +263,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator<T> GetChangeFeedIterator<T>(
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -328,12 +276,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator<T> GetChangeFeedIterator<T>(
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -346,13 +289,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator<T> GetChangeFeedIterator<T>(
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -364,13 +301,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -393,7 +324,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="ContainerProperties"/> for this container.</returns>
-        internal async Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             try
@@ -409,13 +340,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Name based look-up, needs re-computation and can't be cached
-        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken)
+        public override async Task<string> GetRIDAsync(CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             return containerProperties?.ResourceId;
         }
 
-        internal virtual Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetCachedContainerPropertiesAsync(cancellationToken)
                             .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
@@ -426,7 +357,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>Returns the partition key path</returns>
-        internal virtual async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             if (containerProperties == null)
@@ -452,13 +383,13 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// For non-existing container will throw <see cref="DocumentClientException"/> with 404 as status code
         /// </remarks>
-        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             return containerProperties.GetNoneValue();
         }
 
-        internal virtual Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
+        public override Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
             string collectionRID = null;
             return this.GetRIDAsync(cancellationToken)
@@ -478,16 +409,6 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken);
                 })
                 .Unwrap();
-        }
-
-        internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
-        {
-            if (!this.ClientContext.ClientOptions.AllowBulkExecution)
-            {
-                return null;
-            }
-
-            return this.ClientContext.GetExecutorForContainer(this);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
