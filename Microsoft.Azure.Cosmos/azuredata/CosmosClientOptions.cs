@@ -78,6 +78,7 @@ namespace Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
+            this.InitializeLoggedHeaderNames();
         }
 
         /// <summary>
@@ -655,6 +656,19 @@ namespace Azure.Cosmos
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
             }
+        }
+
+        private void InitializeLoggedHeaderNames()
+        {
+            this.Diagnostics.LoggedHeaderNames.Add(HttpConstants.HttpHeaders.RequestCharge);
+            this.Diagnostics.LoggedHeaderNames.Add(HttpConstants.HttpHeaders.ConsistencyLevel);
+            this.Diagnostics.LoggedHeaderNames.Add(HttpConstants.HttpHeaders.SessionToken);
+            this.Diagnostics.LoggedHeaderNames.Add(HttpConstants.HttpHeaders.ActivityId);
+            this.Diagnostics.LoggedHeaderNames.Add(HttpConstants.HttpHeaders.ClientRequestId);
+            this.Diagnostics.LoggedHeaderNames.Add(HttpConstants.HttpHeaders.ContentLength);
+            this.Diagnostics.LoggedHeaderNames.Add(HttpConstants.HttpHeaders.Location);
+            this.Diagnostics.LoggedHeaderNames.Add(WFConstants.BackendHeaders.SubStatus);
+            this.Diagnostics.LoggedHeaderNames.Add(HttpConstants.HttpHeaders.ContentType);
         }
 
         /// <summary>

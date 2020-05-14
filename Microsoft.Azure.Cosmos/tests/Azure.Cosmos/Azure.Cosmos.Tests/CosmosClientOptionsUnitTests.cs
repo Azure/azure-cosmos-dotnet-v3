@@ -406,6 +406,25 @@ namespace Azure.Cosmos.Tests
             Assert.IsFalse(connectionPolicy.EnableEndpointDiscovery);
         }
 
+        [TestMethod]
+        public void ContainsLoggedHeaderNames()
+        {
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: Guid.NewGuid().ToString());
+
+            CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(HttpConstants.HttpHeaders.RequestCharge));
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(HttpConstants.HttpHeaders.ConsistencyLevel));
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(HttpConstants.HttpHeaders.SessionToken));
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(HttpConstants.HttpHeaders.ActivityId));
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(HttpConstants.HttpHeaders.ClientRequestId));
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(HttpConstants.HttpHeaders.ContentLength));
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(HttpConstants.HttpHeaders.Location));
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(WFConstants.BackendHeaders.SubStatus));
+            Assert.IsTrue(cosmosClientOptions.Diagnostics.LoggedHeaderNames.Contains(HttpConstants.HttpHeaders.ContentType));
+        }
+
         private class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }
