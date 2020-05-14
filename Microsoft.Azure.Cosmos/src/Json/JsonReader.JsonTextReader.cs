@@ -48,9 +48,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Initializes a new instance of the JsonTextReader class.
             /// </summary>
             /// <param name="buffer">The IJsonTextBuffer to read from.</param>
-            /// <param name="skipValidation">Whether or not to skip validation.</param>
-            public JsonTextReader(ReadOnlyMemory<byte> buffer, bool skipValidation = false)
-                : base(skipValidation)
+            public JsonTextReader(ReadOnlyMemory<byte> buffer)
             {
                 this.jsonTextBuffer = new JsonTextMemoryReader(buffer);
             }

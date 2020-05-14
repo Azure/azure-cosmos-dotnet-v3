@@ -216,6 +216,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionCreateItemWithNullEncryptionOptions()
+        {
+            TestDoc testDoc = TestDoc.Create();
+            ItemResponse<TestDoc> createResponse = await EncryptionTests.encryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                new EncryptionItemRequestOptions());
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            Assert.AreEqual(testDoc, createResponse.Resource);
+        }
+
+        [TestMethod]
         public async Task EncryptionCreateItemWithoutPrimaryKey()
         {
             TestDoc testDoc = TestDoc.Create();
@@ -725,7 +737,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             QueryRequestOptions requestOptions = null)
         {
             FeedIterator<TestDoc> queryResponseIterator;
-            
+
             if (query == null)
             {
                 IOrderedQueryable<TestDoc> linqQueryable = container.GetItemLinqQueryable<TestDoc>();

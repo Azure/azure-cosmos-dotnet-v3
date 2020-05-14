@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }

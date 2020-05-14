@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     internal sealed class SqlGroupByClause : SqlObject
     {
         private SqlGroupByClause(IReadOnlyList<SqlScalarExpression> expressions)
-            : base(SqlObjectKind.GroupByClause)
         {
             if (expressions == null)
             {
@@ -27,34 +26,16 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.Expressions = expressions;
         }
 
-        public IReadOnlyList<SqlScalarExpression> Expressions
-        {
-            get;
-        }
+        public IReadOnlyList<SqlScalarExpression> Expressions { get; }
 
-        public static SqlGroupByClause Create(params SqlScalarExpression[] expressions)
-        {
-            return new SqlGroupByClause(expressions);
-        }
+        public static SqlGroupByClause Create(params SqlScalarExpression[] expressions) => new SqlGroupByClause(expressions);
 
-        public static SqlGroupByClause Create(IReadOnlyList<SqlScalarExpression> expressions)
-        {
-            return new SqlGroupByClause(expressions);
-        }
+        public static SqlGroupByClause Create(IReadOnlyList<SqlScalarExpression> expressions) => new SqlGroupByClause(expressions);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

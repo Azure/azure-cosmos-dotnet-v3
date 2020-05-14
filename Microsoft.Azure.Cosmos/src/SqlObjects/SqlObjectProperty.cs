@@ -9,53 +9,24 @@ namespace Microsoft.Azure.Cosmos.Sql
     {
         private SqlObjectProperty(
              SqlPropertyName name,
-             SqlScalarExpression expression)
-            : base(SqlObjectKind.ObjectProperty)
+             SqlScalarExpression value)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException("name");
-            }
-
-            if (expression == null)
-            {
-                throw new ArgumentNullException("expression");
-            }
-
-            this.Name = name;
-            this.Expression = expression;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public SqlPropertyName Name
-        {
-            get;
-        }
+        public SqlPropertyName Name { get; }
 
-        public SqlScalarExpression Expression
-        {
-            get;
-        }
+        public SqlScalarExpression Value { get; }
 
         public static SqlObjectProperty Create(
             SqlPropertyName name,
-            SqlScalarExpression expression)
-        {
-            return new SqlObjectProperty(name, expression);
-        }
+            SqlScalarExpression expression) => new SqlObjectProperty(name, expression);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

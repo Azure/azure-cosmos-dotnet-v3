@@ -5,16 +5,12 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     internal abstract class SqlPathExpression : SqlObject
     {
-        protected SqlPathExpression(SqlObjectKind kind, SqlPathExpression parentPath)
-            : base(kind)
+        protected SqlPathExpression(SqlPathExpression parentPath)
         {
             this.ParentPath = parentPath;
         }
 
-        public SqlPathExpression ParentPath
-        {
-            get;
-        }
+        public SqlPathExpression ParentPath { get; }
 
         public abstract void Accept(SqlPathExpressionVisitor visitor);
 

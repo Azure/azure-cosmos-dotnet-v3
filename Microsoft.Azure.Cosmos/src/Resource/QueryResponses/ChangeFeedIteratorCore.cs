@@ -137,7 +137,10 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken() => CosmosElement.Parse(this.FeedRangeContinuation.ToString());
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            return CosmosElement.Parse(this.FeedRangeContinuation.ToString());
+        }
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsScope,

@@ -27,21 +27,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// The <see cref="JsonObjectState"/>
         /// </summary>
-        internal readonly JsonObjectState JsonObjectState;
-
-        /// <summary>
-        /// Whether to skip validation.
-        /// </summary>
-        protected readonly bool SkipValidation;
+        protected readonly JsonObjectState JsonObjectState;
 
         /// <summary>
         /// Initializes a new instance of the JsonWriter class.
         /// </summary>
-        /// <param name="skipValidation">Whether or not to skip validation.</param>
-        protected JsonWriter(bool skipValidation)
+        protected JsonWriter()
         {
             this.JsonObjectState = new JsonObjectState(false);
-            this.SkipValidation = skipValidation;
         }
 
         /// <inheritdoc />
@@ -55,20 +48,17 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="jsonSerializationFormat">The JsonSerializationFormat of the writer.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
-        /// <param name="skipValidation">Whether or not to skip validation</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
-            JsonStringDictionary jsonStringDictionary = null,
-            bool skipValidation = false)
+            JsonStringDictionary jsonStringDictionary = null)
         {
             switch (jsonSerializationFormat)
             {
                 case JsonSerializationFormat.Text:
-                    return new JsonTextWriter(skipValidation);
+                    return new JsonTextWriter();
                 case JsonSerializationFormat.Binary:
                     return new JsonBinaryWriter(
-                        skipValidation,
                         jsonStringDictionary,
                         serializeCount: false);
                 default:

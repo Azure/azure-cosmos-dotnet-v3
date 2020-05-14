@@ -2,20 +2,129 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal static class CosmosElementDeserializer
+    internal static class JsonSerializer
     {
+        public static ReadOnlyMemory<byte> Serialize(
+            object value,
+            JsonSerializationFormat jsonSerializationFormat = JsonSerializationFormat.Text)
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            JsonSerializer.SerializeInternal(value, jsonWriter);
+            return jsonWriter.GetResult();
+        }
+
+        public static void SerializeInternal(
+            object value,
+            IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            switch (value)
+            {
+                case null:
+                    jsonWriter.WriteNullValue();
+                    break;
+
+                case bool boolValue:
+                    jsonWriter.WriteBoolValue(boolValue);
+                    break;
+
+                case string stringValue:
+                    jsonWriter.WriteStringValue(stringValue);
+                    break;
+
+                case Number64 numberValue:
+                    jsonWriter.WriteNumber64Value(numberValue);
+                    break;
+
+                case sbyte signedByteValue:
+                    jsonWriter.WriteInt8Value(signedByteValue);
+                    break;
+
+                case short shortValue:
+                    jsonWriter.WriteInt16Value(shortValue);
+                    break;
+
+                case int intValue:
+                    jsonWriter.WriteInt32Value(intValue);
+                    break;
+
+                case long longValue:
+                    jsonWriter.WriteInt64Value(longValue);
+                    break;
+
+                case uint uintValue:
+                    jsonWriter.WriteUInt32Value(uintValue);
+                    break;
+
+                case float floatValue:
+                    jsonWriter.WriteFloat32Value(floatValue);
+                    break;
+
+                case double doubleValue:
+                    jsonWriter.WriteFloat64Value(doubleValue);
+                    break;
+
+                case ReadOnlyMemory<byte> binaryValue:
+                    jsonWriter.WriteBinaryValue(binaryValue.Span);
+                    break;
+
+                case Guid guidValue:
+                    jsonWriter.WriteGuidValue(guidValue);
+                    break;
+
+                case IEnumerable enumerableValue:
+                    jsonWriter.WriteArrayStart();
+
+                    foreach (object arrayItem in enumerableValue)
+                    {
+                        JsonSerializer.SerializeInternal(arrayItem, jsonWriter);
+                    }
+
+                    jsonWriter.WriteArrayEnd();
+                    break;
+
+                case CosmosElement cosmosElementValue:
+                    cosmosElementValue.WriteTo(jsonWriter);
+                    break;
+
+                case ValueType valueType:
+                    throw new ArgumentOutOfRangeException($"Unable to serialize type: {valueType.GetType()}");
+
+                default:
+                    Type type = value.GetType();
+                    PropertyInfo[] properties = type.GetProperties();
+
+                    jsonWriter.WriteObjectStart();
+
+                    foreach (PropertyInfo propertyInfo in properties)
+                    {
+                        jsonWriter.WriteFieldName(propertyInfo.Name);
+                        object propertyValue = propertyInfo.GetValue(value);
+                        JsonSerializer.SerializeInternal(propertyValue, jsonWriter);
+                    }
+
+                    jsonWriter.WriteObjectEnd();
+                    break;
+            }
+        }
+
         public static T Deserialize<T>(ReadOnlyMemory<byte> buffer)
         {
-            TryCatch<T> tryDeserialize = CosmosElementDeserializer.Monadic.Deserialize<T>(buffer);
+            TryCatch<T> tryDeserialize = JsonSerializer.Monadic.Deserialize<T>(buffer);
             tryDeserialize.ThrowIfFailed();
             return tryDeserialize.Result;
         }
@@ -54,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static bool TryDeserialize<T>(ReadOnlyMemory<byte> buffer, out T result)
         {
-            TryCatch<T> tryDeserialize = CosmosElementDeserializer.Monadic.Deserialize<T>(buffer);
+            TryCatch<T> tryDeserialize = JsonSerializer.Monadic.Deserialize<T>(buffer);
             return TryCatch<T>.ConvertToTryGet<T>(tryDeserialize, out result);
         }
 
