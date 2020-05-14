@@ -25,30 +25,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>
-        /// <param name="stream">The stream response from Azure Cosmos</param>
-        /// <param name="resourceType">The resource type</param>
-        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
-        /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        internal static CosmosArray ToCosmosElements(
-            Stream stream,
-            ResourceType resourceType,
-            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
-        {
-            MemoryStream memoryStream = stream as MemoryStream;
-            if (memoryStream == null)
-            {
-                memoryStream = new MemoryStream();
-                stream.CopyTo(memoryStream);
-            }
-
-            return CosmosElementSerializer.ToCosmosElements(
-                memoryStream,
-                resourceType,
-                cosmosSerializationOptions);
-        }
-        /// <summary>
-        /// Converts a list of CosmosElements into a memory stream.
-        /// </summary>
         /// <param name="memoryStream">The memory stream response from Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
@@ -284,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// <param name="cosmosElement">The cosmos elements</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        private static MemoryStream ElementToMemoryStream(
+        internal static MemoryStream ElementToMemoryStream(
             CosmosElement cosmosElement,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {

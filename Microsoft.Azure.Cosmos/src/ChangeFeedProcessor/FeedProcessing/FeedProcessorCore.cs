@@ -118,7 +118,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             IEnumerable<T> asFeedResponse;
             try
             {
-                asFeedResponse = this.serializerCore.FromFeedResponseStream<T>(
+                asFeedResponse = CosmosFeedResponseSerializer.FromFeedResponseStream<T>(
+                    this.serializerCore,
                     response.Content,
                     Documents.ResourceType.Document);
             }

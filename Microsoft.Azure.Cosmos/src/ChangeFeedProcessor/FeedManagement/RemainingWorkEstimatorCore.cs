@@ -175,7 +175,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return new Collection<JObject>();
             }
 
-            return CosmosContainerExtensions.DefaultJsonSerializer.FromFeedResponseStream<JObject>(
+            return CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(
+                CosmosContainerExtensions.DefaultJsonSerializer,
                 response.Content,
                 ResourceType.Document);
         }

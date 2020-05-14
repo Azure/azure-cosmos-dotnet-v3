@@ -127,7 +127,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockClient.RequestHandler.InnerHandler = testHandler;
             ResponseMessage streamResponse = await feedIterator.ReadNextAsync();
 
-            IEnumerable<ConflictProperties> response = MockCosmosUtil.Serializer.FromFeedResponseStream<ConflictProperties>(
+            IEnumerable<ConflictProperties> response = CosmosFeedResponseSerializer.FromFeedResponseStream<ConflictProperties>(
+                MockCosmosUtil.Serializer,
                 streamResponse.Content,
                 ResourceType.Conflict);
 

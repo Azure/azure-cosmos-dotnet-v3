@@ -58,7 +58,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 using (ResponseMessage responseMessage = await iterator.ReadNextAsync().ConfigureAwait(false))
                 {
                     responseMessage.EnsureSuccessStatusCode();
-                    leases.AddRange(CosmosContainerExtensions.DefaultJsonSerializer.FromFeedResponseStream<DocumentServiceLeaseCore>(
+                    leases.AddRange(CosmosFeedResponseSerializer.FromFeedResponseStream<DocumentServiceLeaseCore>(
+                        CosmosContainerExtensions.DefaultJsonSerializer,
                         responseMessage.Content,
                         Documents.ResourceType.Document));
                 }   

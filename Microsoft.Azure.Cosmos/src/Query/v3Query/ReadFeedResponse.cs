@@ -14,18 +14,15 @@ namespace Microsoft.Azure.Cosmos
     {
         protected ReadFeedResponse(
             HttpStatusCode httpStatusCode,
-            CosmosArray cosmosArray,
-            CosmosSerializerCore serializerCore,
+            IReadOnlyList<T> resources,
             Headers responseMessageHeaders,
             CosmosDiagnostics diagnostics)
         {
-            this.Count = cosmosArray != null ? cosmosArray.Count : 0;
+            this.Count = resources != null ? resources.Count : 0;
             this.Headers = responseMessageHeaders;
             this.StatusCode = httpStatusCode;
             this.Diagnostics = diagnostics;
-            this.Resource = CosmosElementSerializer.GetResources<T>(
-                cosmosArray: cosmosArray,
-                serializerCore: serializerCore);
+            this.Resource = resources;
         }
 
         public override int Count { get; }
@@ -58,19 +55,18 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.EnsureSuccessStatusCode();
                 }
 
-                CosmosArray cosmosArray = null;
+                IReadOnlyList<TInput> resources = null;
                 if (responseMessage.Content != null)
                 {
-                    cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                    resources = CosmosFeedResponseSerializer.FromFeedResponseStream<TInput>(
+                        serializerCore,
                         responseMessage.Content,
-                        resourceType,
-                        null);
+                        resourceType);
                 }
 
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     httpStatusCode: responseMessage.StatusCode,
-                    cosmosArray: cosmosArray,
-                    serializerCore: serializerCore,
+                    resources: resources,
                     responseMessageHeaders: responseMessage.Headers,
                     diagnostics: responseMessage.Diagnostics);
 
