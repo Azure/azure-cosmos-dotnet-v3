@@ -76,7 +76,8 @@ namespace Microsoft.Azure.Cosmos
             return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
                        this.serializerCore,
-                       resourceType);
+                       resourceType,
+                       true);
         }
 
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
