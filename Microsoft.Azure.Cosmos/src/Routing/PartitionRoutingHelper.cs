@@ -229,7 +229,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (!rangeFromContinuationToken.Equals(targetPartitionKeyRange.ToRange()))
             {
                 // Cannot find target range. Either collection was resolved incorrectly or the range was split
-                IReadOnlyList<PartitionKeyRange> replacedRanges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, rangeFromContinuationToken, true);
+                IReadOnlyList<PartitionKeyRange> replacedRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                        collectionResourceId: collectionRid,
+                        range: rangeFromContinuationToken,
+                        forceRefresh: true);
 
                 if (replacedRanges == null || replacedRanges.Count < 1)
                 {
