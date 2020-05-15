@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
 #if INTERNAL
@@ -61,6 +62,11 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             return utf8Memory;
+        }
+
+        public static Utf8Memory Create(string value)
+        {
+            return Utf8Memory.UnsafeCreateNoValidation(Encoding.UTF8.GetBytes(value));
         }
 
         public static Utf8Memory UnsafeCreateNoValidation(ReadOnlyMemory<byte> utf8Bytes)

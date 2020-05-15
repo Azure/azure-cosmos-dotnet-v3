@@ -26,13 +26,13 @@
         [Benchmark]
         public void CosmosElement_Serializer_Text()
         {
-            Serializer.Serialize(this.people, JsonSerializationFormat.Text);
+            Cosmos.Json.JsonSerializer.Serialize(this.people, JsonSerializationFormat.Text);
         }
 
         [Benchmark]
         public void CosmosElement_Serializer_Binary()
         {
-            Serializer.Serialize(this.people, JsonSerializationFormat.Text);
+            Cosmos.Json.JsonSerializer.Serialize(this.people, JsonSerializationFormat.Text);
         }
 
         [Benchmark]
@@ -44,7 +44,7 @@
         [Benchmark]
         public void Newtonsoft_Serializer_Binary()
         {
-            JsonSerializer jsonSerializer = JsonSerializer.CreateDefault();
+            Newtonsoft.Json.JsonSerializer jsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault();
             CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary);
             jsonSerializer.Serialize(writer, this.people);
         }

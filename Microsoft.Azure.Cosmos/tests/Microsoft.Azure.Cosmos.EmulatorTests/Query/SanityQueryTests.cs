@@ -441,22 +441,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             await this.TestMalformedPipelinedContinuationTokenRunner(
                 container: container,
                 queryText: "SELECT * FROM c",
-                continuationToken: notJsonContinuationToken,
-                expectedResponseMessageError: $"Response status code does not indicate success: BadRequest (400); Substatus: 0; ActivityId: ; Reason: (Malformed Continuation Token: {notJsonContinuationToken});");
+                continuationToken: notJsonContinuationToken);
 
-            string validJsonInvalidFormatContinuationToken = @"{""range"":{""min"":""05C189CD6732"",""max"":""05C18F5D153C""}";
+            string validJsonInvalidFormatContinuationToken = @"{""range"":{""min"":""05C189CD6732"",""max"":""05C18F5D153C""}}";
             await this.TestMalformedPipelinedContinuationTokenRunner(
                 container: container,
                 queryText: "SELECT * FROM c",
-                continuationToken: validJsonInvalidFormatContinuationToken,
-                expectedResponseMessageError: $"Response status code does not indicate success: BadRequest (400); Substatus: 0; ActivityId: ; Reason: (Malformed Continuation Token: {validJsonInvalidFormatContinuationToken});");
+                continuationToken: validJsonInvalidFormatContinuationToken);
         }
 
         private async Task TestMalformedPipelinedContinuationTokenRunner(
             Container container,
             string queryText,
-            string continuationToken,
-            string expectedResponseMessageError)
+            string continuationToken)
         {
             {
                 // Malformed continuation token
@@ -466,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 ResponseMessage cosmosQueryResponse = await itemStreamQuery.ReadNextAsync();
                 Assert.AreEqual(HttpStatusCode.BadRequest, cosmosQueryResponse.StatusCode);
                 string errorMessage = cosmosQueryResponse.ErrorMessage;
-                Assert.AreEqual(expectedResponseMessageError, errorMessage);
+                Assert.IsTrue(errorMessage.Contains(continuationToken));
             }
 
             // Malformed continuation token
@@ -484,7 +481,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 Assert.IsNotNull(ce);
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
-                Assert.IsTrue(message.StartsWith($"Microsoft.Azure.Cosmos.CosmosException : {expectedResponseMessageError}"));
+                Assert.IsTrue(message.Contains(continuationToken));
                 string diagnostics = ce.Diagnostics.ToString();
                 Assert.IsNotNull(diagnostics);
             }
