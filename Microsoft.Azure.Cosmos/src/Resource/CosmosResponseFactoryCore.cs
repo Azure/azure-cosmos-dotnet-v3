@@ -31,17 +31,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage)
         {
             return this.CreateChangeFeedResponseHelper<T>(
-                responseMessage,
-                Documents.ResourceType.Document);
-        }
-
-        public override FeedResponse<T> CreateChangeFeedUserTypeResponse<T>(
-            ResponseMessage responseMessage,
-            Documents.ResourceType resourceType)
-        {
-            return this.CreateChangeFeedResponseHelper<T>(
-                responseMessage,
-                resourceType);
+                responseMessage);
         }
 
         public override FeedResponse<T> CreateQueryFeedUserTypeResponse<T>(
@@ -74,18 +64,15 @@ namespace Microsoft.Azure.Cosmos
 
             return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
-                       this.serializerCore,
-                       resourceType);
+                       this.serializerCore);
         }
 
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
-            ResponseMessage cosmosResponseMessage,
-            Documents.ResourceType resourceType)
+            ResponseMessage cosmosResponseMessage)
         {
             return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
-                       this.serializerCore,
-                       resourceType);
+                       this.serializerCore);
         }
 
         public override ItemResponse<T> CreateItemResponse<T>(
