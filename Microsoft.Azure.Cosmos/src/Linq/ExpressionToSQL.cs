@@ -153,8 +153,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // ExpressionToSql is the query input value: a IDocumentQuery
-            IDocumentQuery input = inputExpression.Value as IDocumentQuery;
-            if (input == null)
+            if (!(inputExpression.Value is IDocumentQuery input))
             {
                 throw new DocumentQueryException(ClientResources.InputIsNotIDocumentQuery);
             }
@@ -183,8 +182,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string parameterName = null;
             if (peekMethod.Arguments.Count > 1)
             {
-                LambdaExpression lambda = peekMethod.Arguments[1] as LambdaExpression;
-                if (lambda != null && lambda.Parameters.Count > 0)
+                if (peekMethod.Arguments[1] is LambdaExpression lambda && lambda.Parameters.Count > 0)
                 {
                     parameterName = lambda.Parameters[0].Name;
                 }
@@ -1238,8 +1236,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>True if subquery is needed, otherwise false</returns>
         private static bool IsSubqueryScalarExpression(Expression expression, out SubqueryKind? expressionObjKind, out bool isMinMaxAvgMethod)
         {
-            MethodCallExpression methodCallExpression = expression as MethodCallExpression;
-            if (methodCallExpression == null)
+            if (!(expression is MethodCallExpression methodCallExpression))
             {
                 expressionObjKind = null;
                 isMinMaxAvgMethod = false;

@@ -163,9 +163,8 @@ namespace Microsoft.Azure.Cosmos
                             | itemRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.PartitionKey, out object pkStringObj)))
             {
                 byte[] epk = epkObj as byte[];
-                string epkStr = epkStrObj as string;
                 string pkString = pkStringObj as string;
-                if ((epk == null && pkString == null) || epkStr == null)
+                if ((epk == null && pkString == null) || !(epkStrObj is string epkStr))
                 {
                     throw new InvalidOperationException(string.Format(
                         ClientResources.EpkPropertiesPairingExpected,

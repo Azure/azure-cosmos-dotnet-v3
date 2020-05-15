@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.CosmosBinary.ToString());
+                //request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.CosmosBinary.ToString());
             }
 
             if (this.StartId != null)
