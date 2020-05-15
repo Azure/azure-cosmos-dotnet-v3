@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
             Headers responseMessageHeaders,
             CosmosDiagnostics diagnostics)
         {
-            this.Count = resources != null ? resources.Count : 0;
+            this.Count = resources?.Count ?? 0;
             this.Headers = responseMessageHeaders;
             this.StatusCode = httpStatusCode;
             this.Diagnostics = diagnostics;

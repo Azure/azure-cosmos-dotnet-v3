@@ -33,12 +33,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             using (streamWithServiceEnvelope)
+            using (MemoryStream stream = GetStreamWithoutServiceEnvelope(
+                            streamWithServiceEnvelope))
             {
-                using (MemoryStream stream = GetStreamWithoutServiceEnvelope(
-                                streamWithServiceEnvelope))
-                {
-                    return serializerCore.FromFeedStream<T>(stream);
-                }
+                return serializerCore.FromFeedStream<T>(stream);
             }
         }
 
@@ -54,8 +52,7 @@ namespace Microsoft.Azure.Cosmos
             using (streamWithServiceEnvelope)
             {
                 ReadOnlyMemory<byte> content;
-                MemoryStream? memoryStreamWithEnvelope = streamWithServiceEnvelope as MemoryStream;
-                if (memoryStreamWithEnvelope == null)
+                if (!(streamWithServiceEnvelope is MemoryStream memoryStreamWithEnvelope))
                 {
                     memoryStreamWithEnvelope = new MemoryStream();
                     streamWithServiceEnvelope.CopyTo(memoryStreamWithEnvelope);
@@ -71,10 +68,13 @@ namespace Microsoft.Azure.Cosmos
                     content = memoryStreamWithEnvelope.ToArray();
                 }
 
-                int start = GetArrayStartPosition(content);
+                int start = content.Span.IndexOf(ArrayStart);
                 int end = GetArrayEndPosition(content);
 
-                ReadOnlyMemory<byte> spanwithOnlyArray = content.Slice(start, end - start + 1);
+                ReadOnlyMemory<byte> spanwithOnlyArray = content.Slice(
+                    start: start,
+                    length: end - start + 1);
+
                 if (!MemoryMarshal.TryGetArray(spanwithOnlyArray, out ArraySegment<byte> resultAsArray))
                 {
                     resultAsArray = new ArraySegment<byte>(spanwithOnlyArray.ToArray());
@@ -83,21 +83,6 @@ namespace Microsoft.Azure.Cosmos
                 MemoryStream arrayOnlyStream = new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count, writable: false, publiclyVisible: true);
                 return arrayOnlyStream;
             }
-        }
-
-        private static int GetArrayStartPosition(
-            ReadOnlyMemory<byte> memoryByte)
-        {
-            ReadOnlySpan<byte> span = memoryByte.Span;
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (span[i] == ArrayStart)
-                {
-                    return i;
-                }
-            }
-
-            throw new ArgumentException("ArrayStart not found");
         }
 
         private static int GetArrayEndPosition(
@@ -112,7 +97,8 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            throw new ArgumentException("ArrayEnd not found");
+            string response = Encoding.UTF8.GetString(span);
+            throw new InvalidDataException($"Could not find the end of the json array in the stream: {response}");
         }
     }
 }

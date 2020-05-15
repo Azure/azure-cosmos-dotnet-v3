@@ -91,7 +91,9 @@
             MemoryStream streamPayload = new MemoryStream();
             using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: new UTF8Encoding(
                 encoderShouldEmitUTF8Identifier: false,
-                throwOnInvalidBytes: true), bufferSize: 1024, leaveOpen: true))
+                throwOnInvalidBytes: true),
+                bufferSize: 1024,
+                leaveOpen: true))
             {
                 using (JsonTextWriter writer = new JsonTextWriter(streamWriter))
                 {
