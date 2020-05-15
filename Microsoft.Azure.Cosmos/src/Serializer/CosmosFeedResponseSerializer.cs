@@ -68,8 +68,8 @@ namespace Microsoft.Azure.Cosmos
                     content = memoryStreamWithEnvelope.ToArray();
                 }
 
-                int start = content.Span.IndexOf(ArrayStart);
-                int end = GetArrayEndPosition(content);
+                int start = CosmosFeedResponseSerializer.GetArrayStartPosition(content);
+                int end = CosmosFeedResponseSerializer.GetArrayEndPosition(content);
 
                 ReadOnlyMemory<byte> spanwithOnlyArray = content.Slice(
                     start: start,
@@ -85,20 +85,32 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        private static int GetArrayStartPosition(
+            ReadOnlyMemory<byte> memoryByte)
+        {
+            ReadOnlySpan<byte> span = memoryByte.Span;
+            int position = span.IndexOf(ArrayStart);
+            if (position < 0)
+            {
+                string response = Encoding.UTF8.GetString(span);
+                throw new InvalidDataException($"Could not find the start of the json array in the stream: {response}");
+            }
+
+            return position;
+        }
+
         private static int GetArrayEndPosition(
             ReadOnlyMemory<byte> memoryByte)
         {
             ReadOnlySpan<byte> span = memoryByte.Span;
-            for (int i = span.Length - 1; i < span.Length; i--)
+            int position = span.LastIndexOf(ArrayEnd);
+            if (position < 0)
             {
-                if (span[i] == ArrayEnd)
-                {
-                    return i;
-                }
+                string response = Encoding.UTF8.GetString(span);
+                throw new InvalidDataException($"Could not find the end of the json array in the stream: {response}");
             }
 
-            string response = Encoding.UTF8.GetString(span);
-            throw new InvalidDataException($"Could not find the end of the json array in the stream: {response}");
+            return position;
         }
     }
 }
