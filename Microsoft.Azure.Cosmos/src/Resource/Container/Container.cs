@@ -1160,15 +1160,15 @@ namespace Microsoft.Azure.Cosmos
 
 #if PREVIEW        
         /// <summary>
-        /// Deletes all items in a <see cref="PartitionKey"/>.
+        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
         /// </summary>
         /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
-        /// <param name="requestOptions">(Optional) The options for the Parition Key Delete request.</param>
+        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/>.
         /// </returns>
-        public abstract Task<ResponseMessage> DeleteItemsInPartitionKeyAsync(
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyAsync(
                Cosmos.PartitionKey partitionKey,
                ItemRequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));

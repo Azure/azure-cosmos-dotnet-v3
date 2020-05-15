@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -493,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task PartitionKeyDeletePurgerTest()
+        public async Task PartitionKeyDeleteTest()
         {
             string pKString = "PK1";
             dynamic testItem1 = new
@@ -502,14 +503,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 status = pKString
             };
 
-            ContainerCore containerCore = (ContainerInlineCore)this.Container;
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
             ItemResponse<dynamic>  itemResponse = await this.Container.CreateItemAsync<dynamic>(testItem1);
             Cosmos.PartitionKey partitionKey1 = new Cosmos.PartitionKey(pKString);
-            ResponseMessage pKDeleteResponse = await containerCore.DeleteItemsInPartitionKeyAsync(partitionKey1);
+            ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyAsync(partitionKey1);
             Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.OK);
+
             ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item1", partitionKey1);
             Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.NotFound);
-        } 
+            Assert.AreEqual(readResponse.Headers.SubStatusCode, SubStatusCodes.Unknown);
+        }
 
         [TestMethod]
         public async Task ItemCustomSerialzierTest()

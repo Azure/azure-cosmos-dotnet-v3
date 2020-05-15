@@ -331,12 +331,12 @@ namespace Microsoft.Azure.Cosmos
             return base.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
-        public override Task<ResponseMessage> DeleteItemsInPartitionKeyAsync(
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyAsync(
           Cosmos.PartitionKey partitionKey,
           ItemRequestOptions requestOptions = null,
           CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteItemsInPartitionKeyAsync(partitionKey, requestOptions, cancellationToken));
+            return base.DeleteAllItemsByPartitionKeyAsync(partitionKey, requestOptions, cancellationToken);
         }
     }
 }

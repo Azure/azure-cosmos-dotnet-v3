@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     OperationType = operationType,
                     ResourceType = resourceType,
                     RequestOptions = requestOptions,
-                    Content = streamPayload
+                    Content = streamPayload,
                 };
 
                 if (partitionKey.HasValue)

@@ -765,7 +765,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override async Task<ResponseMessage> DeleteItemsInPartitionKeyAsync(
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyAsync(
           Cosmos.PartitionKey partitionKey,
           ItemRequestOptions requestOptions = null,
           CancellationToken cancellationToken = default(CancellationToken))
@@ -783,7 +783,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore.ValidatePartitionKey(resultingPartitionKey, requestOptions);
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
-            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
                 resourceType: ResourceType.PartitionKey,
                 operationType: OperationType.Delete,
@@ -795,8 +795,6 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
-
-            return responseMessage;
         }
 
         private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
