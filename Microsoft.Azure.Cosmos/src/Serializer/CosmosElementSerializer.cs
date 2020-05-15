@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 serializerCore);
         }
 
-        internal static IReadOnlyList<T> GetResourcesHelper<T>(
+        internal static T[] GetResourcesHelper<T>(
             IReadOnlyList<CosmosElement> cosmosElements,
             CosmosSerializerCore serializerCore,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)

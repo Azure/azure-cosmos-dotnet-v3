@@ -129,7 +129,7 @@
         {
             using (MemoryStream ms = new MemoryStream(this.payloadBytes))
             {
-                IReadOnlyList<ToDoActivity> results = CosmosFeedResponseSerializer.FromFeedResponseStream<ToDoActivity>(
+                IReadOnlyCollection<ToDoActivity> results = CosmosFeedResponseSerializer.FromFeedResponseStream<ToDoActivity>(
                     this.serializerCore,
                     ms);
 

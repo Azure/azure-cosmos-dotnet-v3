@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     {
         protected ReadFeedResponse(
             HttpStatusCode httpStatusCode,
-            IReadOnlyList<T> resources,
+            IReadOnlyCollection<T> resources,
             Headers responseMessageHeaders,
             CosmosDiagnostics diagnostics)
         {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.EnsureSuccessStatusCode();
                 }
 
-                IReadOnlyList<TInput> resources = CosmosFeedResponseSerializer.FromFeedResponseStream<TInput>(
+                IReadOnlyCollection<TInput> resources = CosmosFeedResponseSerializer.FromFeedResponseStream<TInput>(
                         serializerCore,
                         responseMessage.Content);
 

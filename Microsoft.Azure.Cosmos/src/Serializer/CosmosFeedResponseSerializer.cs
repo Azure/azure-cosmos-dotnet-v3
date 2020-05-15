@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="serializerCore">The cosmos serializer</param>
         /// <param name="streamWithServiceEnvelope">A stream with the service envelope like: { "ContainerRid":"Test", "Documents":[{ "id":"MyItem"}], "count":1}</param>
         /// <returns>A read only list of the serialized items</returns>
-        internal static IReadOnlyList<T> FromFeedResponseStream<T>(
+        internal static IReadOnlyCollection<T> FromFeedResponseStream<T>(
             CosmosSerializerCore serializerCore,
             Stream streamWithServiceEnvelope)
         {

@@ -62,10 +62,10 @@ namespace Microsoft.Azure.Cosmos
             return serializer.FromStream<T>(stream);
         }
 
-        internal IReadOnlyList<T> FromFeedStream<T>(Stream stream)
+        internal T[] FromFeedStream<T>(Stream stream)
         {
             CosmosSerializer serializer = this.GetSerializer<T>();
-            return serializer.FromStream<List<T>>(stream);
+            return serializer.FromStream<T[]>(stream);
         }
 
         internal Stream ToStream<T>(T input)
