@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Documents;
 
 #if INTERNAL
@@ -169,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
             }
             else
             {
-                jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             }
 
             // The stream contract should return the same contract as read feed.

@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
                 buffer = memoryStream.ToArray();
             }
 
-            IJsonReader jsonReader = JsonReader.Create(buffer);
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
             IJsonWriter jsonWriter;
             if (this.requestOptions?.CosmosSerializationFormatOptions != null)
             {
@@ -139,10 +139,10 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             }
 
-            jsonWriter.WriteAll(jsonReader);
+            jsonWriter.WriteJsonNode(jsonNavigator, jsonNavigator.GetRootNode());
 
             ReadOnlyMemory<byte> result = jsonWriter.GetResult();
             MemoryStream rewrittenMemoryStream;
