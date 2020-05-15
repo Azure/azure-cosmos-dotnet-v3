@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
-                            else if (retryCount == 1)
+                            else if (retryCount <= 5)
                             {
                                 // Second request must go to write endpoint
                                 Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 catch (NotFoundException)
                 {
                     DefaultTrace.TraceInformation("Received expected notFoundException");
-                    Assert.AreEqual(2, retryCount);
+                    Assert.AreEqual(6, retryCount);
                 }
             }
         }
