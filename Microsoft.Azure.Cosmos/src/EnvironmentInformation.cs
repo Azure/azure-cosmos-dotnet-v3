@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Reflection;
     using System.Runtime.InteropServices;
-    using System.Threading;
 
     internal sealed class EnvironmentInformation
     {
@@ -16,8 +15,8 @@ namespace Microsoft.Azure.Cosmos
         private static readonly string framework;
         private static readonly string architecture;
         private static readonly string os;
+        private static readonly object clientCountLock = new object();
         private static int clientId = 0;
-        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1);
 
         static EnvironmentInformation()
         {
@@ -32,8 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
         public EnvironmentInformation()
         {
-            semaphoreSlim.Wait();
-            try
+            lock (EnvironmentInformation.clientCountLock)
             {
                 int newClientId = EnvironmentInformation.MaxClientId;
                 if (EnvironmentInformation.clientId <= EnvironmentInformation.MaxClientId)
@@ -42,10 +40,6 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.ClientId = newClientId.ToString().PadLeft(2, '0');
-            }
-            finally
-            {
-                semaphoreSlim.Release();
             }
         }
 
