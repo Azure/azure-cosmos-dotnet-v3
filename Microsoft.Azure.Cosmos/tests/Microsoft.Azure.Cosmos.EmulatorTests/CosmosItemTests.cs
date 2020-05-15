@@ -1667,7 +1667,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException cosmosException)
                 {
-                    Assert.IsTrue(cosmosException.Message.Contains("StorePhysicalAddress"), cosmosException.Message);
+                    string message = cosmosException.Message;
+                    Assert.IsTrue(message.Contains("The read session is not available for the input session token"));
+                    Assert.IsTrue(cosmosException.ToString().Contains("StorePhysicalAddress"), cosmosException.Message);
                 }
             }
             finally
