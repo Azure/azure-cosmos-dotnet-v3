@@ -394,6 +394,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             await this.VerifyPartitionKeyDeleteOperation(new Cosmos.PartitionKey(item.pk), "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]");
         }
+
         [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
