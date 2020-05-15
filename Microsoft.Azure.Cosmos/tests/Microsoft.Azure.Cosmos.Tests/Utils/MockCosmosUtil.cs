@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 documentClient = new MockDocumentClient();
             }
-            
+
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
             if (customizeClientBuilder != null)
             {
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string dbName = "myDb",
             string containerName = "myContainer")
         {
-            Uri link = new Uri($"/dbs/{dbName}/colls/{containerName}" , UriKind.Relative);
+            Uri link = new Uri($"/dbs/{dbName}/colls/{containerName}", UriKind.Relative);
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             return mockContainer;
@@ -83,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Range<string>>(),
                 It.IsAny<List<CompositeContinuationToken>>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
-            )).Returns(Task.FromResult(new ResolvedRangeInfo(new PartitionKeyRange { Id = partitionRangeKeyId }, new List<CompositeContinuationToken>())));
+            )).Returns(Task.FromResult(TryCatch<ResolvedRangeInfo>.FromResult(new ResolvedRangeInfo(new PartitionKeyRange { Id = partitionRangeKeyId }, new List<CompositeContinuationToken>()))));
             partitionRoutingHelperMock.Setup(m => m.TryAddPartitionKeyRangeToContinuationTokenAsync(
                 It.IsAny<INameValueCollection>(),
                 It.IsAny<List<Range<string>>>(),

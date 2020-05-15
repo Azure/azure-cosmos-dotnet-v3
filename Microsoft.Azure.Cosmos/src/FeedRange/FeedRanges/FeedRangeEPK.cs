@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
@@ -45,8 +46,13 @@ namespace Microsoft.Azure.Cosmos
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             CancellationToken cancellationToken)
         {
-            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(containerRid, this.Range, forceRefresh: false);
-            return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
+            TryCatch<IReadOnlyList<Documents.PartitionKeyRange>> tryGetOverlappingRangesAsync = await routingMapProvider.TryGetOverlappingRangesAsync(
+                containerRid,
+                this.Range,
+                forceRefresh: false);
+            tryGetOverlappingRangesAsync.ThrowIfFailed();
+
+            return tryGetOverlappingRangesAsync.Result.Select(partitionKeyRange => partitionKeyRange.Id);
         }
 
         public override void Accept(FeedRangeVisitor visitor)

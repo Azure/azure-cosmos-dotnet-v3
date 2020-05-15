@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;

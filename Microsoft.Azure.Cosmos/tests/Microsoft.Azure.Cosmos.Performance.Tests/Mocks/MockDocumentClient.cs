@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Moq;
+    using Microsoft.Azure.Cosmos.Monads;
 
     internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
     {
@@ -73,27 +74,25 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null);
-            this.collectionCache.Setup
-                    (m =>
-                        m.ResolveCollectionAsync(
-                        It.IsAny<DocumentServiceRequest>(),
-                        It.IsAny<CancellationToken>()
-                    )
-                ).Returns(Task.FromResult(ContainerProperties.CreateWithResourceId("test")));
+            this.collectionCache
+                .Setup(m =>
+                    m.ResolveCollectionAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>()
+                ))
+                .Returns(Task.FromResult(ContainerProperties.CreateWithResourceId("test")));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
-            this.partitionKeyRangeCache.Setup(
-                        m => m.TryLookupAsync(
-                            It.IsAny<string>(),
-                            It.IsAny<CollectionRoutingMap>(),
-                            It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<CancellationToken>()
-                        )
-                ).Returns(Task.FromResult<CollectionRoutingMap>(null));
-
+            this.partitionKeyRangeCache
+                .Setup(m => m.TryLookupAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<CollectionRoutingMap>(),
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>()
+                ))
+                .Returns(Task.FromResult<TryCatch<CollectionRoutingMap>>(TryCatch<CollectionRoutingMap>.FromException(new NotFoundException())));
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
-
             this.InitStoreModels();
         }
 

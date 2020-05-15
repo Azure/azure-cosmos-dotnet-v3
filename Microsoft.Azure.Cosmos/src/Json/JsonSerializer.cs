@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Monads;
 
     internal static class JsonSerializer
     {

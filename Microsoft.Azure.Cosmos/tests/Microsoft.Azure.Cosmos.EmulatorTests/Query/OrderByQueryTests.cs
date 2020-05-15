@@ -98,15 +98,15 @@
             ContainerProperties containerSettings = await container.ReadContainerAsync();
             foreach (CosmosObject document in documents)
             {
-                IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
-                containerSettings.ResourceId,
-                Range<string>.GetPointRange(
-                    PartitionKeyInternal.FromObjectArray(
-                        new object[]
-                        {
-                            Number64.ToLong((document[partitionKey] as CosmosNumber).Value)
-                        },
-                        true).GetEffectivePartitionKeyString(containerSettings.PartitionKey)));
+                IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.GetOverlappingRangesAsync(
+                    containerSettings.ResourceId,
+                    Range<string>.GetPointRange(
+                        PartitionKeyInternal.FromObjectArray(
+                            new object[]
+                            {
+                                Number64.ToLong((document[partitionKey] as CosmosNumber).Value)
+                            },
+                            true).GetEffectivePartitionKeyString(containerSettings.PartitionKey)));
                 Debug.Assert(targetRanges.Count == 1);
                 idToRangeMinKeyMap.Add(((CosmosString)document["id"]).Value, targetRanges[0].MinInclusive);
             }

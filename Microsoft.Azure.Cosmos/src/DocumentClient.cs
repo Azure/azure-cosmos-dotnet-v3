@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -1182,13 +1183,13 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey))
             {
                 ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
-                IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                resolvedCollection.ResourceId,
-                new Range<string>(
-                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    true,
-                    false));
+                TryCatch<IReadOnlyList<PartitionKeyRange>> tryGetOverlappingRangesAsync = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                    resolvedCollection.ResourceId,
+                    new Range<string>(
+                        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                        true,
+                        false));
 
                 // In Gateway mode, AddressCache is null
                 if (this.AddressResolver != null)

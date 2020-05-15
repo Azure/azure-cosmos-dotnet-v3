@@ -213,14 +213,13 @@ namespace Microsoft.Azure.Cosmos
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRId = await this.GetRIDAsync(cancellationToken);
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        containerRId,
-                        new Range<string>(
-                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                            isMinInclusive: true,
-                            isMaxInclusive: false),
-                        forceRefresh: true);
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.GetOverlappingRangesAsync(
+                containerRId,
+                new Range<string>(
+                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
             List<FeedRangeEPK> feedTokens = new List<FeedRangeEPK>(partitionKeyRanges.Count);
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
@@ -402,11 +401,11 @@ namespace Microsoft.Azure.Cosmos
                 .ContinueWith(partitionKeyRangeCachetask =>
                 {
                     PartitionKeyRangeCache partitionKeyRangeCache = partitionKeyRangeCachetask.Result;
-                    return partitionKeyRangeCache.TryLookupAsync(
-                            collectionRID,
-                            null,
-                            null,
-                            cancellationToken);
+                    return partitionKeyRangeCache.LookupAsync(
+                        collectionRID,
+                        previousValue: null,
+                        request: null,
+                        cancellationToken);
                 })
                 .Unwrap();
         }

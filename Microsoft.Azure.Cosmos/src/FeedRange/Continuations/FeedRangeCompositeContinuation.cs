@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -185,11 +185,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.CurrentToken.Range.Min, this.CurrentToken.Range.Max, forceRefresh: true);
-            if (resolvedRanges.Count > 0)
-            {
-                this.CreateChildRanges(resolvedRanges);
-            }
+            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.GetOverlappingRangesAsync(
+                partitionKeyRangeCache,
+                this.CurrentToken.Range.Min,
+                this.CurrentToken.Range.Max,
+                forceRefresh: true);
+            this.CreateChildRanges(resolvedRanges);
 
             return FeedRangeCompositeContinuation.Retry;
         }
@@ -252,13 +253,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetOverlappingRangesAsync(
             Routing.PartitionKeyRangeCache partitionKeyRangeCache,
             string min,
             string max,
             bool forceRefresh = false)
         {
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+            TryCatch<IReadOnlyList<Documents.PartitionKeyRange>> tryGetOverlappingRangesAsync = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 this.ContainerRid,
                 new Documents.Routing.Range<string>(
                     min,
@@ -266,13 +267,14 @@ namespace Microsoft.Azure.Cosmos
                     isMaxInclusive: false,
                     isMinInclusive: true),
                 forceRefresh);
+            tryGetOverlappingRangesAsync.ThrowIfFailed();
 
-            if (keyRanges.Count == 0)
+            if (tryGetOverlappingRangesAsync.Result.Count == 0)
             {
                 throw new ArgumentOutOfRangeException("RequestContinuation", $"Token contains invalid range {min}-{max}");
             }
 
-            return keyRanges;
+            return tryGetOverlappingRangesAsync.Result;
         }
     }
 }

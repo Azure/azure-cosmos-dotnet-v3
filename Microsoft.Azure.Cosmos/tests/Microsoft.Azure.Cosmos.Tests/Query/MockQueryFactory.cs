@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     bool isFailureResponse = itemsInPage.Length == 1 && itemsInPage[0] < 0;
                     if (isFailureResponse)
                     {
-                        if(itemsInPage[0] == MockPartitionResponse.MessageWithToManyRequestFailure)
+                        if (itemsInPage[0] == MockPartitionResponse.MessageWithToManyRequestFailure)
                         {
                             queryResponse = QueryResponseMessageFactory.CreateFailureToManyRequestResponse();
                         }
@@ -172,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             x.TryGetOverlappingRangesAsync(
                                 containerRid,
                                 It.Is<Documents.Routing.Range<string>>(inputRange => inputRange.Equals(partitionKeyRange.ToRange())),
-                                true)).Returns(Task.FromResult(partitionAndMessages.GetPartitionKeyRangeOfSplit()));
+                                true)).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(partitionAndMessages.GetPartitionKeyRangeOfSplit())));
 
                     mockQueryClient.Setup(x =>
                      x.ExecuteItemQueryAsync(

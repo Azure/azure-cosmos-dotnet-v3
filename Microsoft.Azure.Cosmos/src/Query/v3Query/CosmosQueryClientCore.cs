@@ -14,8 +14,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -246,24 +246,25 @@ namespace Microsoft.Azure.Cosmos
 
             IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
-            if (ranges == null && PathsHelper.IsNameBased(resourceLink))
+            TryCatch<List<PartitionKeyRange>> tryGetOverlappingRangesAsync = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+            if (tryGetOverlappingRangesAsync.Failed)
             {
-                // Refresh the cache and don't try to re-resolve collection as it is not clear what already
-                // happened based on previously resolved collection rid.
-                // Return NotFoundException this time. Next query will succeed.
-                // This can only happen if collection is deleted/created with same name and client was not restarted
-                // in between.
-                CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
-                collectionCache.Refresh(resourceLink);
+                if (PathsHelper.IsNameBased(resourceLink))
+                {
+                    // Refresh the cache and don't try to re-resolve collection as it is not clear what already
+                    // happened based on previously resolved collection rid.
+                    // Return NotFoundException this time. Next query will succeed.
+                    // This can only happen if collection is deleted/created with same name and client was not restarted
+                    // in between.
+                    CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+                    collectionCache.Refresh(resourceLink);
+                }
+
+                throw new NotFoundException(
+                    $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
             }
 
-            if (ranges == null)
-            {
-                throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
-            }
-
-            return ranges;
+            return tryGetOverlappingRangesAsync.Result;
         }
 
         internal override bool ByPassQueryParsing()
@@ -368,7 +369,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        internal override async Task<TryCatch<IReadOnlyList<PartitionKeyRange>>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Range<string> range,
             bool forceRefresh = false)

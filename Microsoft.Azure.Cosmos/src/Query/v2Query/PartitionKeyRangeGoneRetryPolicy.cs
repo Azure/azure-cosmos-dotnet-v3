@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -108,15 +109,19 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey))
                 {
                     ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                    CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, request, cancellationToken);
-                    if (routingMap != null)
+                    TryCatch<CollectionRoutingMap> tryLookupAsync = await this.partitionKeyRangeCache.TryLookupAsync(
+                        collection.ResourceId,
+                        previousValue: null,
+                        request,
+                        cancellationToken);
+                    if (tryLookupAsync.Failed)
                     {
                         // Force refresh.
                         await this.partitionKeyRangeCache.TryLookupAsync(
-                                collection.ResourceId,
-                                routingMap,
-                                request,
-                                cancellationToken);
+                            collection.ResourceId,
+                            previousValue: null,
+                            request,
+                            cancellationToken);
                     }
                 }
 

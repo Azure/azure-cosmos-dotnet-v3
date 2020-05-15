@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal sealed class CollectionRoutingMap
     {
+        private static readonly int InvalidPkRangeId = -1;
+
         /// <summary>
         /// Partition key range id to partition address and range.
         /// </summary>
@@ -28,22 +30,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly List<PartitionKeyRange> orderedPartitionKeyRanges;
         private readonly List<Range<string>> orderedRanges;
         private readonly HashSet<string> goneRanges;
-        private readonly static int InvalidPkRangeId = -1;
 
-        internal int HighestNonOfflinePkRangeId { get; private set; }
-
-        public CollectionRoutingMap(
-            CollectionRoutingMap collectionRoutingMap,
-            string changeFeedNextIfNoneMatch)
-        {
-            this.rangeById = new Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>>(collectionRoutingMap.rangeById);
-            this.orderedPartitionKeyRanges = new List<PartitionKeyRange>(collectionRoutingMap.orderedPartitionKeyRanges);
-            this.orderedRanges = new List<Range<string>>(collectionRoutingMap.orderedRanges);
-            this.goneRanges = new HashSet<string>(collectionRoutingMap.goneRanges);
-            this.HighestNonOfflinePkRangeId = collectionRoutingMap.HighestNonOfflinePkRangeId;
-            this.CollectionUniqueId = collectionRoutingMap.CollectionUniqueId;
-            this.ChangeFeedNextIfNoneMatch = changeFeedNextIfNoneMatch;
-        }
+        public int HighestNonOfflinePkRangeId { get; private set; }
 
         private CollectionRoutingMap(
             Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>> rangeById,
@@ -51,43 +39,46 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionUniqueId,
             string changeFeedNextIfNoneMatch)
         {
-            this.rangeById = rangeById;
-            this.orderedPartitionKeyRanges = orderedPartitionKeyRanges;
+            this.rangeById = rangeById ?? throw new ArgumentNullException(nameof(rangeById));
+            this.orderedPartitionKeyRanges = orderedPartitionKeyRanges ?? throw new ArgumentNullException(nameof(orderedPartitionKeyRanges));
             this.orderedRanges = orderedPartitionKeyRanges.Select(
-                    range =>
-                    new Range<string>(
-                        range.MinInclusive,
-                        range.MaxExclusive,
-                        true,
-                        false)).ToList();
+                range =>
+                new Range<string>(
+                    range.MinInclusive,
+                    range.MaxExclusive,
+                    true,
+                    false)).ToList();
 
-            this.CollectionUniqueId = collectionUniqueId;
+            this.CollectionUniqueId = collectionUniqueId ?? throw new ArgumentNullException(nameof(collectionUniqueId));
             this.ChangeFeedNextIfNoneMatch = changeFeedNextIfNoneMatch;
             this.goneRanges = new HashSet<string>(orderedPartitionKeyRanges.SelectMany(r => r.Parents ?? Enumerable.Empty<string>()));
 
             this.HighestNonOfflinePkRangeId = orderedPartitionKeyRanges.Max(range =>
+            {
+                int pkId = CollectionRoutingMap.InvalidPkRangeId;
+                if (!int.TryParse(range.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out pkId))
                 {
-                    int pkId = CollectionRoutingMap.InvalidPkRangeId;
-                    if (!int.TryParse(range.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out pkId))
-                    {
-                        DefaultTrace.TraceCritical(
-                            "Could not parse partition key range Id as int {0} for collectionRid {1}",
-                            range.Id,
-                            this.CollectionUniqueId);
-                        throw new ArgumentException(string.Format(
-                            CultureInfo.InvariantCulture,
-                            "Could not parse partition key range Id as int {0} for collectionRid {1}",
-                            range.Id,
-                            this.CollectionUniqueId));
-                    }
-                    return range.Status == PartitionKeyRangeStatus.Offline ? CollectionRoutingMap.InvalidPkRangeId : pkId;
-                });
+                    DefaultTrace.TraceCritical(
+                        "Could not parse partition key range Id as int {0} for collectionRid {1}",
+                        range.Id,
+                        this.CollectionUniqueId);
+
+                    throw new ArgumentException(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Could not parse partition key range Id as int {0} for collectionRid {1}",
+                        range.Id,
+                        this.CollectionUniqueId));
+                }
+
+                return range.Status == PartitionKeyRangeStatus.Offline ? CollectionRoutingMap.InvalidPkRangeId : pkId;
+            });
         }
 
-        public static CollectionRoutingMap TryCreateCompleteRoutingMap(
+        public static bool TryCreateCompleteRoutingMap(
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> ranges,
             string collectionUniqueId,
-            string changeFeedNextIfNoneMatch = null)
+            string changeFeedNextIfNoneMatch,
+            out CollectionRoutingMap collectionRoutingMap)
         {
             Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>> rangeById =
                 new Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>>(StringComparer.Ordinal);
@@ -103,10 +94,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             if (!IsCompleteSetOfRanges(orderedRanges))
             {
-                return null;
+                collectionRoutingMap = default;
+                return false;
             }
 
-            return new CollectionRoutingMap(rangeById, orderedRanges, collectionUniqueId, changeFeedNextIfNoneMatch);
+            collectionRoutingMap = new CollectionRoutingMap(rangeById, orderedRanges, collectionUniqueId, changeFeedNextIfNoneMatch);
+            return true;
         }
 
         public string CollectionUniqueId { get; private set; }
@@ -116,24 +109,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Ranges in increasing order.
         /// </summary>
-        public IReadOnlyList<PartitionKeyRange> OrderedPartitionKeyRanges
-        {
-            get
-            {
-                return this.orderedPartitionKeyRanges;
-            }
-        }
+        public IReadOnlyList<PartitionKeyRange> OrderedPartitionKeyRanges => this.orderedPartitionKeyRanges;
 
-        public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(Range<string> range)
-        {
-            return this.GetOverlappingRanges(new[] { range });
-        }
-
-        public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(IReadOnlyList<Range<string>> providedPartitionKeyRanges)
+        public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(params Range<string>[] providedPartitionKeyRanges)
         {
             if (providedPartitionKeyRanges == null)
             {
-                throw new ArgumentNullException("providedPartitionKeyRanges");
+                throw new ArgumentNullException(nameof(providedPartitionKeyRanges));
             }
 
             SortedList<string, PartitionKeyRange> partitionRanges = new SortedList<string, PartitionKeyRange>();
@@ -192,31 +174,34 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.orderedPartitionKeyRanges[index];
         }
 
-        public PartitionKeyRange TryGetRangeByPartitionKeyRangeId(string partitionKeyRangeId)
+        public bool TryGetRangeByPartitionKeyRangeId(string partitionKeyRangeId, out PartitionKeyRange partitionKeyRange)
         {
-            Tuple<PartitionKeyRange, ServiceIdentity> addresses;
-            if (this.rangeById.TryGetValue(partitionKeyRangeId, out addresses))
+            if (!this.rangeById.TryGetValue(partitionKeyRangeId, out Tuple<PartitionKeyRange, ServiceIdentity> addresses))
             {
-                return addresses.Item1;
+                partitionKeyRange = default;
+                return false;
             }
 
-            return null;
+            partitionKeyRange = addresses.Item1;
+            return true;
         }
 
-        public ServiceIdentity TryGetInfoByPartitionKeyRangeId(string partitionKeyRangeId)
+        public bool TryGetInfoByPartitionKeyRangeId(string partitionKeyRangeId, out ServiceIdentity serviceIdentity)
         {
-            Tuple<PartitionKeyRange, ServiceIdentity> addresses;
-            if (this.rangeById.TryGetValue(partitionKeyRangeId, out addresses))
+            if (!this.rangeById.TryGetValue(partitionKeyRangeId, out Tuple<PartitionKeyRange, ServiceIdentity> addresses))
             {
-                return addresses.Item2;
+                serviceIdentity = default;
+                return false;
             }
 
-            return null;
+            serviceIdentity = addresses.Item2;
+            return true;
         }
 
-        public CollectionRoutingMap TryCombine(
+        public bool TryCombine(
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> ranges,
-            string changeFeedNextIfNoneMatch)
+            string changeFeedNextIfNoneMatch,
+            out CollectionRoutingMap collectionRoutingMap)
         {
             HashSet<string> newGoneRanges = new HashSet<string>(ranges.SelectMany(tuple => tuple.Item1.Parents ?? Enumerable.Empty<string>()));
             newGoneRanges.UnionWith(this.goneRanges);
@@ -240,10 +225,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             if (!IsCompleteSetOfRanges(newOrderedRanges))
             {
-                return null;
+                collectionRoutingMap = default;
+                return false;
             }
 
-            return new CollectionRoutingMap(newRangeById, newOrderedRanges, this.CollectionUniqueId, changeFeedNextIfNoneMatch);
+            collectionRoutingMap = new CollectionRoutingMap(newRangeById, newOrderedRanges, this.CollectionUniqueId, changeFeedNextIfNoneMatch);
+            return true;
         }
 
         private class MinPartitionKeyTupleComparer : IComparer<Tuple<PartitionKeyRange, ServiceIdentity>>

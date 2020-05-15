@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

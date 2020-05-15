@@ -196,7 +196,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
                             throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonToken)}: {jsonTextReader.TokenType}.");
                     }
                 }
-                
             }
         }
 

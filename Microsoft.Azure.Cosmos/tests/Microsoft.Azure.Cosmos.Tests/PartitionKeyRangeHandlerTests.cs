@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
@@ -42,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = this.GetPartitionRoutingHelperMock();
             PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(MockCosmosUtil.CreateMockCosmosClient(), partitionRoutingHelperMock.Object);
 
-            TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler(async (request, cancellationToken) =>
+            {
                 ResponseMessage errorResponse = await TestHandler.ReturnStatusCode(HttpStatusCode.Gone);
                 errorResponse.Headers.Remove(HttpConstants.HttpHeaders.Continuation); //Clobber original continuation
                 return errorResponse;
@@ -79,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(MockCosmosUtil.CreateMockCosmosClient(), partitionRoutingHelperMock.Object);
 
-            TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler(async (request, cancellationToken) =>
+            {
                 ResponseMessage successResponse = await TestHandler.ReturnSuccess();
                 successResponse.Headers.Remove(HttpConstants.HttpHeaders.Continuation); //Clobber original continuation
                 return successResponse;
@@ -141,17 +144,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.Is<bool>(x => x == false)
-            )).Returns(Task.FromResult(overlappingRanges)).Verifiable();
-            
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(overlappingRanges))).Verifiable();
+
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
-                providedRanges, 
-                routingMapProvider.Object, 
-                CollectionId, 
-                range, 
-                suppliedTokens, 
+            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.GetTargetRangeFromContinuationTokenRangeAsync(
+                providedRanges,
+                routingMapProvider.Object,
+                CollectionId,
+                range,
+                suppliedTokens,
                 RntdbEnumerationDirection.Reverse);
             Assert.AreEqual(overlappingRanges.Last().Id, resolvedRangeInfo.ResolvedRange.Id);
             CollectionAssert.AreEqual(suppliedTokens, resolvedRangeInfo.ContinuationTokens);
@@ -162,8 +165,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == range.Min),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
-            resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(overlappingRanges.Take(1).ToList())))
+            .Verifiable();
+            resolvedRangeInfo = await partitionRoutingHelper.GetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
                 CollectionId,
@@ -202,11 +206,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == range.Min),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(overlappingRanges.Take(1).ToList())))
+            .Verifiable();
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.GetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
                 CollectionId,
@@ -248,16 +253,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == rangeFromContinuationToken.Min),
                 It.Is<bool>(x => x == false)
-            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(overlappingRanges.Take(1).ToList())))
+            .Verifiable();
             routingMapProvider.Setup(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == rangeFromContinuationToken.Min && x.Max == rangeFromContinuationToken.Max),
                 It.Is<bool>(x => x == true)
-            )).Returns(Task.FromResult(replacedRanges)).Verifiable();
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(replacedRanges)))
+            .Verifiable();
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.GetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
                 CollectionId,
@@ -272,14 +279,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(replacedRanges.Count, resolvedRangeInfo.ContinuationTokens.Count);
             Assert.AreEqual(resolvedRangeInfo.ContinuationTokens[0].Token, Token);
 
-            for(int i = 0; i < resolvedRangeInfo.ContinuationTokens.Count; i++)
+            for (int i = 0; i < resolvedRangeInfo.ContinuationTokens.Count; i++)
             {
                 Assert.IsTrue(reversedReplacedRanges[i].ToRange().Equals(resolvedRangeInfo.ContinuationTokens[i].Range));
             }
 
             //Forward
             partitionRoutingHelper = new PartitionRoutingHelper();
-            resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+            resolvedRangeInfo = await partitionRoutingHelper.GetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
                 CollectionId,
@@ -320,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == providedRanges.Single().Min && x.Max == providedRanges.Single().Max),
                 It.Is<bool>(x => x == false)
-            )).Returns(Task.FromResult(overlappingRanges)).Verifiable();
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(overlappingRanges))).Verifiable();
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
@@ -347,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Skip(2).ToList())).Verifiable();
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(overlappingRanges.Skip(2).ToList()))).Verifiable();
             headers = new DictionaryNameValueCollection();
             result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                  headers,
@@ -376,11 +383,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult<IReadOnlyList<PartitionKeyRange>>(null)).Verifiable();
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromException(new NotFoundException())))
+            .Verifiable();
 
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-            headers.Add(HttpConstants.HttpHeaders.Continuation, "something");
+            DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+            {
+                { HttpConstants.HttpHeaders.Continuation, "something" }
+            };
             bool result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                 headers,
                 null,
@@ -463,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == providedRanges.Single().Min && x.Max == providedRanges.Single().Max),
                 It.Is<bool>(x => x == false)
-            )).Returns(Task.FromResult(overlappingRanges)).Verifiable();
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(overlappingRanges))).Verifiable();
 
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
             DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
@@ -494,7 +504,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult(overlappingRanges));
+            )).Returns(Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(overlappingRanges)));
             headers = new DictionaryNameValueCollection();
 
             result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
@@ -595,7 +605,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy( null);
+            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy(null);
 
             ShouldRetryResult exceptionResult = await retryPolicyMock.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
             Assert.IsNotNull(exceptionResult);
@@ -619,7 +629,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Range<string>>(),
                 It.IsAny<List<CompositeContinuationToken>>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
-            )).Returns(Task.FromResult(new ResolvedRangeInfo(new PartitionKeyRange { Id = PartitionRangeKeyId }, new List<CompositeContinuationToken>())));
+            )).Returns(Task.FromResult(TryCatch<ResolvedRangeInfo>.FromResult(new ResolvedRangeInfo(new PartitionKeyRange { Id = PartitionRangeKeyId }, new List<CompositeContinuationToken>()))));
             partitionRoutingHelperMock.Setup(m => m.TryAddPartitionKeyRangeToContinuationTokenAsync(
                 It.IsAny<INameValueCollection>(),
                 It.IsAny<List<Range<string>>>(),

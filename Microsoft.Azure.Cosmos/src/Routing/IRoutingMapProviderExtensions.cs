@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -20,21 +22,34 @@ namespace Microsoft.Azure.Cosmos
             return StringComparer.Ordinal.Compare(left, right) < 0 ? right : left;
         }
 
-        public static async Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKeyAsync(
+        public static async Task<TryCatch<PartitionKeyRange>> TryGetRangeByEffectivePartitionKeyAsync(
             this IRoutingMapProvider routingMapProvider,
             string collectionResourceId,
             string effectivePartitionKey)
         {
-            IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
+            TryCatch<IReadOnlyList<PartitionKeyRange>> tryGetOverlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                 collectionResourceId,
                 Range<string>.GetPointRange(effectivePartitionKey));
 
-            if (ranges == null)
+            if (tryGetOverlappingRanges.Failed)
             {
-                return null;
+                return TryCatch<PartitionKeyRange>.FromException(tryGetOverlappingRanges.Exception);
             }
 
-            return ranges.Single();
+            return TryCatch<PartitionKeyRange>.FromResult(tryGetOverlappingRanges.Result.Single());
+        }
+
+        public static async Task<PartitionKeyRange> GetRangeByEffectivePartitionKeyAsync(
+            this IRoutingMapProvider routingMapProvider,
+            string collectionResourceId,
+            string effectivePartitionKey)
+        {
+            TryCatch<PartitionKeyRange> tryGetPartitionKeyRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(
+                collectionResourceId,
+                effectivePartitionKey);
+            tryGetPartitionKeyRange.ThrowIfFailed();
+
+            return tryGetPartitionKeyRange.Result;
         }
 
         private static bool IsNonOverlapping<T>(SortedSet<Range<T>> sortedSet)
@@ -65,7 +80,21 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public static async Task<List<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        public static async Task<List<PartitionKeyRange>> GetOverlappingRangesAsync(
+            this IRoutingMapProvider routingMapProvider,
+            string collectionResourceId,
+            IEnumerable<Range<string>> sortedRanges)
+        {
+            TryCatch<List<PartitionKeyRange>> tryGetOverlappingRangesAsync = await routingMapProvider.TryGetOverlappingRangesAsync(
+                collectionResourceId,
+                sortedRanges,
+                forceRefresh: true);
+            tryGetOverlappingRangesAsync.ThrowIfFailed();
+
+            return tryGetOverlappingRangesAsync.Result;
+        }
+
+        public static async Task<TryCatch<List<PartitionKeyRange>>> TryGetOverlappingRangesAsync(
             this IRoutingMapProvider routingMapProvider,
             string collectionResourceId,
             IEnumerable<Range<string>> sortedRanges,
@@ -127,26 +156,26 @@ namespace Microsoft.Azure.Cosmos
                         range.IsMaxInclusive);
                 }
 
-                IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                TryCatch<IReadOnlyList<PartitionKeyRange>> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     collectionResourceId,
                     queryRange,
                     forceRefresh);
 
-                if (overlappingRanges == null)
+                if (overlappingRanges.Failed)
                 {
                     // null means we weren't able to find the overlapping ranges.
                     // This is due to a stale cache.
                     // It is the caller's responsiblity to recall this method with forceRefresh = true
-                    return null;
+                    return TryCatch<List<PartitionKeyRange>>.FromException(new NotFoundException());
 
                     // Design note: It would be better if this method just returned a bool and followed the standard TryGet Pattern.
                     // It would be even better to remove the forceRefresh flag just replace it with a non TryGet method call.
                 }
 
-                targetRanges.AddRange(overlappingRanges);
+                targetRanges.AddRange(overlappingRanges.Result);
             }
 
-            return targetRanges;
+            return TryCatch<List<PartitionKeyRange>>.FromResult(targetRanges);
         }
     }
 }

@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 {
     using System;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Exception exception = tryCatch.Exception;
             Assert.IsNotNull(exception.StackTrace);
             // exception.ToString() >>
-            //Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. --->System.Exception: Exception of type 'System.Exception' was thrown.
+            //Microsoft.Azure.Cosmos.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. --->System.Exception: Exception of type 'System.Exception' was thrown.
             //   at Microsoft.Azure.Cosmos.Tests.Query.TryCatchTests.MethodWhereExceptionWasThrown() in C:\azure - cosmos - dotnet - v3\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Query\TryCatchTests.cs:line 43
             //   at Microsoft.Azure.Cosmos.Tests.Query.TryCatchTests.MethodWhereExceptionWasCaught() in C:\azure - cosmos - dotnet - v3\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Query\TryCatchTests.cs:line 30
             //         -- - End of inner exception stack trace-- -

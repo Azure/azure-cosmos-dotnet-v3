@@ -156,16 +156,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return null;
         }
 
-        private static long TryConvertToNumber(string number)
+        private static long ConvertToNumberOrDefault(string number)
         {
-            long parsed = 0;
-            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
+            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out long parsedNumber))
             {
                 DefaultTrace.TraceWarning("Cannot parse number '{0}'.", number);
                 return 0;
             }
 
-            return parsed;
+            return parsedNumber;
         }
 
         private static IEnumerable<JObject> GetItemsFromResponse(ResponseMessage response)
@@ -197,10 +196,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                     response.EnsureSuccessStatusCode();
                 }
 
-                long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
+                long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.ConvertToNumberOrDefault(
+                    ExtractLsnFromSessionToken(
+                        response.Headers[HttpConstants.HttpHeaders.SessionToken]));
+
                 IEnumerable<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
                 long lastQueryLSN = items.Any()
-                    ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
+                    ? RemainingWorkEstimatorCore.ConvertToNumberOrDefault(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
                     : parsedLSNFromSessionToken;
                 if (lastQueryLSN < 0)
                 {

@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Monads;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member

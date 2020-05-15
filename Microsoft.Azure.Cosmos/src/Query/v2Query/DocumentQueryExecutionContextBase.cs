@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -432,24 +432,25 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
-            PartitionKeyRange range = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId);
-            if (range == null && PathsHelper.IsNameBased(this.ResourceLink))
+            TryCatch<PartitionKeyRange> tryGetPartitionKeyRangeByIdAsync = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId);
+            if (tryGetPartitionKeyRangeByIdAsync.Failed)
             {
-                // Refresh the cache and don't try to reresolve collection as it is not clear what already
-                // happened based on previously resolved collection rid.
-                // Return NotFoundException this time. Next query will succeed.
-                // This can only happen if collection is deleted/created with same name and client was not restarted
-                // inbetween.
-                CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-                collectionCache.Refresh(this.ResourceLink);
+                if (PathsHelper.IsNameBased(this.ResourceLink))
+                {
+                    // Refresh the cache and don't try to reresolve collection as it is not clear what already
+                    // happened based on previously resolved collection rid.
+                    // Return NotFoundException this time. Next query will succeed.
+                    // This can only happen if collection is deleted/created with same name and client was not restarted
+                    // inbetween.
+                    CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
+                    collectionCache.Refresh(this.ResourceLink);
+                }
+
+                throw new NotFoundException(
+                    $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRangeById(collectionResourceId:{collectionResourceId}, partitionKeyRangeId: {partitionKeyRangeId}) failed due to stale cache");
             }
 
-            if (range == null)
-            {
-                throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRangeById(collectionResourceId:{collectionResourceId}, partitionKeyRangeId: {partitionKeyRangeId}) failed due to stale cache");
-            }
-
-            return range;
+            return tryGetPartitionKeyRangeByIdAsync.Result;
         }
 
         internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(string collectionResourceId, string effectivePartitionKeyString)
@@ -475,54 +476,29 @@ namespace Microsoft.Azure.Cosmos.Query
 
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
-            if (ranges == null && PathsHelper.IsNameBased(this.ResourceLink))
+            TryCatch<List<PartitionKeyRange>> tryGetOverlappingRangesAsync = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+            if (tryGetOverlappingRangesAsync.Failed)
             {
-                // Refresh the cache and don't try to re-resolve collection as it is not clear what already
-                // happened based on previously resolved collection rid.
-                // Return NotFoundException this time. Next query will succeed.
-                // This can only happen if collection is deleted/created with same name and client was not restarted
-                // in between.
-                CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-                collectionCache.Refresh(this.ResourceLink);
-            }
+                if (PathsHelper.IsNameBased(this.ResourceLink))
+                {
+                    // Refresh the cache and don't try to re-resolve collection as it is not clear what already
+                    // happened based on previously resolved collection rid.
+                    // Return NotFoundException this time. Next query will succeed.
+                    // This can only happen if collection is deleted/created with same name and client was not restarted
+                    // in between.
+                    CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
+                    collectionCache.Refresh(this.ResourceLink);
+                }
 
-            if (ranges == null)
-            {
                 throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
             }
 
-            return ranges;
+            return tryGetOverlappingRangesAsync.Result;
         }
 
         public abstract void Dispose();
 
         protected abstract Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
-
-        protected async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
-        {
-            IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
-            List<PartitionKeyRange> replacementRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();
-            string replaceMinInclusive = replacementRanges.First().MinInclusive;
-            string replaceMaxExclusive = replacementRanges.Last().MaxExclusive;
-            if (!replaceMinInclusive.Equals(targetRange.MinInclusive, StringComparison.Ordinal) || !replaceMaxExclusive.Equals(targetRange.MaxExclusive, StringComparison.Ordinal))
-            {
-                throw new InternalServerErrorException(string.Format(
-                    CultureInfo.InvariantCulture,
-                    "Target range and Replacement range has mismatched min/max. Target range: [{0}, {1}). Replacement range: [{2}, {3}).",
-                    targetRange.MinInclusive,
-                    targetRange.MaxExclusive,
-                    replaceMinInclusive,
-                    replaceMaxExclusive));
-            }
-
-            return replacementRanges;
-        }
-
-        protected bool NeedPartitionKeyRangeCacheRefresh(DocumentClientException ex)
-        {
-            return ex.StatusCode == (HttpStatusCode)StatusCodes.Gone && ex.GetSubStatus() == SubStatusCodes.PartitionKeyRangeGone;
-        }
 
         private async Task<DocumentServiceResponse> ExecuteQueryRequestInternalAsync(
             DocumentServiceRequest request,

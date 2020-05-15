@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Common
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Documents;
 
     internal interface IAddressCache
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <param name="forceRefreshPartitionAddresses">Whether addresses need to be refreshed as previously resolved addresses were determined to be outdated.</param>
         /// <param name="cancellationToken">Instance of <see cref="CancellationToken"/>.</param>
         /// <returns>Physical addresses.</returns>
-        Task<PartitionAddressInformation> TryGetAddressesAsync(
+        Task<TryCatch<PartitionAddressInformation>> TryGetAddressesAsync(
             DocumentServiceRequest request,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
             ServiceIdentity serviceIdentity,

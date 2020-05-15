@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -27,8 +28,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private const string AddressResolutionBatchSize = "AddressResolutionBatchSize";
         private const int DefaultBatchSize = 50;
-
-        private readonly Uri serviceEndpoint;
         private readonly Uri addressEndpoint;
 
         private readonly AsyncCache<PartitionKeyRangeIdentity, PartitionAddressInformation> serverPartitionAddressCache;
@@ -59,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
-            this.serviceEndpoint = serviceEndpoint;
+            this.ServiceEndpoint = serviceEndpoint;
             this.serviceConfigReader = serviceConfigReader;
             this.serverPartitionAddressCache = new AsyncCache<PartitionKeyRangeIdentity, PartitionAddressInformation>();
             this.suboptimalServerPartitionTimestamps = new ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime>();
@@ -86,13 +85,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.httpClient.AddApiTypeHeader(apiType);
         }
 
-        public Uri ServiceEndpoint
-        {
-            get
-            {
-                return this.serviceEndpoint;
-            }
-        }
+        public Uri ServiceEndpoint { get; }
 
         [SuppressMessage("", "AsyncFixer02", Justification = "Multi task completed with await")]
         [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]
@@ -111,14 +104,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
 #endif
-                int userSpecifiedBatchSize = 0;
-                if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out userSpecifiedBatchSize))
+#endif
+                if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out int userSpecifiedBatchSize))
                 {
                     batchSize = userSpecifiedBatchSize;
                 }
 #if NETSTANDARD20
             }
-#endif  
 #endif
 
             string collectionAltLink = string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseName),
@@ -155,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task<PartitionAddressInformation> TryGetAddressesAsync(
+        public async Task<TryCatch<PartitionAddressInformation>> TryGetAddressesAsync(
             DocumentServiceRequest request,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
             ServiceIdentity serviceIdentity,
@@ -176,11 +168,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (partitionKeyRangeIdentity.PartitionKeyRangeId == PartitionKeyRange.MasterPartitionKeyRangeId)
                 {
-                    return (await this.ResolveMasterAsync(request, forceRefreshPartitionAddresses)).Item2;
+                    return TryCatch<PartitionAddressInformation>.FromResult((await this.ResolveMasterAsync(request, forceRefreshPartitionAddresses)).Item2);
                 }
 
-                DateTime suboptimalServerPartitionTimestamp;
-                if (this.suboptimalServerPartitionTimestamps.TryGetValue(partitionKeyRangeIdentity, out suboptimalServerPartitionTimestamp))
+                if (this.suboptimalServerPartitionTimestamps.TryGetValue(partitionKeyRangeIdentity, out DateTime suboptimalServerPartitionTimestamp))
                 {
                     bool forceRefreshDueToSuboptimalPartitionReplicaSet =
                         DateTime.UtcNow.Subtract(suboptimalServerPartitionTimestamp) > TimeSpan.FromSeconds(this.suboptimalPartitionForceRefreshIntervalInSeconds);
@@ -205,8 +196,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         cancellationToken,
                         forceRefresh: true);
 
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
                 }
                 else
                 {
@@ -227,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.suboptimalServerPartitionTimestamps.TryAdd(partitionKeyRangeIdentity, DateTime.UtcNow);
                 }
 
-                return addresses;
+                return TryCatch<PartitionAddressInformation>.FromResult(addresses);
             }
             catch (DocumentClientException ex)
             {
@@ -235,10 +225,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     (ex.StatusCode == HttpStatusCode.Gone && ex.GetSubStatus() == SubStatusCodes.PartitionKeyRangeGone))
                 {
                     //remove from suboptimal cache in case the the collection+pKeyRangeId combo is gone.
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
 
-                    return null;
+                    return TryCatch<PartitionAddressInformation>.FromException(ex);
                 }
 
                 throw;
@@ -247,8 +236,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (forceRefreshPartitionAddresses)
                 {
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
                 }
 
                 throw;
@@ -533,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 new PartitionAddressInformation(
                     addressInfos,
                     partitionKeyRangeIdentity.PartitionKeyRangeId == PartitionKeyRange.MasterPartitionKeyRangeId ? null : partitionKeyRangeIdentity,
-                    this.serviceEndpoint));
+                    this.ServiceEndpoint));
         }
 
         private static string LogAddressResolutionStart(DocumentServiceRequest request, Uri targetEndpoint)

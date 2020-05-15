@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
@@ -90,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 Range<string> rangeFromContinuationToken =
                     this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out List<CompositeContinuationToken> suppliedTokens);
 
-                ResolvedRangeInfo resolvedRangeInfo =
+                TryCatch<ResolvedRangeInfo> tryGetResolvedRangeInfo =
                     await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
@@ -99,11 +100,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         suppliedTokens: suppliedTokens,
                         direction: rntdbEnumerationDirection);
 
-                if (serviceRequest.IsNameBased && resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
+                if (serviceRequest.IsNameBased && tryGetResolvedRangeInfo.Failed)
                 {
                     serviceRequest.ForceNameCacheRefresh = true;
                     collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
-                    resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+                    tryGetResolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
@@ -112,13 +113,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         direction: rntdbEnumerationDirection);
                 }
 
-                if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
+                if (tryGetResolvedRangeInfo.Failed)
                 {
                     return ((DocumentClientException)new NotFoundException(
                             $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
                             ).ToCosmosResponseMessage(request);
                 }
 
+                ResolvedRangeInfo resolvedRangeInfo = tryGetResolvedRangeInfo.Result;
                 serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
 
                 response = await base.SendAsync(request, cancellationToken);

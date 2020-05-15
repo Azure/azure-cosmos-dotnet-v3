@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
@@ -40,8 +41,12 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             string effectivePartitionKeyString = this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
-            Documents.PartitionKeyRange range = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(containerRid, effectivePartitionKeyString);
-            return new List<string>() { range.Id };
+            TryCatch<Documents.PartitionKeyRange> tryGetRangeByEffectivePartitionKeyAsync = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(
+                containerRid,
+                effectivePartitionKeyString);
+            tryGetRangeByEffectivePartitionKeyAsync.ThrowIfFailed();
+
+            return new List<string>() { tryGetRangeByEffectivePartitionKeyAsync.Result.Id };
         }
 
         public override void Accept(FeedRangeVisitor visitor)

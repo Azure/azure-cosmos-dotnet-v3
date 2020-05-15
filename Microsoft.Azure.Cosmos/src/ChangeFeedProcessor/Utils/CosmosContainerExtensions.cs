@@ -22,9 +22,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId)
         {
             using (ResponseMessage responseMessage = await container.ReadItemStreamAsync(
-                    itemId,
-                    partitionKey)
-                    .ConfigureAwait(false))
+                itemId,
+                partitionKey).ConfigureAwait(false))
             {
                 responseMessage.EnsureSuccessStatusCode();
                 return CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(responseMessage.Content);
@@ -46,7 +45,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         return null;
                     }
 
-                    return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
+                    return new ItemResponse<T>(
+                        response.StatusCode,
+                        response.Headers,
+                        CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content),
+                        response.Diagnostics);
                 }
             }
         }
@@ -60,10 +63,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         {
             using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<T>(item))
             {
-                using (ResponseMessage response = await container.ReplaceItemStreamAsync(itemStream, itemId, partitionKey, itemRequestOptions).ConfigureAwait(false))
+                using (ResponseMessage response = await container.ReplaceItemStreamAsync(
+                    itemStream,
+                    itemId,
+                    partitionKey,
+                    itemRequestOptions).ConfigureAwait(false))
                 {
                     response.EnsureSuccessStatusCode();
-                    return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
+                    return new ItemResponse<T>(
+                        response.StatusCode,
+                        response.Headers,
+                        CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content),
+                        response.Diagnostics);
                 }
             }
         }
@@ -74,7 +85,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
-            using (ResponseMessage response = await container.DeleteItemStreamAsync(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false))
+            using (ResponseMessage response = await container.DeleteItemStreamAsync(
+                itemId,
+                partitionKey,
+                cosmosItemRequestOptions).ConfigureAwait(false))
             {
                 return response.IsSuccessStatusCode;
             }
@@ -86,9 +100,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId)
         {
             ResponseMessage response = await container.ReadItemStreamAsync(
-                        itemId,
-                        partitionKey)
-                        .ConfigureAwait(false);
+                itemId,
+                partitionKey).ConfigureAwait(false);
 
             return response.IsSuccessStatusCode;
         }

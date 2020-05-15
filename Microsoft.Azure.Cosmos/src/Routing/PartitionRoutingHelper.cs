@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// that collection was resolved to outdated Rid by name. Also null can be returned if <paramref name="rangeFromContinuationToken"/>
         /// is not found - this means it was split.
         /// </returns>
-        public virtual async Task<ResolvedRangeInfo> TryGetTargetRangeFromContinuationTokenRangeAsync(
+        public virtual async Task<TryCatch<ResolvedRangeInfo>> TryGetTargetRangeFromContinuationTokenRangeAsync(
             IReadOnlyList<Range<string>> providedPartitionKeyRanges,
             IRoutingMapProvider routingMapProvider,
             string collectionRid,
@@ -191,11 +191,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             // we will have empty ranges and just forward the request to the first partition
             if (providedPartitionKeyRanges.Count == 0)
             {
-                return new ResolvedRangeInfo(
-                    await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(
-                        collectionRid,
-                        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
-                    suppliedTokens);
+                TryCatch<PartitionKeyRange> tryGetRangeByEffectivePartitionKeyAsync = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(
+                    collectionRid,
+                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey);
+                if (tryGetRangeByEffectivePartitionKeyAsync.Failed)
+                {
+                    return TryCatch<ResolvedRangeInfo>.FromException(tryGetRangeByEffectivePartitionKeyAsync.Exception);
+                }
+
+                return TryCatch<ResolvedRangeInfo>.FromResult(new ResolvedRangeInfo(
+                    tryGetRangeByEffectivePartitionKeyAsync.Result,
+                    suppliedTokens));
             }
 
             // Initially currentRange will be empty
@@ -203,43 +209,51 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (direction == RntdbEnumerationDirection.Reverse)
                 {
-                    IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, providedPartitionKeyRanges.Single());
+                    IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await routingMapProvider.GetOverlappingRangesAsync(
+                        collectionRid,
+                        providedPartitionKeyRanges.Single());
                     PartitionKeyRange lastPartitionKeyRange = partitionKeyRanges[partitionKeyRanges.Count - 1];
 
-                    return new ResolvedRangeInfo(lastPartitionKeyRange, suppliedTokens);
+                    return TryCatch<ResolvedRangeInfo>.FromResult(
+                        new ResolvedRangeInfo(lastPartitionKeyRange, suppliedTokens));
                 }
 
                 Range<string> minimumRange = PartitionRoutingHelper.Min(
                 providedPartitionKeyRanges,
                 Range<string>.MinComparer.Instance);
 
-                return new ResolvedRangeInfo(
-                    await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, minimumRange.Min),
-                    suppliedTokens);
+                return TryCatch<ResolvedRangeInfo>.FromResult(new ResolvedRangeInfo(
+                    await routingMapProvider.GetRangeByEffectivePartitionKeyAsync(
+                        collectionRid,
+                        minimumRange.Min),
+                    suppliedTokens));
             }
 
-            PartitionKeyRange targetPartitionKeyRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, rangeFromContinuationToken.Min);
-
-            if (targetPartitionKeyRange == null)
+            TryCatch<PartitionKeyRange> tryGetTargetPartitionKeyRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(
+                collectionRid,
+                rangeFromContinuationToken.Min);
+            if (tryGetTargetPartitionKeyRange.Failed)
             {
-                return new ResolvedRangeInfo(null, suppliedTokens);
+                return TryCatch<ResolvedRangeInfo>.FromResult(
+                    new ResolvedRangeInfo(null, suppliedTokens));
             }
+
+            PartitionKeyRange targetPartitionKeyRange = tryGetTargetPartitionKeyRange.Result;
 
             if (!rangeFromContinuationToken.Equals(targetPartitionKeyRange.ToRange()))
             {
                 // Cannot find target range. Either collection was resolved incorrectly or the range was split
-                List<PartitionKeyRange> replacedRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, rangeFromContinuationToken, true)).ToList();
+                TryCatch<IReadOnlyList<PartitionKeyRange>> tryGetReplacedRanges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, rangeFromContinuationToken, forceRefresh: true);
 
-                if (replacedRanges == null || replacedRanges.Count < 1)
+                if (tryGetReplacedRanges.Failed || tryGetReplacedRanges.Result.Count < 1)
                 {
-                    return new ResolvedRangeInfo(null, null);
+                    return TryCatch<ResolvedRangeInfo>.FromException(null);
                 }
-                else
+
+                IReadOnlyList<PartitionKeyRange> replacedRanges = tryGetReplacedRanges.Result;
+                if (!(replacedRanges[0].MinInclusive.Equals(rangeFromContinuationToken.Min) && replacedRanges[replacedRanges.Count - 1].MaxExclusive.Equals(rangeFromContinuationToken.Max)))
                 {
-                    if (!(replacedRanges[0].MinInclusive.Equals(rangeFromContinuationToken.Min) && replacedRanges[replacedRanges.Count - 1].MaxExclusive.Equals(rangeFromContinuationToken.Max)))
-                    {
-                        return new ResolvedRangeInfo(null, null);
-                    }
+                    return TryCatch<ResolvedRangeInfo>.FromException(null);
                 }
 
                 if (direction == RntdbEnumerationDirection.Reverse)
@@ -263,15 +277,33 @@ namespace Microsoft.Azure.Cosmos.Routing
                     continuationTokensToBePersisted.AddRange(suppliedTokens.Skip(1));
                 }
 
-                return new ResolvedRangeInfo(replacedRanges[0], continuationTokensToBePersisted);
+                return TryCatch<ResolvedRangeInfo>.FromResult(new ResolvedRangeInfo(replacedRanges[0], continuationTokensToBePersisted));
             }
 
-            return new ResolvedRangeInfo(targetPartitionKeyRange, suppliedTokens);
+            return TryCatch<ResolvedRangeInfo>.FromResult(new ResolvedRangeInfo(targetPartitionKeyRange, suppliedTokens));
+        }
+
+        public virtual async Task<ResolvedRangeInfo> GetTargetRangeFromContinuationTokenRangeAsync(
+            IReadOnlyList<Range<string>> providedPartitionKeyRanges,
+            IRoutingMapProvider routingMapProvider,
+            string collectionRid,
+            Range<string> rangeFromContinuationToken,
+            List<CompositeContinuationToken> suppliedTokens,
+            RntdbEnumerationDirection direction = RntdbEnumerationDirection.Forward)
+        {
+            TryCatch<ResolvedRangeInfo> tryGetTargetRangeFromContinuationTokenRangeAsync = await this.TryGetTargetRangeFromContinuationTokenRangeAsync(
+                providedPartitionKeyRanges,
+                routingMapProvider,
+                collectionRid,
+                rangeFromContinuationToken,
+                suppliedTokens,
+                direction);
+            return tryGetTargetRangeFromContinuationTokenRangeAsync.Result;
         }
 
         public static async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, IRoutingMapProvider routingMapProvider, string collectionRid)
         {
-            return (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();
+            return (await routingMapProvider.GetOverlappingRangesAsync(collectionRid, targetRange.ToRange())).ToList();
         }
 
         /// <summary>
@@ -316,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (direction == RntdbEnumerationDirection.Reverse)
                     {
                         rangeToUse = PartitionRoutingHelper.MinBefore(
-                            (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, providedPartitionKeyRanges.Single())).ToList(),
+                            (await routingMapProvider.GetOverlappingRangesAsync(collectionRid, providedPartitionKeyRanges.Single())).ToList(),
                             currentRange);
                     }
                     else
@@ -340,13 +372,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                             return true;
                         }
 
-                        PartitionKeyRange nextRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, max);
-                        if (nextRange == null)
+                        TryCatch<PartitionKeyRange> tryGetNextRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, max);
+                        if (tryGetNextRange.Failed)
                         {
                             return false;
                         }
 
-                        rangeToUse = nextRange;
+                        rangeToUse = tryGetNextRange.Result;
                     }
                 }
 

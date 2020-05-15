@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -83,15 +84,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             ContainerProperties collection,
             CancellationToken cancellationToken)
         {
-            CollectionRoutingMap routingMap =
+            TryCatch<CollectionRoutingMap> tryGetRoutingMap =
                 await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellationToken);
 
-            if (routingMap == null)
+            if (tryGetRoutingMap.Failed)
             {
                 return;
             }
 
-            List<PartitionKeyRangeIdentity> ranges = routingMap.OrderedPartitionKeyRanges.Select(
+            List<PartitionKeyRangeIdentity> ranges = tryGetRoutingMap.Result.OrderedPartitionKeyRanges.Select(
                 range => new PartitionKeyRangeIdentity(collection.ResourceId, range.Id)).ToList();
 
             List<Task> tasks = new List<Task>();
@@ -121,8 +122,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (AddressCacheToken cacheToken in addressCacheTokens)
             {
-                EndpointCache endpointCache;
-                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out endpointCache))
+                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out EndpointCache endpointCache))
                 {
                     tasks.Add(endpointCache.AddressCache.UpdateAsync(cacheToken.PartitionKeyRangeIdentity, cancellationToken));
                 }

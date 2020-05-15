@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
@@ -232,10 +232,9 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                            collectionRid: this.lazyContainerRid.Result.Result,
-                            range: (this.FeedRangeInternal as FeedRangeEPK).Range,
-                            forceRefresh: false);
+                    IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.GetOverlappingRangesAsync(
+                        collectionRid: this.lazyContainerRid.Result.Result,
+                        range: (this.FeedRangeInternal as FeedRangeEPK).Range);
                     ranges = pkRanges.Select(pkRange => pkRange.ToRange()).ToList();
                 }
 

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -200,30 +201,44 @@ namespace Microsoft.Azure.Cosmos
                 //     3. Requests which target specific partition of an existing collection will use x-ms-documentdb-partitionkeyrangeid header
                 //        to send request to specific partition and will not set request.ServiceIdentity
                 ServiceIdentity identity = request.ServiceIdentity;
-                PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
+                TryCatch<PartitionAddressInformation> tryGetAddressAsync = await this.addressCache.TryGetAddressesAsync(
+                    request,
+                    partitionKeyRangeIdentity: null,
+                    identity,
+                    forceRefreshPartitionAddresses,
+                    cancellationToken);
 
-                if (addresses == null && identity.IsMasterService && this.masterServiceIdentityProvider != null)
+                if (tryGetAddressAsync.Failed && identity.IsMasterService && (this.masterServiceIdentityProvider != null))
                 {
-                    DefaultTrace.TraceWarning("Could not get addresses for MasterServiceIdentity {0}. will refresh masterServiceIdentity and retry", identity);
+                    DefaultTrace.TraceWarning(
+                        $"Could not get addresses for MasterServiceIdentity {identity}. will refresh masterServiceIdentity and retry");
                     await this.masterServiceIdentityProvider.RefreshAsync(identity, cancellationToken);
                     identity = this.masterServiceIdentityProvider.MasterServiceIdentity;
-                    addresses = await this.addressCache.TryGetAddressesAsync(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
+                    tryGetAddressAsync = await this.addressCache.TryGetAddressesAsync(
+                        request,
+                        partitionKeyRangeIdentity: null,
+                        identity,
+                        forceRefreshPartitionAddresses,
+                        cancellationToken);
                 }
 
-                if (addresses == null)
+                if (tryGetAddressAsync.Failed)
                 {
-                    DefaultTrace.TraceInformation("Could not get addresses for explicitly specified ServiceIdentity {0}", identity);
-                    throw new NotFoundException() { ResourceAddress = request.ResourceAddress };
+                    DefaultTrace.TraceInformation(
+                        $"Could not get addresses for explicitly specified ServiceIdentity {identity}");
+                    throw new NotFoundException()
+                    {
+                        ResourceAddress = request.ResourceAddress
+                    };
                 }
 
-                return new ResolutionResult(addresses, identity);
+                return new ResolutionResult(tryGetAddressAsync.Result, identity);
             }
 
-            if (ReplicatedResourceClient.IsReadingFromMaster(request.ResourceType, request.OperationType) && request.PartitionKeyRangeIdentity == null)
+            if (ReplicatedResourceClient.IsReadingFromMaster(request.ResourceType, request.OperationType) && (request.PartitionKeyRangeIdentity == null))
             {
-                DefaultTrace.TraceInformation("Resolving Master service address, forceMasterRefresh: {0}, currentMaster: {1}",
-                    request.ForceMasterRefresh,
-                    this.masterServiceIdentityProvider?.MasterServiceIdentity);
+                DefaultTrace.TraceInformation(
+                    $"Resolving Master service address, forceMasterRefresh: {request.ForceMasterRefresh}, currentMaster: {this.masterServiceIdentityProvider?.MasterServiceIdentity}");
 
                 // Client implementation, GlobalAddressResolver passes in a null IMasterServiceIdentityProvider, because it doesn't actually use the serviceIdentity
                 // in the addressCache.TryGetAddresses method. In GatewayAddressCache.cs, the master address is resolved by making a call to Gateway AddressFeed,
@@ -233,23 +248,30 @@ namespace Microsoft.Azure.Cosmos
                     ServiceIdentity previousMasterService = this.masterServiceIdentityProvider.MasterServiceIdentity;
                     await this.masterServiceIdentityProvider.RefreshAsync(previousMasterService, cancellationToken);
                 }
+
                 ServiceIdentity serviceIdentity = this.masterServiceIdentityProvider?.MasterServiceIdentity;
                 PartitionKeyRangeIdentity partitionKeyRangeIdentity = this.masterPartitionKeyRangeIdentity;
-                PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
+                TryCatch<PartitionAddressInformation> tryGetAddressAsync = await this.addressCache.TryGetAddressesAsync(
                     request,
                     partitionKeyRangeIdentity,
                     serviceIdentity,
                     forceRefreshPartitionAddresses,
                     cancellationToken);
-                if (addresses == null)
+                if (tryGetAddressAsync.Failed)
                 {
                     // This shouldn't really happen.
-                    DefaultTrace.TraceCritical("Could not get addresses for master partition {0}", serviceIdentity);
-                    throw new NotFoundException() { ResourceAddress = request.ResourceAddress };
+                    throw new NotFoundException($"Could not get addresses for master partition {serviceIdentity}")
+                    {
+                        ResourceAddress = request.ResourceAddress
+                    };
                 }
 
-                PartitionKeyRange partitionKeyRange = new PartitionKeyRange { Id = PartitionKeyRange.MasterPartitionKeyRangeId };
-                return new ResolutionResult(partitionKeyRange, addresses, serviceIdentity);
+                PartitionKeyRange partitionKeyRange = new PartitionKeyRange
+                {
+                    Id = PartitionKeyRange.MasterPartitionKeyRangeId
+                };
+
+                return new ResolutionResult(partitionKeyRange, tryGetAddressAsync.Result, serviceIdentity);
             }
 
             bool collectionCacheIsUptoDate = !request.IsNameBased ||
@@ -258,29 +280,40 @@ namespace Microsoft.Azure.Cosmos
             bool collectionRoutingMapCacheIsUptoDate = false;
 
             ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-            CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collection.ResourceId, null, request, cancellationToken);
+            TryCatch<CollectionRoutingMap> tryLookupAsync = await this.collectionRoutingMapCache.TryLookupAsync(
+                collection.ResourceId,
+                previousValue: null,
+                request,
+                cancellationToken);
 
-            if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
+            if (tryLookupAsync.Succeeded && request.ForceCollectionRoutingMapRefresh)
             {
                 DefaultTrace.TraceInformation(
                     "AddressResolver.ResolveAddressesAndIdentityAsync ForceCollectionRoutingMapRefresh collection.ResourceId = {0}",
                     collection.ResourceId);
 
-                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken);
+                tryLookupAsync = await this.collectionRoutingMapCache.TryLookupAsync(
+                    collection.ResourceId,
+                    tryLookupAsync.Result,
+                    request,
+                    cancellationToken);
             }
 
             if (request.ForcePartitionKeyRangeRefresh)
             {
                 collectionRoutingMapCacheIsUptoDate = true;
                 request.ForcePartitionKeyRangeRefresh = false;
-                if (routingMap != null)
+                if (tryLookupAsync.Succeeded)
                 {
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken);
+                    tryLookupAsync = await this.collectionRoutingMapCache.TryLookupAsync(
+                        collection.ResourceId,
+                        tryLookupAsync.Result,
+                        request,
+                        cancellationToken);
                 }
             }
 
-            if (routingMap == null && !collectionCacheIsUptoDate)
+            if (tryLookupAsync.Failed && !collectionCacheIsUptoDate)
             {
                 // Routing map was not found by resolved collection rid. Maybe collection rid is outdated.
                 // Refresh collection cache and reresolve routing map.
@@ -288,40 +321,39 @@ namespace Microsoft.Azure.Cosmos
                 collectionCacheIsUptoDate = true;
                 collectionRoutingMapCacheIsUptoDate = false;
                 collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                tryLookupAsync = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: null,
                         request: request,
                         cancellationToken: cancellationToken);
             }
 
-            AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
+            AddressResolver.EnsureRoutingMapPresent(request, tryLookupAsync, collection);
 
             // At this point we have both collection and routingMap.
-            ResolutionResult result = await this.TryResolveServerPartitionAsync(
+            TryCatch<ResolutionResult> tryResolveServerPartitionAsync = await this.TryResolveServerPartitionAsync(
                 request,
                 collection,
-                routingMap,
+                tryLookupAsync.Result,
                 collectionCacheIsUptoDate,
                 collectionRoutingMapCacheIsUptodate: collectionRoutingMapCacheIsUptoDate,
                 forceRefreshPartitionAddresses: forceRefreshPartitionAddresses,
                 cancellationToken: cancellationToken);
 
-            if (result == null)
+            if (tryResolveServerPartitionAsync.Failed)
             {
                 // Couldn't resolve server partition or its addresses.
                 // Either collection cache is outdated or routing map cache is outdated.
                 if (!collectionCacheIsUptoDate)
                 {
                     request.ForceNameCacheRefresh = true;
-                    collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                    if (collection.ResourceId != routingMap.CollectionUniqueId)
+                    if (collection.ResourceId != tryLookupAsync.Result.CollectionUniqueId)
                     {
                         // Collection cache was stale. We resolved to new Rid. routing map cache is potentially stale
                         // for this new collection rid. Mark it as such.
                         collectionRoutingMapCacheIsUptoDate = false;
-                        routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                        tryLookupAsync = await this.collectionRoutingMapCache.TryLookupAsync(
                             collection.ResourceId,
                             previousValue: null,
                             request: request,
@@ -332,33 +364,35 @@ namespace Microsoft.Azure.Cosmos
                 if (!collectionRoutingMapCacheIsUptoDate)
                 {
                     collectionRoutingMapCacheIsUptoDate = true;
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                    tryLookupAsync = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
-                        previousValue: routingMap,
+                        previousValue: tryLookupAsync.Result,
                         request: request,
                         cancellationToken: cancellationToken);
                 }
 
-                AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
+                AddressResolver.EnsureRoutingMapPresent(request, tryLookupAsync, collection);
 
-                result = await this.TryResolveServerPartitionAsync(
+                tryResolveServerPartitionAsync = await this.TryResolveServerPartitionAsync(
                     request,
                     collection,
-                    routingMap,
+                    tryLookupAsync.Result,
                     collectionCacheIsUptodate: true,
                     collectionRoutingMapCacheIsUptodate: true,
                     forceRefreshPartitionAddresses: forceRefreshPartitionAddresses,
                     cancellationToken: cancellationToken);
             }
 
-            if (result == null)
+            if (tryResolveServerPartitionAsync.Failed)
             {
-                DefaultTrace.TraceInformation("Couldn't route partitionkeyrange-oblivious request after retry/cache refresh. Collection doesn't exist.");
-
                 // At this point collection cache and routing map caches are refreshed.
                 // The only reason we will get here is if collection doesn't exist.
                 // Case when partitionkeyrange doesn't exist is handled in the corresponding method.
-                throw new NotFoundException() { ResourceAddress = request.ResourceAddress };
+                throw new NotFoundException(
+                    "Couldn't route partitionkeyrange-oblivious request after retry/cache refresh. Collection doesn't exist.")
+                {
+                    ResourceAddress = request.ResourceAddress
+                };
             }
 
             if (request.IsNameBased)
@@ -372,38 +406,40 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers[WFConstants.BackendHeaders.CollectionRid] = collection.ResourceId;
             }
 
-            return result;
+            return tryResolveServerPartitionAsync.Result;
         }
 
         private static void EnsureRoutingMapPresent(
             DocumentServiceRequest request,
-            CollectionRoutingMap routingMap,
+            TryCatch<CollectionRoutingMap> tryGetRoutingMap,
             ContainerProperties collection)
         {
-            if (routingMap == null && request.IsNameBased && request.PartitionKeyRangeIdentity != null
-                && request.PartitionKeyRangeIdentity.CollectionRid != null)
+            if (tryGetRoutingMap.Failed && request.IsNameBased && (request.PartitionKeyRangeIdentity != null)
+                && (request.PartitionKeyRangeIdentity.CollectionRid != null))
             {
                 // By design, if partitionkeyrangeid header is present and it contains collectionrid for collection
                 // which doesn't exist, we return InvalidPartitionException. Backend does the same.
                 // Caller (client SDK or whoever attached the header) supposedly has outdated collection cache and will refresh it.
                 // We cannot retry here, as the logic for retry in this case is use-case specific.
-                DefaultTrace.TraceInformation(
-                    "Routing map for request with partitionkeyrageid {0} was not found",
-                    request.PartitionKeyRangeIdentity.ToHeader());
-                throw new InvalidPartitionException() { ResourceAddress = request.ResourceAddress };
+                throw new InvalidPartitionException(
+                    $"Routing map for request with partitionkeyrageid {request.PartitionKeyRangeIdentity.ToHeader()} was not found")
+                {
+                    ResourceAddress = request.ResourceAddress
+                };
             }
 
-            if (routingMap == null)
+            if (tryGetRoutingMap.Failed)
             {
-                DefaultTrace.TraceInformation(
-                    "Routing map was not found although collection cache is upto date for collection {0}",
-                    collection.ResourceId);
                 // Routing map not found although collection was resolved correctly.
-                throw new NotFoundException() { ResourceAddress = request.ResourceAddress };
+                throw new NotFoundException(
+                    message: $"Routing map was not found although collection cache is upto date for collection {collection.ResourceId}")
+                {
+                    ResourceAddress = request.ResourceAddress
+                };
             }
         }
 
-        private async Task<ResolutionResult> TryResolveServerPartitionAsync(
+        private async Task<TryCatch<ResolutionResult>> TryResolveServerPartitionAsync(
             DocumentServiceRequest request,
             ContainerProperties collection,
             CollectionRoutingMap routingMap,
@@ -439,13 +475,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new InternalServerErrorException(RMResources.InternalServerError) { ResourceAddress = request.ResourceAddress };
             }
 
-            PartitionKeyRange range;
+            TryCatch<PartitionKeyRange> tryGetPartitionKeyRange;
             string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
 
-            object effectivePartitionKeyStringObject = null;
             if (partitionKeyString != null)
             {
-                range = this.TryResolveServerPartitionByPartitionKey(
+                tryGetPartitionKeyRange = this.TryResolveServerPartitionByPartitionKey(
                     request,
                     partitionKeyString,
                     collectionCacheIsUptodate,
@@ -454,7 +489,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (request.Properties != null && request.Properties.TryGetValue(
                 WFConstants.BackendHeaders.EffectivePartitionKeyString,
-                out effectivePartitionKeyStringObject))
+                out object effectivePartitionKeyStringObject))
             {
                 // Allow EPK only for partitioned collection (excluding migrated fixed collections)
                 if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
@@ -468,42 +503,48 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException(nameof(effectivePartitionKeyString));
                 }
 
-                range = routingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString);
+                tryGetPartitionKeyRange = TryCatch<PartitionKeyRange>.FromResult(
+                    routingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString));
             }
             else
             {
-                range = this.TryResolveSinglePartitionCollection(request, collection, routingMap, collectionCacheIsUptodate);
+                tryGetPartitionKeyRange = this.TryResolveSinglePartitionCollection(request, collection, routingMap, collectionCacheIsUptodate);
             }
 
-            if (range == null)
+            if (tryGetPartitionKeyRange.Failed)
             {
-                // Collection cache or routing map cache is potentially outdated. Return null -
-                // upper logic will refresh cache and retry.
-                return null;
+                // Collection cache or routing map cache is potentially outdated.
+                // Return the failure - upper logic will refresh cache and retry.
+                return TryCatch<ResolutionResult>.FromException(tryGetPartitionKeyRange.Exception);
             }
 
-            ServiceIdentity serviceIdentity = routingMap.TryGetInfoByPartitionKeyRangeId(range.Id);
+            PartitionKeyRange range = tryGetPartitionKeyRange.Result;
 
-            PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
+            if (!routingMap.TryGetInfoByPartitionKeyRangeId(range.Id, out ServiceIdentity serviceIdentity))
+            {
+                serviceIdentity = default;
+            }
+
+            TryCatch<PartitionAddressInformation> tryGetAddressesAsync = await this.addressCache.TryGetAddressesAsync(
                 request,
                 new PartitionKeyRangeIdentity(collection.ResourceId, range.Id),
                 serviceIdentity,
                 forceRefreshPartitionAddresses,
                 cancellationToken);
 
-            if (addresses == null)
+            if (tryGetAddressesAsync.Failed)
             {
-                DefaultTrace.TraceVerbose(
-                    "Could not resolve addresses for identity {0}/{1}. Potentially collection cache or routing map cache is outdated. Return null - upper logic will refresh and retry. ",
-                    new PartitionKeyRangeIdentity(collection.ResourceId, range.Id),
-                    serviceIdentity);
-                return null;
+                TryCatch<ResolutionResult>.FromException(
+                    new NotFoundException(
+                        message: $"Could not resolve addresses for identity {new PartitionKeyRangeIdentity(collection.ResourceId, range.Id)}/{serviceIdentity?.ToString() ?? "<NULL>"}. " +
+                        $"Potentially collection cache or routing map cache is outdated. Return null - upper logic will refresh and retry."));
             }
 
-            return new ResolutionResult(range, addresses, serviceIdentity);
+            return TryCatch<ResolutionResult>.FromResult(
+                new ResolutionResult(range, tryGetAddressesAsync.Result, serviceIdentity));
         }
 
-        private PartitionKeyRange TryResolveSinglePartitionCollection(
+        private TryCatch<PartitionKeyRange> TryResolveSinglePartitionCollection(
             DocumentServiceRequest request,
             ContainerProperties collection,
             CollectionRoutingMap routingMap,
@@ -524,47 +565,43 @@ namespace Microsoft.Azure.Cosmos
             // If it is partitioned collection - backend will return bad request as partition key header is required in this case.
             if (routingMap.OrderedPartitionKeyRanges.Count == 1)
             {
-                return routingMap.OrderedPartitionKeyRanges.Single();
+                TryCatch<PartitionKeyRange>.FromResult(routingMap.OrderedPartitionKeyRanges.Single());
             }
 
-            if (collectionCacheIsUptoDate)
+            if (!collectionCacheIsUptoDate)
             {
-                // If the current collection is user-partitioned collection
-                if (collection.PartitionKey.Paths.Count >= 1 &&
-                    !collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
-                {
-                    throw new BadRequestException(RMResources.MissingPartitionKeyValue) { ResourceAddress = request.ResourceAddress };
-                }
-                else if (routingMap.OrderedPartitionKeyRanges.Count > 1)
-                {
-                    // With migrated-fixed-collection, it is possible to have multiple partition key ranges
-                    // due to parallel usage of V3 SDK and a possible storage or throughput split
-                    // The current client might be legacy and not aware of this.
-                    // In such case route the request to the first partition
-                    return this.TryResolveServerPartitionByPartitionKey(
-                                        request,
-                                        "[]", // This corresponds to first partition
-                                        collectionCacheIsUptoDate,
-                                        collection,
-                                        routingMap);
-                }
-                else
-                {
-                    // routingMap.OrderedPartitionKeyRanges.Count == 0
-                    // Should never come here.
-                    DefaultTrace.TraceCritical(
-                        "No Partition Key ranges present for the collection {0}", collection.ResourceId);
-                    throw new InternalServerErrorException(RMResources.InternalServerError) { ResourceAddress = request.ResourceAddress };
+                TryCatch<PartitionKeyRange>.FromException(new NotFoundException());
+            }
 
-                }
-            }
-            else
+            // If the current collection is user-partitioned collection
+            if (collection.PartitionKey.Paths.Count >= 1 &&
+                !collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
             {
-                return null;
+                throw new BadRequestException(RMResources.MissingPartitionKeyValue) { ResourceAddress = request.ResourceAddress };
             }
+
+            if (routingMap.OrderedPartitionKeyRanges.Count == 0)
+            {
+                // routingMap.OrderedPartitionKeyRanges.Count == 0
+                // Should never come here.
+                DefaultTrace.TraceCritical(
+                    $"No Partition Key ranges present for the collection {collection.ResourceId}");
+                throw new InternalServerErrorException(RMResources.InternalServerError) { ResourceAddress = request.ResourceAddress };
+            }
+
+            // With migrated-fixed-collection, it is possible to have multiple partition key ranges
+            // due to parallel usage of V3 SDK and a possible storage or throughput split
+            // The current client might be legacy and not aware of this.
+            // In such case route the request to the first partition
+            return this.TryResolveServerPartitionByPartitionKey(
+                request,
+                partitionKeyString: "[]", // This corresponds to first partition
+                collectionCacheIsUptoDate,
+                collection,
+                routingMap);
         }
 
-        private ResolutionResult HandleRangeAddressResolutionFailure(
+        private void HandleRangeAddressResolutionFailure(
             DocumentServiceRequest request,
             bool collectionCacheIsUpToDate,
             bool routingMapCacheIsUpToDate,
@@ -572,8 +609,8 @@ namespace Microsoft.Azure.Cosmos
         {
             // Optimization to not refresh routing map unnecessary. As we keep track of parent child relationships,
             // we can determine that a range is gone just by looking up in the routing map.
-            if (collectionCacheIsUpToDate && routingMapCacheIsUpToDate ||
-                collectionCacheIsUpToDate && routingMap.IsGone(request.PartitionKeyRangeIdentity.PartitionKeyRangeId))
+            if ((collectionCacheIsUpToDate && routingMapCacheIsUpToDate) ||
+                (collectionCacheIsUpToDate && routingMap.IsGone(request.PartitionKeyRangeIdentity.PartitionKeyRangeId)))
             {
                 string errorMessage = string.Format(
                     CultureInfo.InvariantCulture,
@@ -582,11 +619,9 @@ namespace Microsoft.Azure.Cosmos
                     request.PartitionKeyRangeIdentity.CollectionRid);
                 throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = request.ResourceAddress };
             }
-
-            return null;
         }
 
-        private async Task<ResolutionResult> TryResolveServerPartitionByPartitionKeyRangeIdAsync(
+        private async Task<TryCatch<ResolutionResult>> TryResolveServerPartitionByPartitionKeyRangeIdAsync(
             DocumentServiceRequest request,
             ContainerProperties collection,
             CollectionRoutingMap routingMap,
@@ -595,34 +630,53 @@ namespace Microsoft.Azure.Cosmos
             bool forceRefreshPartitionAddresses,
             CancellationToken cancellationToken)
         {
-            PartitionKeyRange partitionKeyRange = routingMap.TryGetRangeByPartitionKeyRangeId(request.PartitionKeyRangeIdentity.PartitionKeyRangeId);
-            if (partitionKeyRange == null)
+            if (!routingMap.TryGetRangeByPartitionKeyRangeId(
+                request.PartitionKeyRangeIdentity.PartitionKeyRangeId,
+                out PartitionKeyRange partitionKeyRange))
             {
-                DefaultTrace.TraceInformation("Cannot resolve range '{0}'", request.PartitionKeyRangeIdentity.ToHeader());
+                this.HandleRangeAddressResolutionFailure(
+                    request,
+                    collectionCacheIsUpToDate,
+                    routingMapCacheIsUpToDate,
+                    routingMap);
 
-                return this.HandleRangeAddressResolutionFailure(request, collectionCacheIsUpToDate, routingMapCacheIsUpToDate, routingMap);
+                return TryCatch<ResolutionResult>.FromException(
+                    new NotFoundException($"Cannot resolve range '{ request.PartitionKeyRangeIdentity.ToHeader()}'"));
             }
 
-            ServiceIdentity identity = routingMap.TryGetInfoByPartitionKeyRangeId(request.PartitionKeyRangeIdentity.PartitionKeyRangeId);
+            if (!routingMap.TryGetInfoByPartitionKeyRangeId(
+                request.PartitionKeyRangeIdentity.PartitionKeyRangeId,
+                out ServiceIdentity serviceIdentity))
+            {
+                serviceIdentity = default;
+            }
 
-            PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
+            TryCatch<PartitionAddressInformation> tryGetAddressesAsync = await this.addressCache.TryGetAddressesAsync(
                 request,
                 new PartitionKeyRangeIdentity(collection.ResourceId, request.PartitionKeyRangeIdentity.PartitionKeyRangeId),
-                identity,
+                serviceIdentity,
                 forceRefreshPartitionAddresses,
                 cancellationToken);
-
-            if (addresses == null)
+            if (tryGetAddressesAsync.Failed)
             {
-                DefaultTrace.TraceInformation("Cannot resolve addresses for range '{0}'", request.PartitionKeyRangeIdentity.ToHeader());
+                this.HandleRangeAddressResolutionFailure(
+                    request,
+                    collectionCacheIsUpToDate,
+                    routingMapCacheIsUpToDate,
+                    routingMap);
 
-                return this.HandleRangeAddressResolutionFailure(request, collectionCacheIsUpToDate, routingMapCacheIsUpToDate, routingMap);
+                return TryCatch<ResolutionResult>.FromException(
+                    new NotFoundException($"Cannot resolve range '{ request.PartitionKeyRangeIdentity.ToHeader()}'"));
             }
 
-            return new ResolutionResult(partitionKeyRange, addresses, identity);
+            return TryCatch<ResolutionResult>.FromResult(
+                new ResolutionResult(
+                    partitionKeyRange,
+                    tryGetAddressesAsync.Result,
+                    serviceIdentity));
         }
 
-        private PartitionKeyRange TryResolveServerPartitionByPartitionKey(
+        private TryCatch<PartitionKeyRange> TryResolveServerPartitionByPartitionKey(
             DocumentServiceRequest request,
             string partitionKeyString,
             bool collectionCacheUptoDate,
@@ -631,26 +685,25 @@ namespace Microsoft.Azure.Cosmos
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
 
             if (partitionKeyString == null)
             {
-                throw new ArgumentNullException("partitionKeyString");
+                throw new ArgumentNullException(nameof(partitionKeyString));
             }
 
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
 
             if (routingMap == null)
             {
-                throw new ArgumentNullException("routingMap");
+                throw new ArgumentNullException(nameof(routingMap));
             }
 
             PartitionKeyInternal partitionKey;
-
             try
             {
                 partitionKey = PartitionKeyInternal.FromJsonString(partitionKeyString);
@@ -658,16 +711,26 @@ namespace Microsoft.Azure.Cosmos
             catch (JsonException ex)
             {
                 throw new BadRequestException(
-                    string.Format(CultureInfo.InvariantCulture, RMResources.InvalidPartitionKey, partitionKeyString),
-                    ex) { ResourceAddress = request.ResourceAddress };
+                    message: string.Format(
+                        CultureInfo.InvariantCulture,
+                        RMResources.InvalidPartitionKey,
+                        partitionKeyString),
+                    innerException: ex)
+                {
+                    ResourceAddress = request.ResourceAddress
+                };
             }
 
             if (partitionKey == null)
             {
-                throw new InternalServerErrorException(string.Format(CultureInfo.InvariantCulture, "partition key is null '{0}'", partitionKeyString));
+                throw new InternalServerErrorException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "partition key is null '{0}'",
+                        partitionKeyString));
             }
 
-            if (partitionKey.Equals(PartitionKeyInternal.Empty) || partitionKey.Components.Count == collection.PartitionKey.Paths.Count)
+            if (partitionKey.Equals(PartitionKeyInternal.Empty) || (partitionKey.Components.Count == collection.PartitionKey.Paths.Count))
             {
                 // Although we can compute effective partition key here, in general case this Gateway can have outdated
                 // partition key definition cached - like if collection with same name but with Range partitioning is created.
@@ -677,12 +740,15 @@ namespace Microsoft.Azure.Cosmos
                 string effectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(collection.PartitionKey);
 
                 // There should be exactly one range which contains a partition key. Always.
-                return routingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey);
+                return TryCatch<PartitionKeyRange>.FromResult(routingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey));
             }
 
             if (collectionCacheUptoDate)
             {
-                BadRequestException badRequestException = new BadRequestException(RMResources.PartitionKeyMismatch) { ResourceAddress = request.ResourceAddress };
+                BadRequestException badRequestException = new BadRequestException(RMResources.PartitionKeyMismatch)
+                {
+                    ResourceAddress = request.ResourceAddress
+                };
                 badRequestException.Headers[WFConstants.BackendHeaders.SubStatus] =
                     ((uint)SubStatusCodes.PartitionKeyMismatch).ToString(CultureInfo.InvariantCulture);
 
@@ -701,38 +767,18 @@ namespace Microsoft.Azure.Cosmos
             // * If collection rid doesn't match, server will send back InvalidPartiitonException and Gateway will
             //   refresh name routing cache - this will refresh partition key definition as well, and retry.
 
-            DefaultTrace.TraceInformation(
-                "Cannot compute effective partition key. Definition has '{0}' paths, values supplied has '{1}' paths. Will refresh cache and retry.",
-                collection.PartitionKey.Paths.Count,
-                partitionKey.Components.Count);
-
-            return null;
+            return TryCatch<PartitionKeyRange>.FromException(
+                new NotFoundException(
+                    $"Cannot compute effective partition key. Definition has '{collection.PartitionKey.Paths.Count}' paths, values supplied has '{partitionKey.Components.Count}' paths. Will refresh cache and retry."));
         }
 
-        private class ResolutionResult
+        private sealed class ResolutionResult
         {
-            public PartitionKeyRange TargetPartitionKeyRange { get; private set; }
-
-            public PartitionAddressInformation Addresses { get; private set; }
-
-            public ServiceIdentity TargetServiceIdentity { get; private set; }
-
             public ResolutionResult(
                 PartitionAddressInformation addresses,
                 ServiceIdentity serviceIdentity)
+                : this(targetPartitionKeyRange: null, addresses: addresses, serviceIdentity: serviceIdentity)
             {
-                if (addresses == null)
-                {
-                    throw new ArgumentNullException("addresses");
-                }
-
-                if (serviceIdentity == null)
-                {
-                    throw new ArgumentNullException("serviceIdentity");
-                }
-
-                this.Addresses = addresses;
-                this.TargetServiceIdentity = serviceIdentity;
             }
 
             public ResolutionResult(
@@ -740,20 +786,14 @@ namespace Microsoft.Azure.Cosmos
                 PartitionAddressInformation addresses,
                 ServiceIdentity serviceIdentity)
             {
-                if (targetPartitionKeyRange == null)
-                {
-                    throw new ArgumentNullException("targetPartitionKeyRange");
-                }
-
-                if (addresses == null)
-                {
-                    throw new ArgumentNullException("addresses");
-                }
-
                 this.TargetPartitionKeyRange = targetPartitionKeyRange;
-                this.Addresses = addresses;
+                this.Addresses = addresses ?? throw new ArgumentNullException(nameof(addresses));
                 this.TargetServiceIdentity = serviceIdentity;
             }
+
+            public PartitionKeyRange TargetPartitionKeyRange { get; }
+            public PartitionAddressInformation Addresses { get; }
+            public ServiceIdentity TargetServiceIdentity { get; }
         }
     }
 }

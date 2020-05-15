@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -39,57 +41,95 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.collectionCache = collectionCache;
         }
 
-        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        public virtual async Task<TryCatch<IReadOnlyList<PartitionKeyRange>>> TryGetOverlappingRangesAsync(
             string collectionRid,
             Range<string> range,
             bool forceRefresh = false)
         {
-            ResourceId collectionRidParsed;
-            Debug.Assert(ResourceId.TryParse(collectionRid, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
+            Debug.Assert(
+                ResourceId.TryParse(collectionRid, out _),
+                "Could not parse CollectionRid from ResourceId.");
 
-            CollectionRoutingMap routingMap =
-                await this.TryLookupAsync(collectionRid, null, null, CancellationToken.None);
+            TryCatch<CollectionRoutingMap> tryLookupAsync = await this.TryLookupAsync(
+                collectionRid,
+                previousValue: null,
+                request: null,
+                CancellationToken.None);
 
-            if (forceRefresh && routingMap != null)
+            if (forceRefresh && tryLookupAsync.Succeeded)
             {
-                routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, CancellationToken.None);
+                tryLookupAsync = await this.TryLookupAsync(collectionRid, tryLookupAsync.Result, request: null, CancellationToken.None);
             }
 
-            if (routingMap == null)
+            if (tryLookupAsync.Failed)
             {
-                DefaultTrace.TraceInformation(string.Format("Routing Map Null for collection: {0} for range: {1}, forceRefresh:{2}", collectionRid, range.ToString(), forceRefresh));
-                return null;
+                return TryCatch<IReadOnlyList<PartitionKeyRange>>.FromException(
+                    CosmosExceptionFactory.CreateNotFoundException(
+                        message: $"Could not find routing map for collection: {collectionRid} for range: {range}, forceRefresh:{forceRefresh}",
+                        innerException: tryLookupAsync.Exception));
             }
 
-            return routingMap.GetOverlappingRanges(range);
+            return TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(
+                tryLookupAsync.Result.GetOverlappingRanges(range));
         }
 
-        public async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
+        public async Task<IReadOnlyList<PartitionKeyRange>> GetOverlappingRangesAsync(string collectionRid, Range<string> range)
+        {
+            TryCatch<IReadOnlyList<PartitionKeyRange>> tryGetOverlappingRangesAsync = await this.TryGetOverlappingRangesAsync(collectionRid, range, forceRefresh: true);
+            tryGetOverlappingRangesAsync.ThrowIfFailed();
+
+            return tryGetOverlappingRangesAsync.Result;
+        }
+
+        public async Task<TryCatch<PartitionKeyRange>> TryGetPartitionKeyRangeByIdAsync(
             string collectionResourceId,
             string partitionKeyRangeId,
             bool forceRefresh = false)
         {
-            ResourceId collectionRidParsed;
-            Debug.Assert(ResourceId.TryParse(collectionResourceId, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
+            Debug.Assert(
+                ResourceId.TryParse(collectionResourceId, out _),
+                "Could not parse CollectionRid from ResourceId.");
 
-            CollectionRoutingMap routingMap =
-                await this.TryLookupAsync(collectionResourceId, null, null, CancellationToken.None);
+            TryCatch<CollectionRoutingMap> tryLookupAsync = await this.TryLookupAsync(
+                collectionResourceId,
+                previousValue: null,
+                request: null,
+                CancellationToken.None);
 
-            if (forceRefresh && routingMap != null)
+            if (forceRefresh && tryLookupAsync.Succeeded)
             {
-                routingMap = await this.TryLookupAsync(collectionResourceId, routingMap, null, CancellationToken.None);
+                tryLookupAsync = await this.TryLookupAsync(collectionResourceId, tryLookupAsync.Result, null, CancellationToken.None);
             }
 
-            if (routingMap == null)
+            if (tryLookupAsync.Failed)
             {
-                DefaultTrace.TraceInformation(string.Format("Routing Map Null for collection: {0}, PartitionKeyRangeId: {1}, forceRefresh:{2}", collectionResourceId, partitionKeyRangeId, forceRefresh));
-                return null;
+                return TryCatch<PartitionKeyRange>.FromException(
+                    CosmosExceptionFactory.CreateNotFoundException(
+                        message: $"Could not find routing map for collection: {collectionResourceId} for PartitionKeyRangeId: {partitionKeyRangeId}, forceRefresh:{forceRefresh}",
+                        innerException: tryLookupAsync.Exception));
             }
 
-            return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
+            if (!tryLookupAsync.Result.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId, out PartitionKeyRange partitionKeyRange))
+            {
+                return TryCatch<PartitionKeyRange>.FromException(
+                    CosmosExceptionFactory.CreateNotFoundException(
+                        message: $"Could not find routing map for collection: {collectionResourceId} for PartitionKeyRangeId: {partitionKeyRangeId}, forceRefresh:{forceRefresh}"));
+            }
+
+            return TryCatch<PartitionKeyRange>.FromResult(partitionKeyRange);
         }
 
-        public virtual async Task<CollectionRoutingMap> TryLookupAsync(
+        public async Task<PartitionKeyRange> GetPartitionKeyRangeByIdAsync(
+            string collectionResourceId,
+            string partitionKeyRangeId)
+        {
+            TryCatch<PartitionKeyRange> tryGetPartitionKeyRangeByIdAsync = await this.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId, forceRefresh: true);
+            tryGetPartitionKeyRangeByIdAsync.ThrowIfFailed();
+
+            return tryGetPartitionKeyRangeByIdAsync.Result;
+        }
+
+        public virtual async Task<TryCatch<CollectionRoutingMap>> TryLookupAsync(
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
@@ -97,11 +137,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             try
             {
-                return await this.routingMapCache.GetAsync(
+                CollectionRoutingMap collectionRoutingMap = await this.routingMapCache.GetAsync(
                     collectionRid,
                     previousValue,
                     () => this.GetRoutingMapForCollectionAsync(collectionRid, previousValue, cancellationToken),
                     CancellationToken.None);
+                return TryCatch<CollectionRoutingMap>.FromResult(collectionRoutingMap);
             }
             catch (DocumentClientException ex)
             {
@@ -110,22 +151,37 @@ namespace Microsoft.Azure.Cosmos.Routing
                     StringBuilder rangesString = new StringBuilder();
                     foreach (PartitionKeyRange range in previousValue.OrderedPartitionKeyRanges)
                     {
-                        rangesString.Append(range.ToRange().ToString());
+                        rangesString.Append(range.ToRange());
                         rangesString.Append(", ");
                     }
-                    DefaultTrace.TraceInformation(string.Format("DocumentClientException in TryLookupAsync Collection: {0}, previousValue: {1} Exception: {2}", collectionRid, rangesString.ToString(), ex.ToString()));
+
+                    DefaultTrace.TraceInformation(
+                        $"DocumentClientException in TryLookupAsync Collection: {collectionRid}, previousValue: {rangesString} Exception: {ex}");
                 }
 
-                if (ex.StatusCode == HttpStatusCode.NotFound)
+                if (ex.StatusCode != HttpStatusCode.NotFound)
                 {
-                    return null;
+                    // Not a retryable exception so just rethrow.
+                    throw;
                 }
 
-                throw;
+                return TryCatch<CollectionRoutingMap>.FromException(ex);
             }
         }
 
-        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, string partitionKeyRangeId)
+        public async Task<CollectionRoutingMap> LookupAsync(
+            string collectionRid,
+            CollectionRoutingMap previousValue,
+            DocumentServiceRequest request,
+            CancellationToken cancellationToken)
+        {
+            TryCatch<CollectionRoutingMap> tryLookupAsync = await this.TryLookupAsync(collectionRid, previousValue, request, cancellationToken);
+            tryLookupAsync.ThrowIfFailed();
+
+            return tryLookupAsync.Result;
+        }
+
+        public async Task<TryCatch<PartitionKeyRange>> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, string partitionKeyRangeId)
         {
             try
             {
@@ -135,16 +191,24 @@ namespace Microsoft.Azure.Cosmos.Routing
                     () => this.GetRoutingMapForCollectionAsync(collectionRid, null, CancellationToken.None),
                     CancellationToken.None);
 
-                return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
+                if (!routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId, out PartitionKeyRange partitionKeyRange))
+                {
+                    return TryCatch<PartitionKeyRange>.FromException(
+                        CosmosExceptionFactory.CreateNotFoundException(
+                            message: $"Could not find partiton key range with id: {partitionKeyRangeId} in collection with rid: {collectionRid}"));
+                }
+
+                return TryCatch<PartitionKeyRange>.FromResult(partitionKeyRange);
             }
             catch (DocumentClientException ex)
             {
                 if (ex.StatusCode == HttpStatusCode.NotFound)
                 {
-                    return null;
+                    // Not a retryable exception so just rethrow.
+                    throw;
                 }
 
-                throw;
+                return TryCatch<PartitionKeyRange>.FromException(ex);
             }
         }
 
@@ -154,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CancellationToken cancellationToken)
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
-            string changeFeedNextIfNoneMatch = previousRoutingMap == null ? null : previousRoutingMap.ChangeFeedNextIfNoneMatch;
+            string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
 
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
             do
@@ -170,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
                     cancellationToken))
                 {
@@ -186,27 +250,30 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             while (lastStatusCode != HttpStatusCode.NotModified);
 
-            IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> tuples = ranges.Select(range => Tuple.Create(range, (ServiceIdentity)null));
+            IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> tuples = ranges
+                .Select(range => Tuple.Create(range, (ServiceIdentity)null));
 
             CollectionRoutingMap routingMap;
             if (previousRoutingMap == null)
             {
                 // Splits could have happened during change feed query and we might have a mix of gone and new ranges.
                 HashSet<string> goneRanges = new HashSet<string>(ranges.SelectMany(range => range.Parents ?? Enumerable.Empty<string>()));
-                routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                if (!CollectionRoutingMap.TryCreateCompleteRoutingMap(
                     tuples.Where(tuple => !goneRanges.Contains(tuple.Item1.Id)),
                     string.Empty,
-                    changeFeedNextIfNoneMatch);
+                    changeFeedNextIfNoneMatch,
+                    out routingMap))
+                {
+                    // Range information either doesn't exist or is not complete.
+                    throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetRoutingMapForCollectionAsync(collectionRid: {collectionRid}), Range information either doesn't exist or is not complete.");
+                }
             }
             else
             {
-                routingMap = previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch);
-            }
-
-            if (routingMap == null)
-            {
-                // Range information either doesn't exist or is not complete.
-                throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetRoutingMapForCollectionAsync(collectionRid: {collectionRid}), Range information either doesn't exist or is not complete.");
+                if (!previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch, out routingMap))
+                {
+                    throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetRoutingMapForCollectionAsync(collectionRid: {collectionRid}), Range information either doesn't exist or is not complete.");
+                }
             }
 
             return routingMap;
@@ -237,22 +304,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                 }
 
-                if (authorizationToken == null)
-                {
-                    // User doesn't have rid based resource token. Maybe he has name based.
-                    throw new NotSupportedException("Resoruce tokens are not supported");
-
-                    ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
-                    ////authorizationToken =
-                    ////    this.authorizationTokenProvider.GetUserAuthorizationToken(
-                    ////        collection.AltLink,
-                    ////        PathsHelper.GetResourcePath(request.ResourceType),
-                    ////        HttpConstants.HttpMethods.Get,
-                    ////        request.Headers,
-                    ////        AuthorizationTokenType.PrimaryMasterKey);
-                }
-
-                request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+                request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken ?? throw new NotSupportedException("Resoruce tokens are not supported");
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {

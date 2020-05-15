@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Newtonsoft.Json;
 
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </remarks>
     internal class StandByFeedContinuationToken
     {
-        internal delegate Task<IReadOnlyList<Documents.PartitionKeyRange>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh);
+        internal delegate Task<TryCatch<IReadOnlyList<Documents.PartitionKeyRange>>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh);
 
         private readonly string containerRid;
         private readonly PartitionKeyRangeCacheDelegate pkRangeCacheDelegate;
@@ -74,10 +75,10 @@ namespace Microsoft.Azure.Cosmos.Query
             this.inputContinuationToken = initialStandByFeedContinuationToken;
         }
 
-        public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentTokenAsync(bool forceRefresh = false)
+        public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentTokenAsync()
         {
             Debug.Assert(this.compositeContinuationTokens != null);
-            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(this.currentToken.Range, forceRefresh: forceRefresh);
+            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.GetOverlappingRangesAsync(this.currentToken.Range);
             if (resolvedRanges.Count > 1)
             {
                 this.HandleSplit(resolvedRanges);
@@ -147,14 +148,17 @@ namespace Microsoft.Azure.Cosmos.Query
             if (string.IsNullOrEmpty(initialContinuationToken))
             {
                 // Initialize composite token with all the ranges
-                IReadOnlyList<Documents.PartitionKeyRange> allRanges = await this.pkRangeCacheDelegate(
-                        this.containerRid,
-                        new Documents.Routing.Range<string>(
-                            Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                            isMinInclusive: true,
-                            isMaxInclusive: false),
-                        false);
+                TryCatch<IReadOnlyList<Documents.PartitionKeyRange>> tryGetAllRanges = await this.pkRangeCacheDelegate(
+                    this.containerRid,
+                    new Documents.Routing.Range<string>(
+                        Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                        isMinInclusive: true,
+                        isMaxInclusive: false),
+                    forceRefresh: false);
+                tryGetAllRanges.ThrowIfFailed();
+
+                IReadOnlyList<Documents.PartitionKeyRange> allRanges = tryGetAllRanges.Result;
 
                 Debug.Assert(allRanges.Count != 0);
                 // Initial state for a scenario where user does not provide any initial continuation token.
@@ -185,20 +189,19 @@ namespace Microsoft.Azure.Cosmos.Query
             this.currentToken = this.compositeContinuationTokens.Peek();
         }
 
-        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
-            Documents.Routing.Range<string> targetRange,
-            bool forceRefresh = false)
+        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetOverlappingRangesAsync(
+            Documents.Routing.Range<string> targetRange)
         {
             Debug.Assert(targetRange != null);
 
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.pkRangeCacheDelegate(
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = (await this.pkRangeCacheDelegate(
                 this.containerRid,
                 new Documents.Routing.Range<string>(
                     targetRange.Min,
                     targetRange.Max,
                     isMaxInclusive: false,
                     isMinInclusive: true),
-                forceRefresh);
+                forceRefresh: false)).Result;
 
             if (keyRanges.Count == 0)
             {

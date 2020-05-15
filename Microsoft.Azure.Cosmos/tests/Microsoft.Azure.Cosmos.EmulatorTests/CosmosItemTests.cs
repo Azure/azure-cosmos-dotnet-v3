@@ -1070,7 +1070,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Get all the partition key ranges to verify there is more than one partition
                 IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.GetOverlappingRangesAsync(
                     containerResponse.Resource.ResourceId,
                     new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true));
 

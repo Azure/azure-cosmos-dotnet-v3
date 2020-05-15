@@ -10,8 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
     internal abstract class CosmosQueryClient
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         /// <param name="range">This method will return all ranges which overlap this range.</param>
         /// <param name="forceRefresh">Whether forcefully refreshing the routing map is necessary</param>
         /// <returns>List of effective partition key ranges for a collection or null if collection doesn't exist.</returns>
-        internal abstract Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        internal abstract Task<TryCatch<IReadOnlyList<Documents.PartitionKeyRange>>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Documents.Routing.Range<string> range,
             bool forceRefresh = false);

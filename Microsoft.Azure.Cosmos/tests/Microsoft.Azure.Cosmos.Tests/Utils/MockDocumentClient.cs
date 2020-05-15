@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -215,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             It.IsAny<DocumentServiceRequest>(),
                             It.IsAny<CancellationToken>()
                         )
-                ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+                ).Returns(Task.FromResult(TryCatch<CollectionRoutingMap>.FromException(new NotFoundException())));
             this.partitionKeyRangeCache.Setup(
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         )
                 ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) =>
                 {
-                    return Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh));
+                    return Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
                 });
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());

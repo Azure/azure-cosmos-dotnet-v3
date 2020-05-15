@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -51,21 +52,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerProperties.ResourceId);
             Assert.IsNotNull(containerProperties.EffectivePartitionKeyString);
 
-            IReadOnlyList<Documents.PartitionKeyRange> pkRange = await this.queryClientCore.TryGetOverlappingRangesAsync(
+            TryCatch<IReadOnlyList<Documents.PartitionKeyRange>> tryGetPkRange = await this.queryClientCore.TryGetOverlappingRangesAsync(
                 collectionResourceId: containerProperties.ResourceId,
                 range: new Documents.Routing.Range<string>("AA", "AB", true, false),
                 forceRefresh: false);
 
-            Assert.IsNotNull(pkRange);
-            Assert.AreEqual(1, pkRange.Count);
+            Assert.IsTrue(tryGetPkRange.Succeeded);
+            Assert.AreEqual(1, tryGetPkRange.Result.Count);
 
-            IReadOnlyList<Documents.PartitionKeyRange> pkRangeAll = await this.queryClientCore.TryGetOverlappingRangesAsync(
+            TryCatch<IReadOnlyList<Documents.PartitionKeyRange>> tryGetPkRangeAll = await this.queryClientCore.TryGetOverlappingRangesAsync(
                 collectionResourceId: containerProperties.ResourceId,
                 range: new Documents.Routing.Range<string>("00", "FF", true, false),
                 forceRefresh: false);
 
-            Assert.IsNotNull(pkRangeAll);
-            Assert.IsTrue(pkRangeAll.Count > 1);
+            Assert.IsTrue(tryGetPkRangeAll.Succeeded);
+            Assert.IsTrue(tryGetPkRangeAll.Result.Count > 1);
         }
     }
 }

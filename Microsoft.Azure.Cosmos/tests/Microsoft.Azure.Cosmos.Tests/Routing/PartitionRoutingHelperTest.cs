@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Monads;
 
     /// <summary>
     /// Tests for <see cref="PartitionRoutingHelper"/> class.
@@ -56,8 +57,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     foreach (ExtractPartitionKeyRangeFromHeadersTestData testData in testSet.Postive)
                     {
                         INameValueCollection headers = getHeadersWithContinuation(testData.CompositeContinuationToken);
-                        List<CompositeContinuationToken> suppliedTokens;
-                        Range<string> range = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
+                        Range<string> range = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
 
                         if (suppliedTokens != null)
                         {
@@ -76,8 +76,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         INameValueCollection headers = getHeadersWithContinuation(testData.CompositeContinuationToken);
                         try
                         {
-                            List<CompositeContinuationToken> suppliedTokens;
-                            Range<string> rangeOrId = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
+                            Range<string> rangeOrId = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
                             Assert.Fail("Expect BadRequestException");
                         }
                         catch (BadRequestException)
@@ -102,19 +101,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     AddFormattedContinuationToHeaderTestData testData = JsonConvert.DeserializeObject<AddFormattedContinuationToHeaderTestData>(reader.ReadToEnd());
 
-                    CollectionRoutingMap routingMap =
-                        CollectionRoutingMap.TryCreateCompleteRoutingMap(
-                            testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)), string.Empty);
-                    RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);              
+                    if (!CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                        testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)),
+                        string.Empty,
+                        changeFeedNextIfNoneMatch: null,
+                        out CollectionRoutingMap routingMap))
+                    {
+                        throw new InvalidOperationException("FAILED TO CREATE ROUTING MAP");
+                    }
+
+                    RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
 
                     foreach (AddFormattedContinuationToHeaderTestUnit positiveTestData in testData.TestSet.Postive)
                     {
 
-                        INameValueCollection headers;
-                        List<CompositeContinuationToken> resolvedContinuationTokens;
-                        List<PartitionKeyRange> resolvedRanges;
 
-                        this.AddFormattedContinuationHeaderHelper(positiveTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
+                        this.AddFormattedContinuationHeaderHelper(positiveTestData, out INameValueCollection headers, out List<PartitionKeyRange> resolvedRanges, out List<CompositeContinuationToken> resolvedContinuationTokens);
 
                         bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, positiveTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null));
 
@@ -125,11 +127,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         try
                         {
-                            INameValueCollection headers;
-                            List<CompositeContinuationToken> resolvedContinuationTokens;
-                            List<PartitionKeyRange> resolvedRanges;
 
-                            this.AddFormattedContinuationHeaderHelper(negativeTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
+                            this.AddFormattedContinuationHeaderHelper(negativeTestData, out INameValueCollection headers, out List<PartitionKeyRange> resolvedRanges, out List<CompositeContinuationToken> resolvedContinuationTokens);
 
                             bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, negativeTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null));
 
@@ -180,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 CompositeContinuationToken continuationToBeCopied;
                 if (initialContinuationTokens != null && initialContinuationTokens.Length > 0)
                 {
-                    continuationToBeCopied = (CompositeContinuationToken) initialContinuationTokens[0].ShallowCopy();
+                    continuationToBeCopied = (CompositeContinuationToken)initialContinuationTokens[0].ShallowCopy();
                 }
                 else
                 {
@@ -192,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 foreach (PartitionKeyRange pkrange in resolvedRanges)
                 {
-                    CompositeContinuationToken token = (CompositeContinuationToken) continuationToBeCopied.ShallowCopy();
+                    CompositeContinuationToken token = (CompositeContinuationToken)continuationToBeCopied.ShallowCopy();
                     token.Range = pkrange.ToRange();
                     resolvedContinuationTokens.Add(token);
                 }
@@ -221,9 +220,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     GetPartitionRoutingInfoTestData testData = JsonConvert.DeserializeObject<GetPartitionRoutingInfoTestData>(reader.ReadToEnd());
 
-                    CollectionRoutingMap routingMap =
-                        CollectionRoutingMap.TryCreateCompleteRoutingMap(
-                            testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)), string.Empty);
+                    if (!CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                            testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)),
+                            string.Empty,
+                            changeFeedNextIfNoneMatch: null,
+                            out CollectionRoutingMap routingMap))
+                    {
+                        throw new InvalidOperationException("FAILED TO CREATE ROUTING MAP");
+                    }
 
                     foreach (GetPartitionRoutingInfoTestCase testCase in testData.TestCases)
                     {
@@ -234,14 +238,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                         for (Range<string> currentRange = startRange; currentRange != null;)
                         {
                             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
-                            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null);
+                            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = (await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+                                testCase.ProvidedRanges,
+                                routingMapProvider,
+                                string.Empty,
+                                currentRange,
+                                null)).Result;
                             actualPartitionKeyRangeIds.Add(resolvedRangeInfo.ResolvedRange.Id);
                             INameValueCollection headers = new DictionaryNameValueCollection();
 
                             await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo);
 
-                            List<CompositeContinuationToken> suppliedTokens;
-                            Range<string> nextRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
+                            Range<string> nextRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
                             currentRange = nextRange.IsEmpty ? null : nextRange;
                         }
 
@@ -260,19 +268,45 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.collectionRoutingMap = collectionRoutingMap;
             }
 
-            public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false)
+            public Task<IReadOnlyList<PartitionKeyRange>> GetOverlappingRangesAsync(string collectionResourceId, Range<string> range)
             {
-                return Task.FromResult(this.collectionRoutingMap.GetOverlappingRanges(range));
+                throw new NotImplementedException();
             }
 
-            public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh = false)
+            public Task<PartitionKeyRange> GetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId)
             {
-                return Task.FromResult(this.collectionRoutingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch<IReadOnlyList<PartitionKeyRange>>> TryGetOverlappingRangesAsync(
+                string collectionResourceId,
+                Range<string> range,
+                bool forceRefresh = false)
+            {
+                return Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(this.collectionRoutingMap.GetOverlappingRanges(range)));
             }
 
             public Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(string collectionResourceId, string effectivePartitionKey)
             {
                 return Task.FromResult(this.collectionRoutingMap.GetOverlappingRanges(Range<string>.GetPointRange(effectivePartitionKey)).Single());
+            }
+
+            Task<TryCatch<PartitionKeyRange>> TryGetPartitionKeyRangeByIdAsync(
+                string collectionResourceId,
+                string partitionKeyRangeId,
+                bool forceRefresh)
+            {
+                if (!this.collectionRoutingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId, out PartitionKeyRange partitionKeyRange))
+                {
+                    return Task.FromResult(TryCatch<PartitionKeyRange>.FromException(new NotFoundException()));
+                }
+
+                return Task.FromResult(TryCatch<PartitionKeyRange>.FromResult(partitionKeyRange));
+            }
+
+            Task<TryCatch<PartitionKeyRange>> IRoutingMapProvider.TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh)
+            {
+                throw new NotImplementedException();
             }
         }
 

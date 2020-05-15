@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -703,13 +704,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         /// <returns>The replacement ranges for the target range that got split.</returns>
         private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetReplacementRangesAsync(Documents.PartitionKeyRange targetRange, string collectionRid)
         {
-            IReadOnlyList<Documents.PartitionKeyRange> replacementRanges = await this.queryClient.TryGetOverlappingRangesAsync(
+            TryCatch<IReadOnlyList<Documents.PartitionKeyRange>> tryGetOverlappingRangesAsync = await this.queryClient.TryGetOverlappingRangesAsync(
                 collectionRid,
                 targetRange.ToRange(),
-                true);
+                forceRefresh: true);
+            tryGetOverlappingRangesAsync.ThrowIfFailed();
 
-            string replaceMinInclusive = replacementRanges.First().MinInclusive;
-            string replaceMaxExclusive = replacementRanges.Last().MaxExclusive;
+            string replaceMinInclusive = tryGetOverlappingRangesAsync.Result.First().MinInclusive;
+            string replaceMaxExclusive = tryGetOverlappingRangesAsync.Result.Last().MaxExclusive;
             if (!replaceMinInclusive.Equals(targetRange.MinInclusive, StringComparison.Ordinal) || !replaceMaxExclusive.Equals(targetRange.MaxExclusive, StringComparison.Ordinal))
             {
                 throw new Documents.InternalServerErrorException(string.Format(
@@ -721,7 +723,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                     replaceMaxExclusive));
             }
 
-            return replacementRanges;
+            return tryGetOverlappingRangesAsync.Result;
         }
     }
 }

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -31,21 +32,21 @@ namespace Microsoft.Azure.Cosmos
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
-            Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
+            TryCatch<Documents.PartitionKeyRange> tryGetPartitionKeyRangeByIdAsync = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
                 collectionResourceId: containerRid,
                 partitionKeyRangeId: this.PartitionKeyRangeId,
                 forceRefresh: false);
 
-            if (pkRange == null)
+            if (tryGetPartitionKeyRangeByIdAsync.Failed)
             {
                 // Try with a refresh
-                pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
+                tryGetPartitionKeyRangeByIdAsync = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
                     collectionResourceId: containerRid,
                     partitionKeyRangeId: this.PartitionKeyRangeId,
                     forceRefresh: true);
             }
 
-            if (pkRange == null)
+            if (tryGetPartitionKeyRangeByIdAsync.Failed)
             {
                 throw CosmosExceptionFactory.Create(
                     statusCode: HttpStatusCode.Gone,
@@ -58,10 +59,10 @@ namespace Microsoft.Azure.Cosmos
                     headers: null,
                     diagnosticsContext: null,
                     error: null,
-                    innerException: null);
+                    innerException: tryGetPartitionKeyRangeByIdAsync.Exception);
             }
 
-            return new List<Documents.Routing.Range<string>> { pkRange.ToRange() };
+            return new List<Documents.Routing.Range<string>> { tryGetPartitionKeyRangeByIdAsync.Result.ToRange() };
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

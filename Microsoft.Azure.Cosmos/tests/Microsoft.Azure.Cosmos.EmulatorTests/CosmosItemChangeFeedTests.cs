@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
@@ -144,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                     else
                     {
-                        if(!createdDocuments)
+                        if (!createdDocuments)
                         {
                             await this.CreateRandomItems(this.Container, expectedDocuments, randomPartitionKey: true);
                             createdDocuments = true;
@@ -364,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(tasks);
 
             int documentsRead = 0;
-            foreach(Task<int> task in tasks)
+            foreach (Task<int> task in tasks)
             {
                 documentsRead += task.Result;
             }
@@ -454,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         this.HasCalledForceRefresh = true;
                     }
 
-                    return Task.FromResult(filteredRanges);
+                    return Task.FromResult(TryCatch<IReadOnlyList<Documents.PartitionKeyRange>>.FromResult(filteredRanges));
                 }).Result;
             }
 

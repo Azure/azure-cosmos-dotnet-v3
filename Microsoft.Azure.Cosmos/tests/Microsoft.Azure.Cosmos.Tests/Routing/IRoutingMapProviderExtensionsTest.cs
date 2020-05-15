@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,23 +19,56 @@ namespace Microsoft.Azure.Cosmos.Routing
     [TestClass]
     public class IRoutingMapProviderExtensionsTest
     {
-        private class MockRoutingMapProvider : IRoutingMapProvider
+        private sealed class MockRoutingMapProvider : IRoutingMapProvider
         {
-            readonly CollectionRoutingMap routingMap;
+            private readonly CollectionRoutingMap routingMap;
 
             public MockRoutingMapProvider(IList<PartitionKeyRange> ranges)
             {
-                this.routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(ranges.Select(r => Tuple.Create(r, (ServiceIdentity)null)), "");
+                if (!CollectionRoutingMap.TryCreateCompleteRoutingMap(ranges.Select(r => Tuple.Create(r, (ServiceIdentity)null)), "", null, out this.routingMap))
+                {
+                    throw new InvalidOperationException("Failed to create routing map");
+                }
             }
 
-            public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionIdOrNameBasedLink, Range<string> range, bool forceRefresh = false)
+            public Task<IReadOnlyList<PartitionKeyRange>> GetOverlappingRangesAsync(
+                string collectionIdOrNameBasedLink,
+                Range<string> range)
             {
                 return Task.FromResult(this.routingMap.GetOverlappingRanges(range));
             }
 
-            public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh = false)
+            public Task<TryCatch<IReadOnlyList<PartitionKeyRange>>> TryGetOverlappingRangesAsync(
+                string collectionIdOrNameBasedLink,
+                Range<string> range,
+                bool forceRefresh = false)
             {
-                return Task.FromResult(this.routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
+                return Task.FromResult(TryCatch<IReadOnlyList<PartitionKeyRange>>.FromResult(this.routingMap.GetOverlappingRanges(range)));
+            }
+
+            public async Task<PartitionKeyRange> GetPartitionKeyRangeByIdAsync(
+                string collectionResourceId,
+                string partitionKeyRangeId)
+            {
+                TryCatch<PartitionKeyRange> tryGetPartitionKeyRangeByIdAsync = await this.TryGetPartitionKeyRangeByIdAsync(
+                    collectionResourceId,
+                    partitionKeyRangeId);
+                tryGetPartitionKeyRangeByIdAsync.ThrowIfFailed();
+
+                return tryGetPartitionKeyRangeByIdAsync.Result;
+            }
+
+            public Task<TryCatch<PartitionKeyRange>> TryGetPartitionKeyRangeByIdAsync(
+                string collectionResourceId,
+                string partitionKeyRangeId,
+                bool forceRefresh = false)
+            {
+                if (!this.routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId, out PartitionKeyRange partitionKeyRange))
+                {
+                    return Task.FromResult(TryCatch<PartitionKeyRange>.FromException(new NotFoundException()));
+                }
+
+                return Task.FromResult(TryCatch<PartitionKeyRange>.FromResult(partitionKeyRange));
             }
         }
 
@@ -59,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         [Owner("padmaa")]
         public async Task TestNonSortedRanges()
         {
-            IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            IList<PartitionKeyRange> ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[] { new Range<string>("0B", "0B", true, true), new Range<string>("0A", "0A", true, true) });
 
@@ -101,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             {
                 // Deep Copy Duplicate
-                IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+                IList<PartitionKeyRange> ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[]
                 {
@@ -121,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 };
                 queryRanges.Add(queryRanges.Last());
 
-                IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+                IList<PartitionKeyRange> ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                     "dbs/db1/colls/coll1",
                     queryRanges);
 
@@ -136,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         [Owner("padmaa")]
         public async Task TestGetOverlappingRanges()
         {
-            IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            IList<PartitionKeyRange> ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[]
                     {
@@ -149,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Assert.AreEqual("1,2,4", string.Join(",", ranges.Select(r => r.Id)));
 
             // query for minimal point
-            ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[]
                     {
@@ -159,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Assert.AreEqual("0", string.Join(",", ranges.Select(r => r.Id)));
 
             // query for empty range
-            ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[]
                     {
@@ -169,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Assert.AreEqual("", string.Join(",", ranges.Select(r => r.Id)));
 
             // entire range
-            ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[]
                     {
@@ -179,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Assert.AreEqual("0,1,2,3,4,5,6", string.Join(",", ranges.Select(r => r.Id)));
 
             // matching range
-            ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[]
                     {
@@ -189,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Assert.AreEqual("3", string.Join(",", ranges.Select(r => r.Id)));
 
             // matching range and a little bit more.
-            ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            ranges = await this.routingMapProvider.GetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[]
                     {

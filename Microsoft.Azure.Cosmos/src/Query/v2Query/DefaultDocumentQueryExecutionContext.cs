@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -170,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(
                                 request.Headers,
                                 out suppliedTokens);
-                        Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>> queryRoutingInfo =
+                        TryCatch<Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>>> tryGetQueryRoutingInfo =
                             await this.TryGetTargetPartitionKeyRangeAsync(
                                 request,
                                 collection,
@@ -179,11 +181,11 @@ namespace Microsoft.Azure.Cosmos.Query
                                 rangeFromContinuationToken,
                                 suppliedTokens);
 
-                        if (request.IsNameBased && queryRoutingInfo == null)
+                        if (request.IsNameBased && tryGetQueryRoutingInfo.Failed)
                         {
                             request.ForceNameCacheRefresh = true;
                             collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
-                            queryRoutingInfo = await this.TryGetTargetPartitionKeyRangeAsync(
+                            tryGetQueryRoutingInfo = await this.TryGetTargetPartitionKeyRangeAsync(
                                 request,
                                 collection,
                                 queryPartitionProvider,
@@ -192,10 +194,12 @@ namespace Microsoft.Azure.Cosmos.Query
                                 suppliedTokens);
                         }
 
-                        if (queryRoutingInfo == null)
+                        if (tryGetQueryRoutingInfo.Failed)
                         {
                             throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collection.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}");
                         }
+
+                        Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>> queryRoutingInfo = tryGetQueryRoutingInfo.Result;
 
                         request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, queryRoutingInfo.Item1.ResolvedRange.Id));
                         DocumentFeedResponse<CosmosElement> response = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
@@ -251,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return !CustomTypeExtensions.ByPassQueryParsing();
         }
 
-        private async Task<Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>>> TryGetTargetPartitionKeyRangeAsync(
+        private async Task<TryCatch<Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>>>> TryGetTargetPartitionKeyRangeAsync(
            DocumentServiceRequest request,
            ContainerProperties collection,
            QueryPartitionProvider queryPartitionProvider,
@@ -350,21 +354,22 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.providedRangesCache[collection.ResourceId] = providedRanges;
             }
 
-            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
-                    providedRanges,
-                    routingMapProvider,
-                    collection.ResourceId,
-                    rangeFromContinuationToken,
-                    suppliedTokens);
+            TryCatch<PartitionRoutingHelper.ResolvedRangeInfo> resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+                providedRanges,
+                routingMapProvider,
+                collection.ResourceId,
+                rangeFromContinuationToken,
+                suppliedTokens);
 
-            if (resolvedRangeInfo.ResolvedRange == null)
+            if (resolvedRangeInfo.Failed)
             {
-                return null;
+                return TryCatch<Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>>>.FromException(resolvedRangeInfo.Exception);
             }
-            else
-            {
-                return Tuple.Create(resolvedRangeInfo, providedRanges);
-            }
+
+            return TryCatch<Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>>>.FromResult(
+                Tuple.Create(
+                    resolvedRangeInfo.Result,
+                    providedRanges));
         }
 
         private async Task<DocumentServiceRequest> CreateRequestAsync()
