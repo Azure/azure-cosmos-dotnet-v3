@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             public override T FromStream<T>(Stream stream)
             {
                 // Only let changes serialization pass through
-                if (typeof(T) == typeof(List<TestClass>))
+                if (typeof(T) == typeof(TestClass[]))
                 {
                     return this.cosmosSerializer.FromStream<T>(stream);
                 }

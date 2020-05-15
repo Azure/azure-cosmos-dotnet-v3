@@ -193,9 +193,9 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             // Test read feed scenario
             ResponseMessage readFeedResponse = this.CreateReadFeedResponse();
-            mockUserJsonSerializer.Setup(x => x.FromStream<List<ToDoActivity>>(It.IsAny<Stream>()))
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity[]>(It.IsAny<Stream>()))
                 .Callback<Stream>(input => input.Dispose())
-                .Returns(new List<ToDoActivity>() { new ToDoActivity() });
+                .Returns(new ToDoActivity[] { new ToDoActivity() });
             FeedResponse<ToDoActivity> feedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(readFeedResponse);
             foreach (ToDoActivity toDoActivity in feedResponse)
             {
