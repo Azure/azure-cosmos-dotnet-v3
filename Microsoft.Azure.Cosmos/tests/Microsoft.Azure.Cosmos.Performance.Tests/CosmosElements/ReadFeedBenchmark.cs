@@ -150,7 +150,7 @@
                     Documents.ResourceType.Document,
                     null);
 
-                using (MemoryStream memoryStream = CosmosElementSerializer.ElementToMemoryStream(
+                using (MemoryStream memoryStream = CosmosElementSerializer.ElementsToMemoryStream(
                     array,
                     null))
                 {

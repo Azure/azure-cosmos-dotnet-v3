@@ -234,9 +234,27 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 serializerCore);
         }
 
-        private static IReadOnlyList<T> GetResourcesHelper<T>(
+        internal static IReadOnlyList<T> GetResourcesHelper<T>(
             IReadOnlyList<CosmosElement> cosmosElements,
             CosmosSerializerCore serializerCore,
+            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
+        {
+            using (MemoryStream memoryStream = ElementsToMemoryStream(
+                cosmosElements,
+                cosmosSerializationOptions))
+            {
+                return serializerCore.FromFeedStream<T>(memoryStream);
+            }
+        }
+
+        /// <summary>
+        /// Converts a list of CosmosElements into a memory stream.
+        /// </summary>
+        /// <param name="cosmosElements">The cosmos elements</param>
+        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
+        /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
+        internal static MemoryStream ElementsToMemoryStream(
+            IReadOnlyList<CosmosElement> cosmosElements,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {
             IJsonWriter jsonWriter;
@@ -250,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
             }
 
             jsonWriter.WriteArrayStart();
-            
+
             foreach (CosmosElement element in cosmosElements)
             {
                 element.WriteTo(jsonWriter);
@@ -258,10 +276,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
 
             jsonWriter.WriteArrayEnd();
 
-            using (MemoryStream memoryStream = GetMemoryStreamFromJsonWriter(jsonWriter))
-            {
-                return serializerCore.FromFeedStream<T>(memoryStream);
-            }
+            return GetMemoryStreamFromJsonWriter(jsonWriter);
         }
 
         private static MemoryStream GetMemoryStreamFromJsonWriter(IJsonWriter jsonWriter)
