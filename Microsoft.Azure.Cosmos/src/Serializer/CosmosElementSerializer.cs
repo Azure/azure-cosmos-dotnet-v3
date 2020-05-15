@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
             return new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count, writable: false, publiclyVisible: true);
         }
 
-        internal static IEnumerable<T> GetResources<T>(
+        internal static IReadOnlyList<T> GetResources<T>(
             IReadOnlyList<CosmosElement> cosmosArray,
             CosmosSerializerCore serializerCore)
         {
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
 
             if (typeof(CosmosElement).IsAssignableFrom(typeof(T)))
             {
-                return cosmosArray.Cast<T>();
+                return cosmosArray.Cast<T>().ToList();
             }
 
             return CosmosElementSerializer.GetResourcesHelper<T>(
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 serializerCore);
         }
 
-        private static IEnumerable<T> GetResourcesHelper<T>(
+        private static IReadOnlyList<T> GetResourcesHelper<T>(
             IReadOnlyList<CosmosElement> cosmosArray,
             CosmosSerializerCore serializerCore)
         {

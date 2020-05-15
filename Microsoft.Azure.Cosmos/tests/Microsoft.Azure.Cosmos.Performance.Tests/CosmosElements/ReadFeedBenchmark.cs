@@ -6,10 +6,7 @@
     using System.Text;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Serializer;
-    using Microsoft.Azure.Cosmos.Tests.Poco;
     using Newtonsoft.Json;
 
     [MemoryDiagnoser]
@@ -31,7 +28,7 @@
 
             public ToDoActivity[] children { get; set; }
 
-            public override bool Equals(Object obj)
+            public override bool Equals(object obj)
             {
                 ToDoActivity input = obj as ToDoActivity;
                 if (input == null)
@@ -110,23 +107,39 @@
         }
 
         [Benchmark]
-        public void ByteFindArrayParsingJson()
+        public void ByteParsingToFindJsonArray()
         {
             using (MemoryStream ms = new MemoryStream(this.payloadBytes))
             {
-                using (MemoryStream memoryStream = CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(
-                    ms))
+                long length = ms.Length;
+                using (MemoryStream memoryStream = CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(ms))
                 {
-                    if (ms.Length == memoryStream.Length)
+                    if (length == memoryStream.Length)
                     {
                         throw new Exception();
                     }
-                }  
+                }
             }
         }
 
         [Benchmark]
-        public void CosmosElements()
+        public void ByteParsingToFindJsonArrayWithSeriliazation()
+        {
+            using (MemoryStream ms = new MemoryStream(this.payloadBytes))
+            {
+                IReadOnlyList<ToDoActivity> results = CosmosFeedResponseSerializer.FromFeedResponseStream<ToDoActivity>(
+                    this.serializerCore,
+                    ms);
+
+                if (results.Count != 1000)
+                {
+                    throw new Exception();
+                }
+            }
+        }
+
+        [Benchmark]
+        public void CosmosElementsToFindArray()
         {
             using (MemoryStream ms = new MemoryStream(this.payloadBytes))
             {
@@ -135,7 +148,7 @@
                     Documents.ResourceType.Document,
                     null);
 
-                using(MemoryStream memoryStream = CosmosElementSerializer.ElementToMemoryStream(
+                using (MemoryStream memoryStream = CosmosElementSerializer.ElementToMemoryStream(
                     array,
                     null))
                 {
@@ -143,6 +156,27 @@
                     {
                         throw new Exception();
                     }
+                }
+            }
+        }
+
+        [Benchmark]
+        public void CosmosElementsToFindArrayWithSerialization()
+        {
+            using (MemoryStream ms = new MemoryStream(this.payloadBytes))
+            {
+                CosmosArray array = CosmosElementSerializer.ToCosmosElements(
+                    ms,
+                    Documents.ResourceType.Document,
+                    null);
+
+                IReadOnlyList<ToDoActivity> results = CosmosElementSerializer.GetResources<ToDoActivity>(
+                    array,
+                    this.serializerCore);
+
+                if (results.Count != 1000)
+                {
+                    throw new Exception();
                 }
             }
         }
