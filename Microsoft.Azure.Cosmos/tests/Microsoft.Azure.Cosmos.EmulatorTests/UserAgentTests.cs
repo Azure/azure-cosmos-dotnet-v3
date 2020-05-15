@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateUniqueClientIdHeader()
         {
+            EnvironmentInformation.ResetCounter();
             using (CosmosClient client = TestCommon.CreateCosmosClient())
             {
                 string firstClientId = this.GetClientIdFromCosmosClient(client);
