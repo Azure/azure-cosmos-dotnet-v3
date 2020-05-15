@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             Assert.IsFalse(changeFeedResponse.Resource.Any());
 
             ResponseMessage queryResponse = this.CreateReadFeedResponse();
-            mockUserJsonSerializer.Setup(x => x.FromStream<List<ToDoActivity>>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new List<ToDoActivity>() { new ToDoActivity() });
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity[]>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity[] { new ToDoActivity() });
             FeedResponse<ToDoActivity> queryFeedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(queryResponse);
             foreach (ToDoActivity toDoActivity in queryFeedResponse)
             {
