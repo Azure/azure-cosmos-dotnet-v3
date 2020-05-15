@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
+        private const int MaxSessionRetry = 5;
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -273,7 +274,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    if (this.sessionTokenRetryCount > 1)
+                    if (this.sessionTokenRetryCount > MaxSessionRetry)
                     {
                         // When cannot use multiple write locations, then don't retry the request if 
                         // we have already tried this request on the write location
@@ -283,7 +284,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         this.retryContext = new RetryContext
                         {
-                            RetryCount = this.sessionTokenRetryCount - 1,
+                            RetryCount = 0, // Should always retry on primary region
                             RetryRequestOnPreferredLocations = false
                         };
 
