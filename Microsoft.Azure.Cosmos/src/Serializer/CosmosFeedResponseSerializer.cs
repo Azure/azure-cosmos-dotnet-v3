@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos
 #nullable enable
     internal static class CosmosFeedResponseSerializer
     {
-        private static readonly byte ArrayStart = Encoding.UTF8.GetBytes("[")[0];
-        private static readonly byte ArrayEnd = Encoding.UTF8.GetBytes("]")[0];
+        private static readonly byte ArrayStart = (byte)'[';
+        private static readonly byte ArrayEnd = (byte)']';
 
         /// <summary>
         /// The service returns feed responses in an envelope. This removes the envelope
