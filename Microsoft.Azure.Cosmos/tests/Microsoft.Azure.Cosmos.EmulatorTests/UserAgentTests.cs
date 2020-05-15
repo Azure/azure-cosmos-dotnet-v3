@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string[] values = serialization.Split('|');
             Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}", values[0]);
             Assert.AreEqual(envInfo.DirectVersion, values[1]);
-            Assert.AreEqual(envInfo.ClientId.Length, values[2].Length);
+            Assert.AreEqual(envInfo.ClientId, values[2]);
             Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
             Assert.IsTrue(!string.IsNullOrWhiteSpace(values[4]));
             if (useMacOs)
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
             string userAgentString = userAgentContainer.UserAgent;
             string clientId = userAgentString.Split('|')[2];
-            Assert.AreEqual(5, clientId.Length);
+            Assert.AreEqual(2, clientId.Length);
             return clientId;
         }
     }
