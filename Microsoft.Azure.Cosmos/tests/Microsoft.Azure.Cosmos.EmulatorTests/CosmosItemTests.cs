@@ -615,12 +615,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 List<dynamic> allItems = new List<dynamic>();
 
+                int pageCount = 0;
                 while (feedIterator.HasMoreResults)
                 {
                     // Only need once to verify correct serialization of the query definition
                     FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
                     Assert.AreEqual(response.Count, response.Count());
                     allItems.AddRange(response);
+                    pageCount++;
                 }
 
 
@@ -635,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Each parameter in query spec should be a call to the custom serializer
                 int parameterCount = queryDefinition.ToSqlQuerySpec().Parameters.Count;
                 Assert.AreEqual(parameterCount, toStreamCount, $"missing to stream call. Expected: {parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
-                Assert.AreEqual(allItems.Count, fromStreamCount);
+                Assert.AreEqual(pageCount, fromStreamCount);
             }
         }
 
@@ -644,6 +646,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
             HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+            FeedIterator<ToDoActivity> feedIterator =
+                this.Container.GetItemQueryIterator<ToDoActivity>();
+            while (feedIterator.HasMoreResults)
+            {
+                foreach (ToDoActivity toDoActivity in await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (itemIds.Contains(toDoActivity.id))
+                    {
+                        itemIds.Remove(toDoActivity.id);
+                    }
+                }
+            }
+
+            Assert.AreEqual(itemIds.Count, 0);
+        }
+
+        [TestMethod]
+        public async Task PerfItemIterator()
+        {
+            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 2000, randomPartitionKey: true);
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+            
             FeedIterator<ToDoActivity> feedIterator =
                 this.Container.GetItemQueryIterator<ToDoActivity>();
             while (feedIterator.HasMoreResults)

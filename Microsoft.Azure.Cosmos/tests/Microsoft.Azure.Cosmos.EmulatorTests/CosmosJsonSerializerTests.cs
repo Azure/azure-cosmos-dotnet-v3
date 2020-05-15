@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 Assert.AreEqual(1, toStreamCount);
-                Assert.AreEqual(5, fromStreamCount);
+                Assert.AreEqual(1, fromStreamCount);
 
                 toStreamCount = 0;
                 fromStreamCount = 0;
