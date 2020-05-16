@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.BinaryHashSeed, seed);
 
                 // TODO: replace this with Span based hashing.
-                hash = MurmurHash3.Hash128(cosmosBinary.Value.Span, seed);
+                hash = MurmurHash3.Hash128(cosmosBinary.Value.Span, hash);
                 return hash;
             }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosGuid cosmosGuid, UInt128 seed)
             {
                 UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.GuidHashSeed, seed);
-                hash = MurmurHash3.Hash128(cosmosGuid.Value.ToByteArray(), seed);
+                hash = MurmurHash3.Hash128(cosmosGuid.Value.ToByteArray(), hash);
                 return hash;
             }
 

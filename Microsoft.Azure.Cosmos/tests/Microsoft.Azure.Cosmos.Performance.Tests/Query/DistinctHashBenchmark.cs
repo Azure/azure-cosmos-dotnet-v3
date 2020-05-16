@@ -15,8 +15,33 @@
         private static readonly CosmosBoolean cosmosTrue = CosmosBoolean.Create(true);
         private static readonly CosmosNumber cosmosNumber = CosmosNumber64.Create(1234);
         private static readonly CosmosString cosmosString = CosmosString.Create("asdfasdfasdfasdfasdfasdf");
-        private static readonly CosmosArray cosmosArray = CosmosArray.Create(new List<CosmosElement>());
-        private static readonly CosmosObject cosmosObject = CosmosObject.Create(new Dictionary<string, CosmosElement>());
+        private static readonly CosmosArray cosmosEmptyArray = CosmosArray.Create(
+            new List<CosmosElement>()
+            {
+                cosmosNull,
+                cosmosFalse,
+                cosmosTrue,
+                cosmosNumber,
+                cosmosString
+            });
+        private static readonly CosmosArray cosmosArrayWithItems = CosmosArray.Create(
+            new List<CosmosElement>()
+            {
+                cosmosNull,
+                cosmosFalse,
+                cosmosTrue,
+                cosmosNumber,
+                cosmosString
+            });
+        private static readonly CosmosObject cosmosEmptyObject = CosmosObject.Create(new Dictionary<string, CosmosElement>());
+        private static readonly CosmosObject cosmosObjectWithItems = CosmosObject.Create(new Dictionary<string, CosmosElement>()
+        {
+            { "null", cosmosNull },
+            { "false", cosmosFalse },
+            { "true", cosmosTrue },
+            { "cosmosNumber", cosmosNumber },
+            { "cosmosString", cosmosString },
+        });
 
         [Benchmark]
         public void Null()
@@ -49,15 +74,27 @@
         }
 
         [Benchmark]
-        public void Array()
+        public void EmptyArray()
         {
-            DistinctHashBenchmark.ExecuteBenchmark(cosmosArray);
+            DistinctHashBenchmark.ExecuteBenchmark(cosmosEmptyArray);
         }
 
         [Benchmark]
-        public void Object()
+        public void ArrayWithItems()
         {
-            DistinctHashBenchmark.ExecuteBenchmark(cosmosObject);
+            DistinctHashBenchmark.ExecuteBenchmark(cosmosArrayWithItems);
+        }
+
+        [Benchmark]
+        public void EmptyObject()
+        {
+            DistinctHashBenchmark.ExecuteBenchmark(cosmosEmptyObject);
+        }
+
+        [Benchmark]
+        public void ObjectWithItems()
+        {
+            DistinctHashBenchmark.ExecuteBenchmark(cosmosObjectWithItems);
         }
 
         private static void ExecuteBenchmark(CosmosElement cosmosElement)
