@@ -309,9 +309,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             {
                 UInt128 hash = seed == RootHashSeed ? RootCache.Number64 : MurmurHash3.Hash128(HashSeeds.Number64, seed);
                 Number64 value = cosmosNumber64.GetValue();
-                Span<byte> buffer = stackalloc byte[Number64.SizeOf];
-                value.CopyTo(buffer);
-                return MurmurHash3.Hash128(buffer, hash);
+                Number64.DoubleEx doubleExValue = Number64.ToDoubleEx(value);
+                return MurmurHash3.Hash128(doubleExValue, hash);
             }
 
             public UInt128 Visit(CosmosUInt32 cosmosUInt32, UInt128 seed)
