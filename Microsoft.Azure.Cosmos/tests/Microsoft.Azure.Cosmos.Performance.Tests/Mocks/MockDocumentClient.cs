@@ -25,12 +25,23 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
 
-        public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        public static CosmosClient CreateMockCosmosClient(
+            bool useCustomSerialzier = false,
+            Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             DocumentClient documentClient = new MockDocumentClient();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
             cosmosClientBuilder.WithConnectionModeDirect();
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
+
+            if (useCustomSerialzier)
+            {
+                cosmosClientBuilder.WithSerializerOptions(
+                    new CosmosSerializationOptions()
+                    {
+                        IgnoreNullValues = true,
+                    });
+            }
 
             return cosmosClientBuilder.Build(documentClient);
         }
