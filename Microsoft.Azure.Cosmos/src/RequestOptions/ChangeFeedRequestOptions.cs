@@ -32,9 +32,9 @@ namespace Microsoft.Azure.Cosmos
             get => this.maxItemCount;
             set
             {
-                if (value.HasValue && (value.Value < 0) && (value.Value != -1))
+                if (value.HasValue && (value.Value <= 0))
                 {
-                    throw new ArgumentOutOfRangeException($"{nameof(this.MaxItemCount)} must be a positive value or -1.");
+                    throw new ArgumentOutOfRangeException($"{nameof(this.MaxItemCount)} must be a positive value.");
                 }
 
                 this.maxItemCount = value;
