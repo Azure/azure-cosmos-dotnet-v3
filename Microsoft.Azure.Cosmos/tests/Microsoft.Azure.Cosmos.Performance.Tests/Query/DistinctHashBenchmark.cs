@@ -18,11 +18,6 @@
         private static readonly CosmosArray cosmosEmptyArray = CosmosArray.Create(
             new List<CosmosElement>()
             {
-                cosmosNull,
-                cosmosFalse,
-                cosmosTrue,
-                cosmosNumber,
-                cosmosString
             });
         private static readonly CosmosArray cosmosArrayWithItems = CosmosArray.Create(
             new List<CosmosElement>()
