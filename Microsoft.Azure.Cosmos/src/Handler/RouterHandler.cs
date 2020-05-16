@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.pointOperationHandler = pointOperationHandler;
         }
 
-        public override Task<ResponseMessage> SendAsync(
+        public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             using (request.DiagnosticsContext.CreateRequestHandlerScopeScope(targetHandler))
             {
-                return targetHandler.SendAsync(request, cancellationToken);
+                return await targetHandler.SendAsync(request, cancellationToken);
             }
         }
     }
