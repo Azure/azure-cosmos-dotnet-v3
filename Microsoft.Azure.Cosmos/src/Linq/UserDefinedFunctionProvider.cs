@@ -25,20 +25,41 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <example> 
         /// <code language="c#">
         /// <![CDATA[
-        ///  await client.CreateUserDefinedFunctionAsync(collectionLink, new UserDefinedFunction { Id = "calculateTax", Body = @"function(amt) { return amt * 0.05; }" });
-        ///  var queryable = client.CreateDocumentQuery<Book>(collectionLink).Select(b => UserDefinedFunctionProvider.Invoke("calculateTax", b.Price));
-        ///  
+        /// StoredProcedureResponse storedProcedureResponse = await client
+        ///     .GetContainer("database", "container")
+        ///     .Scripts
+        ///     .CreateStoredProcedureAsync(
+        ///         new StoredProcedureProperties()
+        ///         {
+        ///             Id = "toLowerCase",
+        ///             Body = @"function(s) { return s.ToLowerCase(); }",
+        ///         });
+        ///         
         /// // Equivalent to SELECT * FROM books b WHERE udf.toLowerCase(b.title) = 'war and peace'" 
-        /// await client.CreateUserDefinedFunctionAsync(collectionLink, new UserDefinedFunction { Id = "toLowerCase", Body = @"function(s) { return s.ToLowerCase(); }" });
-        /// queryable = client.CreateDocumentQuery<Book>(collectionLink).Where(b => UserDefinedFunctionProvider.Invoke("toLowerCase", b.Title) == "war and peace");
+        /// IQueryable<Book> queryable = client
+        ///     .GetContainer("database", "container")
+        ///     .GetItemLinqQueryable<Book>()
+        ///     .Where(b => UserDefinedFunctionProvider.Invoke("toLowerCase", b.Title) == "war and peace");
+        ///
+        /// FeedIterator<Book> bookIterator = queryable.ToFeedIterator();
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<Book> responseMessage = await feedIterator.ReadNextAsync();
+        ///     DoSomethingWithResponse(responseMessage);
+        /// }
         /// ]]>
         /// </code>
         /// </example>
         /// <seealso cref="UserDefinedFunctionProperties"/>
         /// <returns>Placeholder for the udf result.</returns>
+#pragma warning disable IDE0060 // Remove unused parameter
         public static object Invoke(string udfName, params object[] arguments)
+#pragma warning restore IDE0060 // Remove unused parameter
         {
-            throw new Exception(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidCallToUserDefinedFunctionProvider));
+            throw new NotSupportedException(
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    ClientResources.InvalidCallToUserDefinedFunctionProvider));
         }
     }
 }
