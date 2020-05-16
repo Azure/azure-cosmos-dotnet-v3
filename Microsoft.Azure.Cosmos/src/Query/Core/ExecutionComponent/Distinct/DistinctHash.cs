@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 // This is consistent with equality comparison.
                 foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                 {
-                    UInt128 nameHash = CosmosString.Create(kvp.Key).Accept(this, HashSeeds.PropertyName);
+                    UInt128 nameHash = MurmurHash3.Hash128(kvp.Key, HashSeeds.PropertyName);
                     UInt128 propertyHash = kvp.Value.Accept(this, nameHash);
 
                     //// xor is symmetric meaning that a ^ b = b ^ a
