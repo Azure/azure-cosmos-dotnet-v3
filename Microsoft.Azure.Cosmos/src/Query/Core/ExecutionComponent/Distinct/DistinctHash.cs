@@ -59,6 +59,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             private static readonly UInt128 GuidHashSeed = UInt128.Create(0x53b5b8939b790f4b, 0x7cc5e09441fd6cb1);
 
+            private static readonly UInt128 RootNullHash = MurmurHash3.Hash128(NullHashSeed, RootHashSeed);
+            private static readonly UInt128 RootFalseHash = MurmurHash3.Hash128(FalseHashSeed, RootHashSeed);
+            private static readonly UInt128 RootTrueHash = MurmurHash3.Hash128(TrueHashSeed, RootHashSeed);
+
             private CosmosElementHasher()
             {
                 // Private constructor, since this is a singleton class.
@@ -98,6 +102,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosBoolean cosmosBoolean, UInt128 seed)
             {
+                if (seed == RootHashSeed)
+                {
+                    return cosmosBoolean.Value ? RootFalseHash : RootTrueHash;
+                }
+
                 return MurmurHash3.Hash128(
                     cosmosBoolean.Value ? CosmosElementHasher.TrueHashSeed : CosmosElementHasher.FalseHashSeed,
                     seed);
@@ -112,6 +121,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosNull cosmosNull, UInt128 seed)
             {
+                if (seed == RootHashSeed)
+                {
+                    return RootNullHash;
+                }
+
                 return MurmurHash3.Hash128(CosmosElementHasher.NullHashSeed, seed);
             }
 
