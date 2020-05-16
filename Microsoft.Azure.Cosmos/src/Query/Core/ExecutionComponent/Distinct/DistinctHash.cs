@@ -17,14 +17,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
         public static UInt128 GetHash(CosmosElement cosmosElement)
         {
-            return DistinctHash.GetHash(cosmosElement, DistinctHash.RootHashSeed);
+            return GetHash(cosmosElement, RootHashSeed);
         }
 
         private static UInt128 GetHash(CosmosElement cosmosElement, UInt128 seed)
         {
             if (cosmosElement == null)
             {
-                return DistinctHash.GetUndefinedHash(seed);
+                return GetUndefinedHash(seed);
             }
 
             return cosmosElement.Accept(CosmosElementHasher.Singleton, seed);
@@ -58,6 +58,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 public static readonly UInt128 Null = MurmurHash3.Hash128(HashSeeds.Null, RootHashSeed);
                 public static readonly UInt128 False = MurmurHash3.Hash128(HashSeeds.False, RootHashSeed);
                 public static readonly UInt128 True = MurmurHash3.Hash128(HashSeeds.True, RootHashSeed);
+                public static readonly UInt128 String = MurmurHash3.Hash128(HashSeeds.String, RootHashSeed);
+                public static readonly UInt128 Array = MurmurHash3.Hash128(HashSeeds.Array, RootHashSeed);
+                public static readonly UInt128 Object = MurmurHash3.Hash128(HashSeeds.Object, RootHashSeed);
+                public static readonly UInt128 Binary = MurmurHash3.Hash128(HashSeeds.Binary, RootHashSeed);
+                public static readonly UInt128 Guid = MurmurHash3.Hash128(HashSeeds.Guid, RootHashSeed);
             }
 
             private CosmosElementHasher()
@@ -68,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosArray cosmosArray, UInt128 seed)
             {
                 // Start the array with a distinct hash, so that empty array doesn't hash to another value.
-                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.HashSeeds.Array, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Array : MurmurHash3.Hash128(HashSeeds.Array, seed);
 
                 // Incorporate all the array items into the hash.
                 for (int index = 0; index < cosmosArray.Count; index++)
@@ -80,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     // [true, false, true] and [true, true, false]
                     // due to the way the seed works.
                     // But we add the index just incase that property does not hold in the future.
-                    UInt128 arrayItemSeed = CosmosElementHasher.HashSeeds.ArrayIndex + index;
+                    UInt128 arrayItemSeed = HashSeeds.ArrayIndex + index;
                     hash = MurmurHash3.Hash128(hash, arrayItem.Accept(this, arrayItemSeed));
                 }
 
@@ -90,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosBinary cosmosBinary, UInt128 seed)
             {
                 // Hash with binary seed to differntiate between empty binary and no binary.
-                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.HashSeeds.Binary, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Binary : MurmurHash3.Hash128(HashSeeds.Binary, seed);
                 hash = MurmurHash3.Hash128(cosmosBinary.Value.Span, hash);
                 return hash;
             }
@@ -99,17 +104,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             {
                 if (seed == RootHashSeed)
                 {
-                    return cosmosBoolean.Value ? CosmosElementHasher.HashSeeds.True : CosmosElementHasher.HashSeeds.False;
+                    return cosmosBoolean.Value ? HashSeeds.True : HashSeeds.False;
                 }
 
                 return MurmurHash3.Hash128(
-                    cosmosBoolean.Value ? CosmosElementHasher.HashSeeds.True : CosmosElementHasher.HashSeeds.False,
+                    cosmosBoolean.Value ? HashSeeds.True : HashSeeds.False,
                     seed);
             }
 
             public UInt128 Visit(CosmosGuid cosmosGuid, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.HashSeeds.Guid, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Guid : MurmurHash3.Hash128(HashSeeds.Guid, seed);
                 hash = MurmurHash3.Hash128(cosmosGuid.Value.ToByteArray(), hash);
                 return hash;
             }
@@ -121,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     return RootCache.Null;
                 }
 
-                return MurmurHash3.Hash128(CosmosElementHasher.HashSeeds.Null, seed);
+                return MurmurHash3.Hash128(HashSeeds.Null, seed);
             }
 
             public UInt128 Visit(CosmosNumber cosmosNumber, UInt128 seed)
@@ -132,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosObject cosmosObject, UInt128 seed)
             {
                 // Start the object with a distinct hash, so that empty object doesn't hash to another value.
-                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.HashSeeds.Object, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Object : MurmurHash3.Hash128(HashSeeds.Object, seed);
 
                 //// Intermediate hashes of all the properties, which we don't want to xor with the final hash
                 //// otherwise the following will collide:
@@ -166,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 // This is consistent with equality comparison.
                 foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                 {
-                    UInt128 nameHash = CosmosString.Create(kvp.Key).Accept(this, CosmosElementHasher.HashSeeds.PropertyName);
+                    UInt128 nameHash = CosmosString.Create(kvp.Key).Accept(this, HashSeeds.PropertyName);
                     UInt128 propertyHash = kvp.Value.Accept(this, nameHash);
 
                     //// xor is symmetric meaning that a ^ b = b ^ a
@@ -189,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosString cosmosString, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.HashSeeds.String, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.String : MurmurHash3.Hash128(HashSeeds.String, seed);
                 if (cosmosString.TryGetBufferedValue(out Utf8Memory bufferedUtf8Value))
                 {
                     hash = MurmurHash3.Hash128(bufferedUtf8Value.Span.Span, hash);
@@ -219,6 +224,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 public static readonly UInt128 UInt32 = UInt128.Create(0x78c441a2d2e9bb6e, 0xac88cb880ccda71d);
             }
 
+            public static class RootCache
+            {
+                public static readonly UInt128 Number64 = MurmurHash3.Hash128(HashSeeds.Number64, RootHashSeed);
+                public static readonly UInt128 Float32 = MurmurHash3.Hash128(HashSeeds.Float32, RootHashSeed);
+                public static readonly UInt128 Float64 = MurmurHash3.Hash128(HashSeeds.Float64, RootHashSeed);
+                public static readonly UInt128 Int8 = MurmurHash3.Hash128(HashSeeds.Int8, RootHashSeed);
+                public static readonly UInt128 Int16 = MurmurHash3.Hash128(HashSeeds.Int16, RootHashSeed);
+                public static readonly UInt128 Int32 = MurmurHash3.Hash128(HashSeeds.Int32, RootHashSeed);
+                public static readonly UInt128 Int64 = MurmurHash3.Hash128(HashSeeds.Int64, RootHashSeed);
+                public static readonly UInt128 UInt32 = MurmurHash3.Hash128(HashSeeds.UInt32, RootHashSeed);
+            }
+
             private CosmosNumberHasher()
             {
                 // Private constructor, since this class is a singleton.
@@ -226,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosFloat32 cosmosFloat32, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.HashSeeds.Float32, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Float32 : MurmurHash3.Hash128(HashSeeds.Float32, seed);
                 float value = cosmosFloat32.GetValue();
 
                 // Normalize 0.0f and -0.0f value
@@ -242,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosFloat64 cosmosFloat64, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.HashSeeds.Float64, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Float64 : MurmurHash3.Hash128(HashSeeds.Float64, seed);
                 double value = cosmosFloat64.GetValue();
 
                 // Normalize 0.0 and -0.0 value
@@ -258,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosInt16 cosmosInt16, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.HashSeeds.Int16, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Int16 : MurmurHash3.Hash128(HashSeeds.Int16, seed);
                 short value = cosmosInt16.GetValue();
                 hash = MurmurHash3.Hash128(value, hash);
                 return hash;
@@ -266,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosInt32 cosmosInt32, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.HashSeeds.Int32, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Int32 : MurmurHash3.Hash128(HashSeeds.Int32, seed);
                 int value = cosmosInt32.GetValue();
                 hash = MurmurHash3.Hash128(value, hash);
                 return hash;
@@ -274,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosInt64 cosmosInt64, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.HashSeeds.Int64, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Int64 : MurmurHash3.Hash128(HashSeeds.Int64, seed);
                 long value = cosmosInt64.GetValue();
                 hash = MurmurHash3.Hash128(value, hash);
                 return hash;
@@ -282,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosInt8 cosmosInt8, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.HashSeeds.Int8, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Int8 : MurmurHash3.Hash128(HashSeeds.Int8, seed);
                 sbyte value = cosmosInt8.GetValue();
                 hash = MurmurHash3.Hash128(value, hash);
                 return hash;
@@ -290,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosNumber64 cosmosNumber64, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.HashSeeds.Number64, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.Number64 : MurmurHash3.Hash128(HashSeeds.Number64, seed);
                 Number64 value = cosmosNumber64.GetValue();
                 Span<byte> buffer = stackalloc byte[Number64.SizeOf];
                 value.CopyTo(buffer);
@@ -299,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosUInt32 cosmosUInt32, UInt128 seed)
             {
-                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.HashSeeds.UInt32, seed);
+                UInt128 hash = seed == RootHashSeed ? RootCache.UInt32 : MurmurHash3.Hash128(HashSeeds.UInt32, seed);
                 uint value = cosmosUInt32.GetValue();
                 hash = MurmurHash3.Hash128(value, hash);
                 return hash;
