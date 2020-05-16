@@ -10,13 +10,13 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <summary>
     /// Helper class to invoke User Defined Functions via Linq queries in the Azure Cosmos DB service.
     /// </summary>
-    internal static class UserDefinedFunctionProvider
+    public static class UserDefinedFunctionProvider
     {
         /// <summary>
         /// Helper method to invoke User Defined Functions via Linq queries in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="udfName">the UserDefinedFunction name</param>
-        /// <param name="arguments">the arguments of the UserDefinedFunction</param>
+        /// <param name="udfName">The UserDefinedFunction name</param>
+        /// <param name="arguments">The arguments of the UserDefinedFunction</param>
         /// <remarks>
         /// This is a stub helper method for use within LINQ expressions. Cannot be called directly. 
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for more details about the LINQ provider.
@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </code>
         /// </example>
         /// <seealso cref="UserDefinedFunctionProperties"/>
+        /// <returns>Placeholder for the udf result.</returns>
         public static object Invoke(string udfName, params object[] arguments)
         {
             throw new Exception(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidCallToUserDefinedFunctionProvider));

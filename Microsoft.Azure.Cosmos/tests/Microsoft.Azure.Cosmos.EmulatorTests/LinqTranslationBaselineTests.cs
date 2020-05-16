@@ -885,7 +885,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [TestCategory("Ignore")]
         public void TestUDFs()
         {
             // The UDFs invokation are not supported on the client side.
