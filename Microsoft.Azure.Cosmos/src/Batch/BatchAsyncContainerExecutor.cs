@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 byte[] epk = epkObj as byte[];
                 string pkString = pkStringObj as string;
-                if ((epk == null && pkString == null) || !(epkStrObj is string epkStr))
+                if ((epk == null && pkString == null) || !(epkStrObj is string _))
                 {
                     throw new InvalidOperationException(string.Format(
                         ClientResources.EpkPropertiesPairingExpected,
