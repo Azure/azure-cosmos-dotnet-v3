@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Moq;
+    using System.Collections.ObjectModel;
+    using System.Collections.Generic;
 
     internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
     {
@@ -44,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             await Task.Yield();
         }
 
-        public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
+        public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Eventual;
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
@@ -91,6 +93,20 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
 
+            List<PartitionKeyRange> result = new List<PartitionKeyRange>();
+            result.Add(new PartitionKeyRange()
+            {
+                MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                Id = "0"
+            }); 
+
+            this.partitionKeyRangeCache.Setup(
+                    m => m.TryGetOverlappingRangesAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<Documents.Routing.Range<string>>(),
+                        It.IsAny<bool>())
+                ).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
@@ -113,6 +129,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
+            mockServiceConfigReader.SetupGet(x => x.SystemReplicationPolicy).Returns(replicationPolicy);
+            mockServiceConfigReader.SetupGet(x => x.DefaultConsistencyLevel).Returns(Documents.ConsistencyLevel.Eventual);
 
             this.StoreModel = new ServerStoreModel(new StoreClient(
                         mockAddressCache.Object,
