@@ -14,14 +14,17 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     internal sealed class CosmosDiagnosticScope : CosmosDiagnosticsInternal, IDisposable
     {
         private readonly Func<TimeSpan> getContextElapsedTime;
+        private readonly Action<CosmosDiagnosticScopeEnd> addScopeEndToContextList;
         private bool isDisposed = false;
         private TimeSpan? TotalElapsedTime = null;
 
         public CosmosDiagnosticScope(
             string name,
-            Func<TimeSpan> getContextElapsedTime)
+            Func<TimeSpan> getContextElapsedTime,
+            Action<CosmosDiagnosticScopeEnd> addScopeEndToContextList)
         {
             this.Id = name;
+            this.addScopeEndToContextList = addScopeEndToContextList;
             this.getContextElapsedTime = getContextElapsedTime;
             this.StartTime = getContextElapsedTime();
         }
@@ -41,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return false;
         }
 
-        public TimeSpan GetCurrentElapsedTime()
+        public TimeSpan GetTotalTimeOrCurrentElapsedTime()
         {
             if (this.TotalElapsedTime.HasValue)
             {
@@ -59,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.TotalElapsedTime = this.getContextElapsedTime() - this.StartTime;
+            this.addScopeEndToContextList(CosmosDiagnosticScopeEnd.Singleton);
             this.isDisposed = true;
         }
 

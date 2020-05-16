@@ -84,7 +84,10 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDisposable CreateScope(string name)
         {
-            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name, () => this.Stopwatch.Elapsed);
+            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(
+                name,
+                this.GetClientElapsedTime,
+                this.AddEndScope);
 
             this.ContextList.Add(scope);
             return scope;
@@ -92,9 +95,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
-            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler, () => this.Stopwatch.Elapsed);
-            this.ContextList.Add(requestHandlerScope);
-            return requestHandlerScope;
+            return this.CreateScope(requestHandler.GetType().FullName);
         }
 
         internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
@@ -181,6 +182,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 yield return this.ContextList[i];
             }
+        }
+
+        private void AddEndScope(CosmosDiagnosticScopeEnd scopeEnd)
+        {
+            this.ContextList.Add(scopeEnd);
         }
 
         private void AddRequestCount(int statusCode)

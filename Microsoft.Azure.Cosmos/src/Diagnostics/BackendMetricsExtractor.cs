@@ -65,6 +65,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return BackendMetricsExtractor.MetricsNotFound;
         }
 
+        public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticScopeEnd diagnosticEnd)
+        {
+            return BackendMetricsExtractor.MetricsNotFound;
+        }
+
         public override (ParseFailureReason, BackendMetrics) Visit(QueryPageDiagnostics queryPageDiagnostics)
         {
             if (!BackendMetrics.TryParseFromDelimitedString(queryPageDiagnostics.QueryMetricText, out BackendMetrics backendMetrics))
@@ -91,11 +96,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         }
 
         public override (ParseFailureReason, BackendMetrics) Visit(FeedRangeStatistics feedRangeStatistics)
-        {
-            return BackendMetricsExtractor.MetricsNotFound;
-        }
-
-        public override (ParseFailureReason, BackendMetrics) Visit(RequestHandlerScope requestHandlerScope)
         {
             return BackendMetricsExtractor.MetricsNotFound;
         }

@@ -128,9 +128,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             else
             {
                 this.jsonWriter.WritePropertyName("RunningElapsedTimeInMs");
-                this.jsonWriter.WriteValue(cosmosDiagnosticScope.GetCurrentElapsedTime().TotalMilliseconds);
+                this.jsonWriter.WriteValue(cosmosDiagnosticScope.GetTotalTimeOrCurrentElapsedTime().TotalMilliseconds);
             }
 
+            this.jsonWriter.WritePropertyName("Inner");
+            this.jsonWriter.WriteStartArray();
+        }
+
+        public override void Visit(CosmosDiagnosticScopeEnd diagnosticClose)
+        {
+            this.jsonWriter.WriteEndArray();
             this.jsonWriter.WriteEndObject();
         }
 
@@ -260,30 +267,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteStartObject();
             this.jsonWriter.WritePropertyName("FeedRange");
             this.jsonWriter.WriteValue(feedRangeStatistics.FeedRange.ToString());
-            this.jsonWriter.WriteEndObject();
-        }
-
-        public override void Visit(RequestHandlerScope requestHandlerScope)
-        {
-            this.jsonWriter.WriteStartObject();
-
-            this.jsonWriter.WritePropertyName("Id");
-            this.jsonWriter.WriteValue(requestHandlerScope.Id);
-
-            this.jsonWriter.WritePropertyName("StartTimeInMs");
-            this.jsonWriter.WriteValue(requestHandlerScope.StartTime.TotalMilliseconds);
-
-            if (requestHandlerScope.TryGetTotalElapsedTime(out TimeSpan handlerOnlyElapsedTime))
-            {
-                this.jsonWriter.WritePropertyName("HandlerElapsedTimeInMs");
-                this.jsonWriter.WriteValue(handlerOnlyElapsedTime.TotalMilliseconds);
-            }
-            else
-            {
-                this.jsonWriter.WritePropertyName("HandlerRunningElapsedTimeInMs");
-                this.jsonWriter.WriteValue(requestHandlerScope.GetCurrentElapsedTime().TotalMilliseconds);
-            }
-
             this.jsonWriter.WriteEndObject();
         }
 
