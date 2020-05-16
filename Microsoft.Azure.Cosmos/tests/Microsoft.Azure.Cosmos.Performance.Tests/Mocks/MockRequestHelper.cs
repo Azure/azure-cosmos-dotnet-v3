@@ -13,7 +13,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
     internal static class MockRequestHelper
     {
-        private static readonly byte[] testPayload;
+        internal static readonly byte[] testItemResponsePayload;
+        internal static readonly byte[] testItemFeedResponsePayload;
 
         static MockRequestHelper()
         {
@@ -21,7 +22,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             using (FileStream fs = File.OpenRead("samplepayload.json"))
             {
                 fs.CopyTo(ms);
-                MockRequestHelper.testPayload = ms.ToArray();
+                MockRequestHelper.testItemResponsePayload = ms.ToArray();
+            }
+
+            ms = new MemoryStream();
+            using (FileStream fs = File.OpenRead("samplefeedpayload.json"))
+            {
+                fs.CopyTo(ms);
+                MockRequestHelper.testItemFeedResponsePayload = ms.ToArray();
             }
         }
 
@@ -37,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
                 {
                     return new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testPayload),
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
@@ -55,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 if (request.ResourceAddress.EndsWith(Tests.Constants.ValidOperationId))
                 {
                     return new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testPayload),
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
@@ -74,7 +82,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 || request.OperationType == OperationType.Patch)
             {
                 return new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testPayload),
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
+                        new DictionaryNameValueCollection(),
+                        System.Net.HttpStatusCode.OK
+                    );
+            }
+
+            if (request.ResourceType == ResourceType.Document &&
+                request.OperationType == OperationType.ReadFeed)
+            {
+                return new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemFeedResponsePayload),
                         new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
@@ -99,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                     return new StoreResponse()
                     {
-                        ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
+                        ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
                     };
@@ -119,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     return new StoreResponse()
                     {
-                        ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
+                        ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
                     };
@@ -140,7 +158,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 return new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
+                    ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
+                    Status = (int)System.Net.HttpStatusCode.OK,
+                    Headers = headers,
+                };
+            }
+
+            if (request.ResourceType == ResourceType.Document &&
+                request.OperationType == OperationType.ReadFeed)
+            {
+                return new StoreResponse()
+                {
+                    ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };

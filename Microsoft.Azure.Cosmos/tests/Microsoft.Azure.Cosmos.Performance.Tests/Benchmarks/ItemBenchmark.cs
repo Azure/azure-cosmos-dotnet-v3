@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
     using System.IO;
+    using System.Net;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
@@ -191,6 +192,24 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 string diagnostics = response.Diagnostics.ToString();
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+                {
+                    throw new Exception();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Benchmark for DeleteItemAsync.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        [Benchmark]
+        public async Task ReadFeedStream()
+        {
+            FeedIterator streamIterator = this.container.GetItemQueryStreamIterator();
+            while(streamIterator.HasMoreResults)
+            {
+                ResponseMessage response = await streamIterator.ReadNextAsync();
+                if (response.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception();
                 }
