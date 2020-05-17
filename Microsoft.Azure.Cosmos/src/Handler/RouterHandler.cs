@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Handler which selects the piepline for the requested resource operation
+    /// Handler which selects the pipeline for the requested resource operation
     /// </summary>
     internal class RouterHandler : RequestHandler
     {
