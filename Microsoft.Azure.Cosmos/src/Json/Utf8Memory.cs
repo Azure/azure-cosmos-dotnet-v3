@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Json
     {
         public static readonly Utf8Memory Empty = new Utf8Memory(ReadOnlyMemory<byte>.Empty);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private Utf8Memory(ReadOnlyMemory<byte> utf8Bytes)
         {
             this.Memory = utf8Bytes;
@@ -28,7 +30,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public Utf8Span Span => Utf8Span.UnsafeFromUtf8BytesNoValidation(this.Memory.Span);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Utf8Memory Slice(int start) => new Utf8Memory(this.Memory.Slice(start));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Utf8Memory Slice(int start, int length) => new Utf8Memory(this.Memory.Slice(start, length));
 
         public bool IsEmpty => this.Memory.IsEmpty;
