@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Defined the conflict resoltuion for Azure Cosmos container
+        /// Defined the conflict resolution for Azure Cosmos container
         /// </summary>
         /// <returns>An instance of <see cref="ConflictResolutionDefinition"/>.</returns>
         public ConflictResolutionDefinition WithConflictResolution()

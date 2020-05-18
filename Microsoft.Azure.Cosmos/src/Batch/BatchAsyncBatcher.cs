@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxBatchOperationCount;
         private readonly InterlockIncrementCheck interlockIncrementCheck = new InterlockIncrementCheck();
         private long currentSize = 0;
-        private bool dispached = false;
+        private bool dispatched = false;
 
         public bool IsEmpty => this.batchOperations.Count == 0;
 
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual bool TryAdd(ItemBatchOperation operation)
         {
-            if (this.dispached)
+            if (this.dispatched)
             {
                 DefaultTrace.TraceCritical($"Add operation attempted on dispatched batch.");
                 return false;
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             finally
             {
                 this.batchOperations.Clear();
-                this.dispached = true;
+                this.dispatched = true;
             }
         }
 
