@@ -6,9 +6,10 @@
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
 *       @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
-Microsoft.Azure.Cosmos/src/Json @bchong95 @j82w @sboshra
-Microsoft.Azure.Cosmos/src/Query @bchong95 @j82w @sboshra
-Microsoft.Azure.Cosmos/src/CosmosElements @bchong95 @j82w @sboshra
-Microsoft.Azure.Cosmos/src/SqlObjects @bchong95 @j82w @sboshra
-Microsoft.Azure.Cosmos/src/Linq @khdang @j82w @sboshra @bchong95
-Microsoft.Azure.Cosmos/src/Spatial @lalithamv @sboshra @j82w
+Microsoft.Azure.Cosmos/src/Json @bchong95 @j82w @sboshra @kirankumarkolli
+Microsoft.Azure.Cosmos/src/Query @bchong95 @j82w @sboshra @kirankumarkolli
+Microsoft.Azure.Cosmos/src/CosmosElements @bchong95 @j82w @sboshra @kirankumarkolli
+Microsoft.Azure.Cosmos/src/SqlObjects @bchong95 @j82w @sboshra @kirankumarkolli
+Microsoft.Azure.Cosmos/src/Linq @khdang @j82w @sboshra @bchong95 @kirankumarkolli
+Microsoft.Azure.Cosmos/src/Spatial @lalithamv @sboshra @j82w @kirankumarkolli
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/DotNetSDKAPI.json @kirillg @kirankumarkolli
