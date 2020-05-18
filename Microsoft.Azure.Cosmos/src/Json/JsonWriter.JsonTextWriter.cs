@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Buffers.Text;
     using System.Globalization;
     using System.Linq;
+    using System.Numerics;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
@@ -53,6 +56,10 @@ namespace Microsoft.Azure.Cosmos.Json
             private const byte GuidTokenPrefix = (byte)'G';
             private const byte BinaryTokenPrefix = (byte)'B';
 
+            private const byte DoubleQuote = (byte)'"';
+            private const byte ReverseSolidus = (byte)'\\';
+            private const byte Space = (byte)' ';
+
             private static readonly ReadOnlyMemory<byte> NotANumber = new byte[]
             {
                 (byte)'N', (byte)'a', (byte)'N'
@@ -81,7 +88,15 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// JSON needs to escape quote, reverse soldius, and control characters (anything less than space).
             /// </summary>
-            private static readonly byte[] CharactersThatNeedEscaping = Enumerable.Range(0, (int)' ').Select(x => (byte)x).Concat(new byte[] { (byte)'"', (byte)'\\' }).ToArray();
+            private static readonly byte[] CharactersThatNeedEscaping = Enumerable
+                .Range(0, Space)
+                .Select(x => (byte)x)
+                .Concat(new byte[] { DoubleQuote, ReverseSolidus })
+                .ToArray();
+
+            private static readonly Vector<byte> DoubleQuoteVector = new Vector<byte>(DoubleQuote);
+            private static readonly Vector<byte> ReverseSolidusVector = new Vector<byte>(ReverseSolidus);
+            private static readonly Vector<byte> SpaceVector = new Vector<byte>(Space);
 
             private readonly JsonTextMemoryWriter jsonTextMemoryWriter;
 
@@ -507,17 +522,71 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private static int? IndexOfCharacterThatNeedsEscaping(Utf8Span utf8Span)
+            private static unsafe int? IndexOfCharacterThatNeedsEscaping(Utf8Span utf8Span)
             {
-                int? index = null;
+                int vectorCount = Vector<byte>.Count;
+                int index = 0;
 
-                int indexOfAny = utf8Span.Span.IndexOfAny(JsonTextWriter.CharactersThatNeedEscaping.AsSpan());
-                if (indexOfAny != -1)
+                // If we can benefit from SIMD scan, use that approach
+                if (Vector.IsHardwareAccelerated && (utf8Span.Length > vectorCount))
                 {
-                    index = indexOfAny;
+                    // Ensure we stop the SIMD scan before the length of the vector would
+                    // go past the end of the array
+                    int lastVectorMultiple = utf8Span.Length / vectorCount * vectorCount;
+
+                    for (; index < lastVectorMultiple; index += vectorCount)
+                    {
+                        Vector<byte> vector;
+                        unsafe
+                        {
+                            fixed (byte* spanPtr = utf8Span.Span)
+                            {
+                                vector = Unsafe.Read<Vector<byte>>(spanPtr + index);
+                            }
+                        }
+
+                        if (JsonTextWriter.HasCharacterThatNeedsEscaping(vector))
+                        {
+                            // The Vector contained a character that needed escaping
+                            // Loop to find the exact character and index
+                            for (; index < utf8Span.Length; ++index)
+                            {
+                                byte c = utf8Span.Span[index];
+
+                                if (JsonTextWriter.NeedsEscaping(c))
+                                {
+                                    return index;
+                                }
+                            }
+                        }
+                    }
                 }
 
-                return index;
+                // Unless the scan ended on a vectorCount multiple,
+                // still need to check the last few characters
+                for (; index < utf8Span.Length; ++index)
+                {
+                    byte c = utf8Span.Span[index];
+
+                    if (JsonTextWriter.NeedsEscaping(c))
+                    {
+                        return index;
+                    }
+                }
+
+                return null;
+            }
+
+            private static bool HasCharacterThatNeedsEscaping(Vector<byte> vector)
+            {
+                return Vector.EqualsAny(vector, JsonTextWriter.ReverseSolidusVector) ||
+                    Vector.EqualsAny(vector, JsonTextWriter.DoubleQuoteVector) ||
+                    Vector.LessThanAny(vector, JsonTextWriter.SpaceVector);
+            }
+
+            private static bool NeedsEscaping(byte value)
+            {
+                return (value == ReverseSolidus) || (value == DoubleQuote) || (value < Space);
             }
 
             private static byte GetHexDigit(int value)
