@@ -14,15 +14,8 @@ namespace Azure.Cosmos.Test.Spatial
     /// Tests <see cref="MultiPoint"/> class and serialization.
     /// </summary>
     [TestClass]
-    public class MultiPointTest
+    public class MultiPointTest : CommonSerializationTest
     {
-        private JsonSerializerOptions restContractOptions;
-        public MultiPointTest()
-        {
-            this.restContractOptions = new JsonSerializerOptions();
-            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
-        }
-
         /// <summary>
         /// Tests serialization/deserialization
         /// </summary>

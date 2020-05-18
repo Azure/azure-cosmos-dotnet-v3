@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// </para>
     /// </summary>
     [DataContract]
-    public class GeometryValidationResult
+    internal class GeometryValidationResult
     {
         /// <summary>
         /// Returns a value indicating whether geometry for which <see cref="Geometry.IsValidDetailed"/>

@@ -11,7 +11,7 @@ namespace Azure.Cosmos.Spatial
     /// Point geometry class in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    public sealed class Point : Geometry, IEquatable<Point>
+    internal sealed class Point : Geometry, IEquatable<Point>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Point" /> class in the Azure Cosmos DB service.

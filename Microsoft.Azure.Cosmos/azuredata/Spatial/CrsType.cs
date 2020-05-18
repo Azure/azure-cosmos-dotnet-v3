@@ -7,7 +7,7 @@ namespace Azure.Cosmos.Spatial
     /// <summary>
     /// Type of Coordinate Reference System in the Azure Cosmos DB service.
     /// </summary>
-    public enum CrsType
+    internal enum CrsType
     {
         /// <summary>
         /// Coordinate Reference System is specified by name.

@@ -20,7 +20,7 @@ namespace Azure.Cosmos.Spatial
     /// </para>
     /// </summary>
     [DataContract]
-    public sealed class Position : IEquatable<Position>
+    internal sealed class Position : IEquatable<Position>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Position"/> class in the Azure Cosmos DB service.

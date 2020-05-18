@@ -11,7 +11,7 @@ namespace Azure.Cosmos.Spatial
     /// Coordinate Reference System which is identified by link in the Azure Cosmos DB service. 
     /// </summary>
     [DataContract]
-    public sealed class LinkedCrs : Crs, IEquatable<LinkedCrs>
+    internal sealed class LinkedCrs : Crs, IEquatable<LinkedCrs>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LinkedCrs"/> class in the Azure Cosmos DB service. 

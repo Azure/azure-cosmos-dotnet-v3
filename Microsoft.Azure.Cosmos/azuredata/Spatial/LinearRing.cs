@@ -17,7 +17,7 @@ namespace Azure.Cosmos.Spatial
     /// the <see cref="Polygon"/> geometry type definition in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    public sealed class LinearRing : IEquatable<LinearRing>
+    internal sealed class LinearRing : IEquatable<LinearRing>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LinearRing" /> class in the Azure Cosmos DB service.
