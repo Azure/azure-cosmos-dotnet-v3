@@ -85,15 +85,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 (byte)'n', (byte)'u', (byte)'l', (byte)'l'
             };
 
-            /// <summary>
-            /// JSON needs to escape quote, reverse soldius, and control characters (anything less than space).
-            /// </summary>
-            private static readonly byte[] CharactersThatNeedEscaping = Enumerable
-                .Range(0, Space)
-                .Select(x => (byte)x)
-                .Concat(new byte[] { DoubleQuote, ReverseSolidus })
-                .ToArray();
-
             private static readonly Vector<byte> DoubleQuoteVector = new Vector<byte>(DoubleQuote);
             private static readonly Vector<byte> ReverseSolidusVector = new Vector<byte>(ReverseSolidus);
             private static readonly Vector<byte> SpaceVector = new Vector<byte>(Space);
