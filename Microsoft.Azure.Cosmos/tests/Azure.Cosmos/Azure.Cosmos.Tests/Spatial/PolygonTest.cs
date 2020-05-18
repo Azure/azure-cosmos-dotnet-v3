@@ -14,17 +14,10 @@ namespace Azure.Cosmos.Test.Spatial
     /// Tests <see cref="Polygon"/> class and serialization.
     /// </summary>
     [TestClass]
-    public class PolygonTest
+    public class PolygonTest : CommonSerializationTest
     {
-        private JsonSerializerOptions restContractOptions;
-        public PolygonTest()
-        {
-            this.restContractOptions = new JsonSerializerOptions();
-            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
-        }
-
         /// <summary>
-        /// Tests serialization/deserialization.
+        /// Tests serialization/deserialization.B
         /// </summary>
         [TestMethod]
         public void TestPolygonSerialization()

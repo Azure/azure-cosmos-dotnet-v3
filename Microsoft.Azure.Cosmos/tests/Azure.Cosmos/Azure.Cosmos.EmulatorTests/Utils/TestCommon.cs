@@ -56,6 +56,7 @@ namespace Azure.Cosmos.EmulatorTests
             jsonSerializerOptions.Converters.Add(new TextJsonJTokenListConverter());
             CosmosTextJsonSerializer.InitializeRESTConverters(jsonSerializerOptions);
             CosmosTextJsonSerializer.InitializeDataContractConverters(jsonSerializerOptions);
+            TestCommon.AddSpatialConverters(jsonSerializerOptions);
             return new CosmosTextJsonSerializer(jsonSerializerOptions);
         });
 
@@ -300,6 +301,19 @@ namespace Azure.Cosmos.EmulatorTests
 
                 Task.Delay(retryAfter);
             }
+        }
+
+        public static void AddSpatialConverters(JsonSerializerOptions jsonSerializerOptions)
+        {
+            jsonSerializerOptions.Converters.Add(new TextJsonCrsConverterFactory());
+            jsonSerializerOptions.Converters.Add(new TextJsonGeometryConverterFactory());
+            jsonSerializerOptions.Converters.Add(new TextJsonGeometryParamsJsonConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonBoundingBoxConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonGeometryValidationResultConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonLinearRingConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonLineStringCoordinatesConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonPolygonCoordinatesConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonPositionConverter());
         }
     }
 }

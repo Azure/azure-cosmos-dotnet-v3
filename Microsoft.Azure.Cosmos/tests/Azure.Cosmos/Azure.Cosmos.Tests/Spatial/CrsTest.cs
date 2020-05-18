@@ -13,15 +13,8 @@ namespace Azure.Cosmos.Test.Spatial
     /// Tests for <see cref="Crs"/>.
     /// </summary>
     [TestClass]
-    public class CrsTest
+    public class CrsTest : CommonSerializationTest
     {
-        private JsonSerializerOptions restContractOptions;
-        public CrsTest()
-        {
-            this.restContractOptions = new JsonSerializerOptions();
-            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
-        }
-
         /// <summary>
         /// Tests serialization of ""unspecified"" CRS.
         /// </summary>

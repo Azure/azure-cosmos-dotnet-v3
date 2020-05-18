@@ -14,11 +14,20 @@ namespace Azure.Cosmos.Test.Spatial
     [TestClass]
     public class CommonSerializationTest
     {
-        private JsonSerializerOptions restContractOptions;
+        protected JsonSerializerOptions restContractOptions;
         public CommonSerializationTest()
         {
             this.restContractOptions = new JsonSerializerOptions();
             CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
+            this.restContractOptions.Converters.Add(new TextJsonCrsConverterFactory());
+            this.restContractOptions.Converters.Add(new TextJsonGeometryConverterFactory());
+            this.restContractOptions.Converters.Add(new TextJsonGeometryParamsJsonConverter());
+            this.restContractOptions.Converters.Add(new TextJsonBoundingBoxConverter());
+            this.restContractOptions.Converters.Add(new TextJsonGeometryValidationResultConverter());
+            this.restContractOptions.Converters.Add(new TextJsonLinearRingConverter());
+            this.restContractOptions.Converters.Add(new TextJsonLineStringCoordinatesConverter());
+            this.restContractOptions.Converters.Add(new TextJsonPolygonCoordinatesConverter());
+            this.restContractOptions.Converters.Add(new TextJsonPositionConverter());
         }
 
         /// <summary>

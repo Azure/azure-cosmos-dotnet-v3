@@ -14,15 +14,8 @@ namespace Azure.Cosmos.Test.Spatial
     /// Tests <see cref="GeometryCollection"/> class and serialization.
     /// </summary>
     [TestClass]
-    public class GeometryCollectionTest
+    public class GeometryCollectionTest : CommonSerializationTest
     {
-        private JsonSerializerOptions restContractOptions;
-        public GeometryCollectionTest()
-        {
-            this.restContractOptions = new JsonSerializerOptions();
-            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
-        }
-
         /// <summary>
         /// Tests serialization/deserialization.
         /// </summary>

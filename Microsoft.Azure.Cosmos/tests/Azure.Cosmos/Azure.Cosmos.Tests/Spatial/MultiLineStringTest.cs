@@ -14,15 +14,8 @@ namespace Azure.Cosmos.Test.Spatial
     /// Tests <see cref="MultiLineString"/> class and serialization.
     /// </summary>
     [TestClass]
-    public class MultiLineStringTest
+    public class MultiLineStringTest : CommonSerializationTest
     {
-        private JsonSerializerOptions restContractOptions;
-        public MultiLineStringTest()
-        {
-            this.restContractOptions = new JsonSerializerOptions();
-            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
-        }
-
         /// <summary>
         /// Tests serialization/deserialization.
         /// </summary>

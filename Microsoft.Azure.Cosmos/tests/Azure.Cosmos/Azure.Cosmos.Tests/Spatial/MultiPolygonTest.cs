@@ -14,15 +14,8 @@ namespace Azure.Cosmos.Test.Spatial
     /// Tests <see cref="MultiPolygon"/> class and serialization.
     /// </summary>
     [TestClass]
-    public class MultiPolygonTest
+    public class MultiPolygonTest : CommonSerializationTest
     {
-        private JsonSerializerOptions restContractOptions;
-        public MultiPolygonTest()
-        {
-            this.restContractOptions = new JsonSerializerOptions();
-            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
-        }
-
         /// <summary>
         /// Tests serialization/deserialization.
         /// </summary>
