@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1441](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1441) Transport: Add HttpClientFactory support on CosmosClientOptions
 - [#1457](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1457) Container: Add Database reference to the container
 - [#1455](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1454) Serializer: Add SDK serializer to Client.ClientOptions.Serializer
-- [#1397](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1397) CosmosClientBuilder: Add preferred regions and public internal func WithConnectionModeDirect()
+- [#1397](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1397) CosmosClientBuilder: Add preferred regions and WithConnectionModeDirect()
 - [#1439](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1439) No content on Response: Add the ability to have operation return no content from Cosmos DB. 
 - [#1516](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1516) Read feed and change feed: Add serialization optimization to reduce memory and cpu utlization upto 90%. Object are now passed as an array to the serializer. 
 - [#1516](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1516) Query: Add serialization optimization to reduce memory upto %50 and cpu utlization upto 25%. Object are now passed as an array to the serializer. 
