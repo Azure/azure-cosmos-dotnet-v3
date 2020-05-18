@@ -17,7 +17,7 @@ namespace Azure.Cosmos.Test.Spatial
     public class PolygonTest : CommonSerializationTest
     {
         /// <summary>
-        /// Tests serialization/deserialization.B
+        /// Tests serialization/deserialization.
         /// </summary>
         [TestMethod]
         public void TestPolygonSerialization()
