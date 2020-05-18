@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override ReadOnlyMemory<byte> GetResult()
             {
-                return this.jsonTextMemoryWriter.Buffer.Slice(
+                return this.jsonTextMemoryWriter.BufferAsMemory.Slice(
                     0,
                     this.jsonTextMemoryWriter.Position);
             }
@@ -542,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxBoolLength = 5;
                     this.EnsureRemainingBufferSpace(MaxBoolLength);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(bool).FullName}{value})");
                     }
@@ -553,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void Write(byte value)
                 {
                     this.EnsureRemainingBufferSpace(1);
-                    this.Buffer.Span[this.Position] = value;
+                    this.buffer[this.Position] = value;
                     this.Position++;
                 }
 
@@ -561,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt8Length = 4;
                     this.EnsureRemainingBufferSpace(MaxInt8Length);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(sbyte).FullName}{value})");
                     }
@@ -573,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt16Length = 6;
                     this.EnsureRemainingBufferSpace(MaxInt16Length);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(short).FullName}{value})");
                     }
@@ -585,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt32Length = 11;
                     this.EnsureRemainingBufferSpace(MaxInt32Length);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(int).FullName}{value})");
                     }
@@ -597,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt32Length = 11;
                     this.EnsureRemainingBufferSpace(MaxInt32Length);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(int).FullName}{value})");
                     }
@@ -609,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt64Length = 20;
                     this.EnsureRemainingBufferSpace(MaxInt64Length);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(long).FullName}{value})");
                     }
@@ -627,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     for (int index = 0; index < floatString.Length; index++)
                     {
                         // we can cast to byte, since it's all ascii
-                        this.Cursor.Span[0] = (byte)floatString[index];
+                        this.buffer[this.Position] = (byte)floatString[index];
                         this.Position++;
                     }
                 }
@@ -642,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     for (int index = 0; index < doubleString.Length; index++)
                     {
                         // we can cast to byte, since it's all ascii
-                        this.Cursor.Span[0] = (byte)doubleString[index];
+                        this.buffer[this.Position] = (byte)doubleString[index];
                         this.Position++;
                     }
                 }
@@ -651,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int GuidLength = 38;
                     this.EnsureRemainingBufferSpace(GuidLength);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(double).FullName}{value})");
                     }
@@ -662,7 +662,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void WriteBinaryAsBase64(ReadOnlySpan<byte> binary)
                 {
                     this.EnsureRemainingBufferSpace(Base64.GetMaxEncodedToUtf8Length(binary.Length));
-                    Base64.EncodeToUtf8(binary, this.Cursor.Span, out int bytesConsumed, out int bytesWritten);
+                    Base64.EncodeToUtf8(binary, this.Cursor, out int bytesConsumed, out int bytesWritten);
 
                     this.Position += bytesWritten;
                 }

@@ -17,26 +17,16 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public int Position { get; set; }
 
-        public Memory<byte> Buffer
-        {
-            get
-            {
-                return this.buffer;
-            }
-        }
+        public Span<byte> Cursor => this.buffer.AsSpan().Slice(this.Position);
 
-        public Memory<byte> Cursor
-        {
-            get
-            {
-                return this.Buffer.Slice(this.Position);
-            }
-        }
+        public ReadOnlyMemory<byte> BufferAsMemory => this.buffer.AsMemory();
+
+        public Span<byte> BufferAsSpan => this.buffer.AsSpan();
 
         public void Write(ReadOnlySpan<byte> value)
         {
             this.EnsureRemainingBufferSpace(value.Length);
-            value.CopyTo(this.Cursor.Span);
+            value.CopyTo(this.Cursor);
             this.Position += value.Length;
         }
 
