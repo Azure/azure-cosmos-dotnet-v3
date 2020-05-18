@@ -756,8 +756,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 stream.Position = 0;
 
-                MemoryStream memoryStream = stream as MemoryStream;
-                if (memoryStream == null)
+                if (!(stream is MemoryStream memoryStream))
                 {
                     memoryStream = new MemoryStream();
                     stream.CopyTo(memoryStream);

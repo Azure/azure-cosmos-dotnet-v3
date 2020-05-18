@@ -54,6 +54,10 @@ csharp_style_var_for_built_in_types = false:error
 csharp_style_var_when_type_is_apparent = false:error
 csharp_style_var_elsewhere = false:error
 
+# Patern matching
+csharp_style_pattern_matching_over_is_with_cast_check = true:error
+csharp_style_pattern_matching_over_as_with_null_check = true:error
+
 ## Naming Conventions
 # Async methods should have [Async] suffix
 [*.cs]

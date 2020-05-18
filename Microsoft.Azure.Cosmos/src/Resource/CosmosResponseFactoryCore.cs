@@ -55,8 +55,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             Documents.ResourceType resourceType)
         {
-            QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
-            if (queryResponse != null)
+            if (cosmosResponseMessage is QueryResponse queryResponse)
             {
                 return QueryResponse<T>.CreateResponse<T>(
                     cosmosQueryResponse: queryResponse,
