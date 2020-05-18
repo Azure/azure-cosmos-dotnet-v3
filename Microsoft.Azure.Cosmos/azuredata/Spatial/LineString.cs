@@ -14,7 +14,7 @@ namespace Azure.Cosmos.Spatial
     /// Represents a geometry consisting of connected line segments.
     /// </summary>
     [DataContract]
-    public sealed class LineString : Geometry, IEquatable<LineString>
+    internal sealed class LineString : Geometry, IEquatable<LineString>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LineString"/> class. 

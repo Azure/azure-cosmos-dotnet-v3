@@ -11,7 +11,7 @@ namespace Azure.Cosmos.Spatial
     /// Not frequently used geometry parameters in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    public class GeometryParams
+    internal class GeometryParams
     {
         /// <summary>
         /// Gets or sets any additional properties to be stored as part of a geometry in the Azure Cosmos DB service.

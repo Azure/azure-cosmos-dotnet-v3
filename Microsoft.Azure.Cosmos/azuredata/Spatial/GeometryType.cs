@@ -7,7 +7,7 @@ namespace Azure.Cosmos.Spatial
     /// <summary>
     /// Geometry type in the Azure Cosmos DB service.
     /// </summary>
-    public enum GeometryType
+    internal enum GeometryType
     {
         /// <summary>
         /// Represents single point.

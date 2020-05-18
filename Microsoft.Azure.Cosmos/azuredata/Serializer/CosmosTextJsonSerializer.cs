@@ -208,15 +208,6 @@ namespace Azure.Cosmos
         public static void InitializeDataContractConverters(JsonSerializerOptions serializerOptions)
         {
             serializerOptions.Converters.Add(new TextJsonCosmosSqlQuerySpecConverter());
-            serializerOptions.Converters.Add(new TextJsonBoundingBoxConverter());
-            serializerOptions.Converters.Add(new TextJsonCrsConverterFactory());
-            serializerOptions.Converters.Add(new TextJsonGeometryConverterFactory());
-            serializerOptions.Converters.Add(new TextJsonGeometryParamsJsonConverter());
-            serializerOptions.Converters.Add(new TextJsonGeometryValidationResultConverter());
-            serializerOptions.Converters.Add(new TextJsonLinearRingConverter());
-            serializerOptions.Converters.Add(new TextJsonLineStringCoordinatesConverter());
-            serializerOptions.Converters.Add(new TextJsonPolygonCoordinatesConverter());
-            serializerOptions.Converters.Add(new TextJsonPositionConverter());
         }
 
         public static void InitializeRESTConverters(JsonSerializerOptions serializerOptions)

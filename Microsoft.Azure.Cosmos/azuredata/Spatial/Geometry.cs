@@ -14,7 +14,7 @@ namespace Azure.Cosmos.Spatial
     /// Base class for spatial geometry objects in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    public abstract class Geometry
+    internal abstract class Geometry
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.

@@ -57,7 +57,7 @@ namespace Azure.Cosmos.Spatial
     /// </code>
     /// </example>
     [DataContract]
-    public sealed class Polygon : Geometry, IEquatable<Polygon>
+    internal sealed class Polygon : Geometry, IEquatable<Polygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Polygon"/> class,
