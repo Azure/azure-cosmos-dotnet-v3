@@ -143,19 +143,31 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            DataEncryptionKeyProperties dekProperties = await this.DekProvider.DekCache.GetOrAddDekPropertiesAsync(
-                id,
-                this.ReadResourceAsync,
-                diagnosticsContext,
-                cancellationToken);
+            try
+            { 
+                DataEncryptionKeyProperties dekProperties = await this.DekProvider.DekCache.GetOrAddDekPropertiesAsync(
+                    id,
+                    this.ReadResourceAsync,
+                    diagnosticsContext,
+                    cancellationToken);
 
-            InMemoryRawDek inMemoryRawDek = await this.DekProvider.DekCache.GetOrAddRawDekAsync(
-                dekProperties,
-                this.UnwrapAsync,
-                diagnosticsContext,
-                cancellationToken);
+                InMemoryRawDek inMemoryRawDek = await this.DekProvider.DekCache.GetOrAddRawDekAsync(
+                    dekProperties,
+                    this.UnwrapAsync,
+                    diagnosticsContext,
+                    cancellationToken);
 
-            return (dekProperties, inMemoryRawDek);
+                return (dekProperties, inMemoryRawDek);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.Message.Contains("Resource Not Found"))
+                {
+                    throw new ArgumentException($"Data Encryption Key with id: '{id}' not found.");
+                }
+
+                throw;
+            }
         }
 
         internal async Task<(byte[], EncryptionKeyWrapMetadata, InMemoryRawDek)> WrapAsync(

@@ -25,10 +25,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(encryptionOptions != null);
             Debug.Assert(diagnosticsContext != null);
+
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            if (encryptor == null)
+            {
+                throw new ArgumentNullException(nameof(encryptor));
+            }
+
+            if (encryptionOptions == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionOptions));
+            }
 
             if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
             {
@@ -65,14 +77,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
                 string propertyName = pathToEncrypt.Substring(1);
-                JToken propertyValueHolder = itemJObj.Property(propertyName).Value;
+                JProperty propertyValueHolder = itemJObj.Property(propertyName);
 
-                // Even null in the JSON is a JToken with Type Null, this null check is just a sanity check
-                if (propertyValueHolder != null)
+                if (propertyValueHolder == null)
                 {
-                    toEncryptJObj.Add(propertyName, propertyValueHolder.Value<JToken>());
-                    itemJObj.Remove(propertyName);
+                    throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' not found.");
                 }
+
+                // Even null in the JSON is a JToken with Type Null
+                JToken propertyValue = propertyValueHolder.Value;
+                toEncryptJObj.Add(propertyName, propertyValue.Value<JToken>());
+                itemJObj.Remove(propertyName);
             }
 
             MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj);

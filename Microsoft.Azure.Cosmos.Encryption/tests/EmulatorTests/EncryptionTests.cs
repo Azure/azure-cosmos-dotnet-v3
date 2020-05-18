@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     public class EncryptionTests
     {
         private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
+        private static readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
         private const string metadataUpdateSuffix = "updated";
         private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private const string dekId = "mydek";
@@ -71,13 +72,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             string dekId = "anotherDek";
             DataEncryptionKeyProperties dekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, dekId);
-            Assert.IsNotNull(dekProperties);
-            Assert.IsNotNull(dekProperties.CreatedTime);
-            Assert.IsNotNull(dekProperties.LastModified);
-            Assert.IsNotNull(dekProperties.SelfLink);
-
+            
             Assert.AreEqual(
                 new EncryptionKeyWrapMetadata(EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            // Use different DEK provider to avoid (unintentional) cache impact
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+            await dekProvider.InitializeAsync(EncryptionTests.database, EncryptionTests.keyContainer.Id);
+            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+        }
+
+        [TestMethod]
+        public async Task EncryptionRewrapDek()
+        {
+            string dekId = "randomDek";
+            DataEncryptionKeyProperties dekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await EncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+                dekId,
+                EncryptionTests.metadata2);
+
+            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
+            dekProperties = EncryptionTests.VerifyDekResponse(
+                dekResponse,
+                dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(EncryptionTests.metadata2.Value + EncryptionTests.metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
             // Use different DEK provider to avoid (unintentional) cache impact
@@ -169,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItemWithoutPrimaryKey()
+        public async Task EncryptionCreateItemWithoutPartitionKey()
         {
             TestDoc testDoc = TestDoc.Create();
             try
@@ -182,6 +207,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             catch (NotSupportedException ex)
             {
                 Assert.AreEqual("partitionKey cannot be null for operations using EncryptionContainer.", ex.Message);
+            }
+        }
+
+        [TestMethod]
+        public async Task EncryptionFailsWithUnknownDek()
+        {
+            string unknownDek = "unknownDek";
+
+            try
+            {
+                await EncryptionTests.CreateItemAsync(EncryptionTests.encryptionContainer, unknownDek, TestDoc.PathsToEncrypt);
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.AreEqual($"Data Encryption Key with id: '{unknownDek}' not found.", ex.Message);
             }
         }
 
@@ -376,6 +416,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                            $"GROUP BY c.PK ";
 
             await EncryptionTests.ValidateQueryResponseAsync(EncryptionTests.encryptionContainer, query);
+        }
+
+        [TestMethod]
+        public async Task EncryptionStreamIteratorValidation()
+        {
+            await EncryptionTests.CreateItemAsync(EncryptionTests.encryptionContainer, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            await EncryptionTests.CreateItemAsync(EncryptionTests.encryptionContainer, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
+
+            // test GetItemLinqQueryable with ToEncryptionStreamIterator extension
+            await EncryptionTests.ValidateQueryResponseAsync(EncryptionTests.encryptionContainer);
         }
 
         [TestMethod]
@@ -714,9 +764,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
 
-        private static async Task ValidateQueryResponseAsync(Container container, string query)
+        private static async Task ValidateQueryResponseAsync(Container container,
+            string query = null)
         {
-            FeedIterator feedIterator = container.GetItemQueryStreamIterator(query);
+            FeedIterator feedIterator;
+            if (query == null)
+            {
+                IOrderedQueryable<TestDoc> linqQueryable = container.GetItemLinqQueryable<TestDoc>();
+                feedIterator = container.ToEncryptionStreamIterator(linqQueryable);
+            }
+            else
+            {
+                feedIterator = container.GetItemQueryStreamIterator(query);
+            }
+
             while (feedIterator.HasMoreResults)
             {
                 ResponseMessage response = await feedIterator.ReadNextAsync();
@@ -975,11 +1036,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
         }
 
-        private static Encryption.EncryptionOptions GetEncryptionOptions(
+        private static EncryptionOptions GetEncryptionOptions(
             string dekId,
             List<string> pathsToEncrypt)
         {
-            return new Encryption.EncryptionOptions()
+            return new EncryptionOptions()
             {
                 DataEncryptionKeyId = dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
@@ -1011,12 +1072,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
+            
+            return VerifyDekResponse(dekResponse,
+                dekId);
+        }
+
+        private static DataEncryptionKeyProperties VerifyDekResponse(
+            ItemResponse<DataEncryptionKeyProperties> dekResponse,
+            string dekId)
+        {
             Assert.IsTrue(dekResponse.RequestCharge > 0);
             Assert.IsNotNull(dekResponse.ETag);
 
             DataEncryptionKeyProperties dekProperties = dekResponse.Resource;
+            Assert.IsNotNull(dekProperties);
             Assert.AreEqual(dekResponse.ETag, dekProperties.ETag);
             Assert.AreEqual(dekId, dekProperties.Id);
+            Assert.IsNotNull(dekProperties.SelfLink);
+            Assert.IsNotNull(dekProperties.CreatedTime);
+            Assert.IsNotNull(dekProperties.LastModified);
+            
             return dekProperties;
         }
 
@@ -1123,7 +1198,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         // This class is same as CosmosEncryptor but copied so as to induce decryption failure easily for testing.
-        private class TestEncryptor : Encryption.Encryptor
+        private class TestEncryptor : Encryptor
         {
             public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
             public bool FailDecryption { get; set; }
