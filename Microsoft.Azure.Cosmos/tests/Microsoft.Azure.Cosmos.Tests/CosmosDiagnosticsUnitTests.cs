@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             double overalScope = jToken["Context"][0]["ElapsedTimeInMs"].ToObject<double>();
             Assert.IsTrue(overalScope < total);
             Assert.IsTrue(overalScope > TimeSpan.FromSeconds(1).TotalMilliseconds);
-            double innerScope = jToken["Context"][2]["ElapsedTimeInMs"].ToObject<double>();
+            double innerScope = jToken["Context"][1]["ElapsedTimeInMs"].ToObject<double>();
             Assert.IsTrue(innerScope > 0);
         }
 

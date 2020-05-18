@@ -25,6 +25,14 @@ namespace Microsoft.Azure.Cosmos
 
         private static readonly string DefaultUserAgentString;
 
+        /// <summary>
+        /// A stop watch the represent the start of the diagnostics. 
+        /// </summary>
+        /// <remarks>
+        /// The stop watch is never stopped in-case to ensure all operations show correct
+        /// elapsed time. This way if a background task is started using a context and that context is completed
+        /// the background task will show the correct time once it is completed.
+        /// </remarks>
         private readonly Stopwatch Stopwatch;
 
         private TimeSpan? TotalElapsedTime = null;

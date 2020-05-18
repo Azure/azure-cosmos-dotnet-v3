@@ -58,7 +58,9 @@ namespace Microsoft.Azure.Cosmos
             return this.GetEnumerator();
         }
 
-        internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions, string operationName)
+        internal static CosmosDiagnosticsContext Create(
+            RequestOptions requestOptions,
+            string operationName)
         {
             return requestOptions?.DiagnosticContextFactory?.Invoke() ?? new CosmosDiagnosticsContextCore(operationName);
         }
