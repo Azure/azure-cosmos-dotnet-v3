@@ -6,12 +6,17 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -150,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.containerCore.LinkUri,
                resourceType: ResourceType.Document,
                operationType: OperationType.ReadFeed,
@@ -167,22 +172,27 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
-            ShouldRetryResult shouldRetryOnSplit = await this.FeedRangeContinuation.HandleSplitAsync(this.containerCore, response, cancellationToken);
+            ShouldRetryResult shouldRetryOnSplit = await this.FeedRangeContinuation.HandleSplitAsync(this.containerCore, responseMessage, cancellationToken);
             if (shouldRetryOnSplit.ShouldRetry)
             {
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
-            if (response.IsSuccessStatusCode)
+            if (responseMessage.Content != null)
             {
-                this.FeedRangeContinuation.ReplaceContinuation(response.Headers.ContinuationToken);
+                await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.queryRequestOptions);
+            }
+
+            if (responseMessage.IsSuccessStatusCode)
+            {
+                this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ContinuationToken);
                 this.hasMoreResultsInternal = !this.FeedRangeContinuation.IsDone;
-                return FeedRangeResponse.CreateSuccess(response, this.FeedRangeContinuation);
+                return FeedRangeResponse.CreateSuccess(responseMessage, this.FeedRangeContinuation);
             }
             else
             {
                 this.hasMoreResultsInternal = false;
-                return FeedRangeResponse.CreateFailure(response);
+                return FeedRangeResponse.CreateFailure(responseMessage);
             }
         }
 
@@ -213,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
                 effectiveRanges);
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }

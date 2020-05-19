@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Uri resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
+            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,

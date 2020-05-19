@@ -34,8 +34,9 @@
         public static Task<ResponseMessage> ReturnSuccess()
         {
             return Task.Factory.StartNew(
-                () => {
-                    ResponseMessage responseMessage =  new ResponseMessage(HttpStatusCode.OK);
+                () =>
+                {
+                    ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
                     responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Documents"": [{ ""id"": ""Test""}]}"));
                     return responseMessage;
                 });
@@ -49,8 +50,10 @@
                     ResponseMessage httpResponse = new ResponseMessage(statusCode);
                     if (subStatusCode != SubStatusCodes.Unknown)
                     {
-                        httpResponse.Headers.Add(WFConstants.BackendHeaders.SubStatus,((uint)subStatusCode).ToString(CultureInfo.InvariantCulture));
+                        httpResponse.Headers.Add(WFConstants.BackendHeaders.SubStatus, ((uint)subStatusCode).ToString(CultureInfo.InvariantCulture));
                     }
+
+                    httpResponse.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
                     return httpResponse;
                 });

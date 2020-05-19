@@ -5,9 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Runtime.InteropServices;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
@@ -34,11 +32,9 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="buffer">The (UTF-8) buffer to navigate.</param>
             /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
-            /// <param name="skipValidation">whether to skip validation or not.</param>
             public JsonBinaryNavigator(
                 ReadOnlyMemory<byte> buffer,
-                JsonStringDictionary jsonStringDictionary,
-                bool skipValidation = false)
+                JsonStringDictionary jsonStringDictionary)
             {
                 if (buffer.Length < 2)
                 {
@@ -583,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
 
-                if (buffer.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     throw new ArgumentException($"Node must not be empty.");
                 }

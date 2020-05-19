@@ -75,17 +75,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <see cref="ContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
-        /// <param name="defaulTtlInSeconds">The default Time To Live.</param>
+        /// <param name="defaultTtlInSeconds">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
         /// <seealso cref="ContainerProperties.DefaultTimeToLive"/>
-        public T WithDefaultTimeToLive(int defaulTtlInSeconds)
+        public T WithDefaultTimeToLive(int defaultTtlInSeconds)
         {
-            if (defaulTtlInSeconds < -1)
+            if (defaultTtlInSeconds < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(defaulTtlInSeconds));
+                throw new ArgumentOutOfRangeException(nameof(defaultTtlInSeconds));
             }
 
-            this.defaultTimeToLive = defaulTtlInSeconds;
+            this.defaultTimeToLive = defaultTtlInSeconds;
             return (T)this;
         }
 

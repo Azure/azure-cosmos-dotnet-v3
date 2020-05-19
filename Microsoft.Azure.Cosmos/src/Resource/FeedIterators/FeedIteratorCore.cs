@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
                 operation = OperationType.Query;
             }
 
-            ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
                operationType: operation,
@@ -102,12 +103,15 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
-            this.ContinuationToken = response.Headers.ContinuationToken;
-            this.hasMoreResultsInternal = this.ContinuationToken != null && response.StatusCode != HttpStatusCode.NotModified;
-            return response;
+            this.ContinuationToken = responseMessage.Headers.ContinuationToken;
+            this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
+
+            await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
+            
+            return responseMessage;
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }
@@ -134,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
-            return this.feedIterator.GetCosmsoElementContinuationToken();
+            return this.feedIterator.GetCosmosElementContinuationToken();
         }
 
         /// <summary>

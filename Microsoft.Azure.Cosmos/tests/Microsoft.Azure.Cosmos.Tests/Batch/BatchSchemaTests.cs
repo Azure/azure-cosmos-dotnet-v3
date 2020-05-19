@@ -101,7 +101,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
-                false,
                 CancellationToken.None);
 
             Assert.IsNotNull(batchRequest);
