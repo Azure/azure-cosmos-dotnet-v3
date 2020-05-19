@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
-                headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)3).ToString(CultureInfo.InvariantCulture));
+                headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
 
                 ForbiddenException forbiddenException = new ForbiddenException(
                     errorMessage,
