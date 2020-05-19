@@ -241,14 +241,67 @@ namespace Microsoft.Azure.Cosmos
             // Update current
             Documents.PartitionKeyRange firstRange = keyRanges[0];
             this.CurrentToken.Range = new Documents.Routing.Range<string>(firstRange.MinInclusive, firstRange.MaxExclusive, true, false);
-            // Add children
-            foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
+            // Document ReadFeed uses continuation as a composite continuation token through PartitionKeyRangeHandler, when a split happens, we need to update this continuation too to match the children
+            if (FeedRangeCompositeContinuation.TryParseAsCompositeContinuationToken(
+                this.CurrentToken.Token,
+                out CompositeContinuationToken continuationAsComposite))
             {
-                this.CompositeContinuationTokens.Enqueue(
-                    FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
+                // Update the internal composite continuation
+                continuationAsComposite.Range = this.CurrentToken.Range;
+                this.CurrentToken.Token = JsonConvert.SerializeObject(continuationAsComposite);
+                // Add children
+                foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
+                {
+                    continuationAsComposite.Range = keyRange.ToRange();
+                    this.CompositeContinuationTokens.Enqueue(FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
                         keyRange.MinInclusive,
                         keyRange.MaxExclusive,
-                        this.CurrentToken.Token));
+                        JsonConvert.SerializeObject(continuationAsComposite)));
+                }
+            }
+            else
+            {
+                // Add children
+                foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
+                {
+                    this.CompositeContinuationTokens.Enqueue(
+                        FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
+                            keyRange.MinInclusive,
+                            keyRange.MaxExclusive,
+                            this.CurrentToken.Token));
+                }
+            }
+        }
+
+        private static bool TryParseAsCompositeContinuationToken(
+            string providedContinuation,
+            out CompositeContinuationToken compositeContinuationToken)
+        {
+            compositeContinuationToken = null;
+            try
+            {
+                if (providedContinuation.Trim().StartsWith("[", StringComparison.Ordinal))
+                {
+                    List<CompositeContinuationToken> compositeContinuationTokens = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(providedContinuation);
+
+                    if (compositeContinuationTokens != null && compositeContinuationTokens.Count > 0)
+                    {
+                        compositeContinuationToken = compositeContinuationTokens[0];
+                    }
+
+                    return compositeContinuationToken != null;
+                }
+                else if (providedContinuation.Trim().StartsWith("{", StringComparison.Ordinal))
+                {
+                    compositeContinuationToken = JsonConvert.DeserializeObject<CompositeContinuationToken>(providedContinuation);
+                    return compositeContinuationToken != null;
+                }
+
+                return false;
+            }
+            catch (JsonException)
+            {
+                return false;
             }
         }
 
