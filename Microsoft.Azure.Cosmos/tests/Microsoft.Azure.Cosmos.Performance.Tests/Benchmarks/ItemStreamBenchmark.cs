@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItemNotExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                ItemBenchmarkHelper.NotFoundItemId,
+                ItemBenchmarkHelper.NonExistingItemId,
                 new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task DeleteItemNotExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
-                ItemBenchmarkHelper.NotFoundItemId,
+                ItemBenchmarkHelper.NonExistingItemId,
                 new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)

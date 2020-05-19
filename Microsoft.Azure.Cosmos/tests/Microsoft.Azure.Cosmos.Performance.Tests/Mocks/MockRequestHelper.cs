@@ -4,10 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
-    using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;

@@ -14,7 +14,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     public class ItemBenchmarkHelper
     {
         public static string ExistingItemId = "lets-benchmark";
-        public static string NotFoundItemId = "cant-see-me";
+        public static string NonExistingItemId = "cant-see-me";
+
+        public static readonly PartitionKey ExistingPartitionId = new PartitionKey(ItemBenchmarkHelper.ExistingItemId);
 
         internal ToDoActivity TestItem { get; }
         internal CosmosClient TestClient { get; }
