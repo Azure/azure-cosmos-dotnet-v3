@@ -33,8 +33,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Some derived implementations of MemoryStream (such as versions of RecyclableMemoryStream prior to 1.2.2 that we may be using)
                 // return an incorrect response from TryGetBuffer. Use TryGetBuffer only on the MemoryStream type and not derived types.
-                MemoryStream memStream = stream as MemoryStream;
-                if (memStream != null
+                if (stream is MemoryStream memStream
                      && memStream.GetType() == typeof(MemoryStream)
                      && memStream.TryGetBuffer(out ArraySegment<byte> memBuffer))
                 {
@@ -116,9 +115,8 @@ namespace Microsoft.Azure.Cosmos
                             | operation.RequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.PartitionKey, out object pkStrObj)))
                     {
                         byte[] epk = epkObj as byte[];
-                        string epkStr = epkStrObj as string;
                         string partitionKeyJsonString = pkStrObj as string;
-                        if ((epk == null && partitionKeyJsonString == null) || epkStr == null)
+                        if ((epk == null && partitionKeyJsonString == null) || !(epkStrObj is string epkStr))
                         {
                             errorMessage = string.Format(
                                 ClientResources.EpkPropertiesPairingExpected,

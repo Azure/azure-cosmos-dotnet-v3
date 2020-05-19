@@ -28,13 +28,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </summary>
         /// <param name="lockExpirationTime">The time for the lock to expire.</param>
         /// <returns>True if the lock was acquired, false otherwise.</returns>
-        /// <remarks>In order for expiration time work, lease colection needs to have TTL enabled.</remarks>
+        /// <remarks>In order for expiration time work, lease collection needs to have TTL enabled.</remarks>
         public abstract Task<bool> AcquireInitializationLockAsync(TimeSpan lockExpirationTime);
 
         /// <summary>
         /// Releases the lock one the lease store for initialization.
         /// </summary>
-        /// <returns>True if the lock was acquired and was relesed, false if the lock was not acquired.</returns>
+        /// <returns>True if the lock was acquired and was released, false if the lock was not acquired.</returns>
         public abstract Task<bool> ReleaseInitializationLockAsync();
     }
 }

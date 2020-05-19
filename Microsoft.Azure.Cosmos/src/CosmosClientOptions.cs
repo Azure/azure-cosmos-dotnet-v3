@@ -197,16 +197,49 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
-        /// Get or set the number of times client should retry on rate throttled requests.
+        /// Gets or sets the maximum number of retries in the case where the request fails
+        /// because the Azure Cosmos DB service has applied rate limiting on the client.
         /// </summary>
+        /// <value>
+        /// The default value is 9. This means in the case where the request is rate limited,
+        /// the same request will be issued for a maximum of 10 times to the server before
+        /// an error is returned to the application. If the value of this property is set to 0,
+        /// there will be no automatic retry on rate limiting requests from the client and the exception
+        /// needs to be handled at the application level.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a client is sending requests faster than the allowed rate,
+        /// the service will return HttpStatusCode 429 (Too Many Requests) to rate limit the client. The current
+        /// implementation in the SDK will then wait for the amount of time the service tells it to wait and
+        /// retry after the time has elapsed.
+        /// </para>
+        /// <para>
+        /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips#throughput">Handle rate limiting/request rate too large</see>.
+        /// </para>
+        /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public int? MaxRetryAttemptsOnRateLimitedRequests { get; set; }
 
         /// <summary>
-        /// Get or set the max time to client is allowed to retry on rate throttled requests. 
+        /// Gets or sets the maximum retry time in seconds for the Azure Cosmos DB service.
         /// </summary>
+        /// <value>
+        /// The default value is 30 seconds. 
+        /// </value>
         /// <remarks>
+        /// <para>
         /// The minimum interval is seconds. Any interval that is smaller will be ignored.
+        /// </para>
+        /// <para>
+        /// When a request fails due to a rate limiting error, the service sends back a response that
+        /// contains a value indicating the client should not retry before the <see cref="Microsoft.Azure.Cosmos.CosmosException.RetryAfter"/> time period has
+        /// elapsed. This property allows the application to set a maximum wait time for all retry attempts.
+        /// If the cumulative wait time exceeds the this value, the client will stop retrying and return the error to the application.
+        /// </para>
+        /// <para>
+        /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips#throughput">Handle rate limiting/request rate too large</see>.
+        /// </para>
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
@@ -796,8 +829,7 @@ namespace Microsoft.Azure.Cosmos
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                Collection<RequestHandler> handlers = value as Collection<RequestHandler>;
-                if (handlers != null)
+                if (value is Collection<RequestHandler> handlers)
                 {
                     writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));
                     return;

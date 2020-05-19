@@ -107,10 +107,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Lazy<MemoryStream> memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
-                       responseHeaders.ContainerRid,
-                       result,
-                       responseHeaders.ResourceType,
-                       serializationOptions));
+                responseHeaders.ContainerRid,
+                result,
+                responseHeaders.ResourceType,
+                serializationOptions));
 
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,

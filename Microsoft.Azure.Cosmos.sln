@@ -17,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Encryption", "Encryption", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption.EmulatorTests", "Microsoft.Azure.Cosmos.Encryption\tests\EmulatorTests\Microsoft.Azure.Cosmos.Encryption.EmulatorTests.csproj", "{D6A405BF-15E1-46D3-8C13-210BA043ADC5}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A3EC74BA-3A58-44B2-B184-88E23739B95D}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{804C595B-D0DA-48F1-A40D-97BB014736CB}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
