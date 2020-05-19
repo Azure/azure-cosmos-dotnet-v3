@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task CreateItem()
         {
-            using (MemoryStream ms = new MemoryStream(this.benchmarkHelper.TestItemBytes))
+            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.CreateItemStreamAsync(
                 ms,
                 new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
@@ -47,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpsertItem()
         {
-            using (MemoryStream ms = new MemoryStream(this.benchmarkHelper.TestItemBytes))
+            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.UpsertItemStreamAsync(
                 ms,
                 new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
@@ -102,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpdateItem()
         {
-            using (MemoryStream ms = new MemoryStream(this.benchmarkHelper.TestItemBytes))
+            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReplaceItemStreamAsync(
                 ms,
                 ItemBenchmarkHelper.ExistingItemId,

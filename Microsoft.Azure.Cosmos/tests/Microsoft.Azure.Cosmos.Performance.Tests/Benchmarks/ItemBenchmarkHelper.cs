@@ -44,5 +44,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 this.TestItem = JsonConvert.DeserializeObject<ToDoActivity>(payloadContent);
             }
         }
+
+        public MemoryStream GetItemPayloadAsStream()
+        {
+            return new MemoryStream(
+                this.TestItemBytes,
+                index: 0,
+                count: this.TestItemBytes.Length,
+                writable: false,
+                publiclyVisible: true);
+        }
     }
 }
