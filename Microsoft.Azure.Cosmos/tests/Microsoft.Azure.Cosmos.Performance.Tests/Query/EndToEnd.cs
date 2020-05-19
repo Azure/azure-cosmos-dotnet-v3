@@ -25,8 +25,8 @@
         public EndToEnd()
         {
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
-                accountEndpoint: "https://brandon-test-westus2.documents.azure.com:443/",
-                authKeyOrResourceToken: "mhKW2DZHHORLuF5g4nLb81plFY5z4v5uf4PiBOhaoNaJElDovyhWGwVnqZ9rGecWH2kHV2VGuAhOfG5lT256bw==");
+                accountEndpoint: "<YourEndPointHere>",
+                authKeyOrResourceToken: "<YourAccountKeyHere>");
 
             this.client = clientBuilder.Build();
             Database db = this.client.CreateDatabaseIfNotExistsAsync("BenchmarkDB").Result;
