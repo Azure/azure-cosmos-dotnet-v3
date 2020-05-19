@@ -1,5 +1,3 @@
-# Changelog
-
 Preview features are treated as a separate branch and will not be included in the official release until the feature is ready. Each preview release lists all the additional features that are enabled.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
