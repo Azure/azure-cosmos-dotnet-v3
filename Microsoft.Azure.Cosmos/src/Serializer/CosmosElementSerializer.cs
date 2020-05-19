@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.Serializer
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Documents;
 
 #if INTERNAL
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
             }
             else
             {
-                jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             }
 
             // The stream contract should return the same contract as read feed.
@@ -213,6 +213,65 @@ namespace Microsoft.Azure.Cosmos.Serializer
             jsonWriter.WriteObjectEnd();
 
             return GetMemoryStreamFromJsonWriter(jsonWriter);
+        }
+
+        public static async Task RewriteStreamAsTextAsync(ResponseMessage responseMessage, QueryRequestOptions requestOptions)
+        {
+            // Rewrite the payload to be in the specified format.
+            // If it's already in the correct format, then the following will be a memcpy.
+            MemoryStream memoryStream;
+            if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
+            {
+                memoryStream = responseContentAsMemoryStream;
+            }
+            else
+            {
+                memoryStream = new MemoryStream();
+                await responseMessage.Content.CopyToAsync(memoryStream);
+            }
+
+            ReadOnlyMemory<byte> buffer;
+            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+            {
+                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
+            }
+            else
+            {
+                buffer = memoryStream.ToArray();
+            }
+
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
+            if (jsonNavigator.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                // Exit to avoid the memory allocation.
+                return;
+            }
+
+            IJsonWriter jsonWriter;
+            if (requestOptions?.CosmosSerializationFormatOptions != null)
+            {
+                jsonWriter = requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
+            }
+            else
+            {
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            }
+
+            jsonWriter.WriteJsonNode(jsonNavigator, jsonNavigator.GetRootNode());
+
+            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+            MemoryStream rewrittenMemoryStream;
+            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
+            {
+                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
+            }
+            else
+            {
+                byte[] toArray = result.ToArray();
+                rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
+            }
+
+            responseMessage.Content = rewrittenMemoryStream;
         }
 
         internal static IReadOnlyList<T> GetResources<T>(
