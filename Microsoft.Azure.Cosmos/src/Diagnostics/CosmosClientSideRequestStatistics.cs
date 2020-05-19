@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticsInternal, IClientSideRequestStatistics
     {
+        public const string DefaultToStringMessage = "Please see CosmosDiagnostics";
         private readonly object lockObject = new object();
 
         public CosmosClientSideRequestStatistics(CosmosDiagnosticsContext diagnosticsContext = null)
@@ -160,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public override string ToString()
         {
-            return string.Empty;
+            return DefaultToStringMessage;
         }
 
         /// <summary>
@@ -168,6 +169,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
+            stringBuilder.Append(DefaultToStringMessage);
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor visitor)

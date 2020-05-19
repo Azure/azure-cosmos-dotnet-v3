@@ -126,12 +126,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics(diagnosticsContext);
             string noInfo = clientSideRequestStatistics.ToString();
-            Assert.AreEqual(string.Empty, noInfo);
+            Assert.AreEqual("Please see CosmosDiagnostics", noInfo);
 
             StringBuilder stringBuilder = new StringBuilder();
             clientSideRequestStatistics.AppendToBuilder(stringBuilder);
             string noInfoStringBuilder = stringBuilder.ToString();
-            Assert.AreEqual(string.Empty, noInfo);
+            Assert.AreEqual("Please see CosmosDiagnostics", noInfo);
 
             string id = clientSideRequestStatistics.RecordAddressResolutionStart(new Uri("https://testuri"));
             clientSideRequestStatistics.RecordAddressResolutionEnd(id);
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     usingLocalLSN: true));
 
             string statistics = clientSideRequestStatistics.ToString();
-            Assert.AreEqual(string.Empty, statistics);
+            Assert.AreEqual("Please see CosmosDiagnostics", statistics);
         }
 
 
