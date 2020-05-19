@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Runtime.CompilerServices;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -126,6 +127,88 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsFalse(string.IsNullOrEmpty(diagnosics));
                     Assert.IsTrue(exception.Contains(diagnosics));
                 }
+            }
+        }
+
+        [TestMethod]
+        public async Task PointOperationForbiddenDiagnostic()
+        {
+            List<int> stringLength = new List<int>();
+            foreach (int maxCount in new int[] { 1, 2, 4 })
+            {
+                int count = 0;
+                List<(string, string)> activityIdAndErrorMessage = new List<(string, string)>(maxCount);
+                Guid transportExceptionActivityId = Guid.NewGuid();
+                string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
+
+                Action<Uri, Documents.ResourceOperation, Documents.DocumentServiceRequest> interceptor =
+                    (uri, operation, request) =>
+                {
+                    if (request.ResourceType == Documents.ResourceType.Document)
+                    {
+                        if (count >= maxCount)
+                        {
+                            TransportClientHelper.ThrowTransportExceptionOnItemOperation(
+                                uri,
+                                operation,
+                                request,
+                                transportExceptionActivityId,
+                                transportErrorMessage);
+                        }
+
+                        count++;
+                        string activityId = Guid.NewGuid().ToString();
+                        string errorMessage = $"Error{Guid.NewGuid()}";
+
+                        activityIdAndErrorMessage.Add((activityId, errorMessage));
+                        TransportClientHelper.ThrowForbiddendExceptionOnItemOperation(
+                            uri,
+                            request,
+                            activityId,
+                            errorMessage);
+                    }
+                };
+
+                Container containerWithTransportException = TransportClientHelper.GetContainerWithIntercepter(
+                                        this.database.Id,
+                                        this.Container.Id,
+                                        interceptor);
+                //Checking point operation diagnostics on typed operations
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+                try
+                {
+                    ItemResponse<ToDoActivity> createResponse = await containerWithTransportException.CreateItemAsync<ToDoActivity>(
+                      item: testItem);
+                    Assert.Fail("Should have thrown a request timeout exception");
+                }
+                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+                {
+                    string exceptionToString = ce.ToString();
+                    Assert.IsNotNull(exceptionToString);
+                    stringLength.Add(exceptionToString.Length);
+
+                    // Request timeout info will be in the exception message and in the diagnostic info.
+                    Assert.AreEqual(2, Regex.Matches(exceptionToString, transportExceptionActivityId.ToString()).Count);
+                    Assert.AreEqual(2, Regex.Matches(exceptionToString, transportErrorMessage).Count);
+
+                    // Check to make sure the diagnostics does not include duplicate info.
+                    foreach ((string activityId, string errorMessage) in activityIdAndErrorMessage)
+                    {
+                        Assert.AreEqual(1, Regex.Matches(exceptionToString, activityId).Count);
+                        Assert.AreEqual(1, Regex.Matches(exceptionToString, errorMessage).Count);
+                    }
+                }
+            }
+
+            // Check if the exception message is not growing exponentially
+            Assert.IsTrue(stringLength.Count > 2);
+            for (int i = 0; i < stringLength.Count - 1; i++)
+            {
+                int currLength = stringLength[i];
+                int nextLength = stringLength[i + 1];
+                Assert.IsTrue( nextLength < currLength * 2,
+                    $"The diagnostic string is growing faster than linear. Length: {currLength}, Next Length: {nextLength}");
             }
         }
 

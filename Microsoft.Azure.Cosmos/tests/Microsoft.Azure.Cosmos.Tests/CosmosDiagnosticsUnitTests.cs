@@ -126,14 +126,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics(diagnosticsContext);
             string noInfo = clientSideRequestStatistics.ToString();
-            Assert.IsNotNull(noInfo);
+            Assert.AreEqual("Please see CosmosDiagnostics", noInfo);
 
             StringBuilder stringBuilder = new StringBuilder();
             clientSideRequestStatistics.AppendToBuilder(stringBuilder);
             string noInfoStringBuilder = stringBuilder.ToString();
-            Assert.IsNotNull(noInfoStringBuilder);
-
-            Assert.AreEqual(noInfo, noInfoStringBuilder);
+            Assert.AreEqual("Please see CosmosDiagnostics", noInfo);
 
             string id = clientSideRequestStatistics.RecordAddressResolutionStart(new Uri("https://testuri"));
             clientSideRequestStatistics.RecordAddressResolutionEnd(id);
@@ -168,9 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     usingLocalLSN: true));
 
             string statistics = clientSideRequestStatistics.ToString();
-            Assert.IsTrue(statistics.Contains("\"UserAgent\":\"cosmos-netstandard-sdk"));
-            Assert.IsTrue(statistics.Contains("UsingLocalLSN: True, TransportException: null"));
-            Assert.IsTrue(statistics.Contains("AddressResolutionStatistics\",\"StartTimeUtc"));
+            Assert.AreEqual("Please see CosmosDiagnostics", statistics);
         }
 
 

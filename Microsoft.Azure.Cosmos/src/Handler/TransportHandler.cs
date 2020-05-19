@@ -109,8 +109,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             Exception exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException);
-            CosmosException cosmosException = exception as CosmosException;
-            if (cosmosException != null)
+            if (exception is CosmosException cosmosException)
             {
                 return cosmosException.ToCosmosResponseMessage(request);
             }
