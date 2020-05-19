@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## <a name="3.9.1-preview"/> [3.9.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.1-preview) - 2020-05-19
 
 ### Fixed
-- [#1539](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1539) Diagnostics: Fix ToString() to not grow exponentially with retries
+- [#1539](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1539) CosmosException and Diagnostics: Fix ToString() to not grow exponentially with retries. Introduced in 3.7.0 in PR [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189).
 
 ## <a name="3.9.0"/> [3.9.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.0) - 2020-05-18
 
