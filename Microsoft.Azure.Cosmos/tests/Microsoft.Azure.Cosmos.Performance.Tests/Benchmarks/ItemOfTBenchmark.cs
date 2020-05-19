@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId));
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId));
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             try
             {
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
-                    Constants.NotFoundOperationId,
-                    new Cosmos.PartitionKey(Constants.ValidOperationId));
+                    ItemBenchmarkHelper.NotFoundItemId,
+                    new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId));
                 throw new Exception();
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -76,8 +76,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItemExists()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
-                Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
+                ItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId));
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -94,8 +94,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
-                Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
+                ItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId));
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -111,8 +111,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task DeleteItemExists()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
-                Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
+                ItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId));
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -130,8 +130,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             try
             {
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
-                    Constants.NotFoundOperationId,
-                    new Cosmos.PartitionKey(Constants.ValidOperationId));
+                    ItemBenchmarkHelper.NotFoundItemId,
+                    new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId));
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             while (resultIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
-                if (response.StatusCode != HttpStatusCode.OK || !response.Resource.Any())
+                if (response.StatusCode != HttpStatusCode.OK || response.Resource.Count() == 0)
                 {
                     throw new Exception();
                 }

@@ -29,15 +29,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task CreateItem()
         {
             using (MemoryStream ms = new MemoryStream(this.benchmarkHelper.TestItemBytes))
+            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.CreateItemStreamAsync(
+                ms,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
-                using (ResponseMessage response = await this.benchmarkHelper.TestContainer.CreateItemStreamAsync(
-                    ms,
-                    new Cosmos.PartitionKey(Constants.ValidOperationId)))
+                if ((int)response.StatusCode > 300 || response.Content == null)
                 {
-                    if ((int)response.StatusCode > 300 || response.Content == null)
-                    {
-                        throw new Exception();
-                    }
+                    throw new Exception();
                 }
             }
         }
@@ -49,9 +47,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpsertItem()
         {
+            using (MemoryStream ms = new MemoryStream(this.benchmarkHelper.TestItemBytes))
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.UpsertItemStreamAsync(
-                new MemoryStream(this.benchmarkHelper.TestItemBytes),
-                new Cosmos.PartitionKey(Constants.ValidOperationId)))
+                ms,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
@@ -68,8 +67,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItemNotExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                Constants.NotFoundOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId)))
+                ItemBenchmarkHelper.NotFoundItemId,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {
@@ -86,8 +85,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItemExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId)))
+                ItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
                 {
@@ -103,10 +102,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpdateItem()
         {
+            using (MemoryStream ms = new MemoryStream(this.benchmarkHelper.TestItemBytes))
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReplaceItemStreamAsync(
-                new MemoryStream(this.benchmarkHelper.TestItemBytes),
-                Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId)))
+                ms,
+                ItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
                 {
@@ -123,8 +123,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task DeleteItemExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
-                Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId)))
+                ItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
@@ -141,8 +141,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task DeleteItemNotExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
-                Constants.NotFoundOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId)))
+                ItemBenchmarkHelper.NotFoundItemId,
+                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {

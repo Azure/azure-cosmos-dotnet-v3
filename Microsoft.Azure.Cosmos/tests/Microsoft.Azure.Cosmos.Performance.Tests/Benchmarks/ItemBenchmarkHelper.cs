@@ -4,10 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
-    using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 
@@ -16,6 +13,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     /// </summary>
     public class ItemBenchmarkHelper
     {
+        public static string ExistingItemId = "lets-benchmark";
+        public static string NotFoundItemId = "cant-see-me";
+
         internal ToDoActivity TestItem { get; }
         internal CosmosClient TestClient { get; }
         internal Container TestContainer { get; }
@@ -30,12 +30,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
 
             using (FileStream tmp = File.OpenRead("samplepayload.json"))
+            using (MemoryStream ms = new MemoryStream())
             {
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    tmp.CopyTo(ms);
-                    this.TestItemBytes = ms.ToArray();
-                }
+                tmp.CopyTo(ms);
+                this.TestItemBytes = ms.ToArray();
             }
 
             using (MemoryStream ms = new MemoryStream(this.TestItemBytes))

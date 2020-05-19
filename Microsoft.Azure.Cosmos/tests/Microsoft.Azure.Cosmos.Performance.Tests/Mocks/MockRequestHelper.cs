@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         {
             if (request.OperationType == OperationType.Read)
             {
-                if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
+                if (request.ResourceAddress.EndsWith(ItemBenchmarkHelper.ExistingItemId))
                 {
                     return new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (request.OperationType == OperationType.Delete)
             {
-                if (request.ResourceAddress.EndsWith(Tests.Constants.ValidOperationId))
+                if (request.ResourceAddress.EndsWith(ItemBenchmarkHelper.ExistingItemId))
                 {
                     return new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
@@ -112,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (request.OperationType == OperationType.Read)
             {
                 headers.Add(WFConstants.BackendHeaders.LSN, "1");
-                if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
+                if (request.ResourceAddress.EndsWith(ItemBenchmarkHelper.ExistingItemId))
                 {
 
                     return new StoreResponse()
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (request.OperationType == OperationType.Delete)
             {
-                if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
+                if (request.ResourceAddress.EndsWith(ItemBenchmarkHelper.ExistingItemId))
                 {
                     return new StoreResponse()
                     {
