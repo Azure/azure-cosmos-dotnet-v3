@@ -151,20 +151,23 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// The new Cosmos Exception always includes the diagnostics and the
+        /// document client exception message. Some of the older document client exceptions
+        /// include the request statistics in the message causing a circle reference.
+        /// This always returns empty string to prevent the circle reference which
+        /// would cause the diagnostic string to grow exponentially.
+        /// </summary>
         public override string ToString()
         {
-            // This is required for the older IClientSideRequestStatistics
-            // Capture the entire diagnostic context in the toString to avoid losing any information
-            // for any APIs using the older interface.
-            return this.DiagnosticsContext.ToString();
+            return string.Empty;
         }
 
+        /// <summary>
+        /// Please see ToString() documentation
+        /// </summary>
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
-            // This is required for the older IClientSideRequestStatistics
-            // Capture the entire diagnostic context in the toString to avoid losing any information
-            // for any APIs using the older interface.
-            stringBuilder.Append(this.DiagnosticsContext.ToString());
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor visitor)
