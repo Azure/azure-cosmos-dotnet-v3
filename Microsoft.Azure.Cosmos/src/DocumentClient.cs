@@ -6914,24 +6914,24 @@ namespace Microsoft.Azure.Cosmos
             if (this.ConnectionPolicy.HttpClientFactory != null)
             {
                 new GatewayAccountReader(
-                    this.ServiceEndpoint,
-                    this.authKeyHashFunction,
-                    this.hasAuthKeyResourceToken,
-                    this.authKeyResourceToken,
-                    this.ConnectionPolicy,
-                    this.ApiType,
-                    this.ConnectionPolicy.HttpClientFactory);
+                    serviceEndpoint: this.ServiceEndpoint,
+                    stringHMACSHA256Helper: this.authKeyHashFunction,
+                    hasResourceToken: this.hasAuthKeyResourceToken,
+                    resourceToken: this.authKeyResourceToken,
+                    connectionPolicy: this.ConnectionPolicy,
+                    apiType: this.ApiType,
+                    httpClientFactory: this.ConnectionPolicy.HttpClientFactory);
             }
             else
             {
                 new GatewayAccountReader(
-                    this.ServiceEndpoint,
-                    this.authKeyHashFunction,
-                    this.hasAuthKeyResourceToken,
-                    this.authKeyResourceToken,
-                    this.ConnectionPolicy,
-                    this.ApiType,
-                    this.httpMessageHandler);
+                    serviceEndpoint: this.ServiceEndpoint,
+                    stringHMACSHA256Helper: this.authKeyHashFunction,
+                    hasResourceToken: this.hasAuthKeyResourceToken,
+                    resourceToken: this.authKeyResourceToken,
+                    connectionPolicy: this.ConnectionPolicy,
+                    apiType: this.ApiType,
+                    messageHandler: this.httpMessageHandler);
             }
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
