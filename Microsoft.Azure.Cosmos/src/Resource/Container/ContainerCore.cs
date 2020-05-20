@@ -309,8 +309,7 @@ namespace Microsoft.Azure.Cosmos
             string containerRid = await this.GetRIDAsync(cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 
-            FeedRangeInternal feedTokenInternal = feedRange as FeedRangeInternal;
-            if (feedTokenInternal == null)
+            if (!(feedRange is FeedRangeInternal feedTokenInternal))
             {
                 throw new ArgumentException(nameof(feedRange), ClientResources.FeedToken_UnrecognizedFeedToken);
             }

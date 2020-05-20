@@ -143,6 +143,25 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         }
 
 
+        [Benchmark]
+        public void NutritionData_TextNavigator_To_NewtonsoftTextWriter()
+        {
+            JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
+                payload: JsonRoundtripBenchmark.NutritionDataData,
+                sourceFormat: SerializationFormat.Text,
+                destinationFormat: SerializationFormat.NewtonsoftText);
+        }
+
+        [Benchmark]
+        public void NutritionData_BinaryNavigator_To_NewtonsoftTextWriter()
+        {
+            JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
+                payload: JsonRoundtripBenchmark.NutritionDataData,
+                sourceFormat: SerializationFormat.Binary,
+                destinationFormat: SerializationFormat.NewtonsoftText);
+        }
+
+
         private static void ExecuteReaderBenchmark(
             CurratedDocsPayload payload,
             SerializationFormat sourceFormat,
@@ -183,6 +202,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             {
                 SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
+                SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 

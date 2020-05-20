@@ -6,7 +6,7 @@
 
     public sealed class Person
     {
-        private static readonly Random random = new Random();
+        private static readonly Random random = new Random(Seed: 42);
         private static readonly string[] names = new string[]
         {
             "Emory Carreiro",
