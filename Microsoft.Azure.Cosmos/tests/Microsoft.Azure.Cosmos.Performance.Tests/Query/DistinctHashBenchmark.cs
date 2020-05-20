@@ -9,7 +9,6 @@
     [MemoryDiagnoser]
     public class DistinctHashBenchmark
     {
-        
         private static readonly CosmosNull cosmosNull = CosmosNull.Create();
         private static readonly CosmosBoolean cosmosFalse = CosmosBoolean.Create(false);
         private static readonly CosmosBoolean cosmosTrue = CosmosBoolean.Create(true);
