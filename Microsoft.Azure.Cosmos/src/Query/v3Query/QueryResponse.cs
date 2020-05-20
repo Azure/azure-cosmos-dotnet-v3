@@ -135,16 +135,16 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
-                    result: new List<CosmosElement>(),
-                    count: 0,
-                    responseLengthBytes: 0,
-                    responseHeaders: responseHeaders,
-                    diagnostics: diagnostics,
-                    statusCode: statusCode,
-                    cosmosException: cosmosException,
-                    requestMessage: requestMessage,
-                    memoryStream: null,
-                    serializationOptions: null);
+                result: new List<CosmosElement>(),
+                count: 0,
+                responseLengthBytes: 0,
+                responseHeaders: responseHeaders,
+                diagnostics: diagnostics,
+                statusCode: statusCode,
+                cosmosException: cosmosException,
+                requestMessage: requestMessage,
+                memoryStream: null,
+                serializationOptions: null);
 
             return cosmosQueryResponse;
         }
