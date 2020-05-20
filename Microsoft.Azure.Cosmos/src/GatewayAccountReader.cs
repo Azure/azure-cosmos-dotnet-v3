@@ -22,21 +22,6 @@ namespace Microsoft.Azure.Cosmos
         private Uri serviceEndpoint;
         private ApiType apiType;
 
-        private GatewayAccountReader(Uri serviceEndpoint,
-                IComputeHash stringHMACSHA256Helper,
-                bool hasResourceToken,
-                string resourceToken,
-                ConnectionPolicy connectionPolicy,
-                ApiType apiType)
-        {
-            this.serviceEndpoint = serviceEndpoint;
-            this.authKeyHashFunction = stringHMACSHA256Helper;
-            this.hasAuthKeyResourceToken = hasResourceToken;
-            this.authKeyResourceToken = resourceToken;
-            this.connectionPolicy = connectionPolicy;
-            this.apiType = apiType;
-        }
-
         public GatewayAccountReader(Uri serviceEndpoint,
                 IComputeHash stringHMACSHA256Helper,
                 bool hasResourceToken,
@@ -44,12 +29,6 @@ namespace Microsoft.Azure.Cosmos
                 ConnectionPolicy connectionPolicy,
                 ApiType apiType,
                 Func<HttpClient> httpClientFactory)
-            : this(serviceEndpoint,
-                  stringHMACSHA256Helper,
-                  hasResourceToken,
-                  resourceToken,
-                  connectionPolicy,
-                  apiType)
         {
             HttpClient httpClient = httpClientFactory();
             if (httpClient == null)
@@ -58,23 +37,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.httpClient = httpClient;
-        }
-
-        public GatewayAccountReader(Uri serviceEndpoint,
-                IComputeHash stringHMACSHA256Helper,
-                bool hasResourceToken,
-                string resourceToken,
-                ConnectionPolicy connectionPolicy,
-                ApiType apiType,
-                HttpMessageHandler messageHandler)
-            : this(serviceEndpoint,
-                  stringHMACSHA256Helper,
-                  hasResourceToken,
-                  resourceToken,
-                  connectionPolicy,
-                  apiType)
-        {
-            this.httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
+            this.serviceEndpoint = serviceEndpoint;
+            this.authKeyHashFunction = stringHMACSHA256Helper;
+            this.hasAuthKeyResourceToken = hasResourceToken;
+            this.authKeyResourceToken = resourceToken;
+            this.connectionPolicy = connectionPolicy;
+            this.apiType = apiType;
         }
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)

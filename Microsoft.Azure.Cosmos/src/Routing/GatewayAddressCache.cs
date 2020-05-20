@@ -52,8 +52,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             UserAgentContainer userAgent,
             IServiceConfigurationReader serviceConfigReader,
             TimeSpan requestTimeout,
+            Func<HttpClient> httpClientFactory,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            HttpMessageHandler messageHandler = null,
             ApiType apiType = ApiType.None)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
@@ -67,7 +67,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.suboptimalPartitionForceRefreshIntervalInSeconds = suboptimalPartitionForceRefreshIntervalInSeconds;
 
-            this.httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
+            HttpClient httpClient = httpClientFactory();
+            if (httpClient == null)
+            {
+                throw new InvalidOperationException("HttpClientFactory did not produce an HttpClient");
+            }
+
+            this.httpClient = httpClient;
             if (requestTimeout != null)
             {
                 this.httpClient.Timeout = requestTimeout;

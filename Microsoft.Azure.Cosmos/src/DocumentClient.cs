@@ -564,6 +564,18 @@ namespace Microsoft.Azure.Cosmos
                 }).ToList();
         }
 
+        public static Func<HttpClient> GetHttpClientFactory(
+            ConnectionPolicy connectionPolicy,
+            HttpMessageHandler messageHandler)
+        {
+            if (connectionPolicy.HttpClientFactory != null)
+            {
+                return connectionPolicy.HttpClientFactory;
+            }
+
+            return () => messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
         /// specified Azure Cosmos DB service endpoint, a list of <see cref="ResourceToken"/> objects and a connection policy.
@@ -6826,9 +6838,9 @@ namespace Microsoft.Azure.Cosmos
                 this.partitionKeyRangeCache,
                 this.ConnectionPolicy.UserAgentContainer,
                 this.accountServiceConfiguration,
-                this.httpMessageHandler,
                 this.ConnectionPolicy,
-                this.ApiType);
+                this.ApiType,
+                DocumentClient.GetHttpClientFactory(this.ConnectionPolicy, this.httpMessageHandler));
 
             // Check if we have a store client factory in input and if we do, do not initialize another store client
             // The purpose is to reuse store client factory across all document clients inside compute gateway
@@ -6909,30 +6921,14 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task InitializeGatewayConfigurationReaderAsync()
         {
-            GatewayAccountReader accountReader = null;
-
-            if (this.ConnectionPolicy.HttpClientFactory != null)
-            {
-                new GatewayAccountReader(
+            GatewayAccountReader accountReader = new GatewayAccountReader(
                     serviceEndpoint: this.ServiceEndpoint,
                     stringHMACSHA256Helper: this.authKeyHashFunction,
                     hasResourceToken: this.hasAuthKeyResourceToken,
                     resourceToken: this.authKeyResourceToken,
                     connectionPolicy: this.ConnectionPolicy,
                     apiType: this.ApiType,
-                    httpClientFactory: this.ConnectionPolicy.HttpClientFactory);
-            }
-            else
-            {
-                new GatewayAccountReader(
-                    serviceEndpoint: this.ServiceEndpoint,
-                    stringHMACSHA256Helper: this.authKeyHashFunction,
-                    hasResourceToken: this.hasAuthKeyResourceToken,
-                    resourceToken: this.authKeyResourceToken,
-                    connectionPolicy: this.ConnectionPolicy,
-                    apiType: this.ApiType,
-                    messageHandler: this.httpMessageHandler);
-            }
+                    httpClientFactory: DocumentClient.GetHttpClientFactory(this.ConnectionPolicy, this.httpMessageHandler));
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 

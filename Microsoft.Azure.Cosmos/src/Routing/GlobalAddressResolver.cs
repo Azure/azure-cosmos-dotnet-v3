@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly PartitionKeyRangeCache routingMapProvider;
         private readonly int maxEndpoints;
         private readonly IServiceConfigurationReader serviceConfigReader;
-        private readonly HttpMessageHandler messageHandler;
+        private readonly Func<HttpClient> httpClientFactory;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly TimeSpan requestTimeout;
         private readonly ApiType apiType;
@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyRangeCache routingMapProvider,
             UserAgentContainer userAgentContainer,
             IServiceConfigurationReader serviceConfigReader,
-            HttpMessageHandler messageHandler,
             ConnectionPolicy connectionPolicy,
-            ApiType apiType)
+            ApiType apiType,
+            Func<HttpClient> httpClientFactory)
         {
             this.endpointManager = endpointManager;
             this.protocol = protocol;
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.collectionCache = collectionCache;
             this.routingMapProvider = routingMapProvider;
             this.serviceConfigReader = serviceConfigReader;
-            this.messageHandler = messageHandler;
+            this.httpClientFactory = httpClientFactory;
             this.requestTimeout = connectionPolicy.RequestTimeout;
             this.apiType = apiType;
 
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.userAgentContainer,
                         this.serviceConfigReader,
                         this.requestTimeout,
-                        messageHandler: this.messageHandler,
+                        httpClientFactory: this.httpClientFactory,
                         apiType: this.apiType);
 
                     string location = this.endpointManager.GetLocation(endpoint);
