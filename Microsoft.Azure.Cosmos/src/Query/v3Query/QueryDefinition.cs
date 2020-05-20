@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryDefinition
     {
-        internal Dictionary<string, SqlParameter> SqlParameters { get; }
+        private Dictionary<string, SqlParameter> SqlParameters { get; }
 
         /// <summary>
         /// Create a <see cref="QueryDefinition"/>
@@ -92,6 +93,17 @@ namespace Microsoft.Azure.Cosmos
         internal SqlQuerySpec ToSqlQuerySpec()
         {
             return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.SqlParameters.Values));
+        }
+
+        /// <summary>
+        /// Gets the sql parameters for the class
+        /// </summary>
+        internal ReadOnlyDictionary<string, SqlParameter> Parameters
+        {
+            get
+            {
+                return new ReadOnlyDictionary<string, SqlParameter>(this.SqlParameters);
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            if (x.SqlParameters.Count != y.SqlParameters.Count)
+            if (x.Parameters.Count != y.Parameters.Count)
             {
                 return false;
             }
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            return ParameterEquals(x.SqlParameters, y.SqlParameters);
+            return ParameterEquals(x.Parameters, y.Parameters);
         }
 
         /// <summary>
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             unchecked
             {
                 int hashCode = 23;
-                foreach (KeyValuePair<string, SqlParameter> queryParameter in queryDefinition.SqlParameters)
+                foreach (KeyValuePair<string, SqlParameter> queryParameter in queryDefinition.Parameters)
                 {
                     // xor is associative so we generate the same hash code if order of parameters is different
                     hashCode ^= queryParameter.Value.GetHashCode();
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="parameters"></param>
         /// <param name="otherParameters"></param>
         /// <returns>True if parameters have the same values.</returns>
-        private static bool ParameterEquals(Dictionary<string, SqlParameter> parameters, Dictionary<string, SqlParameter> otherParameters)
+        private static bool ParameterEquals(ReadOnlyDictionary<string, SqlParameter> parameters, ReadOnlyDictionary<string, SqlParameter> otherParameters)
         {
             if (parameters.Count != otherParameters.Count)
             {
