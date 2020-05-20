@@ -107,6 +107,18 @@ namespace Microsoft.Azure.Cosmos
                 return new FeedRangePartitionKey(options.PartitionKey.Value);
             }
 
+            if (options != null
+                && options.Properties != null
+                && options.Properties.TryGetValue(HandlerConstants.StartEpkString, out object startEpk)
+                && options.Properties.TryGetValue(HandlerConstants.EndEpkString, out object endEpk))
+            {
+                return new FeedRangeEPK(new Documents.Routing.Range<string>(
+                        (string)startEpk,
+                        (string)endEpk,
+                        isMinInclusive: true,
+                        isMaxInclusive: false));
+            }
+
             return FeedRangeEPK.ForCompleteRange();
         }
 
