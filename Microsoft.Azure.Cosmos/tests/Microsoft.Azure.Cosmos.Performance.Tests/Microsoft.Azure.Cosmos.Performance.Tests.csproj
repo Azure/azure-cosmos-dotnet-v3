@@ -231,7 +231,7 @@
       <LastGenOutput>Utf8vsUtf16StringBenchmarkGenerator.cs</LastGenOutput>
     </None>
     <None Update="samplepayload.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samplefeedpayload.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
