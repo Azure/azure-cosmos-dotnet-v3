@@ -6909,7 +6909,22 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task InitializeGatewayConfigurationReaderAsync()
         {
-            GatewayAccountReader accountReader = new GatewayAccountReader(
+            GatewayAccountReader accountReader = null;
+
+            if (this.ConnectionPolicy.HttpClientFactory != null)
+            {
+                new GatewayAccountReader(
+                    this.ServiceEndpoint,
+                    this.authKeyHashFunction,
+                    this.hasAuthKeyResourceToken,
+                    this.authKeyResourceToken,
+                    this.ConnectionPolicy,
+                    this.ApiType,
+                    this.ConnectionPolicy.HttpClientFactory);
+            }
+            else
+            {
+                new GatewayAccountReader(
                     this.ServiceEndpoint,
                     this.authKeyHashFunction,
                     this.hasAuthKeyResourceToken,
@@ -6917,6 +6932,7 @@ namespace Microsoft.Azure.Cosmos
                     this.ConnectionPolicy,
                     this.ApiType,
                     this.httpMessageHandler);
+            }
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
