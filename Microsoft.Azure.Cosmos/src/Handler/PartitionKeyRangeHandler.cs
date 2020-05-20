@@ -86,9 +86,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
+                bool wrapContinuationToken = !request.Properties.TryGetValue(HandlerConstants.SimpleFeedContinuationToken, out _);
+
                 //direction is not expected to change  between continuations.
-                Range<string> rangeFromContinuationToken =
-                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out List<CompositeContinuationToken> suppliedTokens);
+                List<CompositeContinuationToken> suppliedTokens = null;
+                Range<string> rangeFromContinuationToken = wrapContinuationToken ?
+                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out suppliedTokens)
+                    : Range<string>.GetEmptyRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey);
 
                 ResolvedRangeInfo resolvedRangeInfo =
                     await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
@@ -129,7 +133,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 else
                 {
-                    if (!await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
+                    if (wrapContinuationToken
+                        && !await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                         response.Headers.CosmosMessageHeaders,
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,

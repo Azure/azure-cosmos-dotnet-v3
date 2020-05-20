@@ -6,13 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Runtime.InteropServices;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -46,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // Backward compatible with old format
-                feedRangeInternal = FeedRangeEPK.ForCompleteRange();
+                feedRangeInternal = FeedRangeIteratorCore.InitializeFeedRange(options);
                 feedRangeContinuation = new FeedRangeCompositeContinuation(
                     string.Empty,
                     feedRangeInternal,
@@ -62,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options);
             }
 
-            feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForCompleteRange();
+            feedRangeInternal = feedRangeInternal ?? FeedRangeIteratorCore.InitializeFeedRange(options);
             return new FeedRangeIteratorCore(containerCore, feedRangeInternal, options);
         }
 
@@ -99,6 +96,18 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.TryInitializeContainerRIdAsync(innerCancellationToken);
             });
+        }
+
+        private static FeedRangeInternal InitializeFeedRange(QueryRequestOptions options)
+        {
+            if (options != null
+                && options.PartitionKey != null
+                && options.PartitionKey.HasValue)
+            {
+                return new FeedRangePartitionKey(options.PartitionKey.Value);
+            }
+
+            return FeedRangeEPK.ForCompleteRange();
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -166,6 +175,7 @@ namespace Microsoft.Azure.Cosmos
                requestEnricher: request =>
                {
                    FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
+                   request.Properties.Add(HandlerConstants.SimpleFeedContinuationToken, string.Empty);
                    this.FeedRangeInternal.Accept(feedRangeVisitor);
                    this.FeedRangeContinuation.Accept(feedRangeVisitor, QueryRequestOptions.FillContinuationToken);
                },
@@ -212,15 +222,37 @@ namespace Microsoft.Azure.Cosmos
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
         {
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            List<Documents.Routing.Range<string>> effectiveRanges = await this.FeedRangeInternal.GetEffectiveRangesAsync(
-                routingMapProvider: partitionKeyRangeCache,
-                containerRid: this.lazyContainerRid.Result.Result,
-                partitionKeyDefinition: null);
+            List<Documents.Routing.Range<string>> ranges;
+            if (this.FeedRangeInternal is FeedRangePartitionKey)
+            {
+                PartitionKeyDefinition partitionKeyDefinition = await this.containerCore.GetPartitionKeyDefinitionAsync(cancellationToken);
+                ranges = await this.FeedRangeInternal.GetEffectiveRangesAsync(partitionKeyRangeCache, this.lazyContainerRid.Result.Result, partitionKeyDefinition);
+            }
+            else
+            {
+                IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                        collectionRid: this.lazyContainerRid.Result.Result,
+                        range: (this.FeedRangeInternal as FeedRangeEPK).Range,
+                        forceRefresh: false);
+                ranges = pkRanges.Select(pkRange => pkRange.ToRange()).ToList();
+
+                if (this.queryRequestOptions != null
+                    && this.queryRequestOptions.Properties != null
+                    && this.queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object direction))
+                {
+                    RntbdConstants.RntdbEnumerationDirection rntdbEnumerationDirection = (byte)direction == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? RntbdConstants.RntdbEnumerationDirection.Reverse : RntbdConstants.RntdbEnumerationDirection.Forward;
+
+                    if (rntdbEnumerationDirection == RntbdConstants.RntdbEnumerationDirection.Reverse)
+                    {
+                        ranges.Reverse();
+                    }
+                }
+            }
 
             this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                 containerRid: this.lazyContainerRid.Result.Result,
                 feedRange: this.FeedRangeInternal,
-                effectiveRanges);
+                ranges);
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()
