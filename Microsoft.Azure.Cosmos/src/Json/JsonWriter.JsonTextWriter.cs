@@ -519,11 +519,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 int index = 0;
 
                 // If we can benefit from SIMD scan, use that approach
-                if (Vector.IsHardwareAccelerated && (utf8Span.Length > vectorCount))
+                if (Vector.IsHardwareAccelerated)
                 {
                     // Ensure we stop the SIMD scan before the length of the vector would
                     // go past the end of the array
-                    int lastVectorMultiple = utf8Span.Length / vectorCount * vectorCount;
+#pragma warning disable IDE0047 // Remove unnecessary parentheses
+                    int lastVectorMultiple = (utf8Span.Length / vectorCount) * vectorCount;
+#pragma warning restore IDE0047 // Remove unnecessary parentheses
 
                     for (; index < lastVectorMultiple; index += vectorCount)
                     {

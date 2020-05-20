@@ -2,9 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Configuration;
     using System.IO;
     using System.Net;
+    using System.Reflection;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -16,6 +16,43 @@
     [MemoryDiagnoser]
     public class EndToEnd
     {
+        private static class Queries
+        {
+            public static readonly Query Parallel = new Query("Parallel", "SELECT * FROM c");
+            public static readonly Query OrderBy = new Query("ORDER BY", "SELECT * FROM c ORDER BY c._ts");
+            public static readonly Query GroupBy = new Query("GROUP BY", "SELECT MAX(c.version) FROM c GROUP BY c.id");
+            public static readonly Query Distinct = new Query("Distinct", "SELECT DISTINCT * FROM c");
+        }
+
+        public sealed class Query
+        {
+            public Query(string description, string text)
+            {
+                this.Description = description;
+                this.Text = text;
+            }
+
+            public string Text { get; }
+            public string Description { get; }
+
+            public override string ToString()
+            {
+                return this.Description;
+            }
+        }
+
+        public enum SerializationFormat
+        {
+            Text,
+            Binary,
+        }
+
+        public enum QueryType
+        {
+            CosmosElement,
+            TextStream,
+        }
+
         private readonly CosmosClient client;
         private readonly Container container;
 
@@ -25,8 +62,8 @@
         public EndToEnd()
         {
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
-                accountEndpoint: "<YourEndPointHere>",
-                authKeyOrResourceToken: "<YourAccountKeyHere>");
+                accountEndpoint: "<YourEndpoint>",
+                authKeyOrResourceToken: "<YourKey>");
 
             this.client = clientBuilder.Build();
             Database db = this.client.CreateDatabaseIfNotExistsAsync("BenchmarkDB").Result;
@@ -52,147 +89,24 @@
         }
 
         [Benchmark]
-        public Task Parallel_Text_CosmosElement()
+        [ArgumentsSource(nameof(Data))]
+        public Task RunBenchmark(Query query, QueryType queryType, SerializationFormat serializationFormat)
         {
-            return QueryWithCosmosElements(
-                this.container,
-                "SELECT * FROM c",
-                JsonSerializationFormat.Text);
-        }
+            JsonSerializationFormat jsonSerializationFormat = serializationFormat switch
+            {
+                SerializationFormat.Text => JsonSerializationFormat.Text,
+                SerializationFormat.Binary => JsonSerializationFormat.Binary,
+                _ => throw new ArgumentOutOfRangeException(nameof(serializationFormat)),
+            };
 
-        [Benchmark]
-        public Task Parallel_Binary_CosmosElement()
-        {
-            return QueryWithCosmosElements(
-                this.container,
-                "SELECT * FROM c",
-                JsonSerializationFormat.Binary);
-        }
+            Func<Container, string, JsonSerializationFormat, Task> func = queryType switch
+            {
+                QueryType.CosmosElement => QueryWithCosmosElements,
+                QueryType.TextStream => QueryWithTextStream,
+                _ => throw new ArgumentOutOfRangeException(nameof(queryType)),
+            };
 
-        [Benchmark]
-        public Task Parallel_Text_TextStream()
-        {
-            return QueryWithTextStream(
-                this.container,
-                "SELECT * FROM c",
-                JsonSerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public Task Parallel_Binary_TextStream()
-        {
-            return QueryWithTextStream(
-                this.container,
-                "SELECT * FROM c",
-                JsonSerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public Task OrderBy_Text_CosmosElement()
-        {
-            return QueryWithCosmosElements(
-                this.container,
-                "SELECT * FROM c ORDER BY c._ts",
-                JsonSerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public Task OrderBy_Binary_CosmosElement()
-        {
-            return QueryWithCosmosElements(
-                this.container,
-                "SELECT * FROM c ORDER BY c._ts",
-                JsonSerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public Task OrderBy_Text_TextStream()
-        {
-            return QueryWithTextStream(
-                this.container,
-                "SELECT * FROM c ORDER BY c._ts",
-                JsonSerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public Task OrderBy_Binary_TextStream()
-        {
-            return QueryWithTextStream(
-                this.container,
-                "SELECT * FROM c ORDER BY c._ts",
-                JsonSerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public Task GroupBy_Text_CosmosElement()
-        {
-            return QueryWithCosmosElements(
-                this.container,
-                "SELECT MAX(c.version) FROM c GROUP BY c.id",
-                JsonSerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public Task GroupBy_Binary_CosmosElement()
-        {
-            return QueryWithCosmosElements(
-                this.container,
-                "SELECT MAX(c.version) FROM c GROUP BY c.id",
-                JsonSerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public Task GroupBy_Text_TextStream()
-        {
-            return QueryWithTextStream(
-                this.container,
-                "SELECT MAX(c.version) FROM c GROUP BY c.id",
-                JsonSerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public Task GroupBy_Binary_TextStream()
-        {
-            return QueryWithTextStream(
-                this.container,
-                "SELECT MAX(c.version) FROM c GROUP BY c.id",
-                JsonSerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public Task Distinct_Text_CosmosElement()
-        {
-            return QueryWithCosmosElements(
-                this.container,
-                "SELECT DISTINCT * FROM c",
-                JsonSerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public Task Distinct_Binary_CosmosElement()
-        {
-            return QueryWithCosmosElements(
-                this.container,
-                "SELECT DISTINCT * FROM c",
-                JsonSerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public Task Distinct_Text_TextStream()
-        {
-            return QueryWithTextStream(
-                this.container,
-                "SELECT DISTINCT * FROM c",
-                JsonSerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public Task Distinct_Binary_TextStream()
-        {
-            return QueryWithTextStream(
-                this.container,
-                "SELECT DISTINCT * FROM c",
-                JsonSerializationFormat.Binary);
+            return func(this.container, query.Text, jsonSerializationFormat);
         }
 
         private static async Task QueryWithTextStream(
@@ -265,6 +179,21 @@
                 () => JsonWriter.Create(JsonSerializationFormat.Text));
 
             queryRequestOptions.CosmosSerializationFormatOptions = formatOptions;
+        }
+
+        public IEnumerable<object[]> Data()
+        {
+            foreach (FieldInfo fieldInfo in typeof(Queries).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                Query query = (Query)fieldInfo.GetValue(null);
+                foreach (QueryType queryType in Enum.GetValues(typeof(QueryType)))
+                {
+                    foreach (SerializationFormat serializationFormat in Enum.GetValues(typeof(SerializationFormat)))
+                    {
+                        yield return new object[] { query, queryType, serializationFormat };
+                    }
+                }
+            }
         }
     }
 }
