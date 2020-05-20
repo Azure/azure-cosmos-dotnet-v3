@@ -62,8 +62,8 @@
         public EndToEnd()
         {
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
-                accountEndpoint: "<YourEndpoint>",
-                authKeyOrResourceToken: "<YourKey>");
+                accountEndpoint: "<YOUR ENDPOINT>",
+                authKeyOrResourceToken: "<YOUR KEY>");
 
             this.client = clientBuilder.Build();
             Database db = this.client.CreateDatabaseIfNotExistsAsync("BenchmarkDB").Result;
@@ -84,6 +84,44 @@
                 foreach (CosmosElement document in cosmosArray)
                 {
                     ItemResponse<CosmosElement> itemResponse = this.container.CreateItemAsync(document).Result;
+                }
+            }
+        }
+
+        [Benchmark]
+        public async Task ReadFeedBaselineAsync()
+        {
+            FeedIterator resultIterator = this.container.GetItemQueryStreamIterator(
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = -1,
+                    MaxConcurrency = -1,
+                    MaxBufferedItemCount = -1
+                });
+
+            while (resultIterator.HasMoreResults)
+            {
+                using (ResponseMessage response = await resultIterator.ReadNextAsync())
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+        }
+
+        [Benchmark]
+        public async Task ChangeFeedBaselineAsync()
+        {
+            ChangeFeedIteratorCore feedIterator = ((ContainerCore)this.container)
+                .GetChangeFeedStreamIterator(
+                    changeFeedRequestOptions: new ChangeFeedRequestOptions()
+                    {
+                        StartTime = DateTime.MinValue.ToUniversalTime()
+                    }) as ChangeFeedIteratorCore;
+
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync())
+                {
                 }
             }
         }
