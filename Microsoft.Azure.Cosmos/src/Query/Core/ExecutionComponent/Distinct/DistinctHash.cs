@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             {
                 if (seed == RootHashSeed)
                 {
-                    return cosmosBoolean.Value ? HashSeeds.True : HashSeeds.False;
+                    return cosmosBoolean.Value ? RootCache.True : RootCache.False;
                 }
 
                 return MurmurHash3.Hash128(

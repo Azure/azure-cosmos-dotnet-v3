@@ -344,6 +344,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Represents an extended double number with 62-bit mantissa which is capable of representing a 64-bit integer with no precision loss
         /// </summary>
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
         public readonly struct DoubleEx : IEquatable<DoubleEx>, IComparable<DoubleEx>
         {
             private DoubleEx(double doubleValue, ushort extraBits)
