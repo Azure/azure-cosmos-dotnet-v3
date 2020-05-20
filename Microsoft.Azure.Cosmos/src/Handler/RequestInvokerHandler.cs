@@ -119,58 +119,69 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 overallScope = diagnosticsContext.GetOverallScope();
             }
 
-            using (overallScope)
-            { 
-                HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
-                RequestMessage request = new RequestMessage(
-                        method,
-                        resourceUri,
-                        diagnosticsContext)
+            try
+            {
+                using (overallScope)
                 {
-                    OperationType = operationType,
-                    ResourceType = resourceType,
-                    RequestOptions = requestOptions,
-                    Content = streamPayload,
-                };
+                    HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
+                    RequestMessage request = new RequestMessage(
+                            method,
+                            resourceUri,
+                            diagnosticsContext)
+                    {
+                        OperationType = operationType,
+                        ResourceType = resourceType,
+                        RequestOptions = requestOptions,
+                        Content = streamPayload,
+                    };
 
-                if (partitionKey.HasValue)
-                {
-                    if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
+                    if (partitionKey.HasValue)
                     {
-                        throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
-                    }
-                    else if (partitionKey.Value.IsNone)
-                    {
-                        using (diagnosticsContext.CreateScope("GetNonePkValue"))
+                        if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                         {
-                            try
+                            throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                        }
+                        else if (partitionKey.Value.IsNone)
+                        {
+                            using (diagnosticsContext.CreateScope("GetNonePkValue"))
                             {
-                                PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
-                                request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
-                            }
-                            catch (DocumentClientException dce)
-                            {
-                                return dce.ToCosmosResponseMessage(request);
-                            }
-                            catch (CosmosException ce)
-                            {
-                                return ce.ToCosmosResponseMessage(request);
+                                try
+                                {
+                                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
+                                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                                }
+                                catch (DocumentClientException dce)
+                                {
+                                    return dce.ToCosmosResponseMessage(request);
+                                }
+                                catch (CosmosException ce)
+                                {
+                                    return ce.ToCosmosResponseMessage(request);
+                                }
                             }
                         }
+                        else
+                        {
+                            request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
+                        }
                     }
-                    else
+
+                    if (operationType == OperationType.Upsert)
                     {
-                        request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
+                        request.Headers.IsUpsert = bool.TrueString;
                     }
-                }
 
-                if (operationType == OperationType.Upsert)
-                {
-                    request.Headers.IsUpsert = bool.TrueString;
+                    requestEnricher?.Invoke(request);
+                    return await this.SendAsync(request, cancellationToken);
                 }
-
-                requestEnricher?.Invoke(request);
-                return await this.SendAsync(request, cancellationToken);
+            }
+            catch (TaskCanceledException te)
+            {
+                throw CosmosOperationCanceledException.Create(te, diagnosticsContext);
+            }
+            catch (OperationCanceledException oe)
+            {
+                throw CosmosOperationCanceledException.Create(oe, diagnosticsContext);
             }
         }
 
