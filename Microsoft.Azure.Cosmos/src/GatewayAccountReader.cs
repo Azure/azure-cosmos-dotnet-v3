@@ -23,11 +23,11 @@ namespace Microsoft.Azure.Cosmos
         private ApiType apiType;
 
         private GatewayAccountReader(Uri serviceEndpoint,
-                                                 IComputeHash stringHMACSHA256Helper,
-                                                 bool hasResourceToken,
-                                                 string resourceToken,
-                                                 ConnectionPolicy connectionPolicy,
-                                                 ApiType apiType)
+                IComputeHash stringHMACSHA256Helper,
+                bool hasResourceToken,
+                string resourceToken,
+                ConnectionPolicy connectionPolicy,
+                ApiType apiType)
         {
             this.serviceEndpoint = serviceEndpoint;
             this.authKeyHashFunction = stringHMACSHA256Helper;
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
                 string resourceToken,
                 ConnectionPolicy connectionPolicy,
                 ApiType apiType,
-                HttpMessageHandler messageHandler = null)
+                HttpMessageHandler messageHandler)
             : this(serviceEndpoint,
                   stringHMACSHA256Helper,
                   hasResourceToken,
