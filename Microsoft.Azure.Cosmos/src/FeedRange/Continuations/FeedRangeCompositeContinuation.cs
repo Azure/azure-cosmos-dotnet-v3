@@ -25,7 +25,6 @@ namespace Microsoft.Azure.Cosmos
         public CompositeContinuationToken CurrentToken { get; private set; }
         private static Documents.ShouldRetryResult Retry = Documents.ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         private static Documents.ShouldRetryResult NoRetry = Documents.ShouldRetryResult.NoRetry();
-        private readonly HashSet<string> doneRanges;
         private string initialNoResultsRange;
 
         private FeedRangeCompositeContinuation(
@@ -34,7 +33,6 @@ namespace Microsoft.Azure.Cosmos
             : base(containerRid, feedRange)
         {
             this.CompositeContinuationTokens = new Queue<CompositeContinuationToken>();
-            this.doneRanges = new HashSet<string>();
         }
 
         public override void Accept(
@@ -109,14 +107,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override void ReplaceContinuation(string continuationToken)
         {
-            if (continuationToken == null)
-            {
-                // Normal ReadFeed can signal termination by CT null, not NotModified
-                // Change Feed never lands here, as it always provides a CT
-                // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
-                this.doneRanges.Add(this.CurrentToken.Range.Min);
-            }
-
             this.CurrentToken.Token = continuationToken;
             this.MoveToNextToken();
         }
@@ -140,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The concept of Done is only for ReadFeed. Change Feed is never done, it is an infinite stream.
         /// </summary>
-        public override bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
+        public override bool IsDone => this.CompositeContinuationTokens.Count == 0;
 
         public override Documents.ShouldRetryResult HandleChangeFeedNotModified(ResponseMessage responseMessage)
         {
@@ -223,15 +213,15 @@ namespace Microsoft.Azure.Cosmos
         private void MoveToNextToken()
         {
             CompositeContinuationToken recentToken = this.CompositeContinuationTokens.Dequeue();
-            this.CompositeContinuationTokens.Enqueue(recentToken);
-            this.CurrentToken = this.CompositeContinuationTokens.Peek();
-
-            // In a Query / ReadFeed not Change Feed, skip ranges that are done to avoid requests
-            while (!this.IsDone &&
-                this.doneRanges.Contains(this.CurrentToken.Range.Min))
+            if (recentToken.Token != null)
             {
-                this.MoveToNextToken();
+                // Normal ReadFeed can signal termination by CT null, not NotModified
+                // Change Feed never lands here, as it always provides a CT
+                // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
+                this.CompositeContinuationTokens.Enqueue(recentToken);
             }
+            
+            this.CurrentToken = this.CompositeContinuationTokens.Peek();
         }
 
         private void CreateChildRanges(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
