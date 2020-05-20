@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query;
 
     internal sealed class FeedIteratorInlineCore : FeedIteratorInternal
     {
@@ -43,6 +44,11 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
+        }
+
+        public void Dispose()
+        {
+            ((QueryIterator)this.feedIteratorInternal).Dispose();
         }
     }
 
@@ -79,6 +85,19 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             return this.feedIteratorInternal.GetCosmosElementContinuationToken();
+        }
+
+        public void Dispose()
+        {
+            if (this.feedIteratorInternal is FeedIteratorCore<T> feedIteratorCore)
+            {
+                feedIteratorCore.Dispose();
+            }
+
+            if (this.feedIteratorInternal is FeedIteratorInlineCore<T> feedIteratorInlineCore)
+            {
+                feedIteratorInlineCore.Dispose();
+            }
         }
     }
 }

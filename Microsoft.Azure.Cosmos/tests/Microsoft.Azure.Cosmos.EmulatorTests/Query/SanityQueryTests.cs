@@ -284,6 +284,62 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        public async Task MemoryLeak()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                QueryRequestOptions feedOptions = new QueryRequestOptions
+                {
+                    MaxItemCount = 1000,
+                };
+
+                await QueryTestsBase.RunQueryCombinationsAsync(
+                    container,
+                    "SELECT * FROM c",
+                    queryRequestOptions: feedOptions,
+                    QueryDrainingMode.HoldState);
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                long originalHeapSize = GC.GetTotalMemory(true);
+
+                {
+                    List<Task> tasks = new List<Task>();
+                    for (int i = 0; i < 10; i++)
+                    {
+                        Task task = QueryTestsBase.RunQueryCombinationsAsync(
+                            container,
+                            "SELECT * FROM c",
+                            queryRequestOptions: feedOptions,
+                            QueryDrainingMode.HoldState);
+                        tasks.Add(task);
+                    }
+
+                    await Task.WhenAll(tasks);
+                }
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                long currentHeapSize = GC.GetTotalMemory(true);
+
+                Assert.AreEqual(originalHeapSize, currentHeapSize);
+            }
+        }
+
+        [TestMethod]
         public async Task TestUnsupportedQueriesAsync()
         {
             await this.CreateIngestQueryDeleteAsync(
@@ -640,7 +696,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
 
                             Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
-                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value); 
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
 
                             Assert.AreEqual(
                                 1,

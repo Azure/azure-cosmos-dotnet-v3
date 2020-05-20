@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -189,6 +187,11 @@ namespace Microsoft.Azure.Cosmos.Query
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
+        }
+
+        public void Dispose()
+        {
+            this.cosmosQueryExecutionContext.Dispose();
         }
     }
 }

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
             this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
 
             await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
-            
+
             return responseMessage;
         }
 
@@ -152,6 +153,19 @@ namespace Microsoft.Azure.Cosmos
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
+        }
+
+        public void Dispose()
+        {
+            if (this.feedIterator is FeedIteratorInlineCore feedIteratorInlineCore)
+            {
+                feedIteratorInlineCore.Dispose();
+            }
+
+            if (this.feedIterator is QueryIterator queryIterator)
+            {
+                queryIterator.Dispose();
+            }
         }
     }
 }

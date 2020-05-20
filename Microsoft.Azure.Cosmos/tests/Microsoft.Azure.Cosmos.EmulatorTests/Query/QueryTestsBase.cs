@@ -711,6 +711,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
+                    ((FeedIteratorCore<T>)itemQuery).Dispose();
                     itemQuery = container.GetItemQueryIterator<T>(
                         queryText: query,
                         requestOptions: queryRequestOptions,
@@ -723,6 +724,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                 }
             }
+
+            ((FeedIteratorInlineCore<T>)itemQuery).Dispose();
 
             return results;
         }
