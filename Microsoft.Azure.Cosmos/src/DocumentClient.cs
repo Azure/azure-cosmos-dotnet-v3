@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Runtime.CompilerServices;
     using System.Security;
     using System.Text;
     using System.Threading;
@@ -109,6 +110,9 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const bool EnableAuthFailureTraces = false;
 
+        // Gateway has backoff/retry logic to hide transient errors.
+        private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
+
         private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
@@ -150,6 +154,7 @@ namespace Microsoft.Azure.Cosmos
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
         private HttpClient mediaClient;
+        private HttpClient httpClient;
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
@@ -564,16 +569,38 @@ namespace Microsoft.Azure.Cosmos
                 }).ToList();
         }
 
-        public static Func<HttpClient> GetHttpClientFactory(
+        public static HttpClient BuildHttpClient(
             ConnectionPolicy connectionPolicy,
+            ApiType apiType,
             HttpMessageHandler messageHandler)
         {
+            HttpClient httpClient;
             if (connectionPolicy.HttpClientFactory != null)
             {
-                return connectionPolicy.HttpClientFactory;
+                httpClient = connectionPolicy.HttpClientFactory();
+            }
+            else
+            {
+                httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
             }
 
-            return () => messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
+            // Use max of client specified and our own request timeout value when sending
+            // requests to gateway. Otherwise, we will have gateway's transient
+            // error hiding retries are of no use.
+            httpClient.Timeout = connectionPolicy.RequestTimeout.TotalSeconds < DocumentClient.GatewayRequestTimeout.TotalSeconds ? DocumentClient.GatewayRequestTimeout : connectionPolicy.RequestTimeout;
+            httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
+
+            httpClient.AddUserAgentHeader(connectionPolicy.UserAgentContainer);
+            httpClient.AddApiTypeHeader(apiType);
+
+            // Set requested API version header that can be used for
+            // version enforcement.
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
+                HttpConstants.Versions.CurrentVersion);
+
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
+
+            return httpClient;
         }
 
         /// <summary>
@@ -1065,6 +1092,8 @@ namespace Microsoft.Azure.Cosmos
             this.mediaClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept,
                 RuntimeConstants.MediaTypes.Any);
 
+            this.httpClient = DocumentClient.BuildHttpClient(connectionPolicy, this.ApiType, this.httpMessageHandler);
+
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;
@@ -1129,33 +1158,13 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            GatewayStoreModel gatewayStoreModel;
-            if (this.ConnectionPolicy.HttpClientFactory != null)
-            {
-                gatewayStoreModel = new GatewayStoreModel(
+            GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
                     this.GlobalEndpointManager,
                     this.sessionContainer,
-                    this.ConnectionPolicy.RequestTimeout,
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     this.serializerSettings,
-                    this.ConnectionPolicy.UserAgentContainer,
-                    this.ApiType,
-                    this.ConnectionPolicy.HttpClientFactory);
-            }
-            else
-            {
-                gatewayStoreModel = new GatewayStoreModel(
-                    this.GlobalEndpointManager,
-                    this.sessionContainer,
-                    this.ConnectionPolicy.RequestTimeout,
-                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                    this.eventSource,
-                    this.serializerSettings,
-                    this.ConnectionPolicy.UserAgentContainer,
-                    this.ApiType,
-                    this.httpMessageHandler);
-            }
+                    this.httpClient);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -1433,6 +1442,21 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.mediaClient.Dispose();
                 this.mediaClient = null;
+            }
+
+            if (this.httpClient != null)
+            {
+                try
+                {
+                    this.httpClient.Dispose();
+                }
+                catch (Exception exception)
+                {
+                    DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
+                        exception);
+                }
+
+                this.httpClient = null;
             }
 
             if (this.authKeyHashFunction != null)
@@ -6836,11 +6860,9 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 this.collectionCache,
                 this.partitionKeyRangeCache,
-                this.ConnectionPolicy.UserAgentContainer,
                 this.accountServiceConfiguration,
                 this.ConnectionPolicy,
-                this.ApiType,
-                DocumentClient.GetHttpClientFactory(this.ConnectionPolicy, this.httpMessageHandler));
+                this.httpClient);
 
             // Check if we have a store client factory in input and if we do, do not initialize another store client
             // The purpose is to reuse store client factory across all document clients inside compute gateway
@@ -6927,8 +6949,7 @@ namespace Microsoft.Azure.Cosmos
                     hasResourceToken: this.hasAuthKeyResourceToken,
                     resourceToken: this.authKeyResourceToken,
                     connectionPolicy: this.ConnectionPolicy,
-                    apiType: this.ApiType,
-                    httpClientFactory: DocumentClient.GetHttpClientFactory(this.ConnectionPolicy, this.httpMessageHandler));
+                    httpClient: this.httpClient);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 

@@ -49,12 +49,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri serviceEndpoint,
             Protocol protocol,
             IAuthorizationTokenProvider tokenProvider,
-            UserAgentContainer userAgent,
             IServiceConfigurationReader serviceConfigReader,
-            TimeSpan requestTimeout,
-            Func<HttpClient> httpClientFactory,
-            long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            ApiType apiType = ApiType.None)
+            HttpClient httpClient,
+            long suboptimalPartitionForceRefreshIntervalInSeconds = 600)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
@@ -67,29 +64,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.suboptimalPartitionForceRefreshIntervalInSeconds = suboptimalPartitionForceRefreshIntervalInSeconds;
 
-            HttpClient httpClient = httpClientFactory();
-            if (httpClient == null)
-            {
-                throw new InvalidOperationException("HttpClientFactory did not produce an HttpClient");
-            }
-
             this.httpClient = httpClient;
-            if (requestTimeout != null)
-            {
-                this.httpClient.Timeout = requestTimeout;
-            }
+
             this.protocolFilter =
                 string.Format(CultureInfo.InvariantCulture,
                 GatewayAddressCache.protocolFilterFormat,
                 Constants.Properties.Protocol,
                 GatewayAddressCache.ProtocolString(this.protocol));
-
-            // Set requested API version header for version enforcement.
-            this.httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                HttpConstants.Versions.CurrentVersion);
-
-            this.httpClient.AddUserAgentHeader(userAgent);
-            this.httpClient.AddApiTypeHeader(apiType);
         }
 
         public Uri ServiceEndpoint
@@ -492,29 +473,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public void Dispose()
         {
-            this.Dispose(true);
             GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (this.httpClient != null)
-                {
-                    try
-                    {
-                        this.httpClient.Dispose();
-                    }
-                    catch (Exception exception)
-                    {
-                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                            exception);
-                    }
-
-                    this.httpClient = null;
-                }
-            }
         }
 
         internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses)

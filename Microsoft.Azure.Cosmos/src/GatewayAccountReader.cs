@@ -19,41 +19,25 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool hasAuthKeyResourceToken = false;
         private readonly string authKeyResourceToken = string.Empty;
         private readonly HttpClient httpClient;
-        private Uri serviceEndpoint;
-        private ApiType apiType;
+        private readonly Uri serviceEndpoint;
 
         public GatewayAccountReader(Uri serviceEndpoint,
                 IComputeHash stringHMACSHA256Helper,
                 bool hasResourceToken,
                 string resourceToken,
                 ConnectionPolicy connectionPolicy,
-                ApiType apiType,
-                Func<HttpClient> httpClientFactory)
+                HttpClient httpClient)
         {
-            HttpClient httpClient = httpClientFactory();
-            if (httpClient == null)
-            {
-                throw new InvalidOperationException("HttpClientFactory did not produce an HttpClient");
-            }
-
             this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
             this.authKeyHashFunction = stringHMACSHA256Helper;
             this.hasAuthKeyResourceToken = hasResourceToken;
             this.authKeyResourceToken = resourceToken;
             this.connectionPolicy = connectionPolicy;
-            this.apiType = apiType;
         }
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
-            this.httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                    HttpConstants.Versions.CurrentVersion);
-
-            // Send client version.
-            this.httpClient.AddUserAgentHeader(this.connectionPolicy.UserAgentContainer);
-            this.httpClient.AddApiTypeHeader(this.apiType);
-
             string authorizationToken = string.Empty;
             if (this.hasAuthKeyResourceToken)
             {

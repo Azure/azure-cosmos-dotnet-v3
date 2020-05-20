@@ -26,15 +26,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly GlobalEndpointManager endpointManager;
         private readonly Protocol protocol;
         private readonly IAuthorizationTokenProvider tokenProvider;
-        private readonly UserAgentContainer userAgentContainer;
         private readonly CollectionCache collectionCache;
         private readonly PartitionKeyRangeCache routingMapProvider;
         private readonly int maxEndpoints;
         private readonly IServiceConfigurationReader serviceConfigReader;
-        private readonly Func<HttpClient> httpClientFactory;
+        private readonly HttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
-        private readonly TimeSpan requestTimeout;
-        private readonly ApiType apiType;
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
@@ -42,22 +39,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             IAuthorizationTokenProvider tokenProvider,
             CollectionCache collectionCache,
             PartitionKeyRangeCache routingMapProvider,
-            UserAgentContainer userAgentContainer,
             IServiceConfigurationReader serviceConfigReader,
             ConnectionPolicy connectionPolicy,
-            ApiType apiType,
-            Func<HttpClient> httpClientFactory)
+            HttpClient httpClient)
         {
             this.endpointManager = endpointManager;
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
-            this.userAgentContainer = userAgentContainer;
             this.collectionCache = collectionCache;
             this.routingMapProvider = routingMapProvider;
             this.serviceConfigReader = serviceConfigReader;
-            this.httpClientFactory = httpClientFactory;
-            this.requestTimeout = connectionPolicy.RequestTimeout;
-            this.apiType = apiType;
+            this.httpClient = httpClient;
 
             int maxBackupReadEndpoints =
                 !connectionPolicy.EnableReadRequestsFallback.HasValue || connectionPolicy.EnableReadRequestsFallback.Value
@@ -160,11 +152,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         resolvedEndpoint,
                         this.protocol,
                         this.tokenProvider,
-                        this.userAgentContainer,
                         this.serviceConfigReader,
-                        this.requestTimeout,
-                        httpClientFactory: this.httpClientFactory,
-                        apiType: this.apiType);
+                        this.httpClient);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);
