@@ -11,12 +11,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     /// <summary>
     /// Benchmark for Item related operations.
     /// </summary>
-    public class ItemBenchmarkHelper
+    public class MockedItemBenchmarkHelper
     {
         public static readonly string ExistingItemId = "lets-benchmark";
         public static readonly string NonExistingItemId = "cant-see-me";
 
-        public static readonly PartitionKey ExistingPartitionId = new PartitionKey(ItemBenchmarkHelper.ExistingItemId);
+        public static readonly PartitionKey ExistingPartitionId = new PartitionKey(MockedItemBenchmarkHelper.ExistingItemId);
 
         internal ToDoActivity TestItem { get; }
         internal CosmosClient TestClient { get; }
@@ -24,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         internal byte[] TestItemBytes { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ItemBenchmark"/> class.
+        /// Initializes a new instance of the <see cref="MockedItemBenchmark"/> class.
         /// </summary>
-        public ItemBenchmarkHelper(bool useCustomSerialzier = false)
+        public MockedItemBenchmarkHelper(bool useCustomSerialzier = false)
         {
             this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerialzier);
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");

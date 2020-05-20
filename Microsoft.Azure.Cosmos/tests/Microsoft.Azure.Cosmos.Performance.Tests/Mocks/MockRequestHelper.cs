@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         {
             if (request.OperationType == OperationType.Read)
             {
-                if (request.ResourceAddress.EndsWith(ItemBenchmarkHelper.ExistingItemId))
+                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
                     return new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (request.OperationType == OperationType.Delete)
             {
-                if (request.ResourceAddress.EndsWith(ItemBenchmarkHelper.ExistingItemId))
+                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
                     return new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (request.OperationType == OperationType.Read)
             {
                 headers.Add(WFConstants.BackendHeaders.LSN, "1");
-                if (request.ResourceAddress.EndsWith(ItemBenchmarkHelper.ExistingItemId))
+                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
 
                     return new StoreResponse()
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (request.OperationType == OperationType.Delete)
             {
-                if (request.ResourceAddress.EndsWith(ItemBenchmarkHelper.ExistingItemId))
+                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
                     return new StoreResponse()
                     {

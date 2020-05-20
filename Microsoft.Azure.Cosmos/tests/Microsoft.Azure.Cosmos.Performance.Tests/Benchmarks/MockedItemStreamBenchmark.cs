@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
 
-    public class ItemStreamBenchmark : IItemBenchmark
+    public class MockedItemStreamBenchmark : IItemBenchmark
     {
-        private ItemBenchmarkHelper benchmarkHelper;
+        private MockedItemBenchmarkHelper benchmarkHelper;
 
-        public ItemStreamBenchmark()
+        public MockedItemStreamBenchmark()
         {
-            this.benchmarkHelper = new ItemBenchmarkHelper();
+            this.benchmarkHelper = new MockedItemBenchmarkHelper();
         }
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.CreateItemStreamAsync(
                 ms,
-                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.UpsertItemStreamAsync(
                 ms,
-                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
@@ -66,8 +66,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItemNotExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                ItemBenchmarkHelper.NonExistingItemId,
-                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
+                MockedItemBenchmarkHelper.NonExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {
@@ -84,8 +84,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItemExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                ItemBenchmarkHelper.ExistingItemId,
-                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
+                MockedItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
                 {
@@ -104,8 +104,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReplaceItemStreamAsync(
                 ms,
-                ItemBenchmarkHelper.ExistingItemId,
-                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
+                MockedItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
                 {
@@ -122,8 +122,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task DeleteItemExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
-                ItemBenchmarkHelper.ExistingItemId,
-                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
+                MockedItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
@@ -140,8 +140,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task DeleteItemNotExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
-                ItemBenchmarkHelper.NonExistingItemId,
-                new Cosmos.PartitionKey(ItemBenchmarkHelper.ExistingItemId)))
+                MockedItemBenchmarkHelper.NonExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {

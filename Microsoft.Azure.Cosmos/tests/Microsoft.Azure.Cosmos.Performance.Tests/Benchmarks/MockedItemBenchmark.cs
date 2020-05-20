@@ -15,13 +15,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     }
 
     [MemoryDiagnoser]
-    public class ItemBenchmark : IItemBenchmark
+    public class MockedItemBenchmark : IItemBenchmark
     {
         public static readonly IItemBenchmark[] IterParameters = new IItemBenchmark[]
             {
-                new ItemStreamBenchmark(),
-                new ItemOfTBenchmark() { BenchmarkHelper = new ItemBenchmarkHelper() },
-                new ItemOfTBenchmark() { BenchmarkHelper = new ItemBenchmarkHelper(true) },
+                new MockedItemStreamBenchmark(),
+                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
+                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(true) },
             };
 
         [Params(ScenarioType.Stream, ScenarioType.OfT, ScenarioType.OfTCustom)]
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             get
             {
-                return ItemBenchmark.IterParameters[(int)this.Type];
+                return MockedItemBenchmark.IterParameters[(int)this.Type];
             }
         }
 

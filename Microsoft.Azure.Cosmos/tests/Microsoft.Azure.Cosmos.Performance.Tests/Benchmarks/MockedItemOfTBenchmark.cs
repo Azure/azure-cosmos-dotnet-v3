@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
 
-    public class ItemOfTBenchmark : IItemBenchmark
+    public class MockedItemOfTBenchmark : IItemBenchmark
     {
-        public ItemBenchmarkHelper BenchmarkHelper { get; set; }
+        public MockedItemBenchmarkHelper BenchmarkHelper { get; set; }
 
         /// <summary>
         /// Benchmark for CreateItemAsync.
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
-                ItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
-                ItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             try
             {
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
-                    ItemBenchmarkHelper.NonExistingItemId,
-                    ItemBenchmarkHelper.ExistingPartitionId);
+                    MockedItemBenchmarkHelper.NonExistingItemId,
+                    MockedItemBenchmarkHelper.ExistingPartitionId);
                 throw new Exception();
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -76,8 +76,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItemExists()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
-                ItemBenchmarkHelper.ExistingItemId,
-                ItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingItemId,
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -94,8 +94,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
-                ItemBenchmarkHelper.ExistingItemId,
-                ItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingItemId,
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -111,8 +111,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task DeleteItemExists()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
-                ItemBenchmarkHelper.ExistingItemId,
-                ItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingItemId,
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -130,8 +130,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             try
             {
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
-                    ItemBenchmarkHelper.NonExistingItemId,
-                    ItemBenchmarkHelper.ExistingPartitionId);
+                    MockedItemBenchmarkHelper.NonExistingItemId,
+                    MockedItemBenchmarkHelper.ExistingPartitionId);
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
