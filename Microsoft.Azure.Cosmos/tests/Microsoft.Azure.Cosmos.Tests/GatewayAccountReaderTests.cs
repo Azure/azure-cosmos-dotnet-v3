@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using System.Threading;
     using System.Net;
-    using System.Runtime.CompilerServices;
 
     /// <summary>
     /// Tests for <see cref="GatewayAccountReader"/>.
@@ -21,84 +20,36 @@ namespace Microsoft.Azure.Cosmos
     public class GatewayAccountReaderTests
     {
         [TestMethod]
-        public void GatewayAccountReader_HttpClientFactory()
-        {
-            HttpClient staticHttpClient = new HttpClient();
-
-            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
-            mockFactory.Setup(f => f()).Returns(staticHttpClient);
-
-            GatewayAccountReader accountReader = new GatewayAccountReader(
-                new Uri("https://localhost"),
-                Mock.Of<IComputeHash>(),
-                false,
-                null,
-                new ConnectionPolicy(),
-                ApiType.None,
-                mockFactory.Object);
-
-            Mock.Get(mockFactory.Object)
-                .Verify(f => f(), Times.Once);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void GatewayAccountReader_HttpClientFactory_IfNull()
-        {
-            HttpClient staticHttpClient = null;
-
-            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
-            mockFactory.Setup(f => f()).Returns(staticHttpClient);
-
-            GatewayAccountReader accountReader = new GatewayAccountReader(
-                new Uri("https://localhost"),
-                Mock.Of<IComputeHash>(),
-                false,
-                null,
-                new ConnectionPolicy(),
-                ApiType.None,
-                mockFactory.Object);
-        }
-
-        [TestMethod]
         public async Task GatewayAccountReader_MessageHandler()
         {
             HttpMessageHandler messageHandler = new CustomMessageHandler();
             HttpClient staticHttpClient = new HttpClient(messageHandler);
 
-            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
-            mockFactory.Setup(f => f()).Returns(staticHttpClient);
-
             GatewayAccountReader accountReader = new GatewayAccountReader(
                 new Uri("https://localhost"),
                 Mock.Of<IComputeHash>(),
                 false,
                 null,
                 new ConnectionPolicy(),
-                ApiType.None,
-                mockFactory.Object);
+                staticHttpClient);
 
             DocumentClientException exception = await Assert.ThrowsExceptionAsync<DocumentClientException>(() => accountReader.InitializeReaderAsync());
             Assert.AreEqual(HttpStatusCode.Conflict, exception.StatusCode);
-
-            Mock.Get(mockFactory.Object)
-                .Verify(f => f(), Times.Once);
         }
 
         [TestMethod]
-        public async Task DocumentClient_GetHttpClientFactory_WithHandler()
+        public async Task DocumentClient_BuildHttpClientFactory_WithHandler()
         {
             HttpMessageHandler messageHandler = new CustomMessageHandler();
             ConnectionPolicy connectionPolicy = new ConnectionPolicy();
-            Func<HttpClient> factory = DocumentClient.GetHttpClientFactory(connectionPolicy, messageHandler);
-            HttpClient httpClient = factory();
+            HttpClient httpClient = DocumentClient.BuildHttpClient(connectionPolicy, ApiType.None, messageHandler);
             Assert.IsNotNull(httpClient);
             HttpResponseMessage response = await httpClient.GetAsync("https://localhost");
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
         }
 
         [TestMethod]
-        public void DocumentClient_GetHttpClientFactory_WithFactory()
+        public void DocumentClient_BuildHttpClientFactory_WithFactory()
         {
             HttpClient staticHttpClient = new HttpClient();
 
@@ -110,8 +61,8 @@ namespace Microsoft.Azure.Cosmos
                 HttpClientFactory = mockFactory.Object
             };
 
-            Func<HttpClient> factory = DocumentClient.GetHttpClientFactory(connectionPolicy, messageHandler: null);
-            HttpClient httpClient = factory();
+            HttpClient httpClient = DocumentClient.BuildHttpClient(connectionPolicy, ApiType.None, messageHandler: null);
+            Assert.IsNotNull(httpClient);
             Assert.IsNotNull(httpClient);
 
             Mock.Get(mockFactory.Object)

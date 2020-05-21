@@ -307,13 +307,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             return new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 Cosmos.ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
-                new Cosmos.UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
         }
 
         private static Mock<IAddressResolver> GetMockAddressCache(AddressInformation[] addressInformation)

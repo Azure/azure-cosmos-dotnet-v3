@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using System.Threading;
     using System.Net;
-    using System.Runtime.CompilerServices;
 
     /// <summary>
     /// Tests for <see cref="GatewayAddressCache"/>.
@@ -21,46 +20,6 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class GatewayAddressCacheTests
     {
-        [TestMethod]
-        public void GatewayAddressCache_HttpClientFactory()
-        {
-            HttpClient staticHttpClient = new HttpClient();
-
-            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
-            mockFactory.Setup(f => f()).Returns(staticHttpClient);
-
-            GatewayAddressCache addressCache = new GatewayAddressCache(
-                new Uri("https://localhost"),
-                Documents.Client.Protocol.Https,
-                Mock.Of<IAuthorizationTokenProvider>(),
-                new Documents.UserAgentContainer(),
-                Mock.Of<IServiceConfigurationReader>(),
-                TimeSpan.FromSeconds(60),
-                mockFactory.Object);
-
-            Mock.Get(mockFactory.Object)
-                .Verify(f => f(), Times.Once);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void GatewayAddressCache_HttpClientFactory_IfNull()
-        {
-            HttpClient staticHttpClient = null;
-
-            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
-            mockFactory.Setup(f => f()).Returns(staticHttpClient);
-
-            GatewayAddressCache addressCache = new GatewayAddressCache(
-                new Uri("https://localhost"),
-                Documents.Client.Protocol.Https,
-                Mock.Of<IAuthorizationTokenProvider>(),
-                new Documents.UserAgentContainer(),
-                Mock.Of<IServiceConfigurationReader>(),
-                TimeSpan.FromSeconds(60),
-                mockFactory.Object);
-        }
-
         [TestMethod]
         public void GatewayAddressCache_MessageHandler()
         {
@@ -74,10 +33,8 @@ namespace Microsoft.Azure.Cosmos
                 new Uri("https://localhost"),
                 Documents.Client.Protocol.Https,
                 Mock.Of<IAuthorizationTokenProvider>(),
-                new Documents.UserAgentContainer(),
                 Mock.Of<IServiceConfigurationReader>(),
-                TimeSpan.FromSeconds(60),
-                mockFactory.Object);
+                staticHttpClient);
 
             Mock.Get(mockFactory.Object)
                 .Verify(f => f(), Times.Once);
