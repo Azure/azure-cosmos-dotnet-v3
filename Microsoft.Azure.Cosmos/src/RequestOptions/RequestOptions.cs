@@ -31,12 +31,9 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
-        /// Application opted Cosmos request headers which are sent to Cosmos service part of request execution.
-        /// Provided headers are the final values for the headers.
+        /// Application opted Cosmos request conext which flow through with the <see cref="RequestMessage" />.
+        /// Context will be available through handlers.
         /// </summary>
-        /// <remarks>
-        /// Only Cosmos service supported request headers will be sent to service, others might get discarded.
-        /// </remarks>
 #if PREVIEW
         public
 #else
