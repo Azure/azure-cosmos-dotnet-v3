@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class RequestOptions
     {
-        internal Dictionary<string, object> Properties { get; set; }
-
         /// <summary>
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
@@ -44,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        IReadOnlyDictionary<string, string> CustomRequestHeaders { get; set; }
+        IReadOnlyDictionary<string, object> Properties { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -93,15 +91,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.IfNoneMatchEtag != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
-            }
-
-            // Include custom headers if-any
-            if (this.CustomRequestHeaders != null)
-            {
-                foreach (KeyValuePair<string, string> entry in this.CustomRequestHeaders)
-                {
-                    request.Headers.Add(entry.Key, entry.Value);
-                }
             }
         }
 

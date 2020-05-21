@@ -1038,12 +1038,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .InternalKey
                             .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
 
+            Dictionary<string, object> properties = new Dictionary<string, object>()
+            {
+                { WFConstants.BackendHeaders.EffectivePartitionKeyString, epk },
+            };
+
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions
             {
                 IsEffectivePartitionKeyRouting = true,
-                Properties = new Dictionary<string, object>()
+                Properties = properties,
             };
-            itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             ResponseMessage response = await this.Container.ReadItemStreamAsync(
                 Guid.NewGuid().ToString(),
@@ -1062,9 +1066,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 IsEffectivePartitionKeyRouting = true,
-                Properties = new Dictionary<string, object>()
+                Properties = properties,
             };
-            queryRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
                     queryText: "SELECT * FROM root",
@@ -1816,11 +1819,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
 
+            Dictionary<string, object> properties = new Dictionary<string, object>()
+            {
+                { customHeaderName, customHeaderValue},
+            };
+
             ItemRequestOptions ro = new ItemRequestOptions();
-            ro.CustomRequestHeaders = new Dictionary<string, string>()
-                {
-                    { customHeaderName, customHeaderValue},
-                };
+            ro.Properties = properties;
 
             ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(
                 partitionKey: new Cosmos.PartitionKey(temp.status),
