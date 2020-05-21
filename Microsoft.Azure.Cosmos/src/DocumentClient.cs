@@ -1092,7 +1092,7 @@ namespace Microsoft.Azure.Cosmos
             this.mediaClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept,
                 RuntimeConstants.MediaTypes.Any);
 
-            this.httpClient = DocumentClient.BuildHttpClient(connectionPolicy, this.ApiType, this.httpMessageHandler);
+            this.httpClient = DocumentClient.BuildHttpClient(this.ConnectionPolicy, this.ApiType, this.httpMessageHandler);
 
             if (sessionContainer != null)
             {
