@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
-        /// Application opted Cosmos request conext which flow through with the <see cref="RequestMessage" />.
+        /// Application opted Cosmos request conext that flow through with the <see cref="RequestMessage" />.
         /// Context will be available through handlers.
         /// </summary>
 #if PREVIEW

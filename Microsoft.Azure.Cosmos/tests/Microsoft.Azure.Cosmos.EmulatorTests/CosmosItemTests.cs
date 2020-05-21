@@ -1807,9 +1807,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                if (resourceOperation.resourceType == ResourceType.Document &&
                                     resourceOperation.operationType == OperationType.Create)
                                {
-                                   string value = request.Headers.Get(customHeaderName);
+                                   bool customHeaderExists = request.Properties.TryGetValue(customHeaderName, out object value);
 
-                                   Assert.IsNotNull(value);
+                                   Assert.IsTrue(customHeaderExists);
                                    Assert.AreEqual(customHeaderValue, value);
                                }
                            }));
