@@ -26,9 +26,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         /// <summary>
         /// Initializes a new instance of the <see cref="MockedItemBenchmark"/> class.
         /// </summary>
-        public MockedItemBenchmarkHelper(bool useCustomSerialzier = false)
+        public MockedItemBenchmarkHelper(bool useCustomSerializer = false)
         {
-            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerialzier);
+            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer);
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
 
             using (FileStream tmp = File.OpenRead("samplepayload.json"))

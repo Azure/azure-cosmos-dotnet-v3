@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 new MockedItemStreamBenchmark(),
                 new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
-                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(true) },
+                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: true) },
             };
 
         [Params(ScenarioType.Stream, ScenarioType.OfT, ScenarioType.OfTCustom)]

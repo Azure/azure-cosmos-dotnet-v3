@@ -15,10 +15,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     {
         public MockedItemBenchmarkHelper BenchmarkHelper { get; set; }
 
-        /// <summary>
-        /// Benchmark for CreateItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
         public async Task CreateItem()
         {
@@ -32,10 +28,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        /// <summary>
-        /// Benchmark for UpsertItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
         public async Task UpsertItem()
         {
@@ -49,10 +41,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        /// <summary>
-        /// Benchmark for ReadItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
         public async Task ReadItemNotExists()
         {
@@ -68,10 +56,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        /// <summary>
-        /// Benchmark for ReadItemStreamAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
         public async Task ReadItemExists()
         {
@@ -85,10 +69,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        /// <summary>
-        /// Benchmark for ReplaceItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
         public async Task UpdateItem()
         {
@@ -103,10 +83,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        /// <summary>
-        /// Benchmark for DeleteItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
         public async Task DeleteItemExists()
         {
@@ -120,10 +96,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        /// <summary>
-        /// Benchmark for DeleteItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
         public async Task DeleteItemNotExists()
         {
@@ -138,10 +110,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        /// <summary>
-        /// Benchmark for DeleteItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
         public async Task ReadFeed()
         {

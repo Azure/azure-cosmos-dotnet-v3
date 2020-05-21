@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<GlobalEndpointManager> globalEndpointManager;
 
         public static CosmosClient CreateMockCosmosClient(
-            bool useCustomSerialzier = false,
+            bool useCustomSerializer = false,
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             DocumentClient documentClient = new MockDocumentClient();
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             cosmosClientBuilder.WithConnectionModeDirect();
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
-            if (useCustomSerialzier)
+            if (useCustomSerializer)
             {
                 cosmosClientBuilder.WithSerializerOptions(
                     new CosmosSerializationOptions()
