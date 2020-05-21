@@ -3,10 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class SqlNumberLiteral : SqlLiteral
     {
@@ -19,15 +17,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x));
 
         private SqlNumberLiteral(Number64 value)
-            : base(SqlObjectKind.NumberLiteral)
         {
             this.Value = value;
         }
 
-        public Number64 Value
-        {
-            get;
-        }
+        public Number64 Value { get; }
 
         public static SqlNumberLiteral Create(Number64 number64)
         {
@@ -50,29 +44,14 @@ namespace Microsoft.Azure.Cosmos.Sql
             return sqlNumberLiteral;
         }
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlLiteralVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlLiteralVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor) => visitor.Visit(this);
     }
 }

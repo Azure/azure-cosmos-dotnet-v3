@@ -89,6 +89,20 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 <# } #>
 <# } #>
 
+<#  foreach (string curatedDoc in curatedDocs) { #>
+<#  foreach (SerializationFormat sourceFormat in Enum.GetValues(typeof(SerializationFormat))) { if (sourceFormat == SerializationFormat.NewtonsoftText) { continue; } #>
+        [Benchmark]
+        public void <#= curatedDoc #>_<#= sourceFormat #>Navigator_To_NewtonsoftTextWriter()
+        {
+            JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
+                payload: JsonRoundtripBenchmark.<#= curatedDoc #>Data,
+                sourceFormat: SerializationFormat.<#= sourceFormat #>,
+                destinationFormat: SerializationFormat.NewtonsoftText);
+        }
+
+<# } #>
+<# } #>
+
         private static void ExecuteReaderBenchmark(
             CurratedDocsPayload payload,
             SerializationFormat sourceFormat,
@@ -129,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             {
                 SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
+                SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 
@@ -174,6 +189,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 
                 string path = $"TestJsons/{name}.json";
                 string json = TextFileConcatenation.ReadMultipartFile(path);
+                json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 100);
 
                 ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                 ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);

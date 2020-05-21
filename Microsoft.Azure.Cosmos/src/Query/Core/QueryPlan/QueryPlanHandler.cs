@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         /// <summary>
         /// Used in the compute gateway to support legacy gateways query execution pattern.
         /// </summary>
-        public async Task<((Exception, PartitionedQueryExecutionInfo), bool)> TryGetQueryInfoAndIfSupportedAsync(
+        public async Task<TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)>> TryGetQueryInfoAndIfSupportedAsync(
             QueryFeatures supportedQueryFeatures,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
@@ -90,16 +90,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 partitionKeyDefinition,
                 hasLogicalPartitionKey,
                 cancellationToken);
-            if (!tryGetQueryInfo.Succeeded)
+            if (tryGetQueryInfo.Failed)
             {
-                // Failed to get QueryInfo, so vacously not supported.
-                return ((tryGetQueryInfo.Exception, null), false);
+                return TryCatch<(PartitionedQueryExecutionInfo, bool)>.FromException(tryGetQueryInfo.Exception);
             }
 
             QueryFeatures neededQueryFeatures = QueryPlanSupportChecker.GetNeededQueryFeatures(
                 tryGetQueryInfo.Result.QueryInfo,
                 supportedQueryFeatures);
-            return ((null, tryGetQueryInfo.Result), neededQueryFeatures == QueryFeatures.None);
+            return TryCatch<(PartitionedQueryExecutionInfo, bool)>.FromResult((tryGetQueryInfo.Result, neededQueryFeatures == QueryFeatures.None));
         }
 
         private async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetQueryInfoAsync(

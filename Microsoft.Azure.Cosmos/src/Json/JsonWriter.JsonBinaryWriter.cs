@@ -63,14 +63,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
-            /// <param name="skipValidation">Whether to skip validation on the JsonObjectState.</param>
             /// <param name="jsonStringDictionary">The JSON string dictionary used for user string encoding.</param>
             /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
             public JsonBinaryWriter(
-                bool skipValidation,
                 JsonStringDictionary jsonStringDictionary = null,
                 bool serializeCount = false)
-                : base(skipValidation)
             {
                 this.binaryWriter = new JsonBinaryMemoryWriter();
                 this.bufferedContexts = new Stack<BeginOffsetAndCount>();

@@ -5,8 +5,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     internal abstract class SqlCollection : SqlObject
     {
-        protected SqlCollection(SqlObjectKind kind)
-            : base(kind)
+        protected SqlCollection()
         {
         }
 
