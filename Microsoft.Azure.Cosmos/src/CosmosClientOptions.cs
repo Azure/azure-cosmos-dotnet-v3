@@ -203,9 +203,11 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The default value is 9. This means in the case where the request is rate limited,
         /// the same request will be issued for a maximum of 10 times to the server before
-        /// an error is returned to the application. If the value of this property is set to 0,
-        /// there will be no automatic retry on rate limiting requests from the client and the exception
-        /// needs to be handled at the application level.
+        /// an error is returned to the application.
+        ///
+        /// If the value of this property is set to 0, there will be no automatic retry on rate
+        /// limiting requests from the client and the exception needs to be handled at the
+        /// application level.
         /// </value>
         /// <remarks>
         /// <para>
@@ -234,7 +236,9 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// When a request fails due to a rate limiting error, the service sends back a response that
         /// contains a value indicating the client should not retry before the <see cref="Microsoft.Azure.Cosmos.CosmosException.RetryAfter"/> time period has
-        /// elapsed. This property allows the application to set a maximum wait time for all retry attempts.
+        /// elapsed.
+        ///
+        /// This property allows the application to set a maximum wait time for all retry attempts.
         /// If the cumulative wait time exceeds the this value, the client will stop retrying and return the error to the application.
         /// </para>
         /// <para>
