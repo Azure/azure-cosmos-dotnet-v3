@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
+    using BenchmarkDotNet.Columns;
+    using BenchmarkDotNet.Configs;
 
     public enum ScenarioType
     {
@@ -15,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     }
 
     [MemoryDiagnoser]
+    [Config(typeof(ItemBenchmarkConfig))]
     public class MockedItemBenchmark : IItemBenchmark
     {
         public static readonly IItemBenchmark[] IterParameters = new IItemBenchmark[]
@@ -85,6 +88,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task UpsertItem()
         {
             await this.CurrentBenchmark.UpsertItem();
+        }
+
+        private class ItemBenchmarkConfig : ManualConfig
+        {
+            public ItemBenchmarkConfig()
+            {
+                this.Add(StatisticColumn.Q3);
+                this.Add(StatisticColumn.P80);
+                this.Add(StatisticColumn.P85);
+                this.Add(StatisticColumn.P90);
+                this.Add(StatisticColumn.P95);
+                this.Add(StatisticColumn.P100);
+            }
         }
     }
 }

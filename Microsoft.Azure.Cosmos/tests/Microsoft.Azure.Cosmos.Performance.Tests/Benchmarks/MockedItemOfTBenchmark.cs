@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     {
         public MockedItemBenchmarkHelper BenchmarkHelper { get; set; }
 
-        [Benchmark]
         public async Task CreateItem()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync<ToDoActivity>(
@@ -28,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task UpsertItem()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync<ToDoActivity>(
@@ -41,7 +39,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task ReadItemNotExists()
         {
             try
@@ -56,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task ReadItemExists()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
@@ -69,7 +65,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task UpdateItem()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync<ToDoActivity>(
@@ -83,7 +78,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task DeleteItemExists()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
@@ -96,7 +90,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task DeleteItemNotExists()
         {
             try
@@ -110,7 +103,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task ReadFeed()
         {
             FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>();
