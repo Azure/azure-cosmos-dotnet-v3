@@ -139,48 +139,5 @@
                 }
             }
         }
-
-        [Benchmark]
-        public void CosmosElementsToFindArray()
-        {
-            using (MemoryStream ms = new MemoryStream(this.payloadBytes))
-            {
-                CosmosArray array = CosmosElementSerializer.ToCosmosElements(
-                    ms,
-                    Documents.ResourceType.Document,
-                    null);
-
-                using (MemoryStream memoryStream = CosmosElementSerializer.ElementsToMemoryStream(
-                    array,
-                    null))
-                {
-                    if (ms.Length == memoryStream.Length)
-                    {
-                        throw new Exception();
-                    }
-                }
-            }
-        }
-
-        [Benchmark]
-        public void CosmosElementsToFindArrayWithSerialization()
-        {
-            using (MemoryStream ms = new MemoryStream(this.payloadBytes))
-            {
-                CosmosArray array = CosmosElementSerializer.ToCosmosElements(
-                    ms,
-                    Documents.ResourceType.Document,
-                    null);
-
-                IReadOnlyList<ToDoActivity> results = CosmosElementSerializer.GetResources<ToDoActivity>(
-                    array,
-                    this.serializerCore);
-
-                if (results.Count != 1000)
-                {
-                    throw new Exception();
-                }
-            }
-        }
     }
 }
