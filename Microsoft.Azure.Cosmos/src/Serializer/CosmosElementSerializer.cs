@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.Serializer
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Documents;
 
 #if INTERNAL
@@ -22,132 +22,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
 #endif
     static class CosmosElementSerializer
     {
-        /// <summary>
-        /// Converts a list of CosmosElements into a memory stream.
-        /// </summary>
-        /// <param name="memoryStream">The memory stream response from Azure Cosmos</param>
-        /// <param name="resourceType">The resource type</param>
-        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
-        /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
-        internal static CosmosArray ToCosmosElements(
-            MemoryStream memoryStream,
-            ResourceType resourceType,
-            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
-        {
-            if (!memoryStream.CanRead)
-            {
-                throw new InvalidDataException("Stream can not be read");
-            }
-
-            // Execute the callback an each element of the page
-            // For example just could get a response like this
-            // {
-            //    "_rid": "qHVdAImeKAQ=",
-            //    "Documents": [{
-            //        "id": "03230",
-            //        "_rid": "qHVdAImeKAQBAAAAAAAAAA==",
-            //        "_self": "dbs\/qHVdAA==\/colls\/qHVdAImeKAQ=\/docs\/qHVdAImeKAQBAAAAAAAAAA==\/",
-            //        "_etag": "\"410000b0-0000-0000-0000-597916b00000\"",
-            //        "_attachments": "attachments\/",
-            //        "_ts": 1501107886
-            //    }],
-            //    "_count": 1
-            // }
-            // And you should execute the callback on each document in "Documents".
-
-            long responseLengthBytes = memoryStream.Length;
-            ReadOnlyMemory<byte> content;
-            if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
-            {
-                content = buffer;
-            }
-            else
-            {
-                content = memoryStream.ToArray();
-            }
-
-            IJsonNavigator jsonNavigator;
-
-            // Use the users custom navigator
-            if (cosmosSerializationOptions != null)
-            {
-                jsonNavigator = cosmosSerializationOptions.CreateCustomNavigatorCallback(content);
-                if (jsonNavigator == null)
-                {
-                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
-                }
-            }
-            else
-            {
-                jsonNavigator = JsonNavigator.Create(content);
-            }
-
-            string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
-
-            CosmosArray documents;
-            if ((jsonNavigator.SerializationFormat == JsonSerializationFormat.Binary) && jsonNavigator.TryGetObjectProperty(
-                jsonNavigator.GetRootNode(),
-                "stringDictionary",
-                out ObjectProperty stringDictionaryProperty))
-            {
-                // Payload is string dictionary encode so we have to decode using the string dictionary.
-                IJsonNavigatorNode stringDictionaryNode = stringDictionaryProperty.ValueNode;
-                JsonStringDictionary jsonStringDictionary = JsonStringDictionary.CreateFromStringArray(
-                    jsonNavigator
-                        .GetArrayItems(stringDictionaryNode)
-                        .Select(item => jsonNavigator.GetStringValue(item))
-                        .ToList());
-
-                if (!jsonNavigator.TryGetObjectProperty(
-                    jsonNavigator.GetRootNode(),
-                    resourceName,
-                    out ObjectProperty resourceProperty))
-                {
-                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-                }
-
-                IJsonNavigatorNode resources = resourceProperty.ValueNode;
-
-                if (!jsonNavigator.TryGetBufferedBinaryValue(resources, out ReadOnlyMemory<byte> resourceBinary))
-                {
-                    resourceBinary = jsonNavigator.GetBinaryValue(resources);
-                }
-
-                IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary, jsonStringDictionary);
-
-                if (!(CosmosElement.Dispatch(
-                    navigatorWithStringDictionary,
-                    navigatorWithStringDictionary.GetRootNode()) is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-                }
-
-                documents = cosmosArray;
-            }
-            else
-            {
-                // Payload is not string dictionary encoded so we can just do for the documents as is.
-                if (!jsonNavigator.TryGetObjectProperty(
-                    jsonNavigator.GetRootNode(),
-                    resourceName,
-                    out ObjectProperty objectProperty))
-                {
-                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-                }
-
-                if (!(CosmosElement.Dispatch(
-                    jsonNavigator,
-                    objectProperty.ValueNode) is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-                }
-
-                documents = cosmosArray;
-            }
-
-            return documents;
-        }
-
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>
@@ -169,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
             }
             else
             {
-                jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             }
 
             // The stream contract should return the same contract as read feed.
@@ -213,6 +87,65 @@ namespace Microsoft.Azure.Cosmos.Serializer
             jsonWriter.WriteObjectEnd();
 
             return GetMemoryStreamFromJsonWriter(jsonWriter);
+        }
+
+        public static async Task RewriteStreamAsTextAsync(ResponseMessage responseMessage, QueryRequestOptions requestOptions)
+        {
+            // Rewrite the payload to be in the specified format.
+            // If it's already in the correct format, then the following will be a memcpy.
+            MemoryStream memoryStream;
+            if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
+            {
+                memoryStream = responseContentAsMemoryStream;
+            }
+            else
+            {
+                memoryStream = new MemoryStream();
+                await responseMessage.Content.CopyToAsync(memoryStream);
+            }
+
+            ReadOnlyMemory<byte> buffer;
+            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+            {
+                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
+            }
+            else
+            {
+                buffer = memoryStream.ToArray();
+            }
+
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
+            if (jsonNavigator.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                // Exit to avoid the memory allocation.
+                return;
+            }
+
+            IJsonWriter jsonWriter;
+            if (requestOptions?.CosmosSerializationFormatOptions != null)
+            {
+                jsonWriter = requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
+            }
+            else
+            {
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            }
+
+            jsonWriter.WriteJsonNode(jsonNavigator, jsonNavigator.GetRootNode());
+
+            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+            MemoryStream rewrittenMemoryStream;
+            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
+            {
+                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
+            }
+            else
+            {
+                byte[] toArray = result.ToArray();
+                rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
+            }
+
+            responseMessage.Content = rewrittenMemoryStream;
         }
 
         internal static IReadOnlyList<T> GetResources<T>(

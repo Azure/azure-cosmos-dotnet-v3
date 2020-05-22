@@ -7,13 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -108,55 +106,8 @@ namespace Microsoft.Azure.Cosmos
             this.ContinuationToken = responseMessage.Headers.ContinuationToken;
             this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
 
-            // Rewrite the payload to be in the specified format.
-            // If it's already in the correct format, then the following will be a memcpy.
-            MemoryStream memoryStream;
-            if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
-            {
-                memoryStream = responseContentAsMemoryStream;
-            }
-            else
-            {
-                memoryStream = new MemoryStream();
-                await responseMessage.Content.CopyToAsync(memoryStream);
-            }
-
-            ReadOnlyMemory<byte> buffer;
-            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
-            {
-                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
-            }
-            else
-            {
-                buffer = memoryStream.ToArray();
-            }
-
-            IJsonReader jsonReader = JsonReader.Create(buffer);
-            IJsonWriter jsonWriter;
-            if (this.requestOptions?.CosmosSerializationFormatOptions != null)
-            {
-                jsonWriter = this.requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
-            }
-            else
-            {
-                jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-            }
-
-            jsonWriter.WriteAll(jsonReader);
-
-            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
-            MemoryStream rewrittenMemoryStream;
-            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
-            {
-                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
-            }
-            else
-            {
-                byte[] toArray = result.ToArray();
-                rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
-            }
-
-            responseMessage.Content = rewrittenMemoryStream;
+            await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
+            
             return responseMessage;
         }
 
