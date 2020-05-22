@@ -179,6 +179,31 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
+        internal override async Task<TResult> OperationHelperAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+        {
+            using (CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
+                operationName,
+                requestOptions))
+            {
+                return await TaskHelper.RunInlineIfNeededAsync<TResult>(
+                    diagnosticsContext,
+                    () => task(diagnosticsContext));
+            }
+        }
+
+        internal override CosmosDiagnosticsContext CreateDiagnosticContext(
+            string operationName,
+            RequestOptions requestOptions)
+        {
+            return CosmosDiagnosticsContextCore.Create(
+                operationName,
+                requestOptions,
+                this.UserAgent);
+        }
+
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
@@ -257,21 +282,23 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal override Task<T> ProcessResourceOperationAsync<T>(
+        internal override Task<TResponse> ProcessResourceOperationAsync<TInput, TResponse>(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
-            Stream streamPayload,
+            TInput item,
             Action<RequestMessage> requestEnricher,
-            Func<ResponseMessage, T> responseCreator,
+            Func<ResponseMessage, TResponse> responseCreator,
             CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
-            return this.RequestHandler.SendAsync<T>(
+            Stream streamPayload = this.serializerCore.ToStream<TInput>(item);
+
+            return this.RequestHandler.SendAsync<TResponse>(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -290,22 +317,25 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
-            CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore();
-            ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
-            try
+            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(nameof(GetCachedContainerPropertiesAsync)))
             {
-                using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+                try
                 {
-                    return await collectionCache.ResolveByNameAsync(
-                        HttpConstants.Versions.CurrentVersion,
-                        containerUri,
-                        cancellationToken);
+                    using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                    {
+                        return await collectionCache.ResolveByNameAsync(
+                            HttpConstants.Versions.CurrentVersion,
+                            containerUri,
+                            cancellationToken);
+                    }
+                }
+                catch (DocumentClientException ex)
+                {
+                    throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
                 }
             }
-            catch (DocumentClientException ex)
-            {
-                throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
-            }
+
         }
 
         internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerInternal container)

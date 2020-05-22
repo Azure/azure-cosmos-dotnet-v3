@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         public ResponseMessage()
         {
             this.Headers = new Headers();
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = CosmosDiagnosticsContextCore.Create(nameof(ResponseMessage));
             this.CosmosException = null;
         }
 
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.Headers = new Headers();
-            this.DiagnosticsContext = requestMessage?.DiagnosticsContext ?? new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = requestMessage?.DiagnosticsContext ?? CosmosDiagnosticsContextCore.Create(nameof(ResponseMessage));
 
             if (!string.IsNullOrEmpty(errorMessage))
             {

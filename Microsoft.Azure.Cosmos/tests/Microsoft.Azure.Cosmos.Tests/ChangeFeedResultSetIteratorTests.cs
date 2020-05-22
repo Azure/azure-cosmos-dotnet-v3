@@ -43,9 +43,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     ETag = "ShouldNotContainThis"
                 },
                 cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"),
-                diagnostics: new CosmosDiagnosticsContextCore());
+                diagnostics: MockCosmosUtil.CreateDiagnosticsContext());
 
-            mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
+            mockContext.SetupSequence(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
@@ -54,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(!firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should not contain the second continuation");
             Assert.AreEqual(HttpStatusCode.NotFound, firstRequest.StatusCode);
 
-            mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
+            mockContext.Verify(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
@@ -78,7 +77,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
@@ -101,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage secondResponse = new ResponseMessage(HttpStatusCode.OK);
             secondResponse.Headers.ETag = "SecondContinuation";
 
-            mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
+            mockContext.SetupSequence(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
@@ -110,7 +108,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
@@ -125,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
             Assert.AreEqual(HttpStatusCode.OK, firstRequest.StatusCode);
 
-            mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
+            mockContext.Verify(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
@@ -134,7 +131,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
@@ -159,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage thirdResponse = new ResponseMessage(HttpStatusCode.NotModified);
             thirdResponse.Headers.ETag = "ThirdContinuation";
 
-            mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
+            mockContext.SetupSequence(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
@@ -168,7 +164,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
@@ -185,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(thirdResponse.Headers.ETag), "Response should contain the third continuation");
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
 
-            mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
+            mockContext.Verify(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
@@ -194,7 +189,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
@@ -215,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
 
-            mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
+            mockContext.SetupSequence(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
@@ -224,7 +218,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
@@ -237,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
 
-            mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
+            mockContext.Verify(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
@@ -246,7 +239,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Once);
         }

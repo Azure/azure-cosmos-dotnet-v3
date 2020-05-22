@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -203,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
                 
             };
 
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnostics = MockCosmosUtil.CreateDiagnosticsContext();
 
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
                 error.ToString(),
@@ -238,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             string message)
         {
-            exception.DiagnosticsContext.GetOverallScope().Dispose();
+            exception.DiagnosticsContext.Dispose();
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));

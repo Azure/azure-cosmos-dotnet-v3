@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
             string effectivePartitionKeyString = null;
             if (partitionKey != null)
             {
-                // Dis-ambiguate the NonePK if used 
+                // Disambiguate the NonePK if used 
                 Documents.Routing.PartitionKeyInternal partitionKeyInternal = null;
                 if (partitionKey.Value.IsNone)
                 {
@@ -128,36 +128,41 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions.MaxItemCount = pageSize;
 
-            ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: requestOptions.PartitionKey,
-                cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
-                requestEnricher: (cosmosRequestMessage) =>
-                {
-                    this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
-                    cosmosRequestMessage.Headers.Add(
-                        HttpConstants.HttpHeaders.IsContinuationExpected,
-                        isContinuationExpected.ToString());
-                    QueryRequestOptions.FillContinuationToken(
-                        cosmosRequestMessage,
-                        continuationToken);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                },
-                diagnosticsContext: null,
-                cancellationToken: cancellationToken);
+            using (CosmosDiagnosticsContext diagnosticsContext = this.clientContext.CreateDiagnosticContext(
+                nameof(CosmosQueryClientCore),
+                requestOptions))
+            {
+                ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    partitionKey: requestOptions.PartitionKey,
+                    cosmosContainerCore: this.cosmosContainerCore,
+                    streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
+                    requestEnricher: (cosmosRequestMessage) =>
+                    {
+                        this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
+                        cosmosRequestMessage.Headers.Add(
+                            HttpConstants.HttpHeaders.IsContinuationExpected,
+                            isContinuationExpected.ToString());
+                        QueryRequestOptions.FillContinuationToken(
+                            cosmosRequestMessage,
+                            continuationToken);
+                        cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
+                        cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                    },
+                    diagnosticsContext: diagnosticsContext,
+                    cancellationToken: cancellationToken);
 
-            return this.GetCosmosElementResponse(
-                clientQueryCorrelationId,
-                requestOptions,
-                resourceType,
-                message,
-                partitionKeyRange,
-                queryPageDiagnostics);
+                return this.GetCosmosElementResponse(
+                    clientQueryCorrelationId,
+                    requestOptions,
+                    resourceType,
+                    message,
+                    partitionKeyRange,
+                    queryPageDiagnostics);
+            }
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(

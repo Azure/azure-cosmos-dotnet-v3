@@ -149,12 +149,12 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public FeedIterator<T> ToFeedIterator()
         {
-            return new FeedIteratorInlineCore<T>(this.CreateFeedIterator(true));
+            return this.CreateFeedIterator(true);
         }
 
         public FeedIterator ToStreamIterator()
         {
-            return new FeedIteratorInlineCore(this.CreateStreamIterator(true));
+            return this.CreateStreamIterator(true);
         }
 
         public void Dispose()
@@ -228,9 +228,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
 
             FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExcpected);
-            return new FeedIteratorInlineCore<T>(new FeedIteratorCore<T>(
+            return new FeedIteratorCore<T>(
                 streamIterator,
-                this.responseFactory.CreateQueryFeedUserTypeResponse<T>));
+                this.responseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
     }
 }

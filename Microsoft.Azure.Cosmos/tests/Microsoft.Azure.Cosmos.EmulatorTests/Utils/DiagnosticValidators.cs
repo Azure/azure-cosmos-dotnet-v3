@@ -52,9 +52,9 @@ namespace Microsoft.Azure.Cosmos
         {
             Assert.IsTrue((cosmosDiagnosticsContext.StartUtc - DateTime.UtcNow) < TimeSpan.FromHours(12), $"Start Time is not valid {cosmosDiagnosticsContext.StartUtc}");
             Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent.ToString(), new UserAgentContainer().UserAgent.ToString(), "User agent not set");
-            Assert.IsTrue(cosmosDiagnosticsContext.TotalRequestCount > 0, "No request found");
+            Assert.IsTrue(cosmosDiagnosticsContext.GetTotalRequestCount() > 0, "No request found");
             Assert.IsTrue(cosmosDiagnosticsContext.IsComplete(), "OverallClientRequestTime should be stopped");
-            Assert.IsTrue(cosmosDiagnosticsContext.GetClientElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
+            Assert.IsTrue(cosmosDiagnosticsContext.GetRunningElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
 
             string info = cosmosDiagnosticsContext.ToString();
             Assert.IsNotNull(info);
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(stats.FailedReplicas);
 
             // If all the request failed it's possible to not contact a region or replica.
-            if (stats.DiagnosticsContext.TotalRequestCount < stats.DiagnosticsContext.FailedRequestCount)
+            if (stats.DiagnosticsContext.GetTotalRequestCount() < stats.DiagnosticsContext.GetFailedRequestCount())
             {
                 Assert.IsTrue(stats.RegionsContacted.Count > 0);
                 Assert.IsTrue(stats.ContactedReplicas.Count > 0);
@@ -253,10 +253,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
-                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
                 // Buffered pages are normal and have 0 request. This causes most validation to fail.
-                if(cosmosDiagnosticsContext.TotalRequestCount > 0)
+                if(cosmosDiagnosticsContext.GetTotalRequestCount() > 0)
                 {
                     DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
                 }
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsFalse(this.isContextVisited, "Point operations should only have a single context");
                 this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
-                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
 
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsFalse(this.isContextVisited, "Point operations should only have a single context");
                 this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
-                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
 

@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage: null,
                 headers: headers,
                 cosmosException: null,
-                diagnostics: this.DiagnosticsContext ?? new CosmosDiagnosticsContextCore())
+                diagnostics: this.DiagnosticsContext ?? CosmosDiagnosticsContextCore.Create(nameof(TransactionalBatchOperationResult)))
             {
                 Content = this.ResourceStream
             };

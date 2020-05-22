@@ -40,10 +40,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnostics = MockCosmosUtil.CreateDiagnosticsContext();
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage, diagnosticsContext: diagnostics);
             
-            diagnostics.GetOverallScope().Dispose();
+            diagnostics.Dispose();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         cosmosException: cosmosException,
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContextCore());
+                        diagnostics: MockCosmosUtil.CreateDiagnosticsContext());
 
             using (Stream stream = queryResponse.Content)
             {
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContextCore());
+                        diagnostics: MockCosmosUtil.CreateDiagnosticsContext());
 
             QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
             List<ToDoItem> resultItems = new List<ToDoItem>(itemQueryResponse.Resource);
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContextCore());
+                        diagnostics: MockCosmosUtil.CreateDiagnosticsContext());
 
             QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);
             List<CosmosElement> resultItems = new List<CosmosElement>(itemQueryResponse.Resource);
@@ -273,6 +273,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
                 client: client.Object,
+                clientContext: new Mock<CosmosClientContext>().Object,
                 queryRequestOptions: queryRequestOptions,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -280,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
-                diagnosticsContext: new CosmosDiagnosticsContextCore(),
+                diagnosticsContext: MockCosmosUtil.CreateDiagnosticsContext(),
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
             CosmosQueryExecutionContext context = CosmosQueryExecutionContextFactory.Create(
@@ -347,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnosticsContext = MockCosmosUtil.CreateDiagnosticsContext();
             diagnosticsContext.AddDiagnosticsInternal( new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,

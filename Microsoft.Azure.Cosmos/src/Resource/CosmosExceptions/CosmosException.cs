@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Error = error;
 
             // Always have a diagnostic context. A new diagnostic will have useful info like user agent
-            this.DiagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContextCore.Create(nameof(CosmosException));
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
             this.Headers = new Headers();
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = CosmosDiagnosticsContextCore.Create(nameof(CosmosException));
         }
 
         /// <summary>

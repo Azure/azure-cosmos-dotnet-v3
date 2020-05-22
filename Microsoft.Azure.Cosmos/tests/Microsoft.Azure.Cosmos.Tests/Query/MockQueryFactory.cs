@@ -211,6 +211,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             return new CosmosQueryContextCore(
                 client: cosmosQueryClient,
+                clientContext: new Mock<CosmosClientContext>().Object,
                 queryRequestOptions: null,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -219,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 correlatedActivityId: Guid.NewGuid(),
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
-                diagnosticsContext: new CosmosDiagnosticsContextCore(),
+                diagnosticsContext: MockCosmosUtil.CreateDiagnosticsContext(),
                 containerResourceId: DefaultCollectionRid);
         }
 

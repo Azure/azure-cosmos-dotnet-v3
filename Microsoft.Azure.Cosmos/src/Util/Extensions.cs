@@ -71,7 +71,9 @@ namespace Microsoft.Azure.Cosmos
             return responseMessage;
         }
 
-        internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException documentClientException, RequestMessage requestMessage)
+        internal static ResponseMessage ToCosmosResponseMessage(
+            this DocumentClientException documentClientException,
+            RequestMessage requestMessage)
         {
             CosmosDiagnosticsContext diagnosticsContext = requestMessage?.DiagnosticsContext;
             if (requestMessage != null)
@@ -85,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                diagnosticsContext = new CosmosDiagnosticsContextCore();
+                diagnosticsContext = CosmosDiagnosticsContextCore.Create(nameof(ToCosmosResponseMessage));
             }
 
             CosmosException cosmosException = CosmosExceptionFactory.Create(

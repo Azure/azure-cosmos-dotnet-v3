@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             this.ContactedReplicas = new List<Uri>();
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContacted = new HashSet<Uri>();
-            this.DiagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContextCore.Create(nameof(CosmosClientSideRequestStatistics));
             this.DiagnosticsContext.AddDiagnosticsInternal(this);
         }
 

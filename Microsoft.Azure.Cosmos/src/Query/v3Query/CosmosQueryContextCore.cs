@@ -15,12 +15,14 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal class CosmosQueryContextCore : CosmosQueryContext
     {
+        private readonly CosmosClientContext clientContext;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly object diagnosticLock = new object();
         private CosmosDiagnosticsContext diagnosticsContext;
 
         public CosmosQueryContextCore(
             CosmosQueryClient client,
+            CosmosClientContext clientContext,
             QueryRequestOptions queryRequestOptions,
             ResourceType resourceTypeEnum,
             OperationType operationType,
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery,
                 containerResourceId)
         {
+            this.clientContext = clientContext;
             this.queryRequestOptions = queryRequestOptions;
             this.diagnosticsContext = diagnosticsContext;
         }
@@ -57,7 +60,9 @@ namespace Microsoft.Azure.Cosmos.Query
             lock (this.diagnosticLock)
             {
                 CosmosDiagnosticsContext current = this.diagnosticsContext;
-                this.diagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
+                this.diagnosticsContext = this.clientContext.CreateDiagnosticContext(
+                    nameof(CosmosQueryContextCore),
+                    this.queryRequestOptions);
                 return current;
             }
         }

@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -25,7 +24,10 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteAsync(conflict, partitionKey, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(DeleteAsync),
+                null,
+                (diagnostics) => base.DeleteAsync(diagnostics, conflict, partitionKey, cancellationToken));
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
@@ -33,10 +35,10 @@ namespace Microsoft.Azure.Cosmos
            string continuationToken = null,
            QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorInlineCore(base.GetConflictQueryStreamIterator(
+            return base.GetConflictQueryStreamIterator(
                 queryText,
                 continuationToken,
-                requestOptions));
+                requestOptions);
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
@@ -44,10 +46,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorInlineCore<T>(base.GetConflictQueryIterator<T>(
+            return base.GetConflictQueryIterator<T>(
                 queryText,
                 continuationToken,
-                requestOptions));
+                requestOptions);
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
@@ -55,10 +57,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorInlineCore(base.GetConflictQueryStreamIterator(
+            return base.GetConflictQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions));
+                requestOptions);
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
@@ -66,10 +68,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorInlineCore<T>(base.GetConflictQueryIterator<T>(
+            return base.GetConflictQueryIterator<T>(
                 queryDefinition,
                 continuationToken,
-                requestOptions));
+                requestOptions);
         }
 
         public override Task<ItemResponse<T>> ReadCurrentAsync<T>(
@@ -77,7 +79,10 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadCurrentAsync<T>(cosmosConflict, partitionKey, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadCurrentAsync),
+                null,
+                (diagnostics) => base.ReadCurrentAsync<T>(diagnostics, cosmosConflict, partitionKey, cancellationToken));
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)

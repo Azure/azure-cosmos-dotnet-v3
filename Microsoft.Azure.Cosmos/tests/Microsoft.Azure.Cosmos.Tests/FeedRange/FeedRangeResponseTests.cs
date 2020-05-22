@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 new RequestMessage(),
                 new Headers(),
                 CosmosExceptionFactory.CreateBadRequestException("test"),
-                CosmosDiagnosticsContext.Create(new RequestOptions()));
+                MockCosmosUtil.CreateDiagnosticsContext());
             original.Content = Mock.Of<MemoryStream>();
             Mock<FeedRangeContinuation> feedContinuation = new Mock<FeedRangeContinuation>();
 

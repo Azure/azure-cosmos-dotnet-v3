@@ -23,6 +23,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         public static readonly CosmosSerializerCore Serializer = new CosmosSerializerCore();
 
+        public static CosmosDiagnosticsContext CreateDiagnosticsContext()
+        {
+            return new CosmosDiagnosticsContextCore(
+                nameof(CreateDiagnosticsContext),
+                "DiagnosticValidatorUserAgentString");
+        }
+
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
             Cosmos.ConsistencyLevel? accountConsistencyLevel = null)

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -354,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                     disallowContinuationTokenMessage: null,
                     resourceType: Documents.ResourceType.Document,
                     "+o4fAPfXPzw="),
-                new CosmosDiagnosticsContextCore(),
+                MockCosmosUtil.CreateDiagnosticsContext(),
                 null);
 
             return cosmosResponse;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using Microsoft.Azure.Cosmos.Tests;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -9,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class BatchOperationResultTests
     {
-        static readonly CosmosDiagnosticsContext CosmosDiagnostics = new CosmosDiagnosticsContextCore();
+        static readonly CosmosDiagnosticsContext CosmosDiagnostics = MockCosmosUtil.CreateDiagnosticsContext();
         static TransactionalBatchOperationResult CreateTestResult() => new TransactionalBatchOperationResult(HttpStatusCode.Unused)
         {
             SubStatusCode = Documents.SubStatusCodes.CanNotAcquireOfferOwnerLock,

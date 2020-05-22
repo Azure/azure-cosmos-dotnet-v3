@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.ContinuationToken = continuationToken;
-            this.requestOptions = options;
+            this.RequestOptions = options;
             this.hasMoreResultsInternal = true;
         }
 
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        public QueryRequestOptions requestOptions { get; }
+        public QueryRequestOptions RequestOptions { get; }
 
         /// <summary>
         /// The Continuation Token
@@ -60,13 +60,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnostics.GetOverallScope())
-            {
-                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
-            }
+            return this.clientContext.OperationHelperAsync(
+                nameof(FeedIteratorCore),
+                this.RequestOptions,
+                async (diagnostics) =>
+                {
+                    return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                });
         }
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
@@ -87,9 +89,9 @@ namespace Microsoft.Azure.Cosmos
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
                operationType: operation,
-               requestOptions: this.requestOptions,
+               requestOptions: this.RequestOptions,
                cosmosContainerCore: null,
-               partitionKey: this.requestOptions?.PartitionKey,
+               partitionKey: this.RequestOptions?.PartitionKey,
                streamPayload: stream,
                requestEnricher: request =>
                {
@@ -106,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
             this.ContinuationToken = responseMessage.Headers.ContinuationToken;
             this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
 
-            await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
+            await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.RequestOptions);
             
             return responseMessage;
         }

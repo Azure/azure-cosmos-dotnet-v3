@@ -108,45 +108,47 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
-            using (diagnostics.GetOverallScope())
-            {
-                if (!this.lazyContainerRid.ValueInitialized)
+            return this.clientContext.OperationHelperAsync(
+                nameof(FeedRangeIteratorCore),
+                this.queryRequestOptions,
+                async (diagnostics) =>
                 {
-                    using (diagnostics.CreateScope("InitializeContainerResourceId"))
+                    if (!this.lazyContainerRid.ValueInitialized)
                     {
-                        TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
-                        if (!tryInitializeContainerRId.Succeeded)
+                        using (diagnostics.CreateScope("InitializeContainerResourceId"))
                         {
-                            CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
-                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
-                        }
-                    }
-
-                    using (diagnostics.CreateScope("InitializeContinuation"))
-                    {
-                        if (this.FeedRangeContinuation != null)
-                        {
-                            TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
-                            if (!validateContainer.Succeeded)
+                            TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
+                            if (!tryInitializeContainerRId.Succeeded)
                             {
-                                return CosmosExceptionFactory.CreateBadRequestException(
-                                    message: validateContainer.Exception.InnerException.Message,
-                                    innerException: validateContainer.Exception.InnerException,
-                                    diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                                CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
+                                return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                             }
                         }
-                        else
+
+                        using (diagnostics.CreateScope("InitializeContinuation"))
                         {
-                            await this.InitializeFeedContinuationAsync(cancellationToken);
+                            if (this.FeedRangeContinuation != null)
+                            {
+                                TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
+                                if (!validateContainer.Succeeded)
+                                {
+                                    return CosmosExceptionFactory.CreateBadRequestException(
+                                        message: validateContainer.Exception.InnerException.Message,
+                                        innerException: validateContainer.Exception.InnerException,
+                                        diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                                }
+                            }
+                            else
+                            {
+                                await this.InitializeFeedContinuationAsync(cancellationToken);
+                            }
                         }
                     }
-                }
 
-                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
-            }
+                    return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                });
         }
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
