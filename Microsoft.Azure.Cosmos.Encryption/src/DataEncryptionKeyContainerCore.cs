@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (ex.Message.Contains("Resource Not Found"))
                 {
-                    throw new ArgumentException($"Data Encryption Key with id: '{id}' not found.");
+                    throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(id);
                 }
 
                 throw;

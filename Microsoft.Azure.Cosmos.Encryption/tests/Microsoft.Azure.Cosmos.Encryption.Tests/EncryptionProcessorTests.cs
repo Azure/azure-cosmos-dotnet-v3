@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual("PathsToEncrypt includes a path: '/Invalid' not found.", ex.Message);
+                Assert.AreEqual("PathsToEncrypt includes a path: '/Invalid' which was not found.", ex.Message);
             }
         }
 

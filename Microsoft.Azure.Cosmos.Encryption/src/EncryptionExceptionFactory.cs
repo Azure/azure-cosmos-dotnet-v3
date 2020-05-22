@@ -35,5 +35,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 "Invalid authentication tag in cipher text.",
                 "cipherText");
         }
+
+        internal static Exception EncryptionKeyNotFoundException(string encryptionKeyId)
+        {
+            return new ArgumentException($"Data Encryption Key with id: '{encryptionKeyId}' not found.");
+        }
     }
 }

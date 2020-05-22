@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (propertyValueHolder == null)
                 {
-                    throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' not found.");
+                    throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
                 }
 
                 // Even null in the JSON is a JToken with Type Null
