@@ -7,7 +7,6 @@ namespace CosmosBenchmark
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.Tracing;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -186,6 +185,9 @@ namespace CosmosBenchmark
             long numberOfItemsToInsert,
             bool warmup)
         {
+            string databsaeName = container.Database.Id;
+            string containerName = container.Id;
+
             this.RequestUnitsConsumed[taskId] = 0;
             string partitionKeyProperty = partitionKeyPath.Replace("/", "");
             Dictionary<string, object> newDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(sampleJson);
@@ -219,7 +221,9 @@ namespace CosmosBenchmark
                                 Program.latencyHistogram.RecordValue(sw.ElapsedMilliseconds);
                                 if (sw.ElapsedMilliseconds > currentTraceLatency && itemResponse != null)
                                 {
-                                    LatencyEventSource.Instance.LatencyDiagnostics(
+                                    BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
+                                        databsaeName,
+                                        containerName,
                                         (int)sw.ElapsedMilliseconds, 
                                         itemResponse.Diagnostics.ToString());
                                 }
@@ -347,22 +351,6 @@ namespace CosmosBenchmark
 
             streamPayload.Position = 0;
             return streamPayload;
-        }
-
-        [EventSource(Name = "Azure.Cosmos.Benchmark")]
-        internal class LatencyEventSource : EventSource
-        {
-            public static LatencyEventSource Instance = new LatencyEventSource();
-
-            private LatencyEventSource() 
-            { 
-            }
-
-            [Event(1, Level = EventLevel.Informational)]
-            public void LatencyDiagnostics(int latencyinMs, string dianostics)
-            {
-                this.WriteEvent(1, latencyinMs, dianostics);
-            }
         }
     }
 }
