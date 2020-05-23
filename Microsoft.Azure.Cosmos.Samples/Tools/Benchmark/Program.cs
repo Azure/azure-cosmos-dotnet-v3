@@ -208,7 +208,6 @@ namespace CosmosBenchmark
 
                         }
 
-                        string partition = itemResponse.Headers.Session.Split(':')[0];
                         this.RequestUnitsConsumed[taskId] += itemResponse.Headers.RequestCharge;
                         Interlocked.Increment(ref this.itemsInserted);
                     }
