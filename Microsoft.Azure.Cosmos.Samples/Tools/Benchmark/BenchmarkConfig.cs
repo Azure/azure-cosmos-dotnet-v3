@@ -12,6 +12,9 @@ namespace CosmosBenchmark
 
     public class BenchmarkConfig
     {
+        [Option('w', Required = true, HelpText = "Workload type insert, read")]
+        public string WorkloadType { get; set; }
+
         [Option('e', Required = true, HelpText = "Cosmos account end point")]
         public string EndPoint { get; set; }
 
@@ -47,6 +50,19 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Min thread pool size")]
         public int MinThreadPoolSize { get; set; } = 100;
+
+        internal int GetTaskCount(int containerThroughput)
+        {
+            int taskCount = this.DegreeOfParallelism;
+            if (taskCount == -1)
+            {
+                // set TaskCount = 10 for each 10k RUs, minimum 1, maximum { #processor * 50 }
+                taskCount = Math.Max(containerThroughput / 1000, 1);
+                taskCount = Math.Min(taskCount, Environment.ProcessorCount * 50);
+            }
+
+            return taskCount;
+        }
 
         internal void Print()
         {

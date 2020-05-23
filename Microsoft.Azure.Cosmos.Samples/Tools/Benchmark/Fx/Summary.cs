@@ -9,6 +9,8 @@ namespace CosmosBenchmark
 
     internal struct Summary
     {
+        private const int MsPerSecond = 1000;
+
         public long succesfulOpsCount;
         public long failedOpsCount;
         public double ruCharges;
@@ -16,12 +18,17 @@ namespace CosmosBenchmark
 
         public double Rups()
         {
-            return Math.Round(this.ruCharges / this.elapsedMs * 1000, 2);
+            return Math.Round(
+                    Math.Min(this.ruCharges / this.elapsedMs * Summary.MsPerSecond, this.ruCharges),
+                    2);
         }
 
         public double Rps()
         {
-            return Math.Round((this.succesfulOpsCount + this.failedOpsCount) / this.elapsedMs * 1000, 2);
+            long total = this.succesfulOpsCount + this.failedOpsCount;
+            return Math.Round(
+                    Math.Min(total / this.elapsedMs * Summary.MsPerSecond, total),
+                    2);
         }
 
         public void Print(long globalTotal)

@@ -56,7 +56,7 @@ namespace CosmosBenchmark
                 clientOptions))
             {
                 Program program = new Program(client);
-                await program.RunAsync(config);
+                await program.ExecuteAsync(config);
             }
 
             TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
@@ -65,7 +65,7 @@ namespace CosmosBenchmark
                 TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
             }
 
-            Console.WriteLine("CosmosBenchmark completed successfully.");
+            Console.WriteLine($"{nameof(CosmosBenchmark)} completed successfully.");
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
         }
@@ -74,52 +74,55 @@ namespace CosmosBenchmark
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task RunAsync(BenchmarkConfig options)
+        private async Task ExecuteAsync(BenchmarkConfig config)
         {
-            if (options.CleanupOnStart)
+            if (config.CleanupOnStart)
             {
-                Database database = this.client.GetDatabase(options.Database);
+                Database database = this.client.GetDatabase(config.Database);
                 await database.DeleteStreamAsync();
             }
 
-            ContainerResponse containerResponse = await this.CreatePartitionedContainerAsync(options);
+            ContainerResponse containerResponse = await this.CreatePartitionedContainerAsync(config);
             Container container = containerResponse;
 
             int? currentContainerThroughput = await container.ReadThroughputAsync();
-            Console.WriteLine($"Using container {options.Container} with {currentContainerThroughput} RU/s");
+            Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
 
-            int taskCount = options.DegreeOfParallelism;
-            if (taskCount == -1)
-            {
-                // set TaskCount = 10 for each 10k RUs, minimum 1, maximum { #processor * 50 }
-                taskCount = Math.Max(currentContainerThroughput.Value / 1000, 1);
-                taskCount = Math.Min(taskCount, Environment.ProcessorCount * 50);
-            }
+            int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
 
             Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
             Console.WriteLine();
-            string sampleItem = File.ReadAllText(options.ItemTemplateFile);
 
             string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
-            int numberOfItemsToInsert = options.ItemCount / taskCount;
+            int numberOfItemsToInsert = config.ItemCount / taskCount;
+            string sampleItem = File.ReadAllText(config.ItemTemplateFile);
 
-            ////IBenchmarkOperatrion insertBenchmarkOperatrion = new InsertBenchmarkOperation(
-            ////    container,
-            ////    partitionKeyPath,
-            ////    sampleItem);
+            IBenchmarkOperatrion benchmarkOperation = null;
+            switch (config.WorkloadType.ToLower())
+            {
+                case "insert":
+                    benchmarkOperation = new InsertBenchmarkOperation(
+                        container,
+                        partitionKeyPath,
+                        sampleItem);
+                    break;
+                case "read":
+                    benchmarkOperation = new ReadBenchmarkOperation(
+                        container,
+                        partitionKeyPath,
+                        sampleItem);
+                    break;
+                default:
+                    throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}");
+            }
 
-            IBenchmarkOperatrion benchmarkOperatrion = new ReadBenchmarkOperation(
-                container,
-                partitionKeyPath,
-                sampleItem);
-
-            IExecutionStrategy execution = IExecutionStrategy.StartNew(options, benchmarkOperatrion);
+            IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperation);
             await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, 0.01);
 
-            if (options.CleanupOnFinish)
+            if (config.CleanupOnFinish)
             {
-                Console.WriteLine($"Deleting Database {options.Database}");
-                Database database = this.client.GetDatabase(options.Database);
+                Console.WriteLine($"Deleting Database {config.Database}");
+                Database database = this.client.GetDatabase(config.Database);
                 await database.DeleteStreamAsync();
             }
         }
