@@ -1,4 +1,8 @@
-﻿namespace CosmosBenchmark
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
@@ -53,7 +57,7 @@
             string accountKey = options.Key;
             options.Key = null; // Don't print 
 
-            using (ConsoleColoeContext ct = new ConsoleColoeContext(ConsoleColor.Green))
+            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
             {
 
                 Console.WriteLine($"{nameof(CosmosBenchmark)} started with arguments");
@@ -109,7 +113,7 @@
 
         private static void HandleParseError(IEnumerable<Error> errors)
         {
-            using (ConsoleColoeContext ct = new ConsoleColoeContext(ConsoleColor.Red))
+            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Red))
             {
                 foreach (Error e in errors)
                 {
@@ -281,7 +285,7 @@
             ruPerSecond = requestUnits / totalSeconds;
             ruPerMonth = ruPerSecond * 86400 * 30;
 
-            using (ConsoleColoeContext ct = new ConsoleColoeContext(ConsoleColor.Green))
+            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
             {
                 Console.WriteLine();
                 Console.WriteLine("Summary:");
@@ -320,22 +324,6 @@
 
                 string partitionKeyPath = options.PartitionKeyPath;
                 return await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
-            }
-        }
-
-        private class ConsoleColoeContext : IDisposable
-        {
-            ConsoleColor beforeContextColor;
-
-            public ConsoleColoeContext(ConsoleColor color)
-            {
-                this.beforeContextColor = Console.ForegroundColor;
-                Console.ForegroundColor = color;
-            }
-
-            public void Dispose()
-            {
-                Console.ForegroundColor = this.beforeContextColor;
             }
         }
 
