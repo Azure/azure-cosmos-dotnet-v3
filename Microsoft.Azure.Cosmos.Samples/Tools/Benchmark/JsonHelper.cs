@@ -16,7 +16,7 @@ namespace CosmosBenchmark
 
         public static string ToString<T>(T input)
         {
-            MemoryStream stream = JsonHelper.ToStream(input);
+            using (MemoryStream stream = JsonHelper.ToStream(input))
             using (StreamReader sr = new StreamReader(stream))
             {
                 return sr.ReadToEnd();
@@ -39,6 +39,7 @@ namespace CosmosBenchmark
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
                     writer.Formatting = Formatting.None;
+                    writer.Formatting = Formatting.Indented;
                     JsonSerializer jsonSerializer = JsonHelper.serializer;
                     jsonSerializer.Serialize(writer, input);
                     writer.Flush();

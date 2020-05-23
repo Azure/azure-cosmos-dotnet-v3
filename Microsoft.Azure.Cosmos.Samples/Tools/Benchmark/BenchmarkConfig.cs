@@ -4,12 +4,9 @@
 
 namespace CosmosBenchmark
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
     using CommandLine;
 
-    public class BenchmarkOptions
+    public class BenchmarkConfig
     {
         [Option('e', Required = true, HelpText = "Cosmos account end point")]
         public string EndPoint { get; set; }

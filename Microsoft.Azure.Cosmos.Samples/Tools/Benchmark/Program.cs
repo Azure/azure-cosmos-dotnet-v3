@@ -21,12 +21,7 @@ namespace CosmosBenchmark
     /// </summary>
     public sealed class Program
     {
-        private static readonly string InstanceId = Dns.GetHostEntry("LocalHost").HostName + Process.GetCurrentProcess().Id;
-
-        private int pendingTaskCount;
-        private long itemsInserted;
         private CosmosClient client;
-        private double[] RequestUnitsConsumed { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Program"/> class.
@@ -43,10 +38,10 @@ namespace CosmosBenchmark
         /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
-            BenchmarkOptions options = null;
-            Parser.Default.ParseArguments<BenchmarkOptions>(args)
-                .WithParsed<BenchmarkOptions>(e => options = e)
-                .WithNotParsed<BenchmarkOptions>(e => Program.HandleParseError(e));
+            BenchmarkConfig options = null;
+            Parser.Default.ParseArguments<BenchmarkConfig>(args)
+                .WithParsed<BenchmarkConfig>(e => options = e)
+                .WithNotParsed<BenchmarkConfig>(e => Program.HandleParseError(e));
 
             ThreadPool.SetMinThreads(options.MinThreadPoolSize, options.MinThreadPoolSize);
 
@@ -58,7 +53,7 @@ namespace CosmosBenchmark
 
                 Console.WriteLine($"{nameof(CosmosBenchmark)} started with arguments");
                 Console.WriteLine("--------------------------------------------------------------------- ");
-                Console.WriteLine(JsonHelper.ToStream(options));
+                Console.WriteLine(JsonHelper.ToString(options));
                 Console.WriteLine("--------------------------------------------------------------------- ");
                 Console.WriteLine();
             }
@@ -79,15 +74,7 @@ namespace CosmosBenchmark
             {
                 Program program = new Program(client);
 
-                int tmp = options.ItemCount;
-
-                options.ItemCount = tmp / 10;
-                await program.RunAsync(options, disableTelemetry: true);
-                Console.WriteLine("Press ENTER to resume");
-                Console.ReadLine();
-
-                options.ItemCount = tmp;
-                await program.RunAsync(options, disableTelemetry: false);
+                await program.RunAsync(options);
 
                 Console.WriteLine("CosmosBenchmark completed successfully.");
             }
@@ -120,9 +107,8 @@ namespace CosmosBenchmark
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task RunAsync(BenchmarkOptions options, bool disableTelemetry)
+        private async Task RunAsync(BenchmarkConfig options)
         {
-            this.itemsInserted = 0;
             if (options.CleanupOnStart)
             {
                 Database database = this.client.GetDatabase(options.Database);
@@ -143,24 +129,16 @@ namespace CosmosBenchmark
                 taskCount = Math.Min(taskCount, Environment.ProcessorCount * 50);
             }
 
-            this.RequestUnitsConsumed = new double[taskCount];
-
             Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
             Console.WriteLine();
             string sampleItem = File.ReadAllText(options.ItemTemplateFile);
 
-            this.pendingTaskCount = taskCount;
-            List<Task> tasks = new List<Task>();
-            tasks.Add(this.LogOutputStats());
-
             string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
-            long numberOfItemsToInsert = options.ItemCount / taskCount;
-            for (int i = 0; i < taskCount; i++)
-            {
-                tasks.Add(this.InsertItem(i, container, partitionKeyPath, sampleItem, numberOfItemsToInsert, disableTelemetry));
-            }
+            int numberOfItemsToInsert = options.ItemCount / taskCount;
 
-            await Task.WhenAll(tasks);
+            IBenchmarkOperatrion insertBenchmarkOperatrion = new InsertBenchmarkOperation(container, partitionKeyPath, sampleItem);
+            IExecutionStrategy execution = IExecutionStrategy.StartNew(options, insertBenchmarkOperatrion);
+            await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, 0.01);
 
             if (options.CleanupOnFinish)
             {
@@ -170,121 +148,11 @@ namespace CosmosBenchmark
             }
         }
 
-        private async Task InsertItem(
-            int taskId,
-            Container container,
-            string partitionKeyPath,
-            string sampleJson,
-            long numberOfItemsToInsert,
-            bool disableTelemetry = false)
-        {
-            string databsaeName = container.Database.Id;
-            string containerName = container.Id;
-
-            this.RequestUnitsConsumed[taskId] = 0;
-            string partitionKeyProperty = partitionKeyPath.Replace("/", "");
-            Dictionary<string, object> newDictionary = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
-
-            for (int i = 0; i < numberOfItemsToInsert; i++)
-            {
-                string newPartitionKey = Guid.NewGuid().ToString();
-                newDictionary["id"] = Guid.NewGuid().ToString();
-                newDictionary[partitionKeyProperty] = newPartitionKey;
-
-                try
-                {
-                    using (Stream inputStream = JsonHelper.ToStream(newDictionary))
-                    {
-                        ResponseMessage itemResponse = null;
-                        using (TelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
-                                    databsaeName,
-                                    containerName,
-                                    () => itemResponse?.Diagnostics,
-                                    disableTelemetry: disableTelemetry))
-                        {
-                            itemResponse = await container.CreateItemStreamAsync(
-                                    inputStream,
-                                    new PartitionKey(newPartitionKey));
-
-                        }
-
-                        this.RequestUnitsConsumed[taskId] += itemResponse.Headers.RequestCharge;
-                        Interlocked.Increment(ref this.itemsInserted);
-                    }
-                }
-                catch (CosmosException ex)
-                {
-                    if (ex.StatusCode != HttpStatusCode.Forbidden)
-                    {
-                        Trace.TraceError($"Failed to write {JsonHelper.ToString(newDictionary)}. Exception was {ex}");
-                    }
-                    else
-                    {
-                        Interlocked.Increment(ref this.itemsInserted);
-                    }
-                }
-
-                Interlocked.Decrement(ref this.pendingTaskCount);
-            }
-        }
-
-        private async Task LogOutputStats()
-        {
-            long lastCount = 0;
-            double lastRequestUnits = 0;
-            double lastSeconds = 0;
-            double requestUnits = 0;
-            double ruPerSecond = 0;
-            double ruPerMonth = 0;
-
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
-
-            while (this.pendingTaskCount > 0)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1));
-                double seconds = watch.Elapsed.TotalSeconds;
-
-                requestUnits = this.RequestUnitsConsumed.Sum();
-
-                long currentCount = this.itemsInserted;
-                ruPerSecond = requestUnits / seconds;
-                ruPerMonth = ruPerSecond * 86400 * 30;
-
-                Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
-                    currentCount,
-                    Math.Round(this.itemsInserted / seconds),
-                    Math.Round(ruPerSecond),
-                    Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
-
-                lastCount = this.itemsInserted;
-                lastSeconds = seconds;
-                lastRequestUnits = requestUnits;
-            }
-
-            double totalSeconds = watch.Elapsed.TotalSeconds;
-            ruPerSecond = requestUnits / totalSeconds;
-            ruPerMonth = ruPerSecond * 86400 * 30;
-
-            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
-            {
-                Console.WriteLine();
-                Console.WriteLine("Summary:");
-                Console.WriteLine("--------------------------------------------------------------------- ");
-                Console.WriteLine("Inserted {0} items @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
-                    lastCount,
-                    Math.Round(this.itemsInserted / watch.Elapsed.TotalSeconds),
-                    Math.Round(ruPerSecond),
-                    Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
-                Console.WriteLine("--------------------------------------------------------------------- ");
-            }
-        }
-
         /// <summary>
         /// Create a partitioned container.
         /// </summary>
         /// <returns>The created container.</returns>
-        private async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkOptions options)
+        private async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options)
         {
             Database database = await this.client.CreateDatabaseIfNotExistsAsync(options.Database);
 
@@ -305,6 +173,337 @@ namespace CosmosBenchmark
 
                 string partitionKeyPath = options.PartitionKeyPath;
                 return await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
+            }
+        }
+
+        internal struct OperationResult
+        {
+            public string DatabseName { get; set; }
+            public string ContainerName { get; set; }
+            public double RuCharges { get; set; }
+
+            public Func<string> lazyDiagnostics { get; set; }
+        }
+
+        private interface IBenchmarkOperatrion
+        {
+            void Prepare();
+
+            Task<OperationResult> ExecuteOnceAsync();
+        }
+
+        private class InsertBenchmarkOperation : IBenchmarkOperatrion
+        {
+            private readonly Container container;
+            private readonly string partitionKeyPath;
+            private readonly Dictionary<string, object> sampleJObject;
+
+            private readonly string databsaeName;
+            private readonly string containerName;
+
+            private Stream nextExecutionItemPayload;
+            private string nextExecutionItemPartitionKey;
+
+            public InsertBenchmarkOperation(
+                Container container,
+                string partitionKeyPath,
+                string sampleJson)
+            {
+                this.container = container;
+                this.partitionKeyPath = partitionKeyPath.Replace("/", "");
+
+                this.databsaeName = container.Database.Id;
+                this.containerName = container.Id;
+
+                this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
+            }
+
+            public async Task<OperationResult> ExecuteOnceAsync()
+            {
+                using (Stream inputStream = this.nextExecutionItemPayload)
+                {
+                    ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
+                            inputStream,
+                            new PartitionKey(this.nextExecutionItemPartitionKey));
+
+                    double ruCharges = itemResponse.Headers.RequestCharge;
+                    return new OperationResult()
+                    {
+                        DatabseName = databsaeName,
+                        ContainerName = containerName,
+                        RuCharges = ruCharges,
+                        lazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
+                    };
+                }
+            }
+
+            public void Prepare()
+            {
+                string newPartitionKey = Guid.NewGuid().ToString();
+                this.sampleJObject["id"] = Guid.NewGuid().ToString();
+                this.sampleJObject[this.partitionKeyPath] = newPartitionKey;
+
+                this.nextExecutionItemPayload = JsonHelper.ToStream(this.sampleJObject);
+                this.nextExecutionItemPartitionKey = newPartitionKey;
+            }
+        }
+
+        private delegate Task<OperationResult> BenchmarkOperation();
+
+        private interface IExecutionStrategy
+        {
+            public static IExecutionStrategy StartNew(
+                BenchmarkConfig config,
+                IBenchmarkOperatrion benchmarkOperation)
+            {
+                return new ParallelExecutionStrategy(benchmarkOperation);
+            }
+
+            public Task ExecuteAsync(
+                int serialExecutorConcurrency,
+                int serialExecutorIterationCount,
+                double warmupFraction);
+
+        }
+
+        private class ParallelExecutionStrategy : IExecutionStrategy
+        {
+            private readonly IBenchmarkOperatrion benchmarkOperation;
+
+            private volatile int pendingExecutorCount;
+
+            public ParallelExecutionStrategy(
+                IBenchmarkOperatrion benchmarkOperation)
+            {
+                this.benchmarkOperation = benchmarkOperation;
+            }
+
+            public async Task ExecuteAsync(
+                int serialExecutorConcurrency,
+                int serialExecutorIterationCount,
+                double warmupFraction)
+            {
+                IExecutor warmupExecutor = new SerialOperationExecutor(
+                            executorId: "Warmup",
+                            benchmarkOperation: this.benchmarkOperation);
+                await warmupExecutor.ExecuteAsync(
+                        (int)(serialExecutorIterationCount * warmupFraction),
+                        isWarmup: true,
+                        completionCallback: () => { });
+
+                IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
+                for (int i = 0; i < serialExecutorConcurrency; i++)
+                {
+                    executors[i] = new SerialOperationExecutor(
+                                executorId: i.ToString(),
+                                benchmarkOperation: this.benchmarkOperation);
+                }
+
+                this.pendingExecutorCount = serialExecutorConcurrency;
+                for (int i = 0; i < serialExecutorConcurrency; i++)
+                {
+                    _ = executors[i].ExecuteAsync(
+                            iterationCount: serialExecutorIterationCount,
+                            isWarmup: false,
+                            completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
+                }
+
+                await this.LogOutputStats(executors);
+            }
+
+            private async Task LogOutputStats(IExecutor[] executors)
+            {
+                const int outputLoopDelayInSeconds = 5;
+                Summary lastSummary = new Summary();
+
+                Stopwatch watch = new Stopwatch();
+                watch.Start();
+
+                bool isLastIterationCompleted = false;
+                do
+                {
+                    isLastIterationCompleted = this.pendingExecutorCount <= 0;
+
+                    Summary currentTotalSummary = new Summary();
+                    for (int i = 0; i < executors.Length; i++)
+                    {
+                        IExecutor executor = executors[i];
+                        Summary executorSummary = new Summary()
+                        {
+                            succesfulOpsCount = executor.SuccessOperationCount,
+                            failedOpsCount = executor.FailedOperationCount,
+                            ruCharges = executor.TotalRuCharges,
+                        };
+
+                        currentTotalSummary += executorSummary;
+                    }
+
+                    // In-theory summary might be lower than real as its not transactional on time
+                    currentTotalSummary.elapsedMs = watch.Elapsed.TotalMilliseconds;
+
+                    Summary diff = currentTotalSummary - lastSummary;
+                    lastSummary = currentTotalSummary;
+
+                    diff.Print(currentTotalSummary.failedOpsCount + currentTotalSummary.succesfulOpsCount);
+
+                    await Task.Delay(TimeSpan.FromSeconds(outputLoopDelayInSeconds));
+                }
+                while (!isLastIterationCompleted);
+
+                using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Summary:");
+                    Console.WriteLine("--------------------------------------------------------------------- ");
+                    lastSummary.Print(lastSummary.failedOpsCount + lastSummary.succesfulOpsCount);
+                    Console.WriteLine("--------------------------------------------------------------------- ");
+                }
+            }
+
+            private struct Summary
+            {
+                public long succesfulOpsCount;
+                public long failedOpsCount;
+                public double ruCharges;
+                public double elapsedMs;
+
+                public double Rups()
+                {
+                    return Math.Round(this.ruCharges / this.elapsedMs * 1000, 2);
+                }
+
+                public double Rps()
+                {
+                    return Math.Round((this.succesfulOpsCount + this.failedOpsCount) / this.elapsedMs * 1000, 2);
+                }
+
+                public void Print(long globalTotal)
+                {
+                    Console.WriteLine("Stats, total: {0,5}   success: {1,5}   fail: {2,3}   RPS: {3,5}   rups: {4,5}",
+                        globalTotal,
+                        this.succesfulOpsCount,
+                        this.failedOpsCount,
+                        this.Rps(),
+                        this.Rups());
+                }
+
+                public static Summary operator +(Summary arg1, Summary arg2)
+                {
+                    return new Summary()
+                    {
+                        succesfulOpsCount = arg1.succesfulOpsCount + arg2.succesfulOpsCount,
+                        failedOpsCount = arg1.failedOpsCount + arg2.failedOpsCount,
+                        ruCharges = arg1.ruCharges + arg2.ruCharges,
+                        elapsedMs = arg1.elapsedMs + arg2.elapsedMs,
+                    };
+                }
+
+                public static Summary operator -(Summary arg1, Summary arg2)
+                {
+                    return new Summary()
+                    {
+                        succesfulOpsCount = arg1.succesfulOpsCount - arg2.succesfulOpsCount,
+                        failedOpsCount = arg1.failedOpsCount - arg2.failedOpsCount,
+                        ruCharges = arg1.ruCharges - arg2.ruCharges,
+                        elapsedMs = arg1.elapsedMs - arg2.elapsedMs,
+                    };
+                }
+            }
+
+        }
+
+        private interface IExecutor
+        {
+            public int SuccessOperationCount { get; }
+            public int FailedOperationCount { get; }
+            public double TotalRuCharges { get; }
+
+            public Task ExecuteAsync(
+                    int iterationCount,
+                    bool isWarmup,
+                    Action completionCallback);
+        }
+
+        private class SerialOperationExecutor : IExecutor
+        {
+            private readonly IBenchmarkOperatrion operation;
+            private readonly string executorId;
+
+            public SerialOperationExecutor(
+                string executorId,
+                IBenchmarkOperatrion benchmarkOperation)
+            {
+                this.executorId = executorId;
+                this.operation = benchmarkOperation;
+
+                this.SuccessOperationCount = 0;
+                this.FailedOperationCount = 0;
+            }
+
+            public int SuccessOperationCount { get; private set; }
+            public int FailedOperationCount { get; private set; }
+
+            public double TotalRuCharges { get; private set; }
+
+            public async Task ExecuteAsync(
+                    int iterationCount,
+                    bool isWarmup,
+                    Action completionCallback)
+            {
+                Trace.TraceInformation($"Executor {this.executorId} started");
+
+                try
+                {
+                    int currentIterationCount = 0;
+                    do
+                    {
+                        OperationResult? operationResult = null;
+
+                        this.operation.Prepare();
+
+                        using (TelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
+                                    () => operationResult.Value,
+                                    disableTelemetry: isWarmup))
+                        {
+                            try
+                            {
+                                operationResult = await this.operation.ExecuteOnceAsync();
+
+                                // Success case
+                                this.SuccessOperationCount++;
+                                this.TotalRuCharges += operationResult.Value.RuCharges;
+                            }
+                            catch (Exception ex)
+                            {
+                                // failure case
+                                this.FailedOperationCount++;
+
+                                // Special case of cosmos exception
+                                double opCharge = 0;
+                                if (ex is CosmosException cosmosException)
+                                {
+                                    opCharge = cosmosException.RequestCharge;
+                                    this.TotalRuCharges += opCharge;
+                                }
+
+                                operationResult = new OperationResult()
+                                {
+                                    // TODO: Populate account, databse, collection context into ComsosDiagnostics
+                                    RuCharges = opCharge,
+                                    lazyDiagnostics = () => ex.ToString(),
+                                };
+                            }
+                        }
+
+                        currentIterationCount++;
+                    } while (currentIterationCount < iterationCount);
+
+                    Trace.TraceInformation($"Executor {this.executorId} completed");
+                }
+                finally
+                {
+                    completionCallback();
+                }
             }
         }
     }

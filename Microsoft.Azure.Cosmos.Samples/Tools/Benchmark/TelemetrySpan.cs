@@ -8,29 +8,24 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos;
+    using static CosmosBenchmark.Program;
 
     internal struct TelemetrySpan : IDisposable
     {
         internal static HistogramBase LatencyHistogram = new IntConcurrentHistogram(1, 10 * 1000, 0);
 
         private Stopwatch stopwatch;
-        private Func<CosmosDiagnostics> funcDiagnostics;
-        private string databaseName;
-        private string containerName;
+        private Func<OperationResult> lazyOperationResult;
         private bool disableTelemetry;
 
         public static TelemetrySpan StartNew(
-            string databaseName,
-            string containerName,
-            Func<CosmosDiagnostics> funcDiag,
+            Func<OperationResult> lazyOperationResult,
             bool disableTelemetry)
         {
             TelemetrySpan span = new TelemetrySpan();
             span.stopwatch = Stopwatch.StartNew();
 
-            span.databaseName = databaseName;
-            span.containerName = containerName;
-            span.funcDiagnostics = funcDiag;
+            span.lazyOperationResult = lazyOperationResult;
             span.disableTelemetry = disableTelemetry;
 
             return span;
@@ -41,12 +36,14 @@ namespace CosmosBenchmark
             this.stopwatch.Stop();
             if (!this.disableTelemetry)
             {
+                OperationResult operationResult = this.lazyOperationResult();
+
                 TelemetrySpan.LatencyHistogram.RecordValue(this.stopwatch.ElapsedMilliseconds);
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
-                    this.databaseName,
-                    this.containerName,
+                    operationResult.DatabseName,
+                    operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
-                    this.funcDiagnostics()?.ToString());
+                    operationResult.lazyDiagnostics);
             }
         }
     }

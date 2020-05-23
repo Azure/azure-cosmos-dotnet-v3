@@ -4,6 +4,7 @@
 
 namespace CosmosBenchmark
 {
+    using System;
     using System.Diagnostics.Tracing;
     using Microsoft.Azure.Cosmos;
 
@@ -35,12 +36,12 @@ namespace CosmosBenchmark
             string dbName,
             string containerName,
             int durationInMs,
-            CosmosDiagnostics dianostics)
+            Func<string> lazyDiagnostics)
         {
-            if (BenchmarkLatencyEventSource.TraceLatencyThreshold > durationInMs
+            if (durationInMs > BenchmarkLatencyEventSource.TraceLatencyThreshold
                 && this.IsEnabled())
             {
-                this.WriteEvent(1, dbName, containerName, durationInMs, dianostics?.ToString());
+                this.WriteEvent(1, dbName, containerName, durationInMs, lazyDiagnostics());
             }
         }
     }
