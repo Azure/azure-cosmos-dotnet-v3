@@ -7,8 +7,6 @@ namespace CosmosBenchmark
     using System;
     using System.Diagnostics;
     using HdrHistogram;
-    using Microsoft.Azure.Cosmos;
-    using static CosmosBenchmark.Program;
 
     internal struct TelemetrySpan : IDisposable
     {
