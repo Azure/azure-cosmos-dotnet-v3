@@ -5,13 +5,10 @@
 namespace CosmosBenchmark
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using CommandLine;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos;
 
@@ -37,25 +34,12 @@ namespace CosmosBenchmark
         /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
-            BenchmarkConfig options = null;
-            Parser.Default.ParseArguments<BenchmarkConfig>(args)
-                .WithParsed<BenchmarkConfig>(e => options = e)
-                .WithNotParsed<BenchmarkConfig>(e => Program.HandleParseError(e));
+            BenchmarkConfig config = BenchmarkConfig.From(args);
+            ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
-            ThreadPool.SetMinThreads(options.MinThreadPoolSize, options.MinThreadPoolSize);
-
-            string accountKey = options.Key;
-            options.Key = null; // Don't print 
-
-            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
-            {
-
-                Console.WriteLine($"{nameof(CosmosBenchmark)} started with arguments");
-                Console.WriteLine("--------------------------------------------------------------------- ");
-                Console.WriteLine(JsonHelper.ToString(options));
-                Console.WriteLine("--------------------------------------------------------------------- ");
-                Console.WriteLine();
-            }
+            string accountKey = config.Key;
+            config.Key = null; // Don't print
+            config.Print();
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -67,39 +51,23 @@ namespace CosmosBenchmark
             };
 
             using (CosmosClient client = new CosmosClient(
-                options.EndPoint,
+                config.EndPoint,
                 accountKey,
                 clientOptions))
             {
                 Program program = new Program(client);
-
-                await program.RunAsync(options);
-
-                Console.WriteLine("CosmosBenchmark completed successfully.");
+                await program.RunAsync(config);
             }
 
+            TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
             using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
             {
                 TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
             }
 
-            TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
-
+            Console.WriteLine("CosmosBenchmark completed successfully.");
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
-        }
-
-        private static void HandleParseError(IEnumerable<Error> errors)
-        {
-            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Red))
-            {
-                foreach (Error e in errors)
-                {
-                    Console.WriteLine(e.ToString());
-                }
-            }
-
-            Environment.Exit(errors.Count());
         }
 
         /// <summary>

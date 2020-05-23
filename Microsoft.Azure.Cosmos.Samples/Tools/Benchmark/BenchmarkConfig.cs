@@ -4,6 +4,8 @@
 
 namespace CosmosBenchmark
 {
+    using System;
+    using System.Collections.Generic;
     using CommandLine;
 
     public class BenchmarkConfig
@@ -43,5 +45,40 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Min thread pool size")]
         public int MinThreadPoolSize { get; set; } = 100;
+
+        internal void Print()
+        {
+            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
+            {
+                Console.WriteLine($"{nameof(BenchmarkConfig)} arguments");
+                Console.WriteLine("--------------------------------------------------------------------- ");
+                Console.WriteLine(JsonHelper.ToString(this));
+                Console.WriteLine("--------------------------------------------------------------------- ");
+                Console.WriteLine();
+            }
+        }
+
+        internal static BenchmarkConfig From(string[] args)
+        {
+            BenchmarkConfig options = null;
+            Parser.Default.ParseArguments<BenchmarkConfig>(args)
+                .WithParsed<BenchmarkConfig>(e => options = e)
+                .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
+
+            return options;
+        }
+
+        private static void HandleParseError(IEnumerable<Error> errors)
+        {
+            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Red))
+            {
+                foreach (Error e in errors)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+            }
+
+            Environment.Exit(errors.Count());
+        }
     }
 }
