@@ -10,13 +10,11 @@ namespace CosmosBenchmark
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using CommandLine;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -61,11 +59,7 @@ namespace CosmosBenchmark
 
                 Console.WriteLine($"{nameof(CosmosBenchmark)} started with arguments");
                 Console.WriteLine("--------------------------------------------------------------------- ");
-                Console.WriteLine(JsonConvert.SerializeObject(options, new JsonSerializerSettings()
-                {
-                    NullValueHandling = NullValueHandling.Ignore,
-                    Formatting = Formatting.Indented,
-                }));
+                Console.WriteLine(JsonHelper.ToStream(options));
                 Console.WriteLine("--------------------------------------------------------------------- ");
                 Console.WriteLine();
             }
@@ -190,7 +184,7 @@ namespace CosmosBenchmark
 
             this.RequestUnitsConsumed[taskId] = 0;
             string partitionKeyProperty = partitionKeyPath.Replace("/", "");
-            Dictionary<string, object> newDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(sampleJson);
+            Dictionary<string, object> newDictionary = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
 
             int currentTraceLatency = 50;
 
@@ -201,7 +195,7 @@ namespace CosmosBenchmark
                 newDictionary["id"] = Guid.NewGuid().ToString();
                 newDictionary[partitionKeyProperty] = newPartitionKey;
 
-                using (Stream inputStream = Program.ToStream(newDictionary))
+                using (Stream inputStream = JsonHelper.ToStream(newDictionary))
                 {
                     try
                     {
@@ -238,7 +232,7 @@ namespace CosmosBenchmark
                     {
                         if (ex.StatusCode != HttpStatusCode.Forbidden)
                         {
-                            Trace.TraceError($"Failed to write {JsonConvert.SerializeObject(newDictionary)}. Exception was {ex}");
+                            Trace.TraceError($"Failed to write {JsonHelper.ToString(newDictionary)}. Exception was {ex}");
                         }
                         else
                         {
@@ -329,28 +323,6 @@ namespace CosmosBenchmark
                 string partitionKeyPath = options.PartitionKeyPath;
                 return await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
             }
-        }
-
-        private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-        private static readonly JsonSerializer serializer = JsonSerializer.Create();
-
-        private static Stream ToStream<T>(T input)
-        {
-            MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: Program.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
-            {
-                using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    JsonSerializer jsonSerializer = Program.serializer;
-                    jsonSerializer.Serialize(writer, input);
-                    writer.Flush();
-                    streamWriter.Flush();
-                }
-            }
-
-            streamPayload.Position = 0;
-            return streamPayload;
         }
     }
 }
