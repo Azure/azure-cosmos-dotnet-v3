@@ -4,12 +4,15 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.Tracing;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using CommandLine;
+    using HdrHistogram;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 
@@ -24,6 +27,7 @@
         private long itemsInserted;
         private CosmosClient client;
         private double[] RequestUnitsConsumed { get; set; }
+        internal static HistogramBase latencyHistogram = new IntConcurrentHistogram(1, 10*1000, 0);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Program"/> class.
@@ -68,8 +72,9 @@
             {
                 ApplicationName = "cosmosdbdotnetbenchmark",
                 RequestTimeout = new TimeSpan(1, 0, 0),
-                MaxRetryAttemptsOnRateLimitedRequests = 10,
+                MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
+                MaxRequestsPerTcpConnection = 2,
             };
 
             using (var client = new CosmosClient(
@@ -78,9 +83,26 @@
                 clientOptions))
             {
                 var program = new Program(client);
-                await program.RunAsync(options);
+
+                var tmp = options.ItemCount;
+
+                options.ItemCount = tmp / 10;
+                await program.RunAsync(options, true);
+                Console.WriteLine("Press ENTER to resume");
+                Console.ReadLine();
+
+                options.ItemCount = tmp;
+                await program.RunAsync(options, false);
+
                 Console.WriteLine("CosmosBenchmark completed successfully.");
             }
+
+            using (var fileWriter = new StreamWriter("HistogramResults.hgrm"))
+            {
+                Program.latencyHistogram.OutputPercentileDistribution(fileWriter);
+            }
+
+            Program.latencyHistogram.OutputPercentileDistribution(Console.Out);
 
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
@@ -103,8 +125,9 @@
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task RunAsync(BenchmarkOptions options)
+        private async Task RunAsync(BenchmarkOptions options, bool warmup)
         {
+            this.itemsInserted = 0;
             if (options.CleanupOnStart)
             {
                 Database database = client.GetDatabase(options.Database);
@@ -139,7 +162,7 @@
             long numberOfItemsToInsert = options.ItemCount / taskCount;
             for (var i = 0; i < taskCount; i++)
             {
-                tasks.Add(this.InsertItem(i, container, partitionKeyPath, sampleItem, numberOfItemsToInsert));
+                tasks.Add(this.InsertItem(i, container, partitionKeyPath, sampleItem, numberOfItemsToInsert, warmup));
             }
 
             await Task.WhenAll(tasks);
@@ -157,37 +180,63 @@
             Container container, 
             string partitionKeyPath,
             string sampleJson, 
-            long numberOfItemsToInsert)
+            long numberOfItemsToInsert,
+            bool warmup)
         {
             this.RequestUnitsConsumed[taskId] = 0;
             string partitionKeyProperty = partitionKeyPath.Replace("/", "");
             Dictionary<string, object> newDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(sampleJson);
 
+            int currentTraceLatency = 50;
+
+            Stopwatch sw = new Stopwatch();
             for (var i = 0; i < numberOfItemsToInsert; i++)
             {
                 string newPartitionKey = Guid.NewGuid().ToString();
                 newDictionary["id"] = Guid.NewGuid().ToString();
                 newDictionary[partitionKeyProperty] = newPartitionKey;
 
-                try
+                using (var inputStream = Program.ToStream(newDictionary))
                 {
-                    var itemResponse = await container.CreateItemAsync(
-                            newDictionary,
-                            new PartitionKey(newPartitionKey));
+                    try
+                    {
+                        sw.Restart();
+                        ResponseMessage itemResponse = null;
+                        try
+                        {
+                            itemResponse = await container.CreateItemStreamAsync(
+                                    inputStream,
+                                    new PartitionKey(newPartitionKey));
+                        }
+                        finally
+                        {
+                            sw.Stop();
+                            if (! warmup)
+                            {
+                                Program.latencyHistogram.RecordValue(sw.ElapsedMilliseconds);
+                                if (sw.ElapsedMilliseconds > currentTraceLatency && itemResponse != null)
+                                {
+                                    LatencyEventSource.Instance.LatencyDiagnostics(
+                                        (int)sw.ElapsedMilliseconds, 
+                                        itemResponse.Diagnostics.ToString());
+                                }
+                            }
+                        }
 
-                    string partition = itemResponse.Headers.Session.Split(':')[0];
-                    this.RequestUnitsConsumed[taskId] += itemResponse.RequestCharge;
-                    Interlocked.Increment(ref this.itemsInserted);
-                }
-                catch (CosmosException ex)
-                {
-                    if (ex.StatusCode != HttpStatusCode.Forbidden)
-                    {
-                        Trace.TraceError($"Failed to write {JsonConvert.SerializeObject(newDictionary)}. Exception was {ex}");
-                    }
-                    else
-                    {
+                        string partition = itemResponse.Headers.Session.Split(':')[0];
+                        this.RequestUnitsConsumed[taskId] += itemResponse.Headers.RequestCharge;
                         Interlocked.Increment(ref this.itemsInserted);
+                    }
+                    catch (CosmosException ex)
+                    {
+                        if (ex.StatusCode != HttpStatusCode.Forbidden)
+                        {
+                            Trace.TraceError($"Failed to write {JsonConvert.SerializeObject(newDictionary)}. Exception was {ex}");
+                        }
+                        else
+                        {
+                            Interlocked.Increment(ref this.itemsInserted);
+                        }
                     }
                 }
             }
@@ -288,6 +337,44 @@
             public void Dispose()
             {
                 Console.ForegroundColor = this.beforeContextColor;
+            }
+        }
+
+        private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+        private static readonly JsonSerializer serializer = JsonSerializer.Create();
+
+        private static Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: Program.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            {
+                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                {
+                    writer.Formatting = Newtonsoft.Json.Formatting.None;
+                    JsonSerializer jsonSerializer = Program.serializer;
+                    jsonSerializer.Serialize(writer, input);
+                    writer.Flush();
+                    streamWriter.Flush();
+                }
+            }
+
+            streamPayload.Position = 0;
+            return streamPayload;
+        }
+
+        [EventSource(Name = "Azure.Cosmos.Benchmark")]
+        internal class LatencyEventSource : EventSource
+        {
+            public static LatencyEventSource Instance = new LatencyEventSource();
+
+            private LatencyEventSource() 
+            { 
+            }
+
+            [Event(1, Level = EventLevel.Informational)]
+            public void LatencyDiagnostics(int latencyinMs, string dianostics)
+            {
+                WriteEvent(1, latencyinMs, dianostics);
             }
         }
     }
