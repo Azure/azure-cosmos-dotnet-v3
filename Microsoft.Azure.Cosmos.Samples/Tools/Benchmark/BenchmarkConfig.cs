@@ -6,6 +6,8 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime;
     using CommandLine;
 
     public class BenchmarkConfig
@@ -51,6 +53,7 @@ namespace CosmosBenchmark
             using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
             {
                 Console.WriteLine($"{nameof(BenchmarkConfig)} arguments");
+                Console.WriteLine($"IsServerGC: {GCSettings.IsServerGC}");
                 Console.WriteLine("--------------------------------------------------------------------- ");
                 Console.WriteLine(JsonHelper.ToString(this));
                 Console.WriteLine("--------------------------------------------------------------------- ");

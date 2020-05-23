@@ -4,6 +4,7 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <RootNamespace>CosmosBenchmark</RootNamespace>
     <AssemblyName>CosmosBenchmark</AssemblyName>
+    <ServerGarbageCollection>true</ServerGarbageCollection>    
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">

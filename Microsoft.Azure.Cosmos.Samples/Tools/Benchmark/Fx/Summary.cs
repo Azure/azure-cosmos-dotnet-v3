@@ -26,7 +26,7 @@ namespace CosmosBenchmark
 
         public void Print(long globalTotal)
         {
-            Console.WriteLine("Stats, total: {0,5}   success: {1,5}   fail: {2,3}   RPS: {3,5}   rups: {4,5}",
+            Console.WriteLine("Stats, total: {0,5}   success: {1,5}   fail: {2,3}   RPs: {3,5}   RUps: {4,5}",
                 globalTotal,
                 this.succesfulOpsCount,
                 this.failedOpsCount,
