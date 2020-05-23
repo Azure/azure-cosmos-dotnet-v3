@@ -27,7 +27,6 @@ namespace CosmosBenchmark
         private long itemsInserted;
         private CosmosClient client;
         private double[] RequestUnitsConsumed { get; set; }
-        internal static HistogramBase latencyHistogram = new IntConcurrentHistogram(1, 10*1000, 0);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Program"/> class.
@@ -95,10 +94,10 @@ namespace CosmosBenchmark
 
             using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
             {
-                Program.latencyHistogram.OutputPercentileDistribution(fileWriter);
+                TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
             }
 
-            Program.latencyHistogram.OutputPercentileDistribution(Console.Out);
+            TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
 
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
@@ -172,10 +171,10 @@ namespace CosmosBenchmark
         }
 
         private async Task InsertItem(
-            int taskId, 
-            Container container, 
+            int taskId,
+            Container container,
             string partitionKeyPath,
-            string sampleJson, 
+            string sampleJson,
             long numberOfItemsToInsert,
             bool warmup)
         {
@@ -186,63 +185,47 @@ namespace CosmosBenchmark
             string partitionKeyProperty = partitionKeyPath.Replace("/", "");
             Dictionary<string, object> newDictionary = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
 
-            int currentTraceLatency = 50;
-
-            Stopwatch sw = new Stopwatch();
             for (int i = 0; i < numberOfItemsToInsert; i++)
             {
                 string newPartitionKey = Guid.NewGuid().ToString();
                 newDictionary["id"] = Guid.NewGuid().ToString();
                 newDictionary[partitionKeyProperty] = newPartitionKey;
 
-                using (Stream inputStream = JsonHelper.ToStream(newDictionary))
+                try
                 {
-                    try
+                    using (Stream inputStream = JsonHelper.ToStream(newDictionary))
                     {
-                        sw.Restart();
                         ResponseMessage itemResponse = null;
-                        try
+                        using (TelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
+                                    databsaeName,
+                                    containerName,
+                                    () => itemResponse?.Diagnostics))
                         {
                             itemResponse = await container.CreateItemStreamAsync(
                                     inputStream,
                                     new PartitionKey(newPartitionKey));
-                        }
-                        finally
-                        {
-                            sw.Stop();
-                            if (! warmup)
-                            {
-                                Program.latencyHistogram.RecordValue(sw.ElapsedMilliseconds);
-                                if (sw.ElapsedMilliseconds > currentTraceLatency && itemResponse != null)
-                                {
-                                    BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
-                                        databsaeName,
-                                        containerName,
-                                        (int)sw.ElapsedMilliseconds, 
-                                        itemResponse.Diagnostics.ToString());
-                                }
-                            }
+
                         }
 
                         string partition = itemResponse.Headers.Session.Split(':')[0];
                         this.RequestUnitsConsumed[taskId] += itemResponse.Headers.RequestCharge;
                         Interlocked.Increment(ref this.itemsInserted);
                     }
-                    catch (CosmosException ex)
+                }
+                catch (CosmosException ex)
+                {
+                    if (ex.StatusCode != HttpStatusCode.Forbidden)
                     {
-                        if (ex.StatusCode != HttpStatusCode.Forbidden)
-                        {
-                            Trace.TraceError($"Failed to write {JsonHelper.ToString(newDictionary)}. Exception was {ex}");
-                        }
-                        else
-                        {
-                            Interlocked.Increment(ref this.itemsInserted);
-                        }
+                        Trace.TraceError($"Failed to write {JsonHelper.ToString(newDictionary)}. Exception was {ex}");
+                    }
+                    else
+                    {
+                        Interlocked.Increment(ref this.itemsInserted);
                     }
                 }
-            }
 
-            Interlocked.Decrement(ref this.pendingTaskCount);
+                Interlocked.Decrement(ref this.pendingTaskCount);
+            }
         }
 
         private async Task LogOutputStats()
