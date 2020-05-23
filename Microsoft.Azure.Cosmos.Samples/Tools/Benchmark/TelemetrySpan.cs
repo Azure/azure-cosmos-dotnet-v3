@@ -17,11 +17,13 @@ namespace CosmosBenchmark
         private Func<CosmosDiagnostics> funcDiagnostics;
         private string databaseName;
         private string containerName;
+        private bool disableTelemetry;
 
         public static TelemetrySpan StartNew(
             string databaseName,
             string containerName,
-            Func<CosmosDiagnostics> funcDiag)
+            Func<CosmosDiagnostics> funcDiag,
+            bool disableTelemetry)
         {
             TelemetrySpan span = new TelemetrySpan();
             span.stopwatch = Stopwatch.StartNew();
@@ -29,6 +31,7 @@ namespace CosmosBenchmark
             span.databaseName = databaseName;
             span.containerName = containerName;
             span.funcDiagnostics = funcDiag;
+            span.disableTelemetry = disableTelemetry;
 
             return span;
         }
@@ -36,13 +39,15 @@ namespace CosmosBenchmark
         public void Dispose()
         {
             this.stopwatch.Stop();
-
-            TelemetrySpan.LatencyHistogram.RecordValue(this.stopwatch.ElapsedMilliseconds);
-            BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
-                this.databaseName,
-                this.containerName,
-                (int)this.stopwatch.ElapsedMilliseconds,
-                this.funcDiagnostics()?.ToString());
+            if (!this.disableTelemetry)
+            {
+                TelemetrySpan.LatencyHistogram.RecordValue(this.stopwatch.ElapsedMilliseconds);
+                BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
+                    this.databaseName,
+                    this.containerName,
+                    (int)this.stopwatch.ElapsedMilliseconds,
+                    this.funcDiagnostics()?.ToString());
+            }
         }
     }
 }

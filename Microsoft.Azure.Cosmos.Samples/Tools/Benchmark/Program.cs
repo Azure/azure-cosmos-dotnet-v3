@@ -82,12 +82,12 @@ namespace CosmosBenchmark
                 int tmp = options.ItemCount;
 
                 options.ItemCount = tmp / 10;
-                await program.RunAsync(options, true);
+                await program.RunAsync(options, disableTelemetry: true);
                 Console.WriteLine("Press ENTER to resume");
                 Console.ReadLine();
 
                 options.ItemCount = tmp;
-                await program.RunAsync(options, false);
+                await program.RunAsync(options, disableTelemetry: false);
 
                 Console.WriteLine("CosmosBenchmark completed successfully.");
             }
@@ -120,7 +120,7 @@ namespace CosmosBenchmark
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task RunAsync(BenchmarkOptions options, bool warmup)
+        private async Task RunAsync(BenchmarkOptions options, bool disableTelemetry)
         {
             this.itemsInserted = 0;
             if (options.CleanupOnStart)
@@ -157,7 +157,7 @@ namespace CosmosBenchmark
             long numberOfItemsToInsert = options.ItemCount / taskCount;
             for (int i = 0; i < taskCount; i++)
             {
-                tasks.Add(this.InsertItem(i, container, partitionKeyPath, sampleItem, numberOfItemsToInsert, warmup));
+                tasks.Add(this.InsertItem(i, container, partitionKeyPath, sampleItem, numberOfItemsToInsert, disableTelemetry));
             }
 
             await Task.WhenAll(tasks);
@@ -176,7 +176,7 @@ namespace CosmosBenchmark
             string partitionKeyPath,
             string sampleJson,
             long numberOfItemsToInsert,
-            bool warmup)
+            bool disableTelemetry = false)
         {
             string databsaeName = container.Database.Id;
             string containerName = container.Id;
@@ -199,7 +199,8 @@ namespace CosmosBenchmark
                         using (TelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
                                     databsaeName,
                                     containerName,
-                                    () => itemResponse?.Diagnostics))
+                                    () => itemResponse?.Diagnostics,
+                                    disableTelemetry: disableTelemetry))
                         {
                             itemResponse = await container.CreateItemStreamAsync(
                                     inputStream,
