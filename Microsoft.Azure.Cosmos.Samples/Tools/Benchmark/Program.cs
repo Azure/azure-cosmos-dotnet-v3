@@ -103,8 +103,17 @@ namespace CosmosBenchmark
             string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
             int numberOfItemsToInsert = options.ItemCount / taskCount;
 
-            IBenchmarkOperatrion insertBenchmarkOperatrion = new InsertBenchmarkOperation(container, partitionKeyPath, sampleItem);
-            IExecutionStrategy execution = IExecutionStrategy.StartNew(options, insertBenchmarkOperatrion);
+            ////IBenchmarkOperatrion insertBenchmarkOperatrion = new InsertBenchmarkOperation(
+            ////    container,
+            ////    partitionKeyPath,
+            ////    sampleItem);
+
+            IBenchmarkOperatrion benchmarkOperatrion = new ReadBenchmarkOperation(
+                container,
+                partitionKeyPath,
+                sampleItem);
+
+            IExecutionStrategy execution = IExecutionStrategy.StartNew(options, benchmarkOperatrion);
             await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, 0.01);
 
             if (options.CleanupOnFinish)

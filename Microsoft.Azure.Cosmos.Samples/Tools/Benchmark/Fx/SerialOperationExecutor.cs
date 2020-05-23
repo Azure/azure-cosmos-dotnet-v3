@@ -44,7 +44,7 @@ namespace CosmosBenchmark
                 {
                     OperationResult? operationResult = null;
 
-                    this.operation.Prepare();
+                    await this.operation.Prepare();
 
                     using (TelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
                                 () => operationResult.Value,

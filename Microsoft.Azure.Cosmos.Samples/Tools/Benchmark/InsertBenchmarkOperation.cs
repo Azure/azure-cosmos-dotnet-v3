@@ -55,7 +55,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public void Prepare()
+        public Task Prepare()
         {
             string newPartitionKey = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = Guid.NewGuid().ToString();
@@ -63,6 +63,8 @@ namespace CosmosBenchmark
 
             this.nextExecutionItemPayload = JsonHelper.ToStream(this.sampleJObject);
             this.nextExecutionItemPartitionKey = newPartitionKey;
+
+            return Task.CompletedTask;
         }
     }
 }

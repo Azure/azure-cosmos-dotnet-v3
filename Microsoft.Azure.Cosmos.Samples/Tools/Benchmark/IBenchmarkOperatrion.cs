@@ -8,7 +8,7 @@ namespace CosmosBenchmark
 
     internal interface IBenchmarkOperatrion
     {
-        void Prepare();
+        Task Prepare();
 
         Task<OperationResult> ExecuteOnceAsync();
     }
