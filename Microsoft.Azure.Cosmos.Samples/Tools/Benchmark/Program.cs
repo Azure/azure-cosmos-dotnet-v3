@@ -54,7 +54,7 @@
             string accountKey = options.Key;
             options.Key = null; // Don't print 
 
-            using (var ct = new ConsoleColoeContext(ConsoleColor.Green))
+            using (ConsoleColoeContext ct = new ConsoleColoeContext(ConsoleColor.Green))
             {
 
                 Console.WriteLine($"{nameof(CosmosBenchmark)} started with arguments");
@@ -77,14 +77,14 @@
                 MaxRequestsPerTcpConnection = 2,
             };
 
-            using (var client = new CosmosClient(
+            using (CosmosClient client = new CosmosClient(
                 options.EndPoint,
                 accountKey,
                 clientOptions))
             {
-                var program = new Program(client);
+                Program program = new Program(client);
 
-                var tmp = options.ItemCount;
+                int tmp = options.ItemCount;
 
                 options.ItemCount = tmp / 10;
                 await program.RunAsync(options, true);
@@ -97,7 +97,7 @@
                 Console.WriteLine("CosmosBenchmark completed successfully.");
             }
 
-            using (var fileWriter = new StreamWriter("HistogramResults.hgrm"))
+            using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
             {
                 Program.latencyHistogram.OutputPercentileDistribution(fileWriter);
             }
@@ -110,9 +110,9 @@
 
         private static void HandleParseError(IEnumerable<Error> errors)
         {
-            using (var ct = new ConsoleColoeContext(ConsoleColor.Red))
+            using (ConsoleColoeContext ct = new ConsoleColoeContext(ConsoleColor.Red))
             {
-                foreach (var e in errors)
+                foreach (Error e in errors)
                 {
                     Console.WriteLine(e.ToString());
                 }
@@ -130,7 +130,7 @@
             this.itemsInserted = 0;
             if (options.CleanupOnStart)
             {
-                Database database = client.GetDatabase(options.Database);
+                Database database = this.client.GetDatabase(options.Database);
                 await database.DeleteStreamAsync();
             }
 
@@ -154,13 +154,13 @@
             Console.WriteLine();
             string sampleItem = File.ReadAllText(options.ItemTemplateFile);
 
-            pendingTaskCount = taskCount;
-            var tasks = new List<Task>();
+            this.pendingTaskCount = taskCount;
+            List<Task> tasks = new List<Task>();
             tasks.Add(this.LogOutputStats());
 
             string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
             long numberOfItemsToInsert = options.ItemCount / taskCount;
-            for (var i = 0; i < taskCount; i++)
+            for (int i = 0; i < taskCount; i++)
             {
                 tasks.Add(this.InsertItem(i, container, partitionKeyPath, sampleItem, numberOfItemsToInsert, warmup));
             }
@@ -170,7 +170,7 @@
             if (options.CleanupOnFinish)
             {
                 Console.WriteLine($"Deleting Database {options.Database}");
-                Database database = client.GetDatabase(options.Database);
+                Database database = this.client.GetDatabase(options.Database);
                 await database.DeleteStreamAsync();
             }
         }
@@ -190,13 +190,13 @@
             int currentTraceLatency = 50;
 
             Stopwatch sw = new Stopwatch();
-            for (var i = 0; i < numberOfItemsToInsert; i++)
+            for (int i = 0; i < numberOfItemsToInsert; i++)
             {
                 string newPartitionKey = Guid.NewGuid().ToString();
                 newDictionary["id"] = Guid.NewGuid().ToString();
                 newDictionary[partitionKeyProperty] = newPartitionKey;
 
-                using (var inputStream = Program.ToStream(newDictionary))
+                using (Stream inputStream = Program.ToStream(newDictionary))
                 {
                     try
                     {
@@ -264,7 +264,7 @@
                 requestUnits = this.RequestUnitsConsumed.Sum();
 
                 long currentCount = this.itemsInserted;
-                ruPerSecond = (requestUnits / seconds);
+                ruPerSecond = requestUnits / seconds;
                 ruPerMonth = ruPerSecond * 86400 * 30;
 
                 Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
@@ -273,16 +273,16 @@
                     Math.Round(ruPerSecond),
                     Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
 
-                lastCount = itemsInserted;
+                lastCount = this.itemsInserted;
                 lastSeconds = seconds;
                 lastRequestUnits = requestUnits;
             }
 
             double totalSeconds = watch.Elapsed.TotalSeconds;
-            ruPerSecond = (requestUnits / totalSeconds);
+            ruPerSecond = requestUnits / totalSeconds;
             ruPerMonth = ruPerSecond * 86400 * 30;
 
-            using (var ct = new ConsoleColoeContext(ConsoleColor.Green))
+            using (ConsoleColoeContext ct = new ConsoleColoeContext(ConsoleColor.Green))
             {
                 Console.WriteLine();
                 Console.WriteLine("Summary:");
@@ -302,7 +302,7 @@
         /// <returns>The created container.</returns>
         private async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkOptions options)
         {
-            Database database = await client.CreateDatabaseIfNotExistsAsync(options.Database);
+            Database database = await this.client.CreateDatabaseIfNotExistsAsync(options.Database);
 
             Container container = database.GetContainer(options.Container);
 
@@ -374,7 +374,7 @@
             [Event(1, Level = EventLevel.Informational)]
             public void LatencyDiagnostics(int latencyinMs, string dianostics)
             {
-                WriteEvent(1, latencyinMs, dianostics);
+                this.WriteEvent(1, latencyinMs, dianostics);
             }
         }
     }
