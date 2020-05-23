@@ -3,8 +3,7 @@
     <Input>
       <Description>Escape Sequence 0</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0000",
-  "Kind": "StringLiteral"
+  "Value": "\u0000"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -20,8 +19,7 @@
     <Input>
       <Description>Escape Sequence 1</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0001",
-  "Kind": "StringLiteral"
+  "Value": "\u0001"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -37,8 +35,7 @@
     <Input>
       <Description>Escape Sequence 2</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0002",
-  "Kind": "StringLiteral"
+  "Value": "\u0002"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -54,8 +51,7 @@
     <Input>
       <Description>Escape Sequence 3</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0003",
-  "Kind": "StringLiteral"
+  "Value": "\u0003"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -71,8 +67,7 @@
     <Input>
       <Description>Escape Sequence 4</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0004",
-  "Kind": "StringLiteral"
+  "Value": "\u0004"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -88,8 +83,7 @@
     <Input>
       <Description>Escape Sequence 5</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0005",
-  "Kind": "StringLiteral"
+  "Value": "\u0005"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -105,8 +99,7 @@
     <Input>
       <Description>Escape Sequence 6</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0006",
-  "Kind": "StringLiteral"
+  "Value": "\u0006"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -122,8 +115,7 @@
     <Input>
       <Description>Escape Sequence 7</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0007",
-  "Kind": "StringLiteral"
+  "Value": "\u0007"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -139,8 +131,7 @@
     <Input>
       <Description>Escape Sequence 8</Description>
       <SqlObject><![CDATA[{
-  "Value": "\b",
-  "Kind": "StringLiteral"
+  "Value": "\b"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -156,8 +147,7 @@
     <Input>
       <Description>Escape Sequence 9</Description>
       <SqlObject><![CDATA[{
-  "Value": "\t",
-  "Kind": "StringLiteral"
+  "Value": "\t"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -173,8 +163,7 @@
     <Input>
       <Description>Escape Sequence 10</Description>
       <SqlObject><![CDATA[{
-  "Value": "\n",
-  "Kind": "StringLiteral"
+  "Value": "\n"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -190,8 +179,7 @@
     <Input>
       <Description>Escape Sequence 11</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u000b",
-  "Kind": "StringLiteral"
+  "Value": "\u000b"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -207,8 +195,7 @@
     <Input>
       <Description>Escape Sequence 12</Description>
       <SqlObject><![CDATA[{
-  "Value": "\f",
-  "Kind": "StringLiteral"
+  "Value": "\f"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -224,8 +211,7 @@
     <Input>
       <Description>Escape Sequence 13</Description>
       <SqlObject><![CDATA[{
-  "Value": "\r",
-  "Kind": "StringLiteral"
+  "Value": "\r"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -241,8 +227,7 @@
     <Input>
       <Description>Escape Sequence 14</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u000e",
-  "Kind": "StringLiteral"
+  "Value": "\u000e"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -258,8 +243,7 @@
     <Input>
       <Description>Escape Sequence 15</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u000f",
-  "Kind": "StringLiteral"
+  "Value": "\u000f"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -275,8 +259,7 @@
     <Input>
       <Description>Escape Sequence 16</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0010",
-  "Kind": "StringLiteral"
+  "Value": "\u0010"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -292,8 +275,7 @@
     <Input>
       <Description>Escape Sequence 17</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0011",
-  "Kind": "StringLiteral"
+  "Value": "\u0011"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -309,8 +291,7 @@
     <Input>
       <Description>Escape Sequence 18</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0012",
-  "Kind": "StringLiteral"
+  "Value": "\u0012"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -326,8 +307,7 @@
     <Input>
       <Description>Escape Sequence 19</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0013",
-  "Kind": "StringLiteral"
+  "Value": "\u0013"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -343,8 +323,7 @@
     <Input>
       <Description>Escape Sequence 20</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0014",
-  "Kind": "StringLiteral"
+  "Value": "\u0014"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -360,8 +339,7 @@
     <Input>
       <Description>Escape Sequence 21</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0015",
-  "Kind": "StringLiteral"
+  "Value": "\u0015"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -377,8 +355,7 @@
     <Input>
       <Description>Escape Sequence 22</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0016",
-  "Kind": "StringLiteral"
+  "Value": "\u0016"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -394,8 +371,7 @@
     <Input>
       <Description>Escape Sequence 23</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0017",
-  "Kind": "StringLiteral"
+  "Value": "\u0017"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -411,8 +387,7 @@
     <Input>
       <Description>Escape Sequence 24</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0018",
-  "Kind": "StringLiteral"
+  "Value": "\u0018"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -428,8 +403,7 @@
     <Input>
       <Description>Escape Sequence 25</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u0019",
-  "Kind": "StringLiteral"
+  "Value": "\u0019"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -445,8 +419,7 @@
     <Input>
       <Description>Escape Sequence 26</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u001a",
-  "Kind": "StringLiteral"
+  "Value": "\u001a"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -462,8 +435,7 @@
     <Input>
       <Description>Escape Sequence 27</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u001b",
-  "Kind": "StringLiteral"
+  "Value": "\u001b"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -479,8 +451,7 @@
     <Input>
       <Description>Escape Sequence 28</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u001c",
-  "Kind": "StringLiteral"
+  "Value": "\u001c"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -496,8 +467,7 @@
     <Input>
       <Description>Escape Sequence 29</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u001d",
-  "Kind": "StringLiteral"
+  "Value": "\u001d"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -513,8 +483,7 @@
     <Input>
       <Description>Escape Sequence 30</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u001e",
-  "Kind": "StringLiteral"
+  "Value": "\u001e"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -530,8 +499,7 @@
     <Input>
       <Description>Escape Sequence 31</Description>
       <SqlObject><![CDATA[{
-  "Value": "\u001f",
-  "Kind": "StringLiteral"
+  "Value": "\u001f"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -547,8 +515,7 @@
     <Input>
       <Description>Empty String</Description>
       <SqlObject><![CDATA[{
-  "Value": "",
-  "Kind": "StringLiteral"
+  "Value": ""
 }]]></SqlObject>
     </Input>
     <Output>
@@ -564,8 +531,7 @@
     <Input>
       <Description>SqlStringLiteral</Description>
       <SqlObject><![CDATA[{
-  "Value": "Hello",
-  "Kind": "StringLiteral"
+  "Value": "Hello"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -579,10 +545,9 @@
   </Result>
   <Result>
     <Input>
-      <Description>SqlStringLiteralWith Unicode</Description>
+      <Description>SqlStringLiteral With Unicode</Description>
       <SqlObject><![CDATA[{
-  "Value": "💩",
-  "Kind": "StringLiteral"
+  "Value": "💩"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -598,8 +563,7 @@
     <Input>
       <Description>SqlNumberLiteral</Description>
       <SqlObject><![CDATA[{
-  "Value": 1597463007,
-  "Kind": "NumberLiteral"
+  "Value": 1597463007
 }]]></SqlObject>
     </Input>
     <Output>
@@ -614,9 +578,7 @@
   <Result>
     <Input>
       <Description>SqlNullLiteral</Description>
-      <SqlObject><![CDATA[{
-  "Kind": "NullLiteral"
-}]]></SqlObject>
+      <SqlObject><![CDATA[{}]]></SqlObject>
     </Input>
     <Output>
       <TextOutput><![CDATA[null]]></TextOutput>
@@ -631,8 +593,7 @@ null
     <Input>
       <Description>SqlBooleanLiteralTrue</Description>
       <SqlObject><![CDATA[{
-  "Value": true,
-  "Kind": "BooleanLiteral"
+  "Value": true
 }]]></SqlObject>
     </Input>
     <Output>
@@ -648,8 +609,7 @@ true
     <Input>
       <Description>SqlBooleanLiteralFalse</Description>
       <SqlObject><![CDATA[{
-  "Value": false,
-  "Kind": "BooleanLiteral"
+  "Value": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -664,9 +624,7 @@ false
   <Result>
     <Input>
       <Description>SqlUndefinedLiteral</Description>
-      <SqlObject><![CDATA[{
-  "Kind": "UndefinedLiteral"
-}]]></SqlObject>
+      <SqlObject><![CDATA[{}]]></SqlObject>
     </Input>
     <Output>
       <TextOutput><![CDATA[undefined]]></TextOutput>
@@ -681,8 +639,7 @@ undefined
     <Input>
       <Description>Zero</Description>
       <SqlObject><![CDATA[{
-  "Value": 0,
-  "Kind": "NumberLiteral"
+  "Value": 0
 }]]></SqlObject>
     </Input>
     <Output>
@@ -698,8 +655,7 @@ undefined
     <Input>
       <Description>Positive Number</Description>
       <SqlObject><![CDATA[{
-  "Value": 1,
-  "Kind": "NumberLiteral"
+  "Value": 1
 }]]></SqlObject>
     </Input>
     <Output>
@@ -715,8 +671,7 @@ undefined
     <Input>
       <Description>Negative Number</Description>
       <SqlObject><![CDATA[{
-  "Value": -1,
-  "Kind": "NumberLiteral"
+  "Value": -1
 }]]></SqlObject>
     </Input>
     <Output>
@@ -732,8 +687,7 @@ undefined
     <Input>
       <Description>Double</Description>
       <SqlObject><![CDATA[{
-  "Value": 1337.1337,
-  "Kind": "NumberLiteral"
+  "Value": 1337.1337
 }]]></SqlObject>
     </Input>
     <Output>
@@ -749,8 +703,7 @@ undefined
     <Input>
       <Description>E</Description>
       <SqlObject><![CDATA[{
-  "Value": 2.7182818284590451,
-  "Kind": "NumberLiteral"
+  "Value": 2.7182818284590451
 }]]></SqlObject>
     </Input>
     <Output>
@@ -766,8 +719,7 @@ undefined
     <Input>
       <Description>Pi</Description>
       <SqlObject><![CDATA[{
-  "Value": 3.1415926535897931,
-  "Kind": "NumberLiteral"
+  "Value": 3.1415926535897931
 }]]></SqlObject>
     </Input>
     <Output>
@@ -783,8 +735,7 @@ undefined
     <Input>
       <Description>1/3</Description>
       <SqlObject><![CDATA[{
-  "Value": 0.33333333333333331,
-  "Kind": "NumberLiteral"
+  "Value": 0.33333333333333331
 }]]></SqlObject>
     </Input>
     <Output>
@@ -800,8 +751,7 @@ undefined
     <Input>
       <Description>Max Safe Integer 9007199254740991</Description>
       <SqlObject><![CDATA[{
-  "Value": 9007199254740991,
-  "Kind": "NumberLiteral"
+  "Value": 9007199254740991
 }]]></SqlObject>
     </Input>
     <Output>
@@ -817,8 +767,7 @@ undefined
     <Input>
       <Description>Max Safe Integer 9007199254740991 Plus One</Description>
       <SqlObject><![CDATA[{
-  "Value": 9007199254740992,
-  "Kind": "NumberLiteral"
+  "Value": 9007199254740992
 }]]></SqlObject>
     </Input>
     <Output>
@@ -834,8 +783,7 @@ undefined
     <Input>
       <Description>Max Safe Integer 9007199254740991 Minus One</Description>
       <SqlObject><![CDATA[{
-  "Value": 9007199254740990,
-  "Kind": "NumberLiteral"
+  "Value": 9007199254740990
 }]]></SqlObject>
     </Input>
     <Output>
@@ -851,8 +799,7 @@ undefined
     <Input>
       <Description>Min Safe Integer: -9007199254740991</Description>
       <SqlObject><![CDATA[{
-  "Value": -9007199254740991,
-  "Kind": "NumberLiteral"
+  "Value": -9007199254740991
 }]]></SqlObject>
     </Input>
     <Output>
@@ -868,8 +815,7 @@ undefined
     <Input>
       <Description>Min Safe Integer: -9007199254740991 Plus One</Description>
       <SqlObject><![CDATA[{
-  "Value": -9007199254740990,
-  "Kind": "NumberLiteral"
+  "Value": -9007199254740990
 }]]></SqlObject>
     </Input>
     <Output>
@@ -885,8 +831,7 @@ undefined
     <Input>
       <Description>Min Safe Integer: -9007199254740991 Minus One</Description>
       <SqlObject><![CDATA[{
-  "Value": -9007199254740992,
-  "Kind": "NumberLiteral"
+  "Value": -9007199254740992
 }]]></SqlObject>
     </Input>
     <Output>
@@ -902,8 +847,7 @@ undefined
     <Input>
       <Description>PositiveInfinity ∞</Description>
       <SqlObject><![CDATA[{
-  "Value": "Infinity",
-  "Kind": "NumberLiteral"
+  "Value": "Infinity"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -919,8 +863,7 @@ Infinity
     <Input>
       <Description>NegativeInfinity -∞</Description>
       <SqlObject><![CDATA[{
-  "Value": "-Infinity",
-  "Kind": "NumberLiteral"
+  "Value": "-Infinity"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -936,8 +879,7 @@ Infinity
     <Input>
       <Description>NaN NaN</Description>
       <SqlObject><![CDATA[{
-  "Value": "NaN",
-  "Kind": "NumberLiteral"
+  "Value": "NaN"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -953,8 +895,7 @@ NaN
     <Input>
       <Description>Epsilon 4.94065645841247E-324</Description>
       <SqlObject><![CDATA[{
-  "Value": 4.94065645841247E-324,
-  "Kind": "NumberLiteral"
+  "Value": 4.94065645841247E-324
 }]]></SqlObject>
     </Input>
     <Output>
@@ -970,8 +911,7 @@ NaN
     <Input>
       <Description>MaxValue 1.79769313486232E+308</Description>
       <SqlObject><![CDATA[{
-  "Value": 1.7976931348623157E+308,
-  "Kind": "NumberLiteral"
+  "Value": 1.7976931348623157E+308
 }]]></SqlObject>
     </Input>
     <Output>
@@ -987,8 +927,7 @@ NaN
     <Input>
       <Description>MinValue -1.79769313486232E+308</Description>
       <SqlObject><![CDATA[{
-  "Value": -1.7976931348623157E+308,
-  "Kind": "NumberLiteral"
+  "Value": -1.7976931348623157E+308
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1004,8 +943,7 @@ NaN
     <Input>
       <Description>MinValue -9223372036854775808</Description>
       <SqlObject><![CDATA[{
-  "Value": -9223372036854775808,
-  "Kind": "NumberLiteral"
+  "Value": -9223372036854775808
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1021,8 +959,7 @@ NaN
     <Input>
       <Description>MaxValue 9223372036854775807</Description>
       <SqlObject><![CDATA[{
-  "Value": 9223372036854775807,
-  "Kind": "NumberLiteral"
+  "Value": 9223372036854775807
 }]]></SqlObject>
     </Input>
     <Output>

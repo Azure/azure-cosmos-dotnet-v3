@@ -26,14 +26,14 @@ namespace Microsoft.Azure.Cosmos
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private string containerRid;
         private string continuationToken;
         private int? maxItemCount;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
-            ContainerCore container,
+            ContainerInternal container,
             string continuationToken,
             int? maxItemCount,
             ChangeFeedRequestOptions options)
@@ -53,13 +53,6 @@ namespace Microsoft.Azure.Cosmos
         protected readonly ChangeFeedRequestOptions changeFeedOptions;
 
         public override bool HasMoreResults => true;
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedToken FeedToken => throw new NotImplementedException();
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -179,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }

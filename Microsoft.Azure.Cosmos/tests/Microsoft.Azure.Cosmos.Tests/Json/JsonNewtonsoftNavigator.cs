@@ -7,38 +7,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json.Linq;
 
     internal sealed class JsonNewtonsoftNavigator : IJsonNavigator
     {
-        private readonly struct NewtonsoftNode : IJsonNavigatorNode
-        {
-            public NewtonsoftNode(JToken jToken, JsonNodeType jsonNodeType)
-            {
-                this.JToken = jToken;
-                this.JsonNodeType = jsonNodeType;
-            }
-
-            public JToken JToken { get; }
-            public JsonNodeType JsonNodeType { get; }
-        }
-
         private readonly NewtonsoftNode root;
 
         public JsonNewtonsoftNavigator(string input)
         {
-            JToken rootJToken = JToken.Parse(input);
+            Newtonsoft.Json.JsonReader reader = new Newtonsoft.Json.JsonTextReader(new StringReader(input))
+            {
+                DateParseHandling = Newtonsoft.Json.DateParseHandling.None
+            };
+
+            JToken rootJToken = JToken.Load(reader);
+
             this.root = new NewtonsoftNode(rootJToken, this.JTokenToJsonNodeType(rootJToken));
         }
 
-        public JsonSerializationFormat SerializationFormat
-        {
-            get
-            {
-                return JsonSerializationFormat.Text;
-            }
-        }
+        public JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
         public IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode arrayNode, int index)
         {
@@ -181,9 +171,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             throw new NotImplementedException();
         }
 
-        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedStringValue)
+        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Memory bufferedStringValue)
         {
-            bufferedStringValue = null;
+            bufferedStringValue = default;
             return false;
         }
 
@@ -209,10 +199,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return false;
         }
 
-        public bool TryGetBufferedUtf8StringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Span bufferedUtf8StringValue)
         {
-            bufferedUtf8StringValue = null;
+            bufferedUtf8StringValue = default;
             return false;
+        }
+
+        private readonly struct NewtonsoftNode : IJsonNavigatorNode
+        {
+            public NewtonsoftNode(JToken jToken, JsonNodeType jsonNodeType)
+            {
+                this.JToken = jToken;
+                this.JsonNodeType = jsonNodeType;
+            }
+
+            public JToken JToken { get; }
+            public JsonNodeType JsonNodeType { get; }
         }
     }
 }

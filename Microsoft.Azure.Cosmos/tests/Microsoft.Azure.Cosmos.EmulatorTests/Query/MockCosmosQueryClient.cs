@@ -4,7 +4,6 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,7 +13,7 @@
     /// <summary>
     /// A helper that forces the SDK to use the gateway or the service interop for the query plan
     /// </summary>
-    internal class MockCosmosQueryClient : CosmosQueryClientCore
+    internal sealed class MockCosmosQueryClient : CosmosQueryClientCore
     {
         /// <summary>
         /// True it will use the gateway query plan.
@@ -24,7 +23,7 @@
 
         public MockCosmosQueryClient(
             CosmosClientContext clientContext,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             bool forceQueryPlanGatewayElseServiceInterop) : base(
                 clientContext,
                 cosmosContainerCore)
@@ -34,12 +33,12 @@
 
         public int QueryPlanCalls { get; private set; }
 
-        internal override bool ByPassQueryParsing()
+        public override bool ByPassQueryParsing()
         {
             return this.forceQueryPlanGatewayElseServiceInterop;
         }
 
-        internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+        public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -61,10 +60,11 @@
                 cancellationToken);
         }
 
-        internal override Task<QueryResponseCore> ExecuteItemQueryAsync(
+        public override Task<QueryResponseCore> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
+            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
@@ -81,6 +81,7 @@
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
+                clientQueryCorrelationId: clientQueryCorrelationId,
                 requestOptions: requestOptions,
                 queryPageDiagnostics: queryPageDiagnostics,
                 sqlQuerySpec: sqlQuerySpec,

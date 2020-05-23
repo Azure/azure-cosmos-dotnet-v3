@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task UserTests(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            DatabaseCore database = (DatabaseInlineCore)client.GetDatabase(DatabaseId);
+            DatabaseInternal database = (DatabaseInlineCore)client.GetDatabase(DatabaseId);
             List<string> createdIds = new List<string>();
 
             try
@@ -579,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<UserProperties> queryResults = await this.ToListAsync(
                     database.GetUserQueryStreamIterator,
                     database.GetUserQueryIterator<UserProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")",
+                    "SELECT * FROM T where STARTSWITH(T.id, \"BasicQueryUser\")",
                     CosmosBasicQueryTests.RequestOptions
                 );
 

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Text;
@@ -15,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticsInternal, IClientSideRequestStatistics
     {
+        public const string DefaultToStringMessage = "Please see CosmosDiagnostics";
         private readonly object lockObject = new object();
 
         public CosmosClientSideRequestStatistics(CosmosDiagnosticsContext diagnosticsContext = null)
@@ -34,6 +36,8 @@ namespace Microsoft.Azure.Cosmos
         private DateTime? RequestEndTimeUtc { get; set; }
 
         private Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
+
+        private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
 
         public List<Uri> ContactedReplicas { get; set; }
 
@@ -60,13 +64,26 @@ namespace Microsoft.Azure.Cosmos
 
         public void RecordRequest(DocumentServiceRequest request)
         {
+            this.RecordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
         }
 
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
+            // One DocumentServiceRequest can map to multiple store results
+            DateTime? startDateTime = null;
+            if (this.RecordRequestHashCodeToStartTime.TryGetValue(request.GetHashCode(), out DateTime startRequestTime))
+            {
+                startDateTime = startRequestTime;
+            }
+            else
+            {
+                Debug.Fail("DocumentServiceRequest start time not recorded");
+            }
+
             DateTime responseTime = DateTime.UtcNow;
             Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
             StoreResponseStatistics responseStatistics = new StoreResponseStatistics(
+                startDateTime,
                 responseTime,
                 storeResult,
                 request.ResourceType,
@@ -135,20 +152,24 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// The new Cosmos Exception always includes the diagnostics and the
+        /// document client exception message. Some of the older document client exceptions
+        /// include the request statistics in the message causing a circle reference.
+        /// This always returns empty string to prevent the circle reference which
+        /// would cause the diagnostic string to grow exponentially.
+        /// </summary>
         public override string ToString()
         {
-            // This is required for the older IClientSideRequestStatistics
-            // Capture the entire diagnostic context in the toString to avoid losing any information
-            // for any APIs using the older interface.
-            return this.DiagnosticsContext.ToString();
+            return DefaultToStringMessage;
         }
 
+        /// <summary>
+        /// Please see ToString() documentation
+        /// </summary>
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
-            // This is required for the older IClientSideRequestStatistics
-            // Capture the entire diagnostic context in the toString to avoid losing any information
-            // for any APIs using the older interface.
-            stringBuilder.Append(this.DiagnosticsContext.ToString());
+            stringBuilder.Append(DefaultToStringMessage);
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor visitor)

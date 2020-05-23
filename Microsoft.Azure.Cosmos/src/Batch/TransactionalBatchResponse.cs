@@ -219,7 +219,6 @@ namespace Microsoft.Azure.Cosmos
             ServerBatchRequest serverRequest,
             CosmosSerializerCore serializer,
             bool shouldPromoteOperationStatus,
-            bool shouldPerformDecryption,
             CancellationToken cancellationToken)
         {
             using (responseMessage)
@@ -309,19 +308,6 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     response.CreateAndPopulateResults(serverRequest.Operations, retryAfterMilliseconds);
-                }
-                else if (shouldPerformDecryption)
-                {
-                    for (int index = 0; index < serverRequest.Operations.Count; index++)
-                    {
-                        ContainerCore containerCore = serverRequest.Operations[index].ContainerCore;
-                        TransactionalBatchOperationResult result = response.results[index];
-                        result.ResourceStream = await containerCore.ClientContext.DecryptItemAsync(
-                            result.ResourceStream,
-                            (DatabaseCore)containerCore.Database,
-                            responseMessage.DiagnosticsContext,
-                            cancellationToken);
-                    }
                 }
 
                 return response;

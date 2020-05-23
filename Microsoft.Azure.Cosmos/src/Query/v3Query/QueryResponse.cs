@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -106,10 +107,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Lazy<MemoryStream> memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
-                       responseHeaders.ContainerRid,
-                       result,
-                       responseHeaders.ResourceType,
-                       serializationOptions));
+                responseHeaders.ContainerRid,
+                result,
+                responseHeaders.ResourceType,
+                serializationOptions));
 
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,
@@ -134,16 +135,16 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
-                    result: new List<CosmosElement>(),
-                    count: 0,
-                    responseLengthBytes: 0,
-                    responseHeaders: responseHeaders,
-                    diagnostics: diagnostics,
-                    statusCode: statusCode,
-                    cosmosException: cosmosException,
-                    requestMessage: requestMessage,
-                    memoryStream: null,
-                    serializationOptions: null);
+                result: new List<CosmosElement>(),
+                count: 0,
+                responseLengthBytes: 0,
+                responseHeaders: responseHeaders,
+                diagnostics: diagnostics,
+                statusCode: statusCode,
+                cosmosException: cosmosException,
+                requestMessage: requestMessage,
+                memoryStream: null,
+                serializationOptions: null);
 
             return cosmosQueryResponse;
         }

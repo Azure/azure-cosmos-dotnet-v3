@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -46,14 +47,14 @@ namespace Microsoft.Azure.Cosmos
         public ItemBatchOperation(
             OperationType operationType,
             int operationIndex,
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             string id = null,
             Stream resourceStream = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
-            this.ContainerCore = containerCore;
+            this.ContainerInternal = containerCore;
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
 
         public int OperationIndex { get; internal set; }
 
-        internal ContainerCore ContainerCore { get; }
+        internal ContainerInternal ContainerInternal { get; }
 
         internal CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
@@ -170,6 +171,18 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
+                if (ItemRequestOptions.ShouldSetNoContentHeader(
+                    options.EnableContentResponseOnWrite,
+                    options.EnableContentResponseOnRead,
+                    operation.OperationType))
+                {
+                    r = writer.WriteBool("minimalReturnPreference", true);
+                    if (r != Result.Success)
+                    {
+                        return r;
+                    }
+                }
+
                 if (options.IfMatchEtag != null)
                 {
                     r = writer.WriteString("ifMatch", options.IfMatchEtag);
@@ -191,8 +204,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
                     {
-                        byte[] binaryId = binaryIdObj as byte[];
-                        if (binaryId != null)
+                        if (binaryIdObj is byte[] binaryId)
                         {
                             r = writer.WriteBinary("binaryId", binaryId);
                             if (r != Result.Success)
@@ -204,8 +216,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
                     {
-                        byte[] epk = epkObj as byte[];
-                        if (epk != null)
+                        if (epkObj is byte[] epk)
                         {
                             r = writer.WriteBinary("effectivePartitionKey", epk);
                             if (r != Result.Success)
@@ -219,8 +230,7 @@ namespace Microsoft.Azure.Cosmos
                             HttpConstants.HttpHeaders.PartitionKey,
                             out object pkStrObj))
                     {
-                        string pkString = pkStrObj as string;
-                        if (pkString != null)
+                        if (pkStrObj is string pkString)
                         {
                             r = writer.WriteString("partitionKey", pkString);
                             if (r != Result.Success)
@@ -232,8 +242,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.TimeToLiveInSeconds, out object ttlObj))
                     {
-                        string ttlStr = ttlObj as string;
-                        if (ttlStr != null && int.TryParse(ttlStr, out int ttl))
+                        if (ttlObj is string ttlStr && int.TryParse(ttlStr, out int ttl))
                         {
                             r = writer.WriteInt32("timeToLiveInSeconds", ttl);
                             if (r != Result.Success)
@@ -290,8 +299,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (this.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
                     {
-                        byte[] binaryId = binaryIdObj as byte[];
-                        if (binaryId != null)
+                        if (binaryIdObj is byte[] binaryId)
                         {
                             length += binaryId.Length;
                         }
@@ -299,8 +307,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (this.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
                     {
-                        byte[] epk = epkObj as byte[];
-                        if (epk != null)
+                        if (epkObj is byte[] epk)
                         {
                             length += epk.Length;
                         }
@@ -312,26 +319,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Encrypts (if encryption options are set) and materializes the operation's resource into a Memory{byte} wrapping a byte array.
+        /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
         /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal virtual async Task EncryptAndMaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
-                Stream stream = this.ResourceStream;
-                if (this.ContainerCore != null && this.RequestOptions?.EncryptionOptions != null)
-                {
-                    stream = await this.ContainerCore.ClientContext.EncryptItemAsync(
-                        stream,
-                        this.RequestOptions.EncryptionOptions,
-                        (DatabaseCore)this.ContainerCore.Database,
-                        this.DiagnosticsContext,
-                        cancellationToken);
-                }
-
-                this.body = await BatchExecUtils.StreamToMemoryAsync(stream, cancellationToken);
+                this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
             }
         }
 
@@ -387,7 +383,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             int operationIndex,
             T resource,
-            ContainerCore containerCore,
+            ContainerInternal containerCore,
             string id = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
             : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions)
@@ -402,12 +398,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal override Task EncryptAndMaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
                 this.ResourceStream = serializerCore.ToStream(this.Resource);
-                return base.EncryptAndMaterializeResourceAsync(serializerCore, cancellationToken);
+                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 
             return Task.CompletedTask;

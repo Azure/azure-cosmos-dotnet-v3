@@ -245,24 +245,28 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         static StringBuiltinFunctions()
         {
-            StringBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>();
-
-            StringBuiltinFunctionDefinitions.Add("Concat",
-                new StringVisitConcat());
-
-            StringBuiltinFunctionDefinitions.Add("Contains",
-                new StringVisitContains());
-
-            StringBuiltinFunctionDefinitions.Add("EndsWith",
-                new SqlBuiltinFunctionVisitor("ENDSWITH",
+            StringBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
+            {
+                {
+                    "Concat",
+                    new StringVisitConcat()
+                },
+                {
+                    "Contains",
+                    new StringVisitContains()
+                },
+                {
+                    "EndsWith",
+                    new SqlBuiltinFunctionVisitor("ENDSWITH",
                     false,
                     new List<Type[]>
                     {
                         new Type[]{typeof(string)}
-                    }));
-
-            StringBuiltinFunctionDefinitions.Add("IndexOf",
-                new SqlBuiltinFunctionVisitor("INDEX_OF",
+                    })
+                },
+                {
+                    "IndexOf",
+                    new SqlBuiltinFunctionVisitor("INDEX_OF",
                     false,
                     new List<Type[]>()
                     {
@@ -270,66 +274,79 @@ namespace Microsoft.Azure.Cosmos.Linq
                         new Type[]{typeof(string)},
                         new Type[]{typeof(char), typeof(int)},
                         new Type[]{typeof(string), typeof(int)},
-                    }));
-
-            StringBuiltinFunctionDefinitions.Add("Count",
-                new StringVisitCount());
-
-            StringBuiltinFunctionDefinitions.Add("ToLower",
-                new SqlBuiltinFunctionVisitor("LOWER",
+                    })
+                },
+                {
+                    "Count",
+                    new StringVisitCount()
+                },
+                {
+                    "ToLower",
+                    new SqlBuiltinFunctionVisitor("LOWER",
                     false,
                     new List<Type[]>()
                     {
                         new Type[]{}
-                    }));
-
-            StringBuiltinFunctionDefinitions.Add("TrimStart",
-                new StringVisitTrimStart());
-
-            StringBuiltinFunctionDefinitions.Add("Replace",
-                new SqlBuiltinFunctionVisitor("REPLACE",
+                    })
+                },
+                {
+                    "TrimStart",
+                    new StringVisitTrimStart()
+                },
+                {
+                    "Replace",
+                    new SqlBuiltinFunctionVisitor("REPLACE",
                     false,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(char), typeof(char)},
                         new Type[]{typeof(string), typeof(string)}
-                    }));
-
-            StringBuiltinFunctionDefinitions.Add("Reverse",
-                new StringVisitReverse());
-
-            StringBuiltinFunctionDefinitions.Add("TrimEnd",
-                new StringVisitTrimEnd());
-
-            StringBuiltinFunctionDefinitions.Add("StartsWith",
-                new SqlBuiltinFunctionVisitor("STARTSWITH",
+                    })
+                },
+                {
+                    "Reverse",
+                    new StringVisitReverse()
+                },
+                {
+                    "TrimEnd",
+                    new StringVisitTrimEnd()
+                },
+                {
+                    "StartsWith",
+                    new SqlBuiltinFunctionVisitor("STARTSWITH",
                     false,
                     new List<Type[]>
                     {
                         new Type[]{typeof(string)}
-                    }));
-
-            StringBuiltinFunctionDefinitions.Add("Substring",
-                new SqlBuiltinFunctionVisitor("SUBSTRING",
+                    })
+                },
+                {
+                    "Substring",
+                    new SqlBuiltinFunctionVisitor("SUBSTRING",
                     false,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(int), typeof(int)}
-                    }));
-
-            StringBuiltinFunctionDefinitions.Add("ToUpper",
-                new SqlBuiltinFunctionVisitor("UPPER",
+                    })
+                },
+                {
+                    "ToUpper",
+                    new SqlBuiltinFunctionVisitor("UPPER",
                     false,
                     new List<Type[]>()
                     {
                         new Type[]{}
-                    }));
-
-            StringBuiltinFunctionDefinitions.Add("get_Chars",
-                new StringGetCharsVisitor());
-
-            StringBuiltinFunctionDefinitions.Add("Equals",
-                new StringEqualsVisitor());
+                    })
+                },
+                {
+                    "get_Chars",
+                    new StringGetCharsVisitor()
+                },
+                {
+                    "Equals",
+                    new StringEqualsVisitor()
+                }
+            };
         }
 
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)

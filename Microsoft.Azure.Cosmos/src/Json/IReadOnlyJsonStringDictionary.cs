@@ -3,7 +3,7 @@
 // ------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
-    using System;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -14,8 +14,6 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     interface IReadOnlyJsonStringDictionary
     {
-        bool TryGetStringAtIndex(int index, out string value);
-
-        bool TryGetUtf8StringAtIndex(int index, out ReadOnlyMemory<byte> value);
+        bool TryGetStringAtIndex(int index, out UtfAllString value);
     }
 }

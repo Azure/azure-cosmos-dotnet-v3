@@ -4,9 +4,25 @@
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <IsPreview>true</IsPreview>
+    
+    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+    <Version>$(EncryptionVersion)</Version>
+    <Company>Microsoft Corporation</Company>
+    <Authors>Microsoft</Authors>
+    <Description>This library provides an implementation for client-side encryption for Azure Cosmos's SQL API. For more information, refer to https://aka.ms/CosmosClientEncryption</Description>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Title>Microsoft Azure Cosmos DB client-side encryption library</Title>
+    <PackageId>Microsoft.Azure.Cosmos.Encryption</PackageId>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+    <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard;client;encryption;byok</PackageTags>
   </PropertyGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.9.0-preview3" />  
   </ItemGroup>
 
   <PropertyGroup>
