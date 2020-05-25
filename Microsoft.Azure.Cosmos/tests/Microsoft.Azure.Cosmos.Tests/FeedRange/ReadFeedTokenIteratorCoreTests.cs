@@ -83,21 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
             responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
+            Mock<CosmosClientContext> cosmosClientContext = CreateMockedClientContext(responseMessage);
 
             ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
@@ -141,21 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
             responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
+            Mock<CosmosClientContext> cosmosClientContext = CreateMockedClientContext(responseMessage);
 
             ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
@@ -208,21 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
             responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
+            Mock<CosmosClientContext> cosmosClientContext = CreateMockedClientContext(responseMessage);
 
             ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
@@ -267,21 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
             responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
+            Mock<CosmosClientContext> cosmosClientContext = CreateMockedClientContext(responseMessage);
 
             ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
@@ -330,23 +274,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();            
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            Mock<CosmosClientContext> cosmosClientContext = CreateMockedClientContext(responseMessage);
             cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
-
+            
             ContainerInternal containerCore = Mock.Of<ContainerInternal>();
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
@@ -410,6 +340,36 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             Assert.AreEqual(1, executionCount, "Pipeline handled the Split");
             Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+        }
+
+        private static Mock<CosmosClientContext> CreateMockedClientContext(
+            ResponseMessage responseMessage)
+        {
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+
+            cosmosClientContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+
+            cosmosClientContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<Documents.ResourceType>(),
+                    It.IsAny<Documents.OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(responseMessage));
+
+            return cosmosClientContext;
         }
 
         private static CosmosClientContext GetMockedClientContext(

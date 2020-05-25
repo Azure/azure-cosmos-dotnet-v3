@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = MockCosmosUtil.CreateDiagnosticsContext();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+                nameof(ValidateDiagnosticsContext),
+                "cosmos-netstandard-sdk");
             cosmosDiagnostics.Dispose();
             string diagnostics = cosmosDiagnostics.ToString();
 
