@@ -395,9 +395,6 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 cancellationToken);
 
-            // Merge the previous message diagnostics
-            createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
-
             if (readResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return this.ClientContext.ResponseFactory.CreateContainerResponse(container, createResponse);
@@ -415,7 +412,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Merge the previous message diagnostics
-            createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
             return this.ClientContext.ResponseFactory.CreateContainerResponse(container, readResponseAfterCreate);
         }
 
@@ -438,7 +434,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ContainerProperties containerProperties = new ContainerProperties(id, partitionKeyPath);
-            return this.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, cancellationToken);
+            return this.CreateContainerIfNotExistsAsync(diagnosticsContext, containerProperties, throughput, requestOptions, cancellationToken);
         }
 
         public override Container GetContainer(string id)

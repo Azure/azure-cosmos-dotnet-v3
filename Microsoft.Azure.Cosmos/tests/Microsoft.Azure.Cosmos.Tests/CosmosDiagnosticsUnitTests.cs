@@ -102,7 +102,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Thread.Sleep(TimeSpan.FromSeconds(2));
                 }
 
-                cosmosDiagnostics2 = MockCosmosUtil.CreateDiagnosticsContext();
+                cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
+                    nameof(ValidateDiagnosticsAppendContext),
+                    "MyCustomUserAgentString");
                 cosmosDiagnostics2.Dispose();
 
                 using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))

@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                                            select t;
 
             List<Type> inlineClasses = allClasses.ToList();
-            Assert.IsTrue(inlineClasses.Count >= 7);
+            Assert.IsTrue(inlineClasses.Count >= 6);
 
             foreach (Type inlineType in inlineClasses)
             {
