@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
@@ -82,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="parameters"></param>
         /// <param name="otherParameters"></param>
         /// <returns>True if parameters have the same values.</returns>
-        private static bool ParameterEquals(ReadOnlyDictionary<string, SqlParameter> parameters, ReadOnlyDictionary<string, SqlParameter> otherParameters)
+        private static bool ParameterEquals(IReadOnlyDictionary<string, SqlParameter> parameters, IReadOnlyDictionary<string, SqlParameter> otherParameters)
         {
             if (parameters.Count != otherParameters.Count)
             {

@@ -98,11 +98,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the sql parameters for the class
         /// </summary>
-        internal ReadOnlyDictionary<string, SqlParameter> Parameters
+        internal IReadOnlyDictionary<string, SqlParameter> Parameters
         {
             get
             {
-                return new ReadOnlyDictionary<string, SqlParameter>(this.SqlParameters);
+                return this.SqlParameters;
             }
         }
     }
