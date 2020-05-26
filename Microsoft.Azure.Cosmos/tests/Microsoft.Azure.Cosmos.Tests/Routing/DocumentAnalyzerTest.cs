@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             document.address = address;
 
             partitionKeyDefinition = new PartitionKeyDefinition { Kind = PartitionKind.Hash, Paths = new Collection<string> { "/address/Country/something" } };
-            
+
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "foo" }, true), partitionKeyValue);
 
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             document.address = address;
 
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Kind = PartitionKind.Hash, Paths = new Collection<string> { "/address/Country" } };
-            
+
             PartitionKeyInternal partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { null }, true), partitionKeyValue);
 
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             document.address = address;
 
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Kind = PartitionKind.Hash, Paths = new Collection<string> { "/address/Country" } };
-            
+
             PartitionKeyInternal partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
 
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new Entity { Address = new Address { Country = true } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
-            
+
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new DocumentEntity { Address = new Address { Country = true } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
 
@@ -278,25 +278,48 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public void TestExtractSpecialTypePartitionKey()
         {
-            foreach (Tuple<string, object, Func<object, object>> tuple in new[]
-                {
-                    Tuple.Create<string, object, Func<object, object>>("Guid", Guid.NewGuid(), val => val.ToString()),
-                    Tuple.Create<string, object, Func<object, object>>("DateTime", DateTime.Now, val => 
-                        {
-                            string str = JsonConvert.SerializeObject(val, new JsonSerializerSettings() { Converters = new List<JsonConverter> { new IsoDateTimeConverter() } });
-                            return str.Substring(1, str.Length - 2);
-                        }),
-                    Tuple.Create<string, object, Func<object, object>>("Enum", HttpStatusCode.OK, val => (int)val),
-                    Tuple.Create<string, object, Func<object, object>>("CustomEnum", HttpStatusCode.OK, val => val.ToString()),
-                    Tuple.Create<string, object, Func<object, object>>("ResourceId", "testid", val => val),
-                    Tuple.Create<string, object, Func<object, object>>("CustomDateTime", new DateTime(2016, 11, 14), val => EpochDateTimeConverter.DateTimeToEpoch((DateTime)val)),
-                })
+            foreach ((string, object, Func<object, object>) tuple in new (string, object, Func<object, object>)[]
+            {
+                ("Guid", Guid.NewGuid(), val => val.ToString()),
+                ("DateTime", DateTime.Now, val =>
+                    {
+                        string str = JsonConvert.SerializeObject(
+                            val,
+                            new JsonSerializerSettings()
+                            {
+                                Converters = new List<JsonConverter>
+                                {
+                                    new IsoDateTimeConverter()
+                                }
+                            });
+                        return str.Substring(1, str.Length - 2);
+                    }),
+                ("Enum", HttpStatusCode.OK, val => (int)val),
+                ("CustomEnum", HttpStatusCode.OK, val => val.ToString()),
+                ("ResourceId", "testid", val => val),
+                ("CustomDateTime", new DateTime(2016, 11, 14), val => EpochDateTimeConverter.DateTimeToEpoch((DateTime)val)),
+            })
             {
                 SpecialPropertyDocument sd = new SpecialPropertyDocument();
                 sd.GetType().GetProperty(tuple.Item1).SetValue(sd, tuple.Item2);
-                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Kind = PartitionKind.Hash, Paths = new Collection<string> { "/" + tuple.Item1 } };
-                PartitionKeyInternal partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(sd), partitionKeyDefinition);
-                Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { tuple.Item3(tuple.Item2) }, true), partitionKeyValue);
+
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+                {
+                    Kind = PartitionKind.Hash,
+                    Paths = new Collection<string>
+                    {
+                        "/" + tuple.Item1
+                    }
+                };
+
+                PartitionKeyInternal partitionKeyValue = DocumentAnalyzer
+                    .ExtractPartitionKeyValue(
+                        Document.FromObject(sd),
+                        partitionKeyDefinition);
+
+                Assert.AreEqual(
+                    PartitionKeyInternal.FromObjectArray(new object[] { tuple.Item3(tuple.Item2) }, strict: true),
+                    partitionKeyValue);
             }
         }
 
