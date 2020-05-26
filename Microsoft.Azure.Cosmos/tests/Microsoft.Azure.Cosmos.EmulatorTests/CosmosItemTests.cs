@@ -1792,7 +1792,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task CustomHeaderItemReqeuestOptionsTest()
+        public async Task CustomPropertiesItemRequestOptionsTest()
         {
             string customHeaderName = "custom-header1";
             string customHeaderValue = "value1";

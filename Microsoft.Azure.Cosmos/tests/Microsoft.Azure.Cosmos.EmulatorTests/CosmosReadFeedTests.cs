@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(total, count);
             Assert.IsFalse(forwardOrder.Where(x => string.IsNullOrEmpty(x)).Any());
 
-            requestOptions.Properties = requestOptions.Properties = new Dictionary<string, object>()
+            requestOptions.Properties = new Dictionary<string, object>()
             {
                 { HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse },
             };
