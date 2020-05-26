@@ -3397,10 +3397,22 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Boolean] EnableBulkExecution": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "System.Nullable`1[System.Boolean] get_EnableBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableBulkExecution()"
         },
         "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3430,6 +3442,13 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+        },
+        "Void set_EnableBulkExecution(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableBulkExecution(System.Nullable`1[System.Boolean])"
         },
         "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -4889,10 +4908,22 @@
               "Attributes": [],
               "MethodInfo": null
             },
+            "System.Nullable`1[System.Boolean] EnableBulkExecution": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
             "System.Nullable`1[System.Boolean] EnableContentResponseOnWrite": {
               "Type": "Property",
               "Attributes": [],
               "MethodInfo": null
+            },
+            "System.Nullable`1[System.Boolean] get_EnableBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableBulkExecution()"
             },
             "System.Nullable`1[System.Boolean] get_EnableContentResponseOnWrite()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -4922,6 +4953,13 @@
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+            },
+            "Void set_EnableBulkExecution(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_EnableBulkExecution(System.Nullable`1[System.Boolean])"
             },
             "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
