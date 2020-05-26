@@ -1,17 +1,8 @@
-﻿|                                                     Method |         Mean |        Error |      StdDev |       Median |      Gen 0 |     Gen 1 | Gen 2 |    Allocated |
-|----------------------------------------------------------- |-------------:|-------------:|------------:|-------------:|-----------:|----------:|------:|-------------:|
-|                     NutritionData_TextReader_To_TextWriter | 12,305.74 us |   962.448 us | 2,714.60 us | 11,028.05 us |          - |         - |     - |   1039.09 KB |
-|                   NutritionData_TextReader_To_BinaryWriter | 18,631.29 us |   367.686 us |   663.01 us | 18,464.60 us |          - |         - |     - |   2788.23 KB |
-|           NutritionData_TextReader_To_NewtonsoftTextWriter | 33,497.31 us |   672.020 us | 1,417.52 us | 33,283.60 us | 25000.0000 | 1000.0000 |     - | 106343.27 KB |
-|                   NutritionData_BinaryReader_To_TextWriter | 12,336.98 us |   245.413 us |   624.65 us | 12,177.45 us |          - |         - |     - |   2672.93 KB |
-|                 NutritionData_BinaryReader_To_BinaryWriter |  5,299.14 us |   145.055 us |   382.13 us |  5,227.50 us |          - |         - |     - |   1251.77 KB |
-|         NutritionData_BinaryReader_To_NewtonsoftTextWriter | 13,076.59 us | 1,677.835 us | 4,947.13 us | 10,180.95 us |          - |         - |     - |   2497.41 KB |
-|           NutritionData_NewtonsoftTextReader_To_TextWriter | 14,186.59 us |   473.102 us | 1,303.06 us | 13,831.00 us |          - |         - |     - |   3106.41 KB |
-|         NutritionData_NewtonsoftTextReader_To_BinaryWriter | 14,319.61 us |   285.106 us |   666.43 us | 14,190.00 us |          - |         - |     - |   3103.45 KB |
-| NutritionData_NewtonsoftTextReader_To_NewtonsoftTextWriter | 12,488.27 us |   469.511 us | 1,339.54 us | 12,032.95 us |          - |         - |     - |   3000.98 KB |
-|                  NutritionData_TextNavigator_To_TextWriter |    163.03 us |    13.813 us |    40.29 us |    154.80 us |          - |         - |     - |   1522.66 KB |
-|                NutritionData_TextNavigator_To_BinaryWriter | 19,980.72 us |   531.824 us | 1,074.31 us | 19,755.20 us |          - |         - |     - |   3960.15 KB |
-|                NutritionData_BinaryNavigator_To_TextWriter |  8,908.26 us |   175.862 us |   370.95 us |  8,857.65 us |          - |         - |     - |    3564.8 KB |
-|              NutritionData_BinaryNavigator_To_BinaryWriter |     66.89 us |     4.913 us |    14.49 us |     61.85 us |          - |         - |     - |    687.37 KB |
-|        NutritionData_TextNavigator_To_NewtonsoftTextWriter | 10,648.62 us |   338.097 us |   996.89 us | 10,395.45 us |          - |         - |     - |   4244.78 KB |
-|      NutritionData_BinaryNavigator_To_NewtonsoftTextWriter | 12,821.37 us | 1,259.063 us | 3,692.61 us | 10,635.30 us |  1000.0000 |         - |     - |   4930.37 KB |
+﻿|                                                Method |         Mean |      Error |      StdDev |       Median |     Gen 0 | Gen 1 | Gen 2 |  Allocated |
+|------------------------------------------------------ |-------------:|-----------:|------------:|-------------:|----------:|------:|------:|-----------:|
+|             NutritionData_TextNavigator_To_TextWriter |    122.58 us |  10.226 us |    29.67 us |    118.40 us |         - |     - |     - | 1522.66 KB |
+|           NutritionData_TextNavigator_To_BinaryWriter | 20,468.10 us | 406.670 us | 1,106.38 us | 20,241.70 us |         - |     - |     - | 3960.15 KB |
+|           NutritionData_BinaryNavigator_To_TextWriter | 11,464.40 us | 258.191 us |   702.43 us | 11,360.00 us |         - |     - |     - | 4130.05 KB |
+|         NutritionData_BinaryNavigator_To_BinaryWriter |     68.16 us |   5.538 us |    16.24 us |     65.10 us |         - |     - |     - |  687.38 KB |
+|   NutritionData_TextNavigator_To_NewtonsoftTextWriter | 10,576.78 us | 320.993 us |   946.46 us | 10,449.40 us |         - |     - |     - | 4244.78 KB |
+| NutritionData_BinaryNavigator_To_NewtonsoftTextWriter | 12,661.64 us | 278.050 us |   732.49 us | 12,443.90 us | 1000.0000 |     - |     - | 5495.63 KB |

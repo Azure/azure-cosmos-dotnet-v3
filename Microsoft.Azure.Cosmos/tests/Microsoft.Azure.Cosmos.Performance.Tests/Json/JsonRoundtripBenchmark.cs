@@ -25,88 +25,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         private static readonly CurratedDocsPayload NutritionDataData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
 
         [Benchmark]
-        public void NutritionData_TextReader_To_TextWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.Text,
-                destinationFormat: SerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public void NutritionData_TextReader_To_BinaryWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.Text,
-                destinationFormat: SerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public void NutritionData_TextReader_To_NewtonsoftTextWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.Text,
-                destinationFormat: SerializationFormat.NewtonsoftText);
-        }
-
-        [Benchmark]
-        public void NutritionData_BinaryReader_To_TextWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.Binary,
-                destinationFormat: SerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public void NutritionData_BinaryReader_To_BinaryWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.Binary,
-                destinationFormat: SerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public void NutritionData_BinaryReader_To_NewtonsoftTextWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.Binary,
-                destinationFormat: SerializationFormat.NewtonsoftText);
-        }
-
-        [Benchmark]
-        public void NutritionData_NewtonsoftTextReader_To_TextWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.NewtonsoftText,
-                destinationFormat: SerializationFormat.Text);
-        }
-
-        [Benchmark]
-        public void NutritionData_NewtonsoftTextReader_To_BinaryWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.NewtonsoftText,
-                destinationFormat: SerializationFormat.Binary);
-        }
-
-        [Benchmark]
-        public void NutritionData_NewtonsoftTextReader_To_NewtonsoftTextWriter()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.NutritionDataData,
-                sourceFormat: SerializationFormat.NewtonsoftText,
-                destinationFormat: SerializationFormat.NewtonsoftText);
-        }
-
-
-        [Benchmark]
         public void NutritionData_TextNavigator_To_TextWriter()
         {
             JsonRoundtripBenchmark.ExecuteNavigatorBenchmark(
@@ -162,30 +80,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
         }
 
 
-        private static void ExecuteReaderBenchmark(
-            CurratedDocsPayload payload,
-            SerializationFormat sourceFormat,
-            SerializationFormat destinationFormat)
-        {
-            IJsonReader reader = sourceFormat switch
-            {
-                SerializationFormat.Text => JsonReader.Create(payload.Text),
-                SerializationFormat.Binary => JsonReader.Create(payload.Binary),
-                SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBReader.CreateFromBuffer(payload.Text),
-                _ => throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: '{sourceFormat}'"),
-            };
-
-            IJsonWriter writer = destinationFormat switch
-            {
-                SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
-                SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
-                SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
-                _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
-            };
-
-            writer.WriteAll(reader);
-        }
-
         private static void ExecuteNavigatorBenchmark(
             CurratedDocsPayload payload,
             SerializationFormat sourceFormat,
@@ -207,6 +101,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             };
 
             writer.WriteJsonNode(navigator, navigator.GetRootNode());
+
+            //navigator.WriteTo(navigator.GetRootNode(), writer);
         }
 
         private enum SerializationFormat

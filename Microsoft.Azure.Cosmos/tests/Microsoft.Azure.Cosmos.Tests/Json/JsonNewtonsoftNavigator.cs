@@ -205,6 +205,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return false;
         }
 
+        public void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
+        {
+            jsonWriter.WriteJsonNode(this, jsonNavigatorNode);
+        }
+
         private readonly struct NewtonsoftNode : IJsonNavigatorNode
         {
             public NewtonsoftNode(JToken jToken, JsonNodeType jsonNodeType)

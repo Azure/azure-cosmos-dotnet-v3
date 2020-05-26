@@ -58,22 +58,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 <# } #>
 
 <#  foreach (string curatedDoc in curatedDocs) { #>
-<#  foreach (var sourceFormat in Enum.GetValues(typeof(SerializationFormat))) { #>
-<#  foreach (var destinationFormat in Enum.GetValues(typeof(SerializationFormat))) { #>
-        [Benchmark]
-        public void <#= curatedDoc #>_<#= sourceFormat #>Reader_To_<#= destinationFormat #>Writer()
-        {
-            JsonRoundtripBenchmark.ExecuteReaderBenchmark(
-                payload: JsonRoundtripBenchmark.<#= curatedDoc #>Data,
-                sourceFormat: SerializationFormat.<#= sourceFormat #>,
-                destinationFormat: SerializationFormat.<#= destinationFormat #>);
-        }
-
-<# } #>
-<# } #>
-<# } #>
-
-<#  foreach (string curatedDoc in curatedDocs) { #>
 <#  foreach (SerializationFormat sourceFormat in Enum.GetValues(typeof(SerializationFormat))) { if (sourceFormat == SerializationFormat.NewtonsoftText) { continue; } #>
 <#  foreach (SerializationFormat destinationFormat in Enum.GetValues(typeof(SerializationFormat))) { if (destinationFormat == SerializationFormat.NewtonsoftText) { continue; } #>
         [Benchmark]
@@ -103,30 +87,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
 <# } #>
 <# } #>
 
-        private static void ExecuteReaderBenchmark(
-            CurratedDocsPayload payload,
-            SerializationFormat sourceFormat,
-            SerializationFormat destinationFormat)
-        {
-            IJsonReader reader = sourceFormat switch
-            {
-                SerializationFormat.Text => JsonReader.Create(payload.Text),
-                SerializationFormat.Binary => JsonReader.Create(payload.Binary),
-                SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBReader.CreateFromBuffer(payload.Text),
-                _ => throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: '{sourceFormat}'"),
-            };
-
-            IJsonWriter writer = destinationFormat switch
-            {
-                SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
-                SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
-                SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
-                _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
-            };
-
-            writer.WriteAll(reader);
-        }
-
         private static void ExecuteNavigatorBenchmark(
             CurratedDocsPayload payload,
             SerializationFormat sourceFormat,
@@ -147,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 
-            writer.WriteJsonNode(navigator, navigator.GetRootNode());
+            navigator.WriteTo(navigator.GetRootNode(), writer);
         }
 
         private enum SerializationFormat

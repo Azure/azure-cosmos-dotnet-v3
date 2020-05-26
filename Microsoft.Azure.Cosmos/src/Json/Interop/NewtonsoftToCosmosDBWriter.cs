@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteValue(value);
         }
 
-        protected override void WriteRawJsonToken(
+        public override void WriteRawJsonToken(
             JsonTokenType jsonTokenType,
             ReadOnlySpan<byte> rawJsonToken)
         {

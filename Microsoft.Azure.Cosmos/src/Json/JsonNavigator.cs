@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Base abstract class for JSON navigators.
@@ -46,15 +45,14 @@ namespace Microsoft.Azure.Cosmos.Json
             // Examine the first buffer byte to determine the serialization format
             byte firstByte = buffer.Span[0];
 
-            switch ((JsonSerializationFormat)firstByte)
+            return ((JsonSerializationFormat)firstByte) switch
             {
                 // Explicitly pick from the set of supported formats
-                case JsonSerializationFormat.Binary:
-                    return new JsonBinaryNavigator(buffer, jsonStringDictionary);
-                default:
-                    // or otherwise assume text format
-                    return new JsonTextNavigator(buffer);
-            }
+                JsonSerializationFormat.Binary => new JsonBinaryNavigator(buffer, jsonStringDictionary),
+
+                // or otherwise assume text format
+                _ => new JsonTextNavigator(buffer), 
+            };
         }
 
         /// <inheritdoc />
@@ -115,17 +113,15 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract int GetObjectPropertyCount(IJsonNavigatorNode objectNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetObjectProperty(
-            IJsonNavigatorNode objectNode,
-            string propertyName,
-            out ObjectProperty objectProperty);
+        public abstract bool TryGetObjectProperty(IJsonNavigatorNode objectNode, string propertyName, out ObjectProperty objectProperty);
 
         /// <inheritdoc />
         public abstract IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetBufferedRawJson(
-            IJsonNavigatorNode jsonNode,
-            out ReadOnlyMemory<byte> bufferedRawJson);
+        public abstract bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
+
+        /// <inheritdoc />
+        public abstract void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter);
     }
 }

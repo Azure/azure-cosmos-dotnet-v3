@@ -162,6 +162,14 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteJsonFragment(ReadOnlyMemory<byte> jsonFragment);
 
         /// <summary>
+        /// Writes a raw JSON token to the writer.
+        /// </summary>
+        /// <remarks>The raw json token has to be the same format.</remarks>
+        /// <param name="jsonTokenType">The type of jsonToken to write.</param>
+        /// <param name="rawJsonToken">The JSON token to write.</param>
+        void WriteRawJsonToken(JsonTokenType jsonTokenType, ReadOnlySpan<byte> rawJsonToken);
+
+        /// <summary>
         /// Writes a json node to the internal buffer.
         /// </summary>
         /// <param name="jsonNavigator">The navigator to use to navigate the node</param>

@@ -5,11 +5,8 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -436,6 +433,13 @@ namespace Microsoft.Azure.Cosmos.Json
                     default:
                         throw new ArgumentOutOfRangeException($"Unknown {nameof(IJsonNavigatorNode)} type: {jsonNode.GetType()}.");
                 }
+            }
+
+            public override void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
+            {
+                // For text we don't really plan on doing better than what the writer can.
+                // In the future we could potentially optimize this
+                jsonWriter.WriteJsonNode(this, jsonNavigatorNode);
             }
 
             #region JsonTextParser
