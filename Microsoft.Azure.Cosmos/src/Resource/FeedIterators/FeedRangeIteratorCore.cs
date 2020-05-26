@@ -187,7 +187,6 @@ namespace Microsoft.Azure.Cosmos
                requestEnricher: request =>
                {
                    FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
-                   request.Properties.Add(HandlerConstants.SimpleFeedContinuationToken, string.Empty);
                    this.FeedRangeInternal.Accept(feedRangeVisitor);
                    this.FeedRangeContinuation.Accept(feedRangeVisitor, QueryRequestOptions.FillContinuationToken);
                },

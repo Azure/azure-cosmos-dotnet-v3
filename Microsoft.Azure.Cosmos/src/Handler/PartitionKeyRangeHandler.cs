@@ -86,21 +86,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
-                bool wrapContinuationToken = !request.Properties.TryGetValue(HandlerConstants.SimpleFeedContinuationToken, out _);
-
                 //direction is not expected to change  between continuations.
-                List<CompositeContinuationToken> suppliedTokens = null;
-                Range<string> rangeFromContinuationToken = wrapContinuationToken ?
-                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out suppliedTokens)
-                    : Range<string>.GetEmptyRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey);
-
                 ResolvedRangeInfo resolvedRangeInfo =
                     await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
-                        rangeFromContinuationToken: rangeFromContinuationToken,
-                        suppliedTokens: suppliedTokens,
+                        rangeFromContinuationToken: providedRanges[0],
+                        suppliedTokens: null,
                         direction: rntdbEnumerationDirection);
 
                 if (serviceRequest.IsNameBased && resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
@@ -111,15 +104,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
-                        rangeFromContinuationToken: rangeFromContinuationToken,
-                        suppliedTokens: suppliedTokens,
+                        rangeFromContinuationToken: providedRanges[0],
+                        suppliedTokens: null,
                         direction: rntdbEnumerationDirection);
                 }
 
                 if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
                 {
                     return ((DocumentClientException)new NotFoundException(
-                            $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
+                            $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the provided ranges: {JsonConvert.SerializeObject(providedRanges)}")
                             ).ToCosmosResponseMessage(request);
                 }
 
@@ -130,22 +123,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 if (!response.IsSuccessStatusCode)
                 {
                     this.SetOriginalContinuationToken(request, response, originalContinuation);
-                }
-                else
-                {
-                    if (wrapContinuationToken
-                        && !await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
-                        response.Headers.CosmosMessageHeaders,
-                        providedPartitionKeyRanges: providedRanges,
-                        routingMapProvider: routingMapProvider,
-                        collectionRid: collectionFromCache.ResourceId,
-                        resolvedRangeInfo: resolvedRangeInfo,
-                        direction: rntdbEnumerationDirection))
-                    {
-                        return ((DocumentClientException)new NotFoundException(
-                                $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Call to TryAddPartitionKeyRangeToContinuationTokenAsync failed to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
-                            ).ToCosmosResponseMessage(request);
-                    }
                 }
 
                 return response;
