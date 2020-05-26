@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public string ContinuationToken { get; set; }
 
-        public override CosmosClientContext ClientContext { get; }
+        internal override CosmosClientContext ClientContext { get; }
 
         /// <summary>
         /// Get the next set of results from the cosmos service

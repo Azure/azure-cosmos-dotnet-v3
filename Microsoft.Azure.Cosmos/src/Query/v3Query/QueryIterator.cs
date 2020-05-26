@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
-        public override CosmosClientContext ClientContext { get; }
+        internal override CosmosClientContext ClientContext { get; }
 
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {

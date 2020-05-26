@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal : FeedIterator
     {
-        public abstract CosmosClientContext ClientContext { get; }
+        internal abstract CosmosClientContext ClientContext { get; }
+
         public abstract CosmosElement GetCosmosElementContinuationToken();
 
         public abstract Task<ResponseMessage> ReadNextInternalAsync(

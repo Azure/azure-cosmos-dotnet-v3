@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-        public override CosmosClientContext ClientContext { get; }
+        internal override CosmosClientContext ClientContext { get; }
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {

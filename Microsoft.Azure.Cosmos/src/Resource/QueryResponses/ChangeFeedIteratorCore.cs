@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override CosmosClientContext ClientContext { get; }
+        internal override CosmosClientContext ClientContext { get; }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
