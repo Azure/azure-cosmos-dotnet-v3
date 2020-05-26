@@ -20,6 +20,9 @@
   <ItemGroup>
     <None Remove="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestPointOperationStatistics.xml" />
     <None Remove="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestQueryAggregateDiagnostics.xml" />
+    <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.ElementsHash.xml" />
+    <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.ExtendedTypesHash.xml" />
+    <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.NumbersHash.xml" />
     <None Remove="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Singletons.xml" />
     <None Remove="BaselineTest\TestBaseline\QueryPartitionProviderTest - Copy (2).Top.xml" />
     <None Remove="BaselineTest\TestBaseline\QueryPartitionProviderTest - Copy.Top.xml" />
@@ -79,6 +82,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Strings.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\DistinctHashBaselineTests.WrappedElementsHash.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="BaselineTest\TestBaseline\PipelineContinuationTokenTests.Tests.xml">
@@ -165,6 +171,12 @@
     <Content Include="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestQueryAggregateDiagnostics.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.ElementsHash.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.ExtendedTypesHash.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="BaselineTest\TestBaseline\QueryPartitionProviderTest.Aggregates.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -202,6 +214,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestPointOperationStatistics.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.NumbersHash.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlBinaryScalarOperators.xml">
