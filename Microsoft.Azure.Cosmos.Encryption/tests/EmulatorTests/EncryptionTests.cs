@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testKeyWrapProvider, 
                 new DekCacheOptions(
                     dekPropertiesTimeToLive: null,
-                    cleanupIterationDelayInSeconds: TimeSpan.FromSeconds(1),
+                    cleanupIterationDelay: TimeSpan.FromSeconds(1),
                     cleanupBufferTimeAfterExpiry: TimeSpan.FromSeconds(0)));
             TestEncryptor encryptor = new TestEncryptor(dekProvider);
             CosmosClient client = TestCommon.CreateCosmosClient();

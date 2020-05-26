@@ -5,29 +5,24 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using System.Timers;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
 
     internal sealed class ExpiredRawDekCleaner : IDisposable
     {
         private readonly PriorityQueue<InMemoryRawDek> inMemoryRawDeks;
-        private readonly int minimumDispatchTimerInSeconds = 1;
-        private readonly TimeSpan iterationDelayInSeconds = TimeSpan.FromSeconds(60);
+        private readonly TimeSpan iterationDelay = TimeSpan.FromSeconds(60);
         private readonly TimeSpan bufferTimeAfterExpiry = TimeSpan.FromSeconds(60);
-        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        private readonly TimerPool timerPool;
-        private PooledTimer pooledTimer;
-        private Task continuationTask;
+        private readonly Timer timer;
         private bool isDisposed = false;
 
         public ExpiredRawDekCleaner(
-            TimeSpan? iterationDelayInSeconds = null,
+            TimeSpan? iterationDelay = null,
             TimeSpan? bufferTimeAfterExpiry = null)
         {
-            if (iterationDelayInSeconds.HasValue)
+            if (iterationDelay.HasValue)
             {
-                this.iterationDelayInSeconds = iterationDelayInSeconds.Value;
+                this.iterationDelay = iterationDelay.Value;
             }
 
             if (bufferTimeAfterExpiry.HasValue)
@@ -35,43 +30,32 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.bufferTimeAfterExpiry = bufferTimeAfterExpiry.Value;
             }
 
-            this.timerPool = new TimerPool(this.minimumDispatchTimerInSeconds);
             this.inMemoryRawDeks = new PriorityQueue<InMemoryRawDek>(
                 new InMemoryRawDekExpiryComparer(),
                 isSynchronized: true);
-            this.StartCleanupProcess();
+
+            this.timer = new Timer(this.iterationDelay.TotalMilliseconds);
+            this.timer.Elapsed += this.RunCleanup;
+            this.timer.AutoReset = true;
+            this.timer.Enabled = true;
         }
 
-        private void StartCleanupProcess()
+        private void RunCleanup(Object source, ElapsedEventArgs e)
         {
-            this.pooledTimer = this.timerPool.GetPooledTimer(this.iterationDelayInSeconds);
-            this.continuationTask = this.pooledTimer.StartTimerAsync().ContinueWith((task) =>
+            while (this.inMemoryRawDeks.TryPeek(out InMemoryRawDek inMemoryRawDek))
             {
-                this.RunCleanup();
-            }, this.cancellationTokenSource.Token);
-        }
-
-        private void RunCleanup()
-        {
-            if (!this.cancellationTokenSource.Token.IsCancellationRequested)
-            {
-                while (this.inMemoryRawDeks.TryPeek(out InMemoryRawDek inMemoryRawDek))
+                if (inMemoryRawDek.RawDekExpiry + this.bufferTimeAfterExpiry > DateTime.UtcNow)
                 {
-                    if (inMemoryRawDek.RawDekExpiry + this.bufferTimeAfterExpiry > DateTime.UtcNow)
-                    {
-                        break;
-                    }
-
-                    if (inMemoryRawDek.DataEncryptionKey is AeadAes256CbcHmac256Algorithm encryptionKey)
-                    {
-                        encryptionKey.Dispose();
-                    }
-
-                    this.inMemoryRawDeks.Dequeue();
+                    break;
                 }
-            }
 
-            this.StartCleanupProcess();
+                if (inMemoryRawDek.DataEncryptionKey is IDisposable encryptionKey)
+                {
+                    encryptionKey.Dispose();
+                }
+
+                this.inMemoryRawDeks.Dequeue();
+            }
         }
 
         internal void EnqueueInMemoryRawDek(InMemoryRawDek inMemoryRawDek)
@@ -84,11 +68,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (disposing && !this.isDisposed)
             {
                 this.inMemoryRawDeks.Clear();
-                this.cancellationTokenSource.Dispose();
-                this.timerPool.Dispose();
-                this.pooledTimer.CancelTimer();
-                this.pooledTimer = null;
-                this.continuationTask.Dispose();
+                this.timer.Stop();
+                this.timer.Dispose();
                 this.isDisposed = true;
             }
         }

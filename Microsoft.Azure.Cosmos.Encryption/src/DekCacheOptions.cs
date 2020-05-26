@@ -15,15 +15,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Initializes a new instance of the <see cref="DekCacheOptions"/> struct.
         /// </summary>
         /// <param name="dekPropertiesTimeToLive"></param>
-        /// <param name="cleanupIterationDelayInSeconds"></param>
+        /// <param name="cleanupIterationDelay"></param>
         /// <param name="cleanupBufferTimeAfterExpiry"></param>
         public DekCacheOptions(
             TimeSpan? dekPropertiesTimeToLive = null,
-            TimeSpan? cleanupIterationDelayInSeconds = null,
+            TimeSpan? cleanupIterationDelay = null,
             TimeSpan? cleanupBufferTimeAfterExpiry = null)
         {
             this.DekPropertiesTimeToLive = dekPropertiesTimeToLive;
-            this.CleanupIterationDelayInSeconds = cleanupIterationDelayInSeconds;
+            this.CleanupIterationDelay = cleanupIterationDelay;
             this.CleanupBufferTimeAfterExpiry = cleanupBufferTimeAfterExpiry;
         }
 
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Iteration delay for job cleaning up expired raw DEK from cache.
         /// </summary>
-        internal TimeSpan? CleanupIterationDelayInSeconds { get; }
+        internal TimeSpan? CleanupIterationDelay { get; }
 
         /// <summary>
         /// Additional buffer time before cleaning up raw DEK.

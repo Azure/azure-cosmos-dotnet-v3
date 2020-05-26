@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal AsyncCache<string, InMemoryRawDek> RawDekCache { get; } = new AsyncCache<string, InMemoryRawDek>();
 
-        internal ExpiredRawDekCleaner ExpiredRawDekCleaner { get; set; }
+        internal readonly ExpiredRawDekCleaner ExpiredRawDekCleaner;
 
         public DekCache(DekCacheOptions? dekCacheOptions)
         {
@@ -30,16 +30,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 else
                 {
-                    this.dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
+                    this.dekPropertiesTimeToLive = Constants.DefaultDekPropertiesTimeToLive;
                 }
 
                 this.ExpiredRawDekCleaner = new ExpiredRawDekCleaner(
-                    dekCacheOptions.Value.CleanupIterationDelayInSeconds,
+                    dekCacheOptions.Value.CleanupIterationDelay,
                     dekCacheOptions.Value.CleanupBufferTimeAfterExpiry);
             }
             else
             {
-                this.dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
+                this.dekPropertiesTimeToLive = Constants.DefaultDekPropertiesTimeToLive;
                 this.ExpiredRawDekCleaner = new ExpiredRawDekCleaner();
             }
         }
