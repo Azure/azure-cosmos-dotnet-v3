@@ -4,13 +4,8 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using RMResources = Documents.RMResources;
 
     /// <summary>
