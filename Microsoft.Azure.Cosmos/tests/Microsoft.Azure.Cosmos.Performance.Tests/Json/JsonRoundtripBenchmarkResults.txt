@@ -1,8 +1,0 @@
-﻿|                                                Method |         Mean |        Error |      StdDev |       Median | Gen 0 | Gen 1 | Gen 2 |  Allocated |
-|------------------------------------------------------ |-------------:|-------------:|------------:|-------------:|------:|------:|------:|-----------:|
-|             NutritionData_TextNavigator_To_TextWriter |    154.22 us |    14.295 us |    41.47 us |    147.20 us |     - |     - |     - | 1522.66 KB |
-|           NutritionData_TextNavigator_To_BinaryWriter | 19,798.83 us |   385.696 us |   633.71 us | 19,643.70 us |     - |     - |     - | 3960.15 KB |
-|           NutritionData_BinaryNavigator_To_TextWriter |  8,380.37 us |   233.568 us |   623.44 us |  8,229.60 us |     - |     - |     - | 1745.97 KB |
-|         NutritionData_BinaryNavigator_To_BinaryWriter |     64.93 us |     6.331 us |    18.37 us |     62.00 us |     - |     - |     - |  687.38 KB |
-|   NutritionData_TextNavigator_To_NewtonsoftTextWriter | 10,578.83 us |   350.593 us | 1,017.13 us | 10,430.20 us |     - |     - |     - | 4244.78 KB |
-| NutritionData_BinaryNavigator_To_NewtonsoftTextWriter | 11,557.44 us | 1,069.209 us | 3,135.80 us |  9,579.10 us |     - |     - |     - | 3111.54 KB |
