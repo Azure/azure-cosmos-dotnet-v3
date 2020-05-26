@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract CosmosElement GetCosmosElementContinuationToken();
 
-        public abstract Task<ResponseMessage> ReadNextInternalAsync(
+        internal abstract Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
     }

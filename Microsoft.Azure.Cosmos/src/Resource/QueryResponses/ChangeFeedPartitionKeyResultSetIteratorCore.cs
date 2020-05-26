@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                });
         }
 
-        public override async Task<ResponseMessage> ReadNextInternalAsync(CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
+        internal override async Task<ResponseMessage> ReadNextInternalAsync(CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
         {
             ResponseMessage responseMessage = await this.NextResultSetDelegateAsync(
                 this.continuationToken,

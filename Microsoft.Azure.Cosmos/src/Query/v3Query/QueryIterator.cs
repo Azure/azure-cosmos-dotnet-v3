@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }
 
-        public override async Task<ResponseMessage> ReadNextInternalAsync(
+        internal override async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {

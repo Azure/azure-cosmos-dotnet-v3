@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                });
         }
 
-        public override async Task<ResponseMessage> ReadNextInternalAsync(
+        internal override async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {

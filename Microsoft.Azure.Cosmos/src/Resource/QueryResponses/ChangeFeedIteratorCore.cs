@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             return CosmosElement.Parse(this.FeedRangeContinuation.ToString());
         }
 
-        public override async Task<ResponseMessage> ReadNextInternalAsync(
+        internal override async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
