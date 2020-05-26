@@ -100,9 +100,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 
-            writer.WriteJsonNode(navigator, navigator.GetRootNode());
-
-            //navigator.WriteTo(navigator.GetRootNode(), writer);
+            navigator.WriteTo(navigator.GetRootNode(), writer);
         }
 
         private enum SerializationFormat

@@ -1,8 +1,8 @@
-﻿|                                                Method |         Mean |      Error |      StdDev |       Median |     Gen 0 | Gen 1 | Gen 2 |  Allocated |
-|------------------------------------------------------ |-------------:|-----------:|------------:|-------------:|----------:|------:|------:|-----------:|
-|             NutritionData_TextNavigator_To_TextWriter |    122.58 us |  10.226 us |    29.67 us |    118.40 us |         - |     - |     - | 1522.66 KB |
-|           NutritionData_TextNavigator_To_BinaryWriter | 20,468.10 us | 406.670 us | 1,106.38 us | 20,241.70 us |         - |     - |     - | 3960.15 KB |
-|           NutritionData_BinaryNavigator_To_TextWriter | 11,464.40 us | 258.191 us |   702.43 us | 11,360.00 us |         - |     - |     - | 4130.05 KB |
-|         NutritionData_BinaryNavigator_To_BinaryWriter |     68.16 us |   5.538 us |    16.24 us |     65.10 us |         - |     - |     - |  687.38 KB |
-|   NutritionData_TextNavigator_To_NewtonsoftTextWriter | 10,576.78 us | 320.993 us |   946.46 us | 10,449.40 us |         - |     - |     - | 4244.78 KB |
-| NutritionData_BinaryNavigator_To_NewtonsoftTextWriter | 12,661.64 us | 278.050 us |   732.49 us | 12,443.90 us | 1000.0000 |     - |     - | 5495.63 KB |
+﻿|                                                Method |         Mean |        Error |      StdDev |       Median |     Gen 0 | Gen 1 | Gen 2 |  Allocated |
+|------------------------------------------------------ |-------------:|-------------:|------------:|-------------:|----------:|------:|------:|-----------:|
+|             NutritionData_TextNavigator_To_TextWriter |    113.97 us |     6.837 us |    20.05 us |    111.30 us |         - |     - |     - | 1522.66 KB |
+|           NutritionData_TextNavigator_To_BinaryWriter | 21,461.14 us |   424.478 us | 1,183.28 us | 21,344.30 us |         - |     - |     - | 3960.15 KB |
+|           NutritionData_BinaryNavigator_To_TextWriter | 11,277.76 us |   224.974 us |   612.06 us | 11,129.85 us |         - |     - |     - | 4130.05 KB |
+|         NutritionData_BinaryNavigator_To_BinaryWriter |     50.56 us |     4.829 us |    14.16 us |     47.20 us |         - |     - |     - |  687.38 KB |
+|   NutritionData_TextNavigator_To_NewtonsoftTextWriter | 10,724.07 us |   457.559 us | 1,320.16 us | 10,274.15 us |         - |     - |     - | 4244.78 KB |
+| NutritionData_BinaryNavigator_To_NewtonsoftTextWriter | 15,425.84 us | 1,431.591 us | 4,198.61 us | 13,148.10 us | 1000.0000 |     - |     - | 5495.63 KB |
