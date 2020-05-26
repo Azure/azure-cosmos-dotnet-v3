@@ -26,24 +26,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
-            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
-            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            mockedContext
-                .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<ResourceType>(),
-                    It.IsAny<OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(this.GenerateSplitResponseAsync(itemBatchOperation))
-                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
-
-            mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+            Mock<CosmosClientContext> mockedContext =this.CreateClientContext(
+                this.GenerateSplitResponseAsync(itemBatchOperation),
+                this.GenerateOkResponseAsync(itemBatchOperation));
 
             Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
@@ -86,24 +71,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
-            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
-            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            mockedContext
-                .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<ResourceType>(),
-                    It.IsAny<OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(this.GenerateCacheStaleResponseAsync(itemBatchOperation))
-                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
-
-            mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+            Mock<CosmosClientContext> mockedContext = this.CreateClientContext(
+                this.GenerateCacheStaleResponseAsync(itemBatchOperation),
+                this.GenerateOkResponseAsync(itemBatchOperation));
 
             Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
@@ -146,22 +116,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
-            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
-            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            mockedContext
-                .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<ResourceType>(),
-                    It.IsAny<OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(this.Generate429ResponseAsync(itemBatchOperation))
-                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
+            Mock<CosmosClientContext> mockedContext = this.CreateClientContext(
+                this.Generate429ResponseAsync(itemBatchOperation),
+                this.GenerateOkResponseAsync(itemBatchOperation));
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
@@ -206,23 +163,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
-            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
-            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            mockedContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
-                    It.IsAny<ResourceType>(),
-                    It.IsAny<OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
-
-            mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+            Mock<CosmosClientContext> mockedContext = this.CreateClientContext(
+                this.GenerateOkResponseAsync(itemBatchOperation),
+                null);
 
             Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
@@ -254,6 +197,48 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Once);
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+        }
+
+        private Mock<CosmosClientContext> CreateClientContext(
+            Task<ResponseMessage> firstResponseMessage,
+            Task<ResponseMessage> secondResponseMessage)
+        {
+            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+
+            mockedContext.Setup(x => x.CreateDiagnosticContext(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>()))
+                .Returns<string, RequestOptions>((x, y) => new CosmosDiagnosticsContextCore(x, "MockUserAgentString"));
+
+            mockedContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+
+            Moq.Language.ISetupSequentialResult<Task<ResponseMessage>> setup = mockedContext
+               .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
+                   It.IsAny<Uri>(),
+                   It.IsAny<ResourceType>(),
+                   It.IsAny<OperationType>(),
+                   It.IsAny<RequestOptions>(),
+                   It.IsAny<ContainerInternal>(),
+                   It.IsAny<Cosmos.PartitionKey?>(),
+                   It.IsAny<Stream>(),
+                   It.IsAny<Action<RequestMessage>>(),
+                   It.IsAny<CosmosDiagnosticsContext>(),
+                   It.IsAny<CancellationToken>()))
+               .Returns(firstResponseMessage);
+
+            if(secondResponseMessage != null)
+            {
+                setup.Returns(secondResponseMessage);
+            }
+
+            return mockedContext;
         }
 
         private async Task<ResponseMessage> GenerateSplitResponseAsync(ItemBatchOperation itemBatchOperation)

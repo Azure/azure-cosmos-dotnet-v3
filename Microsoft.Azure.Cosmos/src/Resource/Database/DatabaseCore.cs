@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessResourceOperationStreamAsync(
                 diagnosticsContext: diagnosticsContext,
                 streamPayload: null,
-                operationType: OperationType.Delete,
+                operationType: OperationType.Read,
                 linkUri: this.LinkUri,
                 resourceType: ResourceType.Database,
                 requestOptions: requestOptions,
