@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
+            INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
             string authorizationToken = string.Empty;
             if (this.hasAuthKeyResourceToken)
             {
@@ -47,22 +48,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Retrieve the document service properties.
                 string xDate = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
-                this.httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
-
-                INameValueCollection headersCollection = new DictionaryNameValueCollection();
-                headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
+                headers.Set(HttpConstants.HttpHeaders.XDate, xDate);
 
                 authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                     HttpConstants.HttpMethods.Get,
                     serviceEndpoint,
-                    headersCollection,
+                    headers,
                     this.authKeyHashFunction);
             }
 
-            this.httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Authorization, authorizationToken);
-
-            using (HttpResponseMessage responseMessage = await this.httpClient.GetHttpAsync(
-            serviceEndpoint))
+            headers.Set(HttpConstants.HttpHeaders.Authorization, authorizationToken);
+            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(serviceEndpoint, headers))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
