@@ -23,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         {
             using (ResponseMessage responseMessage = await container.ReadItemStreamAsync(
                     itemId,
-                    partitionKey)
+                    partitionKey,
+                    new ItemRequestOptions() { EnableBulkExecution = false })
                     .ConfigureAwait(false))
             {
                 responseMessage.EnsureSuccessStatusCode();
@@ -38,7 +39,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         {
             using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<T>(item))
             {
-                using (ResponseMessage response = await container.CreateItemStreamAsync(itemStream, partitionKey).ConfigureAwait(false))
+                using (ResponseMessage response = await container.CreateItemStreamAsync(
+                    itemStream,
+                    partitionKey,
+                    new ItemRequestOptions() { EnableBulkExecution = false }).ConfigureAwait(false))
                 {
                     if (response.StatusCode == HttpStatusCode.Conflict)
                     {
@@ -74,7 +78,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
-            using (ResponseMessage response = await container.DeleteItemStreamAsync(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false))
+            cosmosItemRequestOptions = cosmosItemRequestOptions ?? new ItemRequestOptions() { EnableBulkExecution = false };
+            using (ResponseMessage response = await container.DeleteItemStreamAsync(
+                itemId,
+                partitionKey,
+                cosmosItemRequestOptions).ConfigureAwait(false))
             {
                 return response.IsSuccessStatusCode;
             }
@@ -87,7 +95,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         {
             ResponseMessage response = await container.ReadItemStreamAsync(
                         itemId,
-                        partitionKey)
+                        partitionKey,
+                        new ItemRequestOptions() { EnableBulkExecution = false })
                         .ConfigureAwait(false);
 
             return response.IsSuccessStatusCode;

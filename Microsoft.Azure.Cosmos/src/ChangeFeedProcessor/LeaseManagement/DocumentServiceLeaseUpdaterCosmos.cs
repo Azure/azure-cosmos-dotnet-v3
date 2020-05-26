@@ -81,7 +81,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             try
             {
-                ItemRequestOptions itemRequestOptions = this.CreateIfMatchOptions(lease);
+                ItemRequestOptions itemRequestOptions = new ItemRequestOptions
+                {
+                    IfMatchEtag = lease.ConcurrencyToken,
+                    EnableBulkExecution = false
+                };
                 ItemResponse<DocumentServiceLeaseCore> response = await this.container.TryReplaceItemAsync<DocumentServiceLeaseCore>(
                     itemId,
                     lease,
@@ -110,11 +114,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
                 throw;
             }
-        }
-
-        private ItemRequestOptions CreateIfMatchOptions(DocumentServiceLease lease)
-        {
-            return new ItemRequestOptions { IfMatchEtag = lease.ConcurrencyToken };
         }
     }
 }

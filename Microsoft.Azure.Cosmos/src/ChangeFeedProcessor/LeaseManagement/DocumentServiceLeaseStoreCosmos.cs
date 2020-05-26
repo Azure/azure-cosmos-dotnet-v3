@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
                 IfMatchEtag = this.lockETag,
+                EnableBulkExecution = false
             };
 
             bool deleted = await this.container.TryDeleteItemAsync<LockDocument>(
