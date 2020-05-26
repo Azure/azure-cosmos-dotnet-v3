@@ -110,6 +110,8 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const bool EnableAuthFailureTraces = false;
 
+        private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
+        // Gateway has backoff/retry logic to hide transient errors.
         private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
@@ -581,7 +583,7 @@ namespace Microsoft.Azure.Cosmos
                 httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
             }
 
-            httpClient.Timeout = connectionPolicy.RequestTimeout;
+            httpClient.Timeout = (connectionPolicy.RequestTimeout > DocumentClient.GatewayRequestTimeout) ? connectionPolicy.RequestTimeout : DocumentClient.GatewayRequestTimeout;
             httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
 
             httpClient.AddUserAgentHeader(connectionPolicy.UserAgentContainer);
