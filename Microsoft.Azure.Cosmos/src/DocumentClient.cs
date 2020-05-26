@@ -110,9 +110,6 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const bool EnableAuthFailureTraces = false;
 
-        // Gateway has backoff/retry logic to hide transient errors.
-        private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
-
         private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
@@ -584,10 +581,7 @@ namespace Microsoft.Azure.Cosmos
                 httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
             }
 
-            // Use max of client specified and our own request timeout value when sending
-            // requests to gateway. Otherwise, we will have gateway's transient
-            // error hiding retries are of no use.
-            httpClient.Timeout = connectionPolicy.RequestTimeout.TotalSeconds < DocumentClient.GatewayRequestTimeout.TotalSeconds ? DocumentClient.GatewayRequestTimeout : connectionPolicy.RequestTimeout;
+            httpClient.Timeout = connectionPolicy.RequestTimeout;
             httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
 
             httpClient.AddUserAgentHeader(connectionPolicy.UserAgentContainer);
