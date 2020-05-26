@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
-            if (this.IsBulkOperationSupported(resourceType, operationType))
+            if (this.IsBulkOperationSupported(resourceType, operationType, requestOptions))
             {
                 if (!partitionKey.HasValue)
                 {
@@ -377,10 +377,18 @@ namespace Microsoft.Azure.Cosmos
 
         private bool IsBulkOperationSupported(
             ResourceType resourceType,
-            OperationType operationType)
+            OperationType operationType,
+            RequestOptions requestOptions)
         {
             this.ThrowIfDisposed();
-            if (!this.ClientOptions.AllowBulkExecution)
+            bool isBulkEnableOnRequestOptions = false;
+            if (requestOptions is ItemRequestOptions itemRequestOptions)
+            {
+                isBulkEnableOnRequestOptions = itemRequestOptions.EnableBulkExecution.HasValue && itemRequestOptions.EnableBulkExecution.Value;
+            }
+
+            if (!this.ClientOptions.AllowBulkExecution
+                && !isBulkEnableOnRequestOptions)
             {
                 return false;
             }
