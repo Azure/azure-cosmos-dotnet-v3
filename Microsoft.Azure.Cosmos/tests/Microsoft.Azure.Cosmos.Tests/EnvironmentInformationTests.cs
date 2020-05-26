@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void ClientIdIncrementsUpToMax_Concurrent()
+        public async Task ClientIdIncrementsUpToMax_Concurrent()
         {
             const int max = 10;
             const int tasks = max + 5;
@@ -73,16 +74,23 @@ namespace Microsoft.Azure.Cosmos.Tests
                 expected.Add(i > max ? max : i);
             }
 
-            List<int> results = new List<int>(tasks);
-            Parallel.For(0, tasks, (int i) =>
+            List<Task<int>> results = new List<Task<int>>(tasks);
+            for (int i = 0; i < tasks; i++)
             {
-                EnvironmentInformation envInfo = new EnvironmentInformation();
-                results.Add(int.Parse(envInfo.ClientId));
-            });
+                results.Add(this.CreateAndReturnClientId());
+            }
 
-            results.Sort();
+            await Task.WhenAll(results);
+            List<int> resultsInts = results.Select(r => r.Result).ToList();
+            resultsInts.Sort();
 
-            CollectionAssert.AreEqual(expected, results);
+            CollectionAssert.AreEqual(expected, resultsInts);
+        }
+
+        private Task<int> CreateAndReturnClientId()
+        {
+            EnvironmentInformation envInfo = new EnvironmentInformation();
+            return Task.FromResult(int.Parse(envInfo.ClientId));
         }
     }
 }
