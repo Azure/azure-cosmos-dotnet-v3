@@ -355,6 +355,13 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>(
                 (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
 
+            cosmosClientContext.Setup(x => x.OperationHelperAsync<FeedResponse<dynamic>>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<CosmosDiagnosticsContext, Task<FeedResponse<dynamic>>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<FeedResponse<dynamic>>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<Uri>(),
