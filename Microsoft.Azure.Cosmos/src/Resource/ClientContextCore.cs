@@ -311,12 +311,6 @@ namespace Microsoft.Azure.Cosmos
         internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerInternal container)
         {
             this.ThrowIfDisposed();
-
-            if (!this.ClientOptions.AllowBulkExecution)
-            {
-                return null;
-            }
-
             return this.batchExecutorCache.GetExecutorForContainer(container, this);
         }
 
@@ -381,14 +375,16 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions)
         {
             this.ThrowIfDisposed();
-            bool isBulkEnableOnRequestOptions = false;
+            bool isBoolEnabledForRequest = this.clientOptions.AllowBulkExecution;
             if (requestOptions is ItemRequestOptions itemRequestOptions)
             {
-                isBulkEnableOnRequestOptions = itemRequestOptions.EnableBulkExecution.HasValue && itemRequestOptions.EnableBulkExecution.Value;
+                if (itemRequestOptions.EnableBulkExecution.HasValue)
+                {
+                    isBoolEnabledForRequest = itemRequestOptions.EnableBulkExecution.Value;
+                }
             }
 
-            if (!this.ClientOptions.AllowBulkExecution
-                && !isBulkEnableOnRequestOptions)
+            if (!isBoolEnabledForRequest)
             {
                 return false;
             }
