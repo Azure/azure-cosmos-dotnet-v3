@@ -387,16 +387,32 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 (diagnostics) =>
                 {
-                    DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-                    ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
+                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
 
-                    return this.CreateDatabaseInternalAsync(
-                        databaseProperties: databaseProperties,
-                        throughputProperties: throughputProperties,
-                        requestOptions: requestOptions,
-                        diagnosticsContext: diagnostics,
-                        cancellationToken: cancellationToken);
-                });
+                return this.CreateDatabaseInternalAsync(
+                    databaseProperties: databaseProperties,
+                    throughputProperties: throughputProperties,
+                    requestOptions: requestOptions,
+                    diagnosticsContext: diagnostics,
+                    cancellationToken: cancellationToken);
+            });
+
+            //return this.ClientContext.OperationHelperAsync(
+            //    nameof(CreateDatabaseAsync),
+            //    requestOptions,
+            //    (diagnostics) =>
+            //    {
+            //        DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+            //        ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
+
+            //        return this.CreateDatabaseInternalAsync(
+            //            databaseProperties: databaseProperties,
+            //            throughputProperties: throughputProperties,
+            //            requestOptions: requestOptions,
+            //            diagnosticsContext: diagnostics,
+            //            cancellationToken: cancellationToken);
+            //    });
         }
 
         /// <summary>

@@ -179,19 +179,23 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override async Task<TResult> OperationHelperAsync<TResult>(
+        internal override Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
             Func<CosmosDiagnosticsContext, Task<TResult>> task)
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
-                operationName,
-                requestOptions))
+            if (SynchronizationContext.Current == null)
             {
-                return await TaskHelper.RunInlineIfNeededAsync<TResult>(
-                    diagnosticsContext,
-                    () => task(diagnosticsContext));
+                return this.RunWithDiagnosticsHelperAsync(
+                    operationName,
+                    requestOptions,
+                    task);
             }
+
+            return this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
+                    operationName,
+                    requestOptions,
+                    task);
         }
 
         internal override CosmosDiagnosticsContext CreateDiagnosticContext(
@@ -370,6 +374,41 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.isDisposed = true;
+            }
+        }
+
+        private Task<TResult> RunWithSynchronizationContextAndDiagnosticsHelperAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+        {
+            Debug.Assert(SynchronizationContext.Current != null, "This should only be used when aSynchronizationContext is specified");
+
+            CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
+                operationName,
+                requestOptions);
+
+            // Used on NETFX applications with SynchronizationContext when doing locking calls
+            return Task.Run(async () =>
+            {
+                using (diagnosticsContext)
+                using (diagnosticsContext.CreateScope("SynchronizationContext"))
+                {
+                    return await task(diagnosticsContext).ConfigureAwait(false);
+                }
+            });
+        }
+
+        private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+        {
+            using (CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
+                operationName,
+                requestOptions))
+            {
+                return await task(diagnosticsContext).ConfigureAwait(false);
             }
         }
 

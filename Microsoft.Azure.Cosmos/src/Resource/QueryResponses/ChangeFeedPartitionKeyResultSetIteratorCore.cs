@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIteratorInternal
     {
-        private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private string continuationToken;
@@ -41,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyRangeId));
             }
 
-            this.clientContext = clientContext;
+            this.ClientContext = clientContext;
             this.container = container;
             this.changeFeedOptions = options;
             this.MaxItemCount = maxItemCount;
@@ -56,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
+        public override CosmosClientContext ClientContext { get; }
+
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
@@ -69,17 +70,29 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
+            return this.ClientContext.OperationHelperAsync(
+               nameof(FeedIteratorCore),
+               this.changeFeedOptions,
+               async (diagnostics) =>
+               {
+                   return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+               });
+        }
 
-            return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
-                .ContinueWith(task =>
-                {
-                    ResponseMessage response = task.Result;
-                    // Change Feed uses ETAG
-                    this.continuationToken = response.Headers.ETag;
-                    this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
-                    response.Headers.ContinuationToken = this.continuationToken;
-                    return response;
-                }, cancellationToken);
+        public override async Task<ResponseMessage> ReadNextInternalAsync(CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
+        {
+            ResponseMessage responseMessage = await this.NextResultSetDelegateAsync(
+                this.continuationToken,
+                this.partitionKeyRangeId,
+                this.MaxItemCount,
+                this.changeFeedOptions,
+                cancellationToken);
+
+            // Change Feed uses ETAG
+            this.continuationToken = responseMessage.Headers.ETag;
+            this.hasMoreResultsInternal = responseMessage.StatusCode != HttpStatusCode.NotModified;
+            responseMessage.Headers.ContinuationToken = this.continuationToken;
+            return responseMessage;
         }
 
         private Task<ResponseMessage> NextResultSetDelegateAsync(
@@ -90,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                cosmosContainerCore: this.container,
                resourceUri: resourceUri,
                resourceType: Documents.ResourceType.Document,

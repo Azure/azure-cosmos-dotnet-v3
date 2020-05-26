@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
-        private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
@@ -35,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
-            this.clientContext = clientContext;
+            this.ClientContext = clientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.ContinuationToken = continuationToken;
@@ -55,6 +54,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public string ContinuationToken { get; set; }
 
+        public override CosmosClientContext ClientContext { get; }
+
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.clientContext.OperationHelperAsync(
+            return this.ClientContext.OperationHelperAsync(
                 nameof(FeedIteratorCore),
                 this.RequestOptions,
                 async (diagnostics) =>
@@ -71,9 +72,9 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        private async Task<ResponseMessage> ReadNextInternalAsync(
+        public override async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnostics,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -81,11 +82,11 @@ namespace Microsoft.Azure.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
+                stream = this.ClientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
                 operation = OperationType.Query;
             }
 
-            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
                operationType: operation,
@@ -148,12 +149,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
-            return this.responseCreator(response);
+            return this.feedIterator.ClientContext.OperationHelperAsync(
+                nameof(FeedIteratorCore),
+                null,
+                async (diagnosics) =>
+                {
+                    ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
+                    return this.responseCreator(response);
+                });
         }
     }
 }

@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -19,6 +21,11 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal : FeedIterator
     {
+        public abstract CosmosClientContext ClientContext { get; }
         public abstract CosmosElement GetCosmosElementContinuationToken();
+
+        public abstract Task<ResponseMessage> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken);
     }
 }

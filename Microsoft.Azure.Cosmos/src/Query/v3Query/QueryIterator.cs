@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
         private readonly RequestOptions requestOptions;
-        private readonly CosmosClientContext clientContext;
 
         private QueryIterator(
             CosmosQueryContextCore cosmosQueryContext,
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
             this.requestOptions = requestOptions;
-            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.ClientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
         }
 
         public static QueryIterator Create(
@@ -133,65 +132,74 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
+        public override CosmosClientContext ClientContext { get; }
+
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.clientContext.OperationHelperAsync(
+            return this.ClientContext.OperationHelperAsync(
                 nameof(QueryIterator),
                 this.requestOptions,
-                async (diagnostics) =>
+                (diagnostics) =>
                 {
-                    // This catches exception thrown by the pipeline and converts it to QueryResponse
-                    QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
-
-                    // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
-                    diagnostics.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
-
-                    if (responseCore.IsSuccess)
-                    {
-                        return QueryResponse.CreateSuccess(
-                            result: responseCore.CosmosElements,
-                            count: responseCore.CosmosElements.Count,
-                            responseLengthBytes: responseCore.ResponseLengthBytes,
-                            diagnostics: diagnostics,
-                            serializationOptions: this.cosmosSerializationFormatOptions,
-                            responseHeaders: new CosmosQueryResponseMessageHeaders(
-                                responseCore.ContinuationToken,
-                                responseCore.DisallowContinuationTokenMessage,
-                                this.cosmosQueryContext.ResourceTypeEnum,
-                                this.cosmosQueryContext.ContainerResourceId)
-                            {
-                                RequestCharge = responseCore.RequestCharge,
-                                ActivityId = responseCore.ActivityId,
-                                SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
-                            });
-                    }
-
-                    if (responseCore.CosmosException != null)
-                    {
-                        return responseCore.CosmosException.ToCosmosResponseMessage(null);
-                    }
-
-                    return QueryResponse.CreateFailure(
-                        statusCode: responseCore.StatusCode,
-                        cosmosException: responseCore.CosmosException,
-                        requestMessage: null,
-                        diagnostics: diagnostics,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            responseCore.ContinuationToken,
-                            responseCore.DisallowContinuationTokenMessage,
-                            this.cosmosQueryContext.ResourceTypeEnum,
-                            this.cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId,
-                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown,
-                        });
+                    return this.ReadNextInternalAsync(diagnostics, cancellationToken);
                 });
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
+        }
+
+        public override async Task<ResponseMessage> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            // This catches exception thrown by the pipeline and converts it to QueryResponse
+            QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
+
+            // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
+            diagnosticsContext.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
+
+            if (responseCore.IsSuccess)
+            {
+                return QueryResponse.CreateSuccess(
+                    result: responseCore.CosmosElements,
+                    count: responseCore.CosmosElements.Count,
+                    responseLengthBytes: responseCore.ResponseLengthBytes,
+                    diagnostics: diagnosticsContext,
+                    serializationOptions: this.cosmosSerializationFormatOptions,
+                    responseHeaders: new CosmosQueryResponseMessageHeaders(
+                        responseCore.ContinuationToken,
+                        responseCore.DisallowContinuationTokenMessage,
+                        this.cosmosQueryContext.ResourceTypeEnum,
+                        this.cosmosQueryContext.ContainerResourceId)
+                    {
+                        RequestCharge = responseCore.RequestCharge,
+                        ActivityId = responseCore.ActivityId,
+                        SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
+                    });
+            }
+
+            if (responseCore.CosmosException != null)
+            {
+                return responseCore.CosmosException.ToCosmosResponseMessage(null);
+            }
+
+            return QueryResponse.CreateFailure(
+                statusCode: responseCore.StatusCode,
+                cosmosException: responseCore.CosmosException,
+                requestMessage: null,
+                diagnostics: diagnosticsContext,
+                responseHeaders: new CosmosQueryResponseMessageHeaders(
+                    responseCore.ContinuationToken,
+                    responseCore.DisallowContinuationTokenMessage,
+                    this.cosmosQueryContext.ResourceTypeEnum,
+                    this.cosmosQueryContext.ContainerResourceId)
+                {
+                    RequestCharge = responseCore.RequestCharge,
+                    ActivityId = responseCore.ActivityId,
+                    SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown,
+                });
         }
     }
 }

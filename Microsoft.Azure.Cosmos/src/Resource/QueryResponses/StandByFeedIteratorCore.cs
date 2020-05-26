@@ -25,7 +25,6 @@ namespace Microsoft.Azure.Cosmos
     {
         internal StandByFeedContinuationToken compositeContinuationToken;
 
-        private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private string containerRid;
         private string continuationToken;
@@ -40,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
 
-            this.clientContext = clientContext;
+            this.ClientContext = clientContext;
             this.container = container;
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
@@ -54,12 +53,27 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => true;
 
+        public override CosmosClientContext ClientContext { get; }
+
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.OperationHelperAsync(
+               nameof(FeedIteratorCore),
+               this.changeFeedOptions,
+               async (diagnostics) =>
+               {
+                   return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+               });
+        }
+
+        public override async Task<ResponseMessage> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             string firstNotModifiedKeyRangeId = null;
             string currentKeyRangeId;
@@ -97,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.compositeContinuationToken == null)
             {
-                PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.container.GetRIDAsync(cancellationToken);
                 this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
@@ -153,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,

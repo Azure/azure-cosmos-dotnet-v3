@@ -27,7 +27,6 @@ namespace Microsoft.Azure.Cosmos
         internal readonly FeedRangeInternal FeedRangeInternal;
         internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
         private readonly ContainerInternal containerCore;
-        private readonly CosmosClientContext clientContext;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private bool hasMoreResultsInternal;
@@ -92,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options)
         {
             this.containerCore = containerCore ?? throw new ArgumentNullException(nameof(containerCore));
-            this.clientContext = containerCore.ClientContext;
+            this.ClientContext = containerCore.ClientContext;
             this.queryRequestOptions = options;
             this.hasMoreResultsInternal = true;
             this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
@@ -103,6 +102,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
+        public override CosmosClientContext ClientContext { get; }
+
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.clientContext.OperationHelperAsync(
+            return this.ClientContext.OperationHelperAsync(
                 nameof(FeedRangeIteratorCore),
                 this.queryRequestOptions,
                 async (diagnostics) =>
@@ -151,13 +152,13 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        private async Task<ResponseMessage> ReadNextInternalAsync(
+        public override async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnostics,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.containerCore.LinkUri,
                resourceType: ResourceType.Document,
                operationType: OperationType.ReadFeed,
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
         {
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             List<Documents.Routing.Range<string>> effectiveRanges = await this.FeedRangeInternal.GetEffectiveRangesAsync(
                 routingMapProvider: partitionKeyRangeCache,
                 containerRid: this.lazyContainerRid.Result.Result,
