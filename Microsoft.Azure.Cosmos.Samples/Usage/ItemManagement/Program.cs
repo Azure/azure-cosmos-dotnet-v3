@@ -179,8 +179,8 @@
                 new PartitionKey(salesOrder2.AccountNumber),
                 new ItemRequestOptions()
                 {
-                    // The response will have a null resource. This avoids the overhead of sending
-                    // back over the network and serializing it.
+                    // The response will have a null resource. This avoids the overhead of 
+                    // sending the item back over the network and serializing it.
                     EnableContentResponseOnWrite = false
                 });
 
