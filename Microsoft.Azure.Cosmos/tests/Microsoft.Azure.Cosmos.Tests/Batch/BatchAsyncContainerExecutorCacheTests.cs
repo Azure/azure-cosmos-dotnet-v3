@@ -6,10 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -67,16 +65,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 BatchAsyncContainerExecutor otherExecutor = tasks[i].Result.BatchExecutor;
                 Assert.AreEqual(firstExecutor, otherExecutor);
             }
-        }
-
-        [TestMethod]
-        public void Null_When_OptionsOff()
-        {
-            CosmosClientContext context = this.MockClientContext(allowBulkExecution: false);
-
-            DatabaseInternal db = new DatabaseInlineCore(context, "test");
-            ContainerInternal container = new ContainerInlineCore(context, db, "test");
-            Assert.IsNull(container.BatchExecutor);
         }
 
         private CosmosClientContext MockClientContext(bool allowBulkExecution = true)

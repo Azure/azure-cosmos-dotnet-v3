@@ -12,7 +12,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -254,6 +256,96 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Once);
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+        }
+
+        [DataTestMethod]
+        [DataRow(true, null, true)]
+        [DataRow(false, null, false)]
+        [DataRow(false, false, false)]
+        [DataRow(false, true, true)]
+        [DataRow(true, true, true)]
+        [DataRow(true, false, false)]
+        public async Task ClientContext_UsesBulkWhenOptionsAreSet(bool clientOptionsAllowBulk, bool? itemRequestOptionsAllowBulk, bool expectedUseBulk)
+        {
+            MyDocument myDocument = new MyDocument() { id = "test", Status = "test" };
+            ItemRequestOptions itemRequestOptions = null;
+            if (itemRequestOptionsAllowBulk.HasValue)
+            {
+                itemRequestOptions = new ItemRequestOptions() { EnableBulkExecution = itemRequestOptionsAllowBulk.Value };
+            }
+
+            Mock<BatchAsyncContainerExecutor> mockExecutor = new Mock<BatchAsyncContainerExecutor>();
+            mockExecutor
+                .Setup(e => e.AddAsync(
+                    It.IsAny<ItemBatchOperation>(),
+                    It.IsAny<ItemRequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK));
+
+            bool handlerCalled = false;
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
+                handlerCalled = true;
+                return TestHandler.ReturnSuccess();
+            });
+
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+            CosmosClientContext clientContext = ClientContextCore.Create(
+                client,
+                new MockDocumentClient(),
+                new CosmosClientOptions() { AllowBulkExecution = clientOptionsAllowBulk });
+            RequestHandler handler = clientContext.RequestHandler.InnerHandler;
+            while (handler != null)
+            {
+                if (handler.InnerHandler is RouterHandler)
+                {
+                    handler.InnerHandler = testHandler;
+                    break;
+                }
+
+                handler = handler.InnerHandler;
+            }
+
+            Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
+            Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
+            mockContainer.Setup(x => x.LinkUri).Returns(link);
+            mockContainer.Setup(x => x.BatchExecutor).Returns(mockExecutor.Object);
+
+            ResponseMessage responseMessage = await clientContext.ProcessResourceOperationStreamAsync(
+                link,
+                ResourceType.Document,
+                OperationType.Delete,
+                itemRequestOptions,
+                mockContainer.Object,
+                partitionKey: new Cosmos.PartitionKey("test"),
+                itemId: "test",
+                streamPayload: null,
+                requestEnricher: null,
+                diagnosticsContext: CosmosDiagnosticsContext.Create(itemRequestOptions),
+                cancellationToken: default(CancellationToken));
+
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
+            if (expectedUseBulk)
+            {
+                // Combination expected Bulk to be used
+                Assert.IsFalse(handlerCalled, $"Expected Bulk pipeline to be used. Options.AllowBulk {clientOptionsAllowBulk} ItemRequestOptions.EnableBulk {itemRequestOptionsAllowBulk}");
+                Mock.Get(mockExecutor.Object)
+                    .Verify(e => e.AddAsync(
+                        It.IsAny<ItemBatchOperation>(),
+                        It.IsAny<ItemRequestOptions>(),
+                        It.IsAny<CancellationToken>()), Times.Once, $"Expected Bulk pipeline to be used. Options.AllowBulk {clientOptionsAllowBulk} ItemRequestOptions.EnableBulk {itemRequestOptionsAllowBulk}");
+            }
+            else
+            {
+                // Combination did not expect Bulk to be used
+                Assert.IsTrue(handlerCalled, $"Expected normal pipeline to be used. Options.AllowBulk {clientOptionsAllowBulk} ItemRequestOptions.EnableBulk {itemRequestOptionsAllowBulk}");
+                Mock.Get(mockExecutor.Object)
+                    .Verify(e => e.AddAsync(
+                        It.IsAny<ItemBatchOperation>(),
+                        It.IsAny<ItemRequestOptions>(),
+                        It.IsAny<CancellationToken>()), Times.Never, $"Expected normal pipeline to be used. Options.AllowBulk {clientOptionsAllowBulk} ItemRequestOptions.EnableBulk {itemRequestOptionsAllowBulk}");
+            }
         }
 
         private async Task<ResponseMessage> GenerateSplitResponseAsync(ItemBatchOperation itemBatchOperation)
