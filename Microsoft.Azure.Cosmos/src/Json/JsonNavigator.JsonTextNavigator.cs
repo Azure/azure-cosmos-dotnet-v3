@@ -435,13 +435,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            public override void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
-            {
-                // For text we don't really plan on doing better than what the writer can.
-                // In the future we could potentially optimize this
-                jsonWriter.WriteJsonNode(this, jsonNavigatorNode);
-            }
-
             #region JsonTextParser
             /// <summary>
             /// The JsonTextParser class is used to get a JSON AST / DOM from plaintext using a JsonTextReader as a lexer / tokenizer.

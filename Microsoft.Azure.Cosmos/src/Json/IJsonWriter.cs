@@ -170,13 +170,6 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteRawJsonToken(JsonTokenType jsonTokenType, ReadOnlySpan<byte> rawJsonToken);
 
         /// <summary>
-        /// Writes a json node to the internal buffer.
-        /// </summary>
-        /// <param name="jsonNavigator">The navigator to use to navigate the node</param>
-        /// <param name="jsonNavigatorNode">The node to write.</param>
-        void WriteJsonNode(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode);
-
-        /// <summary>
         /// Gets the result of the JsonWriter.
         /// </summary>
         /// <returns>The result of the JsonWriter as an array of bytes.</returns>
