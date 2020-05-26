@@ -119,6 +119,23 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
+        /// Gets or sets a boolean to define if the current request should use bulk support to be executed.
+        /// </summary>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableBulkExecution = true };
+        /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// The default behavior is defined by the value of <see cref="CosmosClientOptions.AllowBulkExecution"/>. This request level setting overrides the default value.
+        /// </remarks>
+        /// <seealso cref="CosmosClientOptions.AllowBulkExecution"/>
+        public bool? EnableBulkExecution { get; set; }
+
+        /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
         /// the Cosmos DB response for read item operations like ReadItemAsync
         /// This removes the resource from the response. This reduces networking and CPU load by not sending
