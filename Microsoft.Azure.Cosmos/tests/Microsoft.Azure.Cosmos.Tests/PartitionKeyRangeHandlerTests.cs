@@ -70,9 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(MockCosmosUtil.CreateMockCosmosClient(), partitionRoutingHelperMock.Object);
 
             TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
-                ResponseMessage successResponse = await TestHandler.ReturnStatusCode(HttpStatusCode.ServiceUnavailable);
-                successResponse.Headers.Remove(HttpConstants.HttpHeaders.Continuation); //Clobber original continuation
-                return successResponse;
+                throw new DocumentClientException("error", HttpStatusCode.ServiceUnavailable, SubStatusCodes.Unknown);
             });
             partitionKeyRangeHandler.InnerHandler = testHandler;
 
