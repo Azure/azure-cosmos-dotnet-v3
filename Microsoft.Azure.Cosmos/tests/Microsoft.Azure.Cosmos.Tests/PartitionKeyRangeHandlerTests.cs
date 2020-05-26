@@ -67,20 +67,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = this.GetPartitionRoutingHelperMock();
 
-            //throw a DocumentClientException
-            partitionRoutingHelperMock.Setup(m => m.TryAddPartitionKeyRangeToContinuationTokenAsync(
-                It.IsAny<INameValueCollection>(),
-                It.IsAny<List<Range<string>>>(),
-                It.IsAny<IRoutingMapProvider>(),
-                It.Is<string>(x => x == CollectionId),
-                It.IsAny<ResolvedRangeInfo>(),
-                It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
-            )).ThrowsAsync(new DocumentClientException("error", HttpStatusCode.ServiceUnavailable, SubStatusCodes.Unknown));
-
             PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(MockCosmosUtil.CreateMockCosmosClient(), partitionRoutingHelperMock.Object);
 
             TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
-                ResponseMessage successResponse = await TestHandler.ReturnSuccess();
+                ResponseMessage successResponse = await TestHandler.ReturnStatusCode(HttpStatusCode.ServiceUnavailable);
                 successResponse.Headers.Remove(HttpConstants.HttpHeaders.Continuation); //Clobber original continuation
                 return successResponse;
             });
