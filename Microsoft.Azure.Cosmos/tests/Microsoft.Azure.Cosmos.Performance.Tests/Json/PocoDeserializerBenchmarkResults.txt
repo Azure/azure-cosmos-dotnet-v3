@@ -1,0 +1,6 @@
+﻿|       Method |  serializationFormat |     Mean |    Error |   StdDev |   Gen 0 |  Gen 1 | Gen 2 | Allocated |
+|------------- |--------------------- |---------:|---------:|---------:|--------:|-------:|------:|----------:|
+| RunBenchmark |                 Text | 807.6 us | 16.01 us | 22.45 us | 41.9922 | 2.9297 |     - | 174.16 KB |
+| RunBenchmark |       NewtonsoftText | 546.5 us |  6.99 us |  6.54 us | 36.1328 |      - |     - | 150.15 KB |
+| RunBenchmark |               Binary | 586.3 us |  6.07 us |  5.38 us | 41.9922 |      - |     - | 174.38 KB |
+| RunBenchmark | Binar(...)oding [28] | 634.6 us | 12.64 us | 20.05 us | 41.9922 |      - |     - | 174.37 KB |

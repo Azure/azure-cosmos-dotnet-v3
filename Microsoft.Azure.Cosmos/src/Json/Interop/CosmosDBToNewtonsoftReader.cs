@@ -43,9 +43,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// Initializes a new instance of the NewtonsoftReader class.
         /// </summary>
         /// <param name="buffer">The buffer to read from.</param>
-        public CosmosDBToNewtonsoftReader(ReadOnlyMemory<byte> buffer)
+        /// <param name="jsonStringDictionary">The json string dictionary to use.</param>
+        public CosmosDBToNewtonsoftReader(
+            ReadOnlyMemory<byte> buffer,
+            JsonStringDictionary jsonStringDictionary = null)
         {
-            this.jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(buffer);
+            this.jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(buffer, jsonStringDictionary);
         }
 
         /// <summary>

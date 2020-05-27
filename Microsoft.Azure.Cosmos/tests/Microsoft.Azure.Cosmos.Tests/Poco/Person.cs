@@ -3,10 +3,12 @@
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     public sealed class Person
     {
-        private static readonly Random random = new Random(Seed: 42);
+        private static readonly Random random = new Random(Seed: 1337);
+        private static readonly Gender[] genders = (Gender[])Enum.GetValues(typeof(Gender));
         private static readonly string[] names = new string[]
         {
             "Emory Carreiro",
@@ -61,10 +63,12 @@
             "Sunny Fenton",
         };
 
-        public Person(string name, int age, IReadOnlyList<Person> children)
+        public Person(string name, int age, double salary, Gender gender, IReadOnlyList<Person> children)
         {
             this.Name = name;
             this.Age = age;
+            this.Salary = salary;
+            this.PersonGender = gender;
             this.Children = new List<Person>(children);
         }
 
@@ -73,6 +77,13 @@
 
         [JsonProperty("age")]
         public int Age { get; }
+
+        [JsonProperty("salary")]
+        public double Salary { get; }
+
+        [JsonProperty("gender")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public Gender PersonGender { get; }
 
         [JsonProperty("children")]
         public IReadOnlyList<Person> Children { get; }
@@ -101,18 +112,74 @@
         {
             string name = Person.names[Person.random.Next(0, Person.names.Length)];
             int age = Person.random.Next(0, 100);
+            double salary = Person.random.NextDouble() * 10000000;
+            Gender gender = Person.genders[Person.random.Next(0, Person.genders.Length)];
 
             List<Person> children = new List<Person>();
-            if (Person.random.Next() % 2 == 0)
+            if (Person.random.Next() % 3 == 0)
             {
-                int numChildren = Person.random.Next(0, 5);
+                int numChildren = Person.random.Next(0, 3);
                 for (int i = 0; i < numChildren; i++)
                 {
                     children.Add(Person.GetRandomPerson());
                 }
             }
 
-            return new Person(name, age, children);
+            return new Person(name, age, salary, gender, children);
+        }
+
+        public enum Gender
+        {
+            Agender,
+            Androgyne,
+            Androgynous,
+            Bigender,
+            Cis,
+            Cisgender,
+            CisFemale,
+            CisMale,
+            CisMan,
+            CisWoman,
+            CisgenderFemale,
+            CisgenderMale,
+            CisgenderMan,
+            CisgenderWoman,
+            FemaleToMale,
+            FTM,
+            GenderFluid,
+            GenderNonconforming,
+            GenderQuestioning,
+            GenderVariant,
+            Genderqueer,
+            Intersex,
+            MaleToFemale,
+            MTF,
+            Neither,
+            Neutrois,
+            NonBinary,
+            Other,
+            Pangender,
+            Trans,
+            TransFemale,
+            TransMale,
+            TransMan,
+            TransPerson,
+            TransWoman,
+            Transfeminine,
+            Transgender,
+            TransgenderFemale,
+            TransgenderMale,
+            TransgenderMan,
+            TransgenderPerson,
+            TransgenderWoman,
+            Transmasculine,
+            Transsexual,
+            TranssexualFemale,
+            TranssexualMale,
+            TranssexualMan,
+            TranssexualPerson,
+            TranssexualWoman,
+            TwoSpirit,
         }
     }
 }
