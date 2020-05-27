@@ -375,26 +375,25 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions)
         {
             this.ThrowIfDisposed();
-            bool isBoolEnabledForRequest = this.clientOptions.AllowBulkExecution;
-            if (requestOptions is ItemRequestOptions itemRequestOptions)
-            {
-                if (itemRequestOptions.EnableBulkExecution.HasValue)
-                {
-                    isBoolEnabledForRequest = itemRequestOptions.EnableBulkExecution.Value;
-                }
-            }
-
-            if (!isBoolEnabledForRequest)
-            {
-                return false;
-            }
-
-            return resourceType == ResourceType.Document
+            bool isSupportedOperation = resourceType == ResourceType.Document
                 && (operationType == OperationType.Create
                 || operationType == OperationType.Upsert
                 || operationType == OperationType.Read
                 || operationType == OperationType.Delete
                 || operationType == OperationType.Replace);
+
+            if (!isSupportedOperation)
+            {
+                return false;
+            }
+
+            if (requestOptions is ItemRequestOptions itemRequestOptions &&
+                  itemRequestOptions.EnableBulkExecution.HasValue)
+            {
+                return itemRequestOptions.EnableBulkExecution.Value;
+            }
+
+            return this.clientOptions.AllowBulkExecution;
         }
 
         private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)

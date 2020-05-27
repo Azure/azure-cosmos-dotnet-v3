@@ -20,11 +20,6 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal container,
             CosmosClientContext cosmosClientContext)
         {
-            if (!cosmosClientContext.ClientOptions.AllowBulkExecution)
-            {
-                throw new InvalidOperationException("AllowBulkExecution is not currently enabled.");
-            }
-
             string containerLink = container.LinkUri.ToString();
             if (this.executorsPerContainer.TryGetValue(containerLink, out BatchAsyncContainerExecutor executor))
             {
