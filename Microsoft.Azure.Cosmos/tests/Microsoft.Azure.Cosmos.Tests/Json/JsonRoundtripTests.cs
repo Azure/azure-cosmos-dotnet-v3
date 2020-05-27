@@ -835,7 +835,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        private static void PerformRoundTrip(SerializationFormat sourceFormat, SerializationFormat destinationFormat, string json)
+        private static void PerformRoundTrip(
+            SerializationFormat sourceFormat,
+            SerializationFormat destinationFormat,
+            string json)
         {
             IJsonReader reader;
             switch (sourceFormat)

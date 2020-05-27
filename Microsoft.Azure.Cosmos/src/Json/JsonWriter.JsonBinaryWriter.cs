@@ -126,35 +126,13 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteFieldName(string fieldName)
-            {
-                int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
-                Span<byte> utf8Buffer = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(fieldName, utf8Buffer);
-                Utf8Span utf8FieldName = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
-
-                this.WriteFieldNameOrString(isFieldName: true, utf8FieldName);
-            }
-
-            /// <inheritdoc />
-            public override void WriteFieldName(Utf8Span fieldName)
+            public override void WriteFieldName(Utf8Span fieldName, bool skipEscapedStringChecks = false)
             {
                 this.WriteFieldNameOrString(isFieldName: true, fieldName);
             }
 
             /// <inheritdoc />
-            public override void WriteStringValue(string value)
-            {
-                int utf8Length = Encoding.UTF8.GetByteCount(value);
-                Span<byte> utf8Buffer = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(value, utf8Buffer);
-                Utf8Span utf8StringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
-
-                this.WriteFieldNameOrString(isFieldName: false, utf8StringValue);
-            }
-
-            /// <inheritdoc />
-            public override void WriteStringValue(Utf8Span value)
+            public override void WriteStringValue(Utf8Span value, bool skipEscapedStringChecks = false)
             {
                 this.WriteFieldNameOrString(isFieldName: false, value);
             }

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 JsonSerializationFormat.Binary => new JsonBinaryNavigator(buffer, jsonStringDictionary),
 
                 // or otherwise assume text format
-                _ => new JsonTextNavigator(buffer), 
+                _ => new JsonTextNavigator(buffer),
             };
         }
 
@@ -125,6 +125,20 @@ namespace Microsoft.Azure.Cosmos.Json
         public virtual void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
         {
             JsonNodeType nodeType = this.GetNodeType(jsonNavigatorNode);
+            switch (nodeType)
+            {
+                case JsonNodeType.Null:
+                    jsonWriter.WriteNullValue();
+                    return;
+
+                case JsonNodeType.False:
+                    jsonWriter.WriteBoolValue(false);
+                    return;
+
+                case JsonNodeType.True:
+                    jsonWriter.WriteBoolValue(true);
+                    return;
+            }
 
             bool sameEncoding = this.SerializationFormat == jsonWriter.SerializationFormat;
             if (sameEncoding && this.TryGetBufferedRawJson(jsonNavigatorNode, out ReadOnlyMemory<byte> bufferedRawJson))
@@ -137,18 +151,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
             switch (nodeType)
             {
-                case JsonNodeType.Null:
-                    jsonWriter.WriteNullValue();
-                    break;
-
-                case JsonNodeType.False:
-                    jsonWriter.WriteBoolValue(false);
-                    break;
-
-                case JsonNodeType.True:
-                    jsonWriter.WriteBoolValue(true);
-                    break;
-
                 case JsonNodeType.Number64:
                     {
                         Number64 value = this.GetNumber64Value(jsonNavigatorNode);

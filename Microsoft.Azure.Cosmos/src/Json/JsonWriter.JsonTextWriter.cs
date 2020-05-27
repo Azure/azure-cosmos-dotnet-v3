@@ -34,8 +34,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonTextWriter : JsonWriter
         {
-            private const int MaxStackAlloc = 4 * 1024;
-
             private const byte ValueSeperatorToken = (byte)':';
             private const byte MemberSeperatorToken = (byte)',';
             private const byte ObjectStartToken = (byte)'{';
@@ -162,18 +160,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override unsafe void WriteFieldName(string fieldName)
-            {
-                int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
-                Span<byte> utf8Buffer = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(fieldName, utf8Buffer);
-                Utf8Span utf8FieldName = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
-
-                this.WriteFieldName(utf8FieldName);
-            }
-
-            /// <inheritdoc />
-            public override void WriteFieldName(Utf8Span fieldName)
+            public override void WriteFieldName(Utf8Span fieldName, bool skipEscapedStringChecks = false)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
                 this.PrefixMemberSeparator();
@@ -182,31 +169,38 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = true;
 
                 this.jsonTextMemoryWriter.Write(PropertyStartToken);
-                this.WriteEscapedString(fieldName);
+
+                if (skipEscapedStringChecks)
+                {
+                    this.jsonTextMemoryWriter.Write(fieldName.Span);
+                }
+                else
+                {
+                    this.WriteEscapedString(fieldName);
+                }
+
                 this.jsonTextMemoryWriter.Write(PropertyEndToken);
 
                 this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
             }
 
             /// <inheritdoc />
-            public override void WriteStringValue(string value)
-            {
-                int utf8Length = Encoding.UTF8.GetByteCount(value);
-                Span<byte> utf8Buffer = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(value, utf8Buffer);
-                Utf8Span utf8Value = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
-
-                this.WriteStringValue(utf8Value);
-            }
-
-            /// <inheritdoc />
-            public override void WriteStringValue(Utf8Span value)
+            public override void WriteStringValue(Utf8Span value, bool skipEscapedStringChecks = false)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.String);
                 this.PrefixMemberSeparator();
 
                 this.jsonTextMemoryWriter.Write(StringStartToken);
-                this.WriteEscapedString(value);
+
+                if (skipEscapedStringChecks)
+                {
+                    this.jsonTextMemoryWriter.Write(value.Span);
+                }
+                else
+                {
+                    this.WriteEscapedString(value);
+                }
+
                 this.jsonTextMemoryWriter.Write(StringEndToken);
             }
 

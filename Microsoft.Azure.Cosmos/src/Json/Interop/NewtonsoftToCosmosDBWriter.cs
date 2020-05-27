@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteValue(value);
         }
 
-        public override void WriteFieldName(string fieldName)
+        public override void WriteFieldName(string fieldName, bool skipEscapedStringChecks = false)
         {
             this.writer.WritePropertyName(fieldName);
         }
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteStartObject();
         }
 
-        public override void WriteStringValue(string value)
+        public override void WriteStringValue(string value, bool skipEscapedStringChecks = false)
         {
             this.writer.WriteValue(value);
         }
@@ -220,12 +220,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return new NewtonsoftToCosmosDBWriter(writer, () => throw new NotSupportedException());
         }
 
-        public override void WriteFieldName(Utf8Span utf8FieldName)
+        public override void WriteFieldName(Utf8Span utf8FieldName, bool skipEscapedStringChecks = false)
         {
             this.WriteFieldName(Encoding.UTF8.GetString(utf8FieldName.Span));
         }
 
-        public override void WriteStringValue(Utf8Span utf8StringValue)
+        public override void WriteStringValue(Utf8Span utf8StringValue, bool skipEscapedStringChecks = false)
         {
             this.WriteStringValue(Encoding.UTF8.GetString(utf8StringValue.Span));
         }
