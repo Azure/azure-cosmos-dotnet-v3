@@ -97,10 +97,10 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Initializes a new instance of the JsonTextWriter class.
             /// </summary>
-            public JsonTextWriter()
+            public JsonTextWriter(int initialCapacity = 256)
             {
                 this.firstValue = true;
-                this.jsonTextMemoryWriter = new JsonTextMemoryWriter();
+                this.jsonTextMemoryWriter = new JsonTextMemoryWriter(initialCapacity);
             }
 
             /// <inheritdoc />

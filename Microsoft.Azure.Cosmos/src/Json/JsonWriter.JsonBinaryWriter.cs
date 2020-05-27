@@ -64,12 +64,14 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
             /// <param name="jsonStringDictionary">The JSON string dictionary used for user string encoding.</param>
+            /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
             /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
             public JsonBinaryWriter(
                 JsonStringDictionary jsonStringDictionary = null,
+                int initialCapacity = 256,
                 bool serializeCount = false)
             {
-                this.binaryWriter = new JsonBinaryMemoryWriter();
+                this.binaryWriter = new JsonBinaryMemoryWriter(initialCapacity);
                 this.bufferedContexts = new Stack<BeginOffsetAndCount>();
                 this.serializeCount = serializeCount;
                 this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);

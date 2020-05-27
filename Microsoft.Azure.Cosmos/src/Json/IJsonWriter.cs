@@ -4,9 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Interface for all JsonWriters that know how to write jsons of a specific serialization format.
