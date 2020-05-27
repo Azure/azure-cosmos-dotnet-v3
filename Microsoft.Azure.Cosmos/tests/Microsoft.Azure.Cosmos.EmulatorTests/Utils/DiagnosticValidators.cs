@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
             Assert.IsTrue((cosmosDiagnosticsContext.StartUtc - DateTime.UtcNow) < TimeSpan.FromHours(12), $"Start Time is not valid {cosmosDiagnosticsContext.StartUtc}");
-            Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent.ToString(), new UserAgentContainer().UserAgent.ToString(), "User agent not set");
+            Assert.IsTrue(cosmosDiagnosticsContext.UserAgent.ToString().Contains("cosmos-netstandard-sdk"));
             Assert.IsTrue(cosmosDiagnosticsContext.GetTotalRequestCount() > 0, "No request found");
             Assert.IsTrue(cosmosDiagnosticsContext.IsComplete(), "OverallClientRequestTime should be stopped");
             Assert.IsTrue(cosmosDiagnosticsContext.GetRunningElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["DiagnosticVersion"].ToString()); 
             JToken summary = jObject["Summary"];
             Assert.IsNotNull(summary["UserAgent"].ToString());
-            Assert.AreNotEqual(summary["UserAgent"].ToString(), new UserAgentContainer().UserAgent);
+            Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"));
             Assert.IsNotNull(summary["StartUtc"].ToString());
             Assert.IsNotNull(summary["TotalElapsedTimeInMs"].ToString());
         }

@@ -1619,6 +1619,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage failedResponseMessage = failedToManyRequests.First();
                 Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
                 Assert.IsNotNull(failedResponseMessage.ErrorMessage);
+                string fullExceptionMessage = failedResponseMessage.CosmosException.ToString();
+                Assert.IsNotNull(fullExceptionMessage);
                 string diagnostics = failedResponseMessage.Diagnostics.ToString();
                 Assert.IsNotNull(diagnostics);
             }

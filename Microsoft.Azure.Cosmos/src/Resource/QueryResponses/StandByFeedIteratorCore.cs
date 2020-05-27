@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -26,9 +25,9 @@ namespace Microsoft.Azure.Cosmos
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly ContainerInternal container;
+        private readonly int? maxItemCount;
         private string containerRid;
         private string continuationToken;
-        private int? maxItemCount;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
@@ -37,7 +36,10 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
 
             this.ClientContext = clientContext;
             this.container = container;
@@ -63,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.OperationHelperAsync(
-               nameof(FeedIteratorCore),
+               nameof(StandByFeedIteratorCore),
                this.changeFeedOptions,
                async (diagnostics) =>
                {
@@ -81,7 +83,10 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage response;
             do
             {
-                (currentKeyRangeId, response) = await this.ReadNextInternalAsync(cancellationToken);
+                (currentKeyRangeId, response) = await this.ReadNextInternalHelperAsync(
+                    diagnosticsContext,
+                    cancellationToken);
+
                 // Read only one range at a time - Breath first
                 this.compositeContinuationToken.MoveToNextToken();
                 (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
@@ -105,7 +110,9 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
+        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalHelperAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -119,10 +126,17 @@ namespace Microsoft.Azure.Cosmos
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             string partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
-            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            ResponseMessage response = await this.NextResultSetDelegateAsync(
+                diagnosticsContext,
+                this.continuationToken,
+                partitionKeyRangeId,
+                this.maxItemCount,
+                this.changeFeedOptions,
+                cancellationToken);
+
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
-                return await this.ReadNextInternalAsync(cancellationToken);
+                return await this.ReadNextInternalHelperAsync(diagnosticsContext, cancellationToken);
             }
 
             if (response.IsSuccessStatusCode
@@ -160,6 +174,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal virtual Task<ResponseMessage> NextResultSetDelegateAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
@@ -181,7 +196,7 @@ namespace Microsoft.Azure.Cosmos
                 },
                 partitionKey: null,
                 streamPayload: null,
-                diagnosticsContext: null,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
