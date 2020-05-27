@@ -17,23 +17,13 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly OperationCanceledException originalException;
 
-        internal static OperationCanceledException Create(
+        internal CosmosOperationCanceledException(
             OperationCanceledException originalException,
             CosmosDiagnosticsContext diagnosticsContext)
+            : this(
+                originalException,
+                diagnosticsContext?.Diagnostics)
         {
-            if (originalException == null)
-            {
-                throw new ArgumentNullException(nameof(originalException));
-            }
-
-            if (diagnosticsContext == null)
-            {
-                throw new ArgumentNullException(nameof(diagnosticsContext));
-            }
-
-            return new CosmosOperationCanceledException(
-                    originalException,
-                    diagnosticsContext.Diagnostics);
         }
 
         /// <summary>
@@ -46,6 +36,16 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnostics diagnostics)
             : base(originalException.CancellationToken)
         {
+            if (originalException == null)
+            {
+                throw new ArgumentNullException(nameof(originalException));
+            }
+
+            if (diagnostics == null)
+            {
+                throw new ArgumentNullException(nameof(diagnostics));
+            }
+
             this.originalException = originalException;
             this.Diagnostics = diagnostics;
         }
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.originalException.ToString()} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics.ToString()}";
+            return $"{this.originalException.ToString() ?? string.Empty} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics.ToString() ?? string.Empty}";
         }
     }
 }

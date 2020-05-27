@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             catch (OperationCanceledException oe)
             {
-                throw CosmosOperationCanceledException.Create(oe, diagnosticsContext);
+                throw new CosmosOperationCanceledException(oe, diagnosticsContext);
             }
         }
 

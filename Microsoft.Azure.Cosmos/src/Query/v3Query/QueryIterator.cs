@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (cosmosException.InnerException != null &&
                         cosmosException.InnerException is OperationCanceledException operationCanceledException)
                     {
-                        throw CosmosOperationCanceledException.Create(
+                        throw new CosmosOperationCanceledException(
                             operationCanceledException,
                             diagnostics);
                     }
