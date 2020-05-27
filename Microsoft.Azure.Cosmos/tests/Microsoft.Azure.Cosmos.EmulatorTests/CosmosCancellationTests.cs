@@ -99,6 +99,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(toString.Contains(diagnostics));
                 Assert.IsTrue(toString.Contains(message));
             }
+
+            try
+            {
+                FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    "select * from T");
+
+                await feedIterator.ReadNextAsync(cancellationToken: cancellationToken);
+
+                Assert.Fail("Should have thrown");
+            }
+            catch (CosmosOperationCanceledException ce)
+            {
+                Assert.IsNotNull(ce);
+                string message = ce.Message;
+                string diagnostics = ce.Diagnostics.ToString();
+                string toString = ce.ToString();
+                Assert.IsTrue(toString.Contains(diagnostics));
+                Assert.IsTrue(toString.Contains(message));
+            }
         }
     }
 }

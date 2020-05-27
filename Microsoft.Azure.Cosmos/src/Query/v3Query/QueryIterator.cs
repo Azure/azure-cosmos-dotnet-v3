@@ -165,6 +165,15 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (responseCore.CosmosException != null)
                 {
+                    CosmosException cosmosException = responseCore.CosmosException;
+                    if (cosmosException.InnerException != null &&
+                        cosmosException.InnerException is OperationCanceledException operationCanceledException)
+                    {
+                        throw CosmosOperationCanceledException.Create(
+                            operationCanceledException,
+                            diagnostics);
+                    }
+
                     return responseCore.CosmosException.ToCosmosResponseMessage(null);
                 }
 
