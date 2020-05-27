@@ -210,10 +210,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Executes the batch at the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">Options that apply to the batch. Used only for EPK routing.</param>
+        /// <param name="requestOptions">Options that apply to the batch.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
-        public virtual Task<TransactionalBatchResponse> ExecuteAsync(
+        public override Task<TransactionalBatchResponse> ExecuteAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {

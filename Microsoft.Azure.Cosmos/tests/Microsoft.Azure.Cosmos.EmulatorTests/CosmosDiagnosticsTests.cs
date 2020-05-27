@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
-            TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
+            TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
 
             Assert.IsNotNull(response);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(

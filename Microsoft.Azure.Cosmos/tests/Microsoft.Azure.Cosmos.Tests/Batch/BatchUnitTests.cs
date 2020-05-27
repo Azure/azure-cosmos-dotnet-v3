@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 if (requestOptions != null)
                 {
-                    await ((BatchCore)batch).ExecuteAsync(requestOptions);
+                    await batch.ExecuteAsync(requestOptions);
                 }
                 else
                 {

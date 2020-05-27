@@ -223,5 +223,37 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(
             CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Executes the transactional batch at the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestOptions">Options that apply to the batch.</param>
+        /// <param name="cancellationToken">(Optional) Cancellation token representing request cancellation.</param>
+        /// <returns>An awaitable response which contains details of execution of the transactional batch.
+        /// <para>
+        /// If the transactional batch executes successfully, the <see cref="TransactionalBatchResponse.StatusCode"/> on the response returned
+        /// will be set to <see cref="HttpStatusCode.OK"/>.
+        /// </para>
+        /// <para>
+        /// If an operation within the transactional batch fails during execution, no changes from the batch will be committed
+        /// and the status of the failing operation is made available in the <see cref="TransactionalBatchResponse.StatusCode"/>.
+        /// To get more details about the operation that failed, the response can be enumerated - this returns <see cref="TransactionalBatchOperationResult" />
+        /// instances corresponding to each operation in the transactional batch in the order they were added into the transactional batch.
+        /// For a result corresponding to an operation within the transactional batch, the <see cref="TransactionalBatchOperationResult.StatusCode"/> indicates
+        /// the status of the operation - if the operation was not executed or it was aborted due to the failure of another operation within the transactional batch,
+        /// the value of this field will be HTTP 424 (Failed Dependency); for the operation that caused the batch to abort, the value of this field will indicate
+        /// the cause of failure as a HTTP status code.
+        /// </para>
+        /// <para>
+        /// The <see cref="TransactionalBatchResponse.StatusCode"/> on the response returned may also have values such as HTTP 5xx in case of server errors and HTTP 429 (Too Many Requests).
+        /// </para>
+        /// </returns>
+        /// <remarks>
+        /// This API only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions.
+        /// Use <see cref="TransactionalBatchResponse.IsSuccessStatusCode"/> on the response returned to ensure that the transactional batch succeeded.
+        /// </remarks>
+        public abstract Task<TransactionalBatchResponse> ExecuteAsync(
+           RequestOptions requestOptions,
+           CancellationToken cancellationToken = default(CancellationToken));
     }
 }
