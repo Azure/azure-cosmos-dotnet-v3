@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsNotNull(ce);
                 string message = ce.Message;
-                string diagnostics = ce.DiagnosticsContext.ToString();
+                string diagnostics = ce.Diagnostics.ToString();
                 string toString = ce.ToString();
                 Assert.IsTrue(toString.Contains(diagnostics));
                 Assert.IsTrue(toString.Contains(message));

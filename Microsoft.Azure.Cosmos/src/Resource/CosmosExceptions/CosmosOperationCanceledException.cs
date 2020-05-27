@@ -9,13 +9,15 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
 
     /// <summary>
-    /// The Cosmos Client exception
+    /// The exception that is thrown in a thread upon cancellation of an operation that
+    ///  the thread was executing. This extends the OperationCanceledException to include the
+    ///  diagnostics of the operation that was canceled.
     /// </summary>
-    internal class CosmosOperationCanceledException : OperationCanceledException
+    public class CosmosOperationCanceledException : OperationCanceledException
     {
         private readonly OperationCanceledException originalException;
 
-        public static OperationCanceledException Create(
+        internal static OperationCanceledException Create(
             OperationCanceledException originalException,
             CosmosDiagnosticsContext diagnosticsContext)
         {
@@ -29,65 +31,63 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(diagnosticsContext));
             }
 
-            if (originalException.CancellationToken != null)
-            {
-                return new CosmosOperationCanceledException(
-                    originalException,
-                    originalException.CancellationToken,
-                    diagnosticsContext);
-            }
-
             return new CosmosOperationCanceledException(
                     originalException,
-                    diagnosticsContext);
+                    diagnosticsContext.Diagnostics);
         }
 
-        private CosmosOperationCanceledException(
+        /// <summary>
+        /// Create an instance of CosmosOperationCanceledException
+        /// </summary>
+        /// <param name="originalException">The original operation canceled exception</param>
+        /// <param name="diagnostics"></param>
+        public CosmosOperationCanceledException(
             OperationCanceledException originalException,
-            CosmosDiagnosticsContext diagnosticsContext)
+            CosmosDiagnostics diagnostics)
+            : base(originalException.CancellationToken)
         {
             this.originalException = originalException;
-            this.DiagnosticsContext = diagnosticsContext;
+            this.Diagnostics = diagnostics;
         }
 
-        private CosmosOperationCanceledException(
-            OperationCanceledException originalException,
-            CancellationToken cancellationToken,
-            CosmosDiagnosticsContext diagnosticsContext)
-            : base(cancellationToken)
-        {
-            this.originalException = originalException;
-            this.DiagnosticsContext = diagnosticsContext;
-        }
-
+        /// <inheritdoc/>
         public override string Source
         {
             get => this.originalException.Source;
             set => this.originalException.Source = value;
         }
 
+        /// <inheritdoc/>
         public override string Message => this.originalException.Message;
 
+        /// <inheritdoc/>
         public override string StackTrace => this.originalException.StackTrace;
 
+        /// <inheritdoc/>
         public override IDictionary Data => this.originalException.Data;
 
+        /// <summary>
+        /// Gets the diagnostics for the request
+        /// </summary>
+        public CosmosDiagnostics Diagnostics { get; }
+
+        /// <inheritdoc/>
         public override string HelpLink
         {
             get => this.originalException.HelpLink;
             set => this.originalException.HelpLink = value;
         }
 
-        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
-
+        /// <inheritdoc/>
         public override Exception GetBaseException()
         {
             return this.originalException.GetBaseException();
         }
 
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.originalException.ToString()} {Environment.NewLine}CosmosDiagnostics: {this.DiagnosticsContext.ToString()}";
+            return $"{this.originalException.ToString()} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics.ToString()}";
         }
     }
 }

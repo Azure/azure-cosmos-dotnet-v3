@@ -175,10 +175,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     return await this.SendAsync(request, cancellationToken);
                 }
             }
-            catch (TaskCanceledException te)
-            {
-                throw CosmosOperationCanceledException.Create(te, diagnosticsContext);
-            }
             catch (OperationCanceledException oe)
             {
                 throw CosmosOperationCanceledException.Create(oe, diagnosticsContext);
