@@ -946,6 +946,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     if (this.position + token.Length <= this.buffer.Length)
                     {
                         bool read = this.buffer
+                            .AsMemory()
                             .Slice(this.position, token.Length)
                             .Span
                             .SequenceEqual(token);

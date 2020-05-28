@@ -20,11 +20,6 @@ namespace Microsoft.Azure.Cosmos.Json
             Utf8Memory stringToken,
             IReadOnlyJsonStringDictionary jsonStringDictionary)
         {
-            if (stringToken.IsEmpty)
-            {
-                throw new JsonInvalidTokenException();
-            }
-
             if (!JsonBinaryEncoding.TryGetBufferedStringValue(stringToken, jsonStringDictionary, out Utf8Memory bufferedUtf8StringValue))
             {
                 throw new JsonInvalidTokenException();
@@ -100,12 +95,6 @@ namespace Microsoft.Azure.Cosmos.Json
             Utf8Span stringToken,
             out UtfAllString value)
         {
-            if (stringToken.IsEmpty)
-            {
-                value = default;
-                return false;
-            }
-
             if (!JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(stringToken.Span[0]))
             {
                 value = default;
@@ -151,12 +140,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private static bool TryGetUserStringId(Utf8Span stringToken, out int userStringId)
         {
-            if (stringToken.IsEmpty)
-            {
-                userStringId = default;
-                return false;
-            }
-
             byte typeMarker = stringToken.Span[0];
             if (!JsonBinaryEncoding.TypeMarker.IsUserString(typeMarker))
             {
@@ -195,12 +178,6 @@ namespace Microsoft.Azure.Cosmos.Json
             Utf8Memory stringToken,
             out Utf8Memory value)
         {
-            if (stringToken.IsEmpty)
-            {
-                value = default;
-                return false;
-            }
-
             ReadOnlySpan<byte> stringTokenSpan = stringToken.Memory.Span;
             byte typeMarker = stringTokenSpan[0];
             stringTokenSpan = stringTokenSpan.Slice(start: 1);
@@ -224,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         }
 
                         start = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength;
-                        length = MemoryMarshal.Read<byte>(stringTokenSpan);
+                        length = stringTokenSpan[0];
                         break;
 
                     case JsonBinaryEncoding.TypeMarker.String2ByteLength:

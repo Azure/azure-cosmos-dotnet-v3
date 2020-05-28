@@ -475,7 +475,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetRawMemoryJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }
 
             private static JsonTokenType GetJsonTokenType(byte typeMarker)
@@ -563,11 +563,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void SkipBytes(int offset)
                 {
                     this.position += offset;
-                }
-
-                public ReadOnlyMemory<byte> GetRawMemoryJsonToken(int startPosition)
-                {
-                    return this.buffer.Slice(startPosition);
                 }
             }
         }
