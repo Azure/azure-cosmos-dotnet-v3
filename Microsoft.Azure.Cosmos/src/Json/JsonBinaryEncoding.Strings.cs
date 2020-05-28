@@ -20,12 +20,27 @@ namespace Microsoft.Azure.Cosmos.Json
             Utf8Memory stringToken,
             IReadOnlyJsonStringDictionary jsonStringDictionary)
         {
-            if (!JsonBinaryEncoding.TryGetBufferedStringValue(stringToken, jsonStringDictionary, out Utf8Memory bufferedUtf8StringValue))
+            if (stringToken.IsEmpty)
             {
                 throw new JsonInvalidTokenException();
             }
 
-            return bufferedUtf8StringValue.ToString();
+            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
+                stringToken,
+                out Utf8Memory lengthPrefixedString))
+            {
+                return lengthPrefixedString.ToString();
+            }
+
+            if (JsonBinaryEncoding.TryGetEncodedStringValue(
+                stringToken.Span,
+                jsonStringDictionary,
+                out UtfAllString encodedStringValue))
+            {
+                return encodedStringValue.Utf16String;
+            }
+
+            throw new JsonInvalidTokenException();
         }
 
         public static bool TryGetBufferedStringValue(
