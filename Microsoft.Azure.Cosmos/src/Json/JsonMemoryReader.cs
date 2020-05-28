@@ -4,54 +4,43 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Runtime.InteropServices;
+    using System.Runtime.CompilerServices;
 
     internal abstract class JsonMemoryReader
     {
-        protected readonly byte[] buffer;
+        protected readonly ReadOnlyMemory<byte> buffer;
         protected int position;
 
         protected JsonMemoryReader(ReadOnlyMemory<byte> buffer)
         {
-            if (!MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
-            {
-                throw new InvalidOperationException($"Failed to get '{nameof(segment)}'");
-            }
-
-            this.buffer = segment.Array;
-            this.position = segment.Offset;
+            this.buffer = buffer;
         }
 
         public bool IsEof => this.position >= this.buffer.Length;
 
         public int Position => this.position;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte Read()
         {
-            byte value = this.position < this.buffer.Length ? (byte)this.buffer[this.position] : (byte)0;
+            byte value = this.position < this.buffer.Length ? (byte)this.buffer.Span[this.position] : (byte)0;
             this.position++;
             return value;
         }
 
-        public byte Peek()
-        {
-            byte value = this.position < this.buffer.Length ? (byte)this.buffer[this.position] : (byte)0;
-            return value;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte Peek() => this.position < this.buffer.Length ? (byte)this.buffer.Span[this.position] : (byte)0;
 
-        public ReadOnlyMemory<byte> GetBufferedRawJsonToken()
-        {
-            return this.buffer.AsMemory().Slice(this.position);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlyMemory<byte> GetBufferedRawJsonToken() => this.buffer.Slice(this.position);
 
-        public ReadOnlyMemory<byte> GetBufferedRawJsonToken(int startPosition)
-        {
-            return this.buffer.AsMemory().Slice(startPosition);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlyMemory<byte> GetBufferedRawJsonToken(
+            int startPosition) => this.buffer.Slice(startPosition);
 
-        public ReadOnlyMemory<byte> GetBufferedRawJsonToken(int startPosition, int endPosition)
-        {
-            return this.buffer.AsMemory().Slice(startPosition, endPosition - startPosition);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlyMemory<byte> GetBufferedRawJsonToken(
+            int startPosition,
+            int endPosition) => this.buffer.Slice(startPosition, endPosition - startPosition);
     }
 }
