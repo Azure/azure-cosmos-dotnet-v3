@@ -132,15 +132,11 @@ namespace Microsoft.Azure.Cosmos
 
                 this.DiagnosticsContext.AddDiagnosticsInternal(responseStatistics);
 
-                // TODO: The direct package added StatusCode to StoreResult which is not ported here.
-                // remove the internal when the next direct package gets pulled in.
-#if INTERNAL
                 if (!this.received429ResponseSinceLastStartRequest &&
                     storeResult.StatusCode == StatusCodes.TooManyRequests)
                 {
                     this.received429ResponseSinceLastStartRequest = true;
                 }
-#endif
             }
         }
 
