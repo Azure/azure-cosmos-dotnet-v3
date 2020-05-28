@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private sealed class TransportClientWrapper : TransportClient
+        internal sealed class TransportClientWrapper : TransportClient
         {
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
