@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.originalException.ToString() ?? string.Empty} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics.ToString() ?? string.Empty}";
+            return $"{this.originalException.ToString()} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics.ToString()}";
         }
     }
 }
