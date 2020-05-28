@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<CosmosDiagnosticsContext, Task<TResult>> task)
         {
-            Debug.Assert(SynchronizationContext.Current != null, "This should only be used when aSynchronizationContext is specified");
+            Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
             CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
                 operationName,
