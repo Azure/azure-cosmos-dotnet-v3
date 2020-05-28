@@ -76,16 +76,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
-                string propertyName = pathToEncrypt.Substring(1);
-                JProperty propertyValueHolder = itemJObj.Property(propertyName);
-
-                if (propertyValueHolder == null)
+                string propertyName = pathToEncrypt.Substring(1);                
+                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
                 }
 
-                // Even null in the JSON is a JToken with Type Null
-                JToken propertyValue = propertyValueHolder.Value;
                 toEncryptJObj.Add(propertyName, propertyValue.Value<JToken>());
                 itemJObj.Remove(propertyName);
             }

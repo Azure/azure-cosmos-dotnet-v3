@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             catch (CosmosException ex)
             {
-                if (ex.Message.Contains("Resource Not Found"))
+                if (ex.StatusCode.Equals(System.Net.HttpStatusCode.NotFound))
                 {
                     throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(id);
                 }

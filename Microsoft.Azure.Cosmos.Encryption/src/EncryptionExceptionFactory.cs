@@ -8,28 +8,28 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionExceptionFactory
     {
-        internal static Exception InvalidKeySize(string algorithmName, int actualKeylength, int expectedLength)
+        internal static ArgumentException InvalidKeySize(string algorithmName, int actualKeylength, int expectedLength)
         {
             return new ArgumentException(
                 $"Invalid key size for {algorithmName}; actual: {actualKeylength}, expected: {expectedLength}",
                 "dataEncryptionKey");
         }
 
-        internal static Exception InvalidCipherTextSize(int actualSize, int minimumSize)
+        internal static ArgumentException InvalidCipherTextSize(int actualSize, int minimumSize)
         {
             return new ArgumentException(
                 $"Invalid cipher text size; actual: {actualSize}, minimum expected: {minimumSize}.",
                 "cipherText");
         }
 
-        internal static Exception InvalidAlgorithmVersion(byte actual, byte expected)
+        internal static ArgumentException InvalidAlgorithmVersion(byte actual, byte expected)
         {
             return new ArgumentException(
                 $"Invalid encryption algorithm version; actual: {actual.ToString(@"X2")}, expected: {expected.ToString(@"X2")}.",
                 "cipherText");
         }
 
-        internal static Exception InvalidAuthenticationTag()
+        internal static ArgumentException InvalidAuthenticationTag()
         {
             return new ArgumentException(
                 "Invalid authentication tag in cipher text.",
