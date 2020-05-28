@@ -37,11 +37,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     $"Can not {nameof(ExecuteNextAsync)} from a {nameof(CosmosQueryExecutionContext)} where {nameof(this.IsDone)}.");
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             QueryResponseCore queryResponseCore;
             try
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 queryResponseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Per cancellationToken.ThrowIfCancellationRequested(); line above, this function should still throw OperationCanceledException.
+                throw;
             }
             catch (Exception ex)
             {

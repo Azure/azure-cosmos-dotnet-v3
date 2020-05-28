@@ -137,11 +137,21 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
             using (diagnostics.GetOverallScope())
             {
-                // This catches exception thrown by the pipeline and converts it to QueryResponse
-                QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
-
-                // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
-                diagnostics.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
+                QueryResponseCore responseCore;
+                try
+                {
+                    // This catches exception thrown by the pipeline and converts it to QueryResponse
+                    responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
+                }
+                catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
+                {
+                    throw new CosmosOperationCanceledException(ex, diagnostics);
+                }
+                finally
+                {
+                    // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
+                    diagnostics.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
+                }
 
                 if (responseCore.IsSuccess)
                 {
@@ -165,15 +175,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (responseCore.CosmosException != null)
                 {
-                    CosmosException cosmosException = responseCore.CosmosException;
-                    if (cosmosException.InnerException != null &&
-                        cosmosException.InnerException is OperationCanceledException operationCanceledException)
-                    {
-                        throw new CosmosOperationCanceledException(
-                            operationCanceledException,
-                            diagnostics);
-                    }
-
                     return responseCore.CosmosException.ToCosmosResponseMessage(null);
                 }
 

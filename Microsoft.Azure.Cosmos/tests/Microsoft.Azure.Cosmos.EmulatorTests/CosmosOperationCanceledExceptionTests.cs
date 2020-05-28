@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosCancellationTests : BaseCosmosClientHelper
+    public class CosmosOperationCanceledExceptionTests : BaseCosmosClientHelper
     {
         private ContainerInternal Container = null;
 
