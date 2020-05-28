@@ -70,9 +70,9 @@ namespace Microsoft.Azure.Cosmos
 
         public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
-        internal TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
+        public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
 
-        internal TimeSpan EstimatedClientDelayFromAllCauses => TimeSpan.FromSeconds((this.lastStartRequestTimestamp - this.firstStartRequestTimestamp) / (double)Stopwatch.Frequency);
+        public TimeSpan EstimatedClientDelayFromAllCauses => TimeSpan.FromSeconds((this.lastStartRequestTimestamp - this.firstStartRequestTimestamp) / (double)Stopwatch.Frequency);
 
         public void RecordRequest(DocumentServiceRequest request)
         {
