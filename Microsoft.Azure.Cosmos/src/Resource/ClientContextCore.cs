@@ -286,23 +286,22 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal override Task<TResponse> ProcessResourceOperationAsync<TInput, TResponse>(
+        internal override Task<T> ProcessResourceOperationAsync<T>(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerInternal cosmosContainerCore,
             PartitionKey? partitionKey,
-            TInput item,
+            Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            Func<ResponseMessage, TResponse> responseCreator,
+            Func<ResponseMessage, T> responseCreator,
             CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
-            Stream streamPayload = this.serializerCore.ToStream<TInput>(item);
 
-            return this.RequestHandler.SendAsync<TResponse>(
+            return this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,

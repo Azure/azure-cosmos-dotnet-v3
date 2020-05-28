@@ -397,22 +397,6 @@ namespace Microsoft.Azure.Cosmos
                     diagnosticsContext: diagnostics,
                     cancellationToken: cancellationToken);
             });
-
-            //return this.ClientContext.OperationHelperAsync(
-            //    nameof(CreateDatabaseAsync),
-            //    requestOptions,
-            //    (diagnostics) =>
-            //    {
-            //        DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            //        ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
-
-            //        return this.CreateDatabaseInternalAsync(
-            //            databaseProperties: databaseProperties,
-            //            throughputProperties: throughputProperties,
-            //            requestOptions: requestOptions,
-            //            diagnosticsContext: diagnostics,
-            //            cancellationToken: cancellationToken);
-            //    });
         }
 
         /// <summary>
@@ -892,25 +876,26 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        private Task<DatabaseResponse> CreateDatabaseInternalAsync(
+        private async Task<DatabaseResponse> CreateDatabaseInternalAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             DatabaseProperties databaseProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return this.ClientContext.ProcessResourceOperationAsync(
+            ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
-                containerInternal: null,
+                cosmosContainerCore: null,
                 partitionKey: null,
-                item: databaseProperties,
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
-                responseCreator: (response) => this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), response),
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), response);
         }
 
         private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
@@ -927,7 +912,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 containerInternal: null,
                 partitionKey: null,
-                item: databaseProperties,
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 responseCreator: (response) => response,
                 diagnosticsContext: diagnosticsContext,

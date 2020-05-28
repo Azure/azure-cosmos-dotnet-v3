@@ -229,8 +229,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             using (CosmosDiagnosticsContext diagnosticsContext = this.cosmosClientContext.CreateDiagnosticContext(
-                nameof(BatchAsyncContainerExecutor),
-                null))
+                operationName: nameof(BatchAsyncContainerExecutor),
+                requestOptions: null))
             {
                 SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(serverRequest.PartitionKeyRangeId);
                 using (await limiter.UsingWaitAsync(diagnosticsContext, cancellationToken))

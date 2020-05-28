@@ -85,8 +85,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        static public Task<TResult> RunInlineIfNeededAsync<TResult>(
-           Func<Task<TResult>> task)
+        static public Task<TResult> RunInlineIfNeededAsync<TResult>(Func<Task<TResult>> task)
         {
             if (SynchronizationContext.Current == null)
             {

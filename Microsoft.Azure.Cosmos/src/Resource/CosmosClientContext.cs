@@ -104,16 +104,16 @@ namespace Microsoft.Azure.Cosmos
         /// This is a wrapper around request invoker method. This allows the calls to be mocked so logic done 
         /// in a resource can be unit tested.
         /// </summary>
-        internal abstract Task<TResponse> ProcessResourceOperationAsync<TInput, TResponse>(
+        internal abstract Task<T> ProcessResourceOperationAsync<T>(
            Uri resourceUri,
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,
            ContainerInternal containerInternal,
            PartitionKey? partitionKey,
-           TInput item,
+           Stream streamPayload,
            Action<RequestMessage> requestEnricher,
-           Func<ResponseMessage, TResponse> responseCreator,
+           Func<ResponseMessage, T> responseCreator,
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
 
