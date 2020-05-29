@@ -98,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptedData: cipherText);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
+            input.Dispose();
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
 
@@ -148,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             itemJObj.Remove(Constants.EncryptedInfo);
+            input.Dispose();
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
 

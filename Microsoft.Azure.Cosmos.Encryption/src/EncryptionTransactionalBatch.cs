@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -20,9 +21,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
         {
-            this.transactionalBatch = transactionalBatch;
-            this.encryptor = encryptor;
-            this.cosmosSerializer = cosmosSerializer;
+            this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
+            this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
         public override TransactionalBatch CreateItem<T>(
