@@ -193,7 +193,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     numberOfReadRegions: 1,
                     itemLSN: 5,
                     sessionToken: null,
-                    usingLocalLSN: true));
+                    usingLocalLSN: true,
+                    ,
+                    activityId: Guid.NewGuid().ToString()));
 
                 throw Documents.Rntbd.TransportExceptions.GetServiceUnavailableException(physicalAddress, Guid.NewGuid(),
                     transportException);
