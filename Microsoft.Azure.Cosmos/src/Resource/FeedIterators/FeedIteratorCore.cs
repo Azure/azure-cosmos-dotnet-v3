@@ -93,8 +93,11 @@ namespace Microsoft.Azure.Cosmos
             this.ContinuationToken = responseMessage.Headers.ContinuationToken;
             this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
 
-            await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.queryRequestOptions);
-
+            if (responseMessage.Content != null)
+            {
+                await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.queryRequestOptions);
+            }
+            
             return responseMessage;
         }
 

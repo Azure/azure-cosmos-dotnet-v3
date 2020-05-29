@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Text;
 
     internal static partial class JsonBinaryEncoding
@@ -325,6 +326,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="value">The input integer.</param>
             /// <returns>Whether an integer can be encoded as a literal.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsEncodedNumberLiteral(long value)
             {
                 return InRange(value, LiteralIntMin, LiteralIntMax);
@@ -335,6 +337,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="value">The input integer.</param>
             /// <returns>Whether an integer is a fixed length integer.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsFixedLengthNumber(long value)
             {
                 return InRange(value, NumberUInt8, NumberDouble + 1);
@@ -345,6 +348,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="value">The input integer.</param>
             /// <returns>Whether an integer is a number.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsNumber(long value)
             {
                 return IsEncodedNumberLiteral(value) || IsFixedLengthNumber(value);
@@ -355,6 +359,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="value">The input integer.</param>
             /// <returns>The integer encoded as a literal if it can; else Invalid</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static byte EncodeIntegerLiteral(long value)
             {
                 return IsEncodedNumberLiteral(value) ? (byte)(LiteralIntMin + value) : Invalid;
@@ -367,6 +372,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a one byte encoded system string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsOneByteEncodedSystemString(byte typeMarker)
             {
                 return InRange(typeMarker, SystemString1ByteLengthMin, SystemString1ByteLengthMax);
@@ -377,6 +383,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a system string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsSystemString(byte typeMarker)
             {
                 return IsOneByteEncodedSystemString(typeMarker);
@@ -387,6 +394,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a one byte encoded user string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsOneByteEncodedUserString(byte typeMarker)
             {
                 return InRange(typeMarker, UserString1ByteLengthMin, UserString1ByteLengthMax);
@@ -397,6 +405,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a two byte encoded user string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsTwoByteEncodedUserString(byte typeMarker)
             {
                 return InRange(typeMarker, UserString2ByteLengthMin, UserString2ByteLengthMax);
@@ -407,6 +416,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a user string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsUserString(byte typeMarker)
             {
                 return IsOneByteEncodedUserString(typeMarker) || IsTwoByteEncodedUserString(typeMarker);
@@ -417,6 +427,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a one byte encoded string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsOneByteEncodedString(byte typeMarker)
             {
                 return InRange(typeMarker, SystemString1ByteLengthMin, UserString1ByteLengthMax);
@@ -427,6 +438,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a two byte encoded string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsTwoByteEncodedString(byte typeMarker)
             {
                 return IsTwoByteEncodedUserString(typeMarker);
@@ -437,6 +449,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for an encoded string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsEncodedString(byte typeMarker)
             {
                 return InRange(typeMarker, SystemString1ByteLengthMin, UserString2ByteLengthMax);
@@ -447,6 +460,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for an encoded string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsEncodedLengthString(byte typeMarker)
             {
                 return InRange(typeMarker, EncodedStringLengthMin, EncodedStringLengthMax);
@@ -457,6 +471,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a variable length string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsVarLengthString(byte typeMarker)
             {
                 return InRange(typeMarker, String1ByteLength, String4ByteLength + 1);
@@ -467,6 +482,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a variable length compressed string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsVarLengthCompressedString(byte typeMarker)
             {
                 return InRange(typeMarker, Binary1ByteLength, Binary4ByteLength + 1);
@@ -477,6 +493,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The type maker.</param>
             /// <returns>Whether the typeMarker is for a string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsString(byte typeMarker)
             {
                 return InRange(typeMarker, SystemString1ByteLengthMin, Binary4ByteLength + 1);
@@ -487,6 +504,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>The length of the encoded string type marker.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static long GetEncodedStringLength(byte typeMarker)
             {
                 return typeMarker & (EncodedStringLengthMin - 1);
@@ -497,6 +515,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="length">The length of the encoded string.</param>
             /// <returns>The type marker for an encoded string of a particular length.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static byte GetEncodedStringLengthTypeMarker(long length)
             {
                 return length < (EncodedStringLengthMax - EncodedStringLengthMin) ? (byte)(length | EncodedStringLengthMin) : Invalid;
@@ -509,6 +528,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the type maker is the null type marker.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsNull(byte typeMarker)
             {
                 return typeMarker == Null;
@@ -519,6 +539,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the type maker is the false type marker.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsFalse(byte typeMarker)
             {
                 return typeMarker == False;
@@ -529,6 +550,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the type maker is the true type marker.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsTrue(byte typeMarker)
             {
                 return typeMarker == True;
@@ -539,11 +561,13 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the type maker is a boolean type marker.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsBoolean(byte typeMarker)
             {
                 return (typeMarker == False) || (typeMarker == True);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsGuid(byte typeMarker)
             {
                 return typeMarker == Guid;
@@ -557,6 +581,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the type marker is for an array.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsArray(byte typeMarker)
             {
                 return InRange(typeMarker, EmptyArray, Array4ByteLengthAndCount + 1);
@@ -567,6 +592,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the type marker is for an object.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsObject(byte typeMarker)
             {
                 return InRange(typeMarker, EmptyObject, Object4ByteLengthAndCount + 1);
@@ -579,16 +605,18 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the type marker is valid.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsValid(byte typeMarker)
             {
                 return typeMarker != Invalid;
             }
-            #endregion
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static bool InRange(long value, long minInclusive, long maxExclusive)
             {
                 return (value >= minInclusive) && (value < maxExclusive);
             }
+            #endregion
         }
     }
 }

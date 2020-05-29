@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos
     {
         public const string DefaultToStringMessage = "Please see CosmosDiagnostics";
         private readonly object lockObject = new object();
+        private readonly long firstStartRequestTimestamp;
+
+        private long lastStartRequestTimestamp;
+        private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks;
+        private bool received429ResponseSinceLastStartRequest;
 
         public CosmosClientSideRequestStatistics(CosmosDiagnosticsContext diagnosticsContext = null)
         {
@@ -29,6 +34,9 @@ namespace Microsoft.Azure.Cosmos
             this.RegionsContacted = new HashSet<Uri>();
             this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContextCore.Create(nameof(CosmosClientSideRequestStatistics));
             this.DiagnosticsContext.AddDiagnosticsInternal(this);
+
+            this.firstStartRequestTimestamp = Stopwatch.GetTimestamp();
+            this.lastStartRequestTimestamp = this.firstStartRequestTimestamp;
         }
 
         private DateTime RequestStartTimeUtc { get; }
@@ -62,8 +70,23 @@ namespace Microsoft.Azure.Cosmos
 
         public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
+        public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
+
+        public TimeSpan EstimatedClientDelayFromAllCauses => TimeSpan.FromSeconds((this.lastStartRequestTimestamp - this.firstStartRequestTimestamp) / (double)Stopwatch.Frequency);
+
         public void RecordRequest(DocumentServiceRequest request)
         {
+            lock (this.lockObject)
+            {
+                long timestamp = Stopwatch.GetTimestamp();
+                if (this.received429ResponseSinceLastStartRequest)
+                {
+                    this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks += timestamp - this.lastStartRequestTimestamp;
+                }
+                this.lastStartRequestTimestamp = timestamp;
+                this.received429ResponseSinceLastStartRequest = false;
+            }
+
             this.RecordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
         }
 
@@ -108,6 +131,12 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.DiagnosticsContext.AddDiagnosticsInternal(responseStatistics);
+
+                if (!this.received429ResponseSinceLastStartRequest &&
+                    storeResult.StatusCode == StatusCodes.TooManyRequests)
+                {
+                    this.received429ResponseSinceLastStartRequest = true;
+                }
             }
         }
 

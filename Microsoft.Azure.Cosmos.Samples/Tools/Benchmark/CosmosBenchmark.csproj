@@ -4,6 +4,7 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <RootNamespace>CosmosBenchmark</RootNamespace>
     <AssemblyName>CosmosBenchmark</AssemblyName>
+    <ServerGarbageCollection>true</ServerGarbageCollection>    
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">
@@ -16,5 +17,6 @@
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.5.0" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+    <PackageReference Include="HdrHistogram" Version="2.5.0" />
   </ItemGroup>
 </Project>

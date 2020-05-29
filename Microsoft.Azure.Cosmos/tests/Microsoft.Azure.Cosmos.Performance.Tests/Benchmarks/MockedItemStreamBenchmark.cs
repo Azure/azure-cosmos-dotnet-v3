@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             this.benchmarkHelper = new MockedItemBenchmarkHelper();
         }
 
-        [Benchmark]
         public async Task CreateItem()
         {
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
@@ -35,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task UpsertItem()
         {
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
@@ -50,7 +48,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task ReadItemNotExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
@@ -64,7 +61,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task ReadItemExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
@@ -78,7 +74,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task UpdateItem()
         {
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
@@ -94,7 +89,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task DeleteItemExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
@@ -108,7 +102,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task DeleteItemNotExists()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
@@ -122,7 +115,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        [Benchmark]
         public async Task ReadFeed()
         {
             FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator();

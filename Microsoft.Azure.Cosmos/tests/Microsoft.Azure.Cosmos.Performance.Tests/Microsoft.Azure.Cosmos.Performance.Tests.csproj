@@ -218,10 +218,6 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>JsonMicroBenchmarks.cs</LastGenOutput>
     </None>
-    <None Update="Json\JsonRoundtripBenchmark.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>JsonRoundtripBenchmark.cs</LastGenOutput>
-    </None>
     <None Update="Json\Utf8vsUtf16StringBenchmark.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Utf8vsUtf16StringBenchmark.cs</LastGenOutput>
@@ -252,11 +248,6 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>JsonMicroBenchmarks.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Json\JsonRoundtripBenchmark.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>JsonRoundtripBenchmark.tt</DependentUpon>
     </Compile>
     <Compile Update="Json\Utf8vsUtf16StringBenchmark.cs">
       <DesignTime>True</DesignTime>
