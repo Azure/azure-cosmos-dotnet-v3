@@ -9,7 +9,6 @@ namespace Azure.Cosmos
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
-    using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
 
     internal class TextJsonSpatialPathConverter : JsonConverter<SpatialPath>
@@ -59,7 +58,7 @@ namespace Azure.Cosmos
             {
                 writer.WritePropertyName(JsonEncodedStrings.Types);
                 writer.WriteStartArray();
-                foreach (Spatial.SpatialType type in path.SpatialTypes)
+                foreach (SpatialType type in path.SpatialTypes)
                 {
                     writer.WriteStringValue(type.ToString());
                 }
@@ -91,10 +90,10 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(JsonEncodedStrings.Types.EncodedUtf8Bytes))
             {
-                path.SpatialTypes = new Collection<Spatial.SpatialType>();
+                path.SpatialTypes = new Collection<SpatialType>();
                 foreach (JsonElement item in property.Value.EnumerateArray())
                 {
-                    TextJsonSettingsHelper.TryParseEnum<Spatial.SpatialType>(item, type => path.SpatialTypes.Add(type));
+                    TextJsonSettingsHelper.TryParseEnum<SpatialType>(item, type => path.SpatialTypes.Add(type));
                 }
             }
         }

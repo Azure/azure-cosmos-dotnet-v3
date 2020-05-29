@@ -7,7 +7,6 @@ namespace Azure.Cosmos.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using Azure.Cosmos.Spatial;
 
     #region EqualityComparers
     internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>

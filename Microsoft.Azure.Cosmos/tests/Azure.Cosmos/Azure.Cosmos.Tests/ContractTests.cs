@@ -31,11 +31,10 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ClientDllNamespaceTest()
         {
-
 #if INTERNAL
-            int expected = 6;
-#else
             int expected = 5;
+#else
+            int expected = 4;
 #endif
             ContractTests.NamespaceCountTest(typeof(CosmosClient), expected);
         }

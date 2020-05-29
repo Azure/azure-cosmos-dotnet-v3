@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 #if AZURECORE
-namespace Azure.Cosmos.Spatial
+namespace Azure.Cosmos
 #else
 namespace Microsoft.Azure.Cosmos
 #endif
