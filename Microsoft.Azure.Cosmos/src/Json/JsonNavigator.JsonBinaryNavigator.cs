@@ -616,15 +616,14 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentOutOfRangeException($"Expected {nameof(jsonNavigatorNode)} to be a {nameof(BinaryNavigatorNode)}.");
                 }
 
-                this.WriteToInternal(binaryNavigatorNode, jsonWriter);
+                this.WriteToInternal(binaryNavigatorNode, jsonWriter, sameEncoding: this.SerializationFormat == jsonWriter.SerializationFormat);
             }
 
-            private void WriteToInternal(BinaryNavigatorNode binaryNavigatorNode, IJsonWriter jsonWriter)
+            private void WriteToInternal(BinaryNavigatorNode binaryNavigatorNode, IJsonWriter jsonWriter, bool sameEncoding)
             {
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
                 JsonNodeType nodeType = binaryNavigatorNode.JsonNodeType;
 
-                bool sameEncoding = this.SerializationFormat == jsonWriter.SerializationFormat;
                 if (sameEncoding && this.TryGetBufferedRawJsonInternal(binaryNavigatorNode, out ReadOnlyMemory<byte> bufferedRawJson))
                 {
                     // Token type doesn't make any difference other than whether it's a value or field name
@@ -695,7 +694,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                             foreach (BinaryNavigatorNode arrayItem in this.GetArrayItemsInternal(buffer))
                             {
-                                this.WriteToInternal(arrayItem, jsonWriter);
+                                this.WriteToInternal(arrayItem, jsonWriter, sameEncoding);
                             }
 
                             jsonWriter.WriteArrayEnd();
@@ -708,8 +707,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                             foreach (ObjectPropertyInternal objectProperty in this.GetObjectPropertiesInternal(buffer))
                             {
-                                this.WriteToInternal(objectProperty.NameNode, jsonWriter);
-                                this.WriteToInternal(objectProperty.ValueNode, jsonWriter);
+                                this.WriteToInternal(objectProperty.NameNode, jsonWriter, sameEncoding);
+                                this.WriteToInternal(objectProperty.ValueNode, jsonWriter, sameEncoding);
                             }
 
                             jsonWriter.WriteObjectEnd();
