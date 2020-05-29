@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Mock.Get(feedToken)
                 .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             };
 
             FeedIteratorCore<dynamic> changeFeedIteratorCoreOfT = new FeedIteratorCore<dynamic>(changeFeedIteratorCore, creator);
-            FeedResponse<dynamic> response = await changeFeedIteratorCoreOfT.ReadNextAsync();
+            FeedResponse<dynamic> response = await changeFeedIteratorCoreOfT.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Mock.Get(feedToken)
                 .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Mock.Get(feedToken)
                 .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
 
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Mock.Get(feedToken)
                 .Verify(f => f.ReplaceContinuation(It.IsAny<string>()), Times.Once);
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
 
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Assert.AreEqual(1, executionCount, "PartitionKeyRangeGoneRetryHandler handled the Split");
             Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);

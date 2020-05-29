@@ -20,10 +20,11 @@ namespace Microsoft.Azure.Cosmos
     /// Legacy, see <see cref="ChangeFeedIteratorCore"/>.
     /// </remarks>
     /// <seealso cref="ChangeFeedIteratorCore"/>
-    internal class StandByFeedIteratorCore : FeedIteratorInternal
+    internal class StandByFeedIteratorCore : FeedIteratorBase
     {
         internal StandByFeedContinuationToken compositeContinuationToken;
 
+        private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly int? maxItemCount;
         private string containerRid;
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(container));
             }
 
-            this.ClientContext = clientContext;
+            this.clientContext = clientContext;
             this.container = container;
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
@@ -55,25 +56,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => true;
 
-        internal override CosmosClientContext ClientContext { get; }
+        internal override RequestOptions RequestOptions => this.changeFeedOptions;
 
-        /// <summary>
-        /// Get the next set of results from the cosmos service
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A query response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ClientContext.OperationHelperAsync(
-               nameof(StandByFeedIteratorCore),
-               this.changeFeedOptions,
-               async (diagnostics) =>
-               {
-                   return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
-               });
-        }
-
-        internal override async Task<ResponseMessage> ReadNextInternalAsync(
+        internal override async Task<ResponseMessage> ReadNextAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -83,10 +68,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage response;
             do
             {
-                (currentKeyRangeId, response) = await this.ReadNextInternalHelperAsync(
-                    diagnosticsContext,
-                    cancellationToken);
-
+                (currentKeyRangeId, response) = await this.ReadNextInternalAsync(cancellationToken);
                 // Read only one range at a time - Breath first
                 this.compositeContinuationToken.MoveToNextToken();
                 (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
@@ -110,15 +92,13 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalHelperAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (this.compositeContinuationToken == null)
             {
-                PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.container.GetRIDAsync(cancellationToken);
                 this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
@@ -126,17 +106,10 @@ namespace Microsoft.Azure.Cosmos
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             string partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
-            ResponseMessage response = await this.NextResultSetDelegateAsync(
-                diagnosticsContext,
-                this.continuationToken,
-                partitionKeyRangeId,
-                this.maxItemCount,
-                this.changeFeedOptions,
-                cancellationToken);
-
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
-                return await this.ReadNextInternalHelperAsync(diagnosticsContext, cancellationToken);
+                return await this.ReadNextInternalAsync(cancellationToken);
             }
 
             if (response.IsSuccessStatusCode
@@ -174,7 +147,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal virtual Task<ResponseMessage> NextResultSetDelegateAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
@@ -182,21 +154,22 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                cosmosContainerCore: this.container,
+                containerInternal: this.container,
                 requestEnricher: request =>
                 {
                     ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
                     ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
                     ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
+                responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
-                diagnosticsContext: diagnosticsContext,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
         }
 

@@ -57,10 +57,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetConflictQueryStreamIterator(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetConflictQueryStreamIteratorHelper(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
@@ -68,10 +70,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetConflictQueryIterator<T>(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetConflictQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override Task<ItemResponse<T>> ReadCurrentAsync<T>(

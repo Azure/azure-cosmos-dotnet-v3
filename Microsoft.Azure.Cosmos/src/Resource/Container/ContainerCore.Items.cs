@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
-        public override FeedIterator GetItemQueryStreamIterator(
+        public FeedIteratorBase GetItemQueryStreamIteratorHelper(
            string queryText = null,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null)
@@ -252,18 +252,18 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetItemQueryStreamIterator(
+            return this.GetItemQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator GetItemQueryStreamIterator(
+        public FeedIteratorBase GetItemQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.GetItemQueryStreamIteratorInternal(
+            return this.GetItemQueryStreamIteratorInternalHelper(
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: continuationToken,
@@ -379,7 +379,7 @@ namespace Microsoft.Azure.Cosmos
             return tryExecuteQueryResult;
         }
 
-        public override FeedIterator<T> GetItemQueryIterator<T>(
+        public FeedIteratorBase<T> GetItemQueryIteratorHelper<T>(
            string queryText = null,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null)
@@ -390,13 +390,13 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetItemQueryIterator<T>(
+            return this.GetItemQueryIteratorHelper<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator<T> GetItemQueryIterator<T>(
+        public FeedIteratorBase<T> GetItemQueryIteratorHelper<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
@@ -408,16 +408,13 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.PartitionKey = null;
             }
 
-            if (!(this.GetItemQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetItemQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal feedIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                feedIterator: feedIterator,
+                feedIterator: streamIterator,
                 responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
 
@@ -438,7 +435,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ClientOptions.SerializerOptions);
         }
 
-        public override FeedIterator<T> GetItemQueryIterator<T>(
+        public FeedIteratorBase<T> GetItemQueryIteratorHelper<T>(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -446,28 +443,25 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
-            if (!(this.GetItemQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetItemQueryStreamIteratorHelper(
                 feedRange,
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal feedIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                feedIterator: feedIterator,
+                feedIterator: streamIterator,
                 responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
 
-        public override FeedIterator GetItemQueryStreamIterator(
+        public FeedIteratorBase GetItemQueryStreamIteratorHelper(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             FeedRangeInternal feedRangeInternal = feedRange as FeedRangeInternal;
-            return this.GetItemQueryStreamIteratorInternal(
+            return this.GetItemQueryStreamIteratorInternalHelper(
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: continuationToken,
@@ -542,7 +536,7 @@ namespace Microsoft.Azure.Cosmos
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
-        public override FeedIterator GetStandByFeedIterator(
+        public FeedIteratorBase GetStandByFeedIteratorHelper(
             string continuationToken = null,
             int? maxItemCount = null,
             ChangeFeedRequestOptions requestOptions = null)
@@ -557,12 +551,29 @@ namespace Microsoft.Azure.Cosmos
                 options: cosmosQueryRequestOptions);
         }
 
+        public FeedIteratorBase<T> GetItemQueryIteratorInternalHelper<T>(
+            SqlQuerySpec sqlQuerySpec,
+            bool isContinuationExcpected,
+            string continuationToken,
+            FeedRangeInternal feedRange,
+            QueryRequestOptions requestOptions)
+        {
+            return new FeedIteratorCore<T>(
+               this.GetItemQueryStreamIteratorInternalHelper(
+                   sqlQuerySpec,
+                   isContinuationExcpected,
+                   continuationToken,
+                   feedRange,
+                   requestOptions),
+               this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
+        }
+
         /// <summary>
         /// Helper method to create a stream feed iterator.
         /// It decides if it is a query or read feed and create
         /// the correct instance.
         /// </summary>
-        public override FeedIteratorInternal GetItemQueryStreamIteratorInternal(
+        public FeedIteratorBase GetItemQueryStreamIteratorInternalHelper(
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,

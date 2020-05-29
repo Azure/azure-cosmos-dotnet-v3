@@ -7,20 +7,17 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
-    /// <summary>
-    /// Internal feed iterator API for casting and mocking purposes.
-    /// </summary>
-#if INTERNAL
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable SA1600 // Elements should be documented
-    public
-#else
-    internal
-#endif
-    abstract class FeedIteratorInternal : FeedIterator
+    internal abstract class FeedIteratorBase<T>
     {
+        public abstract bool HasMoreResults { get; }
+
+        internal abstract RequestOptions RequestOptions { get; }
+
         public abstract CosmosElement GetCosmosElementContinuationToken();
+
+        internal abstract Task<FeedResponse<T>> ReadNextAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken);
     }
 }

@@ -1485,7 +1485,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (fixedContainer != null)
                 {
-                    await fixedContainer.DeleteContainerAsync();
+                    //await fixedContainer.DeleteContainerAsync();
                 }
             }
         }

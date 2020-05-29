@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition = new QueryDefinition("select * from root r where r.offerResourceId= @targetRID");
             queryDefinition.WithParameter("@targetRID", targetRID);
 
-            FeedIterator<T> databaseStreamIterator = this.GetOfferQueryIterator<T>(
+            FeedIteratorBase<T> databaseStreamIterator = this.GetOfferQueryIterator<T>(
                  queryDefinition: queryDefinition,
                  continuationToken: null,
                  requestOptions: null,
@@ -191,29 +191,26 @@ namespace Microsoft.Azure.Cosmos
             return offerV2;
         }
 
-        internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
+        internal virtual FeedIteratorBase<T> GetOfferQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            if (!(this.GetOfferQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetOfferQueryStreamIterator(
                queryDefinition,
                continuationToken,
                requestOptions,
-               cancellationToken) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+               cancellationToken);
 
             return new FeedIteratorCore<T>(
-                databaseStreamIterator,
+                streamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.Offer));
         }
 
-        internal virtual FeedIterator GetOfferQueryStreamIterator(
+        internal virtual FeedIteratorBase GetOfferQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -229,19 +226,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<T> SingleOrDefaultAsync<T>(
-            FeedIterator<T> offerQuery,
+            FeedIteratorBase<T> offerQuery,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            while (offerQuery.HasMoreResults)
+            using (CosmosDiagnosticsContext diagnosticsContext = this.ClientContext.CreateDiagnosticContext(
+                nameof(CosmosOffers),
+                requestOptions: null))
             {
-                FeedResponse<T> offerFeedResponse = await offerQuery.ReadNextAsync(cancellationToken);
-                if (offerFeedResponse.Any())
+                while (offerQuery.HasMoreResults)
                 {
-                    return offerFeedResponse.Single();
+                    FeedResponse<T> offerFeedResponse = await offerQuery.ReadNextAsync(
+                        diagnosticsContext,
+                        cancellationToken);
+                    if (offerFeedResponse.Any())
+                    {
+                        return offerFeedResponse.Single();
+                    }
                 }
-            }
 
-            return default(T);
+                return default(T);
+            }
         }
 
         private async Task<ThroughputResponse> GetThroughputResponseAsync(

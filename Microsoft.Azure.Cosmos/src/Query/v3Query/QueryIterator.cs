@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -17,25 +18,25 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
-    internal sealed class QueryIterator : FeedIteratorInternal
+    internal sealed class QueryIterator : FeedIteratorBase
     {
         private readonly CosmosQueryContextCore cosmosQueryContext;
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
-        private readonly RequestOptions requestOptions;
+        private readonly CosmosClientContext clientContext;
 
         private QueryIterator(
             CosmosQueryContextCore cosmosQueryContext,
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
-            RequestOptions requestOptions,
+            QueryRequestOptions requestOptions,
             CosmosClientContext clientContext)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
-            this.requestOptions = requestOptions;
-            this.ClientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.RequestOptions = requestOptions;
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
         }
 
         public static QueryIterator Create(
@@ -56,7 +57,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions = new QueryRequestOptions();
             }
 
-            CosmosDiagnosticsContext queryPipelineCreationDiagnostics = CosmosDiagnosticsContextCore.Create(nameof(CosmosException));
+            CosmosDiagnosticsContext queryPipelineCreationDiagnostics = clientContext.CreateDiagnosticContext(
+                nameof(QueryIterator),
+                queryRequestOptions);
 
             CosmosQueryContextCore cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
@@ -132,33 +135,30 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
-        internal override CosmosClientContext ClientContext { get; }
+        internal override RequestOptions RequestOptions { get; }
 
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        internal async Task<ResponseMessage> ReadNextAsync(
+            CancellationToken cancellationToken = default)
         {
-            return this.ClientContext.OperationHelperAsync(
+            using (CosmosDiagnosticsContext diagnostics = this.clientContext.CreateDiagnosticContext(
                 nameof(QueryIterator),
-                this.requestOptions,
-                (diagnostics) =>
-                {
-                    return this.ReadNextInternalAsync(diagnostics, cancellationToken);
-                });
+                this.RequestOptions))
+            {
+                return await this.ReadNextAsync(
+                    diagnostics,
+                    cancellationToken);
+            }
         }
 
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
-        }
-
-        internal override async Task<ResponseMessage> ReadNextInternalAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
+        internal override async Task<ResponseMessage> ReadNextAsync(
+            CosmosDiagnosticsContext diagnostics,
             CancellationToken cancellationToken)
         {
             // This catches exception thrown by the pipeline and converts it to QueryResponse
             QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
 
             // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
-            diagnosticsContext.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
+            diagnostics.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
 
             if (responseCore.IsSuccess)
             {
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     result: responseCore.CosmosElements,
                     count: responseCore.CosmosElements.Count,
                     responseLengthBytes: responseCore.ResponseLengthBytes,
-                    diagnostics: diagnosticsContext,
+                    diagnostics: diagnostics,
                     serializationOptions: this.cosmosSerializationFormatOptions,
                     responseHeaders: new CosmosQueryResponseMessageHeaders(
                         responseCore.ContinuationToken,
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 statusCode: responseCore.StatusCode,
                 cosmosException: responseCore.CosmosException,
                 requestMessage: null,
-                diagnostics: diagnosticsContext,
+                diagnostics: diagnostics,
                 responseHeaders: new CosmosQueryResponseMessageHeaders(
                     responseCore.ContinuationToken,
                     responseCore.DisallowContinuationTokenMessage,
@@ -200,6 +200,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     ActivityId = responseCore.ActivityId,
                     SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown,
                 });
+        }
+
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }
     }
 }

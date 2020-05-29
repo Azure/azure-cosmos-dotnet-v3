@@ -18,11 +18,13 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content for non-partitioned results
     /// </summary>
-    internal sealed class FeedIteratorCore : FeedIteratorInternal
+    internal sealed class FeedIteratorCore : FeedIteratorBase
     {
+        private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
+        private readonly QueryRequestOptions queryRequestOptions;
         private bool hasMoreResultsInternal;
 
         public FeedIteratorCore(
@@ -34,11 +36,11 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
-            this.ClientContext = clientContext;
+            this.clientContext = clientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.ContinuationToken = continuationToken;
-            this.RequestOptions = options;
+            this.queryRequestOptions = options;
             this.hasMoreResultsInternal = true;
         }
 
@@ -47,34 +49,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        public QueryRequestOptions RequestOptions { get; }
+        internal override RequestOptions RequestOptions => this.queryRequestOptions;
 
         /// <summary>
         /// The Continuation Token
         /// </summary>
         public string ContinuationToken { get; set; }
 
-        internal override CosmosClientContext ClientContext { get; }
-
-        /// <summary>
-        /// Get the next set of results from the cosmos service
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A query response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
-        {
-            return this.ClientContext.OperationHelperAsync(
-                nameof(FeedIteratorCore),
-                this.RequestOptions,
-                async (diagnostics) =>
-                {
-                    return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
-                });
-        }
-
-        internal override async Task<ResponseMessage> ReadNextInternalAsync(
-            CosmosDiagnosticsContext diagnostics,
-            CancellationToken cancellationToken)
+        internal async override Task<ResponseMessage> ReadNextAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -82,17 +66,17 @@ namespace Microsoft.Azure.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.ClientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
+                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
                 operation = OperationType.Query;
             }
 
-            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
                operationType: operation,
                requestOptions: this.RequestOptions,
                cosmosContainerCore: null,
-               partitionKey: this.RequestOptions?.PartitionKey,
+               partitionKey: this.queryRequestOptions?.PartitionKey,
                streamPayload: stream,
                requestEnricher: request =>
                {
@@ -103,64 +87,20 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
                },
-               diagnosticsContext: diagnostics,
+               diagnosticsContext: diagnosticsContext,
                cancellationToken: cancellationToken);
 
             this.ContinuationToken = responseMessage.Headers.ContinuationToken;
             this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
 
-            await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.RequestOptions);
-            
+            await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.queryRequestOptions);
+
             return responseMessage;
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
-        }
-    }
-
-    /// <summary>
-    /// Cosmos feed iterator that keeps track of the continuation token when retrieving results form a query.
-    /// </summary>
-    /// <typeparam name="T">The response object type that can be deserialized</typeparam>
-    internal sealed class FeedIteratorCore<T> : FeedIteratorInternal<T>
-    {
-        private readonly FeedIteratorInternal feedIterator;
-        private readonly Func<ResponseMessage, FeedResponse<T>> responseCreator;
-
-        internal FeedIteratorCore(
-            FeedIteratorInternal feedIterator,
-            Func<ResponseMessage, FeedResponse<T>> responseCreator)
-        {
-            this.responseCreator = responseCreator;
-            this.feedIterator = feedIterator;
-        }
-
-        public override bool HasMoreResults => this.feedIterator.HasMoreResults;
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.feedIterator.GetCosmosElementContinuationToken();
-        }
-
-        /// <summary>
-        /// Get the next set of results from the cosmos service
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A query response from cosmos service</returns>
-        public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return this.feedIterator.ClientContext.OperationHelperAsync(
-                nameof(FeedIteratorCore),
-                null,
-                async (diagnosics) =>
-                {
-                    ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
-                    return this.responseCreator(response);
-                });
         }
     }
 }

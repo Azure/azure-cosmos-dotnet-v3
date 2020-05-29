@@ -129,10 +129,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetContainerQueryIterator<T>(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetContainerQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator<T> GetContainerQueryIterator<T>(
@@ -140,20 +142,24 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetContainerQueryIterator<T>(
-                queryText,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetContainerQueryIteratorHelper<T>(
+                    queryText,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetContainerQueryStreamIterator(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore(
+                 this.ClientContext,
+                 base.GetContainerQueryStreamIteratorHelper(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(
@@ -161,10 +167,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetContainerQueryStreamIterator(
-                queryText,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore(
+                 this.ClientContext,
+                 base.GetContainerQueryStreamIteratorHelper(
+                    queryText,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override User GetUser(string id)
@@ -177,10 +185,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetUserQueryIterator<T>(
-                queryText,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                 this.ClientContext,
+                 base.GetUserQueryIteratorHelper<T>(
+                    queryText,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator<T> GetUserQueryIterator<T>(
@@ -188,10 +198,38 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetUserQueryIterator<T>(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                 this.ClientContext,
+                 base.GetUserQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
+        }
+
+        public override FeedIterator GetUserQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetUserQueryStreamIteratorHelper(
+                   queryDefinition,
+                   continuationToken,
+                   requestOptions));
+        }
+
+        public override FeedIterator GetUserQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetUserQueryStreamIteratorHelper(
+                   queryText,
+                   continuationToken,
+                   requestOptions));
         }
 
         public override Task<DatabaseResponse> ReadAsync(RequestOptions requestOptions = null,

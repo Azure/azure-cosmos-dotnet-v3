@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Security.Policy;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -226,11 +227,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         private FeedIterator<T> CreateFeedIterator(bool isContinuationExcpected)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
-
-            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExcpected);
-            return new FeedIteratorCore<T>(
-                streamIterator,
-                this.responseFactory.CreateQueryFeedUserTypeResponse<T>);
+            return this.container.GetItemQueryIteratorInternal<T>(
+                sqlQuerySpec: querySpec,
+                isContinuationExcpected: isContinuationExcpected,
+                continuationToken: this.continuationToken,
+                feedRange: null,
+                requestOptions: this.cosmosQueryRequestOptions);
         }
     }
 }

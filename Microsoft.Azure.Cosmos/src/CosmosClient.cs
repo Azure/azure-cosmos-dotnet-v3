@@ -610,10 +610,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.GetDatabaseQueryIteratorHelper<T>(
-                    queryDefinition,
-                    continuationToken,
-                    requestOptions);
+            return new FeedIteratorInlineCore<T>(
+               this.ClientContext,
+               this.GetDatabaseQueryIteratorHelper<T>(
+                   queryDefinition,
+                   continuationToken,
+                   requestOptions));
         }
 
         /// <summary>
@@ -658,10 +660,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.GetDatabaseQueryStreamIteratorHelper(
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                this.GetDatabaseQueryStreamIteratorHelper(
                     queryDefinition,
                     continuationToken,
-                    requestOptions);
+                    requestOptions));
         }
 
         /// <summary>
@@ -706,10 +710,12 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetDatabaseQueryIteratorHelper<T>(
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                this.GetDatabaseQueryIteratorHelper<T>(
                     queryDefinition,
                     continuationToken,
-                    requestOptions);
+                    requestOptions));
         }
 
         /// <summary>
@@ -919,18 +925,15 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private FeedIteratorInternal<T> GetDatabaseQueryIteratorHelper<T>(
+        private FeedIteratorBase<T> GetDatabaseQueryIteratorHelper<T>(
            QueryDefinition queryDefinition,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null)
         {
-            if (!(this.GetDatabaseQueryStreamIteratorHelper(
+            FeedIteratorBase databaseStreamIterator = this.GetDatabaseQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
                     databaseStreamIterator,
@@ -939,7 +942,7 @@ namespace Microsoft.Azure.Cosmos
                         resourceType: ResourceType.Database));
         }
 
-        private FeedIteratorInternal GetDatabaseQueryStreamIteratorHelper(
+        private FeedIteratorBase GetDatabaseQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)

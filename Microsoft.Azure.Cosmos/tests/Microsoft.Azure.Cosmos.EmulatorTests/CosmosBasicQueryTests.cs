@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> createdPermissionIds = new List<string>();
             List<string> createdContainerIds = new List<string>();
             string userId = Guid.NewGuid().ToString();
-            UserCore user = null;
+            UserInlineCore user = null;
 
             try
             {

@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public override FeedIterator GetConflictQueryStreamIterator(
+        public FeedIteratorBase GetConflictQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -113,21 +113,18 @@ namespace Microsoft.Azure.Cosmos
 
         }
 
-        public override FeedIterator<T> GetConflictQueryIterator<T>(
+        public FeedIteratorBase<T> GetConflictQueryIteratorHelper<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
         {
-            if (!(this.GetConflictQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetConflictQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                databaseStreamIterator,
+                streamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.Conflict));

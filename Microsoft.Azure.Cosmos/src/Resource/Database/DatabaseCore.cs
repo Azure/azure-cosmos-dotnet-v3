@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateUserResponse(this.GetUser(id), response);
         }
 
-        public override FeedIterator GetContainerQueryStreamIterator(
+        public FeedIteratorBase GetContainerQueryStreamIteratorHelper(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -562,13 +562,13 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetContainerQueryStreamIterator(
+            return this.GetContainerQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator<T> GetContainerQueryIterator<T>(
+        public FeedIteratorBase<T> GetContainerQueryIteratorHelper<T>(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -579,13 +579,13 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetContainerQueryIterator<T>(
+            return this.GetContainerQueryIteratorHelper<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator GetContainerQueryStreamIterator(
+        public FeedIteratorBase GetContainerQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -599,49 +599,41 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        public override FeedIterator<T> GetContainerQueryIterator<T>(
+        public FeedIteratorBase<T> GetContainerQueryIteratorHelper<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
         {
-            if (!(this.GetContainerQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetContainerQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal containerStreamIterator))
-            {
-                // This class should inherit from DatabaseInteral to avoid the downcasting hacks.
-                throw new InvalidOperationException($"Expected FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                containerStreamIterator,
+                streamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.Collection));
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(
+        public FeedIteratorBase<T> GetUserQueryIteratorHelper<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
         {
-            if (!(this.GetUserQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetUserQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal userStreamIterator))
-            {
-                // This class should inherit from DatabaseInteral to avoid the downcasting hacks.
-                throw new InvalidOperationException($"Expected FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                userStreamIterator,
+                streamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.User));
         }
 
-        public override FeedIterator GetUserQueryStreamIterator(
+        public FeedIteratorBase GetUserQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -655,7 +647,7 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(
+        public FeedIteratorBase<T> GetUserQueryIteratorHelper<T>(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -666,13 +658,13 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetUserQueryIterator<T>(
+            return this.GetUserQueryIteratorHelper<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator GetUserQueryStreamIterator(
+        public FeedIteratorBase GetUserQueryStreamIteratorHelper(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -683,7 +675,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetUserQueryStreamIterator(
+            return this.GetUserQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
                 requestOptions);

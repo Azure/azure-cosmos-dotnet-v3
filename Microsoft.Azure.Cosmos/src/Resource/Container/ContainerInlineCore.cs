@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -271,10 +272,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryStreamIterator(
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetItemQueryStreamIteratorHelper(
                     queryDefinition,
                     continuationToken,
-                    requestOptions);
+                    requestOptions));
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -282,20 +285,24 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryIterator<T>(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetItemQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryStreamIterator(
-                queryText,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetItemQueryStreamIteratorHelper(
+                    queryText,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -303,10 +310,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryIterator<T>(
-                queryText,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetItemQueryIteratorHelper<T>(
+                    queryText,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution = false,
@@ -350,42 +359,54 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedStreamIterator(continuationToken, changeFeedRequestOptions);
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetChangeFeedStreamIteratorHelper(continuationToken, changeFeedRequestOptions));
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedStreamIterator(feedRange, changeFeedRequestOptions);
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetChangeFeedStreamIteratorHelper(feedRange, changeFeedRequestOptions));
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetChangeFeedStreamIteratorHelper(partitionKey, changeFeedRequestOptions));
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(continuationToken, changeFeedRequestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetChangeFeedIteratorHelper<T>(continuationToken, changeFeedRequestOptions));
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(feedRange, changeFeedRequestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetChangeFeedIteratorHelper<T>(feedRange, changeFeedRequestOptions));
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(partitionKey, changeFeedRequestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetChangeFeedIteratorHelper<T>(partitionKey, changeFeedRequestOptions));
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -404,7 +425,9 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryStreamIterator(feedRange, queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetItemQueryStreamIteratorHelper(feedRange, queryDefinition, continuationToken, requestOptions));
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -413,7 +436,30 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetItemQueryIteratorHelper<T>(feedRange, queryDefinition, continuationToken, requestOptions));
+        }
+
+        public override FeedIterator GetStandByFeedIterator(string continuationToken = null, int? maxItemCount = null, ChangeFeedRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorInlineCore(
+               this.ClientContext,
+               base.GetStandByFeedIteratorHelper(continuationToken, maxItemCount, requestOptions));
+        }
+
+        public override FeedIteratorInternal<T> GetItemQueryIteratorInternal<T>(SqlQuerySpec sqlQuerySpec, bool isContinuationExcpected, string continuationToken, FeedRangeInternal feedRange, QueryRequestOptions requestOptions)
+        {
+            return new FeedIteratorInlineCore<T>(
+               this.ClientContext,
+               base.GetItemQueryIteratorInternalHelper<T>(sqlQuerySpec, isContinuationExcpected, continuationToken, feedRange, requestOptions));
+        }
+
+        public override FeedIteratorInternal GetItemQueryStreamIteratorInternal(SqlQuerySpec sqlQuerySpec, bool isContinuationExcpected, string continuationToken, FeedRangeInternal feedRange, QueryRequestOptions requestOptions)
+        {
+            return new FeedIteratorInlineCore(
+               this.ClientContext,
+               base.GetItemQueryStreamIteratorInternalHelper(sqlQuerySpec, isContinuationExcpected, continuationToken, feedRange, requestOptions));
         }
     }
 }

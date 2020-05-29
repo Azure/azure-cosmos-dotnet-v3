@@ -220,27 +220,24 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreatePermissionResponse(this.GetPermission(permissionProperties.Id), response);
         }
 
-        public override FeedIterator<T> GetPermissionQueryIterator<T>(
+        public FeedIteratorBase<T> GetPermissionQueryIteratorHelper<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
         {
-            if (!(this.GetPermissionQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetPermissionQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal permissionStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                permissionStreamIterator,
+                streamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.Permission));
         }
 
-        public FeedIterator GetPermissionQueryStreamIterator(
+        public FeedIteratorBase GetPermissionQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -254,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        public override FeedIterator<T> GetPermissionQueryIterator<T>(
+        public FeedIteratorBase<T> GetPermissionQueryIteratorHelper<T>(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -265,13 +262,13 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetPermissionQueryIterator<T>(
+            return this.GetPermissionQueryIteratorHelper<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public FeedIterator GetPermissionQueryStreamIterator(
+        public FeedIteratorBase GetPermissionQueryStreamIteratorHelper(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -282,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetPermissionQueryStreamIterator(
+            return this.GetPermissionQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
@@ -336,7 +333,7 @@ namespace Microsoft.Azure.Cosmos
                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                    }
                },
-               diagnosticsContext: null,
+               diagnosticsContext: diagnosticsContext,
                cancellationToken: cancellationToken);
         }
 

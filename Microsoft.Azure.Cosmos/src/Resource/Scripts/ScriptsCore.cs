@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator GetStoredProcedureQueryStreamIterator(
+        public FeedIteratorBase GetStoredProcedureQueryStreamIteratorHelper(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -50,13 +50,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetStoredProcedureQueryStreamIterator(
+            return this.GetStoredProcedureQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
+        public FeedIteratorBase<T> GetStoredProcedureQueryIteratorHelper<T>(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -67,13 +67,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetStoredProcedureQueryIterator<T>(
+            return this.GetStoredProcedureQueryIteratorHelper<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator GetStoredProcedureQueryStreamIterator(
+        public FeedIteratorBase GetStoredProcedureQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -87,21 +87,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
                options: requestOptions);
         }
 
-        public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
+        public FeedIteratorBase<T> GetStoredProcedureQueryIteratorHelper<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
         {
-            if (!(this.GetStoredProcedureQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetStoredProcedureQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                databaseStreamIterator,
+                streamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.StoredProcedure));
@@ -265,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator GetTriggerQueryStreamIterator(
+        public FeedIteratorBase GetTriggerQueryStreamIteratorHelper(
            string queryText,
            string continuationToken,
            QueryRequestOptions requestOptions)
@@ -276,13 +273,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetTriggerQueryStreamIterator(
+            return this.GetTriggerQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator<T> GetTriggerQueryIterator<T>(
+        public FeedIteratorBase<T> GetTriggerQueryIteratorHelper<T>(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -293,13 +290,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetTriggerQueryIterator<T>(
+            return this.GetTriggerQueryIteratorHelper<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator GetTriggerQueryStreamIterator(
+        public FeedIteratorBase GetTriggerQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -313,21 +310,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
                options: requestOptions);
         }
 
-        public override FeedIterator<T> GetTriggerQueryIterator<T>(
+        public FeedIteratorBase<T> GetTriggerQueryIteratorHelper<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
         {
-            if (!(this.GetTriggerQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetTriggerQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                databaseStreamIterator,
+                streamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.Trigger));
@@ -433,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
+        public FeedIteratorBase GetUserDefinedFunctionQueryStreamIteratorHelper(
            string queryText,
            string continuationToken,
            QueryRequestOptions requestOptions)
@@ -444,13 +438,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetUserDefinedFunctionQueryStreamIterator(
+            return this.GetUserDefinedFunctionQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
+        public FeedIteratorBase<T> GetUserDefinedFunctionQueryIteratorHelper<T>(
             string queryText,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -461,13 +455,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetUserDefinedFunctionQueryIterator<T>(
+            return this.GetUserDefinedFunctionQueryIteratorHelper<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
         }
 
-        public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
+        public FeedIteratorBase GetUserDefinedFunctionQueryStreamIteratorHelper(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
@@ -481,21 +475,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
                options: requestOptions);
         }
 
-        public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
+        public FeedIteratorBase<T> GetUserDefinedFunctionQueryIteratorHelper<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions)
         {
-            if (!(this.GetUserDefinedFunctionQueryStreamIterator(
+            FeedIteratorBase streamIterator = this.GetUserDefinedFunctionQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
-                requestOptions) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+                requestOptions);
 
             return new FeedIteratorCore<T>(
-                databaseStreamIterator,
+                streamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.UserDefinedFunction));

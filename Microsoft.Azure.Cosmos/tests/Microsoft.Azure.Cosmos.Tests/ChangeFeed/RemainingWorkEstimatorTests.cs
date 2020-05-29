@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 using Microsoft.Azure.Cosmos.Query.Core;
+using Microsoft.Azure.Cosmos.Tests;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json.Linq;

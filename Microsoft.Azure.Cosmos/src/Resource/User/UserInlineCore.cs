@@ -87,10 +87,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetPermissionQueryIterator<T>(
-                queryText,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetPermissionQueryIteratorHelper<T>(
+                    queryText,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(
@@ -98,10 +100,25 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetPermissionQueryIterator<T>(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.ClientContext,
+                base.GetPermissionQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
+        }
+
+        public FeedIterator GetPermissionQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorInlineCore(
+                this.ClientContext,
+                base.GetPermissionQueryStreamIteratorHelper(
+                    queryText,
+                    continuationToken,
+                    requestOptions));
         }
     }
 }

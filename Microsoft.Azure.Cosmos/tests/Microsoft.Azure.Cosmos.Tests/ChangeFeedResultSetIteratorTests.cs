@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
-            ResponseMessage firstRequest = await iterator.ReadNextAsync();
+            ResponseMessage firstRequest = await iterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(!firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should not contain the second continuation");
             Assert.AreEqual(HttpStatusCode.NotFound, firstRequest.StatusCode);
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
-            ResponseMessage firstRequest = await iterator.ReadNextAsync();
+            ResponseMessage firstRequest = await iterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
             Assert.AreEqual(HttpStatusCode.OK, firstRequest.StatusCode);
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
-            ResponseMessage firstRequest = await iterator.ReadNextAsync();
+            ResponseMessage firstRequest = await iterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(thirdResponse.Headers.ETag), "Response should contain the third continuation");
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
-            ResponseMessage firstRequest = await iterator.ReadNextAsync();
+            ResponseMessage firstRequest = await iterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
 

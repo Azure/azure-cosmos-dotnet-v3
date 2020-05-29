@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -310,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock(this.Container, "", 100, new ChangeFeedRequestOptions());
             using (ResponseMessage responseMessage =
-                    await iterator.ReadNextAsync(this.cancellationToken))
+                    await iterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, this.cancellationToken))
             {
                 Assert.IsTrue(iterator.HasCalledForceRefresh);
                 Assert.IsTrue(iterator.Iteration > 1);
@@ -459,7 +460,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             internal override Task<ResponseMessage> NextResultSetDelegateAsync(
-                CosmosDiagnosticsContext diagnosticsContext,
                 string continuationToken,
                 string partitionKeyRangeId,
                 int? maxItemCount,

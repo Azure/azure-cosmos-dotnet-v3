@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
             return feedTokens;
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
+        public FeedIteratorBase GetChangeFeedStreamIteratorHelper(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
+        public FeedIteratorBase GetChangeFeedStreamIteratorHelper(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos
                 continuation: null,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
-        public override FeedIterator GetChangeFeedStreamIterator(
+        public FeedIteratorBase GetChangeFeedStreamIteratorHelper(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
+        public FeedIteratorBase<T> GetChangeFeedIteratorHelper<T>(
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
+        public FeedIteratorBase<T> GetChangeFeedIteratorHelper<T>(
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
+        public FeedIteratorBase<T> GetChangeFeedIteratorHelper<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {

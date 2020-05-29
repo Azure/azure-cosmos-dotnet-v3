@@ -8,18 +8,17 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
     /// </summary>
-    internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIteratorInternal
+    internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIterator
     {
+        private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
+        private readonly string partitionKeyRangeId;
         private string continuationToken;
-        private string partitionKeyRangeId;
         private bool hasMoreResultsInternal;
 
         internal ChangeFeedPartitionKeyResultSetIteratorCore(
@@ -40,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyRangeId));
             }
 
-            this.ClientContext = clientContext;
+            this.clientContext = clientContext;
             this.container = container;
             this.changeFeedOptions = options;
             this.MaxItemCount = maxItemCount;
@@ -55,13 +54,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-        internal override CosmosClientContext ClientContext { get; }
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -70,29 +62,17 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return this.ClientContext.OperationHelperAsync(
-               nameof(FeedIteratorCore),
-               this.changeFeedOptions,
-               async (diagnostics) =>
-               {
-                   return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
-               });
-        }
 
-        internal override async Task<ResponseMessage> ReadNextInternalAsync(CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
-        {
-            ResponseMessage responseMessage = await this.NextResultSetDelegateAsync(
-                this.continuationToken,
-                this.partitionKeyRangeId,
-                this.MaxItemCount,
-                this.changeFeedOptions,
-                cancellationToken);
-
-            // Change Feed uses ETAG
-            this.continuationToken = responseMessage.Headers.ETag;
-            this.hasMoreResultsInternal = responseMessage.StatusCode != HttpStatusCode.NotModified;
-            responseMessage.Headers.ContinuationToken = this.continuationToken;
-            return responseMessage;
+            return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
+                .ContinueWith(task =>
+                {
+                    ResponseMessage response = task.Result;
+                    // Change Feed uses ETAG
+                    this.continuationToken = response.Headers.ETag;
+                    this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
+                    response.Headers.ContinuationToken = this.continuationToken;
+                    return response;
+                }, cancellationToken);
         }
 
         private Task<ResponseMessage> NextResultSetDelegateAsync(
@@ -103,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.clientContext.ProcessResourceOperationStreamAsync(
                cosmosContainerCore: this.container,
                resourceUri: resourceUri,
                resourceType: Documents.ResourceType.Document,

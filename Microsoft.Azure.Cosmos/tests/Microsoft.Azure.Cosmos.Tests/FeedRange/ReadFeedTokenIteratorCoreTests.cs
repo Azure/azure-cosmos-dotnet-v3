@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(true);
 
             FeedRangeIteratorCore feedTokenIterator = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
-            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
+            ResponseMessage response = await feedTokenIterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Mock.Get(feedToken)
                 .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             };
 
             FeedIteratorCore<dynamic> feedTokenIteratorOfT = new FeedIteratorCore<dynamic>(feedTokenIterator, creator);
-            FeedResponse<dynamic> response = await feedTokenIteratorOfT.ReadNextAsync();
+            FeedResponse<dynamic> response = await feedTokenIteratorOfT.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Assert.IsTrue(creatorCalled, "Response creator not called");
             Mock.Get(feedToken)
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(true);
 
             FeedRangeIteratorCore feedTokenIterator = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
-            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
+            ResponseMessage response = await feedTokenIterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Mock.Get(feedToken)
                 .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(true);
 
             FeedRangeIteratorCore feedTokenIterator = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
-            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
+            ResponseMessage response = await feedTokenIterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Mock.Get(feedToken)
                 .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Never);
@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .ReturnsAsync(Guid.NewGuid().ToString());
 
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(containerCore, null, null, new QueryRequestOptions());
-            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
+            ResponseMessage response = await feedTokenIterator.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Assert.IsTrue(FeedRangeContinuation.TryParse(response.ContinuationToken, out FeedRangeContinuation parsedToken));
             FeedRangeCompositeContinuation feedRangeCompositeContinuation = parsedToken as FeedRangeCompositeContinuation;
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             FeedRangeIteratorCore changeFeedIteratorCore = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions());
 
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync(new Mock<CosmosDiagnosticsContext>().Object, default);
 
             Assert.AreEqual(1, executionCount, "Pipeline handled the Split");
             Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);

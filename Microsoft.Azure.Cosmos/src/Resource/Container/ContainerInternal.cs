@@ -60,6 +60,13 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = default,
             ChangeFeedRequestOptions requestOptions = default);
 
+        public abstract FeedIteratorInternal<T> GetItemQueryIteratorInternal<T>(
+            SqlQuerySpec sqlQuerySpec,
+            bool isContinuationExcpected,
+            string continuationToken,
+            FeedRangeInternal feedRange,
+            QueryRequestOptions requestOptions);
+
         public abstract FeedIteratorInternal GetItemQueryStreamIteratorInternal(
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,

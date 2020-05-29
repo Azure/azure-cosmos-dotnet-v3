@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             string partitionKeyRangeId = lease.CurrentLeaseToken;
 
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
-            ChangeFeedPartitionKeyResultSetIteratorCore iterator = ResultSetIteratorUtils.BuildResultSetIterator(
+            FeedIterator iterator = ResultSetIteratorUtils.BuildResultSetIterator(
                 partitionKeyRangeId: partitionKeyRangeId,
                 continuationToken: options.StartContinuation,
                 maxItemCount: options.MaxItemCount,
