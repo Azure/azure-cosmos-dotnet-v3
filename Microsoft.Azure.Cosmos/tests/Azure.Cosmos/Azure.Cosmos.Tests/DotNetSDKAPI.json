@@ -2134,10 +2134,10 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String)"
         },
-        "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String, Azure.Cosmos.Spatial.SpatialType[])": {
+        "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String, Azure.Cosmos.SpatialType[])": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String, Azure.Cosmos.Spatial.SpatialType[])"
+          "MethodInfo": "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String, Azure.Cosmos.SpatialType[])"
         },
         "T Attach()": {
           "Type": "Method",
@@ -2296,14 +2296,14 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialPath] get_SpatialIndexes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.SpatialPath] get_SpatialIndexes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialPath] get_SpatialIndexes()"
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.SpatialPath] get_SpatialIndexes()"
         },
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialPath] SpatialIndexes": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.SpatialPath] SpatialIndexes": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -3918,12 +3918,12 @@
     "SpatialPath": {
       "Subclasses": {},
       "Members": {
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialType] get_SpatialTypes()": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.SpatialType] get_SpatialTypes()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialType] get_SpatialTypes()"
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.SpatialType] get_SpatialTypes()"
         },
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialType] SpatialTypes": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.SpatialType] SpatialTypes": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -3958,22 +3958,22 @@
     "SpatialType": {
       "Subclasses": {},
       "Members": {
-        "Azure.Cosmos.Spatial.SpatialType LineString": {
+        "Azure.Cosmos.SpatialType LineString": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Azure.Cosmos.Spatial.SpatialType MultiPolygon": {
+        "Azure.Cosmos.SpatialType MultiPolygon": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Azure.Cosmos.Spatial.SpatialType Point": {
+        "Azure.Cosmos.SpatialType Point": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Azure.Cosmos.Spatial.SpatialType Polygon": {
+        "Azure.Cosmos.SpatialType Polygon": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
