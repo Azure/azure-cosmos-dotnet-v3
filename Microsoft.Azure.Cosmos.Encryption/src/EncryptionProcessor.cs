@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         internal static readonly CosmosJsonDotNetSerializer baseSerializer = new CosmosJsonDotNetSerializer();
 
+        /// <remarks>
+        /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
+        /// Else input stream will be disposed, and a new stream is returned.
+        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// </remarks>
         public static async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
@@ -102,6 +107,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
 
+        /// <remarks>
+        /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
+        /// Else input stream will be disposed, and a new stream is returned.
+        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// </remarks>
         public static async Task<Stream> DecryptAsync(
             Stream input,
             Encryptor encryptor,
