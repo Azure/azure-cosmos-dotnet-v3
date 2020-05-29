@@ -7,7 +7,6 @@ namespace Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using Azure.Cosmos.Spatial;
 
     /// <summary>
     /// Represents the indexing policy configuration for a collection in the Azure Cosmos DB service.
@@ -248,8 +247,8 @@ namespace Azure.Cosmos
                     return false;
                 }
 
-                HashSet<Spatial.SpatialType> hashedSpatialTypes1 = new HashSet<Spatial.SpatialType>(spatialSpec1.SpatialTypes);
-                HashSet<Spatial.SpatialType> hashedSpatialTypes2 = new HashSet<Spatial.SpatialType>(spatialSpec2.SpatialTypes);
+                HashSet<SpatialType> hashedSpatialTypes1 = new HashSet<SpatialType>(spatialSpec1.SpatialTypes);
+                HashSet<SpatialType> hashedSpatialTypes2 = new HashSet<SpatialType>(spatialSpec2.SpatialTypes);
 
                 if (!hashedSpatialTypes1.SetEquals(hashedSpatialTypes2))
                 {
@@ -263,7 +262,7 @@ namespace Azure.Cosmos
             {
                 int hashCode = 0;
                 hashCode ^= spatialSpec.Path.GetHashCode();
-                foreach (Spatial.SpatialType spatialType in spatialSpec.SpatialTypes)
+                foreach (SpatialType spatialType in spatialSpec.SpatialTypes)
                 {
                     hashCode ^= spatialType.GetHashCode();
                 }
