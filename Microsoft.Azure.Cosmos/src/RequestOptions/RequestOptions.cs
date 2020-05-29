@@ -78,6 +78,14 @@ namespace Microsoft.Azure.Cosmos
                 {
                     request.Properties[property.Key] = property.Value;
                 }
+
+                if (this.Properties.TryGetValue(HttpConstants.HttpHeaders.IsClientEncrypted, out object isClientEncryptedObj))
+                {
+                    if (isClientEncryptedObj is string isClientEncryptedStr)
+                    {
+                        request.Headers.Add(HttpConstants.HttpHeaders.IsClientEncrypted, isClientEncryptedStr);
+                    }
+                }
             }
 
             if (this.IfMatchEtag != null)

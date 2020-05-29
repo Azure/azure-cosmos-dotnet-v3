@@ -90,6 +90,13 @@
             "type": "bool",
             "storage": "sparse"
           }
+        },
+        {
+          "path": "isClientEncrypted",
+          "type": {
+            "type": "bool",
+            "storage": "sparse"
+          }
         }
       ]
     },

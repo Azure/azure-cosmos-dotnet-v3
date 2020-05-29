@@ -202,6 +202,19 @@ namespace Microsoft.Azure.Cosmos
 
                 if (options.Properties != null)
                 {
+                    if (options.Properties.TryGetValue(HttpConstants.HttpHeaders.IsClientEncrypted, out object isClientEncryptedObj))
+                    {
+                        if (isClientEncryptedObj is string isClientEncryptedStr
+                            && bool.TryParse(isClientEncryptedStr, out bool isClientEncrypted))
+                        {
+                            r = writer.WriteBool("isClientEncrypted", isClientEncrypted);
+                            if (r != Result.Success)
+                            {
+                                return r;
+                            }
+                        }
+                    }
+
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
                     {
                         if (binaryIdObj is byte[] binaryId)

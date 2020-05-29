@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string ifMatch = null;
             string ifNoneMatch = null;
             int? ttlInSeconds = null;
+            string isClientEncrypted = null;
 
             while (reader.Read())
             {
@@ -179,6 +180,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                         ttlInSeconds = ttl;
                         break;
+
+                    case "isClientEncrypted":
+                        r = reader.ReadBool(out bool isClientEncryptedBool);
+                        if (r != Result.Success)
+                        {
+                            return r;
+                        }
+
+                        isClientEncrypted = isClientEncryptedBool.ToString();
+                        break;
                 }
             }
 
@@ -189,7 +200,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             TransactionalBatchItemRequestOptions requestOptions = null;
-            if (indexingDirective.HasValue || ifMatch != null || ifNoneMatch != null || binaryId != null || effectivePartitionKey != null || ttlInSeconds.HasValue)
+            if (indexingDirective.HasValue
+                || ifMatch != null
+                || ifNoneMatch != null
+                || binaryId != null
+                || effectivePartitionKey != null
+                || ttlInSeconds.HasValue
+                || isClientEncrypted != null)
             {
                 requestOptions = new TransactionalBatchItemRequestOptions();
                 if (indexingDirective.HasValue)
@@ -206,7 +223,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestOptions.IfNoneMatchEtag = ifNoneMatch;
                 }
 
-                if (binaryId != null || effectivePartitionKey != null || ttlInSeconds.HasValue)
+                if (binaryId != null
+                    || effectivePartitionKey != null
+                    || ttlInSeconds.HasValue
+                    || isClientEncrypted != null)
                 {
                     Dictionary<string, object> properties = new Dictionary<string, object>();
 
@@ -223,6 +243,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     if (ttlInSeconds.HasValue)
                     {
                         properties.Add(WFConstants.BackendHeaders.TimeToLiveInSeconds, ttlInSeconds.ToString());
+                    }
+
+                    if(isClientEncrypted != null)
+                    {
+                        properties.Add(HttpConstants.HttpHeaders.IsClientEncrypted, isClientEncrypted);
                     }
 
                     requestOptions.Properties = properties;

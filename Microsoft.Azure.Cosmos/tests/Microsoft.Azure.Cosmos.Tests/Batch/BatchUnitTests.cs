@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -158,7 +159,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Properties = new Dictionary<string, object>()
                 {
-                    { WFConstants.BackendHeaders.BinaryId, replaceStreamBinaryId }
+                    { WFConstants.BackendHeaders.BinaryId, replaceStreamBinaryId },
+                    { HttpConstants.HttpHeaders.IsClientEncrypted, bool.TrueString }
                 },
                 IfMatchEtag = "replCondition",
                 IndexingDirective = Microsoft.Azure.Cosmos.IndexingDirective.Exclude
@@ -173,7 +175,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Properties = new Dictionary<string, object>()
                 {
-                    { WFConstants.BackendHeaders.BinaryId, upsertStreamBinaryId }
+                    { WFConstants.BackendHeaders.BinaryId, upsertStreamBinaryId },
+                    { HttpConstants.HttpHeaders.IsClientEncrypted, bool.FalseString }
                 },
                 IfMatchEtag = "upsertCondition",
                 IndexingDirective = Microsoft.Azure.Cosmos.IndexingDirective.Exclude
@@ -465,6 +468,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Assert.IsTrue(actual.Properties.TryGetValue(WFConstants.BackendHeaders.TimeToLiveInSeconds, out object actualTtlObj));
                         Assert.AreEqual(expectedTtlStr, actualTtlObj as string);
                     }
+
+                    if(expected.Properties.TryGetValue(HttpConstants.HttpHeaders.IsClientEncrypted, out object expectedIsClientEncryptedObj))
+                    {
+                        string expectedIsClientEncryptedStr = expectedIsClientEncryptedObj as string;
+                        Assert.IsTrue(actual.Properties.TryGetValue(HttpConstants.HttpHeaders.IsClientEncrypted, out object actualIsClientEncryptedObj));
+                        Assert.AreEqual(expectedIsClientEncryptedStr, actualIsClientEncryptedObj as string);
+                    }
                 }
             }
             else
@@ -581,8 +591,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public override bool Equals(object obj)
             {
-                TestItem other = obj as TestItem;
-                if (other == null)
+                if (!(obj is TestItem other))
                 {
                     return false;
                 }
