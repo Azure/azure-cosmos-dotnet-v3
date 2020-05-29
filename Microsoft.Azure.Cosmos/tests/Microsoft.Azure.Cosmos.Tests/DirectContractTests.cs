@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(e.Value, projDependencies[e.Key]);
             }
 
-            CollectionAssert.AreEquivalent(allDependencies.Keys, projDependencies.Keys);
+            CollectionAssert.IsSubsetOf(allDependencies.Keys, projDependencies.Keys);
         }
 
         private static Dictionary<string, string> GetPackageReferencies(string csprojName)

@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 private const JsonNodeType UInt32 = JsonNodeType.UInt32;
                 private const JsonNodeType Unknown = JsonNodeType.Unknown;
 
-                private static readonly ReadOnlyMemory<JsonNodeType> Types = new JsonNodeType[]
+                private static readonly JsonNodeType[] Types = new JsonNodeType[]
                 {
                     // Encoded literal integer value (32 values)
                     Number, Number, Number, Number, Number, Number, Number, Number,
@@ -744,7 +744,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public static JsonNodeType GetNodeType(byte typeMarker)
                 {
-                    return NodeTypes.Types.Span[typeMarker];
+                    return NodeTypes.Types[typeMarker];
                 }
             }
         }

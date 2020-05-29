@@ -70,8 +70,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (HttpStatusCode code in testHttpStatusCodes)
             {
                 ItemRequestOptions options = new ItemRequestOptions();
-                options.Properties = new Dictionary<string, object>();
-                options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
+                options.Properties = new Dictionary<string, object>()
+                {
+                    { PreProcessingTestHandler.StatusCodeName, code },
+                };
 
                 ItemResponse<object> response = await container.ReadItemAsync<object>("id1", new Cosmos.PartitionKey("pk1"), options);
                 Console.WriteLine($"Got status code {response.StatusCode}");
@@ -82,8 +84,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (HttpStatusCode code in testHttpStatusCodes)
             {
                 ContainerRequestOptions options = new ContainerRequestOptions();
-                options.Properties = new Dictionary<string, object>();
-                options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
+                options.Properties = new Dictionary<string, object>()
+                {
+                    { PreProcessingTestHandler.StatusCodeName, code }
+                };
 
                 ContainerResponse response = await container.DeleteContainerAsync(options);
 
