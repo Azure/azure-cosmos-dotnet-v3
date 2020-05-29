@@ -42,10 +42,10 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <summary>
         /// Initializes a new instance of the NewtonsoftReader class.
         /// </summary>
-        /// <param name="buffer">The buffer to read from.</param>
-        public CosmosDBToNewtonsoftReader(ReadOnlyMemory<byte> buffer)
+        /// <param name="jsonReader">The reader to interop with.</param>
+        public CosmosDBToNewtonsoftReader(IJsonReader jsonReader)
         {
-            this.jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(buffer);
+            this.jsonReader = jsonReader ?? throw new ArgumentNullException(nameof(jsonReader));
         }
 
         /// <summary>
@@ -123,6 +123,51 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
                 case JsonTokenType.FieldName:
                     newtonsoftToken = JsonToken.PropertyName;
                     value = this.jsonReader.GetStringValue();
+                    break;
+
+                case JsonTokenType.Int8:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt8Value();
+                    break;
+
+                case JsonTokenType.Int16:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt16Value();
+                    break;
+
+                case JsonTokenType.Int32:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt32Value();
+                    break;
+
+                case JsonTokenType.Int64:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt64Value();
+                    break;
+
+                case JsonTokenType.UInt32:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetUInt32Value();
+                    break;
+
+                case JsonTokenType.Float32:
+                    newtonsoftToken = JsonToken.Float;
+                    value = this.jsonReader.GetFloat32Value();
+                    break;
+
+                case JsonTokenType.Float64:
+                    newtonsoftToken = JsonToken.Float;
+                    value = this.jsonReader.GetFloat64Value();
+                    break;
+
+                case JsonTokenType.Guid:
+                    newtonsoftToken = JsonToken.String;
+                    value = this.jsonReader.GetGuidValue().ToString();
+                    break;
+
+                case JsonTokenType.Binary:
+                    newtonsoftToken = JsonToken.Bytes;
+                    value = this.jsonReader.GetBinaryValue().ToArray();
                     break;
 
                 default:

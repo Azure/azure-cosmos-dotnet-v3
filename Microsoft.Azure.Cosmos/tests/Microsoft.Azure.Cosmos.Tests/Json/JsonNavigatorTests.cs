@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
+    using System.Security.AccessControl;
 
     [TestClass]
     public class JsonNavigatorTests
@@ -191,11 +193,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             string input = @"[
                 1111111110111111111011111111101111111110,
                 1111111110111111111011111111101111111110111111111011111111101111111110,
-               11111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110,
+                11111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110,
                 1111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110111111111011111111101111111110
-                    ]";
+            ]";
 
-            JsonNavigatorTests.VerifyNavigator(input);
+            try
+            {
+                JsonNavigatorTests.VerifyNavigator(input);
+            }
+            catch (MaterilizationFailedToMatchException)
+            {
+                // Newtonsoft does not use IEEE double precision for these long integers.
+            }
         }
 
         [TestMethod]
@@ -502,20 +511,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(input));
                     JsonToken[] tokensFromReader = JsonNavigatorTests.GetTokensWithReader(jsonReader);
 
-                    // Test text
+                    // Text
                     IJsonNavigator textNavigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(input));
-                    IJsonNavigatorNode textRootNode = textNavigator.GetRootNode();
-                    JsonToken[] tokensFromTextNavigator = JsonNavigatorTests.GetTokensFromNode(textRootNode, textNavigator, performExtraChecks);
 
-                    Assert.IsTrue(tokensFromTextNavigator.SequenceEqual(tokensFromReader));
-
-                    // Test binary
+                    // Binary
                     byte[] binaryInput = JsonTestUtils.ConvertTextToBinary(input);
                     IJsonNavigator binaryNavigator = JsonNavigator.Create(binaryInput);
-                    IJsonNavigatorNode binaryRootNode = binaryNavigator.GetRootNode();
-                    JsonToken[] tokensFromBinaryNavigator = JsonNavigatorTests.GetTokensFromNode(binaryRootNode, binaryNavigator, performExtraChecks);
-
-                    Assert.IsTrue(tokensFromBinaryNavigator.SequenceEqual(tokensFromReader));
 
                     // Test binary + user string encoding
                     JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 4096);
@@ -526,10 +527,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     }
 
                     IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
-                    IJsonNavigatorNode binaryRootNodeWithUserStringEncoding = binaryNavigatorWithUserStringEncoding.GetRootNode();
-                    JsonToken[] tokensFromBinaryNavigatorWithUserStringEncoding = JsonNavigatorTests.GetTokensFromNode(binaryRootNodeWithUserStringEncoding, binaryNavigatorWithUserStringEncoding, performExtraChecks);
 
-                    Assert.IsTrue(tokensFromBinaryNavigatorWithUserStringEncoding.SequenceEqual(tokensFromReader));
+                    // Test
+                    foreach (IJsonNavigator jsonNavigator in new IJsonNavigator[] { textNavigator, binaryNavigator, binaryNavigatorWithUserStringEncoding })
+                    {
+                        IJsonNavigatorNode rootNode = jsonNavigator.GetRootNode();
+                        JsonToken[] tokensFromNavigator = JsonNavigatorTests.GetTokensFromNode(rootNode, jsonNavigator, performExtraChecks);
+                        Assert.IsTrue(tokensFromNavigator.SequenceEqual(tokensFromReader));
+
+                        // Test materialize
+                        JToken materializedToken = jsonNavigator.Materialize<JToken>(new Newtonsoft.Json.JsonSerializer(), rootNode);
+
+                        try
+                        {
+                            if (materializedToken.ToString() != JToken.Parse(input).ToString())
+                            {
+                                throw new MaterilizationFailedToMatchException();
+                            }
+                        }
+                        catch (Newtonsoft.Json.JsonReaderException)
+                        {
+                            // If the input is extended type we ignore this check.
+                        }
+                    }
                 }
             }
             finally
@@ -782,6 +802,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
 
             return tokensFromIEnumerable.ToArray();
+        }
+
+        private sealed class MaterilizationFailedToMatchException : Exception
+        {
+            public MaterilizationFailedToMatchException()
+            {
+            }
         }
     }
 }

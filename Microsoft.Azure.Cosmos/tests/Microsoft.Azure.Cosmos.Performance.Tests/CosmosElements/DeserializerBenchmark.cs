@@ -57,7 +57,7 @@
         public void JsonConvert_DeserializeObject_Binary()
         {
             Newtonsoft.Json.JsonSerializer jsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault();
-            CosmosDBToNewtonsoftReader cosmosDBToNewtonsoftReader = new CosmosDBToNewtonsoftReader(this.binaryBuffer);
+            CosmosDBToNewtonsoftReader cosmosDBToNewtonsoftReader = new CosmosDBToNewtonsoftReader(Cosmos.Json.JsonReader.Create(this.binaryBuffer));
             _ = jsonSerializer.Deserialize<IReadOnlyList<Person>>(cosmosDBToNewtonsoftReader);
         }
     }

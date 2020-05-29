@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -107,6 +106,19 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 
                 return new Person(name, age, children.ToArray());
             }
+
+            public override bool Equals(object obj)
+            {
+                if (!(obj is Person person))
+                {
+                    return false;
+                }
+
+                return (this.Age == person.Age)
+                    && (this.Name == person.Name)
+                    && (this.Children.Length == person.Children.Length)
+                    && this.Children.SequenceEqual(person.Children);
+            }
         }
 
         private class LazilyDeserializedPerson
@@ -172,6 +184,15 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             string bufferedSerializedPeopleString = Encoding.UTF8.GetString(bufferedSerializedPeople);
             string bufferedResultString = Encoding.UTF8.GetString(bufferedResult);
             Assert.AreEqual(bufferedSerializedPeopleString, bufferedResultString);
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Materialize()
+        {
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer<CosmosArray>(LazyCosmosElementTests.bufferedSerializedPeople);
+            IReadOnlyList<Person> materialziedPeople = lazilyDeserializedPeople.Materialize<IReadOnlyList<Person>>();
+            Assert.IsTrue(people.SequenceEqual(materialziedPeople));
         }
 
         [TestMethod]

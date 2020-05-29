@@ -5,11 +5,9 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -27,6 +25,13 @@ namespace Microsoft.Azure.Cosmos.Json
         private sealed class JsonTextNavigator : JsonNavigator
         {
             private static readonly Utf8Memory ReverseSoldius = Utf8Memory.Create("\\");
+
+            private static class SingletonBuffers
+            {
+                public static readonly ReadOnlyMemory<byte> True = Encoding.UTF8.GetBytes("true");
+                public static readonly ReadOnlyMemory<byte> False = Encoding.UTF8.GetBytes("false");
+                public static readonly ReadOnlyMemory<byte> Null = Encoding.UTF8.GetBytes("null");
+            }
 
             private readonly JsonTextNavigatorNode rootNode;
 
@@ -436,6 +441,39 @@ namespace Microsoft.Azure.Cosmos.Json
                     default:
                         throw new ArgumentOutOfRangeException($"Unknown {nameof(IJsonNavigatorNode)} type: {jsonNode.GetType()}.");
                 }
+            }
+
+            public override T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode)
+            {
+                if (jsonSerializer == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonSerializer));
+                }
+                if (!(jsonNavigatorNode is JsonTextNavigatorNode jsonTextNavigatorNode))
+                {
+                    throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(JsonTextNavigatorNode)}.");
+                }
+
+                ReadOnlyMemory<byte> buffer = jsonTextNavigatorNode switch
+                {
+                    LazyNode lazyNode => lazyNode.BufferedValue,
+                    ArrayNode arrayNode => arrayNode.BufferedValue,
+                    FalseNode falseNode => SingletonBuffers.False,
+                    StringNodeBase stringNodeBase => stringNodeBase.BufferedValue.Memory,
+                    NullNode nullNode => SingletonBuffers.Null,
+                    NumberNode numberNode => numberNode.BufferedToken,
+                    ObjectNode objectNode => objectNode.BufferedValue,
+                    TrueNode trueNode => SingletonBuffers.True,
+                    GuidNode guidNode => guidNode.BufferedToken,
+                    BinaryNode binaryNode => binaryNode.BufferedToken,
+                    IntegerNode intNode => intNode.BufferedToken,
+                    FloatNode floatNode => floatNode.BufferedToken,
+                    _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonTextNavigatorNode)} type: {jsonTextNavigatorNode.GetType()}."),
+                };
+
+                Cosmos.Json.IJsonReader cosmosReader = JsonReader.Create(JsonSerializationFormat.Text, buffer);
+                Newtonsoft.Json.JsonReader newtonsoftReader = new CosmosDBToNewtonsoftReader(cosmosReader);
+                return jsonSerializer.Deserialize<T>(newtonsoftReader);
             }
 
             #region JsonTextParser

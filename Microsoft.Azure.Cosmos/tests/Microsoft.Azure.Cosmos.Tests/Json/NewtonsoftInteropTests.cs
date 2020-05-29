@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         private static void VerifyReader<T>(ReadOnlyMemory<byte> payload, T expectedDeserializedValue)
         {
-            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(payload))
+            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(Cosmos.Json.JsonReader.Create(payload)))
             {
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
                 T actualDeserializedValue = serializer.Deserialize<T>(reader);
@@ -326,9 +326,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             /// <param name="serializer">The calling serializer.</param>
             public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
             {
-                if (value is DateTime)
+                if (value is DateTime time)
                 {
-                    Int64 totalSeconds = (Int64)((DateTime)value - UnixStartTime).TotalSeconds;
+                    Int64 totalSeconds = (Int64)(time - UnixStartTime).TotalSeconds;
                     writer.WriteValue(totalSeconds);
                 }
                 else

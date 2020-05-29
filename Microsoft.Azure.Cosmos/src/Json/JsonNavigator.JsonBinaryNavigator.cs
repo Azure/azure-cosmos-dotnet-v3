@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -470,11 +471,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 IJsonNavigatorNode jsonNode,
                 out ReadOnlyMemory<byte> bufferedRawJson)
             {
-                if (jsonNode == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonNode));
-                }
-
                 if (!(jsonNode is BinaryNavigatorNode binaryNavigatorNode))
                 {
                     throw new ArgumentException($"{nameof(jsonNode)} must be a {nameof(BinaryNavigatorNode)}");
@@ -498,6 +494,24 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
+            public override T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode)
+            {
+                if (jsonSerializer == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonSerializer));
+                }
+
+                if (!(jsonNavigatorNode is BinaryNavigatorNode binaryNavigatorNode))
+                {
+                    throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(BinaryNavigatorNode)}");
+                }
+
+                ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
+                Cosmos.Json.IJsonReader cosmosJsonReader = JsonReader.Create(JsonSerializationFormat.Binary, buffer, this.jsonStringDictionary);
+                Newtonsoft.Json.JsonReader newtonsoftReader = new CosmosDBToNewtonsoftReader(cosmosJsonReader);
+                return jsonSerializer.Deserialize<T>(newtonsoftReader);
+            }
+
             private static bool IsStringOrNested(BinaryNavigatorNode binaryNavigatorNode)
             {
                 switch (binaryNavigatorNode.JsonNodeType)
@@ -506,7 +520,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonNodeType.FieldName:
                     case JsonNodeType.Array:
                     case JsonNodeType.Object:
-                        return true; 
+                        return true;
                     default:
                         return false;
                 }

@@ -4,10 +4,11 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
-    using System.Runtime.ExceptionServices;
+    using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
@@ -20,6 +21,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract class CosmosElement
     {
+        protected static readonly Newtonsoft.Json.JsonSerializer DefaultSerializer = new Newtonsoft.Json.JsonSerializer()
+        {
+            Culture = CultureInfo.InvariantCulture,
+            DateParseHandling = Newtonsoft.Json.DateParseHandling.None,
+        };
+
         protected CosmosElement(CosmosElementType cosmosItemType)
         {
             this.Type = cosmosItemType;
@@ -62,6 +69,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor);
 
         public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
+
+        public virtual T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer = null)
+        {
+            jsonSerializer ??= DefaultSerializer;
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+            this.WriteTo(jsonWriter);
+            ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
+            Cosmos.Json.IJsonReader cosmosJsonReader = Cosmos.Json.JsonReader.Create(buffer);
+            Newtonsoft.Json.JsonReader newtonsoftReader = new CosmosDBToNewtonsoftReader(cosmosJsonReader);
+            return jsonSerializer.Deserialize<T>(newtonsoftReader);
+        }
 
         public static class Monadic
         {

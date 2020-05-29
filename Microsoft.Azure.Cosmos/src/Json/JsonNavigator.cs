@@ -115,17 +115,15 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract int GetObjectPropertyCount(IJsonNavigatorNode objectNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetObjectProperty(
-            IJsonNavigatorNode objectNode,
-            string propertyName,
-            out ObjectProperty objectProperty);
+        public abstract bool TryGetObjectProperty(IJsonNavigatorNode objectNode, string propertyName, out ObjectProperty objectProperty);
 
         /// <inheritdoc />
         public abstract IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetBufferedRawJson(
-            IJsonNavigatorNode jsonNode,
-            out ReadOnlyMemory<byte> bufferedRawJson);
+        public abstract bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
+
+        /// <inheritdoc />
+        public abstract T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode);
     }
 }

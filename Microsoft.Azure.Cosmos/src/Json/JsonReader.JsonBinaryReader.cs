@@ -49,18 +49,10 @@ namespace Microsoft.Azure.Cosmos.Json
                 ReadOnlyMemory<byte> buffer,
                 JsonStringDictionary jsonStringDictionary = null)
             {
-                if (buffer.Length < 2)
+                if (buffer.IsEmpty)
                 {
-                    throw new ArgumentException($"{nameof(buffer)} must have at least two byte.");
+                    throw new ArgumentException($"{nameof(buffer)} must not be empty.");
                 }
-
-                if (buffer.Span[0] != (byte)JsonSerializationFormat.Binary)
-                {
-                    throw new ArgumentNullException("buffer must be binary encoded.");
-                }
-
-                // offset for the 0x80 (128) binary serialization type marker.
-                buffer = buffer.Slice(1);
 
                 // Only navigate the outer most json value and trim off trailing bytes
                 int jsonValueLength = JsonBinaryEncoding.GetValueLength(buffer.Span);

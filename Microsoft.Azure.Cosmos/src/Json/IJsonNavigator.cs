@@ -183,5 +183,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="bufferedRawJson">The raw json.</param>
         /// <returns>True if bufferedRawJson was set. False otherwise.</returns>
         bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
+
+        /// <summary>
+        /// Materializes the contents of the <see cref="IJsonNavigatorNode"/> into the specided type.
+        /// </summary>
+        /// <typeparam name="T">The type that represents the schema of what is to be materialized.</typeparam>
+        /// <param name="jsonSerializer">The serializer to deserialize with.</param>
+        /// <param name="jsonNavigatorNode">The node to materialize the value from.</param>
+        /// <returns>The materialized value.</returns>
+        public T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode);
     }
 }

@@ -77,6 +77,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);
             }
+
+            public override T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer = null)
+            {
+                jsonSerializer ??= DefaultSerializer;
+                return this.jsonNavigator.Materialize<T>(jsonSerializer, this.jsonNavigatorNode);
+            }
         }
     }
 #if INTERNAL
