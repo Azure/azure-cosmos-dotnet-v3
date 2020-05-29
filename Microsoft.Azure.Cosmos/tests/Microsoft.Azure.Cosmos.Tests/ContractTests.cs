@@ -31,7 +31,6 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ClientDllNamespaceTest()
         {
-
 #if INTERNAL
             int expected = 6;
 #else
