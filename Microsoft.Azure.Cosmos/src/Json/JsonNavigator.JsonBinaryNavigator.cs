@@ -659,19 +659,18 @@ namespace Microsoft.Azure.Cosmos.Json
                         bool fieldName = binaryNavigatorNode.JsonNodeType == JsonNodeType.FieldName;
 
                         Utf8Memory utf8Buffer = Utf8Memory.UnsafeCreateNoValidation(buffer);
-                        if (JsonBinaryEncoding.TryGetBufferedEscapedStringValue(
+                        if (JsonBinaryEncoding.TryGetBufferedStringValue(
                             utf8Buffer,
                             this.jsonStringDictionary,
-                            out bool skipEscapedStringChecks,
                             out Utf8Memory bufferedStringValue))
                         {
                             if (fieldName)
                             {
-                                jsonWriter.WriteFieldName(bufferedStringValue.Span, skipEscapedStringChecks);
+                                jsonWriter.WriteFieldName(bufferedStringValue.Span);
                             }
                             else
                             {
-                                jsonWriter.WriteStringValue(bufferedStringValue.Span, skipEscapedStringChecks);
+                                jsonWriter.WriteStringValue(bufferedStringValue.Span);
                             }
                         }
                         else

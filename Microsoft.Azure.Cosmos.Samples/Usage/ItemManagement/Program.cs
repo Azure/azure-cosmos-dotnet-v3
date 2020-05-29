@@ -25,7 +25,7 @@
     // 1. Basic CRUD operations on a item using regular POCOs
     // 1.1 - Create a item
     // 1.2 - Read a item by its Id
-    // 1.3 - Read all items in a Collection
+    // 1.3 - Read all items in a container
     // 1.4 - Query for items by a property other than Id
     // 1.5 - Replace a item
     // 1.6 - Upsert a item
@@ -147,6 +147,8 @@
 
             await Program.ReadItemAsync();
 
+            await Program.ReadAllItems();
+
             await Program.QueryItems();
 
             await Program.ReplaceItemAsync(result);
@@ -171,9 +173,22 @@
 
             // As your app evolves, let's say your object has a new schema. You can insert SalesOrderV2 objects without any 
             // changes to the database tier.
-            SalesOrder2 newSalesOrder = GetSalesOrderV2Sample("SalesOrder2");
-            ItemResponse<SalesOrder2> response2 = await container.CreateItemAsync(newSalesOrder, new PartitionKey(newSalesOrder.AccountNumber));
-            SalesOrder2 salesOrder2 = response2;
+            SalesOrder2 salesOrder2 = GetSalesOrderV2Sample("SalesOrder2");
+            ItemResponse<SalesOrder2> response2 = await container.CreateItemAsync(
+                salesOrder2,
+                new PartitionKey(salesOrder2.AccountNumber),
+                new ItemRequestOptions()
+                {
+                    // The response will have a null resource. This avoids the overhead of 
+                    // sending the item back over the network and serializing it.
+                    EnableContentResponseOnWrite = false
+                });
+
+            if(response2.Resource != null)
+            {
+                throw new ArgumentException("Resource should be null");
+            }
+
             Console.WriteLine($"\n1.1.2 - Item created {salesOrder2.Id}");
 
             // For better performance create a SalesOrder object from a stream. 
@@ -240,6 +255,78 @@
         }
         // </ReadItemAsync>
 
+        // <ReadAllItems>
+        private static async Task ReadAllItems()
+        {
+            //******************************************************************************************************************
+            // 1.3 - Read all items in a container
+            //
+            // NOTE: Operations like AsEnumerable(), ToList(), ToArray() will make as many trips to the database
+            //       as required to fetch the entire result-set. Even if you set MaxItemCount to a smaller number. 
+            //       MaxItemCount just controls how many results to fetch each trip. 
+            //******************************************************************************************************************
+            Console.WriteLine("\n1.3 - Read all items with query using a specific partition key");
+
+            FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
+                queryDefinition: null,
+                requestOptions: new QueryRequestOptions()
+                {
+                    PartitionKey = new PartitionKey("Account1")
+                });
+
+            List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
+            while (resultSet.HasMoreResults)
+            {
+                FeedResponse<SalesOrder> response = await resultSet.ReadNextAsync();
+                SalesOrder sale = response.First();
+                Console.WriteLine($"\n1.3.1 Account Number: {sale.AccountNumber}; Id: {sale.Id};");
+                if (response.Diagnostics != null)
+                {
+                    Console.WriteLine($" Diagnostics {response.Diagnostics.ToString()}");
+                }
+
+                allSalesForAccount1.AddRange(response);
+            }
+
+            Console.WriteLine($"\n1.3.2 Read all items found {allSalesForAccount1.Count} items.");
+
+            // Use the same query as before but get the cosmos response message to access the stream directly
+            FeedIterator streamResultSet = container.GetItemQueryStreamIterator(
+                queryDefinition: null,
+                requestOptions: new QueryRequestOptions()
+                {
+                    PartitionKey = new PartitionKey("Account1")
+                });
+
+            List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
+            while (streamResultSet.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage = await streamResultSet.ReadNextAsync())
+                {
+                    // Item stream operations do not throw exceptions for better performance
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
+                        List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
+                        Console.WriteLine($"\n1.3.3 - Read all items via stream {salesOrders.Count}");
+                        allSalesForAccount1FromStream.AddRange(salesOrders);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Read all items from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                    }
+                }
+            }
+
+            Console.WriteLine($"\n1.3.4 Read all items found {allSalesForAccount1FromStream.Count} items.");
+
+            if (allSalesForAccount1.Count != allSalesForAccount1FromStream.Count)
+            {
+                throw new InvalidDataException($"Both read all item operations should return the same list");
+            }
+        }
+        // </QueryItems>
+
         // <QueryItems>
         private static async Task QueryItems()
         {
@@ -275,7 +362,7 @@
                     Console.WriteLine($" Diagnostics {response.Diagnostics.ToString()}");
                 }
 
-                allSalesForAccount1.Add(sale);
+                allSalesForAccount1.AddRange(response);
             }
 
             Console.WriteLine($"\n1.4.2 Query found {allSalesForAccount1.Count} items.");
@@ -434,7 +521,7 @@
             {
                 if (typeof(Stream).IsAssignableFrom(typeof(T)))
                 {
-                    return (T)(object)(stream);
+                    return (T)(object)stream;
                 }
 
                 using (StreamReader sr = new StreamReader(stream))

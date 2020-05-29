@@ -67,35 +67,6 @@ namespace Microsoft.Azure.Cosmos.Json
             return false;
         }
 
-        public static bool TryGetBufferedEscapedStringValue(
-            Utf8Memory stringToken,
-            IReadOnlyJsonStringDictionary jsonStringDictionary,
-            out bool stringIsAlreadyEscaped,
-            out Utf8Memory value)
-        {
-            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
-                stringToken,
-                out value))
-            {
-                stringIsAlreadyEscaped = false;
-                return true;
-            }
-
-            if (JsonBinaryEncoding.TryGetEncodedStringValue(
-                stringToken.Span,
-                jsonStringDictionary,
-                out UtfAllString encodedStringValue))
-            {
-                value = encodedStringValue.Utf8EscapedString;
-                stringIsAlreadyEscaped = true;
-                return true;
-            }
-
-            value = default;
-            stringIsAlreadyEscaped = false;
-            return false;
-        }
-
         /// <summary>
         /// Try Get Encoded String Value
         /// </summary>

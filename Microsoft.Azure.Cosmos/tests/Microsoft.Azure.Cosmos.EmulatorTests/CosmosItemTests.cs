@@ -1038,12 +1038,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .InternalKey
                             .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
 
+            Dictionary<string, object> properties = new Dictionary<string, object>()
+            {
+                { WFConstants.BackendHeaders.EffectivePartitionKeyString, epk },
+            };
+
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions
             {
                 IsEffectivePartitionKeyRouting = true,
-                Properties = new Dictionary<string, object>()
+                Properties = properties,
             };
-            itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             ResponseMessage response = await this.Container.ReadItemStreamAsync(
                 Guid.NewGuid().ToString(),
@@ -1062,9 +1066,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 IsEffectivePartitionKeyRouting = true,
-                Properties = new Dictionary<string, object>()
+                Properties = properties,
             };
-            queryRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
                     queryText: "SELECT * FROM root",
@@ -1786,6 +1789,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsNotNull(createdItem.id);
             Assert.AreEqual(itemWithoutId.status, createdItem.status);
+        }
+
+        [TestMethod]
+        public async Task CustomPropertiesItemRequestOptionsTest()
+        {
+            string customHeaderName = "custom-header1";
+            string customHeaderValue = "value1";
+
+            CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
+               builder =>
+               {
+                   builder.WithTransportClientHandlerFactory(transportClient => new TransportClientHelper.TransportClientWrapper(
+                       transportClient,
+                       (uri, resourceOperation, request) =>
+                           {
+                               if (resourceOperation.resourceType == ResourceType.Document &&
+                                    resourceOperation.operationType == OperationType.Create)
+                               {
+                                   bool customHeaderExists = request.Properties.TryGetValue(customHeaderName, out object value);
+
+                                   Assert.IsTrue(customHeaderExists);
+                                   Assert.AreEqual(customHeaderValue, value);
+                               }
+                           }));
+               });
+
+            Container container = clientWithIntercepter.GetContainer(this.database.Id, this.Container.Id);
+
+            ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
+
+            Dictionary<string, object> properties = new Dictionary<string, object>()
+            {
+                { customHeaderName, customHeaderValue},
+            };
+
+            ItemRequestOptions ro = new ItemRequestOptions();
+            ro.Properties = properties;
+
+            ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(
+                partitionKey: new Cosmos.PartitionKey(temp.status),
+                item: temp,
+                requestOptions: ro);
+
+            Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)

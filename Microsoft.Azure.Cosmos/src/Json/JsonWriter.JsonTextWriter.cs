@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteFieldName(Utf8Span fieldName, bool skipEscapedStringChecks = false)
+            public override void WriteFieldName(Utf8Span fieldName)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
                 this.PrefixMemberSeparator();
@@ -170,14 +170,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 this.jsonTextMemoryWriter.Write(PropertyStartToken);
 
-                if (skipEscapedStringChecks)
-                {
-                    this.jsonTextMemoryWriter.Write(fieldName.Span);
-                }
-                else
-                {
-                    this.WriteEscapedString(fieldName);
-                }
+                this.WriteEscapedString(fieldName);
 
                 this.jsonTextMemoryWriter.Write(PropertyEndToken);
 
@@ -185,21 +178,14 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteStringValue(Utf8Span value, bool skipEscapedStringChecks = false)
+            public override void WriteStringValue(Utf8Span value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.String);
                 this.PrefixMemberSeparator();
 
                 this.jsonTextMemoryWriter.Write(StringStartToken);
 
-                if (skipEscapedStringChecks)
-                {
-                    this.jsonTextMemoryWriter.Write(value.Span);
-                }
-                else
-                {
-                    this.WriteEscapedString(value);
-                }
+                this.WriteEscapedString(value);
 
                 this.jsonTextMemoryWriter.Write(StringEndToken);
             }

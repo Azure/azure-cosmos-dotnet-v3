@@ -128,13 +128,13 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteFieldName(Utf8Span fieldName, bool skipEscapedStringChecks = false)
+            public override void WriteFieldName(Utf8Span fieldName)
             {
                 this.WriteFieldNameOrString(isFieldName: true, fieldName);
             }
 
             /// <inheritdoc />
-            public override void WriteStringValue(Utf8Span value, bool skipEscapedStringChecks = false)
+            public override void WriteStringValue(Utf8Span value)
             {
                 this.WriteFieldNameOrString(isFieldName: false, value);
             }

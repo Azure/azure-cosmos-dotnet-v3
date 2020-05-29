@@ -50,29 +50,25 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Writes a field name to the the internal buffer.
         /// </summary>
         /// <param name="fieldName">The name of the field to write.</param>
-        /// <param name="skipEscapedStringChecks">Whether or not to skip checks for escaped strings.</param>
-        void WriteFieldName(string fieldName, bool skipEscapedStringChecks = false);
+        void WriteFieldName(string fieldName);
 
         /// <summary>
         /// Writes a UTF-8 field name to the internal buffer.
         /// </summary>
         /// <param name="fieldName"></param>
-        /// <param name="skipEscapedStringChecks">Whether or not to skip checks for escaped strings.</param>
-        void WriteFieldName(Utf8Span fieldName, bool skipEscapedStringChecks = false);
+        void WriteFieldName(Utf8Span fieldName);
 
         /// <summary>
         /// Writes a string to the internal buffer.
         /// </summary>
         /// <param name="value">The value of the string to write.</param>
-        /// <param name="skipEscapedStringChecks">Whether or not to skip checks for escaped strings.</param>
-        void WriteStringValue(string value, bool skipEscapedStringChecks = false);
+        void WriteStringValue(string value);
 
         /// <summary>
         /// Writes a UTF-8 string value to the internal buffer.
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="skipEscapedStringChecks">Whether or not to skip checks for escaped strings.</param>
-        void WriteStringValue(Utf8Span value, bool skipEscapedStringChecks = false);
+        void WriteStringValue(Utf8Span value);
 
         /// <summary>
         /// Writes a number to the internal buffer.
