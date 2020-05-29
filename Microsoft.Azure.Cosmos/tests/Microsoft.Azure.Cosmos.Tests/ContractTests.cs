@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos
         {
 
 #if INTERNAL
-            int expected = 7;
+            int expected = 6;
 #else
-            int expected = 5;
+            int expected = 4;
 #endif
             ContractTests.NamespaceCountTest(typeof(CosmosClient), expected);
         }
