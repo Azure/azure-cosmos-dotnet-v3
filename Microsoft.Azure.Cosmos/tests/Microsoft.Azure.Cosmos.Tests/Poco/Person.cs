@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     public sealed class Person
     {
@@ -68,7 +67,6 @@
             this.Name = name;
             this.Age = age;
             this.Salary = salary;
-            this.PersonGender = gender;
             this.Children = new List<Person>(children);
         }
 
@@ -80,10 +78,6 @@
 
         [JsonProperty("salary")]
         public double Salary { get; }
-
-        [JsonProperty("gender")]
-        [JsonConverter(typeof(StringEnumConverter))]
-        public Gender PersonGender { get; }
 
         [JsonProperty("children")]
         public IReadOnlyList<Person> Children { get; }
