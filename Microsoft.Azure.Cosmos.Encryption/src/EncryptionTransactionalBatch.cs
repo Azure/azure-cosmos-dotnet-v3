@@ -201,8 +201,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync"))
-            using (TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(cancellationToken))
             {
+                TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(cancellationToken);
+
                 if (response.IsSuccessStatusCode)
                 {
                     for (int index = 0; index < response.Count; index++)
