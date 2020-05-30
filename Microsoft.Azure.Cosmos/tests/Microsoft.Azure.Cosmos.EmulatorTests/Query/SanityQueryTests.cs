@@ -640,12 +640,63 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
 
                             Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
-                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value); 
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
 
                             Assert.AreEqual(
                                 1,
                                 queryResults.Count,
                                 $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestTryFillPageFully()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (bool tryFillPageFully in new bool[] { true, false })
+                {
+                    foreach (int maxItemCount in new int[] { 1, 10, 100 })
+                    {
+                        QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                        {
+                            MaxBufferedItemCount = 7000,
+                            MaxConcurrency = 10,
+                            MaxItemCount = maxItemCount,
+                            TryFillPageFully = tryFillPageFully,
+                        };
+
+                        string query = "SELECT * FROM c ORDER BY c._ts";
+
+                        FeedIterator<CosmosElement> itemQuery = container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+
+                        while (itemQuery.HasMoreResults)
+                        {
+                            FeedResponse<CosmosElement> page = await itemQuery.ReadNextAsync();
+                            if (tryFillPageFully)
+                            {
+                                Assert.AreEqual(maxItemCount, page.Count);
+                            }
+                            else
+                            {
+                                Assert.IsTrue(page.Count <= maxItemCount);
+                            }
                         }
                     }
                 }
