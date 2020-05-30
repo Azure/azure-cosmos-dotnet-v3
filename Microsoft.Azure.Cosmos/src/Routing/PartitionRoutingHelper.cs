@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
@@ -228,7 +229,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (!rangeFromContinuationToken.Equals(targetPartitionKeyRange.ToRange()))
             {
                 // Cannot find target range. Either collection was resolved incorrectly or the range was split
-                List<PartitionKeyRange> replacedRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, rangeFromContinuationToken, true)).ToList();
+                IReadOnlyList<PartitionKeyRange> replacedRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                        collectionResourceId: collectionRid,
+                        range: rangeFromContinuationToken,
+                        forceRefresh: true);
 
                 if (replacedRanges == null || replacedRanges.Count < 1)
                 {
@@ -244,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (direction == RntdbEnumerationDirection.Reverse)
                 {
-                    replacedRanges.Reverse();
+                    replacedRanges = new ReadOnlyCollection<PartitionKeyRange>(replacedRanges.Reverse().ToList());
                 }
 
                 List<CompositeContinuationToken> continuationTokensToBePersisted = null;

@@ -91,7 +91,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 customizeClientBuilder(cosmosClientBuilder);
             }
 
-            return cosmosClientBuilder.Build();
+            CosmosClient client = cosmosClientBuilder.Build();
+            Assert.IsNotNull(client.ClientOptions.Serializer);
+            return client;
         }
 
         internal static CosmosClient CreateCosmosClient(CosmosClientOptions clientOptions, string resourceToken = null)

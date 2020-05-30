@@ -89,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
                     returnResultsInDeterministicOrder: true,
+                    tryFillPageFully: false,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
@@ -177,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
                     returnResultsInDeterministicOrder: true,
+                    tryFillPageFully: false,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
@@ -310,6 +312,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
                     returnResultsInDeterministicOrder: true,
+                    tryFillPageFully: false,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 IDocumentQueryExecutionComponent executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
@@ -437,6 +440,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
                     returnResultsInDeterministicOrder: true,
+                    tryFillPageFully: false,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 TryCatch<IDocumentQueryExecutionComponent> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(

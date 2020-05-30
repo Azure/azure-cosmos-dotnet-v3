@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             double requestCharge = 42.42;
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage, diagnosticsContext: diagnostics);
-            
+
             diagnostics.GetOverallScope().Dispose();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
@@ -268,6 +268,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionedQueryExecutionInfo: null,
                 executionEnvironment: queryRequestOptions?.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: true,
+                forcePassthrough: false,
+                tryFillPageFully: false,
                 testInjections: queryRequestOptions?.TestSettings);
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
@@ -347,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
-            diagnosticsContext.AddDiagnosticsInternal( new PointOperationStatistics(
+            diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,
                     subStatusCode: SubStatusCodes.PartitionKeyMismatch,
@@ -361,6 +363,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics(
+                    Guid.NewGuid(),
                     "0",
                     "SomeQueryMetricText",
                     "SomeIndexUtilText",

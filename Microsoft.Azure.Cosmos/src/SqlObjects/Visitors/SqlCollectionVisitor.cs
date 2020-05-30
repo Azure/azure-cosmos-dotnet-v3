@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.Sql
     {
         public abstract void Visit(SqlInputPathCollection collection);
 
-        public abstract void Visit(SqlLiteralArrayCollection collection);
-
         public abstract void Visit(SqlSubqueryCollection collection);
     }
 
@@ -16,16 +14,12 @@ namespace Microsoft.Azure.Cosmos.Sql
     {
         public abstract TResult Visit(SqlInputPathCollection collection);
 
-        public abstract TResult Visit(SqlLiteralArrayCollection collection);
-
         public abstract TResult Visit(SqlSubqueryCollection collection);
     }
 
     internal abstract class SqlCollectionVisitor<TArg, TOuput>
     {
         public abstract TOuput Visit(SqlInputPathCollection collection, TArg input);
-
-        public abstract TOuput Visit(SqlLiteralArrayCollection collection, TArg input);
 
         public abstract TOuput Visit(SqlSubqueryCollection collection, TArg input);
     }

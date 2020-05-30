@@ -48,9 +48,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Initializes a new instance of the JsonTextReader class.
             /// </summary>
             /// <param name="buffer">The IJsonTextBuffer to read from.</param>
-            /// <param name="skipValidation">Whether or not to skip validation.</param>
-            public JsonTextReader(ReadOnlyMemory<byte> buffer, bool skipValidation = false)
-                : base(skipValidation)
+            public JsonTextReader(ReadOnlyMemory<byte> buffer)
             {
                 this.jsonTextBuffer = new JsonTextMemoryReader(buffer);
             }
@@ -303,17 +301,18 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+            public override bool TryGetBufferedStringValue(out Utf8Memory value)
             {
                 if (this.token.JsonTextTokenType.HasFlag(JsonTextTokenType.EscapedFlag))
                 {
-                    bufferedUtf8StringValue = default;
+                    value = default;
                     return false;
                 }
 
-                bufferedUtf8StringValue = this.jsonTextBuffer.GetBufferedRawJsonToken(
-                    this.token.Start,
-                    this.token.End);
+                value = Utf8Memory.UnsafeCreateNoValidation(
+                    this.jsonTextBuffer.GetBufferedRawJsonToken(
+                        this.token.Start,
+                        this.token.End));
                 return true;
             }
 

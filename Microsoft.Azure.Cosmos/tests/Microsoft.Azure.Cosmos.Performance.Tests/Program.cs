@@ -6,10 +6,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
     using BenchmarkDotNet.Running;
-    using CosmosDB.Benchmark.Common.Models;
-    using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
-    using Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies;
-    using Microsoft.Azure.Cosmos.Performance.Tests.Services;
 
     class Program
     {

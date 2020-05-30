@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ClientOfficialVersion>3.8.0</ClientOfficialVersion>
-    <ClientPreviewVersion>3.9.0</ClientPreviewVersion>
+    <ClientOfficialVersion>3.9.1</ClientOfficialVersion>
+    <ClientPreviewVersion>3.9.1</ClientPreviewVersion>
     <DirectVersion>3.9.0</DirectVersion>
-    <EncryptionPreviewVersion>1.0.0</EncryptionPreviewVersion>
+    <EncryptionVersion>1.0.0-preview4</EncryptionVersion>
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
     <AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
   </PropertyGroup>

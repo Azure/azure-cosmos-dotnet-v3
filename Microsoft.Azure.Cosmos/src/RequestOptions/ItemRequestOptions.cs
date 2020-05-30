@@ -98,14 +98,46 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Options to encrypt properties of the item.
+        /// Gets or sets the boolean to only return the headers and status code in
+        /// the Cosmos DB response for write item operation like Create, Upsert, and Replace.
+        /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending
+        /// the resource back over the network and serializing it on the client.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        EncryptionOptions EncryptionOptions { get; set; }
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableContentResponseOnWrite = false };
+        /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
+        /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+        /// Assert.IsNull(itemResponse.Resource);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// This is optimal for workloads where the returned resource is not used.
+        /// </remarks>
+        public bool? EnableContentResponseOnWrite { get; set; }
+
+        /// <summary>
+        /// Gets or sets the boolean to only return the headers and status code in
+        /// the Cosmos DB response for read item operations like ReadItemAsync
+        /// This removes the resource from the response. This reduces networking and CPU load by not sending
+        /// the resource back over the network and serializing it on the client.
+        /// </summary>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableContentResponseOnRead = true };
+        /// ItemResponse itemResponse = await this.container.ReadItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
+        /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+        /// Assert.IsNull(itemResponse.Resource);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// This is optimal for workloads where the returned resource is not used.
+        /// </remarks>
+        internal bool? EnableContentResponseOnRead { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -132,7 +164,34 @@ namespace Microsoft.Azure.Cosmos
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
 
+            if (ItemRequestOptions.ShouldSetNoContentHeader(
+                this.EnableContentResponseOnWrite,
+                this.EnableContentResponseOnRead,
+                request.OperationType))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
+            }
+
             base.PopulateRequestOptions(request);
+        }
+
+        internal static bool ShouldSetNoContentHeader(
+            bool? enableContentResponseOnWrite,
+            bool? enableContentResponseOnRead,
+            OperationType operationType)
+        {
+            if (enableContentResponseOnRead.HasValue &&
+                !enableContentResponseOnRead.Value &&
+                operationType == OperationType.Read)
+            {
+                return true;
+            }
+
+            return enableContentResponseOnWrite.HasValue &&
+              !enableContentResponseOnWrite.Value &&
+              (operationType == OperationType.Create ||
+              operationType == OperationType.Replace ||
+              operationType == OperationType.Upsert);
         }
     }
 }

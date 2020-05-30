@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTestUtils.cs" Link="JsonTestUtils.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Json\JsonTokenInfo.cs" Link="Json\JsonTokenInfo.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Poco\Person.cs" Link="Models\Person.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Utils\TextFileConcatenation.cs" Link="TextFileConcatenation.cs" />
   </ItemGroup>
 
@@ -217,16 +218,19 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>JsonMicroBenchmarks.cs</LastGenOutput>
     </None>
-    <None Update="Json\JsonRoundtripBenchmark.tt">
+    <None Update="Json\Utf8vsUtf16StringBenchmark.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>JsonRoundtripBenchmark.cs</LastGenOutput>
+      <LastGenOutput>Utf8vsUtf16StringBenchmark.cs</LastGenOutput>
     </None>
     <None Update="Json\Utf8vsUtf16StringBenchmarkGenerator.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Utf8vsUtf16StringBenchmarkGenerator.cs</LastGenOutput>
     </None>
     <None Update="samplepayload.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="samplefeedpayload.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
@@ -245,10 +249,10 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>JsonMicroBenchmarks.tt</DependentUpon>
     </Compile>
-    <Compile Update="Json\JsonRoundtripBenchmark.cs">
+    <Compile Update="Json\Utf8vsUtf16StringBenchmark.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>JsonRoundtripBenchmark.tt</DependentUpon>
+      <DependentUpon>Utf8vsUtf16StringBenchmark.tt</DependentUpon>
     </Compile>
     <Compile Update="Json\Utf8vsUtf16StringBenchmarkGenerator.cs">
       <DesignTime>True</DesignTime>

@@ -71,17 +71,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string result = cosmosDiagnostics.ToString();
 
-            string regex = @"\{""Summary"":\{""StartUtc"":"".+Z"",""TotalElapsedTime"":""00:00:.+"",""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:0.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTime"":""00:00:.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
-            Assert.IsTrue(Regex.IsMatch(result, regex), result);
+            string regex = @"\{""DiagnosticVersion"":""2"",""Summary"":\{""StartUtc"":"".+Z"",""TotalElapsedTimeInMs"":.+,""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
+            Assert.IsTrue(Regex.IsMatch(result, regex), $"regex: {regex} result: {result}");
 
             JToken jToken = JToken.Parse(result);
-            TimeSpan total = jToken["Summary"]["TotalElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(total > TimeSpan.FromSeconds(2));
-            TimeSpan overalScope = jToken["Context"][0]["ElapsedTime"].ToObject<TimeSpan>();
+            double total = jToken["Summary"]["TotalElapsedTimeInMs"].ToObject<double>();
+            Assert.IsTrue(total > TimeSpan.FromSeconds(2).TotalMilliseconds);
+            double overalScope = jToken["Context"][0]["ElapsedTimeInMs"].ToObject<double>();
             Assert.IsTrue(overalScope < total);
-            Assert.IsTrue(overalScope > TimeSpan.FromSeconds(1));
-            TimeSpan innerScope = jToken["Context"][2]["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(innerScope > TimeSpan.Zero);
+            Assert.IsTrue(overalScope > TimeSpan.FromSeconds(1).TotalMilliseconds);
+            double innerScope = jToken["Context"][2]["ElapsedTimeInMs"].ToObject<double>();
+            Assert.IsTrue(innerScope > 0);
         }
 
         [TestMethod]
@@ -126,27 +126,28 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics(diagnosticsContext);
             string noInfo = clientSideRequestStatistics.ToString();
-            Assert.IsNotNull(noInfo);
+            Assert.AreEqual("Please see CosmosDiagnostics", noInfo);
 
             StringBuilder stringBuilder = new StringBuilder();
             clientSideRequestStatistics.AppendToBuilder(stringBuilder);
             string noInfoStringBuilder = stringBuilder.ToString();
-            Assert.IsNotNull(noInfoStringBuilder);
-
-            Assert.AreEqual(noInfo, noInfoStringBuilder);
+            Assert.AreEqual("Please see CosmosDiagnostics", noInfo);
 
             string id = clientSideRequestStatistics.RecordAddressResolutionStart(new Uri("https://testuri"));
             clientSideRequestStatistics.RecordAddressResolutionEnd(id);
 
-            clientSideRequestStatistics.RecordResponse(
-                new Documents.DocumentServiceRequest(
+            Documents.DocumentServiceRequest documentServiceRequest = new Documents.DocumentServiceRequest(
                     operationType: Documents.OperationType.Read,
                     resourceIdOrFullName: null,
                     resourceType: Documents.ResourceType.Database,
                     body: null,
                     headers: null,
                     isNameBased: false,
-                    authorizationTokenType: Documents.AuthorizationTokenType.PrimaryMasterKey),
+                    authorizationTokenType: Documents.AuthorizationTokenType.PrimaryMasterKey);
+
+            clientSideRequestStatistics.RecordRequest(documentServiceRequest);
+            clientSideRequestStatistics.RecordResponse(
+                documentServiceRequest,
                 new Documents.StoreResult(
                     storeResponse: new Documents.StoreResponse(),
                     exception: null,
@@ -165,9 +166,27 @@ namespace Microsoft.Azure.Cosmos.Tests
                     usingLocalLSN: true));
 
             string statistics = clientSideRequestStatistics.ToString();
-            Assert.IsTrue(statistics.Contains("\"UserAgent\":\"cosmos-netstandard-sdk"));
-            Assert.IsTrue(statistics.Contains("UsingLocalLSN: True, TransportException: null"));
-            Assert.IsTrue(statistics.Contains("AddressResolutionStatistics\",\"StartTimeUtc"));
+            Assert.AreEqual("Please see CosmosDiagnostics", statistics);
+        }
+
+
+        [TestMethod]
+        public void TestUpdatesWhileVisiting()
+        {
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            cosmosDiagnostics.CreateScope("FirstScope");
+
+            bool isFirst = true;
+            foreach (CosmosDiagnosticsInternal diagnostic in cosmosDiagnostics)
+            {
+                if (isFirst)
+                {
+                    cosmosDiagnostics.CreateScope("SecondScope");
+                    isFirst = false;
+                }
+               
+                diagnostic.ToString();
+            }
         }
     }
 }

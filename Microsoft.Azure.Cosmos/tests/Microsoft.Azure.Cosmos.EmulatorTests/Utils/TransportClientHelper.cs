@@ -7,11 +7,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
-
+    using Microsoft.Azure.Documents.Collections;
 
     internal static class TransportClientHelper
     {
@@ -21,23 +22,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Guid activityId,
             string transportExceptionSourceDescription)
         {
+            return GetContainerWithIntercepter(
+                databaseId,
+                containerId,
+                (uri, resourceOperation, request) => TransportClientHelper.ThrowTransportExceptionOnItemOperation(
+                    uri,
+                    resourceOperation,
+                    request,
+                    activityId,
+                    transportExceptionSourceDescription));
+        }
+
+        internal static Container GetContainerWithIntercepter(
+            string databaseId,
+            string containerId,
+            Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor)
+        {
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
                builder =>
                {
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                        transportClient,
-                       (uri, resourceOperation, request) => TransportClientHelper.ThrowTransportExceptionOnItemOperation(
-                           uri,
-                           resourceOperation,
-                           request,
-                           activityId,
-                           transportExceptionSourceDescription)));
+                       interceptor));
                });
 
             return clientWithIntercepter.GetContainer(databaseId, containerId);
         }
 
-        private static void ThrowTransportExceptionOnItemOperation(
+        public static void ThrowTransportExceptionOnItemOperation(
                 Uri physicalAddress,
                 ResourceOperation resourceOperation,
                 DocumentServiceRequest request,
@@ -60,7 +72,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private sealed class TransportClientWrapper : TransportClient
+        public static void ThrowForbiddendExceptionOnItemOperation(
+                Uri physicalAddress,
+                DocumentServiceRequest request,
+                string activityId,
+                string errorMessage)
+        {
+            if (request.ResourceType == ResourceType.Document)
+            {
+                DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+                headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+                headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
+
+                ForbiddenException forbiddenException = new ForbiddenException(
+                    errorMessage,
+                    headers,
+                    physicalAddress);
+
+                throw forbiddenException;
+            }
+        }
+
+        internal sealed class TransportClientWrapper : TransportClient
         {
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
