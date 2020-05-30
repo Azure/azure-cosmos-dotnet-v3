@@ -143,6 +143,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string SessionToken { get; set; }
 
+        /// <summary>
+        /// Tries to fill the response page with as many items up until the <see cref="QueryRequestOptions.MaxItemCount"/>.
+        /// </summary>
+        /// <remarks>Note that this best effort and it does not gaurentee that you will get back <see cref="QueryRequestOptions.MaxItemCount"/> items.</remarks>
+        public bool? TryFillPageFully { get; set; }
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }

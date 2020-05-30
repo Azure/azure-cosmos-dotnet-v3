@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Sql;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using RequestChargeTracker = Documents.RequestChargeTracker;
     using RMResources = Documents.RMResources;
@@ -124,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <param name="fetchPrioirtyFunction">The priority function to determine which partition to fetch documents from next.</param>
         /// <param name="equalityComparer">Used to determine whether we need to return the continuation token for a partition.</param>
         /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in deterministic order.</param>
+        /// <param name="tryFillPageFully">Try to fill up the response page as much as possible.</param>
         /// <param name="testSettings">Test settings.</param>
         protected CosmosCrossPartitionQueryExecutionContext(
             CosmosQueryContext queryContext,
@@ -134,6 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             Func<ItemProducerTree, int> fetchPrioirtyFunction,
             IEqualityComparer<CosmosElement> equalityComparer,
             bool returnResultsInDeterministicOrder,
+            bool tryFillPageFully,
             TestInjections testSettings)
         {
             if (moveNextComparer == null)
@@ -184,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             this.CanPrefetch = maxConcurrency.HasValue && maxConcurrency.Value != 0;
 
             this.returnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
+            this.TryFillPageFully = tryFillPageFully;
         }
 
         /// <summary>
@@ -194,6 +198,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         protected int ActualMaxBufferedItemCount => (int)this.actualMaxBufferedItemCount;
 
         protected int ActualMaxPageSize => (int)this.actualMaxPageSize;
+
+        protected bool TryFillPageFully { get; }
 
         /// <summary>
         /// Gets the continuation token for the context.
@@ -672,6 +678,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             /// <param name="maxBufferedItemCount">The max buffered item count</param>
             /// <param name="maxItemCount">Max item count</param>
             /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in a deterministic order.</param>
+            /// <param name="tryFillPageFully">Tries to fill the page fully.</param>
             /// <param name="testSettings">Test settings.</param>
             public CrossPartitionInitParams(
                 SqlQuerySpec sqlQuerySpec,
@@ -683,6 +690,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 int? maxItemCount,
                 int? maxBufferedItemCount,
                 bool returnResultsInDeterministicOrder,
+                bool tryFillPageFully,
                 TestInjections testSettings)
             {
                 if (string.IsNullOrWhiteSpace(collectionRid))
@@ -718,6 +726,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.MaxConcurrency = maxConcurrency;
                 this.MaxItemCount = maxItemCount;
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
+                this.TryFillPageFully = tryFillPageFully;
                 this.TestSettings = testSettings;
             }
 
@@ -762,6 +771,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public int? MaxBufferedItemCount { get; }
 
             public bool ReturnResultsInDeterministicOrder { get; }
+
+            public bool TryFillPageFully { get; }
 
             public TestInjections TestSettings { get; }
         }

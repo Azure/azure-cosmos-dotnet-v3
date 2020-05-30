@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
                 moveNextComparer: moveNextComparer,
                 returnResultsInDeterministicOrder: initParams.ReturnResultsInDeterministicOrder,
+                tryFillPageFully: initParams.TryFillPageFully,
                 testSettings: initParams.TestSettings);
 
             return (await context.TryInitializeAsync(

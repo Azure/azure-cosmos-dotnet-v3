@@ -256,6 +256,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         inputParameters.PartitionedQueryExecutionInfo,
                         inputParameters.ExecutionEnvironment,
                         inputParameters.ReturnResultsInDeterministicOrder,
+                        inputParameters.TryFillPageFully,
                         inputParameters.TestInjections);
                 }
 
@@ -289,6 +290,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 maxItemCount: inputParameters.MaxItemCount,
                 maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
                 returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
+                tryFillPageFully: inputParameters.TryFillPageFully,
                 testSettings: inputParameters.TestInjections);
 
             return PipelinedDocumentQueryExecutionContext.TryCreatePassthroughAsync(
@@ -347,6 +349,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 maxItemCount: inputParameters.MaxItemCount,
                 maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
                 returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
+                tryFillPageFully: inputParameters.TryFillPageFully,
                 testSettings: inputParameters.TestInjections);
 
             return await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
@@ -436,6 +439,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             private const int DefaultMaxBufferedItemCount = 1000;
             private const bool DefaultReturnResultsInDeterministicOrder = true;
             private const ExecutionEnvironment DefaultExecutionEnvironment = ExecutionEnvironment.Client;
+            private const bool DefaultTryFillPageFully = true;
 
             public InputParameters(
                 SqlQuerySpec sqlQuerySpec,
@@ -449,6 +453,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
+                bool? tryFillPageFully,
                 TestInjections testInjections)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
@@ -481,6 +486,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
                 this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
+                this.TryFillPageFully = tryFillPageFully.GetValueOrDefault(InputParameters.DefaultTryFillPageFully);
                 this.TestInjections = testInjections;
             }
 
@@ -495,6 +501,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; }
             public ExecutionEnvironment ExecutionEnvironment { get; }
             public bool ReturnResultsInDeterministicOrder { get; }
+            public bool TryFillPageFully { get; }
             public TestInjections TestInjections { get; }
         }
     }

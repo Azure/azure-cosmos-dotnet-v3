@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         /// <param name="maxItemCount">Max item count</param>
         /// <param name="moveNextComparer">The comparer to use for the priority queue.</param>
         /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in deterministic order.</param>
+        /// <param name="tryFillPageFully">Tries to fill the page fully.</param>
         /// <param name="testSettings">Test settings.</param>
         private CosmosParallelItemQueryExecutionContext(
             CosmosQueryContext queryContext,
@@ -47,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             int? maxBufferedItemCount,
             IComparer<ItemProducerTree> moveNextComparer,
             bool returnResultsInDeterministicOrder,
+            bool tryFillPageFully,
             TestInjections testSettings)
             : base(
                 queryContext: queryContext,
@@ -57,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
                 equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer,
                 returnResultsInDeterministicOrder: returnResultsInDeterministicOrder,
+                tryFillPageFully: tryFillPageFully,
                 testSettings: testSettings)
         {
             this.returnResultsInDeterministicOrder = returnResultsInDeterministicOrder;

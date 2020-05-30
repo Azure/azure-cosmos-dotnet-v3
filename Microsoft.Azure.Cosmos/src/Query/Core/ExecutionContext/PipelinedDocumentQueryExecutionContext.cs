@@ -150,6 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     maxItemCount: int.MaxValue,
                     maxBufferedItemCount: initParams.MaxBufferedItemCount,
                     returnResultsInDeterministicOrder: true,
+                    tryFillPageFully: initParams.TryFillPageFully,
                     testSettings: initParams.TestSettings);
             }
 
@@ -313,6 +314,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
                 returnResultsInDeterministicOrder: initParams.ReturnResultsInDeterministicOrder,
+                tryFillPageFully: initParams.TryFillPageFully,
                 testSettings: initParams.TestSettings);
 
             // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.

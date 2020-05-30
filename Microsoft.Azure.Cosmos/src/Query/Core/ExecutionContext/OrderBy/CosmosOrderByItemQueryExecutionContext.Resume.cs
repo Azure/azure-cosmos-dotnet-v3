@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
                 consumeComparer: orderByItemProducerTreeComparer,
+                tryFillPageFully: initParams.TryFillPageFully,
                 testSettings: initParams.TestSettings);
 
             IReadOnlyList<string> orderByExpressions = initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions;

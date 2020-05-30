@@ -67,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
         /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
+        /// <param name="tryFillPageFully">Try to fill the response page as much as possible.</param>
         /// <param name="testSettings">Test settings.</param>
         private CosmosOrderByItemQueryExecutionContext(
             CosmosQueryContext initPararms,
@@ -74,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             int? maxItemCount,
             int? maxBufferedItemCount,
             OrderByItemProducerTreeComparer consumeComparer,
+            bool tryFillPageFully,
             TestInjections testSettings)
             : base(
                 queryContext: initPararms,
@@ -84,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 fetchPrioirtyFunction: CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
                 equalityComparer: new OrderByEqualityComparer(consumeComparer),
                 returnResultsInDeterministicOrder: true,
+                tryFillPageFully: tryFillPageFully,
                 testSettings: testSettings)
         {
         }
