@@ -25,7 +25,10 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new JsonInvalidTokenException();
             }
 
-            if (!JsonBinaryEncoding.TryGetBufferedStringValue(stringToken, jsonStringDictionary, out Utf8Memory bufferedUtf8StringValue))
+            if (!JsonBinaryEncoding.TryGetBufferedStringValue(
+                stringToken,
+                jsonStringDictionary,
+                out Utf8Memory bufferedUtf8StringValue))
             {
                 throw new JsonInvalidTokenException();
             }
@@ -44,14 +47,19 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(stringToken, out value))
+            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
+                stringToken,
+                out value))
             {
                 return true;
             }
 
-            if (JsonBinaryEncoding.TryGetEncodedStringValue(stringToken.Span, jsonStringDictionary, out UtfAllString encodedStringValue))
+            if (JsonBinaryEncoding.TryGetEncodedStringValue(
+                stringToken.Span,
+                jsonStringDictionary,
+                out UtfAllString encodedStringValue))
             {
-                value = encodedStringValue.Utf8String;
+                value = encodedStringValue.Utf8EscapedString;
                 return true;
             }
 
@@ -196,8 +204,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            ReadOnlySpan<byte> stringTokenSpan = stringToken.Span.Span;
-            byte typeMarker = stringToken.Span.Span[0];
+            ReadOnlySpan<byte> stringTokenSpan = stringToken.Memory.Span;
+            byte typeMarker = stringTokenSpan[0];
             stringTokenSpan = stringTokenSpan.Slice(start: 1);
 
             int start;

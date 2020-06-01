@@ -8,7 +8,7 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
+    <RootNamespace>Microsoft.Azure.Cosmos.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

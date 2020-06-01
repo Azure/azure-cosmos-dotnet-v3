@@ -36,11 +36,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static Container GetContainerWithIntercepter(
             string databaseId,
             string containerId,
-            Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor)
+            Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
+            bool useGatewayMode = false)
         {
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
                builder =>
                {
+                   if (useGatewayMode)
+                   {
+                       builder.WithConnectionModeGateway();
+                   }
+
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                        transportClient,
                        interceptor));
@@ -93,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private sealed class TransportClientWrapper : TransportClient
+        internal sealed class TransportClientWrapper : TransportClient
         {
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;

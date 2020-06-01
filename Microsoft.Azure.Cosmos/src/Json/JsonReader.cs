@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="buffer">The byte array to read from.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <returns>A concrete JsonReader that can read the supplied byte array.</returns>
-        public static IJsonReader Create(ReadOnlyMemory<byte> buffer, JsonStringDictionary jsonStringDictionary = null)
+        public static IJsonReader Create(ReadOnlyMemory<byte> buffer, IReadOnlyJsonStringDictionary jsonStringDictionary = null)
         {
             if (buffer.IsEmpty)
             {
