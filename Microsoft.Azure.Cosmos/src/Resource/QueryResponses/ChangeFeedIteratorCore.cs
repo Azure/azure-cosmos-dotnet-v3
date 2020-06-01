@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos
     {
         internal FeedRangeInternal FeedRangeInternal;
         internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
-        private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
@@ -83,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.clientContext = container.ClientContext;
-            this.changeFeedOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
+            this.RequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
             {
                 return this.TryInitializeContainerRIdAsync(innerCancellationToken);
@@ -147,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
-                requestOptions: this.changeFeedOptions,
+                requestOptions: this.RequestOptions,
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
                 {

@@ -18,11 +18,11 @@ namespace Microsoft.Azure.Cosmos
     {
         public const string DefaultToStringMessage = "Please see CosmosDiagnostics";
         private readonly object lockObject = new object();
-        private readonly long firstStartRequestTimestamp;
-
-        private long lastStartRequestTimestamp;
-        private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks;
-        private bool received429ResponseSinceLastStartRequest;
+        private readonly long clientSideRequestStatisticsCreateTime;
+        private long? firstStartRequestTimestamp;
+        private long? lastStartRequestTimestamp;
+        private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
+        private bool received429ResponseSinceLastStartRequest = false;
 
         public CosmosClientSideRequestStatistics(CosmosDiagnosticsContext diagnosticsContext = null)
         {
@@ -34,9 +34,7 @@ namespace Microsoft.Azure.Cosmos
             this.RegionsContacted = new HashSet<Uri>();
             this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContextCore.Create(nameof(CosmosClientSideRequestStatistics));
             this.DiagnosticsContext.AddDiagnosticsInternal(this);
-
-            this.firstStartRequestTimestamp = Stopwatch.GetTimestamp();
-            this.lastStartRequestTimestamp = this.firstStartRequestTimestamp;
+            this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
         }
 
         private DateTime RequestStartTimeUtc { get; }
@@ -72,7 +70,19 @@ namespace Microsoft.Azure.Cosmos
 
         public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
 
-        public TimeSpan EstimatedClientDelayFromAllCauses => TimeSpan.FromSeconds((this.lastStartRequestTimestamp - this.firstStartRequestTimestamp) / (double)Stopwatch.Frequency);
+        public TimeSpan EstimatedClientDelayFromAllCauses
+        {
+            get
+            {
+                if (!this.lastStartRequestTimestamp.HasValue || !this.firstStartRequestTimestamp.HasValue)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                long clientDelayInTicks = this.lastStartRequestTimestamp.Value - this.firstStartRequestTimestamp.Value;
+                return TimeSpan.FromSeconds(clientDelayInTicks / (double)Stopwatch.Frequency);
+            }
+        }
 
         public void RecordRequest(DocumentServiceRequest request)
         {
@@ -81,8 +91,15 @@ namespace Microsoft.Azure.Cosmos
                 long timestamp = Stopwatch.GetTimestamp();
                 if (this.received429ResponseSinceLastStartRequest)
                 {
-                    this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks += timestamp - this.lastStartRequestTimestamp;
+                    long lastTimestamp = this.lastStartRequestTimestamp ?? this.clientSideRequestStatisticsCreateTime;
+                    this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks += timestamp - lastTimestamp;
                 }
+
+                if (!this.firstStartRequestTimestamp.HasValue)
+                {
+                    this.firstStartRequestTimestamp = timestamp;
+                }
+
                 this.lastStartRequestTimestamp = timestamp;
                 this.received429ResponseSinceLastStartRequest = false;
             }
