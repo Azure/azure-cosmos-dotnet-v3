@@ -8,11 +8,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using System.IO;
+    using System.Linq.Dynamic;
+    using System.Net;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Newtonsoft.Json;
 
     internal static class TransportClientHelper
     {
@@ -53,6 +57,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                });
 
             return clientWithIntercepter.GetContainer(databaseId, containerId);
+        }
+
+        public static StoreResponse ReturnThrottledStoreResponseOnItemOperation(
+                Uri physicalAddress,
+                ResourceOperation resourceOperation,
+                DocumentServiceRequest request,
+                Guid activityId,
+                string errorMessage)
+        {
+            if (request.ResourceType == ResourceType.Document)
+            {
+                DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+                headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+                headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
+                headers.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, TimeSpan.FromMilliseconds(100).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+                headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)429).ToString(CultureInfo.InvariantCulture));
+
+                StoreResponse storeResponse = new StoreResponse()
+                {
+                    Status = 429,
+                    Headers = headers,
+                    ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes(errorMessage))
+                };
+
+                return storeResponse;
+            }
+
+            return null;
         }
 
         public static void ThrowTransportExceptionOnItemOperation(
@@ -103,6 +135,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
+            private readonly Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult;
 
             internal TransportClientWrapper(
                 TransportClient client,
@@ -115,15 +148,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.interceptor = interceptor;
             }
 
+            internal TransportClientWrapper(
+                TransportClient client,
+                Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult)
+            {
+                Debug.Assert(client != null);
+                Debug.Assert(interceptorWithStoreResult != null);
+
+                this.baseClient = client;
+                this.interceptorWithStoreResult = interceptorWithStoreResult;
+            }
+
             internal override async Task<StoreResponse> InvokeStoreAsync(
                 Uri physicalAddress,
                 ResourceOperation resourceOperation,
                 DocumentServiceRequest request)
             {
-                this.interceptor(physicalAddress, resourceOperation, request);
+                this.interceptor?.Invoke(physicalAddress, resourceOperation, request);
 
-                StoreResponse response = await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
-                return response;
+                if (this.interceptorWithStoreResult != null)
+                {
+                    StoreResponse storeResponse = this.interceptorWithStoreResult(physicalAddress, resourceOperation, request);
+
+                    if (storeResponse != null)
+                    {
+                        return storeResponse;
+                    }
+                }
+
+                return await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
             }
         }
     }
