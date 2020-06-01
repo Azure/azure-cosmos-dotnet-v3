@@ -4433,6 +4433,11 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.String BrazilSoutheast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String CanadaCentral": {
           "Type": "Field",
           "Attributes": [],

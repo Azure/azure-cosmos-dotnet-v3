@@ -228,6 +228,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             if (storeResponseStatistics.StoreResult != null)
             {
+                this.jsonWriter.WritePropertyName("ActivityId");
+                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult.ActivityId);
+
                 this.jsonWriter.WritePropertyName("StoreResult");
                 this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult.ToString());
             }
