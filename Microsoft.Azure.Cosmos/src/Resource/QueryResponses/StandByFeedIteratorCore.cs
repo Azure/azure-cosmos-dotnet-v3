@@ -154,19 +154,18 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
+            return this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                containerInternal: this.container,
+                cosmosContainerCore: this.container,
                 requestEnricher: request =>
                 {
                     ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
                     ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
                     ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
-                responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
                 diagnosticsContext: null,
