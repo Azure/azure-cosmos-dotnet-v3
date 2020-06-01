@@ -111,12 +111,12 @@
         [Benchmark]
         public async Task ChangeFeedBaselineAsync()
         {
-            ChangeFeedIteratorCore feedIterator = ((ContainerCore)this.container)
+            FeedIterator feedIterator = ((ContainerCore)this.container)
                 .GetChangeFeedStreamIterator(
                     changeFeedRequestOptions: new ChangeFeedRequestOptions()
                     {
                         StartTime = DateTime.MinValue.ToUniversalTime()
-                    }) as ChangeFeedIteratorCore;
+                    });
 
             while (feedIterator.HasMoreResults)
             {

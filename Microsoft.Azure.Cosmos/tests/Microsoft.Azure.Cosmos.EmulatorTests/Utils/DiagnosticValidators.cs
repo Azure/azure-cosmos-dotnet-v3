@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(stats.RegionsContacted);
             Assert.IsNotNull(stats.FailedReplicas);
 
-            if (stats.DiagnosticsContext.FailedRequestCount == 0)
+            if (stats.DiagnosticsContext.GetFailedRequestCount() == 0)
             {
                 Assert.AreEqual(stats.EstimatedClientDelayFromAllCauses, TimeSpan.Zero);
                 Assert.AreEqual(stats.EstimatedClientDelayFromRateLimiting, TimeSpan.Zero);
