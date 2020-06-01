@@ -665,6 +665,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ConclictsTests(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            //Read All
+            List<ConflictProperties> results = await this.ToListAsync(
+                container.Conflicts.GetConflictQueryStreamIterator,
+                container.Conflicts.GetConflictQueryIterator<ConflictProperties>,
+                null,
+                CosmosBasicQueryTests.RequestOptions
+            );
+
+            // There is no way to simulate MM conflicts on the emulator but the list operations should work
+        }
+
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);
         private delegate FeedIterator QueryStream(string querytext, string continuationToken, QueryRequestOptions options);
 
