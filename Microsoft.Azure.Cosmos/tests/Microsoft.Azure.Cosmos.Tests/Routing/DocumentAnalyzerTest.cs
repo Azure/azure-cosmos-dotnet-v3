@@ -2,14 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests.Routing
+namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -272,13 +271,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { 5.5 }, true), partitionKeyValue);
         }
 
-        /// <summary>
-        /// Extract valid bool Partition Key value.
-        /// </summary>
         [TestMethod]
         public void TestExtractSpecialTypePartitionKey()
         {
-            foreach ((string, object, Func<object, object>) tuple in new (string, object, Func<object, object>)[]
+            foreach ((string fieldName, object value, Func<object, object> toJsonValue) in new (string, object, Func<object, object>)[]
             {
                 ("Guid", Guid.NewGuid(), val => val.ToString()),
                 ("DateTime", DateTime.Now, val =>
@@ -301,25 +297,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             })
             {
                 SpecialPropertyDocument sd = new SpecialPropertyDocument();
-                sd.GetType().GetProperty(tuple.Item1).SetValue(sd, tuple.Item2);
+                sd.GetType().GetProperty(fieldName).SetValue(sd, value);
 
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
                 {
                     Kind = PartitionKind.Hash,
                     Paths = new Collection<string>
                     {
-                        "/" + tuple.Item1
+                        "/" + fieldName
                     }
                 };
 
                 PartitionKeyInternal partitionKeyValue = DocumentAnalyzer
                     .ExtractPartitionKeyValue(
-                        Document.FromObject(sd),
+                        Document.FromObject(
+                            sd,
+                            new JsonSerializerSettings()
+                            {
+                                
+                            }),
                         partitionKeyDefinition);
 
                 Assert.AreEqual(
-                    PartitionKeyInternal.FromObjectArray(new object[] { tuple.Item3(tuple.Item2) }, strict: true),
-                    partitionKeyValue);
+                    PartitionKeyInternal.FromObjectArray(new object[] { toJsonValue(value) }, strict: true),
+                    partitionKeyValue,
+                    message: $"fieldName: {fieldName}, value: {value}, valueToJson: {toJsonValue(value)}.");
             }
         }
 
