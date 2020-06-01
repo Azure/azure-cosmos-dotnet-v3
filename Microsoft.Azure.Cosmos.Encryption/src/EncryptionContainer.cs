@@ -409,7 +409,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override TransactionalBatch CreateTransactionalBatch(
             PartitionKey partitionKey)
         {
-            return this.container.CreateTransactionalBatch(partitionKey);
+            return new EncryptionTransactionalBatch(
+                this.container.CreateTransactionalBatch(partitionKey),
+                this.encryptor,
+                this.cosmosSerializer);
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
