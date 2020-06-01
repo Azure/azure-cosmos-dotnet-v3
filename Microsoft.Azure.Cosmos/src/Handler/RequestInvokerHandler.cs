@@ -117,56 +117,63 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(diagnosticsContext));
             }
 
-            HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
-            RequestMessage request = new RequestMessage(
-                    method,
-                    resourceUri,
-                    diagnosticsContext)
+            try
             {
-                OperationType = operationType,
-                ResourceType = resourceType,
-                RequestOptions = requestOptions,
-                Content = streamPayload,
-            };
+                HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
+                RequestMessage request = new RequestMessage(
+                        method,
+                        resourceUri,
+                        diagnosticsContext)
+                {
+                    OperationType = operationType,
+                    ResourceType = resourceType,
+                    RequestOptions = requestOptions,
+                    Content = streamPayload,
+                };
 
-            if (partitionKey.HasValue)
-            {
-                if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
+                if (partitionKey.HasValue)
                 {
-                    throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
-                }
-                else if (partitionKey.Value.IsNone)
-                {
-                    using (diagnosticsContext.CreateScope("GetNonePkValue"))
+                    if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                     {
-                        try
+                        throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                    }
+                    else if (partitionKey.Value.IsNone)
+                    {
+                        using (diagnosticsContext.CreateScope("GetNonePkValue"))
                         {
-                            PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
-                            request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
-                        }
-                        catch (DocumentClientException dce)
-                        {
-                            return dce.ToCosmosResponseMessage(request);
-                        }
-                        catch (CosmosException ce)
-                        {
-                            return ce.ToCosmosResponseMessage(request);
+                            try
+                            {
+                                PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
+                                request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                            }
+                            catch (DocumentClientException dce)
+                            {
+                                return dce.ToCosmosResponseMessage(request);
+                            }
+                            catch (CosmosException ce)
+                            {
+                                return ce.ToCosmosResponseMessage(request);
+                            }
                         }
                     }
+                    else
+                    {
+                        request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
+                    }
                 }
-                else
+
+                if (operationType == OperationType.Upsert)
                 {
-                    request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
+                    request.Headers.IsUpsert = bool.TrueString;
                 }
-            }
 
-            if (operationType == OperationType.Upsert)
+                requestEnricher?.Invoke(request);
+                return await this.SendAsync(request, cancellationToken);
+            }
+            catch (OperationCanceledException oe)
             {
-                request.Headers.IsUpsert = bool.TrueString;
+                throw new CosmosOperationCanceledException(oe, diagnosticsContext);
             }
-
-            requestEnricher?.Invoke(request);
-            return await this.SendAsync(request, cancellationToken);
         }
 
         internal static HttpMethod GetHttpMethod(

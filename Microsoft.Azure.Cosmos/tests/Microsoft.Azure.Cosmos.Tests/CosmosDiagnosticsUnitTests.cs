@@ -167,7 +167,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     numberOfReadRegions: 1,
                     itemLSN: 5,
                     sessionToken: null,
-                    usingLocalLSN: true));
+                    usingLocalLSN: true,
+                    activityId: Guid.NewGuid().ToString()));
 
             string statistics = clientSideRequestStatistics.ToString();
             Assert.AreEqual("Please see CosmosDiagnostics", statistics);
