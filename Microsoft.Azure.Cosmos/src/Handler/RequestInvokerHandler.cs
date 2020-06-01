@@ -112,9 +112,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             // DEVNOTE: Non-Item operations need to be refactored to always pass
             // the diagnostic context in. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1276
+            bool disposeOfDiagnostics = false;
             if (diagnosticsContext == null)
             {
-                throw new ArgumentNullException(nameof(diagnosticsContext));
+                diagnosticsContext = this.client.ClientContext.CreateDiagnosticContext(
+                    nameof(RequestInvokerHandler),
+                    requestOptions);
+                disposeOfDiagnostics = true;
             }
 
             try
@@ -173,6 +177,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
             catch (OperationCanceledException oe)
             {
                 throw new CosmosOperationCanceledException(oe, diagnosticsContext);
+            }
+            finally
+            {
+                if (disposeOfDiagnostics)
+                {
+                    diagnosticsContext.Dispose();
+                }
             }
         }
 
