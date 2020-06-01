@@ -29,19 +29,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
 
-        public async override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
-            using (ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken))
             {
+                ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
                     Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
                         diagnosticsContext,
                         cancellationToken);
-
+                        
                     return new DecryptedResponseMessage(responseMessage, decryptedContent);
                 }
 

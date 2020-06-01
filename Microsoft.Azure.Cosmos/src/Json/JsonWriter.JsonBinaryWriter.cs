@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     return ReadOnlyMemory<byte>.Empty;
                 }
 
-                return this.binaryWriter.Buffer.Slice(
+                return this.binaryWriter.BufferAsMemory.Slice(
                     0,
                     this.binaryWriter.Position);
             }
@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Single-property object
 
                     // Move the buffer back but leave one byte for the typemarker
-                    Memory<byte> buffer = this.binaryWriter.Buffer;
+                    Span<byte> buffer = this.binaryWriter.BufferAsSpan;
                     buffer.Slice(payloadIndex).CopyTo(buffer.Slice(typeMarkerIndex + JsonBinaryEncoding.TypeMarkerLength));
 
                     // Move the cursor back
@@ -450,12 +450,12 @@ namespace Microsoft.Azure.Cosmos.Json
                         }
 
                         // Move the buffer forward
-                        Memory<byte> buffer = this.binaryWriter.Buffer;
+                        Span<byte> buffer = this.binaryWriter.BufferAsSpan;
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.TwoByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.TwoByteCount : 0);
-                        Memory<byte> payload = buffer.Slice(payloadIndex, payloadLength);
-                        Memory<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
+                        Span<byte> payload = buffer.Slice(payloadIndex, payloadLength);
+                        Span<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
                         payload.CopyTo(newPayloadStart);
 
                         // Move the cursor back
@@ -491,12 +491,12 @@ namespace Microsoft.Azure.Cosmos.Json
                         }
 
                         // Move the buffer forward
-                        Memory<byte> buffer = this.binaryWriter.Buffer;
+                        Span<byte> buffer = this.binaryWriter.BufferAsSpan;
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.FourByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.FourByteCount : 0);
-                        Memory<byte> payload = buffer.Slice(payloadIndex, payloadLength);
-                        Memory<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
+                        Span<byte> payload = buffer.Slice(payloadIndex, payloadLength);
+                        Span<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
                         payload.CopyTo(newPayloadStart);
 
                         // Move the cursor back
@@ -675,7 +675,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void Write(byte value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(byte));
-                    this.Cursor.Span[0] = value;
+                    this.buffer[this.Position] = value;
                     this.Position++;
                 }
 
@@ -687,49 +687,49 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void Write(short value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(short));
-                    BinaryPrimitives.WriteInt16LittleEndian(this.Cursor.Span, value);
+                    BinaryPrimitives.WriteInt16LittleEndian(this.Cursor, value);
                     this.Position += sizeof(short);
                 }
 
                 public void Write(ushort value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(ushort));
-                    BinaryPrimitives.WriteUInt16LittleEndian(this.Cursor.Span, value);
+                    BinaryPrimitives.WriteUInt16LittleEndian(this.Cursor, value);
                     this.Position += sizeof(ushort);
                 }
 
                 public void Write(int value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(int));
-                    BinaryPrimitives.WriteInt32LittleEndian(this.Cursor.Span, value);
+                    BinaryPrimitives.WriteInt32LittleEndian(this.Cursor, value);
                     this.Position += sizeof(int);
                 }
 
                 public void Write(uint value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(uint));
-                    BinaryPrimitives.WriteUInt32LittleEndian(this.Cursor.Span, value);
+                    BinaryPrimitives.WriteUInt32LittleEndian(this.Cursor, value);
                     this.Position += sizeof(uint);
                 }
 
                 public void Write(long value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(long));
-                    BinaryPrimitives.WriteInt64LittleEndian(this.Cursor.Span, value);
+                    BinaryPrimitives.WriteInt64LittleEndian(this.Cursor, value);
                     this.Position += sizeof(long);
                 }
 
                 public void Write(float value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(float));
-                    MemoryMarshal.Write<float>(this.Cursor.Span, ref value);
+                    MemoryMarshal.Write<float>(this.Cursor, ref value);
                     this.Position += sizeof(float);
                 }
 
                 public void Write(double value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(double));
-                    MemoryMarshal.Write<double>(this.Cursor.Span, ref value);
+                    MemoryMarshal.Write<double>(this.Cursor, ref value);
                     this.Position += sizeof(double);
                 }
 
@@ -737,7 +737,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     int sizeOfGuid = Marshal.SizeOf(Guid.Empty);
                     this.EnsureRemainingBufferSpace(sizeOfGuid);
-                    MemoryMarshal.Write<Guid>(this.Cursor.Span, ref value);
+                    MemoryMarshal.Write<Guid>(this.Cursor, ref value);
                     this.Position += sizeOfGuid;
                 }
             }
