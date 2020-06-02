@@ -403,9 +403,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
                 int seconds;
-                if (value is DateTime)
+                if (value is DateTime time)
                 {
-                    seconds = DateTimeToEpoch((DateTime)value);
+                    seconds = DateTimeToEpoch(time);
                 }
                 else
                 {

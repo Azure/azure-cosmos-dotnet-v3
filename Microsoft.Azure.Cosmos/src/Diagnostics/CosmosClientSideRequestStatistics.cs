@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
         public const string DefaultToStringMessage = "Please see CosmosDiagnostics";
         private readonly object lockObject = new object();
         private readonly long clientSideRequestStatisticsCreateTime;
+
         private long? firstStartRequestTimestamp;
         private long? lastStartRequestTimestamp;
         private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
@@ -79,8 +80,9 @@ namespace Microsoft.Azure.Cosmos
                     return TimeSpan.Zero;
                 }
 
-                long clientDelayInTicks = this.lastStartRequestTimestamp.Value - this.firstStartRequestTimestamp.Value;
-                return TimeSpan.FromSeconds(clientDelayInTicks / (double)Stopwatch.Frequency);
+                // Stopwatch ticks are not equivalent to DateTime ticks
+                long clientDelayInStopWatchTicks = this.lastStartRequestTimestamp.Value - this.firstStartRequestTimestamp.Value;
+                return TimeSpan.FromSeconds(clientDelayInStopWatchTicks / (double)Stopwatch.Frequency);
             }
         }
 
