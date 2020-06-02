@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Dictionary used for user string encoding.
             /// </summary>
-            private readonly JsonStringDictionary jsonStringDictionary;
+            private readonly IReadOnlyJsonStringDictionary jsonStringDictionary;
 
             /// <summary>
             /// For binary there is no end of token marker in the actual binary, but the JsonReader interface still needs to surface ObjectEndToken and ArrayEndToken.
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public JsonBinaryReader(
                 ReadOnlyMemory<byte> buffer,
-                JsonStringDictionary jsonStringDictionary = null)
+                IReadOnlyJsonStringDictionary jsonStringDictionary = null)
             {
                 if (buffer.IsEmpty)
                 {

@@ -192,5 +192,12 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="jsonNavigatorNode">The node to materialize the value from.</param>
         /// <returns>The materialized value.</returns>
         public T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode);
+
+        /// <summary>
+        /// Writes a <see cref="IJsonNavigatorNode"/> to a <see cref="IJsonWriter"/>.
+        /// </summary>
+        /// <param name="jsonNavigatorNode">The <see cref="IJsonNavigatorNode"/> to write.</param>
+        /// <param name="jsonWriter">The <see cref="IJsonWriter"/> to write to.</param>
+        void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter);
     }
 }

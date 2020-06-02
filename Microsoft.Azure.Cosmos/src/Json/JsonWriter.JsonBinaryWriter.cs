@@ -64,12 +64,14 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
             /// <param name="jsonStringDictionary">The JSON string dictionary used for user string encoding.</param>
+            /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
             /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
             public JsonBinaryWriter(
                 JsonStringDictionary jsonStringDictionary = null,
+                int initialCapacity = 256,
                 bool serializeCount = false)
             {
-                this.binaryWriter = new JsonBinaryMemoryWriter();
+                this.binaryWriter = new JsonBinaryMemoryWriter(initialCapacity);
                 this.bufferedContexts = new Stack<BeginOffsetAndCount>();
                 this.serializeCount = serializeCount;
                 this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
@@ -126,31 +128,9 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteFieldName(string fieldName)
-            {
-                int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
-                Span<byte> utf8Buffer = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(fieldName, utf8Buffer);
-                Utf8Span utf8FieldName = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
-
-                this.WriteFieldNameOrString(isFieldName: true, utf8FieldName);
-            }
-
-            /// <inheritdoc />
             public override void WriteFieldName(Utf8Span fieldName)
             {
                 this.WriteFieldNameOrString(isFieldName: true, fieldName);
-            }
-
-            /// <inheritdoc />
-            public override void WriteStringValue(string value)
-            {
-                int utf8Length = Encoding.UTF8.GetByteCount(value);
-                Span<byte> utf8Buffer = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(value, utf8Buffer);
-                Utf8Span utf8StringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
-
-                this.WriteFieldNameOrString(isFieldName: false, utf8StringValue);
             }
 
             /// <inheritdoc />
@@ -313,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            protected override void WriteRawJsonToken(
+            public override void WriteRawJsonToken(
                 JsonTokenType jsonTokenType,
                 ReadOnlySpan<byte> rawJsonToken)
             {
