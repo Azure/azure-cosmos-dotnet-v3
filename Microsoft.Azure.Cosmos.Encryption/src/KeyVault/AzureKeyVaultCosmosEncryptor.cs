@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// it using the Azure Key Vault key provided during the creation of each Data Encryption Key.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public sealed class AzureKeyVaultCosmosEncryptor : Encryptor, IDisposable
+    public sealed class AzureKeyVaultCosmosEncryptor : Encryptor
     {
         private bool isDisposed = false;
 
@@ -90,7 +90,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
         }
 
-        private void Dispose(bool disposing)
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
         {
             if (disposing && !this.isDisposed)
             {
@@ -98,15 +99,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.cosmosDekProvider.Dispose();
                 this.isDisposed = true;
             }
-        }
-
-        /// <summary>
-        /// Dispose of unmanaged resources.
-        /// </summary>
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            this.Dispose(true);
         }
     }
 }

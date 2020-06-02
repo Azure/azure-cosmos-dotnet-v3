@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testKeyWrapProvider, 
                 new DekCacheOptions(
                     dekPropertiesTimeToLive: null,
-                    cleanupIterationDelay: TimeSpan.FromSeconds(1),
+                    cleanupInterval: TimeSpan.FromSeconds(1),
                     cleanupBufferTimeAfterExpiry: TimeSpan.FromSeconds(0)));
             TestEncryptor encryptor = new TestEncryptor(dekProvider);
             CosmosClient client = TestCommon.CreateCosmosClient();
@@ -1217,7 +1217,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         // This class is same as CosmosEncryptor but copied so as to induce decryption failure easily for testing.
-        private class TestEncryptor : Encryption.Encryptor
+        private class TestEncryptor : Encryptor
         {
             public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
             public bool FailDecryption { get; set; }
@@ -1264,6 +1264,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     cancellationToken);
 
                 return dek.EncryptData(plainText);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                throw new NotImplementedException();
             }
         }
     }

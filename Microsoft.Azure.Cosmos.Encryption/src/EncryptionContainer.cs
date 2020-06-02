@@ -13,13 +13,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal sealed class EncryptionContainer : Container, IDisposable
+    internal sealed class EncryptionContainer : Container
     {
         private readonly Container container;
         private readonly CosmosSerializer cosmosSerializer;
         internal Encryptor encryptor;
         internal CosmosResponseFactory responseFactory;
-        private bool isDisposed = false;
 
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
@@ -50,8 +49,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
@@ -91,8 +88,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
@@ -142,8 +137,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.DeleteItemAsync<T>(
                 id,
                 partitionKey,
@@ -157,8 +150,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.DeleteItemStreamAsync(
                 id,
                 partitionKey,
@@ -172,8 +163,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             using (ResponseMessage responseMessage = await this.ReadItemStreamAsync(
                 id,
                 partitionKey,
@@ -190,8 +179,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("ReadItemStream"))
             {
@@ -224,8 +211,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             if (id == null)
             {
                 throw new ArgumentNullException(nameof(id));
@@ -273,8 +258,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             if (id == null)
             {
                 throw new ArgumentNullException(nameof(id));
@@ -334,8 +317,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
@@ -372,8 +353,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
@@ -424,8 +403,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override TransactionalBatch CreateTransactionalBatch(
             PartitionKey partitionKey)
         {
-            this.ThrowIfDisposed();
-
             return new EncryptionTransactionalBatch(
                 this.container.CreateTransactionalBatch(partitionKey),
                 this.encryptor,
@@ -436,8 +413,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.DeleteContainerAsync(
                 requestOptions,
                 cancellationToken);
@@ -447,8 +422,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.DeleteContainerStreamAsync(
                 requestOptions,
                 cancellationToken);
@@ -459,8 +432,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
-            this.ThrowIfDisposed();
-
             return this.container.GetChangeFeedEstimatorBuilder(
                 processorName,
                 estimationDelegate,
@@ -472,8 +443,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             return this.container.GetItemLinqQueryable<T>(
                 allowSynchronousQueryExecution,
                 continuationToken,
@@ -485,8 +454,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
                     queryDefinition,
@@ -500,8 +467,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
                     queryText,
@@ -514,8 +479,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.ReadContainerAsync(
                 requestOptions,
                 cancellationToken);
@@ -525,8 +488,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.ReadContainerStreamAsync(
                 requestOptions,
                 cancellationToken);
@@ -535,8 +496,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.ReadThroughputAsync(cancellationToken);
         }
 
@@ -544,8 +503,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.ReadThroughputAsync(
                 requestOptions,
                 cancellationToken);
@@ -556,8 +513,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.ReplaceContainerAsync(
                 containerProperties,
                 requestOptions,
@@ -569,8 +524,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.ReplaceContainerStreamAsync(
                 containerProperties,
                 requestOptions,
@@ -582,8 +535,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.ReplaceThroughputAsync(
                 throughput,
                 requestOptions,
@@ -595,8 +546,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             Action<DecryptionResult> decryptionResultHandler;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
@@ -621,8 +570,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             Action<DecryptionResult> decryptionResultHandler;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
@@ -648,7 +595,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             // TODO: need client SDK to expose underlying feedIterator to make decryption work for this scenario
             // Issue #1484
-            this.ThrowIfDisposed();
+            
             return this.container.GetChangeFeedProcessorBuilder(
                 processorName,
                 onChangesDelegate);
@@ -659,8 +606,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.ReplaceThroughputAsync(
                 throughputProperties,
                 requestOptions,
@@ -670,8 +615,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.GetFeedRangesAsync(cancellationToken);
         }
 
@@ -679,8 +622,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             Action<DecryptionResult> decryptionResultHandler;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
@@ -703,8 +644,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             Action<DecryptionResult> decryptionResultHandler;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
@@ -727,8 +666,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             Action<DecryptionResult> decryptionResultHandler;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
             {
@@ -751,8 +688,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
                     continuationToken,
@@ -764,8 +699,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
                     feedRange,
@@ -777,8 +710,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
                     partitionKey,
@@ -790,8 +721,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
 
@@ -801,8 +730,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             Action<DecryptionResult> decryptionResultHandler;
             if (requestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
             {
@@ -829,8 +756,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
-
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
                     feedRange,
@@ -882,33 +807,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 input.Position = 0;
                 return input;
             }
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(EncryptionContainer));
-            }
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing && !this.isDisposed)
-            {
-                if (this.encryptor is IDisposable encryptor)
-                {
-                    encryptor.Dispose();
-                }
-
-                this.isDisposed = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            this.Dispose(true);
         }
     }
 }

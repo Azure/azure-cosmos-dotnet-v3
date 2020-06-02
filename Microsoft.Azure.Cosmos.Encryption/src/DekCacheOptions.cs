@@ -7,39 +7,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
 
     /// <summary>
-    /// DekCache configurable options.
+    /// Struct to specify configurable options for Data Encryption Key cache (DekCache).
     /// </summary>
     public readonly struct DekCacheOptions
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DekCacheOptions"/> struct.
         /// </summary>
-        /// <param name="dekPropertiesTimeToLive"></param>
-        /// <param name="cleanupIterationDelay"></param>
-        /// <param name="cleanupBufferTimeAfterExpiry"></param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        /// <param name="cleanupInterval">Time interval between successive runs of cleanup task.</param>
+        /// <param name="cleanupBufferTimeAfterExpiry">Additional buffer time before cleaning up raw DEK.</param>
         public DekCacheOptions(
             TimeSpan? dekPropertiesTimeToLive = null,
-            TimeSpan? cleanupIterationDelay = null,
+            TimeSpan? cleanupInterval = null,
             TimeSpan? cleanupBufferTimeAfterExpiry = null)
         {
             this.DekPropertiesTimeToLive = dekPropertiesTimeToLive;
-            this.CleanupIterationDelay = cleanupIterationDelay;
+            this.CleanupInterval = cleanupInterval;
             this.CleanupBufferTimeAfterExpiry = cleanupBufferTimeAfterExpiry;
         }
 
         /// <summary>
         /// Time to live for DEK properties before having to refresh.
         /// </summary>
-        internal TimeSpan? DekPropertiesTimeToLive { get; }
+        /// <remarks>Set ServerPropertiesExpiryUtc (time to live before expiring) for <see cref="CachedDekProperties"/></remarks>
+        public TimeSpan? DekPropertiesTimeToLive { get; }
 
         /// <summary>
-        /// Iteration delay for job cleaning up expired raw DEK from cache.
+        /// Time interval between successive runs of cleanup task.
         /// </summary>
-        internal TimeSpan? CleanupIterationDelay { get; }
+        public TimeSpan? CleanupInterval { get; }
 
         /// <summary>
         /// Additional buffer time before cleaning up raw DEK.
         /// </summary>
-        internal TimeSpan? CleanupBufferTimeAfterExpiry { get; }
+        public TimeSpan? CleanupBufferTimeAfterExpiry { get; }
     }
 }

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Default implementation for a provider to get a data encryption key - wrapped keys are stored in a Cosmos DB container.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public sealed class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider, IDisposable
+    public sealed class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider
     {
         private const string ContainerPartitionKeyPath = "/id";
 
@@ -116,22 +116,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        private void Dispose(bool disposing)
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
         {
             if (disposing && !this.isDisposed)
             {
                 this.DekCache.ExpiredRawDekCleaner.Dispose();
                 this.isDisposed = true;
             }
-        }
-
-        /// <summary>
-        /// Dispose of unmanaged resources.
-        /// </summary>
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            this.Dispose(true);
         }
     }
 }

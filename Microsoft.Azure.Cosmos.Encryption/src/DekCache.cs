@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 this.ExpiredRawDekCleaner = new ExpiredRawDekCleaner(
-                    dekCacheOptions.Value.CleanupIterationDelay,
+                    dekCacheOptions.Value.CleanupInterval,
                     dekCacheOptions.Value.CleanupBufferTimeAfterExpiry);
             }
             else

@@ -11,18 +11,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class ExpiredRawDekCleaner : IDisposable
     {
         private readonly PriorityQueue<InMemoryRawDek> inMemoryRawDeks;
-        private readonly TimeSpan iterationDelay = TimeSpan.FromSeconds(60);
+        private readonly TimeSpan iterationInterval = TimeSpan.FromSeconds(60);
         private readonly TimeSpan bufferTimeAfterExpiry = TimeSpan.FromSeconds(60);
         private readonly Timer timer;
         private bool isDisposed = false;
 
         public ExpiredRawDekCleaner(
-            TimeSpan? iterationDelay = null,
+            TimeSpan? iterationInterval = null,
             TimeSpan? bufferTimeAfterExpiry = null)
         {
-            if (iterationDelay.HasValue)
+            if (iterationInterval.HasValue)
             {
-                this.iterationDelay = iterationDelay.Value;
+                if (iterationInterval.Value < TimeSpan.FromSeconds(1))
+                {
+                    throw new ArgumentOutOfRangeException("Time interval between successive iterations should be at least 1 seconds.");
+                }
+
+                this.iterationInterval = iterationInterval.Value;
             }
 
             if (bufferTimeAfterExpiry.HasValue)
@@ -34,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 new InMemoryRawDekExpiryComparer(),
                 isSynchronized: true);
 
-            this.timer = new Timer(this.iterationDelay.TotalMilliseconds);
+            this.timer = new Timer(this.iterationInterval.TotalMilliseconds);
             this.timer.Elapsed += this.RunCleanup;
             this.timer.AutoReset = true;
             this.timer.Enabled = true;
@@ -49,11 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     break;
                 }
 
-                if (inMemoryRawDek.DataEncryptionKey is IDisposable encryptionKey)
-                {
-                    encryptionKey.Dispose();
-                }
-
+                inMemoryRawDek.DataEncryptionKey.Dispose();
                 this.inMemoryRawDeks.Dequeue();
             }
         }
