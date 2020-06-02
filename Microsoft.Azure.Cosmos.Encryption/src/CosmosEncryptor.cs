@@ -87,11 +87,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (disposing && !this.isDisposed)
             {
-                if (this.DataEncryptionKeyProvider is IDisposable dataEncryptionKeyProvider)
-                {
-                    dataEncryptionKeyProvider.Dispose();
-                }
-
+                this.DataEncryptionKeyProvider.Dispose();
                 this.isDisposed = true;
             }
         }
