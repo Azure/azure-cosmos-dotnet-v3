@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, TimeSpan.FromMilliseconds(100).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-                headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)429).ToString(CultureInfo.InvariantCulture));
+                headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture));
 
                 StoreResponse storeResponse = new StoreResponse()
                 {
@@ -121,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
+                headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture));
 
                 ForbiddenException forbiddenException = new ForbiddenException(
                     errorMessage,
