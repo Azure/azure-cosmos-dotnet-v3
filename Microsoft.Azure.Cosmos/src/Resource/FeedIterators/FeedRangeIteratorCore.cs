@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
                         isMaxInclusive: false));
             }
 
-            return FeedRangeEPK.ForCompleteRange();
+            return FeedRangeEPK.ForFullRange();
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
