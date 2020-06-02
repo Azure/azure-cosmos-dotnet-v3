@@ -4,21 +4,98 @@
 
 This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to https://azure.microsoft.com/services/cosmos-db/.
 
-```csharp
-CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
-CosmosDatabase database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
-CosmosContainer container = await database.CreateContainerIfNotExistsAsync(
-    "MyContainerName",
-    "/partitionKeyPath",
-    400);
+## Getting started
 
-dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working" };
-ItemResponse<dynamic> response = await container.CreateItemAsync(testItem);
+### Install the package
+
+Install the Microsoft Azure Cosmos DB .NET SDK V4 with [NuGet][nuget_package]:
+
+```PowerShell
+dotnet add package Azure.Cosmos --version 1.0.0-preview3
 ```
 
-## Install via [Nuget.org](https://www.nuget.org/packages/Azure.Cosmos/)
+### Prerequisites
 
-`Install-Package Azure.Cosmos`
+* An [Azure subscription][azure_sub].
+* An existing Azure Cosmos account or the [Azure Cosmos Emulator][cosmos_emulator].
+
+### Create an Azure Cosmos account
+
+Form Recognizer supports both [multi-service and single-service access][cognitive_resource_portal]. Create a Cognitive Services resource if you plan to access multiple cognitive services under a single endpoint/key. For Form Recognizer access only, create a Form Recognizer resource.
+
+You can create either resource using:
+
+* [Azure Portal][cosmos_resource_portal].
+* [Azure CLI][cosmos_resource_cli].
+* [Azure ARM][cosmos_resource_arm].
+
+Below is an example of how you can create an Azure Cosmos resource using the CLI:
+
+```PowerShell
+# Create a new resource group to hold the resource -
+# if using an existing resource group, skip this step
+az group create --name <your-resource-name> --location <location>
+```
+
+```PowerShell
+# Create Azure Cosmos account
+az cosmosdb create \
+    --resource-group <your-resource-name> \
+    --name <account-name> \
+    --kind GlobalDocumentDB \
+    --locations regionName="<location>" failoverPriority=0 \
+    --default-consistency-level "Session"
+```
+
+For more information about creating the resource see [here][cosmos_resource_cli].
+
+### Authentication
+
+In order to interact with the Azure Cosmos service, you'll need to create an instance of the `CosmosClient` class. You will need an **endpoint** and an **API key**, or the **connection string**.
+
+#### Get the connection string
+
+You can obtain the connection string from the resource information in the [Azure Portal][azure_portal].
+
+Alternatively, you can use the [Azure CLI][azure_cli] snippet below:
+
+```PowerShell
+az cosmosdb keys list \
+    -n <your-resource-name> \
+    -g <your-resource-group-name> \
+    --type connection-strings
+```
+
+#### Create CosmosCLient with the connection string
+
+Once you have the value for the connection string, you can create the `CosmosClient`:
+
+```csharp
+CosmosClient client = new CosmosClient("<connection-string>");
+```
+
+## Key concepts
+
+### CosmosClient
+
+`CosmosClient` provides operations for:
+
+* Working with Azure Cosmos databases. They include creating and listing through the `CosmosDatabase` type.
+* Obtaining the Azure Cosmos account information.
+
+### CosmosDatabase
+
+`CosmosDatabase` provides operations for:
+
+* Working with Azure Cosmos containers. They include creating, modifying, deleting, and listing through the `CosmosContainer` type.
+* Working with Azure Cosmos users. Users define access scope and permissions. They include creating, modifying, deleting, and listing through the `CosmosUser` type.
+
+### CosmosContainer
+
+`CosmosContainer` provides operations for:
+
+* Working with items. Items are the conceptually the user's data. They include creating, modifying, deleting, and listing (including query) items.
+* Working with scripts. Scripts are defined as Stored Procedures, User Defined Functions, and  
 
 ## Useful links
 
@@ -59,3 +136,13 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
+<!-- LINKS -->
+[nuget_package]: https://www.nuget.org/packages/Azure.Cosmos
+[cosmos_emulator]: https://docs.microsoft.com/azure/cosmos-db/local-emulator
+[cosmos_resource_portal]: https://docs.microsoft.com/azure/cosmos-db/create-cosmosdb-resources-portal
+[cosmos_resource_cli]: https://docs.microsoft.com/azure/cosmos-db/scripts/cli/sql/create
+[cosmos_resource_arm]: https://docs.microsoft.com/azure/cosmos-db/quick-create-template
+
+[azure_cli]: https://docs.microsoft.com/cli/azure
+[azure_sub]: https://azure.microsoft.com/free/
+[azure_portal]: https://portal.azure.com
