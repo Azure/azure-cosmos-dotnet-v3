@@ -101,7 +101,7 @@ The following section provides several code snippets illustrating common pattern
 
 * [Creating a database and container](#creating-a-database-and-container)
 * [Creating an item](#creating-an-item)
-* [Read an item](#read-an-item)
+* [Reading an item](#reading-an-item)
 * [Optimistic concurrency](#optimistic-concurrency)
 * [Query items](#query-items)
 * [Executing a stored procedure](#executing-a-stored-procedure)
