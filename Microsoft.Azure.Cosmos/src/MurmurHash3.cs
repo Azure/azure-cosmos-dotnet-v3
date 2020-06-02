@@ -2,9 +2,10 @@
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core
+namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Numerics;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -19,6 +20,90 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     /// </summary>
     internal static class MurmurHash3
     {
+        #region Hash32
+        public static unsafe uint Hash32(ReadOnlySpan<byte> span, uint seed)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                throw new InvalidOperationException("Host machine needs to be little endian.");
+            }
+
+            const uint c1 = 0xcc9e2d51;
+            const uint c2 = 0x1b873593;
+
+            uint h1 = seed;
+
+            // body
+            unchecked
+            {
+                fixed (byte* bytes = span)
+                {
+                    for (int i = 0; i < span.Length - 3; i += 4)
+                    {
+                        uint k1 = *(uint*)(bytes + i);
+
+                        k1 *= c1;
+                        k1 = MurmurHash3.RotateLeft32(k1, 15);
+                        k1 *= c2;
+
+                        h1 ^= k1;
+                        h1 = MurmurHash3.RotateLeft32(h1, 13);
+                        h1 = (h1 * 5) + 0xe6546b64;
+                    }
+
+                    {
+                        // tail
+                        uint k = 0;
+
+                        switch (span.Length & 3)
+                        {
+                            case 3:
+                                k ^= (uint)bytes[span.Length - 1] << 16;
+                                k ^= (uint)bytes[span.Length - 2] << 8;
+                                k ^= (uint)bytes[span.Length - 3];
+                                break;
+
+                            case 2:
+                                k ^= (uint)bytes[span.Length - 1] << 8;
+                                k ^= (uint)bytes[span.Length - 2];
+                                break;
+
+                            case 1:
+                                k ^= (uint)bytes[span.Length - 1];
+                                break;
+                        }
+
+                        k *= c1;
+                        k = MurmurHash3.RotateLeft32(k, 15);
+                        k *= c2;
+                        h1 ^= k;
+                    }
+                }
+
+                // finalization
+                h1 ^= (uint)span.Length;
+                h1 ^= h1 >> 16;
+                h1 *= 0x85ebca6b;
+                h1 ^= h1 >> 13;
+                h1 *= 0xc2b2ae35;
+                h1 ^= h1 >> 16;
+            }
+
+            return h1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint RotateLeft32(uint n, int numBits)
+        {
+            if (numBits >= 32)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(numBits)} must be less than 32");
+            }
+
+            return (n << numBits) | (n >> (32 - numBits));
+        }
+        #endregion
+        #region Hash128
         /// <summary>MurmurHash3 128-bit implementation.</summary>
         /// <param name="value">The data to hash.</param>
         /// <param name="seed">The seed to initialize with.</param>
@@ -65,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             if (!BitConverter.IsLittleEndian)
             {
-                throw new InvalidOperationException("Host machine needs to little endian.");
+                throw new InvalidOperationException("Host machine needs to be little endian.");
             }
 
             const ulong c1 = 0x87c37b91114253d5;
@@ -236,5 +321,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             return (n << numBits) | (n >> (64 - numBits));
         }
+        #endregion
     }
 }
