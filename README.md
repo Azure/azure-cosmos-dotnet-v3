@@ -66,34 +66,42 @@ az cosmosdb keys list \
 
 #### Create CosmosClient with the connection string
 
-Once you have the value for the connection string, you can create the `CosmosClient`:
+Once you have the value for the connection string, you can create the `CosmosClient`. In the below example, we are also setting the application region to make sure we are connecting to the closest Azure Cosmos endpoint:
 
 ```csharp
-CosmosClient client = new CosmosClient("<connection-string>");
+CosmosClientOptions clientOptions = new CosmosClientOptions();
+clientOptions.ApplicationRegion = "West US";
+CosmosClient client = new CosmosClient("<connection-string>", clientOptions);
 ```
 
 ## Key concepts
 
+The following image shows the hierarchy of different entities in an Azure Cosmos account:
+
+![Azure Cosmos DB resource model](https://docs.microsoft.com/azure/cosmos-db/media/databases-containers-items/cosmos-entities.png)
+
 ### CosmosClient
 
-`CosmosClient` provides operations for:
+`CosmosClient` is the client:
 
 * Working with Azure Cosmos databases. They include creating and listing through the `CosmosDatabase` type.
 * Obtaining the Azure Cosmos account information.
 
-### CosmosDatabase
+### Database
 
-`CosmosDatabase` provides operations for:
+A database is the unit of management for a set of Azure Cosmos containers. It maps to the `CosmosDatabase` class and supports:
 
 * Working with Azure Cosmos containers. They include creating, modifying, deleting, and listing through the `CosmosContainer` type.
 * Working with Azure Cosmos users. Users define access scope and permissions. They include creating, modifying, deleting, and listing through the `CosmosUser` type.
 
-### CosmosContainer
+### Containers
 
-`CosmosContainer` provides operations for:
+An Azure Cosmos container is the unit of scalability both for provisioned throughput and storage. A container is horizontally partitioned and then replicated across multiple regions. It maps to the `CosmosContainer` class and supports:
 
 * Working with items. Items are the conceptually the user's data. They include creating, modifying, deleting, and listing (including query) items.
 * Working with scripts. Scripts are defined as Stored Procedures, User Defined Functions, and Triggers.
+
+For more details visit [here][cosmos_resourcemodel].
 
 ## Examples
 
@@ -113,13 +121,6 @@ Azure Cosmos DB uses partitioning to scale individual containers in a database t
 ```csharp
 CosmosDatabase database = await client.CreateDatabaseIfNotExistsAsync("my-database");
 CosmosContainer container = await database.CreateContainerIfNotExistsAsync("my-container", "/partitionKey", throughput: 1000);
-
-string queryText = "SELECT * FROM c where c.id == 'my-container'";
-QueryDefinition queryDefinition = new QueryDefinition(queryText);
-await foreach(CosmosContainerProperties properties in this.cosmosDatabase.GetContainerQueryResultsAsync<ContainerProperties>(queryDefinition))
-{
-    Console.WriteLine(containerProperties.Id);
-}
 ```
 
 ### Creating an item
@@ -335,6 +336,7 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 [cosmos_partition]: https://docs.microsoft.com/azure/cosmos-db/partitioning-overview#choose-partitionkey
 [cosmos_optimistic]: https://docs.microsoft.com/azure/cosmos-db/database-transactions-optimistic-concurrency#optimistic-concurrency-control
 [cosmos_scripts]: https://docs.microsoft.com/azure/cosmos-db/how-to-write-stored-procedures-triggers-udfs
+[cosmos_resourcemodel]: https://docs.microsoft.com/azure/cosmos-db/databases-containers-items
 
 [azure_cli]: https://docs.microsoft.com/cli/azure
 [azure_sub]: https://azure.microsoft.com/free/
