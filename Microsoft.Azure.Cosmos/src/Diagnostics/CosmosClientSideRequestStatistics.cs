@@ -80,8 +80,9 @@ namespace Microsoft.Azure.Cosmos
                     return TimeSpan.Zero;
                 }
 
-                long clientDelayInTicks = this.lastStartRequestTimestamp.Value - this.firstStartRequestTimestamp.Value;
-                return TimeSpan.FromSeconds(clientDelayInTicks / (double)Stopwatch.Frequency);
+                // Stopwatch ticks are not equivalent to DateTime ticks
+                long clientDelayInStopWatchTicks = this.lastStartRequestTimestamp.Value - this.firstStartRequestTimestamp.Value;
+                return TimeSpan.FromSeconds(clientDelayInStopWatchTicks / (double)Stopwatch.Frequency);
             }
         }
 
