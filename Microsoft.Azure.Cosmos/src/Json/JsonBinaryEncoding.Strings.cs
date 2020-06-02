@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 jsonStringDictionary,
                 out UtfAllString encodedStringValue))
             {
-                value = encodedStringValue.Utf8String;
+                value = encodedStringValue.Utf8EscapedString;
                 return true;
             }
 

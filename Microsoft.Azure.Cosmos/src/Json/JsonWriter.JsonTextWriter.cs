@@ -34,8 +34,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonTextWriter : JsonWriter
         {
-            private const int MaxStackAlloc = 4 * 1024;
-
             private const byte ValueSeperatorToken = (byte)':';
             private const byte MemberSeperatorToken = (byte)',';
             private const byte ObjectStartToken = (byte)'{';
@@ -99,10 +97,10 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Initializes a new instance of the JsonTextWriter class.
             /// </summary>
-            public JsonTextWriter()
+            public JsonTextWriter(int initialCapacity = 256)
             {
                 this.firstValue = true;
-                this.jsonTextMemoryWriter = new JsonTextMemoryWriter();
+                this.jsonTextMemoryWriter = new JsonTextMemoryWriter(initialCapacity);
             }
 
             /// <inheritdoc />
@@ -162,17 +160,6 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override unsafe void WriteFieldName(string fieldName)
-            {
-                int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
-                Span<byte> utf8Buffer = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(fieldName, utf8Buffer);
-                Utf8Span utf8FieldName = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
-
-                this.WriteFieldName(utf8FieldName);
-            }
-
-            /// <inheritdoc />
             public override void WriteFieldName(Utf8Span fieldName)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
@@ -182,21 +169,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = true;
 
                 this.jsonTextMemoryWriter.Write(PropertyStartToken);
+
                 this.WriteEscapedString(fieldName);
+
                 this.jsonTextMemoryWriter.Write(PropertyEndToken);
 
                 this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
-            }
-
-            /// <inheritdoc />
-            public override void WriteStringValue(string value)
-            {
-                int utf8Length = Encoding.UTF8.GetByteCount(value);
-                Span<byte> utf8Buffer = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
-                Encoding.UTF8.GetBytes(value, utf8Buffer);
-                Utf8Span utf8Value = Utf8Span.UnsafeFromUtf8BytesNoValidation(utf8Buffer);
-
-                this.WriteStringValue(utf8Value);
             }
 
             /// <inheritdoc />
@@ -206,7 +184,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.PrefixMemberSeparator();
 
                 this.jsonTextMemoryWriter.Write(StringStartToken);
+
                 this.WriteEscapedString(value);
+
                 this.jsonTextMemoryWriter.Write(StringEndToken);
             }
 
@@ -339,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            protected override void WriteRawJsonToken(
+            public override void WriteRawJsonToken(
                 JsonTokenType jsonTokenType,
                 ReadOnlySpan<byte> rawJsonToken)
             {
