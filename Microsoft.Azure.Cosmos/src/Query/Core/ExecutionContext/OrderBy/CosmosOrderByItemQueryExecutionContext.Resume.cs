@@ -400,7 +400,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                         cmp = continuationRid.Document.CompareTo(rid.Document);
                         if (producer.CosmosQueryExecutionInfo.ReverseRidEnabled)
                         {
-                            cmp = -cmp;
+                            // If reverse rid is enabled on the backend then fallback to the old way of doing it.
+                            if (sortOrders[0] == SortOrder.Descending)
+                            {
+                                cmp = -cmp;
+                            }
+                        }
+                        else
+                        {
+                            // Go by the whatever order the index wants
+                            if (producer.CosmosQueryExecutionInfo.ReverseIndexScan)
+                            {
+                                cmp = -cmp;
+                            }
                         }
 
                         // We might have passed the item due to deletions and filters.

@@ -15,9 +15,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.ReverseIndexScan = reverseIndexScan;
         }
 
+        /// <summary>
+        /// Whether or not the backend has the reverseRid feature enabled.
+        /// </summary>
         [JsonProperty("reverseRidEnabled")]
         public bool ReverseRidEnabled { get; }
 
+        /// <summary>
+        /// Indicates the direction of the index scan.
+        /// </summary>
         [JsonProperty("reverseIndexScan")]
         public bool ReverseIndexScan { get; }
     }
