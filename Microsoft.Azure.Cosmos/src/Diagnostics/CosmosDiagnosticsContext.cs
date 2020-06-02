@@ -11,25 +11,27 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
     /// </summary>
-    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
+    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>, IDisposable
     {
         public abstract DateTime StartUtc { get; }
 
-        public abstract int TotalRequestCount { get; protected set; }
+        public abstract string UserAgent { get; }
 
-        public abstract int FailedRequestCount { get; protected set; }
-
-        public abstract string UserAgent { get; protected set; }
+        public abstract string OperationName { get; }
 
         internal abstract CosmosDiagnostics Diagnostics { get; }
 
-        internal abstract IDisposable GetOverallScope();
+        public abstract int GetTotalRequestCount();
+
+        public abstract int GetFailedRequestCount();
 
         internal abstract IDisposable CreateScope(string name);
 
         internal abstract IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler);
 
-        internal abstract TimeSpan GetClientElapsedTime();
+        internal abstract TimeSpan GetRunningElapsedTime();
+
+        internal abstract bool TryGetTotalElapsedTime(out TimeSpan timeSpan);
 
         internal abstract bool IsComplete();
 
@@ -47,8 +49,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 
-        internal abstract void SetSdkUserAgent(string userAgent);
-
         public abstract IEnumerator<CosmosDiagnosticsInternal> GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -56,9 +56,24 @@ namespace Microsoft.Azure.Cosmos
             return this.GetEnumerator();
         }
 
-        internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
+        internal static CosmosDiagnosticsContext Create(
+            RequestOptions requestOptions)
         {
-            return requestOptions?.DiagnosticContextFactory?.Invoke() ?? new CosmosDiagnosticsContextCore();
+            return requestOptions?.DiagnosticContextFactory?.Invoke() ??
+                new CosmosDiagnosticsContextCore();
         }
+
+        internal static CosmosDiagnosticsContext Create(
+            string operationName,
+            RequestOptions requestOptions,
+            string userAgentString)
+        {
+            return requestOptions?.DiagnosticContextFactory?.Invoke() ??
+                new CosmosDiagnosticsContextCore(
+                    operationName,
+                    userAgentString);
+        }
+
+        public abstract void Dispose();
     }
 }

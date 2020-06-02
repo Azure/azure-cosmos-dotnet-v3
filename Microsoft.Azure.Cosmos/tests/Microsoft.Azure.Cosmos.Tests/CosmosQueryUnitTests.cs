@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage, diagnosticsContext: diagnostics);
             
-            diagnostics.GetOverallScope().Dispose();
+            diagnostics.Dispose();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         cosmosException: cosmosException,

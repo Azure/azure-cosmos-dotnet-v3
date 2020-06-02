@@ -134,8 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnostics.GetOverallScope())
+            using (CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions))
             {
                 QueryResponseCore responseCore;
                 try

@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The Cosmos database id</param>
         /// <remarks>
         /// <see cref="Database"/> proxy reference doesn't guarantee existence.
-        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/> 
+        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(string, int?, RequestOptions, CancellationToken)"/> 
         /// or <see cref="CosmosClient.CreateDatabaseIfNotExistsAsync(string, int?, RequestOptions, CancellationToken)"/>, before
         /// operating on it.
         /// </remarks>
@@ -382,12 +382,21 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseAsync(
-                databaseProperties: databaseProperties,
-                throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateDatabaseAsync),
+                requestOptions,
+                (diagnostics) =>
+                {
+                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
+
+                return this.CreateDatabaseInternalAsync(
+                    databaseProperties: databaseProperties,
+                    throughputProperties: throughputProperties,
+                    requestOptions: requestOptions,
+                    diagnosticsContext: diagnostics,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         /// <summary>
@@ -418,12 +427,19 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseAsync(
-                databaseProperties: databaseProperties,
-                throughputProperties: throughputProperties,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateDatabaseAsync),
+                requestOptions,
+                (diagnostics) =>
+                {
+                    DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                    return this.CreateDatabaseInternalAsync(
+                        diagnosticsContext: diagnostics,
+                        databaseProperties: databaseProperties,
+                        throughputProperties: throughputProperties,
+                        requestOptions: requestOptions,
+                        cancellationToken: cancellationToken);
+                });
         }
 
         /// <summary>
@@ -468,27 +484,39 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return TaskHelper.RunInlineIfNeededAsync(async () =>
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateDatabaseIfNotExistsAsync),
+                requestOptions,
+                async (diagnostics) =>
             {
                 // Doing a Read before Create will give us better latency for existing databases
                 DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-                Database database = this.GetDatabase(id);
-                ResponseMessage readResponse = await database.ReadStreamAsync(
+                DatabaseCore database = (DatabaseCore)this.GetDatabase(id);
+                using (ResponseMessage readResponse = await database.ReadStreamAsync(
                     requestOptions: requestOptions,
-                    cancellationToken: cancellationToken);
-
-                if (readResponse.StatusCode != HttpStatusCode.NotFound)
+                    cancellationToken: cancellationToken))
                 {
-                    return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
+                    if (readResponse.StatusCode != HttpStatusCode.NotFound)
+                    {
+                        return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
+                    }
+
+                    diagnostics.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
                 }
 
-                ResponseMessage createResponse = await this.CreateDatabaseStreamAsync(databaseProperties, throughputProperties, requestOptions, cancellationToken);
-
-                // Merge the diagnostics with the first read request.
-                createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
-                if (createResponse.StatusCode != HttpStatusCode.Conflict)
+                using (ResponseMessage createResponse = await this.CreateDatabaseStreamInternalAsync(
+                    diagnostics,
+                    databaseProperties,
+                    throughputProperties,
+                    requestOptions,
+                    cancellationToken))
                 {
-                    return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
+                    if (createResponse.StatusCode != HttpStatusCode.Conflict)
+                    {
+                        return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
+                    }
+
+                    diagnostics.AddDiagnosticsInternal(createResponse.DiagnosticsContext);
                 }
 
                 // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -496,7 +524,7 @@ namespace Microsoft.Azure.Cosmos
                 ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
                     requestOptions: requestOptions,
                     cancellationToken: cancellationToken);
-                readResponseAfterConflict.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
+                diagnostics.AddDiagnosticsInternal(readResponseAfterConflict.DiagnosticsContext);
                 return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
             });
         }
@@ -538,8 +566,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            ThroughputProperties throughputProperties = throughput.HasValue
-                ? ThroughputProperties.CreateManualThroughput(throughput.Value) : null;
+            ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
 
             return this.CreateDatabaseIfNotExistsAsync(
                 id,
@@ -586,10 +613,10 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorInlineCore<T>(
-                this.GetDatabaseQueryIteratorHelper<T>(
-                    queryDefinition,
-                    continuationToken,
-                    requestOptions));
+               this.GetDatabaseQueryIteratorHelper<T>(
+                   queryDefinition,
+                   continuationToken,
+                   requestOptions));
         }
 
         /// <summary>
@@ -771,14 +798,19 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(databaseProperties));
             }
 
-            this.ClientContext.ValidateResource(databaseProperties.Id);
-            Stream streamPayload = this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties);
-
-            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseStreamInternalAsync(
-                streamPayload,
-                throughput,
-                requestOptions,
-                cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                 nameof(CreateDatabaseStreamAsync),
+                 requestOptions,
+                 (diagnostics) =>
+                 {
+                     this.ClientContext.ValidateResource(databaseProperties.Id);
+                     return this.CreateDatabaseStreamInternalAsync(
+                         diagnostics,
+                         databaseProperties,
+                         ThroughputProperties.CreateManualThroughput(throughput),
+                         requestOptions,
+                         cancellationToken);
+                 });
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
@@ -835,21 +867,27 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(databaseProperties));
             }
 
-            this.ClientContext.ValidateResource(databaseProperties.Id);
-            Stream streamPayload = this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties);
-
-            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseStreamInternalAsync(
-                streamPayload,
-                throughputProperties,
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateDatabaseIfNotExistsAsync),
                 requestOptions,
-                cancellationToken));
+                (diagnostics) =>
+                {
+                    this.ClientContext.ValidateResource(databaseProperties.Id);
+                    return this.CreateDatabaseStreamInternalAsync(
+                        diagnostics,
+                        databaseProperties,
+                        throughputProperties,
+                        requestOptions,
+                        cancellationToken);
+                });
         }
 
-        internal async Task<DatabaseResponse> CreateDatabaseAsync(
-                    DatabaseProperties databaseProperties,
-                    ThroughputProperties throughputProperties,
-                    RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<DatabaseResponse> CreateDatabaseInternalAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            DatabaseProperties databaseProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.DatabaseRootUri,
@@ -860,63 +898,30 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
-                diagnosticsContext: null,
-                cancellationToken: cancellationToken);
-
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), response);
-        }
-
-        internal async Task<DatabaseResponse> CreateDatabaseAsync(
-                    DatabaseProperties databaseProperties,
-                    int? throughput = null,
-                    RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            ResponseMessage response = await this.CreateDatabaseStreamInternalAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
-                throughput: throughput,
-                requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), response);
         }
 
         private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
-               Stream streamPayload,
-               int? throughput,
-               RequestOptions requestOptions,
-               CancellationToken cancellationToken)
+            CosmosDiagnosticsContext diagnosticsContext,
+            DatabaseProperties databaseProperties,
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
         {
-            ThroughputProperties throughputProperties = null;
-            if (throughput.HasValue)
-            {
-                throughputProperties = ThroughputProperties.CreateManualThroughput(throughput.Value);
-            }
-
-            return this.CreateDatabaseStreamInternalAsync(
-                streamPayload,
-                throughputProperties,
-                requestOptions,
-                cancellationToken);
-
-        }
-
-        private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
-                Stream streamPayload,
-                ThroughputProperties throughputProperties,
-                RequestOptions requestOptions,
-                CancellationToken cancellationToken)
-        {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationAsync(
                 resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
-                cosmosContainerCore: null,
+                containerInternal: null,
                 partitionKey: null,
-                streamPayload: streamPayload,
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
-                diagnosticsContext: null,
+                responseCreator: (response) => response,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
