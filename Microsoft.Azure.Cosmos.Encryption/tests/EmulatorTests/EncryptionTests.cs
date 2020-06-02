@@ -149,11 +149,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             TestKeyWrapProvider testKeyWrapProvider = new TestKeyWrapProvider();
             CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(
-                testKeyWrapProvider, 
-                new DekCacheOptions(
-                    dekPropertiesTimeToLive: null,
-                    cleanupInterval: TimeSpan.FromSeconds(1),
-                    cleanupBufferTimeAfterExpiry: TimeSpan.FromSeconds(0)));
+                testKeyWrapProvider,
+                dekPropertiesTimeToLive: null,
+                cleanupIterationInterval: TimeSpan.FromSeconds(1),
+                cleanupBufferTimeAfterExpiry: TimeSpan.FromSeconds(0));
             TestEncryptor encryptor = new TestEncryptor(dekProvider);
             CosmosClient client = TestCommon.CreateCosmosClient();
             Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());

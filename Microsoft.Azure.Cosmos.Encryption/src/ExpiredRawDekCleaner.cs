@@ -11,11 +11,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class ExpiredRawDekCleaner : IDisposable
     {
         private readonly PriorityQueue<InMemoryRawDek> inMemoryRawDeks;
-        private readonly TimeSpan iterationInterval = TimeSpan.FromSeconds(60);
-        private readonly TimeSpan bufferTimeAfterExpiry = TimeSpan.FromSeconds(60);
+        private readonly TimeSpan iterationInterval = TimeSpan.FromMinutes(5);
+        private readonly TimeSpan bufferTimeAfterExpiry = TimeSpan.FromSeconds(30);
         private readonly Timer timer;
         private bool isDisposed = false;
 
+        /// <summary>
+        /// Kick-start a background task which runs periodically to delete (dispose) raw DEK from memory after client specified TimeToLive expires.
+        /// </summary>
+        /// <param name="iterationInterval">Time interval between successive runs of cleanup task.</param>
+        /// <param name="bufferTimeAfterExpiry">Additional buffer time before cleaning up raw DEK.</param>
         public ExpiredRawDekCleaner(
             TimeSpan? iterationInterval = null,
             TimeSpan? bufferTimeAfterExpiry = null)
@@ -24,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (iterationInterval.Value < TimeSpan.FromSeconds(1))
                 {
-                    throw new ArgumentOutOfRangeException("Time interval between successive iterations should be at least 1 seconds.");
+                    throw new ArgumentOutOfRangeException("Minimum time interval between successive iterations is 1 second.");
                 }
 
                 this.iterationInterval = iterationInterval.Value;

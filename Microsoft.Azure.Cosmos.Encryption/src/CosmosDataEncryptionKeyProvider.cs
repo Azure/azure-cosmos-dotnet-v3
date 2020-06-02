@@ -51,13 +51,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
-        /// <param name="dekCacheOptions">Options for DekCache properties.</param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        /// <param name="cleanupIterationInterval">Time interval between successive runs of cleanup task. <see cref="ExpiredRawDekCleaner.iterationInterval"/></param>
+        /// <param name="cleanupBufferTimeAfterExpiry">Additional buffer time before cleaning up raw DEK. <see cref="ExpiredRawDekCleaner.bufferTimeAfterExpiry"/></param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            DekCacheOptions? dekCacheOptions = null)
+            TimeSpan? dekPropertiesTimeToLive = null,
+            TimeSpan? cleanupIterationInterval = null,
+            TimeSpan? cleanupBufferTimeAfterExpiry = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
+            DekCacheOptions dekCacheOptions = new DekCacheOptions(
+                dekPropertiesTimeToLive,
+                cleanupIterationInterval,
+                cleanupBufferTimeAfterExpiry);
             this.DekCache = new DekCache(dekCacheOptions);
         }
 
