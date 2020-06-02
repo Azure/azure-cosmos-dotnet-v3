@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption
+namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
 {
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Encryption.KeyVault;
 
     /// <summary>
     /// Provides the default implementation for client-side encryption for Cosmos DB.
@@ -26,11 +26,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public AzureKeyVaultCosmosEncryptor(
             string clientId, 
-            string certificateThumbprint)
+            X509Certificate2 certificate)
         {
             EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(
-                clientId, 
-                certificateThumbprint);
+                clientId,
+                certificate);
 
             this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
