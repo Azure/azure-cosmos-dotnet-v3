@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos
                 using (diagnosticsContext)
                 using (diagnosticsContext.CreateScope("SynchronizationContext"))
                 {
-                    return await task(diagnosticsContext).ConfigureAwait(false);
+                    return await task(diagnosticsContext);
                 }
             });
         }

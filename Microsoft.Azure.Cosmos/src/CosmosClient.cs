@@ -493,6 +493,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                 DatabaseCore database = (DatabaseCore)this.GetDatabase(id);
                 using (ResponseMessage readResponse = await database.ReadStreamAsync(
+                    diagnosticsContext: diagnostics,
                     requestOptions: requestOptions,
                     cancellationToken: cancellationToken))
                 {
@@ -500,8 +501,6 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
                     }
-
-                    diagnostics.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
                 }
 
                 using (ResponseMessage createResponse = await this.CreateDatabaseStreamInternalAsync(
@@ -515,16 +514,15 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
                     }
-
-                    diagnostics.AddDiagnosticsInternal(createResponse.DiagnosticsContext);
                 }
 
                 // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
                 // so for the remaining ones we should do a Read instead of throwing Conflict exception
                 ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
+                    diagnosticsContext: diagnostics,
                     requestOptions: requestOptions,
                     cancellationToken: cancellationToken);
-                diagnostics.AddDiagnosticsInternal(readResponseAfterConflict.DiagnosticsContext);
+
                 return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
             });
         }
