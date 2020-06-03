@@ -214,10 +214,6 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CuratedDocsBenchmark.cs</LastGenOutput>
     </None>
-    <None Update="Json\JsonMicroBenchmarks.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>JsonMicroBenchmarks.cs</LastGenOutput>
-    </None>
     <None Update="Json\Utf8vsUtf16StringBenchmark.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Utf8vsUtf16StringBenchmark.cs</LastGenOutput>
@@ -243,11 +239,6 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>CuratedDocsBenchmark.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Json\JsonMicroBenchmarks.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>JsonMicroBenchmarks.tt</DependentUpon>
     </Compile>
     <Compile Update="Json\Utf8vsUtf16StringBenchmark.cs">
       <DesignTime>True</DesignTime>
