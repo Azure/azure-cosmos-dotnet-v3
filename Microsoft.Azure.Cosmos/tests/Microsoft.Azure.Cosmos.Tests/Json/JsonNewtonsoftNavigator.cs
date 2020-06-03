@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return false;
         }
 
-        public override T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode)
+        public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
         {
             throw new NotImplementedException();
         }

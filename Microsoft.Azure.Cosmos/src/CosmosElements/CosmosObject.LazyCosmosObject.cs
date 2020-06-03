@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -126,10 +127,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
             }
 
-            public override T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer = null)
+            public override T Materialize<T>()
             {
-                jsonSerializer ??= DefaultSerializer;
-                return this.jsonNavigator.Materialize<T>(jsonSerializer, this.jsonNavigatorNode);
+                IJsonReader cosmosDBReader = this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
+                Newtonsoft.Json.JsonReader newtonsoftReader = new CosmosDBToNewtonsoftReader(cosmosDBReader);
+                return DefaultSerializer.Deserialize<T>(newtonsoftReader);
             }
         }
     }

@@ -37,7 +37,9 @@
             switch (serializationFormat)
             {
                 case PocoSerializationFormat.Text:
-                    reader = new CosmosDBToNewtonsoftReader(this.peoplePayload.Text);
+                    reader = new CosmosDBToNewtonsoftReader(
+                        Cosmos.Json.JsonReader.Create(
+                            this.peoplePayload.Text));
                     break;
 
                 case PocoSerializationFormat.NewtonsoftText:
@@ -52,13 +54,16 @@
                     break;
 
                 case PocoSerializationFormat.Binary:
-                    reader = new CosmosDBToNewtonsoftReader(this.peoplePayload.Binary);
+                    reader = new CosmosDBToNewtonsoftReader(
+                        Cosmos.Json.JsonReader.Create(
+                            this.peoplePayload.Binary));
                     break;
 
                 case PocoSerializationFormat.BinaryWithDictionaryEncoding:
                     reader = new CosmosDBToNewtonsoftReader(
-                        this.peoplePayload.BinaryWithDictionaryEncoding.binary,
-                        this.peoplePayload.BinaryWithDictionaryEncoding.dictionary);
+                        Cosmos.Json.JsonReader.Create(
+                            this.peoplePayload.BinaryWithDictionaryEncoding.binary,
+                            this.peoplePayload.BinaryWithDictionaryEncoding.dictionary));
                     break;
 
                 default:

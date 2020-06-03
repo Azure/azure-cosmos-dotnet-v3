@@ -185,13 +185,11 @@ namespace Microsoft.Azure.Cosmos.Json
         bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
 
         /// <summary>
-        /// Materializes the contents of the <see cref="IJsonNavigatorNode"/> into the specided type.
+        /// Creates an <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.
         /// </summary>
-        /// <typeparam name="T">The type that represents the schema of what is to be materialized.</typeparam>
-        /// <param name="jsonSerializer">The serializer to deserialize with.</param>
-        /// <param name="jsonNavigatorNode">The node to materialize the value from.</param>
-        /// <returns>The materialized value.</returns>
-        public T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode);
+        /// <param name="jsonNavigatorNode">The node to create a reader from..</param>
+        /// <returns>The <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.</returns>
+        public IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode);
 
         /// <summary>
         /// Writes a <see cref="IJsonNavigatorNode"/> to a <see cref="IJsonWriter"/>.

@@ -70,15 +70,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
 
-        public virtual T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer = null)
+        public virtual T Materialize<T>()
         {
-            jsonSerializer ??= DefaultSerializer;
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
             this.WriteTo(jsonWriter);
+
             ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
+
             Cosmos.Json.IJsonReader cosmosJsonReader = Cosmos.Json.JsonReader.Create(buffer);
             Newtonsoft.Json.JsonReader newtonsoftReader = new CosmosDBToNewtonsoftReader(cosmosJsonReader);
-            return jsonSerializer.Deserialize<T>(newtonsoftReader);
+
+            return DefaultSerializer.Deserialize<T>(newtonsoftReader);
         }
 
         public static class Monadic

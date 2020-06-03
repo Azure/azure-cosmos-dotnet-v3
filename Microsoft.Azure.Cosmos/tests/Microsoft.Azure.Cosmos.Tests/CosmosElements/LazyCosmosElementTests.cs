@@ -119,6 +119,11 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                     && (this.Children.Length == person.Children.Length)
                     && this.Children.SequenceEqual(person.Children);
             }
+
+            public override int GetHashCode()
+            {
+                return 0;
+            }
         }
 
         private class LazilyDeserializedPerson

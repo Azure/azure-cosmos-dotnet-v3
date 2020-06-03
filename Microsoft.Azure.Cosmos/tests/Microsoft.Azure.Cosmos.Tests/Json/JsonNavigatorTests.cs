@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using System.Security.AccessControl;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class JsonNavigatorTests
@@ -536,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         Assert.IsTrue(tokensFromNavigator.SequenceEqual(tokensFromReader));
 
                         // Test materialize
-                        JToken materializedToken = jsonNavigator.Materialize<JToken>(new Newtonsoft.Json.JsonSerializer(), rootNode);
+                        JToken materializedToken = CosmosElement.Dispatch(jsonNavigator, rootNode).Materialize<JToken>();
 
                         try
                         {

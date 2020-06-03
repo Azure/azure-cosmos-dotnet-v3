@@ -515,22 +515,15 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
-            public override T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode)
+            public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonSerializer == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonSerializer));
-                }
-
                 if (!(jsonNavigatorNode is BinaryNavigatorNode binaryNavigatorNode))
                 {
                     throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(BinaryNavigatorNode)}");
                 }
 
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
-                Cosmos.Json.IJsonReader cosmosJsonReader = JsonReader.Create(JsonSerializationFormat.Binary, buffer, this.jsonStringDictionary);
-                Newtonsoft.Json.JsonReader newtonsoftReader = new CosmosDBToNewtonsoftReader(cosmosJsonReader);
-                return jsonSerializer.Deserialize<T>(newtonsoftReader);
+                return JsonReader.Create(JsonSerializationFormat.Binary, buffer, this.jsonStringDictionary);
             }
 
             private static bool IsStringOrNested(BinaryNavigatorNode binaryNavigatorNode)

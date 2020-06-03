@@ -282,6 +282,6 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <inheritdoc />
-        public abstract T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode);
+        public abstract IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode);
     }
 }

@@ -443,12 +443,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            public override T Materialize<T>(Newtonsoft.Json.JsonSerializer jsonSerializer, IJsonNavigatorNode jsonNavigatorNode)
+            public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonSerializer == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonSerializer));
-                }
                 if (!(jsonNavigatorNode is JsonTextNavigatorNode jsonTextNavigatorNode))
                 {
                     throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(JsonTextNavigatorNode)}.");
@@ -471,9 +467,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonTextNavigatorNode)} type: {jsonTextNavigatorNode.GetType()}."),
                 };
 
-                Cosmos.Json.IJsonReader cosmosReader = JsonReader.Create(JsonSerializationFormat.Text, buffer);
-                Newtonsoft.Json.JsonReader newtonsoftReader = new CosmosDBToNewtonsoftReader(cosmosReader);
-                return jsonSerializer.Deserialize<T>(newtonsoftReader);
+                return JsonReader.Create(JsonSerializationFormat.Text, buffer);
             }
 
             #region JsonTextParser
