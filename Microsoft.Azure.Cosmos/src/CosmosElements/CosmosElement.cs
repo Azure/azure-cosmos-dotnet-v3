@@ -135,7 +135,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
-            CosmosBinary cosmosBinary = CosmosBinary.CreateFromBuffer(default);
             return CosmosElement.CreateFromBuffer<CosmosElement>(buffer);
         }
 
