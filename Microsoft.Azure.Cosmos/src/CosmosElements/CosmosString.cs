@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosString : CosmosElement, IEquatable<CosmosString>
+    abstract partial class CosmosString : CosmosElement, IEquatable<CosmosString>, IComparable<CosmosString>
     {
         private const uint HashSeed = 3163568842;
 
@@ -80,6 +80,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             hash = MurmurHash3.Hash32(this.Value, hash);
 
             return (int)hash;
+        }
+
+        public int CompareTo(CosmosString cosmosString)
+        {
+            return string.CompareOrdinal(this.Value, cosmosString.Value);
         }
 
         public static CosmosString Create(

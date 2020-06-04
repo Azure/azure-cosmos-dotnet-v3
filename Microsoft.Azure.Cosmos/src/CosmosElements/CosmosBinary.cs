@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosBinary : CosmosElement, IEquatable<CosmosBinary>
+    abstract partial class CosmosBinary : CosmosElement, IEquatable<CosmosBinary>, IComparable<CosmosBinary>
     {
         private const uint HashSeed = 1577818695;
 
@@ -81,6 +81,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             uint hash = HashSeed;
             hash = MurmurHash3.Hash32(this.Value.Span, hash);
             return (int)hash;
+        }
+
+        public int CompareTo(CosmosBinary cosmosBinary)
+        {
+            return this.Value.Span.SequenceCompareTo(cosmosBinary.Value.Span);
         }
 
         public static CosmosBinary Create(

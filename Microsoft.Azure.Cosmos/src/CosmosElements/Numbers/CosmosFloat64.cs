@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class CosmosFloat64 : CosmosNumber, IEquatable<CosmosFloat64>
+    abstract partial class CosmosFloat64 : CosmosNumber, IEquatable<CosmosFloat64>, IComparable<CosmosFloat64>
     {
         protected CosmosFloat64()
             : base(CosmosNumberType.Float64)
@@ -36,6 +36,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             }
 
             cosmosNumberVisitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor)
+        {
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            return cosmosNumberVisitor.Visit(this);
         }
 
         public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
@@ -58,6 +68,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return this.Equals(cosmosFloat64);
         }
 
+        public bool Equals(CosmosFloat64 cosmosFloat64)
+        {
+            return this.GetValue() == cosmosFloat64.GetValue();
+        }
+
         public override int GetHashCode()
         {
             uint hash = 470975939;
@@ -66,9 +81,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return (int)hash;
         }
 
-        public bool Equals(CosmosFloat64 cosmosFloat64)
+        public int CompareTo(CosmosFloat64 cosmosFloat64)
         {
-            return this.GetValue() == cosmosFloat64.GetValue();
+            return this.GetValue().CompareTo(cosmosFloat64.GetValue());
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)

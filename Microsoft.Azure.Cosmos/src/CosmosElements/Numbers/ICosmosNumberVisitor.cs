@@ -2,12 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 234
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 249
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
-    using System;
-
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented

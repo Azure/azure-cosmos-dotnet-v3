@@ -50,7 +50,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public int CompareTo(CosmosElement other)
         {
-            throw new NotImplementedException();
+            int thisTypeOrder = this.Accept(CosmosElementToTypeOrder.Singleton);
+            int otherTypeOrder = this.Accept(CosmosElementToTypeOrder.Singleton);
+
+            if (thisTypeOrder != otherTypeOrder)
+            {
+                return thisTypeOrder.CompareTo(otherTypeOrder);
+            }
+
+            // The types are the same so dispatch to each compare operator
+            return this.Accept(CosmosElementWithinTypeComparer.Singleton, other);
         }
 
         public abstract void WriteTo(IJsonWriter jsonWriter);
@@ -266,6 +275,56 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public static bool operator ==(CosmosElement a, CosmosElement b) => a.Equals(b);
 
         public static bool operator !=(CosmosElement a, CosmosElement b) => !(a == b);
+
+        private sealed class CosmosElementToTypeOrder : ICosmosElementVisitor<int>
+        {
+            public static readonly CosmosElementToTypeOrder Singleton = new CosmosElementToTypeOrder();
+
+            private CosmosElementToTypeOrder()
+            {
+            }
+
+            public int Visit(CosmosNull cosmosNull) => 0;
+
+            public int Visit(CosmosBoolean cosmosBoolean) => 1;
+
+            public int Visit(CosmosNumber cosmosNumber) => 2;
+
+            public int Visit(CosmosString cosmosString) => 3;
+
+            public int Visit(CosmosArray cosmosArray) => 4;
+
+            public int Visit(CosmosObject cosmosObject) => 5;
+
+            public int Visit(CosmosGuid cosmosGuid) => 6;
+
+            public int Visit(CosmosBinary cosmosBinary) => 7;
+        }
+
+        private sealed class CosmosElementWithinTypeComparer : ICosmosElementVisitor<CosmosElement, int>
+        {
+            public static readonly CosmosElementWithinTypeComparer Singleton = new CosmosElementWithinTypeComparer();
+
+            private CosmosElementWithinTypeComparer()
+            {
+            }
+
+            public int Visit(CosmosArray cosmosArray, CosmosElement input) => cosmosArray.CompareTo((CosmosArray)input);
+
+            public int Visit(CosmosBinary cosmosBinary, CosmosElement input) => cosmosBinary.CompareTo((CosmosBinary)input);
+
+            public int Visit(CosmosBoolean cosmosBoolean, CosmosElement input) => cosmosBoolean.CompareTo((CosmosBoolean)input);
+
+            public int Visit(CosmosGuid cosmosGuid, CosmosElement input) => cosmosGuid.CompareTo((CosmosGuid)input);
+
+            public int Visit(CosmosNull cosmosNull, CosmosElement input) => cosmosNull.CompareTo((CosmosNull)input);
+
+            public int Visit(CosmosNumber cosmosNumber, CosmosElement input) => cosmosNumber.CompareTo((CosmosNumber)input);
+
+            public int Visit(CosmosObject cosmosObject, CosmosElement input) => cosmosObject.CompareTo((CosmosObject)input);
+
+            public int Visit(CosmosString cosmosString, CosmosElement input) => cosmosString.CompareTo((CosmosString)input);
+        }
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented

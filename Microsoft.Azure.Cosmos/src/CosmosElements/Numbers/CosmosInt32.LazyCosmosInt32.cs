@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 178
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 193
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class CosmosInt32 : CosmosNumber, IEquatable<CosmosInt32>
+    abstract partial class CosmosInt32 : CosmosNumber, IEquatable<CosmosInt32>, IComparable<CosmosInt32>
     {
         private sealed class LazyCosmosInt32 : CosmosInt32
         {

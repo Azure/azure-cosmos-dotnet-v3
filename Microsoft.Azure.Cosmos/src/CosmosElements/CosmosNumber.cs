@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract class CosmosNumber : CosmosElement
+    abstract class CosmosNumber : CosmosElement, IEquatable<CosmosNumber>, IComparable<CosmosNumber>
     {
         protected CosmosNumber(CosmosNumberType cosmosNumberType)
             : base(CosmosElementType.Number)
@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract Number64 Value { get; }
 
         public abstract void Accept(ICosmosNumberVisitor cosmosNumberVisitor);
+
+        public abstract TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor);
 
         public abstract TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input);
 
@@ -72,6 +74,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract bool Equals(CosmosNumber cosmosNumber);
 
+        public int CompareTo(CosmosNumber other)
+        {
+            int thisTypeOrder = this.Accept(CosmosNumberToTypeOrder.Singleton);
+            int otherTypeOrder = this.Accept(CosmosNumberToTypeOrder.Singleton);
+
+            if (thisTypeOrder != otherTypeOrder)
+            {
+                return thisTypeOrder.CompareTo(otherTypeOrder);
+            }
+
+            // The types are the same so dispatch to each compare operator
+            return this.Accept(CosmosNumberWithinTypeComparer.Singleton, other);
+        }
+
         public static new CosmosNumber CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
             return CosmosElement.CreateFromBuffer<CosmosNumber>(buffer);
@@ -103,6 +119,56 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 return CosmosElement.Monadic.Parse<CosmosNumber>(json);
             }
+        }
+
+        private sealed class CosmosNumberToTypeOrder : ICosmosNumberVisitor<int>
+        {
+            public static readonly CosmosNumberToTypeOrder Singleton = new CosmosNumberToTypeOrder();
+
+            private CosmosNumberToTypeOrder()
+            {
+            }
+
+            public int Visit(CosmosNumber64 cosmosNumber64) => 0;
+
+            public int Visit(CosmosInt8 cosmosInt8) => 1;
+
+            public int Visit(CosmosInt16 cosmosInt16) => 2;
+
+            public int Visit(CosmosInt32 cosmosInt32) => 3;
+
+            public int Visit(CosmosInt64 cosmosInt64) => 4;
+
+            public int Visit(CosmosUInt32 cosmosUInt32) => 5;
+
+            public int Visit(CosmosFloat32 cosmosFloat32) => 6;
+
+            public int Visit(CosmosFloat64 cosmosFloat64) => 7;
+        }
+
+        private sealed class CosmosNumberWithinTypeComparer : ICosmosNumberVisitor<CosmosNumber, int>
+        {
+            public static readonly CosmosNumberWithinTypeComparer Singleton = new CosmosNumberWithinTypeComparer();
+
+            private CosmosNumberWithinTypeComparer()
+            {
+            }
+
+            public int Visit(CosmosNumber64 cosmosNumber64, CosmosNumber input) => cosmosNumber64.CompareTo((CosmosNumber64)input);
+
+            public int Visit(CosmosInt8 cosmosInt8, CosmosNumber input) => cosmosInt8.CompareTo((CosmosInt8)input);
+
+            public int Visit(CosmosInt16 cosmosInt16, CosmosNumber input) => cosmosInt16.CompareTo((CosmosInt16)input);
+
+            public int Visit(CosmosInt32 cosmosInt32, CosmosNumber input) => cosmosInt32.CompareTo((CosmosInt32)input);
+
+            public int Visit(CosmosInt64 cosmosInt64, CosmosNumber input) => cosmosInt64.CompareTo((CosmosInt64)input);
+
+            public int Visit(CosmosUInt32 cosmosUInt32, CosmosNumber input) => cosmosUInt32.CompareTo((CosmosUInt32)input);
+
+            public int Visit(CosmosFloat32 cosmosFloat32, CosmosNumber input) => cosmosFloat32.CompareTo((CosmosFloat32)input);
+
+            public int Visit(CosmosFloat64 cosmosFloat64, CosmosNumber input) => cosmosFloat64.CompareTo((CosmosFloat64)input);
         }
     }
 #if INTERNAL

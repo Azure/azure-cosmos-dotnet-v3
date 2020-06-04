@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -15,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    sealed class CosmosNull : CosmosElement, IEquatable<CosmosNull>
+    sealed class CosmosNull : CosmosElement, IEquatable<CosmosNull>, IComparable<CosmosNull>
     {
         private const uint Hash = 448207988;
 
@@ -106,6 +105,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public static bool TryParse(string json, out CosmosNull cosmosNull)
         {
             return CosmosElement.TryParse<CosmosNull>(json, out cosmosNull);
+        }
+
+        public int CompareTo(CosmosNull other)
+        {
+            return 0;
         }
 
         public static new class Monadic

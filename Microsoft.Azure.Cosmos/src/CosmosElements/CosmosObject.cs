@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
 #if INTERNAL
@@ -18,11 +19,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>
+    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>, IComparable<CosmosObject>
     {
         private const uint HashSeed = 1275696788;
         private const uint NameHashSeed = 263659187;
-        private const uint ValueHashSeed = 3590853931;
 
         protected CosmosObject()
             : base(CosmosElementType.Object)
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             uint hash = HashSeed;
             foreach (KeyValuePair<string, CosmosElement> kvp in this)
             {
-                uint nameHash = MurmurHash3.Hash32(kvp.Key, ValueHashSeed);
+                uint nameHash = MurmurHash3.Hash32(kvp.Key, NameHashSeed);
                 uint valueHash = MurmurHash3.Hash32(kvp.Value.GetHashCode(), nameHash);
 
                 //// xor is symmetric meaning that a ^ b = b ^ a
@@ -153,6 +153,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return (int)hash;
+        }
+
+        public int CompareTo(CosmosObject cosmosObject)
+        {
+            UInt128 hash1 = DistinctHash.GetHash(this);
+            UInt128 hash2 = DistinctHash.GetHash(cosmosObject);
+            return hash1.CompareTo(hash2);
         }
 
         public static CosmosObject Create(

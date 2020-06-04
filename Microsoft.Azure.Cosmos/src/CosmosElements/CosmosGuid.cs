@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosGuid : CosmosElement, IEquatable<CosmosGuid>
+    abstract partial class CosmosGuid : CosmosElement, IEquatable<CosmosGuid>, IComparable<CosmosGuid>
     {
         private const uint HashSeed = 527095639;
 
@@ -80,6 +80,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             uint hash = HashSeed;
             hash = MurmurHash3.Hash32(this.Value, hash);
             return (int)hash;
+        }
+
+        public int CompareTo(CosmosGuid cosmosGuid)
+        {
+            return this.Value.CompareTo(cosmosGuid.Value);
         }
 
         public static CosmosGuid Create(

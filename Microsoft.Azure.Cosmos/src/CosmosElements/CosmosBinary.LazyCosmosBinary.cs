@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosBinary : CosmosElement
+    abstract partial class CosmosBinary : CosmosElement, IEquatable<CosmosBinary>, IComparable<CosmosBinary>
     {
         private sealed class LazyCosmosBinary : CosmosBinary
         {

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
 #if INTERNAL
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>
+    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>, IComparable<CosmosArray>
     {
         private const uint HashSeed = 2533142560;
 
@@ -107,6 +108,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return (int)hash;
+        }
+
+        public int CompareTo(CosmosArray cosmosArray)
+        {
+            UInt128 hash1 = DistinctHash.GetHash(this);
+            UInt128 hash2 = DistinctHash.GetHash(cosmosArray);
+            return hash1.CompareTo(hash2);
         }
 
         public static CosmosArray Create(

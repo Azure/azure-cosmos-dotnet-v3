@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    sealed class CosmosBoolean : CosmosElement, IEquatable<CosmosBoolean>
+    sealed class CosmosBoolean : CosmosElement, IEquatable<CosmosBoolean>, IComparable<CosmosBoolean>
     {
         private const int TrueHash = 1071096595;
         private const int FalseHash = 1031304189;
@@ -83,6 +83,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public override int GetHashCode()
         {
             return this.Value ? TrueHash : FalseHash;
+        }
+
+        public int CompareTo(CosmosBoolean cosmosBoolean)
+        {
+            return this.Value.CompareTo(cosmosBoolean.Value);
         }
 
         public static CosmosBoolean Create(bool boolean)

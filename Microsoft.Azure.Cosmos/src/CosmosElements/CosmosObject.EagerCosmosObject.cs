@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>, IComparable<CosmosObject>
     {
         private sealed class EagerCosmosObject : CosmosObject
         {
