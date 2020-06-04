@@ -3,8 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL

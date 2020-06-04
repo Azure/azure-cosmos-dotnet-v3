@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -26,54 +28,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract Guid Value { get; }
 
-        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
-            cosmosElementVisitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
-        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
 
-            return cosmosElementVisitor.Visit(this);
-        }
-        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosGuid cosmosGuid && this.Equals(cosmosGuid);
 
-            return cosmosElementVisitor.Visit(this, input);
-        }
-
-        public override bool Equals(CosmosElement cosmosElement)
-        {
-            if (!(cosmosElement is CosmosGuid cosmosGuid))
-            {
-                return false;
-            }
-
-            return this.Equals(cosmosGuid);
-        }
-
-        public bool Equals(CosmosGuid cosmosGuid)
-        {
-            if (cosmosGuid == null)
-            {
-                return false;
-            }
-
-            return this.Value == cosmosGuid.Value;
-        }
+        public bool Equals(CosmosGuid cosmosGuid) => this.Value == cosmosGuid.Value;
 
         public override int GetHashCode()
         {
@@ -82,10 +45,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosGuid cosmosGuid)
-        {
-            return this.Value.CompareTo(cosmosGuid.Value);
-        }
+        public int CompareTo(CosmosGuid cosmosGuid) => this.Value.CompareTo(cosmosGuid.Value);
 
         public static CosmosGuid Create(
             IJsonNavigator jsonNavigator,

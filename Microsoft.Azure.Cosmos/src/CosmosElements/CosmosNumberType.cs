@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     /// <summary>
     /// An enum that describes the kind of number represented by a cosmos number
     /// </summary>

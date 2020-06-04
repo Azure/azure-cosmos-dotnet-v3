@@ -6,6 +6,8 @@
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -28,35 +30,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public abstract float GetValue();
 
-        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
-        {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor) => cosmosNumberVisitor.Visit(this);
 
-            cosmosNumberVisitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor) => cosmosNumberVisitor.Visit(this);
 
-        public override TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor)
-        {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
-
-            return cosmosNumberVisitor.Visit(this);
-        }
-
-        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
-        {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
-
-            return cosmosNumberVisitor.Visit(this, input);
-        }
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
 
         public override bool Equals(CosmosNumber cosmosNumber)
         {
@@ -86,15 +64,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return this.GetValue().CompareTo(cosmosFloat32.GetValue());
         }
 
-        public override void WriteTo(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonWriter)}");
-            }
-
-            jsonWriter.WriteFloat32Value(this.GetValue());
-        }
+        public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteFloat32Value(this.GetValue());
 
         public static CosmosFloat32 Create(
             IJsonNavigator jsonNavigator,

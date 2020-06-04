@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -71,7 +73,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     }
                 }
 
-                value = null;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                value = default; // Dictionary.TryGetValue does not do nullable references
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
                 return false;
             }
 

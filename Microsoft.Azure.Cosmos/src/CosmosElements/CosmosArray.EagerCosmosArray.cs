@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
@@ -25,14 +27,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 if (elements == null)
                 {
                     throw new ArgumentNullException($"{nameof(elements)}");
-                }
-
-                foreach (CosmosElement element in elements)
-                {
-                    if (element == null)
-                    {
-                        throw new ArgumentException($"{nameof(elements)} must not have null items.");
-                    }
                 }
 
                 this.cosmosElements = new List<CosmosElement>(elements);

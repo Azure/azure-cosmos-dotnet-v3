@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -25,35 +27,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
-            cosmosElementVisitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
-        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
-            return cosmosElementVisitor.Visit(this);
-        }
-
-        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
-            return cosmosElementVisitor.Visit(this, input);
-        }
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
 
         public override bool Equals(CosmosElement cosmosElement)
         {

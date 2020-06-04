@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -41,48 +43,28 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract bool TryGetValue(string key, out CosmosElement value);
 
-        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
-            cosmosElementVisitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
-        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
-            return cosmosElementVisitor.Visit(this);
-        }
-
-        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
-            return cosmosElementVisitor.Visit(this, input);
-        }
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
 
         public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement typedCosmosElement)
             where TCosmosElement : CosmosElement
         {
             if (!this.TryGetValue(key, out CosmosElement cosmosElement))
             {
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 typedCosmosElement = default;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
                 return false;
             }
 
             if (!(cosmosElement is TCosmosElement tCosmosElement))
             {
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 typedCosmosElement = default;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
                 return false;
             }
 

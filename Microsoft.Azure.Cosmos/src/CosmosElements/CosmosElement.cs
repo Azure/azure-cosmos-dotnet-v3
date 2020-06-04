@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -153,7 +155,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             TryCatch<TCosmosElement> tryCreateFromBuffer = CosmosElement.Monadic.CreateFromBuffer<TCosmosElement>(buffer);
             if (tryCreateFromBuffer.Failed)
             {
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 cosmosElement = default;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
                 return false;
             }
 
@@ -184,7 +188,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             TryCatch<TCosmosElement> tryParse = CosmosElement.Monadic.Parse<TCosmosElement>(json);
             if (tryParse.Failed)
             {
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 cosmosElement = default;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
                 return false;
             }
 
