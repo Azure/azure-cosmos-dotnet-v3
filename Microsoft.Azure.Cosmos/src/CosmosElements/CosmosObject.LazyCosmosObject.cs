@@ -30,16 +30,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public LazyCosmosObject(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Object)
                 {
@@ -82,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public override bool ContainsKey(string key) => this.jsonNavigator.TryGetObjectProperty(
                 this.jsonNavigatorNode,
                 key,
-                out ObjectProperty objectProperty);
+                out _);
 
             public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this
                 .jsonNavigator
@@ -121,15 +111,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return false;
             }
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
-                this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
-            }
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
         }
     }
 #if INTERNAL

@@ -54,52 +54,27 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosGuid(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosGuid Create(Guid value)
-        {
-            return new EagerCosmosGuid(value);
-        }
+        public static CosmosGuid Create(Guid value) => new EagerCosmosGuid(value);
 
-        public override void WriteTo(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonWriter)}");
-            }
+        public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteGuidValue(this.Value);
 
-            jsonWriter.WriteGuidValue(this.Value);
-        }
+        public static new CosmosGuid CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosGuid>(buffer);
 
-        public static new CosmosGuid CreateFromBuffer(ReadOnlyMemory<byte> buffer)
-        {
-            return CosmosElement.CreateFromBuffer<CosmosGuid>(buffer);
-        }
+        public static new CosmosGuid Parse(string json) => CosmosElement.Parse<CosmosGuid>(json);
 
-        public static new CosmosGuid Parse(string json)
-        {
-            return CosmosElement.Parse<CosmosGuid>(json);
-        }
+        public static bool TryCreateFromBuffer(
+            ReadOnlyMemory<byte> buffer,
+            out CosmosGuid cosmosGuid) => CosmosElement.TryCreateFromBuffer<CosmosGuid>(buffer, out cosmosGuid);
 
-        public static bool TryCreateFromBuffer(ReadOnlyMemory<byte> buffer, out CosmosGuid cosmosGuid)
-        {
-            return CosmosElement.TryCreateFromBuffer<CosmosGuid>(buffer, out cosmosGuid);
-        }
-
-        public static bool TryParse(string json, out CosmosGuid cosmosGuid)
-        {
-            return CosmosElement.TryParse<CosmosGuid>(json, out cosmosGuid);
-        }
+        public static bool TryParse(
+            string json,
+            out CosmosGuid cosmosGuid) => CosmosElement.TryParse<CosmosGuid>(json, out cosmosGuid);
 
         public static new class Monadic
         {
-            public static TryCatch<CosmosGuid> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
-            {
-                return CosmosElement.Monadic.CreateFromBuffer<CosmosGuid>(buffer);
-            }
+            public static TryCatch<CosmosGuid> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosGuid>(buffer);
 
-            public static TryCatch<CosmosGuid> Parse(string json)
-            {
-                return CosmosElement.Monadic.Parse<CosmosGuid>(json);
-            }
+            public static TryCatch<CosmosGuid> Parse(string json) => CosmosElement.Monadic.Parse<CosmosGuid>(json);
         }
     }
 #if INTERNAL

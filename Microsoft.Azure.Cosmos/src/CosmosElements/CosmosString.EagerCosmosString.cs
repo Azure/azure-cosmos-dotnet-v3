@@ -23,11 +23,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public EagerCosmosString(string value)
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException($"{nameof(value)}");
-                }
-
                 this.Value = value;
             }
 
@@ -40,15 +35,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return false;
             }
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
-                jsonWriter.WriteStringValue(this.Value);
-            }
+            public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteStringValue(this.Value);
         }
     }
 #if INTERNAL

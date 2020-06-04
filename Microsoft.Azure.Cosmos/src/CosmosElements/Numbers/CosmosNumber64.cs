@@ -36,46 +36,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
 
-        public override bool Equals(CosmosNumber cosmosNumber)
-        {
-            if (!(cosmosNumber is CosmosNumber64 cosmosNumber64))
-            {
-                return false;
-            }
+        public override bool Equals(CosmosNumber cosmosNumber) => cosmosNumber is CosmosNumber64 cosmosNumber64 && this.Equals(cosmosNumber64);
 
-            return this.Equals(cosmosNumber64);
-        }
+        public bool Equals(CosmosNumber64 cosmosNumber64) => this.GetValue() == cosmosNumber64.GetValue();
 
-        public bool Equals(CosmosNumber64 cosmosNumber64)
-        {
-            return this.GetValue() == cosmosNumber64.GetValue();
-        }
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), 1943952435);
 
-        public override int GetHashCode()
-        {
-            uint hash = 1943952435;
-            hash = MurmurHash3.Hash32(this.GetValue(), hash);
-
-            return (int)hash;
-        }
-
-        public int CompareTo(CosmosNumber64 cosmosNumber64)
-        {
-            return this.GetValue().CompareTo(cosmosNumber64.GetValue());
-        }
+        public int CompareTo(CosmosNumber64 cosmosNumber64) => this.GetValue().CompareTo(cosmosNumber64.GetValue());
 
         public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteNumber64Value(this.GetValue());
 
         public static CosmosNumber64 Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosNumber64(jsonNavigator, jsonNavigatorNode);
-        }
+            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosNumber64(jsonNavigator, jsonNavigatorNode);
 
-        public static CosmosNumber64 Create(Number64 number)
-        {
-            return new EagerCosmosNumber64(number);
-        }
+        public static CosmosNumber64 Create(Number64 number) => new EagerCosmosNumber64(number);
     }
 }

@@ -23,10 +23,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.Value = value;
             }
 
-            public override Guid Value
-            {
-                get;
-            }
+            public override Guid Value { get; }
         }
     }
 #if INTERNAL

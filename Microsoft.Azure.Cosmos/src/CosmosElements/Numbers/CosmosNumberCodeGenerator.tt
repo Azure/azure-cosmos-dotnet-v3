@@ -76,47 +76,21 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
 
-        public override bool Equals(CosmosNumber cosmosNumber)
-        {
-            if (!(cosmosNumber is Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>))
-            {
-                return false;
-            }
+        public override bool Equals(CosmosNumber cosmosNumber) => cosmosNumber is Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #> && this.Equals(cosmos<#= cosmosNumberType #>);
 
-            return this.Equals(cosmos<#= cosmosNumberType #>);
-        }
+        public bool Equals(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>) => this.GetValue() == cosmos<#= cosmosNumberType #>.GetValue();
 
-        public bool Equals(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>)
-        {
-            return this.GetValue() == cosmos<#= cosmosNumberType #>.GetValue();
-        }
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), <#= cosmosNumberTypeHashCode[cosmosNumberType] #>);
 
-        public override int GetHashCode()
-        {
-            uint hash = <#= cosmosNumberTypeHashCode[cosmosNumberType] #>;
-            hash = MurmurHash3.Hash32(this.GetValue(), hash);
-
-            return (int)hash;
-        }
-
-        public int CompareTo(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>)
-        {
-            return this.GetValue().CompareTo(cosmos<#= cosmosNumberType #>.GetValue());
-        }
+        public int CompareTo(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>) => this.GetValue().CompareTo(cosmos<#= cosmosNumberType #>.GetValue());
 
         public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.Write<#= cosmosNumberType #>Value(this.GetValue());
 
         public static Cosmos<#= cosmosNumberType #> Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmos<#= cosmosNumberType #>(jsonNavigator, jsonNavigatorNode);
-        }
+            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmos<#= cosmosNumberType #>(jsonNavigator, jsonNavigatorNode);
 
-        public static Cosmos<#= cosmosNumberType #> Create(<#= dotNetType #> number)
-        {
-            return new EagerCosmos<#= cosmosNumberType #>(number);
-        }
+        public static Cosmos<#= cosmosNumberType #> Create(<#= dotNetType #> number) => new EagerCosmos<#= cosmosNumberType #>(number);
     }
 }
 <# SaveOutput($"Cosmos{cosmosNumberType}.cs"); #>

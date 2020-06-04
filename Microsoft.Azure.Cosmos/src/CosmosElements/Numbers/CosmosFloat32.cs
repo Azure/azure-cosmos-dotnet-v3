@@ -36,46 +36,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
 
-        public override bool Equals(CosmosNumber cosmosNumber)
-        {
-            if (!(cosmosNumber is CosmosFloat32 cosmosFloat32))
-            {
-                return false;
-            }
+        public override bool Equals(CosmosNumber cosmosNumber) => cosmosNumber is CosmosFloat32 cosmosFloat32 && this.Equals(cosmosFloat32);
 
-            return this.Equals(cosmosFloat32);
-        }
+        public bool Equals(CosmosFloat32 cosmosFloat32) => this.GetValue() == cosmosFloat32.GetValue();
 
-        public bool Equals(CosmosFloat32 cosmosFloat32)
-        {
-            return this.GetValue() == cosmosFloat32.GetValue();
-        }
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), 495253708);
 
-        public override int GetHashCode()
-        {
-            uint hash = 495253708;
-            hash = MurmurHash3.Hash32(this.GetValue(), hash);
-
-            return (int)hash;
-        }
-
-        public int CompareTo(CosmosFloat32 cosmosFloat32)
-        {
-            return this.GetValue().CompareTo(cosmosFloat32.GetValue());
-        }
+        public int CompareTo(CosmosFloat32 cosmosFloat32) => this.GetValue().CompareTo(cosmosFloat32.GetValue());
 
         public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteFloat32Value(this.GetValue());
 
         public static CosmosFloat32 Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosFloat32(jsonNavigator, jsonNavigatorNode);
-        }
+            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosFloat32(jsonNavigator, jsonNavigatorNode);
 
-        public static CosmosFloat32 Create(float number)
-        {
-            return new EagerCosmosFloat32(number);
-        }
+        public static CosmosFloat32 Create(float number) => new EagerCosmosFloat32(number);
     }
 }

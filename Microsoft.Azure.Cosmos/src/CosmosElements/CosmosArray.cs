@@ -40,15 +40,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
 
-        public override bool Equals(CosmosElement cosmosElement)
-        {
-            if (!(cosmosElement is CosmosArray cosmosArray))
-            {
-                return false;
-            }
-
-            return this.Equals(cosmosArray);
-        }
+        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosArray cosmosArray && this.Equals(cosmosArray);
 
         public bool Equals(CosmosArray cosmosArray)
         {
@@ -92,54 +84,29 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosArray Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosArray(jsonNavigator, jsonNavigatorNode);
-        }
+            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosArray(jsonNavigator, jsonNavigatorNode);
 
-        public static CosmosArray Create(IEnumerable<CosmosElement> cosmosElements)
-        {
-            return new EagerCosmosArray(cosmosElements);
-        }
+        public static CosmosArray Create(IEnumerable<CosmosElement> cosmosElements) => new EagerCosmosArray(cosmosElements);
 
         public abstract IEnumerator<CosmosElement> GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-        public static new CosmosArray CreateFromBuffer(ReadOnlyMemory<byte> buffer)
-        {
-            return CosmosElement.CreateFromBuffer<CosmosArray>(buffer);
-        }
+        public static new CosmosArray CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosArray>(buffer);
 
-        public static new CosmosArray Parse(string json)
-        {
-            return CosmosElement.Parse<CosmosArray>(json);
-        }
+        public static new CosmosArray Parse(string json) => CosmosElement.Parse<CosmosArray>(json);
 
-        public static bool TryCreateFromBuffer(ReadOnlyMemory<byte> buffer, out CosmosArray cosmosArray)
-        {
-            return CosmosElement.TryCreateFromBuffer<CosmosArray>(buffer, out cosmosArray);
-        }
+        public static bool TryCreateFromBuffer(
+            ReadOnlyMemory<byte> buffer,
+            out CosmosArray cosmosArray) => CosmosElement.TryCreateFromBuffer<CosmosArray>(buffer, out cosmosArray);
 
-        public static bool TryParse(string json, out CosmosArray cosmosArray)
-        {
-            return CosmosElement.TryParse<CosmosArray>(json, out cosmosArray);
-        }
+        public static bool TryParse(string json, out CosmosArray cosmosArray) => CosmosElement.TryParse<CosmosArray>(json, out cosmosArray);
 
         public static new class Monadic
         {
-            public static TryCatch<CosmosArray> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
-            {
-                return CosmosElement.Monadic.CreateFromBuffer<CosmosArray>(buffer);
-            }
+            public static TryCatch<CosmosArray> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosArray>(buffer);
 
-            public static TryCatch<CosmosArray> Parse(string json)
-            {
-                return CosmosElement.Monadic.Parse<CosmosArray>(json);
-            }
+            public static TryCatch<CosmosArray> Parse(string json) => CosmosElement.Monadic.Parse<CosmosArray>(json);
         }
     }
 #if INTERNAL

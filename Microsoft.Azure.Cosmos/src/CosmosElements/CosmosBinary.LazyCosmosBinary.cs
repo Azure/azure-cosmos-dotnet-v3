@@ -27,16 +27,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 IJsonNavigator jsonNavigator,
                 IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Binary)
                 {
@@ -59,23 +49,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 });
             }
 
-            public override ReadOnlyMemory<byte> Value
-            {
-                get
-                {
-                    return this.lazyBytes.Value;
-                }
-            }
+            public override ReadOnlyMemory<byte> Value => this.lazyBytes.Value;
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
-                this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
-            }
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
         }
     }
 #if INTERNAL

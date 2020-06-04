@@ -36,46 +36,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
 
-        public override bool Equals(CosmosNumber cosmosNumber)
-        {
-            if (!(cosmosNumber is CosmosUInt32 cosmosUInt32))
-            {
-                return false;
-            }
+        public override bool Equals(CosmosNumber cosmosNumber) => cosmosNumber is CosmosUInt32 cosmosUInt32 && this.Equals(cosmosUInt32);
 
-            return this.Equals(cosmosUInt32);
-        }
+        public bool Equals(CosmosUInt32 cosmosUInt32) => this.GetValue() == cosmosUInt32.GetValue();
 
-        public bool Equals(CosmosUInt32 cosmosUInt32)
-        {
-            return this.GetValue() == cosmosUInt32.GetValue();
-        }
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), 3771427877);
 
-        public override int GetHashCode()
-        {
-            uint hash = 3771427877;
-            hash = MurmurHash3.Hash32(this.GetValue(), hash);
-
-            return (int)hash;
-        }
-
-        public int CompareTo(CosmosUInt32 cosmosUInt32)
-        {
-            return this.GetValue().CompareTo(cosmosUInt32.GetValue());
-        }
+        public int CompareTo(CosmosUInt32 cosmosUInt32) => this.GetValue().CompareTo(cosmosUInt32.GetValue());
 
         public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteUInt32Value(this.GetValue());
 
         public static CosmosUInt32 Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosUInt32(jsonNavigator, jsonNavigatorNode);
-        }
+            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosUInt32(jsonNavigator, jsonNavigatorNode);
 
-        public static CosmosUInt32 Create(uint number)
-        {
-            return new EagerCosmosUInt32(number);
-        }
+        public static CosmosUInt32 Create(uint number) => new EagerCosmosUInt32(number);
     }
 }

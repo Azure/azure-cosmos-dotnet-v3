@@ -36,46 +36,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
 
-        public override bool Equals(CosmosNumber cosmosNumber)
-        {
-            if (!(cosmosNumber is CosmosFloat64 cosmosFloat64))
-            {
-                return false;
-            }
+        public override bool Equals(CosmosNumber cosmosNumber) => cosmosNumber is CosmosFloat64 cosmosFloat64 && this.Equals(cosmosFloat64);
 
-            return this.Equals(cosmosFloat64);
-        }
+        public bool Equals(CosmosFloat64 cosmosFloat64) => this.GetValue() == cosmosFloat64.GetValue();
 
-        public bool Equals(CosmosFloat64 cosmosFloat64)
-        {
-            return this.GetValue() == cosmosFloat64.GetValue();
-        }
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), 470975939);
 
-        public override int GetHashCode()
-        {
-            uint hash = 470975939;
-            hash = MurmurHash3.Hash32(this.GetValue(), hash);
-
-            return (int)hash;
-        }
-
-        public int CompareTo(CosmosFloat64 cosmosFloat64)
-        {
-            return this.GetValue().CompareTo(cosmosFloat64.GetValue());
-        }
+        public int CompareTo(CosmosFloat64 cosmosFloat64) => this.GetValue().CompareTo(cosmosFloat64.GetValue());
 
         public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteFloat64Value(this.GetValue());
 
         public static CosmosFloat64 Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosFloat64(jsonNavigator, jsonNavigatorNode);
-        }
+            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosFloat64(jsonNavigator, jsonNavigatorNode);
 
-        public static CosmosFloat64 Create(double number)
-        {
-            return new EagerCosmosFloat64(number);
-        }
+        public static CosmosFloat64 Create(double number) => new EagerCosmosFloat64(number);
     }
 }

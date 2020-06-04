@@ -24,33 +24,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public EagerCosmosArray(IEnumerable<CosmosElement> elements)
             {
-                if (elements == null)
-                {
-                    throw new ArgumentNullException($"{nameof(elements)}");
-                }
-
                 this.cosmosElements = new List<CosmosElement>(elements);
             }
 
             public override int Count => this.cosmosElements.Count;
 
-            public override CosmosElement this[int index]
-            {
-                get
-                {
-                    return this.cosmosElements[index];
-                }
-            }
+            public override CosmosElement this[int index] => this.cosmosElements[index];
 
             public override IEnumerator<CosmosElement> GetEnumerator() => this.cosmosElements.GetEnumerator();
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
                 jsonWriter.WriteArrayStart();
 
                 foreach (CosmosElement arrayItem in this)

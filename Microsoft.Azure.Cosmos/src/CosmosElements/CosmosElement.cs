@@ -36,15 +36,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return Utf8StringHelpers.ToString(jsonWriter.GetResult());
         }
 
-        public override bool Equals(object obj)
-        {
-            if (!(obj is CosmosElement cosmosElement))
-            {
-                return false;
-            }
-
-            return this.Equals(cosmosElement);
-        }
+        public override bool Equals(object obj) => obj is CosmosElement cosmosElement && this.Equals(cosmosElement);
 
         public abstract bool Equals(CosmosElement cosmosElement);
 
@@ -105,10 +97,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return TryCatch<TCosmosElement>.FromResult(typedCosmosElement);
             }
 
-            public static TryCatch<CosmosElement> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
-            {
-                return CosmosElement.Monadic.CreateFromBuffer<CosmosElement>(buffer);
-            }
+            public static TryCatch<CosmosElement> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosElement>(buffer);
 
             public static TryCatch<TCosmosElement> Parse<TCosmosElement>(string serializedCosmosElement)
                 where TCosmosElement : CosmosElement
@@ -129,10 +118,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return CosmosElement.Monadic.CreateFromBuffer<TCosmosElement>(buffer);
             }
 
-            public static TryCatch<CosmosElement> Parse(string serializedCosmosElement)
-            {
-                return CosmosElement.Monadic.Parse<CosmosElement>(serializedCosmosElement);
-            }
+            public static TryCatch<CosmosElement> Parse(string serializedCosmosElement) => CosmosElement.Monadic.Parse<CosmosElement>(serializedCosmosElement);
         }
 
         public static TCosmosElement CreateFromBuffer<TCosmosElement>(ReadOnlyMemory<byte> buffer)
@@ -144,10 +130,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return tryCreateFromBuffer.Result;
         }
 
-        public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
-        {
-            return CosmosElement.CreateFromBuffer<CosmosElement>(buffer);
-        }
+        public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosElement>(buffer);
 
         public static bool TryCreateFromBuffer<TCosmosElement>(ReadOnlyMemory<byte> buffer, out TCosmosElement cosmosElement)
             where TCosmosElement : CosmosElement
@@ -203,79 +186,27 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             IJsonNavigatorNode jsonNavigatorNode)
         {
             JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
-            CosmosElement item;
-            switch (jsonNodeType)
+            return jsonNodeType switch
             {
-                case JsonNodeType.Null:
-                    item = CosmosNull.Create();
-                    break;
-
-                case JsonNodeType.False:
-                    item = CosmosBoolean.Create(false);
-                    break;
-
-                case JsonNodeType.True:
-                    item = CosmosBoolean.Create(true);
-                    break;
-
-                case JsonNodeType.Number64:
-                    item = CosmosNumber64.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.FieldName:
-                case JsonNodeType.String:
-                    item = CosmosString.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Array:
-                    item = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Object:
-                    item = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Int8:
-                    item = CosmosInt8.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Int16:
-                    item = CosmosInt16.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Int32:
-                    item = CosmosInt32.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Int64:
-                    item = CosmosInt64.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.UInt32:
-                    item = CosmosUInt32.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Float32:
-                    item = CosmosFloat32.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Float64:
-                    item = CosmosFloat64.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Guid:
-                    item = CosmosGuid.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                case JsonNodeType.Binary:
-                    item = CosmosBinary.Create(jsonNavigator, jsonNavigatorNode);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(JsonNodeType)}: {jsonNodeType}");
-            }
-
-            return item;
+                JsonNodeType.Null => CosmosNull.Create(),
+                JsonNodeType.False => CosmosBoolean.Create(false),
+                JsonNodeType.True => CosmosBoolean.Create(true),
+                JsonNodeType.Number64 => CosmosNumber64.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.FieldName => CosmosString.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.String => CosmosString.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Array => CosmosArray.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Object => CosmosObject.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Int8 => CosmosInt8.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Int16 => CosmosInt16.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Int32 => CosmosInt32.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Int64 => CosmosInt64.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.UInt32 => CosmosUInt32.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Float32 => CosmosFloat32.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Float64 => CosmosFloat64.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Guid => CosmosGuid.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Binary => CosmosBinary.Create(jsonNavigator, jsonNavigatorNode),
+                _ => throw new ArgumentException($"Unknown {nameof(JsonNodeType)}: {jsonNodeType}")
+            };
         }
 
         public static bool operator ==(CosmosElement a, CosmosElement b) => a.Equals(b);
@@ -291,19 +222,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             public int Visit(CosmosNull cosmosNull) => 0;
-
             public int Visit(CosmosBoolean cosmosBoolean) => 1;
-
             public int Visit(CosmosNumber cosmosNumber) => 2;
-
             public int Visit(CosmosString cosmosString) => 3;
-
             public int Visit(CosmosArray cosmosArray) => 4;
-
             public int Visit(CosmosObject cosmosObject) => 5;
-
             public int Visit(CosmosGuid cosmosGuid) => 6;
-
             public int Visit(CosmosBinary cosmosBinary) => 7;
         }
 
@@ -316,19 +240,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             public int Visit(CosmosArray cosmosArray, CosmosElement input) => cosmosArray.CompareTo((CosmosArray)input);
-
             public int Visit(CosmosBinary cosmosBinary, CosmosElement input) => cosmosBinary.CompareTo((CosmosBinary)input);
-
             public int Visit(CosmosBoolean cosmosBoolean, CosmosElement input) => cosmosBoolean.CompareTo((CosmosBoolean)input);
-
             public int Visit(CosmosGuid cosmosGuid, CosmosElement input) => cosmosGuid.CompareTo((CosmosGuid)input);
-
             public int Visit(CosmosNull cosmosNull, CosmosElement input) => cosmosNull.CompareTo((CosmosNull)input);
-
             public int Visit(CosmosNumber cosmosNumber, CosmosElement input) => cosmosNumber.CompareTo((CosmosNumber)input);
-
             public int Visit(CosmosObject cosmosObject, CosmosElement input) => cosmosObject.CompareTo((CosmosObject)input);
-
             public int Visit(CosmosString cosmosString, CosmosElement input) => cosmosString.CompareTo((CosmosString)input);
         }
     }

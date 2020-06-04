@@ -26,15 +26,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override ReadOnlyMemory<byte> Value { get; }
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
-                jsonWriter.WriteBinaryValue(this.Value.Span);
-            }
+            public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteBinaryValue(this.Value.Span);
         }
     }
 #if INTERNAL
