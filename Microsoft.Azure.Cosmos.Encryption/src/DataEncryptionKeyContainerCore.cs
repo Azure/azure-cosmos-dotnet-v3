@@ -159,14 +159,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 return (dekProperties, inMemoryRawDek);
             }
-            catch (CosmosException ex)
+            catch (CosmosException exception)
             {
-                if (ex.StatusCode.Equals(System.Net.HttpStatusCode.NotFound))
-                {
-                    throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(id);
-                }
-
-                throw;
+                throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(
+                    $"Failed to retrieve Data Encryption Key with id: '{id}'.",
+                    exception);
             }
         }
 

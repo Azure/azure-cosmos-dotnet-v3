@@ -36,9 +36,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 "cipherText");
         }
 
-        internal static Exception EncryptionKeyNotFoundException(string encryptionKeyId)
+        internal static Exception EncryptionKeyNotFoundException(
+            string message,
+            Exception innerException)
         {
-            return new ArgumentException($"Data Encryption Key with id: '{encryptionKeyId}' not found.");
+            return new ArgumentException(
+                message,
+                innerException);
         }
     }
 }

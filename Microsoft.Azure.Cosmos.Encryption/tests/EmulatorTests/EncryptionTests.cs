@@ -221,7 +221,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual($"Data Encryption Key with id: '{unknownDek}' not found.", ex.Message);
+                Assert.AreEqual($"Failed to retrieve Data Encryption Key with id: '{unknownDek}'.", ex.Message);
+                Assert.IsTrue(ex.InnerException is CosmosException);
             }
         }
 
