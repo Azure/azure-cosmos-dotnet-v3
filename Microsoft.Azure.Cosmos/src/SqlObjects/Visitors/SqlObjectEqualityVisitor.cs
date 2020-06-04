@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
     using Microsoft.Azure.Cosmos.Sql;
     using Newtonsoft.Json.Bson;
 
-    internal sealed class SqlEqualityVisitor : SqlObjectVisitor<SqlObject, bool>
+    internal sealed class SqlObjectEqualityVisitor : SqlObjectVisitor<SqlObject, bool>
     {
-        public static readonly SqlEqualityVisitor Singleton = new SqlEqualityVisitor();
+        public static readonly SqlObjectEqualityVisitor Singleton = new SqlObjectEqualityVisitor();
 
-        private SqlEqualityVisitor()
+        private SqlObjectEqualityVisitor()
         {
         }
 
@@ -911,7 +911,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
             foreach ((SqlObject firstItem, SqlObject secondItem) in itemPairs)
             {
-                if (firstItem.Accept(SqlEqualityVisitor.Singleton, secondItem))
+                if (firstItem.Accept(SqlObjectEqualityVisitor.Singleton, secondItem))
                 {
                     return false;
                 }
@@ -943,7 +943,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             else
             {
                 // Both not null
-                return first.Accept(SqlEqualityVisitor.Singleton, second);
+                return first.Accept(SqlObjectEqualityVisitor.Singleton, second);
             }
         }
     }

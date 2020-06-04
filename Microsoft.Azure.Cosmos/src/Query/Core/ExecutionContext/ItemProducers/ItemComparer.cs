@@ -296,6 +296,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 throw new NotImplementedException();
             }
 
+            public override bool Equals(CosmosElement cosmosElement)
+            {
+                return cosmosElement is MinValueItem;
+            }
+
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 throw new NotImplementedException();
@@ -327,6 +332,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
             {
                 throw new NotImplementedException();
+            }
+
+            public override bool Equals(CosmosElement cosmosElement)
+            {
+                return cosmosElement is MaxValueItem;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)

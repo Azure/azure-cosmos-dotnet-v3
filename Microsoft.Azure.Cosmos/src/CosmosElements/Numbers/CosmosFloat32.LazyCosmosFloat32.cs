@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 141
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 156
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {

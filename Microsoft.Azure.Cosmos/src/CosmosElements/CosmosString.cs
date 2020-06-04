@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosString : CosmosElement
+    abstract partial class CosmosString : CosmosElement, IEquatable<CosmosString>
     {
         protected CosmosString()
             : base(CosmosElementType.String)
@@ -55,6 +55,21 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return cosmosElementVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            if (!(cosmosElement is CosmosString cosmosString))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosString);
+        }
+
+        public bool Equals(CosmosString cosmosString)
+        {
+            return this.Value == cosmosString.Value;
         }
 
         public static CosmosString Create(

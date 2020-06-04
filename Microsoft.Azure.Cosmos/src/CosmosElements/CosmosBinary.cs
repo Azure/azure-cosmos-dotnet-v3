@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosBinary : CosmosElement
+    abstract partial class CosmosBinary : CosmosElement, IEquatable<CosmosBinary>
     {
         protected CosmosBinary()
             : base(CosmosElementType.Binary)
@@ -52,6 +52,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return cosmosElementVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            if (!(cosmosElement is CosmosBinary cosmosBinary))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosBinary);
+        }
+
+        public bool Equals(CosmosBinary cosmosBinary)
+        {
+            if (cosmosBinary == null)
+            {
+                return false;
+            }
+
+            return this.Value.Span.SequenceEqual(cosmosBinary.Value.Span);
         }
 
         public static CosmosBinary Create(

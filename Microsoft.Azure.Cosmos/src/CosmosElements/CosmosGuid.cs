@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosGuid : CosmosElement
+    abstract partial class CosmosGuid : CosmosElement, IEquatable<CosmosGuid>
     {
         protected CosmosGuid()
             : base(CosmosElementType.Guid)
@@ -51,6 +51,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return cosmosElementVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            if (!(cosmosElement is CosmosGuid cosmosGuid))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosGuid);
+        }
+
+        public bool Equals(CosmosGuid cosmosGuid)
+        {
+            if (cosmosGuid == null)
+            {
+                return false;
+            }
+
+            return this.Value == cosmosGuid.Value;
         }
 
         public static CosmosGuid Create(

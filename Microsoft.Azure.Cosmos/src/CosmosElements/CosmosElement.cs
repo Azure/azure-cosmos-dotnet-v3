@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
-    using System.Runtime.ExceptionServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
@@ -18,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract class CosmosElement
+    abstract class CosmosElement : IEquatable<CosmosElement>, IComparable<CosmosElement>
     {
         protected CosmosElement(CosmosElementType cosmosItemType)
         {
@@ -45,14 +44,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return this.Equals(cosmosElement);
         }
 
-        public bool Equals(CosmosElement cosmosElement)
-        {
-            return CosmosElementEqualityComparer.Value.Equals(this, cosmosElement);
-        }
+        public abstract bool Equals(CosmosElement cosmosElement);
 
-        public override int GetHashCode()
+        public override abstract int GetHashCode();
+
+        public int CompareTo(CosmosElement other)
         {
-            return CosmosElementEqualityComparer.Value.GetHashCode(this);
+            throw new NotImplementedException();
         }
 
         public abstract void WriteTo(IJsonWriter jsonWriter);
@@ -137,6 +135,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
+            CosmosBinary cosmosBinary = CosmosBinary.CreateFromBuffer(default);
             return CosmosElement.CreateFromBuffer<CosmosElement>(buffer);
         }
 
@@ -264,6 +263,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             return item;
         }
+
+        public static bool operator ==(CosmosElement a, CosmosElement b) => a.Equals(b);
+
+        public static bool operator !=(CosmosElement a, CosmosElement b) => !(a == b);
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented

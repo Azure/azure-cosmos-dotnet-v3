@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class CosmosInt32 : CosmosNumber
+    abstract partial class CosmosInt32 : CosmosNumber, IEqutable<CosmosInt32>
     {
         protected CosmosInt32()
             : base(CosmosNumberType.Int32)
@@ -46,6 +46,21 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             }
 
             return cosmosNumberVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosNumber cosmosNumber)
+        {
+            if (!(cosmosNumber is CosmosInt32 cosmosInt32))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosInt32);
+        }
+
+        public bool Equals(CosmosInt32 cosmosInt32)
+        {
+            return this.GetValue() == cosmosInt32.GetValue();
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)

@@ -60,6 +60,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            if (!(cosmosElement is CosmosNumber cosmosNumber))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosNumber);
+        }
+
+        public abstract bool Equals(CosmosNumber cosmosNumber);
+
         public static new CosmosNumber CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
             return CosmosElement.CreateFromBuffer<CosmosNumber>(buffer);

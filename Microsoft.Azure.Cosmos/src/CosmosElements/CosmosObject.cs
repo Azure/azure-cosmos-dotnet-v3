@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>
     {
         protected CosmosObject()
             : base(CosmosElementType.Object)
@@ -91,6 +91,43 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            if (!(cosmosElement is CosmosObject cosmosObject))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosObject);
+        }
+
+        public bool Equals(CosmosObject cosmosObject)
+        {
+            if (this.Count != cosmosObject.Count)
+            {
+                return false;
+            }
+
+            // Order of properties does not mattter
+            foreach (KeyValuePair<string, CosmosElement> kvp in this)
+            {
+                string propertyName = kvp.Key;
+                CosmosElement propertyValue = kvp.Value;
+
+                if (!cosmosObject.TryGetValue(propertyName, out CosmosElement otherPropertyValue))
+                {
+                    return false;
+                }
+
+                if (propertyValue != otherPropertyValue)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static CosmosObject Create(

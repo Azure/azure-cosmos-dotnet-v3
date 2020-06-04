@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
+    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>, IComparable<CosmosArray>
     {
         protected CosmosArray()
             : base(CosmosElementType.Array)
@@ -56,6 +57,40 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return cosmosElementVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            if (!(cosmosElement is CosmosArray cosmosArray))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosArray);
+        }
+
+        public bool Equals(CosmosArray cosmosArray)
+        {
+            if (cosmosArray == null)
+            {
+                return false;
+            }
+
+            if (this.Count != cosmosArray.Count)
+            {
+                return false;
+            }
+
+            IEnumerable<(CosmosElement, CosmosElement)> itemPairs = this.Zip(cosmosArray, (first, second) => (first, second));
+            foreach ((CosmosElement thisItem, CosmosElement otherItem) in itemPairs)
+            {
+                if (thisItem != otherItem)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static CosmosArray Create(

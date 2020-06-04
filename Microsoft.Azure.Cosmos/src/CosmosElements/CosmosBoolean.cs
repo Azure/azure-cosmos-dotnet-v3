@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    sealed class CosmosBoolean : CosmosElement
+    sealed class CosmosBoolean : CosmosElement, IEquatable<CosmosBoolean>
     {
         private static readonly CosmosBoolean True = new CosmosBoolean(true);
         private static readonly CosmosBoolean False = new CosmosBoolean(false);
@@ -55,6 +55,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return cosmosElementVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            if (!(cosmosElement is CosmosBoolean cosmosBoolean))
+            {
+                return false;
+            }
+
+            return this.Equals(cosmosBoolean);
+        }
+
+        public bool Equals(CosmosBoolean cosmosBoolean)
+        {
+            if (cosmosBoolean == null)
+            {
+                return false;
+            }
+
+            return this.Value == cosmosBoolean.Value;
         }
 
         public static CosmosBoolean Create(bool boolean)

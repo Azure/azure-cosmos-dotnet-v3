@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    sealed class CosmosNull : CosmosElement
+    sealed class CosmosNull : CosmosElement, IEquatable<CosmosNull>
     {
         private static readonly CosmosNull Singleton = new CosmosNull();
 
@@ -51,6 +52,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return cosmosElementVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            if (!(cosmosElement is CosmosNull))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public static CosmosNull Create()
