@@ -495,7 +495,7 @@ namespace Azure.Cosmos
         ///     using(Stream stream = response.ContentStream)
         ///     {
         ///         //Read or do other operations with the stream
-        ///         using (StreamReader  streamReader = new StreamReader(stream))
+        ///         using (StreamReader streamReader = new StreamReader(stream))
         ///         {
         ///             string content =  streamReader.ReadToEndAsync();
         ///         }
@@ -590,7 +590,7 @@ namespace Azure.Cosmos
         ///         //Read or do other operations with the stream
         ///         using (StreamReader streamReader = new StreamReader(stream))
         ///         {
-        ///             string content =  streamReader.ReadToEndAsync();
+        ///             string content = streamReader.ReadToEndAsync();
         ///         }
         ///     }
         /// }
@@ -743,10 +743,18 @@ namespace Azure.Cosmos
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
         /// <code language="c#">
         /// <![CDATA[
-        /// public class ToDoActivity{
+        /// public class ToDoActivity
+        /// {
         ///     public string id {get; set;}
         ///     public string status {get; set;}
         ///     public int cost {get; set;}
+        /// }
+        ///
+        /// // Wraps the Service response from https://docs.microsoft.com/rest/api/cosmos-db/query-documents
+        /// public class CosmosRestResponse<T>
+        /// {
+        ///     [JsonPropertyName("Documents")]
+        ///     public T[] Documents { get; set; }
         /// }
         /// 
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
@@ -756,10 +764,9 @@ namespace Azure.Cosmos
         ///                                                 null,
         ///                                                 new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (Stream stream = response.ContentStream)
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             CosmosRestResponse<ToDoActivity> response = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
         ///         }
         ///     }
         /// ]]>
@@ -824,10 +831,18 @@ namespace Azure.Cosmos
         /// 1. Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
         /// <code language="c#">
         /// <![CDATA[
-        /// public class ToDoActivity{
+        /// public class ToDoActivity
+        /// {
         ///     public string id {get; set;}
         ///     public string status {get; set;}
         ///     public int cost {get; set;}
+        /// }
+        ///
+        /// // Wraps the Service response from https://docs.microsoft.com/rest/api/cosmos-db/query-documents
+        /// public class CosmosRestResponse<T>
+        /// {
+        ///     [JsonPropertyName("Documents")]
+        ///     public T[] Documents { get; set; }
         /// }
         /// 
         /// await foreach(Response response in this.Container.GetItemQueryStreamResultsAsync(
@@ -835,10 +850,9 @@ namespace Azure.Cosmos
         ///     null,
         ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         /// {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (Stream stream = response.ContentStream)
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             CosmosRestResponse<ToDoActivity> response = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
         ///         }
         /// }
         ///
@@ -849,10 +863,18 @@ namespace Azure.Cosmos
         /// 2. Creates a FeedIterator to get all the ToDoActivity.
         /// <code language="c#">
         /// <![CDATA[
-        /// public class ToDoActivity{
+        /// public class ToDoActivity
+        /// {
         ///     public string id {get; set;}
         ///     public string status {get; set;}
         ///     public int cost {get; set;}
+        /// }
+        ///
+        /// // Wraps the Service response from https://docs.microsoft.com/rest/api/cosmos-db/query-documents
+        /// public class CosmosRestResponse<T>
+        /// {
+        ///     [JsonPropertyName("Documents")]
+        ///     public T[] Documents { get; set; }
         /// }
         ///
         /// await foreach(Response response in this.Container.GetItemQueryStreamResultsAsync(
@@ -860,10 +882,9 @@ namespace Azure.Cosmos
         ///     null,
         ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         /// {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (Stream stream = response.ContentStream)
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             CosmosRestResponse<ToDoActivity> response = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
         ///         }
         /// }
         /// ]]>
