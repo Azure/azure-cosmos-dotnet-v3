@@ -243,10 +243,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc />
-        protected override IEnumerable<HttpHeader> EnumerateHeaders()
-        {
-            throw new NotImplementedException();
-        }
+        protected override IEnumerable<HttpHeader> EnumerateHeaders() => this.CosmosHeaders.GetHttpHeaders();
 
         private static Dictionary<string, object> CreateDictionary()
         {
