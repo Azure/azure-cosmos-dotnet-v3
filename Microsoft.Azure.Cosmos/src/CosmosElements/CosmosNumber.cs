@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public int CompareTo(CosmosNumber other)
         {
             int thisTypeOrder = this.Accept(CosmosNumberToTypeOrder.Singleton);
-            int otherTypeOrder = this.Accept(CosmosNumberToTypeOrder.Singleton);
+            int otherTypeOrder = other.Accept(CosmosNumberToTypeOrder.Singleton);
 
             if (thisTypeOrder != otherTypeOrder)
             {
