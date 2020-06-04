@@ -766,7 +766,7 @@ namespace Azure.Cosmos
         ///     {
         ///         using (Stream stream = response.ContentStream)
         ///         {
-        ///             CosmosRestResponse<ToDoActivity> response = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
+        ///             CosmosRestResponse<ToDoActivity> deserializedResponse = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
         ///         }
         ///     }
         /// ]]>
@@ -852,7 +852,7 @@ namespace Azure.Cosmos
         /// {
         ///         using (Stream stream = response.ContentStream)
         ///         {
-        ///             CosmosRestResponse<ToDoActivity> response = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
+        ///             CosmosRestResponse<ToDoActivity> deserializedResponse = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
         ///         }
         /// }
         ///
@@ -884,7 +884,7 @@ namespace Azure.Cosmos
         /// {
         ///         using (Stream stream = response.ContentStream)
         ///         {
-        ///             CosmosRestResponse<ToDoActivity> response = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
+        ///             CosmosRestResponse<ToDoActivity> deserializedResponse = await JsonSerializer.DeserializeAsync<CosmosRestResponse<ToDoActivity>>(stream);
         ///         }
         /// }
         /// ]]>
