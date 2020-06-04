@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract partial class CosmosGuid : CosmosElement, IEquatable<CosmosGuid>
     {
+        private const uint HashSeed = 527095639;
+
         protected CosmosGuid()
             : base(CosmosElementType.Guid)
         {
@@ -71,6 +73,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return this.Value == cosmosGuid.Value;
+        }
+
+        public override int GetHashCode()
+        {
+            uint hash = HashSeed;
+            hash = MurmurHash3.Hash32(this.Value, hash);
+            return (int)hash;
         }
 
         public static CosmosGuid Create(

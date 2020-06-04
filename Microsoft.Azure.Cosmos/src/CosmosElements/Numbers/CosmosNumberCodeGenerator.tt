@@ -20,6 +20,18 @@ Dictionary<string, string> cosmosNumberTypeToDotNetType = new Dictionary<string,
     { "Float32", "float" },
     { "Float64", "double" },
 };
+
+Dictionary<string, uint> cosmosNumberTypeHashCode = new Dictionary<string, uint>()
+{
+    { "Number64", 1943952435 },
+    { "Int8", 1301790982 },
+    { "Int16", 1176550641 },
+    { "Int32", 1791401667 },
+    { "Int64", 2562566505 },
+    { "UInt32", 3771427877 },
+    { "Float32", 495253708 },
+    { "Float64", 470975939 },
+};
 #>
 <# foreach (KeyValuePair<string, string> kvp in cosmosNumberTypeToDotNetType) 
 {
@@ -45,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber, IEqutable<Cosmos<#= cosmosNumberType #>>
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber, IEquatable<Cosmos<#= cosmosNumberType #>>
     {
         protected Cosmos<#= cosmosNumberType #>()
             : base(CosmosNumberType.<#= cosmosNumberType #>)
@@ -86,6 +98,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return this.Equals(cosmos<#= cosmosNumberType #>);
         }
 
+        public override int GetHashCode()
+        {
+            uint hash = <#= cosmosNumberTypeHashCode[cosmosNumberType] #>;
+            hash = MurmurHash3.Hash32(this.GetValue(), hash);
+
+            return (int)hash;
+        }
+
         public bool Equals(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>)
         {
             return this.GetValue() == cosmos<#= cosmosNumberType #>.GetValue();
@@ -123,6 +143,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+    using System;
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1601 // Partial elements should be documented
@@ -130,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber, IEquatable<Cosmos<#= cosmosNumberType #>>
     {
         private sealed class EagerCosmos<#= cosmosNumberType #> : Cosmos<#= cosmosNumberType #>
         {
@@ -167,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber, IEquatable<Cosmos<#= cosmosNumberType #>>
     {
         private sealed class LazyCosmos<#= cosmosNumberType #> : Cosmos<#= cosmosNumberType #>
         {
@@ -213,6 +235,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+    using System;
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
@@ -240,6 +264,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+    using System;
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented

@@ -18,8 +18,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>, IComparable<CosmosArray>
+    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>
     {
+        private const uint HashSeed = 2533142560;
+
         protected CosmosArray()
             : base(CosmosElementType.Array)
         {
@@ -91,6 +93,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return true;
+        }
+
+        public override int GetHashCode()
+        {
+            uint hash = HashSeed;
+
+            // Incorporate all the array items into the hash.
+            for (int index = 0; index < this.Count; index++)
+            {
+                CosmosElement arrayItem = this[index];
+                hash = MurmurHash3.Hash32(arrayItem.GetHashCode(), hash);
+            }
+
+            return (int)hash;
         }
 
         public static CosmosArray Create(

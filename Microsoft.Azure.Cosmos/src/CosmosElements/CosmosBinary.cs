@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract partial class CosmosBinary : CosmosElement, IEquatable<CosmosBinary>
     {
+        private const uint HashSeed = 1577818695;
+
         protected CosmosBinary()
             : base(CosmosElementType.Binary)
         {
@@ -72,6 +74,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return this.Value.Span.SequenceEqual(cosmosBinary.Value.Span);
+        }
+
+        public override int GetHashCode()
+        {
+            uint hash = HashSeed;
+            hash = MurmurHash3.Hash32(this.Value.Span, hash);
+            return (int)hash;
         }
 
         public static CosmosBinary Create(

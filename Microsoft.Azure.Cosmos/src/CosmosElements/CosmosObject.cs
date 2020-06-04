@@ -20,6 +20,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>
     {
+        private const uint HashSeed = 1275696788;
+        private const uint NameHashSeed = 263659187;
+        private const uint ValueHashSeed = 3590853931;
+
         protected CosmosObject()
             : base(CosmosElementType.Object)
         {
@@ -128,6 +132,27 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return true;
+        }
+
+        public override int GetHashCode()
+        {
+            uint hash = HashSeed;
+            foreach (KeyValuePair<string, CosmosElement> kvp in this)
+            {
+                uint nameHash = MurmurHash3.Hash32(kvp.Key, ValueHashSeed);
+                uint valueHash = MurmurHash3.Hash32(kvp.Value.GetHashCode(), nameHash);
+
+                //// xor is symmetric meaning that a ^ b = b ^ a
+                //// Which is great since now we can add the property hashes to the intermediate hash
+                //// in any order and get the same result, which upholds our definition of equality.
+                //// Note that we don't have to worry about a ^ a = 0 = b ^ b for duplicate property values,
+                //// since the hash of property values are seeded with the hash of property names,
+                //// which are unique within an object.
+
+                hash ^= valueHash;
+            }
+
+            return (int)hash;
         }
 
         public static CosmosObject Create(

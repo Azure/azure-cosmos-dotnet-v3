@@ -16,6 +16,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     sealed class CosmosBoolean : CosmosElement, IEquatable<CosmosBoolean>
     {
+        private const int TrueHash = 1071096595;
+        private const int FalseHash = 1031304189;
+
         private static readonly CosmosBoolean True = new CosmosBoolean(true);
         private static readonly CosmosBoolean False = new CosmosBoolean(false);
 
@@ -75,6 +78,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return this.Value == cosmosBoolean.Value;
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Value ? TrueHash : FalseHash;
         }
 
         public static CosmosBoolean Create(bool boolean)

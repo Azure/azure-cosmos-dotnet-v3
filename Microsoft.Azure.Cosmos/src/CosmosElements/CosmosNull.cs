@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     sealed class CosmosNull : CosmosElement, IEquatable<CosmosNull>
     {
+        private const uint Hash = 448207988;
+
         private static readonly CosmosNull Singleton = new CosmosNull();
 
         private CosmosNull()
@@ -56,17 +58,24 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool Equals(CosmosElement cosmosElement)
         {
-            if (!(cosmosElement is CosmosNull))
+            if (!(cosmosElement is CosmosNull cosmosNull))
             {
                 return false;
             }
 
-            return true;
+            return this.Equals(cosmosNull);
         }
+
+        public bool Equals(CosmosNull cosmosNull) => true;
 
         public static CosmosNull Create()
         {
             return CosmosNull.Singleton;
+        }
+
+        public override int GetHashCode()
+        {
+            return (int)Hash;
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)

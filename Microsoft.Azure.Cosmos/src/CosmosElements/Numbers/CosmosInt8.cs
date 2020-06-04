@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 33
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 45
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class CosmosInt8 : CosmosNumber, IEqutable<CosmosInt8>
+    abstract partial class CosmosInt8 : CosmosNumber, IEquatable<CosmosInt8>
     {
         protected CosmosInt8()
             : base(CosmosNumberType.Int8)
@@ -56,6 +56,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             }
 
             return this.Equals(cosmosInt8);
+        }
+
+        public override int GetHashCode()
+        {
+            uint hash = 1301790982;
+            hash = MurmurHash3.Hash32(this.GetValue(), hash);
+
+            return (int)hash;
         }
 
         public bool Equals(CosmosInt8 cosmosInt8)

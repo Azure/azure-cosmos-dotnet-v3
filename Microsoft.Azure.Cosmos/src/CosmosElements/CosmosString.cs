@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract partial class CosmosString : CosmosElement, IEquatable<CosmosString>
     {
+        private const uint HashSeed = 3163568842;
+
         protected CosmosString()
             : base(CosmosElementType.String)
         {
@@ -70,6 +72,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public bool Equals(CosmosString cosmosString)
         {
             return this.Value == cosmosString.Value;
+        }
+
+        public override int GetHashCode()
+        {
+            uint hash = HashSeed;
+            hash = MurmurHash3.Hash32(this.Value, hash);
+
+            return (int)hash;
         }
 
         public static CosmosString Create(

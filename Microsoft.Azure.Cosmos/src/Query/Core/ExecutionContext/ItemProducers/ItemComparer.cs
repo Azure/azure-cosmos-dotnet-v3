@@ -301,6 +301,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 return cosmosElement is MinValueItem;
             }
 
+            public override int GetHashCode()
+            {
+                return 42;
+            }
+
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 throw new NotImplementedException();
@@ -337,6 +342,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             public override bool Equals(CosmosElement cosmosElement)
             {
                 return cosmosElement is MaxValueItem;
+            }
+
+            public override int GetHashCode()
+            {
+                return 1337;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)
