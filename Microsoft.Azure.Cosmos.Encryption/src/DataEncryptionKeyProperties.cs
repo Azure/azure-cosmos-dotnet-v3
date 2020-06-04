@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Linq;
     using Newtonsoft.Json;
 
-    /// <summary> 
+    /// <summary>
     /// Details of an encryption key for use with the Azure Cosmos DB service.
     /// </summary>
     public class DataEncryptionKeyProperties : IEquatable<DataEncryptionKeyProperties>
@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptionAlgorithm">Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.</param>
         /// <param name="wrappedDataEncryptionKey">Wrapped (encrypted) form of the data encryption key.</param>
         /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
+        /// /// <param name="createdTime">Created time.</param>
         public DataEncryptionKeyProperties(
             string id,
             string encryptionAlgorithm,
@@ -60,11 +61,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// The identifier of the resource.
+        /// Gets the identifier of the resource.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
+        /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier.
         /// </para>
         /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
@@ -75,19 +76,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public string Id { get; internal set; }
 
         /// <summary>
-        /// Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
+        /// Gets the Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
         /// </summary>
         [JsonProperty(PropertyName = "encryptionAlgorithm", NullValueHandling = NullValueHandling.Ignore)]
         public string EncryptionAlgorithm { get; internal set; }
 
         /// <summary>
-        /// Wrapped form of the data encryption key.
+        /// Gets wrapped form of the data encryption key.
         /// </summary>
         [JsonProperty(PropertyName = "wrappedDataEncryptionKey", NullValueHandling = NullValueHandling.Ignore)]
         public byte[] WrappedDataEncryptionKey { get; internal set; }
 
         /// <summary>
-        /// Metadata for the wrapping provider that can be used to unwrap the wrapped data encryption key.
+        /// Gets metadata for the wrapping provider that can be used to unwrap the wrapped data encryption key.
         /// </summary>
         [JsonProperty(PropertyName = "keyWrapMetadata", NullValueHandling = NullValueHandling.Ignore)]
         public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; internal set; }
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// The entity tag associated with the resource.
         /// </value>
         /// <remarks>
-        /// ETags are used for concurrency checking when updating resources. 
+        /// ETags are used for concurrency checking when updating resources.
         /// </remarks>
         [JsonProperty(PropertyName = "_etag", NullValueHandling = NullValueHandling.Ignore)]
         public string ETag { get; internal set; }
@@ -122,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
         /// </summary>
-        /// <value>The self-link associated with the resource.</value> 
+        /// <value>The self-link associated with the resource.</value>
         /// <remarks>
         /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
@@ -131,13 +132,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public virtual string SelfLink { get; internal set; }
 
         /// <summary>
-        /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
+        /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The Resource Id associated with the resource.
         /// </value>
         /// <remarks>
-        /// A Resource Id is the unique, immutable, identifier assigned to each Azure Cosmos DB 
+        /// A Resource Id is the unique, immutable, identifier assigned to each Azure Cosmos DB
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
