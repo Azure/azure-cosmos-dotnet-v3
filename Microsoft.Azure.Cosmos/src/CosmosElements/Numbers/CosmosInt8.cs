@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
     abstract partial class CosmosInt8 : CosmosNumber, IEquatable<CosmosInt8>, IComparable<CosmosInt8>
     {
         protected CosmosInt8()
-            : base(CosmosNumberType.Int8)
+            : base()
         {
         }
 

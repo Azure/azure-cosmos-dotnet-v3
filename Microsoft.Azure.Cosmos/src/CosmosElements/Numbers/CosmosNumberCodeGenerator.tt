@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
     abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber, IEquatable<Cosmos<#= cosmosNumberType #>>, IComparable<Cosmos<#= cosmosNumberType #>>
     {
         protected Cosmos<#= cosmosNumberType #>()
-            : base(CosmosNumberType.<#= cosmosNumberType #>)
+            : base()
         {
         }
 
