@@ -25,15 +25,15 @@ These APIs are designed for more advance scenario where perfomance is critical o
 6. ResponseMessage.Diagnostics.ToString() contains information required to troubleshoot most issues.
 
 
-## Common error status codes
+## Common error status codes and retry logic
 
-| Status Code | Description | Retried |
+| Status Code | Description | Retry logic |
 |----------|-------------|------|
-
-| 404 | Resource is not found | No |
-| 408 | Request timed out | No |
-| 409 | Conflict (Only for Create/Replace/Upsert) | No |
-| 410 | Gone exceptions | No |
-| 429 | To many requests | Built in retry |
-| 500 | Azure Cosmos DB failure | No |
-| 503 | Was not able to reach Azure Cosmos DB | No |
+| 401 | [Not authorized](CosmosMacSignature.md) | SDK does not retry. User's application should have retry logic for some corner scenarios, but most likely require user to manually fix | 
+| 404 | [Resource is not found](CosmosNotFound.md) | SDK does not retry. User's application should handle this scenario. |
+| 408 | [Request timed out](CosmosRequestTimeout.md)| SDK does not retry. User's application should have retry logic. There are many transient scenarios that can cause this. The SDK does not rety because it can lead to conflicts since there is no way to tell if the original request completed. Different user scenarios require different logic for conflicts which would be broken if the SDK did retry.  |
+| 409 | Conflict (Only for Create/Replace/Upsert) | User's application should handle the conflict |
+| 410 | Gone exceptions | SDK handles the retries. If the retry logic is exceeded it will get converted to a 503 error. This can be caused by many scenarios like partition was moved to a larger machine because of a scaling operation. This is an expected exception and will not impact the Cosmos DB SLA. |
+| 429 | [To many requests](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/TroubleshootingGuides/CosmosRequestRateTooLarge.md) | The SDK has built in logic, and it is user configurable for most SDKs |
+| 500 | Azure Cosmos DB failure | User's application should have retry logic. |
+| 503 | Was not able to reach Azure Cosmos DB | User's application should have retry logic. |

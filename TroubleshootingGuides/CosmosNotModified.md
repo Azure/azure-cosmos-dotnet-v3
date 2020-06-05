@@ -1,13 +1,10 @@
 ## CosmosNotModified
 
-|   |   |   |
+| Http Status Code | Name | Category |
 |---|---|---|
-|TypeName|CosmosNotModified|
-|Status|304_0000|
-|Category|Service|
+|304|CosmosNotModified|Service|
 
 ## Description
-
 This status code in changefeed simply means there is no new items to process. This is expected and the SDK is designed to handle it.
 
 ## Related documentation
