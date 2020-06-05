@@ -623,14 +623,20 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
+        /// // Wraps the Service response from https://docs.microsoft.com/rest/api/cosmos-db/list-collections
+        /// public class CosmosRestResponse<T>
+        /// {
+        ///     [JsonPropertyName("DocumentCollections")]
+        ///     public T[] Containers { get; set; }
+        /// }
+        /// 
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// await foreach(Response response in this.cosmosDatabase.GetContainerQueryStreamResultsAsync(queryDefinition))
         /// {
-        ///     using (StreamReader sr = new StreamReader(response.Content))
-        ///     using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///     using (Stream stream = response.ContentStream)
         ///     {
-        ///         JObject result = JObject.Load(jtr);
+        ///         CosmosRestResponse<CosmosContainerProperties> deserializedResponse = await JsonSerializer.DeserializeAsync<CosmosRestResponse<CosmosContainerProperties>>(stream);
         ///     }
         /// }
         /// ]]>
@@ -693,10 +699,20 @@ namespace Azure.Cosmos
         /// 1. This create the stream enumerable for containers with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
+        /// // Wraps the Service response from https://docs.microsoft.com/rest/api/cosmos-db/list-collections
+        /// public class CosmosRestResponse<T>
+        /// {
+        ///     [JsonPropertyName("DocumentCollections")]
+        ///     public T[] Containers { get; set; }
+        /// }
+        /// 
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
         /// await foreach (Response response in this.cosmosDatabase.GetContainerQueryStreamResultsAsync(queryText))
         /// {
-        ///
+        ///     using (Stream stream = response.ContentStream)
+        ///     {
+        ///         CosmosRestResponse<CosmosContainerProperties> deserializedResponse = await JsonSerializer.DeserializeAsync<CosmosRestResponse<CosmosContainerProperties>>(stream);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -705,9 +721,19 @@ namespace Azure.Cosmos
         /// 2. This create the stream enumerable for containers without queryText, retrieving all container.
         /// <code language="c#">
         /// <![CDATA[
+        /// // Wraps the Service response from https://docs.microsoft.com/rest/api/cosmos-db/list-collections
+        /// public class CosmosRestResponse<T>
+        /// {
+        ///     [JsonPropertyName("DocumentCollections")]
+        ///     public T[] Containers { get; set; }
+        /// }
+        /// 
         /// await foreach (Response response in this.cosmosDatabase.GetContainerQueryStreamResultsAsync())
         /// {
-        ///
+        ///     using (Stream stream = response.ContentStream)
+        ///     {
+        ///         CosmosRestResponse<CosmosContainerProperties> deserializedResponse = await JsonSerializer.DeserializeAsync<CosmosRestResponse<CosmosContainerProperties>>(stream);
+        ///     }
         /// }
         /// ]]>
         /// </code>
