@@ -206,7 +206,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             };
         }
 
-        public static bool operator ==(CosmosElement a, CosmosElement b) => a.Equals(b);
+        public static bool operator ==(CosmosElement a, CosmosElement b)
+        {
+            if (object.ReferenceEquals(a, b))
+            {
+                return true;
+            }
+
+            if ((a is null) || (b is null))
+            {
+                return false;
+            }
+
+            return a.Equals(b);
+        }
 
         public static bool operator !=(CosmosElement a, CosmosElement b) => !(a == b);
 
