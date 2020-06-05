@@ -11,7 +11,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
-    /// Handler which selects the pipeline for the requested resource operation
+    /// Handler which add process level info like CPU usage to the
+    /// diagnostics. This is a best effort scenario. It will not
+    /// add or attempt to add it if an exception occurs to avoid
+    /// impacting users.
     /// </summary>
     internal class DiagnosticsHandler : RequestHandler
     {
