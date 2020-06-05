@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         private static readonly CosmosNull Singleton = new CosmosNull();
 
         private CosmosNull()
-            : base(CosmosElementType.Null)
+            : base()
         {
         }
 

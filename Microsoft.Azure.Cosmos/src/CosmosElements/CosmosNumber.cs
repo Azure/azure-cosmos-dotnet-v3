@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     abstract class CosmosNumber : CosmosElement, IEquatable<CosmosNumber>, IComparable<CosmosNumber>
     {
         protected CosmosNumber(CosmosNumberType cosmosNumberType)
-            : base(CosmosElementType.Number)
+            : base()
         {
             this.NumberType = cosmosNumberType;
         }

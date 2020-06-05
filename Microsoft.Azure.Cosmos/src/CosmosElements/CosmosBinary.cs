@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         private const uint HashSeed = 1577818695;
 
         protected CosmosBinary()
-            : base(CosmosElementType.Binary)
+            : base()
         {
         }
 

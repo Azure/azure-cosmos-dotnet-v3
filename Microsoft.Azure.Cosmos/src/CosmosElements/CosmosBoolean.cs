@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         private static readonly CosmosBoolean False = new CosmosBoolean(false);
 
         private CosmosBoolean(bool value)
-            : base(CosmosElementType.Boolean)
+            : base()
         {
             this.Value = value;
         }

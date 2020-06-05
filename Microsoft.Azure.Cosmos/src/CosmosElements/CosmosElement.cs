@@ -21,12 +21,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract class CosmosElement : IEquatable<CosmosElement>, IComparable<CosmosElement>
     {
-        protected CosmosElement(CosmosElementType cosmosItemType)
+        protected CosmosElement()
         {
-            this.Type = cosmosItemType;
         }
-
-        public CosmosElementType Type { get; }
 
         public override string ToString()
         {

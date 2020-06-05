@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         private const uint NameHashSeed = 263659187;
 
         protected CosmosObject()
-            : base(CosmosElementType.Object)
+            : base()
         {
         }
 

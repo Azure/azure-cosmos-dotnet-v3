@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         private const uint HashSeed = 527095639;
 
         protected CosmosGuid()
-            : base(CosmosElementType.Guid)
+            : base()
         {
         }
 

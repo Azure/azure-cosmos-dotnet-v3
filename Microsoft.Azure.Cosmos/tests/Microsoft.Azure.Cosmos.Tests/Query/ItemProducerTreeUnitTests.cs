@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             IReadOnlyList<CosmosElement> cosmosElements = new List<CosmosElement>()
             {
-                new Mock<CosmosElement>(CosmosElementType.Object).Object
+                new Mock<CosmosElement>().Object
             };
 
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
