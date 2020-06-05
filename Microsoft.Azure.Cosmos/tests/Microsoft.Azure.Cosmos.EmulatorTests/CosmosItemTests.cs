@@ -1357,7 +1357,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new Cosmos.PartitionKey(originalStatus),
                 item: testItem);
                 Assert.Fail("Replace changing partition key is not supported.");
-            }catch(CosmosException ce)
+            }
+            catch (CosmosException ce)
             {
                 Assert.AreEqual((HttpStatusCode)400, ce.StatusCode);
             }
