@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
@@ -32,6 +33,8 @@ namespace Microsoft.Azure.Cosmos
         internal abstract TimeSpan GetClientElapsedTime();
 
         internal abstract bool IsComplete();
+
+        internal abstract void AddDiagnosticsInternal(CosmosProcessInfo cpuLoadHistory);
 
         internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 

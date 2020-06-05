@@ -88,6 +88,18 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(elapsedInMs > 0);
         }
 
+        private static void ValidateProcessInfo(CosmosProcessInfo processInfo)
+        {
+            Assert.IsNotNull(processInfo.CpuLoadHistory);
+            Assert.IsNotNull(processInfo.CpuLoadHistory.ToString());
+
+            string info = processInfo.ToString();
+            Assert.IsNotNull(info);
+            JObject jObject = JObject.Parse(info);
+            Assert.IsNotNull(jObject["Id"].ToString());
+            Assert.IsNotNull(jObject["CpuHistory"].ToString());
+        }
+
         private static void ValidateRequestHandlerScope(RequestHandlerScope scope, TimeSpan? totalElapsedTime)
         {
             Assert.IsFalse(string.IsNullOrWhiteSpace(scope.Id));
@@ -291,6 +303,11 @@ namespace Microsoft.Azure.Cosmos
                // This will be visited if it is gateway query plan
             }
 
+            public override void Visit(CosmosProcessInfo cpuLoadHistory)
+            {
+                // This will be visited if it is gateway query plan
+            }
+
             public override void Visit(QueryPageDiagnostics queryPageDiagnostics)
             {
                 this.isQueryPageVisited = true;
@@ -377,6 +394,12 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsTrue(this.isContextVisited);
                 this.isRequestHandlerScopeVisited = true;
                 DiagnosticValidator.ValidateRequestHandlerScope(requestHandlerScope, this.TotalElapsedTime);
+            }
+
+            public override void Visit(CosmosProcessInfo cpuLoadHistory)
+            {
+                Assert.IsTrue(this.isContextVisited);
+                DiagnosticValidator.ValidateProcessInfo(cpuLoadHistory);
             }
 
             public override void Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
@@ -469,6 +492,10 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsTrue(this.isContextVisited);
                 this.isRequestHandlerVisited = true;
                 DiagnosticValidator.ValidateRequestHandlerScope(requestHandlerScope, this.TotalElapsedTime);
+            }
+
+            public override void Visit(CosmosProcessInfo cpuLoadHistory)
+            {
             }
 
             public override void Visit(CosmosDiagnosticScope cosmosDiagnosticScope)

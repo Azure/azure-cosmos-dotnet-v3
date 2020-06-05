@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Globalization;
     using System.IO;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json;
 
     internal sealed class CosmosDiagnosticsSerializerVisitor : CosmosDiagnosticsInternalVisitor
@@ -277,6 +278,20 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 this.jsonWriter.WritePropertyName("HandlerRunningElapsedTimeInMs");
                 this.jsonWriter.WriteValue(requestHandlerScope.GetCurrentElapsedTime());
             }
+
+            this.jsonWriter.WriteEndObject();
+        }
+
+        public override void Visit(CosmosProcessInfo processInfo)
+        {
+            this.jsonWriter.WriteStartObject();
+
+            this.jsonWriter.WritePropertyName("Id");
+            this.jsonWriter.WriteValue("ProcessInfo");
+
+            this.jsonWriter.WritePropertyName("CpuHistory");
+            CpuLoadHistory cpuLoadHistory = processInfo.CpuLoadHistory;
+            this.jsonWriter.WriteValue(cpuLoadHistory.ToString());
 
             this.jsonWriter.WriteEndObject();
         }

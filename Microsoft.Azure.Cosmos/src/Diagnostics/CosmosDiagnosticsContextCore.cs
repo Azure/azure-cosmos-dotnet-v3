@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// This represents the core diagnostics object used in the SDK.
@@ -82,6 +83,16 @@ namespace Microsoft.Azure.Cosmos
             RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
             this.ContextList.Add(requestHandlerScope);
             return requestHandlerScope;
+        }
+
+        internal override void AddDiagnosticsInternal(CosmosProcessInfo processInfo)
+        {
+            if (processInfo == null)
+            {
+                throw new ArgumentNullException(nameof(processInfo));
+            }
+
+            this.ContextList.Add(processInfo);
         }
 
         internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
