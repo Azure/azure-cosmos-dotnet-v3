@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // Backward compatible with old format
-                feedRangeInternal = FeedRangeIteratorCore.InitializeFeedRange(options);
+                feedRangeInternal = FeedRangeEPK.ForFullRange();
                 feedRangeContinuation = new FeedRangeCompositeContinuation(
                     string.Empty,
                     feedRangeInternal,
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options);
             }
 
-            feedRangeInternal = feedRangeInternal ?? FeedRangeIteratorCore.InitializeFeedRange(options);
+            feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForFullRange();
             return new FeedRangeIteratorCore(containerCore, feedRangeInternal, options);
         }
 
@@ -96,30 +96,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.TryInitializeContainerRIdAsync(innerCancellationToken);
             });
-        }
-
-        private static FeedRangeInternal InitializeFeedRange(QueryRequestOptions options)
-        {
-            if (options != null
-                && options.PartitionKey != null
-                && options.PartitionKey.HasValue)
-            {
-                return new FeedRangePartitionKey(options.PartitionKey.Value);
-            }
-
-            if (options != null
-                && options.Properties != null
-                && options.Properties.TryGetValue(HandlerConstants.StartEpkString, out object startEpk)
-                && options.Properties.TryGetValue(HandlerConstants.EndEpkString, out object endEpk))
-            {
-                return new FeedRangeEPK(new Documents.Routing.Range<string>(
-                        (string)startEpk,
-                        (string)endEpk,
-                        isMinInclusive: true,
-                        isMaxInclusive: false));
-            }
-
-            return FeedRangeEPK.ForFullRange();
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -233,37 +209,15 @@ namespace Microsoft.Azure.Cosmos
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
         {
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            List<Documents.Routing.Range<string>> ranges;
-            if (this.FeedRangeInternal is FeedRangePartitionKey)
-            {
-                PartitionKeyDefinition partitionKeyDefinition = await this.containerCore.GetPartitionKeyDefinitionAsync(cancellationToken);
-                ranges = await this.FeedRangeInternal.GetEffectiveRangesAsync(partitionKeyRangeCache, this.lazyContainerRid.Result.Result, partitionKeyDefinition);
-            }
-            else
-            {
-                IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        collectionRid: this.lazyContainerRid.Result.Result,
-                        range: (this.FeedRangeInternal as FeedRangeEPK).Range,
-                        forceRefresh: false);
-                ranges = pkRanges.Select(pkRange => pkRange.ToRange()).ToList();
-
-                if (this.queryRequestOptions != null
-                    && this.queryRequestOptions.Properties != null
-                    && this.queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object direction))
-                {
-                    RntbdConstants.RntdbEnumerationDirection rntdbEnumerationDirection = (byte)direction == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? RntbdConstants.RntdbEnumerationDirection.Reverse : RntbdConstants.RntdbEnumerationDirection.Forward;
-
-                    if (rntdbEnumerationDirection == RntbdConstants.RntdbEnumerationDirection.Reverse)
-                    {
-                        ranges.Reverse();
-                    }
-                }
-            }
+            List<Documents.Routing.Range<string>> effectiveRanges = await this.FeedRangeInternal.GetEffectiveRangesAsync(
+                routingMapProvider: partitionKeyRangeCache,
+                containerRid: this.lazyContainerRid.Result.Result,
+                partitionKeyDefinition: null);
 
             this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                 containerRid: this.lazyContainerRid.Result.Result,
                 feedRange: this.FeedRangeInternal,
-                ranges);
+                effectiveRanges);
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()

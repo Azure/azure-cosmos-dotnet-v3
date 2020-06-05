@@ -87,13 +87,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
                 //direction is not expected to change  between continuations.
+                Range<string> rangeFromContinuationToken =
+                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out List<CompositeContinuationToken> suppliedTokens);
+
                 ResolvedRangeInfo resolvedRangeInfo =
                     await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
-                        rangeFromContinuationToken: providedRanges[0],
-                        suppliedTokens: null,
+                        rangeFromContinuationToken: rangeFromContinuationToken,
+                        suppliedTokens: suppliedTokens,
                         direction: rntdbEnumerationDirection);
 
                 if (serviceRequest.IsNameBased && resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
@@ -104,15 +107,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
-                        rangeFromContinuationToken: providedRanges[0],
-                        suppliedTokens: null,
+                        rangeFromContinuationToken: rangeFromContinuationToken,
+                        suppliedTokens: suppliedTokens,
                         direction: rntdbEnumerationDirection);
                 }
 
                 if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
                 {
                     return ((DocumentClientException)new NotFoundException(
-                            $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the provided ranges: {JsonConvert.SerializeObject(providedRanges)}")
+                            $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
                             ).ToCosmosResponseMessage(request);
                 }
 
@@ -123,6 +126,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 if (!response.IsSuccessStatusCode)
                 {
                     this.SetOriginalContinuationToken(request, response, originalContinuation);
+                }
+                else
+                {
+                    if (!await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
+                        response.Headers.CosmosMessageHeaders,
+                        providedPartitionKeyRanges: providedRanges,
+                        routingMapProvider: routingMapProvider,
+                        collectionRid: collectionFromCache.ResourceId,
+                        resolvedRangeInfo: resolvedRangeInfo,
+                        direction: rntdbEnumerationDirection))
+                    {
+                        return ((DocumentClientException)new NotFoundException(
+                                $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Call to TryAddPartitionKeyRangeToContinuationTokenAsync failed to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
+                            ).ToCosmosResponseMessage(request);
+                    }
                 }
 
                 return response;
