@@ -38,6 +38,7 @@
         private static bool shouldCleanupOnStart;
         private static bool shouldCleanupOnFinish;
         private static int numWorkers;
+        private static bool isChangeFeed;
 
         public static async Task Main(string[] args)
         {
@@ -51,8 +52,8 @@
                 }
 
                 List<Memory<byte>> results = await Program.RunQuery(container);
-                Stream outputStream = Console.OpenStandardOutput();
 
+                Stream outputStream = Console.OpenStandardOutput();
                 foreach (Memory<byte> result in results)
                 {
                     outputStream.Write(result.Span);
@@ -84,12 +85,26 @@
         private static async Task<List<Memory<byte>>> RunQuery(Container container)
         {
             List<Memory<byte>> results = new List<Memory<byte>>();
-            FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-                "SELECT * FROM c",
-                requestOptions: new QueryRequestOptions()
+            FeedIterator feedIterator;
+
+            if (Program.isChangeFeed)
+            {
+                feedIterator = container.GetChangeFeedStreamIterator(
+                changeFeedRequestOptions: new ChangeFeedRequestOptions()
                 {
+                    StartTime = DateTime.MinValue.ToUniversalTime(),
                     MaxItemCount = 10000
                 });
+            }
+            else
+            {
+                feedIterator = container.GetItemQueryStreamIterator(
+                    "SELECT * FROM C",
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxItemCount = 10000
+                    });
+            }
 
             while (feedIterator.HasMoreResults)
             {
@@ -310,15 +325,17 @@
             Program.itemsToCreate = int.Parse(string.IsNullOrEmpty(configuration["ItemsToCreate"]) ? "1000" : configuration["ItemsToCreate"]);
             Program.itemSize = int.Parse(string.IsNullOrEmpty(configuration["ItemSize"]) ? "1024" : configuration["ItemSize"]);
             Program.runtimeInSeconds = int.Parse(string.IsNullOrEmpty(configuration["RuntimeInSeconds"]) ? "30" : configuration["RuntimeInSeconds"]);
-            Program.numWorkers = int.Parse(string.IsNullOrEmpty(configuration["numWorkers"]) ? "1" : configuration["numWorkers"]);
+            Program.numWorkers = int.Parse(string.IsNullOrEmpty(configuration["NumWorkers"]) ? "1" : configuration["NumWorkers"]);
 
             Program.shouldCleanupOnFinish = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnFinish"]) ? "false" : configuration["ShouldCleanupOnFinish"]);
             Program.shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
             int collectionThroughput = int.Parse(string.IsNullOrEmpty(configuration["CollectionThroughput"]) ? "30000" : configuration["CollectionThroughput"]);
 
+            Program.isChangeFeed = bool.Parse(string.IsNullOrEmpty(configuration["IsChangeFeed"]) ? "false" : configuration["IsChangeFeed"]);
+
             Program.client = GetClientInstance(endpointUrl, authKey);
             Program.database = client.GetDatabase(databaseName);
-            Container container = Program.database.GetContainer(containerName); ;
+            Container container = Program.database.GetContainer(containerName);
             if (shouldCleanupOnStart)
             {
                 container = await CreateFreshContainerAsync(client, databaseName, containerName, collectionThroughput);
