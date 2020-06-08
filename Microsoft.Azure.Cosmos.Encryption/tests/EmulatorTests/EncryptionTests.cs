@@ -559,6 +559,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
             TestDoc doc2ToCreate = TestDoc.Create(partitionKey);
             TestDoc doc3ToCreate = TestDoc.Create(partitionKey);
+            TestDoc doc4ToCreate = TestDoc.Create(partitionKey);
 
             ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await EncryptionTests.CreateItemAsync(EncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
             TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
@@ -584,6 +585,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .CreateItemStream(doc2ToCreate.ToStream(), EncryptionTests.GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
                 .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, EncryptionTests.GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
                 .CreateItem(doc3ToCreate)
+                .CreateItem(doc4ToCreate, EncryptionTests.GetBatchItemRequestOptions(dek1, new List<string>())) // empty PathsToEncrypt list
                 .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream(), EncryptionTests.GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
                 .UpsertItem(doc1ToUpsert, EncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
                 .DeleteItem(docToDelete.Id)
@@ -595,6 +597,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc1ToCreate);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc2ToCreate);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc3ToCreate);
+            await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc4ToCreate);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc1ToReplace);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc2ToReplace);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc1ToUpsert);
@@ -610,8 +613,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             doc2ToCreate.Sensitive = null;
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainer, doc2ToCreate);
 
-            // doc3ToCreate wasn't encrypted
+            // doc3ToCreate, doc4ToCreate wasn't encrypted
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainer, doc3ToCreate);
+            await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainer, doc4ToCreate);
 
             doc1ToReplace.Sensitive = null;
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainer, doc1ToReplace);
