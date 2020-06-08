@@ -132,7 +132,7 @@ namespace CosmosBenchmark
                         this.nextExecutionItemId,
                         new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey)))
             {
-                if (itemResponse.StatusCode != HttpStatusCode.OK)
+                if (itemResponse.StatusCode != HttpStatusCode.NotFound)
                 {
                     throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
                 }
