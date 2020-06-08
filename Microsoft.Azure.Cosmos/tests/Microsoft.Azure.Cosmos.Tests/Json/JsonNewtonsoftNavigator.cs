@@ -8,11 +8,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json.Linq;
 
-    internal sealed class JsonNewtonsoftNavigator : IJsonNavigator
+    internal sealed class JsonNewtonsoftNavigator : JsonNavigator
     {
         private readonly NewtonsoftNode root;
 
@@ -28,26 +27,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.root = new NewtonsoftNode(rootJToken, this.JTokenToJsonNodeType(rootJToken));
         }
 
-        public JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
+        public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
-        public IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode arrayNode, int index)
+        public override IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode arrayNode, int index)
         {
             JArray jArray = ((NewtonsoftNode)arrayNode).JToken as JArray;
             return new NewtonsoftNode(jArray[index], this.JTokenToJsonNodeType(jArray[index]));
         }
 
-        public bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out ReadOnlyMemory<byte> bufferedBinaryValue)
+        public override bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out ReadOnlyMemory<byte> bufferedBinaryValue)
         {
             throw new NotImplementedException();
         }
 
-        public int GetArrayItemCount(IJsonNavigatorNode arrayNode)
+        public override int GetArrayItemCount(IJsonNavigatorNode arrayNode)
         {
             JArray jArray = ((NewtonsoftNode)arrayNode).JToken as JArray;
             return jArray.Count;
         }
 
-        public IEnumerable<IJsonNavigatorNode> GetArrayItems(IJsonNavigatorNode arrayNode)
+        public override IEnumerable<IJsonNavigatorNode> GetArrayItems(IJsonNavigatorNode arrayNode)
         {
             JArray jArray = ((NewtonsoftNode)arrayNode).JToken as JArray;
             foreach (JToken arrayItem in jArray)
@@ -89,17 +88,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        public JsonNodeType GetNodeType(IJsonNavigatorNode node)
+        public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
         {
             return ((NewtonsoftNode)node).JsonNodeType;
         }
 
-        public Number64 GetNumber64Value(IJsonNavigatorNode numberNode)
+        public override Number64 GetNumber64Value(IJsonNavigatorNode numberNode)
         {
             return (double)((NewtonsoftNode)numberNode).JToken;
         }
 
-        public IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode)
+        public override IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode)
         {
             JObject jObject = ((NewtonsoftNode)objectNode).JToken as JObject;
             foreach (KeyValuePair<string, JToken> kvp in jObject)
@@ -110,79 +109,78 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        public int GetObjectPropertyCount(IJsonNavigatorNode objectNode)
+        public override int GetObjectPropertyCount(IJsonNavigatorNode objectNode)
         {
             JObject jObject = ((NewtonsoftNode)objectNode).JToken as JObject;
             return jObject.Count;
         }
 
-        public IJsonNavigatorNode GetRootNode()
+        public override IJsonNavigatorNode GetRootNode()
         {
             return this.root;
         }
 
-        public string GetStringValue(IJsonNavigatorNode stringNode)
+        public override string GetStringValue(IJsonNavigatorNode stringNode)
         {
             return (string)((NewtonsoftNode)stringNode).JToken;
         }
 
-        public sbyte GetInt8Value(IJsonNavigatorNode numberNode)
+        public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)
         {
             throw new NotImplementedException();
         }
 
-        public short GetInt16Value(IJsonNavigatorNode numberNode)
+        public override short GetInt16Value(IJsonNavigatorNode numberNode)
         {
             throw new NotImplementedException();
         }
 
-        public int GetInt32Value(IJsonNavigatorNode numberNode)
+        public override int GetInt32Value(IJsonNavigatorNode numberNode)
         {
             throw new NotImplementedException();
         }
 
-        public long GetInt64Value(IJsonNavigatorNode numberNode)
+        public override long GetInt64Value(IJsonNavigatorNode numberNode)
         {
             throw new NotImplementedException();
         }
 
-        public float GetFloat32Value(IJsonNavigatorNode numberNode)
+        public override float GetFloat32Value(IJsonNavigatorNode numberNode)
         {
             throw new NotImplementedException();
         }
 
-        public double GetFloat64Value(IJsonNavigatorNode numberNode)
+        public override double GetFloat64Value(IJsonNavigatorNode numberNode)
         {
             throw new NotImplementedException();
         }
 
-        public uint GetUInt32Value(IJsonNavigatorNode numberNode)
+        public override uint GetUInt32Value(IJsonNavigatorNode numberNode)
         {
             throw new NotImplementedException();
         }
 
-        public Guid GetGuidValue(IJsonNavigatorNode guidNode)
+        public override Guid GetGuidValue(IJsonNavigatorNode guidNode)
         {
             throw new NotImplementedException();
         }
 
-        public ReadOnlyMemory<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
+        public override ReadOnlyMemory<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
         {
             throw new NotImplementedException();
         }
 
-        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Memory bufferedStringValue)
+        public override bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Memory bufferedStringValue)
         {
             bufferedStringValue = default;
             return false;
         }
 
-        public bool TryGetObjectProperty(IJsonNavigatorNode objectNode, string propertyName, out ObjectProperty objectProperty)
+        public override bool TryGetObjectProperty(IJsonNavigatorNode objectNode, string propertyName, out ObjectProperty objectProperty)
         {
-            objectProperty = default(ObjectProperty);
+            objectProperty = default;
             JObject jObject = ((NewtonsoftNode)objectNode).JToken as JObject;
-            JToken jToken;
-            if (jObject.TryGetValue(propertyName, out jToken))
+            if (jObject.TryGetValue(propertyName, out JToken jToken))
             {
                 objectProperty = new ObjectProperty(
                     new NewtonsoftNode(JToken.FromObject(propertyName), JsonNodeType.FieldName),
@@ -193,15 +191,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return false;
         }
 
-        public bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson)
+        public override bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson)
         {
             bufferedRawJson = null;
-            return false;
-        }
-
-        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Span bufferedUtf8StringValue)
-        {
-            bufferedUtf8StringValue = default;
             return false;
         }
 

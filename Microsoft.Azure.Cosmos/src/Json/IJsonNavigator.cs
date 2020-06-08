@@ -183,5 +183,12 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="bufferedRawJson">The raw json.</param>
         /// <returns>True if bufferedRawJson was set. False otherwise.</returns>
         bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
+
+        /// <summary>
+        /// Writes a <see cref="IJsonNavigatorNode"/> to a <see cref="IJsonWriter"/>.
+        /// </summary>
+        /// <param name="jsonNavigatorNode">The <see cref="IJsonNavigatorNode"/> to write.</param>
+        /// <param name="jsonWriter">The <see cref="IJsonWriter"/> to write to.</param>
+        void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter);
     }
 }

@@ -194,7 +194,8 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(stats.RequestUri);
             Assert.IsNotNull(stats.RequestCharge);
-            if (stats.StatusCode != HttpStatusCode.RequestEntityTooLarge)
+            if (stats.StatusCode != HttpStatusCode.RequestEntityTooLarge &&
+                stats.StatusCode != HttpStatusCode.RequestTimeout)
             {
                 Assert.IsTrue(stats.RequestCharge > 0);
             }
