@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
         {
-            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
+            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
         }
@@ -74,6 +74,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (this.container != null)
             {
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
+            }
+
+            if (database == null)
+            {
+                throw new ArgumentNullException(nameof(database));
             }
 
             ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(

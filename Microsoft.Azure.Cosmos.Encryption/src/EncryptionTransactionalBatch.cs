@@ -41,12 +41,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return this;
             }
 
-            using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
-            {
-                return this.CreateItemStream(
-                    itemStream,
-                    requestOptions);
-            }
+            Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
+            return this.CreateItemStream(
+                itemStream,
+                requestOptions);
         }
 
         public override TransactionalBatch CreateItemStream(
@@ -113,13 +111,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return this;
             }
 
-            using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
-            {
-                return this.ReplaceItemStream(
-                    id,
-                    itemStream,
-                    requestOptions);
-            }
+            Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
+            return this.ReplaceItemStream(
+                id,
+                itemStream,
+                requestOptions);
         }
 
         public override TransactionalBatch ReplaceItemStream(
@@ -164,12 +160,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return this;
             }
 
-            using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
-            {
-                return this.UpsertItemStream(
-                    itemStream,
-                    requestOptions);
-            }
+            Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
+            return this.UpsertItemStream(
+                itemStream,
+                requestOptions);
         }
 
         public override TransactionalBatch UpsertItemStream(

@@ -326,7 +326,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions)
+            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
+                encryptionItemRequestOptions.EncryptionOptions != null)
             {
                 if (partitionKey == null)
                 {
