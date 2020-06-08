@@ -24,8 +24,6 @@ namespace CosmosBenchmark
         private readonly string databsaeName;
         private readonly string containerName;
 
-        private string nextExecutionItemPartitionKey;
-
         public InsertV2BenchmarkOperation(DocumentClient documentClient,
             string dbName,
             string containerName,
@@ -47,7 +45,7 @@ namespace CosmosBenchmark
             ResourceResponse<Document> itemResponse = await this.documentClient.CreateDocumentAsync(
                     this.containerUri,
                     this.sampleJObject,
-                    new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.nextExecutionItemPartitionKey) }
+                    new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.sampleJObject[this.partitionKeyPath]) }
                     );
 
             Document value = itemResponse.Resource;
@@ -68,7 +66,6 @@ namespace CosmosBenchmark
             this.sampleJObject["id"] = Guid.NewGuid().ToString();
             this.sampleJObject[this.partitionKeyPath] = newPartitionKey;
 
-            this.nextExecutionItemPartitionKey = newPartitionKey;
             return Task.CompletedTask;
         }
     }
@@ -82,8 +79,6 @@ namespace CosmosBenchmark
 
         private readonly string databsaeName;
         private readonly string containerName;
-
-        private string nextExecutionItemPartitionKey;
 
         public InsertBenchmarkOperation(
             Container container,
@@ -103,7 +98,7 @@ namespace CosmosBenchmark
         {
             ItemResponse<Dictionary<string, object>> itemResponse = await this.container.CreateItemAsync<Dictionary<string, object>>(
                     this.sampleJObject,
-                    new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey));
+                    new Microsoft.Azure.Cosmos.PartitionKey(this.sampleJObject[this.partitionKeyPath].ToString()));
 
             double ruCharges = itemResponse.Headers.RequestCharge;
             return new OperationResult()
@@ -121,7 +116,6 @@ namespace CosmosBenchmark
             this.sampleJObject["id"] = Guid.NewGuid().ToString();
             this.sampleJObject[this.partitionKeyPath] = newPartitionKey;
 
-            this.nextExecutionItemPartitionKey = newPartitionKey;
             return Task.CompletedTask;
         }
     }
