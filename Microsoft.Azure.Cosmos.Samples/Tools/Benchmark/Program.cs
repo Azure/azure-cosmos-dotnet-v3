@@ -111,50 +111,55 @@ namespace CosmosBenchmark
             int numberOfItemsToInsert = config.ItemCount / taskCount;
             string sampleItem = File.ReadAllText(config.ItemTemplateFile);
 
-            IBenchmarkOperatrion benchmarkOperation = null;
-            switch (config.WorkloadType.ToLower())
+            Func<IBenchmarkOperatrion> benchmarkOperationFactory = () =>
             {
-                case "insert":
-                    if (config.UseV2Client)
-                    {
-                        benchmarkOperation = new InsertV2BenchmarkOperation(
-                            this.documentClient,
-                            config.Database,
-                            config.Container,
-                            partitionKeyPath,
-                            sampleItem);
-                    }
-                    else
-                    {
-                        benchmarkOperation = new InsertBenchmarkOperation(
-                            container,
-                            partitionKeyPath,
-                            sampleItem);
-                    }
-                    break;
-                case "read":
-                    if (config.UseV2Client)
-                    {
-                        benchmarkOperation = new ReadV2BenchmarkOperation(
-                            this.documentClient,
-                            config.Database,
-                            config.Container,
-                            partitionKeyPath,
-                            sampleItem);
-                    }
-                    else
-                    {
-                        benchmarkOperation = new ReadBenchmarkOperation(
-                            container,
-                            partitionKeyPath,
-                            sampleItem);
-                    }
-                    break;
-                default:
-                    throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}");
-            }
+                IBenchmarkOperatrion benchmarkOperation = null;
+                switch (config.WorkloadType.ToLower())
+                {
+                    case "insert":
+                        if (config.UseV2Client)
+                        {
+                            benchmarkOperation = new InsertV2BenchmarkOperation(
+                                this.documentClient,
+                                config.Database,
+                                config.Container,
+                                partitionKeyPath,
+                                sampleItem);
+                        }
+                        else
+                        {
+                            benchmarkOperation = new InsertBenchmarkOperation(
+                                container,
+                                partitionKeyPath,
+                                sampleItem);
+                        }
+                        break;
+                    case "read":
+                        if (config.UseV2Client)
+                        {
+                            benchmarkOperation = new ReadV2BenchmarkOperation(
+                                this.documentClient,
+                                config.Database,
+                                config.Container,
+                                partitionKeyPath,
+                                sampleItem);
+                        }
+                        else
+                        {
+                            benchmarkOperation = new ReadBenchmarkOperation(
+                                container,
+                                partitionKeyPath,
+                                sampleItem);
+                        }
+                        break;
+                    default:
+                        throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}");
+                }
 
-            IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperation);
+                return benchmarkOperation;
+            };
+
+            IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
             await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, 0.01);
 
             if (config.CleanupOnFinish)

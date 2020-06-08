@@ -11,12 +11,12 @@ namespace CosmosBenchmark
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
     {
-        private readonly IBenchmarkOperatrion benchmarkOperation;
+        private readonly Func<IBenchmarkOperatrion> benchmarkOperation;
 
         private volatile int pendingExecutorCount;
 
         public ParallelExecutionStrategy(
-            IBenchmarkOperatrion benchmarkOperation)
+            Func<IBenchmarkOperatrion> benchmarkOperation)
         {
             this.benchmarkOperation = benchmarkOperation;
         }
@@ -28,7 +28,7 @@ namespace CosmosBenchmark
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
-                        benchmarkOperation: this.benchmarkOperation);
+                        benchmarkOperation: this.benchmarkOperation());
             await warmupExecutor.ExecuteAsync(
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
@@ -39,7 +39,7 @@ namespace CosmosBenchmark
             {
                 executors[i] = new SerialOperationExecutor(
                             executorId: i.ToString(),
-                            benchmarkOperation: this.benchmarkOperation);
+                            benchmarkOperation: this.benchmarkOperation());
             }
 
             this.pendingExecutorCount = serialExecutorConcurrency;
