@@ -135,7 +135,7 @@ namespace CosmosBenchmark
                 case "read":
                     if (config.UseV2Client)
                     {
-                        benchmarkOperation = new ReadBenchmarkOperation(
+                        benchmarkOperation = new ReadV2BenchmarkOperation(
                             this.documentClient,
                             config.Database,
                             config.Container,
