@@ -46,11 +46,11 @@ namespace CosmosBenchmark
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
+                ConsistencyLevel = ConsistencyLevel.Eventual,
                 ApplicationName = "cosmosdbdotnetbenchmark",
                 RequestTimeout = new TimeSpan(1, 0, 0),
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
-                MaxRequestsPerTcpConnection = 2,
             };
 
             using (DocumentClient documentClient = new DocumentClient(new Uri(config.EndPoint),
@@ -59,7 +59,8 @@ namespace CosmosBenchmark
                 {
                     ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
                     ConnectionProtocol = Protocol.Tcp,
-                }))
+                },
+                Microsoft.Azure.Documents.ConsistencyLevel.Eventual))
             {
 
                 using (CosmosClient client = new CosmosClient(
@@ -134,7 +135,7 @@ namespace CosmosBenchmark
                 case "read":
                     if (config.UseV2Client)
                     {
-                        benchmarkOperation = new ReadV2BenchmarkOperation(
+                        benchmarkOperation = new ReadBenchmarkOperation(
                             this.documentClient,
                             config.Database,
                             config.Container,
