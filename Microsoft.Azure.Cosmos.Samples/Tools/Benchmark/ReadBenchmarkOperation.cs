@@ -47,7 +47,7 @@ namespace CosmosBenchmark
             Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
             try
             {
-                ResourceResponse<Document> itemResponse = await this.documentClient.CreateDocumentAsync(
+                ResourceResponse<Document> itemResponse = await this.documentClient.ReadDocumentAsync(
                         itemUri,
                         new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.nextExecutionItemPartitionKey) }
                         );
@@ -58,7 +58,7 @@ namespace CosmosBenchmark
             {
                 if (dce.StatusCode != HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"ReadItem unexpected exception with {dce.StatusCode}");
+                    throw new Exception($"ReadItem unexpected exception with {dce.StatusCode} {dce.ToString()}");
                 }
 
                 double ruCharges = dce.RequestCharge;
@@ -77,12 +77,10 @@ namespace CosmosBenchmark
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
             {
-                string newPartitionKey = Guid.NewGuid().ToString();
-                this.sampleJObject["id"] = Guid.NewGuid().ToString();
-                this.sampleJObject[this.partitionKeyPath] = newPartitionKey;
-
-                this.nextExecutionItemId = newPartitionKey;
-                this.nextExecutionItemPartitionKey = newPartitionKey;
+                this.nextExecutionItemPartitionKey = Guid.NewGuid().ToString();
+                this.nextExecutionItemId = Guid.NewGuid().ToString();
+                this.sampleJObject["id"] = this.nextExecutionItemId;
+                this.sampleJObject[this.partitionKeyPath] = this.nextExecutionItemPartitionKey;
 
                 ////using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
                 ////{

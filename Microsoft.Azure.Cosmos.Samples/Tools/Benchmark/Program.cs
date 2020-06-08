@@ -62,6 +62,7 @@ namespace CosmosBenchmark
                 },
                 Microsoft.Azure.Documents.ConsistencyLevel.Eventual))
             {
+                await documentClient.OpenAsync();
 
                 using (CosmosClient client = new CosmosClient(
                     config.EndPoint,
