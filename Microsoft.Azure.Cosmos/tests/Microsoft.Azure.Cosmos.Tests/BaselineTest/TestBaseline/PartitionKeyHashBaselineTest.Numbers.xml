@@ -12,7 +12,7 @@
   <Result>
     <Input>
       <Description>negative zero</Description>
-      <PartitionKeyValue>0</PartitionKeyValue>
+      <PartitionKeyValue>-0</PartitionKeyValue>
     </Input>
     <Output>
       <PartitionKeyHashV1>50-A6-3D-B0-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
@@ -42,7 +42,7 @@
   <Result>
     <Input>
       <Description>Epsilon</Description>
-      <PartitionKeyValue>4.94065645841247E-324</PartitionKeyValue>
+      <PartitionKeyValue>5E-324</PartitionKeyValue>
     </Input>
     <Output>
       <PartitionKeyHashV1>18-D3-83-AC-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>

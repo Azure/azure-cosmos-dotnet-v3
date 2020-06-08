@@ -34,18 +34,18 @@ if "%COMMAND%"=="" goto :usage
 
 :setup
 if "%TEST_BASELINE_PATH%"=="" (
-  if EXIST "bin\Debug\netcoreapp2.0\BaselineTest\TestBaseline" (
-    set TEST_BASELINE_PATH=bin\Debug\netcoreapp2.0\BaselineTest\TestBaseline
+  if EXIST "bin\Debug\netcoreapp3.0\BaselineTest\TestBaseline" (
+    set TEST_BASELINE_PATH=bin\Debug\netcoreapp3.0\BaselineTest\TestBaseline
   ) else (
-    set TEST_BASELINE_PATH=bin\Release\netcoreapp2.0\BaselineTest\TestBaseline
+    set TEST_BASELINE_PATH=bin\Release\netcoreapp3.0\BaselineTest\TestBaseline
   )
 )
 
 if "%TEST_OUTPUT_PATH%"=="" (
-  if EXIST "bin\Debug\netcoreapp2.0\BaselineTest\TestOutput" (
-    set TEST_OUTPUT_PATH=bin\Debug\netcoreapp2.0\BaselineTest\TestOutput
+  if EXIST "bin\Debug\netcoreapp3.0\BaselineTest\TestOutput" (
+    set TEST_OUTPUT_PATH=bin\Debug\netcoreapp3.0\BaselineTest\TestOutput
   ) else (
-    set TEST_OUTPUT_PATH=bin\Release\netcoreapp2.0\BaselineTest\TestOutput
+    set TEST_OUTPUT_PATH=bin\Release\netcoreapp3.0\BaselineTest\TestOutput
   )
 )
 

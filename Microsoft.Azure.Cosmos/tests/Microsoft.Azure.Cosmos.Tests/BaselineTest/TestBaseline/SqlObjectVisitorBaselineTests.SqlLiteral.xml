@@ -703,13 +703,13 @@ undefined
     <Input>
       <Description>E</Description>
       <SqlObject><![CDATA[{
-  "Value": 2.7182818284590451
+  "Value": 2.718281828459045
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[2.7182818284590451]]></TextOutput>
+      <TextOutput><![CDATA[2.718281828459045]]></TextOutput>
       <PrettyPrint><![CDATA[
-2.7182818284590451
+2.718281828459045
 ]]></PrettyPrint>
       <HashCode>-991713004</HashCode>
       <ObfusctedQuery><![CDATA[2.7201000000000004]]></ObfusctedQuery>
@@ -719,13 +719,13 @@ undefined
     <Input>
       <Description>Pi</Description>
       <SqlObject><![CDATA[{
-  "Value": 3.1415926535897931
+  "Value": 3.141592653589793
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[3.1415926535897931]]></TextOutput>
+      <TextOutput><![CDATA[3.141592653589793]]></TextOutput>
       <PrettyPrint><![CDATA[
-3.1415926535897931
+3.141592653589793
 ]]></PrettyPrint>
       <HashCode>522620564</HashCode>
       <ObfusctedQuery><![CDATA[3.1401000000000003]]></ObfusctedQuery>
@@ -735,13 +735,13 @@ undefined
     <Input>
       <Description>1/3</Description>
       <SqlObject><![CDATA[{
-  "Value": 0.33333333333333331
+  "Value": 0.3333333333333333
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[0.33333333333333331]]></TextOutput>
+      <TextOutput><![CDATA[0.3333333333333333]]></TextOutput>
       <PrettyPrint><![CDATA[
-0.33333333333333331
+0.3333333333333333
 ]]></PrettyPrint>
       <HashCode>1700114827</HashCode>
       <ObfusctedQuery><![CDATA[0.33001]]></ObfusctedQuery>
@@ -893,23 +893,23 @@ NaN
   </Result>
   <Result>
     <Input>
-      <Description>Epsilon 4.94065645841247E-324</Description>
+      <Description>Epsilon 5E-324</Description>
       <SqlObject><![CDATA[{
-  "Value": 4.94065645841247E-324
+  "Value": 5E-324
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[4.94065645841247E-324]]></TextOutput>
+      <TextOutput><![CDATA[5E-324]]></TextOutput>
       <PrettyPrint><![CDATA[
-4.94065645841247E-324
+5E-324
 ]]></PrettyPrint>
       <HashCode>198553994</HashCode>
-      <ObfusctedQuery><![CDATA[4.94065645841247E-324]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[5E-324]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description>MaxValue 1.79769313486232E+308</Description>
+      <Description>MaxValue 1.7976931348623157E+308</Description>
       <SqlObject><![CDATA[{
   "Value": 1.7976931348623157E+308
 }]]></SqlObject>
@@ -925,7 +925,7 @@ NaN
   </Result>
   <Result>
     <Input>
-      <Description>MinValue -1.79769313486232E+308</Description>
+      <Description>MinValue -1.7976931348623157E+308</Description>
       <SqlObject><![CDATA[{
   "Value": -1.7976931348623157E+308
 }]]></SqlObject>
@@ -952,7 +952,7 @@ NaN
 -9223372036854775808
 ]]></PrettyPrint>
       <HashCode>-810176117</HashCode>
-      <ObfusctedQuery><![CDATA[-9.2233720368547758E+18]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[-9.223372036854776E+18]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -968,7 +968,7 @@ NaN
 9223372036854775807
 ]]></PrettyPrint>
       <HashCode>-1208831925</HashCode>
-      <ObfusctedQuery><![CDATA[9.2234720368547758E+18]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[9.223472036854776E+18]]></ObfusctedQuery>
     </Output>
   </Result>
 </Results>

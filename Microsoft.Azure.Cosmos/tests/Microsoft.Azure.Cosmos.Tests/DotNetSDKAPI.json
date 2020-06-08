@@ -8626,9 +8626,11 @@
       "Attributes": [],
       "MethodInfo": "System.String ToString()"
     },
-    "System.Type GetType()": {
+    "System.Type GetType()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]": {
       "Type": "Method",
-      "Attributes": [],
+      "Attributes": [
+        "NullableContextAttribute"
+      ],
       "MethodInfo": "System.Type GetType()"
     },
     "Void .ctor()": {
