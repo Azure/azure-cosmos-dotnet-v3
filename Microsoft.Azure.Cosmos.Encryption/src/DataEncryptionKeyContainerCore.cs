@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             try
-            { 
+            {
                 DataEncryptionKeyProperties dekProperties = await this.DekProvider.DekCache.GetOrAddDekPropertiesAsync(
                     id,
                     this.ReadResourceAsync,

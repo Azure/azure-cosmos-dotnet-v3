@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
-                string propertyName = pathToEncrypt.Substring(1);                
+                string propertyName = pathToEncrypt.Substring(1);
                 if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");

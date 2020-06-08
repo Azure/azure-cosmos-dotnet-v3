@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptionAlgorithm">Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.</param>
         /// <param name="wrappedDataEncryptionKey">Wrapped (encrypted) form of the data encryption key.</param>
         /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
-        /// /// <param name="createdTime">Created time.</param>
+        /// <param name="createdTime">Time at which this data encryption key was created.</param>
         public DataEncryptionKeyProperties(
             string id,
             string encryptionAlgorithm,

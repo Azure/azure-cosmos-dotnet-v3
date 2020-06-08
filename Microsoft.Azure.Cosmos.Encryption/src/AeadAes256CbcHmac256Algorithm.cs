@@ -32,24 +32,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private const int BlockSizeInBytes = 16;
 
         /// <summary>
-        /// Minimum Length of cipherText without authentication tag. This value is 1 (Version byte) + 16 (IV) + 16 (minimum of 1 block of cipher Text)
+        /// Minimum Length of cipherText without authentication tag. This value is 1 (version byte) + 16 (IV) + 16 (minimum of 1 block of cipher Text)
         /// </summary>
         private const int MinimumCipherTextLengthInBytesNoAuthenticationTag = sizeof(byte) + BlockSizeInBytes + BlockSizeInBytes;
 
         /// <summary>
-        /// Minimum Length of cipherText. This value is 1 (Version byte) + 32 (authentication tag) + 16 (IV) + 16 (minimum of 1 block of cipher Text)
+        /// Minimum Length of cipherText. This value is 1 (version byte) + 32 (authentication tag) + 16 (IV) + 16 (minimum of 1 block of cipher Text)
         /// </summary>
         private const int MinimumCipherTextLengthInBytesWithAuthenticationTag = MinimumCipherTextLengthInBytesNoAuthenticationTag + KeySizeInBytes;
 
         /// <summary>
         /// Cipher Mode. For this algorithm, we only use CBC mode.
         /// </summary>
-        private const CipherMode Mode = CipherMode.CBC;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1303:Const field names should begin with upper-case letter", Justification = "This code is borrowed and we may want to pull bug fixes if they happen on the original.")]
+        private const CipherMode cipherMode = CipherMode.CBC;
 
         /// <summary>
         /// Padding mode. This algorithm uses PKCS7.
         /// </summary>
-        private const PaddingMode Padding = PaddingMode.PKCS7;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1303:Const field names should begin with upper-case letter", Justification = "This code is borrowed and we may want to pull bug fixes if they happen on the original.")]
+        private const PaddingMode paddingMode = PaddingMode.PKCS7;
 
         /// <summary>
         /// Variable indicating whether this algorithm should work in Deterministic mode or Randomized mode.
@@ -74,14 +76,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly ConcurrentQueue<AesCryptoServiceProvider> cryptoProviderPool;
 
         /// <summary>
-        /// Byte array with algorithm Version used for authentication tag computation.
+        /// Byte array with algorithm version used for authentication tag computation.
         /// </summary>
-        private static readonly byte[] Version = new byte[] { 0x01 };
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1311:Static readonly fields should begin with upper-case letter", Justification = "This code is borrowed and we may want to pull bug fixes if they happen on the original.")]
+        private static readonly byte[] version = new byte[] { 0x01 };
 
         /// <summary>
-        /// Byte array with algorithm Version size used for authentication tag computation.
+        /// Byte array with algorithm version size used for authentication tag computation.
         /// </summary>
-        private static readonly byte[] VersionSize = new byte[] { sizeof(byte) };
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1311:Static readonly fields should begin with upper-case letter", Justification = "This code is borrowed and we may want to pull bug fixes if they happen on the original.")]
+        private static readonly byte[] versionSize = new byte[] { sizeof(byte) };
 
         public override byte[] RawKey => this.dataEncryptionKey.RootKey;
 
@@ -98,17 +102,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// For Randomized encryption, a random IV will be generated during encryption.
         /// </param>
         /// <param name="algorithmVersion">
-        /// Algorithm Version
+        /// Algorithm version
         /// </param>
         internal AeadAes256CbcHmac256Algorithm(AeadAes256CbcHmac256EncryptionKey encryptionKey, EncryptionType encryptionType, byte algorithmVersion)
         {
             this.dataEncryptionKey = encryptionKey;
             this.algorithmVersion = algorithmVersion;
 
-            Version[0] = algorithmVersion;
+            version[0] = algorithmVersion;
 
             Debug.Assert(encryptionKey != null, "Null encryption key detected in AeadAes256CbcHmac256 algorithm");
-            Debug.Assert(algorithmVersion == 0x01, "Unknown algorithm Version passed to AeadAes256CbcHmac256");
+            Debug.Assert(algorithmVersion == 0x01, "Unknown algorithm version passed to AeadAes256CbcHmac256");
 
             // Validate encryption type for this algorithm
             // This algorithm can only provide randomized or deterministic encryption types.
@@ -163,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             int numBlocks = (plainText.Length / BlockSizeInBytes) + 1;
 
-            // Final blob we return = Version + HMAC + iv + cipherText
+            // Final blob we return = version + HMAC + iv + cipherText
             const int hmacStartIndex = 1;
             int authenticationTagLen = hasAuthenticationTag ? KeySizeInBytes : 0;
             int ivStartIndex = hmacStartIndex + authenticationTagLen;
@@ -173,13 +177,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             int outputBufSize = sizeof(byte) + authenticationTagLen + iv.Length + (numBlocks * BlockSizeInBytes);
             byte[] outBuffer = new byte[outputBufSize];
 
-            // Store the Version and IV rightaway
+            // Store the version and IV rightaway
             outBuffer[0] = this.algorithmVersion;
             Buffer.BlockCopy(iv, 0, outBuffer, ivStartIndex, iv.Length);
 
+            AesCryptoServiceProvider aesAlg;
+
             // Try to get a provider from the pool.
             // If no provider is available, create a new one.
-            if (!this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesAlg))
+            if (!this.cryptoProviderPool.TryDequeue(out aesAlg))
             {
                 aesAlg = new AesCryptoServiceProvider();
 
@@ -187,8 +193,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     // Set various algorithm properties
                     aesAlg.Key = this.dataEncryptionKey.EncryptionKey;
-                    aesAlg.Mode = Mode;
-                    aesAlg.Padding = Padding;
+                    aesAlg.Mode = cipherMode;
+                    aesAlg.Padding = paddingMode;
                 }
                 catch (Exception)
                 {
@@ -228,12 +234,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     using (HMACSHA256 hmac = new HMACSHA256(this.dataEncryptionKey.MACKey))
                     {
                         Debug.Assert(hmac.CanTransformMultipleBlocks, "HMAC can't transform multiple blocks");
-                        hmac.TransformBlock(Version, 0, Version.Length, Version, 0);
+                        hmac.TransformBlock(version, 0, version.Length, version, 0);
                         hmac.TransformBlock(iv, 0, iv.Length, iv, 0);
 
                         // Compute HMAC on final block
                         hmac.TransformBlock(outBuffer, cipherStartIndex, numBlocks * BlockSizeInBytes, outBuffer, cipherStartIndex);
-                        hmac.TransformFinalBlock(VersionSize, 0, VersionSize.Length);
+                        hmac.TransformFinalBlock(versionSize, 0, versionSize.Length);
                         byte[] hash = hmac.Hash;
                         Debug.Assert(hash.Length >= authenticationTagLen, "Unexpected hash size");
                         Buffer.BlockCopy(hash, 0, outBuffer, hmacStartIndex, authenticationTagLen);
@@ -251,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// Decryption steps
-        /// 1. Validate Version byte
+        /// 1. Validate version byte
         /// 2. Validate Authentication tag
         /// 3. Decrypt the message
         /// </summary>
@@ -262,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// Decryption steps
-        /// 1. Validate Version byte
+        /// 1. Validate version byte
         /// 2. (optional) Validate Authentication tag
         /// 3. Decrypt the message
         /// </summary>
@@ -278,11 +284,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw EncryptionExceptionFactory.InvalidCipherTextSize(cipherText.Length, minimumCipherTextLength);
             }
 
-            // Validate the Version byte
+            // Validate the version byte
             int startIndex = 0;
             if (cipherText[startIndex] != this.algorithmVersion)
             {
-                // Cipher text was computed with a different algorithm Version than this.
+                // Cipher text was computed with a different algorithm version than this.
                 throw EncryptionExceptionFactory.InvalidAlgorithmVersion(cipherText[startIndex], this.algorithmVersion);
             }
 
@@ -329,10 +335,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert((count + offset) <= cipherText.Length);
 
             byte[] plainText;
+            AesCryptoServiceProvider aesAlg;
 
             // Try to get a provider from the pool.
             // If no provider is available, create a new one.
-            if (!this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesAlg))
+            if (!this.cryptoProviderPool.TryDequeue(out aesAlg))
             {
                 aesAlg = new AesCryptoServiceProvider();
 
@@ -340,8 +347,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     // Set various algorithm properties
                     aesAlg.Key = this.dataEncryptionKey.EncryptionKey;
-                    aesAlg.Mode = Mode;
-                    aesAlg.Padding = Padding;
+                    aesAlg.Mode = cipherMode;
+                    aesAlg.Padding = paddingMode;
                 }
                 catch (Exception)
                 {
@@ -360,16 +367,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 aesAlg.IV = iv;
 
                 // Create the streams used for decryption.
-                using MemoryStream msDecrypt = new MemoryStream();
-
-                // Create an encryptor to perform the stream transform.
-                using ICryptoTransform decryptor = aesAlg.CreateDecryptor();
-                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                using (MemoryStream msDecrypt = new MemoryStream())
                 {
-                    // Decrypt the secret message and get the plain text data
-                    csDecrypt.Write(cipherText, offset, count);
-                    csDecrypt.FlushFinalBlock();
-                    plainText = msDecrypt.ToArray();
+                    // Create an encryptor to perform the stream transform.
+                    using (ICryptoTransform decryptor = aesAlg.CreateDecryptor())
+                    {
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                        {
+                            // Decrypt the secret message and get the plain text data
+                            csDecrypt.Write(cipherText, offset, count);
+                            csDecrypt.FlushFinalBlock();
+                            plainText = msDecrypt.ToArray();
+                        }
+                    }
                 }
             }
             finally
@@ -393,20 +403,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] authenticationTag = new byte[KeySizeInBytes];
 
             // Raw Tag Length:
-            //              1 for the Version byte
+            //              1 for the version byte
             //              1 block for IV (16 bytes)
             //              cipherText.Length
-            //              1 byte for Version byte length
+            //              1 byte for version byte length
             using (HMACSHA256 hmac = new HMACSHA256(this.dataEncryptionKey.MACKey))
             {
                 int retVal = 0;
-                retVal = hmac.TransformBlock(Version, 0, Version.Length, Version, 0);
-                Debug.Assert(retVal == Version.Length);
+                retVal = hmac.TransformBlock(version, 0, version.Length, version, 0);
+                Debug.Assert(retVal == version.Length);
                 retVal = hmac.TransformBlock(iv, 0, iv.Length, iv, 0);
                 Debug.Assert(retVal == iv.Length);
                 retVal = hmac.TransformBlock(cipherText, offset, length, cipherText, offset);
                 Debug.Assert(retVal == length);
-                hmac.TransformFinalBlock(VersionSize, 0, VersionSize.Length);
+                hmac.TransformFinalBlock(versionSize, 0, versionSize.Length);
                 computedHash = hmac.Hash;
             }
 

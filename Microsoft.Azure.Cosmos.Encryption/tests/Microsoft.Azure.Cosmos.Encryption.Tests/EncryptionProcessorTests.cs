@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            JObject decryptedDoc = EncryptionProcessor.baseSerializer.FromStream<JObject>(decryptedStream);
+            JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
             EncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc);
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            JObject encryptedDoc = EncryptionProcessor.baseSerializer.FromStream<JObject>(encryptedStream);
+            JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
             
             Assert.AreEqual(testDoc.Id, encryptedDoc.Property("id").Value.Value<string>());
             Assert.AreEqual(testDoc.PK, encryptedDoc.Property(nameof(TestDoc.PK)).Value.Value<string>());
