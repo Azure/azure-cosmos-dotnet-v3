@@ -8,7 +8,7 @@
 HTTP 401: The MAC signature found in the HTTP request is not the same as the computed signature
 If you received the following 401 error message: "The MAC signature found in the HTTP request is not the same as the computed signature." it can be caused by the following scenarios.
 
-Older SDKs this might appear as an invalid json excption. Newer SDKs properly handle this scenario and give a valid error message.
+Older SDKs this might appear as an invalid json exception. Newer SDKs properly handle this scenario and give a valid error message.
 
 ## Troubleshooting steps
 
