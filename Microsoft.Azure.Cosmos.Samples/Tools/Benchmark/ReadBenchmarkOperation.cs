@@ -58,7 +58,7 @@ namespace CosmosBenchmark
             {
                 if (dce.StatusCode != HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"ReadItem unexpected success with {dce.StatusCode}");
+                    throw new Exception($"ReadItem unexpected exception with {dce.StatusCode}");
                 }
 
                 double ruCharges = dce.RequestCharge;
