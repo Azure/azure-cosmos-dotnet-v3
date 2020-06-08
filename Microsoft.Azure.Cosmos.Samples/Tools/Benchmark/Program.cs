@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents.Client;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -18,14 +19,16 @@ namespace CosmosBenchmark
     public sealed class Program
     {
         private CosmosClient client;
+        private DocumentClient documentClient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Program"/> class.
         /// </summary>
         /// <param name="client">The Azure Cosmos DB client instance.</param>
-        private Program(CosmosClient client)
+        private Program(CosmosClient client, DocumentClient documentClient)
         {
             this.client = client;
+            this.documentClient = documentClient;
         }
 
         /// <summary>
@@ -50,13 +53,23 @@ namespace CosmosBenchmark
                 MaxRequestsPerTcpConnection = 2,
             };
 
-            using (CosmosClient client = new CosmosClient(
-                config.EndPoint,
+            using (DocumentClient documentClient = new DocumentClient(new Uri(config.EndPoint),
                 accountKey,
-                clientOptions))
+                new ConnectionPolicy()
+                {
+                    ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
+                    ConnectionProtocol = Protocol.Tcp,
+                }))
             {
-                Program program = new Program(client);
-                await program.ExecuteAsync(config);
+
+                using (CosmosClient client = new CosmosClient(
+                    config.EndPoint,
+                    accountKey,
+                    clientOptions))
+                {
+                    Program program = new Program(client, documentClient);
+                    await program.ExecuteAsync(config);
+                }
             }
 
             TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
@@ -101,16 +114,40 @@ namespace CosmosBenchmark
             switch (config.WorkloadType.ToLower())
             {
                 case "insert":
-                    benchmarkOperation = new InsertBenchmarkOperation(
-                        container,
-                        partitionKeyPath,
-                        sampleItem);
+                    if (config.UseV2Client)
+                    {
+                        benchmarkOperation = new InsertV2BenchmarkOperation(
+                            this.documentClient,
+                            config.Database,
+                            config.Container,
+                            partitionKeyPath,
+                            sampleItem);
+                    }
+                    else
+                    {
+                        benchmarkOperation = new InsertBenchmarkOperation(
+                            container,
+                            partitionKeyPath,
+                            sampleItem);
+                    }
                     break;
                 case "read":
-                    benchmarkOperation = new ReadBenchmarkOperation(
-                        container,
-                        partitionKeyPath,
-                        sampleItem);
+                    if (config.UseV2Client)
+                    {
+                        benchmarkOperation = new ReadV2BenchmarkOperation(
+                            this.documentClient,
+                            config.Database,
+                            config.Container,
+                            partitionKeyPath,
+                            sampleItem);
+                    }
+                    else
+                    {
+                        benchmarkOperation = new ReadBenchmarkOperation(
+                            container,
+                            partitionKeyPath,
+                            sampleItem);
+                    }
                     break;
                 default:
                     throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}");

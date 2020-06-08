@@ -18,5 +18,6 @@
     <PackageReference Include="CommandLineParser" Version="2.5.0" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
     <PackageReference Include="HdrHistogram" Version="2.5.0" />
+    <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="2.1.0" />
   </ItemGroup>
 </Project>
