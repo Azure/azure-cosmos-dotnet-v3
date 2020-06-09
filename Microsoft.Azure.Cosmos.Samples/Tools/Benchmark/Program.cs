@@ -138,37 +138,33 @@ namespace CosmosBenchmark
                     case "read":
                         if (config.UseV2Client)
                         {
-                            benchmarkOperation = new ReadV2BenchmarkOperation(
+                            benchmarkOperation = new ReadExistsV2BenchmarkOperation(
                                 this.documentClient,
                                 config.Database,
                                 config.Container,
                                 partitionKeyPath,
-                                sampleItem, false);
+                                sampleItem);
                         }
                         else
                         {
-                            benchmarkOperation = new ReadBenchmarkOperation(
+                            benchmarkOperation = new ReadExistsV3BenchmarkOperation(
                                 container,
                                 partitionKeyPath,
-                                sampleItem, false);
+                                sampleItem);
                         }
                         break;
                     case "readnotfound":
                         if (config.UseV2Client)
                         {
-                            benchmarkOperation = new ReadV2BenchmarkOperation(
+                            benchmarkOperation = new ReadNotExistsV2BenchmarkOperation(
                                 this.documentClient,
                                 config.Database,
-                                config.Container,
-                                partitionKeyPath,
-                                sampleItem, true);
+                                config.Container);
                         }
                         else
                         {
-                            benchmarkOperation = new ReadBenchmarkOperation(
-                                container,
-                                partitionKeyPath,
-                                sampleItem, true);
+                            benchmarkOperation = new ReadNotExistsV3BenchmarkOperation(
+                                container);
                         }
                         break;
                     default:
