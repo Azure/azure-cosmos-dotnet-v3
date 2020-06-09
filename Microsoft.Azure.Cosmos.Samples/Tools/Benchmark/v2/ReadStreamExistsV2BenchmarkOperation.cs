@@ -44,7 +44,6 @@ namespace CosmosBenchmark
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
-
             ResourceResponse<Document> itemResponse = await this.documentClient.ReadDocumentAsync(
                         itemUri,
                         new RequestOptions() { PartitionKey = new PartitionKey(this.nextExecutionItemPartitionKey) }
@@ -52,6 +51,7 @@ namespace CosmosBenchmark
 
             using (itemResponse.ResponseStream) { }
             double ruCharges = itemResponse.RequestCharge;
+
             return new OperationResult()
             {
                 DatabseName = databsaeName,

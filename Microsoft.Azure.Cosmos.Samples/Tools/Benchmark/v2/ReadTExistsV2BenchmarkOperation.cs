@@ -50,9 +50,9 @@ namespace CosmosBenchmark
                         new RequestOptions() { PartitionKey = new PartitionKey(this.nextExecutionItemPartitionKey) }
                         );
 
-            Dictionary<string, string> response= itemResponse.Document;
-           
+            Dictionary<string, string> response = itemResponse.Document;
             double ruCharges = itemResponse.RequestCharge;
+
             return new OperationResult()
             {
                 DatabseName = databsaeName,
