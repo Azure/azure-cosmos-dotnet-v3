@@ -6,8 +6,11 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
     internal class InsertV3BenchmarkOperation : IBenchmarkOperatrion
     {
@@ -36,18 +39,21 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            ItemResponse<Dictionary<string, object>> itemResponse = await this.container.CreateItemAsync<Dictionary<string, object>>(
-                    this.sampleJObject,
-                    new PartitionKey(this.sampleJObject[this.partitionKeyPath].ToString()));
-
-            double ruCharges = itemResponse.Headers.RequestCharge;
-            return new OperationResult()
+            using (Stream input = JsonHelper.ToStream(this.sampleJObject))
             {
-                DatabseName = databsaeName,
-                ContainerName = containerName,
-                RuCharges = ruCharges,
-                lazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
-            };
+                ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
+                        input,
+                        new PartitionKey(this.sampleJObject[this.partitionKeyPath].ToString()));
+
+                double ruCharges = itemResponse.Headers.RequestCharge;
+                return new OperationResult()
+                {
+                    DatabseName = databsaeName,
+                    ContainerName = containerName,
+                    RuCharges = ruCharges,
+                    lazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
+                };
+            }
         }
 
         public Task Prepare()
