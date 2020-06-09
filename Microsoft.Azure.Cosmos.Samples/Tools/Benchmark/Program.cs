@@ -148,6 +148,7 @@ namespace CosmosBenchmark
                         else
                         {
                             benchmarkOperation = new ReadExistsV3BenchmarkOperation(
+                                config.Database,
                                 container,
                                 partitionKeyPath,
                                 sampleItem);
@@ -164,6 +165,7 @@ namespace CosmosBenchmark
                         else
                         {
                             benchmarkOperation = new ReadNotExistsV3BenchmarkOperation(
+                                config.Database,
                                 container);
                         }
                         break;

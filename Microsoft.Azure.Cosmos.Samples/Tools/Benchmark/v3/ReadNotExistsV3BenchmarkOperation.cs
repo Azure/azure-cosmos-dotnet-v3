@@ -20,11 +20,12 @@ namespace CosmosBenchmark
         private string nextExecutionItemId;
 
         public ReadNotExistsV3BenchmarkOperation(
+            string databaseName,
             Container container)
         {
             this.container = container;
 
-            this.databsaeName = container.Database.Id;
+            this.databsaeName = databaseName;
             this.containerName = container.Id;
         }
 
