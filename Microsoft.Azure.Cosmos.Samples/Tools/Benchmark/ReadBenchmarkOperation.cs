@@ -76,9 +76,9 @@ namespace CosmosBenchmark
             }
             else
             {
-                if (itemResponse.StatusCode != HttpStatusCode.OK)
+                if (itemResponse == null || itemResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    throw new Exception($"ReadItem failed wth {itemResponse?.StatusCode} {itemResponse?.RequestDiagnosticsString}");
                 }
                 ruCharges = itemResponse.RequestCharge;
                 using (itemResponse.ResponseStream);
