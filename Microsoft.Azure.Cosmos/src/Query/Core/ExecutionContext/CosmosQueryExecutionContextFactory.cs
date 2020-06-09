@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 return await CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContextAsync(
                                     cosmosQueryContext,
                                     inputParameters,
-                                    partitionedQueryExecutionInfo: default,
+                                    partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo(),
                                     targetRanges,
                                     containerQueryProperties.ResourceId,
                                     cancellationToken);

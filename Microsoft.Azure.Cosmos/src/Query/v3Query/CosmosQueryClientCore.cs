@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionKey != null)
             {
                 // Dis-ambiguate the NonePK if used 
-                Documents.Routing.PartitionKeyInternal partitionKeyInternal = null;
+                PartitionKeyInternal partitionKeyInternal;
                 if (partitionKey.Value.IsNone)
                 {
                     partitionKeyInternal = containerProperties.GetNoneValue();
@@ -66,7 +66,15 @@ namespace Microsoft.Azure.Cosmos
                 {
                     partitionKeyInternal = partitionKey.Value.InternalKey;
                 }
-                effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
+
+                try
+                {
+                    effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
             }
 
             return new ContainerQueryProperties(
