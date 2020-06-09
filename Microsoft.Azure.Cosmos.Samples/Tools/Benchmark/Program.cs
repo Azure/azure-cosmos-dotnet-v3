@@ -141,7 +141,8 @@ namespace CosmosBenchmark
 
             if (res.Count() != 1)
             {
-                throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}. Available ones are {string.Concat(", ", availableBenchmarks.Select(e => e.Name))}");
+                throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}. Available ones are " +
+                    string.Join(", \r\n", availableBenchmarks.Select(e => e.Name)));
             }
 
             ConstructorInfo ci = null;
