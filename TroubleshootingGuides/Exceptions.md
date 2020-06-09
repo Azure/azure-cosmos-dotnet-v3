@@ -29,12 +29,13 @@ These APIs are designed for more advance scenario where perfomance is critical o
 
 | Status Code | Description | Retry logic |
 |----------|-------------|------|
+| 400 | Bad request | SDK does not retry. User's need to troubleshoot this based on the error message as this mostly points to a bug in user's code which causes the request to be invalid. For example passing the wrong partition key for an item will result in an bad request. | 
 | 401 | [Not authorized](CosmosMacSignature.md) | SDK does not retry. User's application should have retry logic for some corner scenarios, but most likely require user to manually fix | 
 | 404 | [Resource is not found](CosmosNotFound.md) | SDK does not retry. User's application should handle this scenario. |
 | 408 | [Request timed out](CosmosRequestTimeout.md)| SDK does not retry. User's application should have retry logic. There are many transient scenarios that can cause this. The SDK does not rety because it can lead to conflicts since there is no way to tell if the original request completed. Different user scenarios require different logic for conflicts which would be broken if the SDK did retry.  |
 | 409 | Conflict (Only for Create/Replace/Upsert) | User's application should handle the conflict |
 | 410 | Gone exceptions | SDK handles the retries. If the retry logic is exceeded it will get converted to a 503 error. This can be caused by many scenarios like partition was moved to a larger machine because of a scaling operation. This is an expected exception and will not impact the Cosmos DB SLA. |
-| 413 | RequestEntityTooLarge | User's application should handle the payload being to large |
+| 413 | [Request Entity Too Large](https://docs.microsoft.com/en-us/azure/cosmos-db/concepts-limits#per-item-limits) | User's application should handle the payload being to large |
 | 429 | [To many requests](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/TroubleshootingGuides/CosmosRequestRateTooLarge.md) | The SDK has built in logic, and it is user configurable for most SDKs |
 | 500 | Azure Cosmos DB failure | User's application should have retry logic. |
 | 503 | Was not able to reach Azure Cosmos DB | User's application should have retry logic. |
