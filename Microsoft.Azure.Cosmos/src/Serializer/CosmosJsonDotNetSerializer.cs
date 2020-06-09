@@ -121,13 +121,19 @@ namespace Microsoft.Azure.Cosmos
             return streamPayload;
         }
 
+        private JsonSerializer jsonSerializer;
+
         /// <summary>
         /// JsonSerializer has hit a race conditions with custom settings that cause null reference exception.
         /// To avoid the race condition a new JsonSerializer is created for each call
         /// </summary>
         private JsonSerializer GetSerializer()
         {
-            return JsonSerializer.Create(this.SerializerSettings);
+            if (this.jsonSerializer == null)
+            {
+                this.jsonSerializer = JsonSerializer.Create(this.SerializerSettings);
+            }
+            return this.jsonSerializer;
         }
     }
 }
