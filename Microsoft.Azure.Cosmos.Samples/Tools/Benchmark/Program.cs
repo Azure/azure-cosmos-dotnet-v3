@@ -43,6 +43,7 @@ namespace CosmosBenchmark
         {
             BenchmarkConfig config = BenchmarkConfig.From(args);
             ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
+            TelemetrySpan.IncludePercentile = config.IncludePercentiles;
 
             string accountKey = config.Key;
             config.Key = null; // Don't print
@@ -82,10 +83,13 @@ namespace CosmosBenchmark
                 }
             }
 
-            TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
-            using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
+            if (TelemetrySpan.IncludePercentile)
             {
-                TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
+                TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
+                using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
+                {
+                    TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
+                }
             }
 
             Console.WriteLine($"{nameof(CosmosBenchmark)} completed successfully.");

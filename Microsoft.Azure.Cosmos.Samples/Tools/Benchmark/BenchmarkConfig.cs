@@ -37,6 +37,9 @@ namespace CosmosBenchmark
         public string ConsistencyLevel { get; set; }
 
         [Option(Required = false, HelpText = "Start with new collection")]
+        public bool IncludePercentiles { get; set; }
+
+        [Option(Required = false, HelpText = "Start with new collection")]
         public bool CleanupOnStart { get; set; } = false;
 
         [Option(Required = false, HelpText = "Clean-up after run")]
