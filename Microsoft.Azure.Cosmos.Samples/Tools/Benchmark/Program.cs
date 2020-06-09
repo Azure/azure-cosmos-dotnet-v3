@@ -120,7 +120,7 @@ namespace CosmosBenchmark
             int numberOfItemsToInsert = config.ItemCount / taskCount;
 
             Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(config, partitionKeyPath);
-            IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
+            IExecutionStrategy execution = new ParallelExecutionStrategy(benchmarkOperationFactory);
             await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, 0.01);
 
             if (config.CleanupOnFinish)
