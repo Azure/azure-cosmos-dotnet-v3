@@ -9,11 +9,12 @@ namespace CosmosBenchmark
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Newtonsoft.Json.Linq;
 
-    internal class ReadExistsV3BenchmarkOperation : IBenchmarkOperatrion
+    internal class ReadTExistsV2BenchmarkOperation : IBenchmarkOperatrion
     {
-        private readonly Container container;
         private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;
 
@@ -23,41 +24,41 @@ namespace CosmosBenchmark
         private string nextExecutionItemPartitionKey;
         private string nextExecutionItemId;
 
-        public ReadExistsV3BenchmarkOperation(
-            string databaseName,
-            Container container,
+        private readonly DocumentClient documentClient;
+
+        public ReadTExistsV2BenchmarkOperation(
+            DocumentClient documentClient,
+            string dbName,
+            string containerName,
             string partitionKeyPath,
             string sampleJson)
         {
-            this.container = container;
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
+            this.documentClient = documentClient;
 
-            this.databsaeName = databaseName;
-            this.containerName = container.Id;
+            this.databsaeName = dbName;
+            this.containerName = containerName;
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            using (ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
-                        this.nextExecutionItemId,
-                        new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey)))
-            {
-                if (itemResponse.StatusCode != HttpStatusCode.OK)
-                {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
-                }
+            Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
+            DocumentResponse<JObject> itemResponse = await this.documentClient.ReadDocumentAsync<JObject>(
+                        itemUri,
+                        new RequestOptions() { PartitionKey = new PartitionKey(this.nextExecutionItemPartitionKey) }
+                        );
 
-                double ruCharges = itemResponse.Headers.RequestCharge;
-                return new OperationResult()
-                {
-                    DatabseName = databsaeName,
-                    ContainerName = containerName,
-                    RuCharges = ruCharges,
-                    lazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
-                };
-            }
+            using (itemResponse.ResponseStream) { }
+            double ruCharges = itemResponse.RequestCharge;
+            return new OperationResult()
+            {
+                DatabseName = databsaeName,
+                ContainerName = containerName,
+                RuCharges = ruCharges,
+                lazyDiagnostics = () => itemResponse.RequestDiagnosticsString,
+            };
         }
 
         public async Task Prepare()
@@ -65,17 +66,19 @@ namespace CosmosBenchmark
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
             {
-                this.nextExecutionItemId = Guid.NewGuid().ToString();
                 this.nextExecutionItemPartitionKey = Guid.NewGuid().ToString();
+                this.nextExecutionItemId = Guid.NewGuid().ToString();
 
                 this.sampleJObject["id"] = this.nextExecutionItemId;
                 this.sampleJObject[this.partitionKeyPath] = this.nextExecutionItemPartitionKey;
 
+                Uri collectionUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
                 using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
                 {
-                    ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
-                            inputStream,
-                            new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey));
+                    ResourceResponse<Document> itemResponse = await this.documentClient.CreateDocumentAsync(
+                            collectionUri,
+                            this.sampleJObject,
+                            new RequestOptions() { PartitionKey = new PartitionKey(this.nextExecutionItemPartitionKey) });
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
                         throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");

@@ -34,7 +34,7 @@ namespace CosmosBenchmark
         public int ItemCount { get; set; } = 200000;
 
         [Option(Required = false, HelpText = "Start with new collection")]
-        public bool UseV2Client { get; set; } = false;
+        public string ConsistencyLevel { get; set; }
 
         [Option(Required = false, HelpText = "Start with new collection")]
         public bool CleanupOnStart { get; set; } = false;

@@ -19,16 +19,17 @@ namespace CosmosBenchmark
         private readonly string containerName;
 
         public InsertV3BenchmarkOperation(
-            string databaseName,
-            Container container,
+            CosmosClient cosmosClient,
+            string dbName,
+            string containerName,
             string partitionKeyPath,
             string sampleJson)
         {
-            this.container = container;
-            this.partitionKeyPath = partitionKeyPath.Replace("/", "");
+            this.databsaeName = dbName;
+            this.containerName = containerName;
 
-            this.databsaeName = databaseName;
-            this.containerName = container.Id;
+            this.container = cosmosClient.GetContainer(this.databsaeName, this.containerName);
+            this.partitionKeyPath = partitionKeyPath.Replace("/", "");
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }

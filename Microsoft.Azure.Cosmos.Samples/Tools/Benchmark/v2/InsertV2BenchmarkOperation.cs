@@ -21,7 +21,8 @@ namespace CosmosBenchmark
         private readonly string databsaeName;
         private readonly string containerName;
 
-        public InsertV2BenchmarkOperation(DocumentClient documentClient,
+        public InsertV2BenchmarkOperation(
+            DocumentClient documentClient,
             string dbName,
             string containerName,
             string partitionKeyPath,

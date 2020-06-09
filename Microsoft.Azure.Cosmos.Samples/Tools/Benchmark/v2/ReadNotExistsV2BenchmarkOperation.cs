@@ -26,7 +26,9 @@ namespace CosmosBenchmark
         public ReadNotExistsV2BenchmarkOperation(
             DocumentClient documentClient,
             string dbName,
-            string containerName)
+            string containerName,
+            string partitionKeyPath,
+            string sampleJson)
         {
             this.documentClient = documentClient;
 
