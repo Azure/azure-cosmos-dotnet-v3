@@ -45,12 +45,13 @@ namespace CosmosBenchmark
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
-            DocumentResponse<JObject> itemResponse = await this.documentClient.ReadDocumentAsync<JObject>(
+            DocumentResponse<Dictionary<string, string>> itemResponse = await this.documentClient.ReadDocumentAsync<Dictionary<string, string>>(
                         itemUri,
                         new RequestOptions() { PartitionKey = new PartitionKey(this.nextExecutionItemPartitionKey) }
                         );
 
-            using (itemResponse.ResponseStream) { }
+            Dictionary<string, string> response= itemResponse.Document;
+           
             double ruCharges = itemResponse.RequestCharge;
             return new OperationResult()
             {
