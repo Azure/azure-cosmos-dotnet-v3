@@ -130,6 +130,7 @@ namespace CosmosBenchmark
                         else
                         {
                             benchmarkOperation = new InsertBenchmarkOperation(
+                                config.Database,
                                 container,
                                 partitionKeyPath,
                                 sampleItem);

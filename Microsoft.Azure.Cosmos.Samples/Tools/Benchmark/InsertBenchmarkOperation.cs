@@ -81,6 +81,7 @@ namespace CosmosBenchmark
         private readonly string containerName;
 
         public InsertBenchmarkOperation(
+            string databaseName,
             Container container,
             string partitionKeyPath,
             string sampleJson)
@@ -88,7 +89,7 @@ namespace CosmosBenchmark
             this.container = container;
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
 
-            this.databsaeName = container.Database.Id;
+            this.databsaeName = databaseName;
             this.containerName = container.Id;
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
