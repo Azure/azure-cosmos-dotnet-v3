@@ -25,14 +25,17 @@ namespace CosmosBenchmark
         private string nextExecutionItemId;
 
         private readonly DocumentClient documentClient;
+        private bool isNotExists;
 
         public ReadV2BenchmarkOperation(
             DocumentClient documentClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
-            string sampleJson)
+            string sampleJson,
+            bool isNotExists)
         {
+            this.isNotExists = isNotExists;
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
             this.documentClient = documentClient;
 
@@ -50,10 +53,19 @@ namespace CosmosBenchmark
                     new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.nextExecutionItemPartitionKey) }
                     );
 
-
-            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            if (this.isNotExists)
             {
-                throw new Exception($"ReadItem unexpected exception with {itemResponse.StatusCode}");
+                if (itemResponse.StatusCode != HttpStatusCode.NotFound)
+                {
+                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                }
+            }
+            else
+            {
+                if (itemResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                }
             }
 
             double ruCharges = itemResponse.RequestCharge;
@@ -76,17 +88,20 @@ namespace CosmosBenchmark
                 this.sampleJObject["id"] = this.nextExecutionItemId;
                 this.sampleJObject[this.partitionKeyPath] = this.nextExecutionItemPartitionKey;
 
-                Uri collectionUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
-                using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
+                if (this.isNotExists)
                 {
-                    ResourceResponse<Document> itemResponse = await this.documentClient.CreateDocumentAsync(
-                            collectionUri,
-                            this.sampleJObject,
-                            new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.nextExecutionItemPartitionKey) }
-                            );
-                    if (itemResponse.StatusCode != HttpStatusCode.Created)
+                    Uri collectionUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
+                    using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        ResourceResponse<Document> itemResponse = await this.documentClient.CreateDocumentAsync(
+                                collectionUri,
+                                this.sampleJObject,
+                                new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.nextExecutionItemPartitionKey) }
+                                );
+                        if (itemResponse.StatusCode != HttpStatusCode.Created)
+                        {
+                            throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        }
                     }
                 }
             }
@@ -104,12 +119,15 @@ namespace CosmosBenchmark
 
         private string nextExecutionItemPartitionKey;
         private string nextExecutionItemId;
+        private bool isNotExists;
 
         public ReadBenchmarkOperation(
             Container container,
             string partitionKeyPath,
-            string sampleJson)
+            string sampleJson,
+            bool isNotExists)
         {
+            this.isNotExists = isNotExists;
             this.container = container;
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
 
@@ -125,11 +143,21 @@ namespace CosmosBenchmark
                         this.nextExecutionItemId,
                         new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey)))
             {
-                if (itemResponse.StatusCode != HttpStatusCode.NotFound)
+                if (this.isNotExists)
                 {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    if (itemResponse.StatusCode != HttpStatusCode.NotFound)
+                    {
+                        throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    }
                 }
-                
+                else
+                {
+                    if (itemResponse.StatusCode != HttpStatusCode.OK)
+                    {
+                        throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    }
+                }
+
                 double ruCharges = itemResponse.Headers.RequestCharge;
                 return new OperationResult()
                 {
@@ -146,21 +174,23 @@ namespace CosmosBenchmark
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
             {
-                string newPartitionKey = Guid.NewGuid().ToString();
-                this.sampleJObject["id"] = Guid.NewGuid().ToString();
-                this.sampleJObject[this.partitionKeyPath] = newPartitionKey;
+                this.nextExecutionItemId = Guid.NewGuid().ToString();
+                this.nextExecutionItemPartitionKey = Guid.NewGuid().ToString();
 
-                this.nextExecutionItemId = newPartitionKey;
-                this.nextExecutionItemPartitionKey = newPartitionKey;
+                this.sampleJObject["id"] = this.nextExecutionItemId;
+                this.sampleJObject[this.partitionKeyPath] = this.nextExecutionItemPartitionKey;
 
-                using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
+                if (this.isNotExists)
                 {
-                    ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
-                            inputStream,
-                            new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey));
-                    if (itemResponse.StatusCode != HttpStatusCode.Created)
+                    using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
+                                inputStream,
+                                new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey));
+                        if (itemResponse.StatusCode != HttpStatusCode.Created)
+                        {
+                            throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        }
                     }
                 }
             }

@@ -143,14 +143,32 @@ namespace CosmosBenchmark
                                 config.Database,
                                 config.Container,
                                 partitionKeyPath,
-                                sampleItem);
+                                sampleItem, false);
                         }
                         else
                         {
                             benchmarkOperation = new ReadBenchmarkOperation(
                                 container,
                                 partitionKeyPath,
-                                sampleItem);
+                                sampleItem, false);
+                        }
+                        break;
+                    case "readnotfound":
+                        if (config.UseV2Client)
+                        {
+                            benchmarkOperation = new ReadV2BenchmarkOperation(
+                                this.documentClient,
+                                config.Database,
+                                config.Container,
+                                partitionKeyPath,
+                                sampleItem, true);
+                        }
+                        else
+                        {
+                            benchmarkOperation = new ReadBenchmarkOperation(
+                                container,
+                                partitionKeyPath,
+                                sampleItem, true);
                         }
                         break;
                     default:
