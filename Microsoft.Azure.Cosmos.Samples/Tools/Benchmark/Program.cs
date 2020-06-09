@@ -137,7 +137,7 @@ namespace CosmosBenchmark
 
             Type[] availableBenchmarks = Program.AvailableBenchmarks();
             IEnumerable<Type> res = availableBenchmarks
-                .Where(e => e.Name.Equals(config.WorkloadType, StringComparison.OrdinalIgnoreCase));
+                .Where(e => e.Name.Equals(config.WorkloadType, StringComparison.OrdinalIgnoreCase) || e.Name.Equals(config.WorkloadType + "BenchmarkOperation", StringComparison.OrdinalIgnoreCase));
 
             if (res.Count() != 1)
             {
