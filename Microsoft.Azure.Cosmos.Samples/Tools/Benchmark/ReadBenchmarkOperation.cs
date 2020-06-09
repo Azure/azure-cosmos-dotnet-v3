@@ -66,7 +66,7 @@ namespace CosmosBenchmark
             double ruCharges = 0;
             if (this.isNotExists)
             {
-                if (dce != null || dce.StatusCode != HttpStatusCode.NotFound)
+                if (dce == null || dce.StatusCode != HttpStatusCode.NotFound)
                 {
                     throw new Exception($"ReadItem failed wth {dce?.StatusCode} {dce?.ToString()}");
                 }
