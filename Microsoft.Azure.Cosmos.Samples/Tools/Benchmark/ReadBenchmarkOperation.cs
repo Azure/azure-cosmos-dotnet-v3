@@ -48,17 +48,31 @@ namespace CosmosBenchmark
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
-            ResourceResponse<Document> itemResponse = await this.documentClient.ReadDocumentAsync(
-                    itemUri,
-                    new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.nextExecutionItemPartitionKey) }
-                    );
 
+            ResourceResponse<Document> itemResponse = null;
+            DocumentClientException dce = null;
+            try
+            {
+                itemResponse = await this.documentClient.ReadDocumentAsync(
+                        itemUri,
+                        new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.nextExecutionItemPartitionKey) }
+                        );
+            }
+            catch(DocumentClientException ex)
+            {
+                dce = ex;
+            }
+
+            double ruCharges = 0;
             if (this.isNotExists)
             {
-                if (itemResponse.StatusCode != HttpStatusCode.NotFound)
+                if (dce != null || dce.StatusCode != HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    throw new Exception($"ReadItem failed wth {dce?.StatusCode} {dce?.ToString()}");
                 }
+
+                ruCharges = dce.RequestCharge;
+
             }
             else
             {
@@ -66,9 +80,11 @@ namespace CosmosBenchmark
                 {
                     throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
                 }
+                ruCharges = itemResponse.RequestCharge;
+                using (itemResponse.ResponseStream);
             }
 
-            double ruCharges = itemResponse.RequestCharge;
+
             return new OperationResult()
             {
                 DatabseName = databsaeName,
