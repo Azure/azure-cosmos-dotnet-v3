@@ -51,6 +51,7 @@ namespace CosmosBenchmark
                         new Microsoft.Azure.Documents.Client.RequestOptions() { PartitionKey = new Microsoft.Azure.Documents.PartitionKey(this.nextExecutionItemPartitionKey) }
                         );
 
+            using (itemResponse.ResponseStream) { }
             double ruCharges = itemResponse.RequestCharge;
             return new OperationResult()
             {
@@ -68,6 +69,7 @@ namespace CosmosBenchmark
             {
                 this.nextExecutionItemPartitionKey = Guid.NewGuid().ToString();
                 this.nextExecutionItemId = Guid.NewGuid().ToString();
+
                 this.sampleJObject["id"] = this.nextExecutionItemId;
                 this.sampleJObject[this.partitionKeyPath] = this.nextExecutionItemPartitionKey;
 
