@@ -24,7 +24,7 @@ namespace CosmosBenchmark
         public async Task ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
-            bool traceFalures,
+            bool traceFailures,
             double warmupFraction)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
@@ -33,7 +33,7 @@ namespace CosmosBenchmark
             await warmupExecutor.ExecuteAsync(
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
-                    traceFaiures: traceFalures,
+                    traceFailures: traceFailures,
                     completionCallback: () => { });
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
@@ -50,7 +50,7 @@ namespace CosmosBenchmark
                 _ = executors[i].ExecuteAsync(
                         iterationCount: serialExecutorIterationCount,
                         isWarmup: false,
-                        traceFaiures: traceFalures,
+                        traceFailures: traceFailures,
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
             }
 

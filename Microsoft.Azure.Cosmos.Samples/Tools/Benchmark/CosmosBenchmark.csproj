@@ -16,8 +16,15 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.5.0" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
     <PackageReference Include="HdrHistogram" Version="2.5.0" />
     <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 </Project>
