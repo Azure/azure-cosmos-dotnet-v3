@@ -132,7 +132,7 @@ namespace CosmosBenchmark
             int numberOfItemsToInsert = config.ItemCount / taskCount;
 
             Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(config, partitionKeyPath);
-            IExecutionStrategy execution = new ParallelExecutionStrategy(benchmarkOperationFactory);
+            IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
             await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, config.TraceFailures, 0.01);
 
             if (config.CleanupOnFinish)
@@ -191,11 +191,7 @@ namespace CosmosBenchmark
                 throw new NotImplementedException($"Unsupported CTOR for workload type {config.WorkloadType} ");
             }
 
-            Func<IBenchmarkOperatrion> benchmarkOperationFactory = () =>
-            {
-                return (IBenchmarkOperatrion)ci.Invoke(ctorArguments);
-            };
-            return benchmarkOperationFactory;
+            return () => (IBenchmarkOperatrion)ci.Invoke(ctorArguments);
         }
 
         private static Type[] AvailableBenchmarks()

@@ -9,7 +9,14 @@ namespace CosmosBenchmark
 
     internal interface IExecutionStrategy
     {
-        Task ExecuteAsync(
+        public static IExecutionStrategy StartNew(
+            BenchmarkConfig config,
+            Func<IBenchmarkOperatrion> benchmarkOperation)
+        {
+            return new ParallelExecutionStrategy(benchmarkOperation);
+        }
+
+        public Task ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             bool traceFalures,

@@ -9,14 +9,14 @@ namespace CosmosBenchmark
 
     internal interface IExecutor
     {
-        int SuccessOperationCount { get; }
-        int FailedOperationCount { get; }
-        double TotalRuCharges { get; }
+        public int SuccessOperationCount { get; }
+        public int FailedOperationCount { get; }
+        public double TotalRuCharges { get; }
 
-        Task ExecuteAsync(
+        public Task ExecuteAsync(
                 int iterationCount,
                 bool isWarmup,
-                bool traceFaiures,
+                bool traceFalures,
                 Action completionCallback);
     }
 }
