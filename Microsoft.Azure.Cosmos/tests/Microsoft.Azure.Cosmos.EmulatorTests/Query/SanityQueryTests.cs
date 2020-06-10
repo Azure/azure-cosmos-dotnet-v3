@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class SanityQueryTests : QueryTestsBase
@@ -77,46 +79,112 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 inputDocuments,
                 ImplementationAsync);
 
+            //WeakReference weakReferenceFeedIterator;
+            //{
+            //    using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
+            //        "SELECT * FROM c",
+            //        null,
+            //        new QueryRequestOptions
+            //        {
+            //            MaxItemCount = 1000,
+            //        }))
+            //    {
+            //        weakReferenceFeedIterator = new WeakReference(feedIterator, true);
+            //        FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
+            //        foreach (JObject jObject in response)
+            //        {
+            //            Assert.IsNotNull(jObject);
+            //        }
+            //    }
+            //}
+
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                QueryRequestOptions feedOptions = new QueryRequestOptions
-                {
-                    MaxItemCount = 1000,
-                };
-
-                await QueryTestsBase.RunQueryCombinationsAsync(
-                    container,
-                    "SELECT * FROM c",
-                    queryRequestOptions: feedOptions,
-                    QueryDrainingMode.HoldState);
-
+                List<WeakReference> weakReferences = await CreateWeakReferenceToFeedIterator(container);
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                long originalHeapSize = GC.GetTotalMemory(true);
 
+                foreach(WeakReference weakReference in weakReferences)
                 {
-                    List<Task> tasks = new List<Task>();
-                    for (int i = 0; i < 10; i++)
-                    {
-                        Task task = QueryTestsBase.RunQueryCombinationsAsync(
-                            container,
-                            "SELECT * FROM c",
-                            queryRequestOptions: feedOptions,
-                            QueryDrainingMode.HoldState);
-                        tasks.Add(task);
-                    }
-
-                    await Task.WhenAll(tasks);
+                    Assert.IsFalse(weakReference.IsAlive);
                 }
-
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
-                long currentHeapSize = GC.GetTotalMemory(true);
-
-                Assert.AreEqual(originalHeapSize, currentHeapSize);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<List<WeakReference>> CreateWeakReferenceToFeedIterator(
+            Container container)
+        {
+            List<WeakReference> weakReferences = new List<WeakReference>();
+
+            // Test draining typed iterator
+            using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
+                    queryDefinition: null,
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 1000,
+                    }))
+            {
+                weakReferences.Add(new WeakReference(feedIterator, true));
+                FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
+                foreach (JObject jObject in response)
+                {
+                    Assert.IsNotNull(jObject);
+                }
+            }
+
+            // Test draining stream iterator
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    queryDefinition: null,
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 1000,
+                    }))
+            {
+                weakReferences.Add(new WeakReference(feedIterator, true));
+                using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                {
+                    Assert.IsNotNull(response.Content);
+                }
+            }
+
+            // Test draining typed iterator
+            using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
+                    queryText: "SELECT * FROM c",
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 1000,
+                    }))
+            {
+                weakReferences.Add(new WeakReference(feedIterator, true));
+                FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
+                foreach (JObject jObject in response)
+                {
+                    Assert.IsNotNull(jObject);
+                }
+            }
+
+            // Test draining stream iterator
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    queryText: "SELECT * FROM c",
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 1000,
+                    }))
+            {
+                weakReferences.Add(new WeakReference(feedIterator, true));
+                using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                {
+                    Assert.IsNotNull(response.Content);
+                }
+            }
+
+            return weakReferences;
         }
 
         [TestMethod]
