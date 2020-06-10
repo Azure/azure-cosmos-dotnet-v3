@@ -9,9 +9,13 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Runtime;
     using CommandLine;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents.Client;
 
     public class BenchmarkConfig
     {
+        private static readonly string UserAgentSuffix = "cosmosdbdotnetbenchmark";
+
         [Option('w', Required = true, HelpText = "Workload type insert, read")]
         public string WorkloadType { get; set; }
 
@@ -94,6 +98,46 @@ namespace CosmosBenchmark
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
 
             return options;
+        }
+
+        internal CosmosClient CreateCosmosClient(string accountKey)
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ApplicationName = BenchmarkConfig.UserAgentSuffix,
+                RequestTimeout = new TimeSpan(1, 0, 0),
+                MaxRetryAttemptsOnRateLimitedRequests = 0,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
+            };
+
+            if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
+            {
+                clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
+            }
+
+            return new CosmosClient(
+                        this.EndPoint,
+                        accountKey,
+                        clientOptions);
+        }
+
+        internal DocumentClient CreateDocumentClient(string accountKey)
+        {
+            Microsoft.Azure.Documents.ConsistencyLevel? consistencyLevel = null;
+            if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
+            {
+                consistencyLevel = (Microsoft.Azure.Documents.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Documents.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
+            }
+
+            return new DocumentClient(new Uri(this.EndPoint),
+                            accountKey,
+                            new ConnectionPolicy()
+                            {
+                                ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
+                                ConnectionProtocol = Protocol.Tcp,
+                                UserAgentSuffix = BenchmarkConfig.UserAgentSuffix,
+                            },
+                            desiredConsistencyLevel: consistencyLevel);
         }
 
         private static void HandleParseError(IEnumerable<Error> errors)

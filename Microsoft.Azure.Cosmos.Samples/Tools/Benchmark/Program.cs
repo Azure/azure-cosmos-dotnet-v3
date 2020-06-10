@@ -22,19 +22,6 @@ namespace CosmosBenchmark
     /// </summary>
     public sealed class Program
     {
-        private CosmosClient cosmosClient;
-        private DocumentClient documentClient;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Program"/> class.
-        /// </summary>
-        /// <param name="client">The Azure Cosmos DB client instance.</param>
-        private Program(CosmosClient client, DocumentClient documentClient)
-        {
-            this.cosmosClient = client;
-            this.documentClient = documentClient;
-        }
-
         /// <summary>
         /// Main method for the sample.
         /// </summary>
@@ -51,39 +38,8 @@ namespace CosmosBenchmark
                 config.Key = null; // Don't print
                 config.Print();
 
-                CosmosClientOptions clientOptions = new CosmosClientOptions()
-                {
-                    ApplicationName = "cosmosdbdotnetbenchmark",
-                    RequestTimeout = new TimeSpan(1, 0, 0),
-                    MaxRetryAttemptsOnRateLimitedRequests = 0,
-                    MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
-                };
-
-                Microsoft.Azure.Documents.ConsistencyLevel? consistencyLevel = null;
-                if (!string.IsNullOrWhiteSpace(config.ConsistencyLevel))
-                {
-                    clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), config.ConsistencyLevel, ignoreCase: true);
-                    consistencyLevel = (Microsoft.Azure.Documents.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Documents.ConsistencyLevel), config.ConsistencyLevel, ignoreCase: true);
-                }
-
-                using (DocumentClient documentClient = new DocumentClient(new Uri(config.EndPoint),
-                    accountKey,
-                    new ConnectionPolicy()
-                    {
-                        ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
-                        ConnectionProtocol = Protocol.Tcp,
-                    },
-                    desiredConsistencyLevel: consistencyLevel))
-                {
-                    using (CosmosClient client = new CosmosClient(
-                        config.EndPoint,
-                        accountKey,
-                        clientOptions))
-                    {
-                        Program program = new Program(client, documentClient);
-                        await program.ExecuteAsync(config);
-                    }
-                }
+                Program program = new Program();
+                await program.ExecuteAsync(config, accountKey);
 
                 if (TelemetrySpan.IncludePercentile)
                 {
@@ -109,41 +65,57 @@ namespace CosmosBenchmark
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task ExecuteAsync(BenchmarkConfig config)
+        private async Task ExecuteAsync(BenchmarkConfig config, string accountKey)
         {
-            if (config.CleanupOnStart)
+            using (CosmosClient cosmosClient = config.CreateCosmosClient(accountKey))
             {
-                Microsoft.Azure.Cosmos.Database database = this.cosmosClient.GetDatabase(config.Database);
-                await database.DeleteStreamAsync();
-            }
+                if (config.CleanupOnStart)
+                {
+                    Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
+                    await database.DeleteStreamAsync();
+                }
 
-            ContainerResponse containerResponse = await this.CreatePartitionedContainerAsync(config);
-            Container container = containerResponse;
+                ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
+                Container container = containerResponse;
 
-            int? currentContainerThroughput = await container.ReadThroughputAsync();
-            Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
+                int? currentContainerThroughput = await container.ReadThroughputAsync();
+                Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
 
-            int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
+                int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
 
-            Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
-            Console.WriteLine();
+                Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
+                Console.WriteLine();
 
-            string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
-            int numberOfItemsToInsert = config.ItemCount / taskCount;
+                string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
+                int numberOfItemsToInsert = config.ItemCount / taskCount;
 
-            Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(config, partitionKeyPath);
-            IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
-            await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, config.TraceFailures, 0.01);
+                // TBD: 2 clients SxS some overhead
+                using (DocumentClient documentClient = config.CreateDocumentClient(accountKey))
+                {
+                    Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(
+                        config,
+                        partitionKeyPath,
+                        cosmosClient,
+                        documentClient);
 
-            if (config.CleanupOnFinish)
-            {
-                Console.WriteLine($"Deleting Database {config.Database}");
-                Microsoft.Azure.Cosmos.Database database = this.cosmosClient.GetDatabase(config.Database);
-                await database.DeleteStreamAsync();
+                    IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
+                    await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, config.TraceFailures, 0.01);
+                }
+
+                if (config.CleanupOnFinish)
+                {
+                    Console.WriteLine($"Deleting Database {config.Database}");
+                    Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
+                    await database.DeleteStreamAsync();
+                }
             }
         }
 
-        private Func<IBenchmarkOperatrion> GetBenchmarkFactory(BenchmarkConfig config, string partitionKeyPath)
+        private Func<IBenchmarkOperatrion> GetBenchmarkFactory(
+            BenchmarkConfig config,
+            string partitionKeyPath,
+            CosmosClient cosmosClient,
+            DocumentClient documentClient)
         {
             string sampleItem = File.ReadAllText(config.ItemTemplateFile);
 
@@ -166,7 +138,7 @@ namespace CosmosBenchmark
                 ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(CosmosClient), typeof(string), typeof(string), typeof(string), typeof(string) });
                 ctorArguments = new object[]
                     {
-                        this.cosmosClient,
+                        cosmosClient,
                         config.Database,
                         config.Container,
                         partitionKeyPath,
@@ -178,7 +150,7 @@ namespace CosmosBenchmark
                 ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
                 ctorArguments = new object[]
                     {
-                        this.documentClient,
+                        documentClient,
                         config.Database,
                         config.Container,
                         partitionKeyPath,
@@ -206,9 +178,9 @@ namespace CosmosBenchmark
         /// Create a partitioned container.
         /// </summary>
         /// <returns>The created container.</returns>
-        private async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options)
+        private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)
         {
-            Microsoft.Azure.Cosmos.Database database = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(options.Database);
+            Microsoft.Azure.Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(options.Database);
 
             Container container = database.GetContainer(options.Container);
 
