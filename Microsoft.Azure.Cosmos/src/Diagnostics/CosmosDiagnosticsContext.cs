@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
     /// </summary>
-    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>, IDisposable
+    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
     {
         public abstract DateTime StartUtc { get; }
 
@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract int GetTotalRequestCount();
 
         public abstract int GetFailedRequestCount();
+
+        internal abstract IDisposable GetOverallScope();
 
         internal abstract IDisposable CreateScope(string name);
 
@@ -73,7 +75,5 @@ namespace Microsoft.Azure.Cosmos
                     operationName,
                     userAgentString);
         }
-
-        public abstract void Dispose();
     }
 }

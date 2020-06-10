@@ -31,6 +31,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override string OperationName => "Empty Context OperationName";
 
+        internal override IDisposable GetOverallScope()
+        {
+            return EmptyCosmosDiagnosticsContext.DefaultScope;
+        }
+
         internal override IDisposable CreateScope(string name)
         {
             return EmptyCosmosDiagnosticsContext.DefaultScope;
@@ -106,10 +111,6 @@ namespace Microsoft.Azure.Cosmos
         internal override bool TryGetTotalElapsedTime(out TimeSpan timeSpan)
         {
             return false;
-        }
-
-        public override void Dispose()
-        {
         }
     }
 }

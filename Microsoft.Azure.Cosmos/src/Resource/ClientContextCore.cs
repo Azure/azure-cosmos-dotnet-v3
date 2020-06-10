@@ -320,7 +320,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions: null))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions: null);
+            using (diagnosticsContext.GetOverallScope())
             {
                 ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
                 try
@@ -390,7 +391,7 @@ namespace Microsoft.Azure.Cosmos
             // Used on NETFX applications with SynchronizationContext when doing locking calls
             return Task.Run(async () =>
             {
-                using (diagnosticsContext)
+                using (diagnosticsContext.GetOverallScope())
                 using (diagnosticsContext.CreateScope("SynchronizationContext"))
                 {
                     return await task(diagnosticsContext);
@@ -403,9 +404,10 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<CosmosDiagnosticsContext, Task<TResult>> task)
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
+            CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
                 operationName,
-                requestOptions))
+                requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 return await task(diagnosticsContext).ConfigureAwait(false);
             }

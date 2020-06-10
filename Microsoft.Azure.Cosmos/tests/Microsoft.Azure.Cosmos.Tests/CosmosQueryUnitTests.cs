@@ -42,8 +42,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             double requestCharge = 42.42;
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage, diagnosticsContext: diagnostics);
-            
-            diagnostics.Dispose();
+
+            diagnostics.GetOverallScope().Dispose();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         cosmosException: cosmosException,

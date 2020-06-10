@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            using (this.diagnosticsContext)
+            using (this.diagnosticsContext.GetOverallScope())
             {
                 BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
 

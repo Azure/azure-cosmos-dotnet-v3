@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
                 nameof(ValidateDiagnosticsContext),
                 "cosmos-netstandard-sdk");
-            cosmosDiagnostics.Dispose();
+            cosmosDiagnostics.GetOverallScope().Dispose();
             string diagnostics = cosmosDiagnostics.ToString();
 
             //Test the default user agent string
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosDiagnostics = new CosmosDiagnosticsContextCore(
                 nameof(ValidateDiagnosticsContext),
                 "MyCustomUserAgentString");
-            using (cosmosDiagnostics)
+            using (cosmosDiagnostics.GetOverallScope())
             {
                 // Test all the different operations on diagnostics context
                 Thread.Sleep(TimeSpan.FromSeconds(1));
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "MyCustomUserAgentString");
             CosmosDiagnosticsContext cosmosDiagnostics2;
 
-            using (cosmosDiagnostics)
+            using (cosmosDiagnostics.GetOverallScope())
             {
                 // Test all the different operations on diagnostics context
                 using (cosmosDiagnostics.CreateScope("ValidateScope"))
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
                     nameof(ValidateDiagnosticsAppendContext),
                     "MyCustomUserAgentString");
-                cosmosDiagnostics2.Dispose();
+                cosmosDiagnostics2.GetOverallScope().Dispose();
 
                 using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
                 {
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Verify that API using the interface get the older v2 string
             CosmosDiagnosticsContext diagnosticsContext = MockCosmosUtil.CreateDiagnosticsContext();
-            diagnosticsContext.Dispose();
+            diagnosticsContext.GetOverallScope().Dispose();
 
             CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics(diagnosticsContext);
             string noInfo = clientSideRequestStatistics.ToString();

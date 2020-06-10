@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             string message)
         {
-            exception.DiagnosticsContext.Dispose();
+            exception.DiagnosticsContext.GetOverallScope().Dispose();
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));

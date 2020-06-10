@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 if (disposeDiagnosticContext)
                 {
-                    diagnosticsContext.Dispose();
+                    diagnosticsContext.GetOverallScope().Dispose();
                 }
             }
         }

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosDiagnosticsContextCore : CosmosDiagnosticsContext
     {
         private static readonly string DefaultUserAgentString;
-        private readonly Stopwatch stopwatch;
+        private readonly CosmosDiagnosticScope overallScope;
 
         /// <summary>
         /// Detailed view of all the operations.
@@ -30,8 +30,6 @@ namespace Microsoft.Azure.Cosmos
 
         private int totalRequestCount = 0;
         private int failedRequestCount = 0;
-        private TimeSpan? totalElapsedTime = null;
-        private bool isDisposed = false;
 
         static CosmosDiagnosticsContextCore()
         {
@@ -55,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
             this.StartUtc = DateTime.UtcNow;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
             this.Diagnostics = new CosmosDiagnosticsCore(this);
-            this.stopwatch = Stopwatch.StartNew();
+            this.overallScope = new CosmosDiagnosticScope("Overall");
         }
 
         public override DateTime StartUtc { get; }
@@ -66,25 +64,24 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosDiagnostics Diagnostics { get; }
 
+        internal override IDisposable GetOverallScope()
+        {
+            return this.overallScope;
+        }
+
         internal override TimeSpan GetRunningElapsedTime()
         {
-            return this.stopwatch.Elapsed;
+            return this.overallScope.GetElapsedTime();
         }
 
         internal override bool TryGetTotalElapsedTime(out TimeSpan timeSpan)
         {
-            if (this.totalElapsedTime.HasValue)
-            {
-                timeSpan = this.totalElapsedTime.Value;
-                return true;
-            }
-
-            return false;
+            return this.overallScope.TryGetElapsedTime(out timeSpan);
         }
 
         internal override bool IsComplete()
         {
-            return this.totalElapsedTime.HasValue;
+            return this.overallScope.IsComplete();
         }
 
         public override int GetTotalRequestCount()
@@ -210,15 +207,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.totalRequestCount += newContext.GetTotalRequestCount();
             this.failedRequestCount += newContext.GetFailedRequestCount();
-        }
-
-        public override void Dispose()
-        {
-            if (!this.isDisposed)
-            {
-                this.totalElapsedTime = this.stopwatch.Elapsed;
-                this.isDisposed = true;
-            }
         }
     }
 }

@@ -99,7 +99,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions))
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
+            using (diagnostics.GetOverallScope())
             {
                 diagnostics.AddDiagnosticsInternal(new FeedRangeStatistics(this.FeedRangeInternal));
                 if (!this.lazyContainerRid.ValueInitialized)

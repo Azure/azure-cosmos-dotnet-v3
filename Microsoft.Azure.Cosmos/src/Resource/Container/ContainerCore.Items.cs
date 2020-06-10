@@ -45,7 +45,8 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 return await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
@@ -69,7 +70,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 ResponseMessage response = await this.ExtractPartitionKeyAndProcessItemStreamAsync(
                     partitionKey: partitionKey,
@@ -90,7 +92,8 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 return await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
@@ -109,7 +112,8 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 ResponseMessage response = await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
@@ -130,7 +134,8 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 return await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
@@ -154,7 +159,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 ResponseMessage response = await this.ExtractPartitionKeyAndProcessItemStreamAsync(
                     partitionKey: partitionKey,
@@ -176,7 +182,8 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 return await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
@@ -206,7 +213,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 ResponseMessage response = await this.ExtractPartitionKeyAndProcessItemStreamAsync(
                    partitionKey: partitionKey,
@@ -227,7 +235,8 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 return await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
@@ -246,7 +255,8 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions))
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
                 ResponseMessage response = await this.ProcessItemStreamAsync(
                     partitionKey: partitionKey,
