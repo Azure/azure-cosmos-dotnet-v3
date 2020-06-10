@@ -463,17 +463,13 @@ namespace Microsoft.Azure.Cosmos.Common
             // TODO, devise a mechanism to handle cache coherency during resource id collision
             public readonly string hostName;
             public readonly ReaderWriterLockSlim rwlock = new ReaderWriterLockSlim();
-            public readonly ConcurrentDictionary<string, ulong> collectionNameByResourceId;
-            public readonly ConcurrentDictionary<ulong, string> collectionResourceIdByName;
+            public readonly ConcurrentDictionary<string, ulong> collectionNameByResourceId = new ConcurrentDictionary<string, ulong>();
+            public readonly ConcurrentDictionary<ulong, string> collectionResourceIdByName = new ConcurrentDictionary<ulong, string>();
             // Map of Collection Rid to map of partitionkeyrangeid to SessionToken.
-            public readonly ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>> sessionTokensRIDBased;
+            public readonly ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>> sessionTokensRIDBased = new ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>>();
 
             public SessionContainerState(string hostName)
             {
-                int concurrency = 10 * Environment.ProcessorCount;
-                this.collectionNameByResourceId = new ConcurrentDictionary<string, ulong>(concurrency, concurrency * 50);
-                this.collectionResourceIdByName = new ConcurrentDictionary<ulong, string>(concurrency, concurrency * 50);
-                this.sessionTokensRIDBased = new ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>>(concurrency, concurrency * 50);
                 this.hostName = hostName;
             }
 
