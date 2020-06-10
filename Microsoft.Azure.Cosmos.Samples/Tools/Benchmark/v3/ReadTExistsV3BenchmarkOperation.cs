@@ -42,7 +42,7 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            ItemResponse<Dictionary<string, string>> itemResponse = await this.container.ReadItemAsync<Dictionary<string, string>>(
+            ItemResponse<Dictionary<string, object>> itemResponse = await this.container.ReadItemAsync<Dictionary<string, object>>(
                         this.nextExecutionItemId,
                         new PartitionKey(this.nextExecutionItemPartitionKey));
             if (itemResponse.StatusCode != HttpStatusCode.OK)
