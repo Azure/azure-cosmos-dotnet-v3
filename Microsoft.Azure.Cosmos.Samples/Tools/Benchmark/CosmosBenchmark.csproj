@@ -16,13 +16,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.5.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
     <PackageReference Include="HdrHistogram" Version="2.5.0" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="3.10.0" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="1.0.0-preview" />
-    <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="2.1.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+    <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="*" />
   </ItemGroup>
 </Project>

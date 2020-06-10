@@ -16,6 +16,7 @@ namespace CosmosBenchmark
         Task ExecuteAsync(
                 int iterationCount,
                 bool isWarmup,
+                bool traceFaiures,
                 Action completionCallback);
     }
 }

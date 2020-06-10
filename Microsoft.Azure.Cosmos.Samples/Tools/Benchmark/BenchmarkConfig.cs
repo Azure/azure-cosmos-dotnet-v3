@@ -33,11 +33,11 @@ namespace CosmosBenchmark
         [Option('n', Required = false, HelpText = "Number of documents to insert")]
         public int ItemCount { get; set; } = 200000;
 
-        [Option(Required = false, HelpText = "Start with new collection")]
+        [Option(Required = false, HelpText = "Client consistency level to override")]
         public string ConsistencyLevel { get; set; }
 
-        [Option(Required = false, HelpText = "Start with new collection")]
-        public bool IncludePercentiles { get; set; }
+        [Option(Required = false, HelpText = "Enable latency percentiles")]
+        public bool EnableLatencyPercentiles { get; set; }
 
         [Option(Required = false, HelpText = "Start with new collection")]
         public bool CleanupOnStart { get; set; } = false;
@@ -56,6 +56,9 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Min thread pool size")]
         public int MinThreadPoolSize { get; set; } = 100;
+
+        [Option(Required = false, HelpText = "Write the task execution failure to console. Useful for debugigng failures")]
+        public bool TraceFailures { get; set; } 
 
         internal int GetTaskCount(int containerThroughput)
         {

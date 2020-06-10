@@ -15,7 +15,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents.Client;
     using System.Collections.Generic;
     using System.Reflection;
-    using Microsoft.Azure.Documents;
+    using System.Diagnostics;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -41,60 +41,68 @@ namespace CosmosBenchmark
         /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
-            BenchmarkConfig config = BenchmarkConfig.From(args);
-            ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
-            TelemetrySpan.IncludePercentile = config.IncludePercentiles;
-
-            string accountKey = config.Key;
-            config.Key = null; // Don't print
-            config.Print();
-
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            try
             {
-                ApplicationName = "cosmosdbdotnetbenchmark",
-                RequestTimeout = new TimeSpan(1, 0, 0),
-                MaxRetryAttemptsOnRateLimitedRequests = 0,
-                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
-            };
+                BenchmarkConfig config = BenchmarkConfig.From(args);
+                ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
+                TelemetrySpan.IncludePercentile = config.EnableLatencyPercentiles;
 
-            Microsoft.Azure.Documents.ConsistencyLevel? consistencyLevel = null;
-            if (!string.IsNullOrWhiteSpace(config.ConsistencyLevel))
-            {
-                clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), config.ConsistencyLevel, ignoreCase: true);
-                consistencyLevel = (Microsoft.Azure.Documents.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Documents.ConsistencyLevel), config.ConsistencyLevel, ignoreCase: true);
-            }
+                string accountKey = config.Key;
+                config.Key = null; // Don't print
+                config.Print();
 
-            using (DocumentClient documentClient = new DocumentClient(new Uri(config.EndPoint),
-                accountKey,
-                new ConnectionPolicy()
+                CosmosClientOptions clientOptions = new CosmosClientOptions()
                 {
-                    ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
-                    ConnectionProtocol = Protocol.Tcp,
-                },
-                desiredConsistencyLevel: consistencyLevel))
-            {
-                using (CosmosClient client = new CosmosClient(
-                    config.EndPoint,
+                    ApplicationName = "cosmosdbdotnetbenchmark",
+                    RequestTimeout = new TimeSpan(1, 0, 0),
+                    MaxRetryAttemptsOnRateLimitedRequests = 0,
+                    MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
+                };
+
+                Microsoft.Azure.Documents.ConsistencyLevel? consistencyLevel = null;
+                if (!string.IsNullOrWhiteSpace(config.ConsistencyLevel))
+                {
+                    clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), config.ConsistencyLevel, ignoreCase: true);
+                    consistencyLevel = (Microsoft.Azure.Documents.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Documents.ConsistencyLevel), config.ConsistencyLevel, ignoreCase: true);
+                }
+
+                using (DocumentClient documentClient = new DocumentClient(new Uri(config.EndPoint),
                     accountKey,
-                    clientOptions))
+                    new ConnectionPolicy()
+                    {
+                        ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
+                        ConnectionProtocol = Protocol.Tcp,
+                    },
+                    desiredConsistencyLevel: consistencyLevel))
                 {
-                    Program program = new Program(client, documentClient);
-                    await program.ExecuteAsync(config);
+                    using (CosmosClient client = new CosmosClient(
+                        config.EndPoint,
+                        accountKey,
+                        clientOptions))
+                    {
+                        Program program = new Program(client, documentClient);
+                        await program.ExecuteAsync(config);
+                    }
+                }
+
+                if (TelemetrySpan.IncludePercentile)
+                {
+                    TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
+                    using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
+                    {
+                        TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
+                    }
                 }
             }
-
-            if (TelemetrySpan.IncludePercentile)
+            finally
             {
-                TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
-                using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
+                Console.WriteLine($"{nameof(CosmosBenchmark)} completed successfully.");
+                if (Debugger.IsAttached)
                 {
-                    TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadLine();
                 }
             }
-
-            Console.WriteLine($"{nameof(CosmosBenchmark)} completed successfully.");
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadLine();
         }
 
         /// <summary>
@@ -125,7 +133,7 @@ namespace CosmosBenchmark
 
             Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(config, partitionKeyPath);
             IExecutionStrategy execution = new ParallelExecutionStrategy(benchmarkOperationFactory);
-            await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, 0.01);
+            await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, config.TraceFailures, 0.01);
 
             if (config.CleanupOnFinish)
             {

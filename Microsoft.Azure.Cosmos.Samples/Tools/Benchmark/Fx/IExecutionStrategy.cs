@@ -12,6 +12,7 @@ namespace CosmosBenchmark
         Task ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
+            bool traceFalures,
             double warmupFraction);
 
     }
