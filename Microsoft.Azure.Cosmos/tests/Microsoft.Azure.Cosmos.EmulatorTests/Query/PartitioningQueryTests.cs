@@ -137,19 +137,21 @@
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 // Query with partition key should be done in one round trip.
-                FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
-                    "SELECT * FROM c WHERE c.pk = 'doc5'");
+                using (FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
+                    "SELECT * FROM c WHERE c.pk = 'doc5'"))
+                {
+                    FeedResponse<dynamic> response = await resultSetIterator.ReadNextAsync();
+                    Assert.AreEqual(1, response.Count());
+                    Assert.IsNull(response.ContinuationToken);
+                }
 
-                FeedResponse<dynamic> response = await resultSetIterator.ReadNextAsync();
-                Assert.AreEqual(1, response.Count());
-                Assert.IsNull(response.ContinuationToken);
-
-                resultSetIterator = container.GetItemQueryIterator<dynamic>(
-                   "SELECT * FROM c WHERE c.pk = 'doc10'");
-
-                response = await resultSetIterator.ReadNextAsync();
-                Assert.AreEqual(0, response.Count());
-                Assert.IsNull(response.ContinuationToken);
+                using (FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
+                       "SELECT * FROM c WHERE c.pk = 'doc10'"))
+                {
+                    FeedResponse<dynamic> response = await resultSetIterator.ReadNextAsync();
+                    Assert.AreEqual(0, response.Count());
+                    Assert.IsNull(response.ContinuationToken);
+                }
             }
         }
 
