@@ -200,5 +200,11 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            this.cosmosQueryExecutionContext.Dispose();
+            base.Dispose(disposing);
+        }
     }
 }

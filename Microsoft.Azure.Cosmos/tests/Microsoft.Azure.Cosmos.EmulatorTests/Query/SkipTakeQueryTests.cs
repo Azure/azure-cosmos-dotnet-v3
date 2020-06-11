@@ -63,26 +63,28 @@
                                 // Max DOP needs to be 0 since the query needs to run in serial => 
                                 // otherwise the parallel code will prefetch from other partitions,
                                 // since the first N-1 partitions might be empty.
-                                FeedIterator<dynamic> documentQuery = container.GetItemQueryIterator<dynamic>(
+                                using (FeedIterator<dynamic> documentQuery = container.GetItemQueryIterator<dynamic>(
                                         query,
-                                        requestOptions: new QueryRequestOptions() { MaxConcurrency = 0, MaxItemCount = pageSize });
-
-                                //QueryMetrics aggregatedQueryMetrics = QueryMetrics.Zero;
-                                int numberOfDocuments = 0;
-                                while (documentQuery.HasMoreResults)
+                                        requestOptions: new QueryRequestOptions() { MaxConcurrency = 0, MaxItemCount = pageSize }))
                                 {
-                                    FeedResponse<dynamic> cosmosQueryResponse = await documentQuery.ReadNextAsync();
+                                    //QueryMetrics aggregatedQueryMetrics = QueryMetrics.Zero;
+                                    int numberOfDocuments = 0;
+                                    while (documentQuery.HasMoreResults)
+                                    {
+                                        FeedResponse<dynamic> cosmosQueryResponse = await documentQuery.ReadNextAsync();
 
-                                    numberOfDocuments += cosmosQueryResponse.Count();
-                                    //foreach (QueryMetrics queryMetrics in cosmosQueryResponse.QueryMetrics.Values)
-                                    //{
-                                    //    aggregatedQueryMetrics += queryMetrics;
-                                    //}
+                                        numberOfDocuments += cosmosQueryResponse.Count();
+                                        //foreach (QueryMetrics queryMetrics in cosmosQueryResponse.QueryMetrics.Values)
+                                        //{
+                                        //    aggregatedQueryMetrics += queryMetrics;
+                                        //}
+                                    }
+
+                                    Assert.IsTrue(
+                                        numberOfDocuments <= topCount,
+                                        $"Received {numberOfDocuments} documents with query: {query} and pageSize: {pageSize}");
                                 }
 
-                                Assert.IsTrue(
-                                    numberOfDocuments <= topCount,
-                                    $"Received {numberOfDocuments} documents with query: {query} and pageSize: {pageSize}");
                                 //if (!useDistinct)
                                 //{
                                 //    Assert.IsTrue(
