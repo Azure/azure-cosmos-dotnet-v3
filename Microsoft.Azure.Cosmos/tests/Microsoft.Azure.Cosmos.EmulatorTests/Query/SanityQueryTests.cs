@@ -109,10 +109,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
-                FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
-                foreach (JObject jObject in response)
+                while (feedIterator.HasMoreResults)
                 {
-                    Assert.IsNotNull(jObject);
+                    FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
+                    foreach (JObject jObject in response)
+                    {
+                        Assert.IsNotNull(jObject);
+                    }
                 }
             }
 
@@ -126,19 +129,22 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
-                using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                while (feedIterator.HasMoreResults)
                 {
-                    Assert.IsNotNull(response.Content);
+                    using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                    {
+                        Assert.IsNotNull(response.Content);
+                    }
                 }
             }
 
-            // Test draining typed iterator
+            // Test single page typed iterator
             using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
                     queryText: "SELECT * FROM c",
                     continuationToken: null,
                     requestOptions: new QueryRequestOptions
                     {
-                        MaxItemCount = 1000,
+                        MaxItemCount = 10,
                     }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
@@ -149,13 +155,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
             }
 
-            // Test draining stream iterator
+            // Test single page stream iterator
             using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                     queryText: "SELECT * FROM c",
                     continuationToken: null,
                     requestOptions: new QueryRequestOptions
                     {
-                        MaxItemCount = 1000,
+                        MaxItemCount = 10,
                     }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
