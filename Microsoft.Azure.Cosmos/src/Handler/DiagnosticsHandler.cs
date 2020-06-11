@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         CpuLoadHistory cpuHistory = this.cpuMonitor.GetCpuLoad();
                         if (cpuHistory != null)
                         {
-                            request.DiagnosticsContext.AddDiagnosticsInternal(new CosmosProcessInfo(cpuHistory));
+                            request.DiagnosticsContext.AddDiagnosticsInternal(new CosmosSystemInfo(cpuHistory));
                         }
                     }
                     catch (Exception)

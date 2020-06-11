@@ -282,12 +282,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteEndObject();
         }
 
-        public override void Visit(CosmosProcessInfo processInfo)
+        public override void Visit(CosmosSystemInfo processInfo)
         {
             this.jsonWriter.WriteStartObject();
 
             this.jsonWriter.WritePropertyName("Id");
-            this.jsonWriter.WriteValue("ProcessInfo");
+            this.jsonWriter.WriteValue("SystemInfo");
 
             this.jsonWriter.WritePropertyName("CpuHistory");
             CpuLoadHistory cpuLoadHistory = processInfo.CpuLoadHistory;

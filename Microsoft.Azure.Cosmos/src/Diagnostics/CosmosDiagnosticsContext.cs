@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract bool IsComplete();
 
-        internal abstract void AddDiagnosticsInternal(CosmosProcessInfo cpuLoadHistory);
+        internal abstract void AddDiagnosticsInternal(CosmosSystemInfo cpuLoadHistory);
 
         internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 

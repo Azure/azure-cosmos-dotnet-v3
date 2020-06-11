@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return (ParseFailureReason.None, backendMetrics);
         }
 
-        public override (ParseFailureReason, BackendMetrics) Visit(CosmosProcessInfo cpuLoadHistory)
+        public override (ParseFailureReason, BackendMetrics) Visit(CosmosSystemInfo cpuLoadHistory)
         {
             return BackendMetricsExtractor.MetricsNotFound;
         }

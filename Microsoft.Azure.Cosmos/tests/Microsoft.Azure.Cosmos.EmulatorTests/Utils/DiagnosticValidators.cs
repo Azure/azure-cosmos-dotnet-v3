@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(elapsedInMs > 0);
         }
 
-        private static void ValidateProcessInfo(CosmosProcessInfo processInfo)
+        private static void ValidateProcessInfo(CosmosSystemInfo processInfo)
         {
             Assert.IsNotNull(processInfo.CpuLoadHistory);
             Assert.IsNotNull(processInfo.CpuLoadHistory.ToString());
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
             string info = processInfo.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
-            Assert.IsNotNull(jObject["Id"].ToString());
+            Assert.AreEqual("SystemInfo", jObject["Id"].ToString());
             Assert.IsNotNull(jObject["CpuHistory"].ToString());
         }
 
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
                // This will be visited if it is gateway query plan
             }
 
-            public override void Visit(CosmosProcessInfo cpuLoadHistory)
+            public override void Visit(CosmosSystemInfo cpuLoadHistory)
             {
                 // This will be visited if it is gateway query plan
             }
@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos
                 DiagnosticValidator.ValidateRequestHandlerScope(requestHandlerScope, this.TotalElapsedTime);
             }
 
-            public override void Visit(CosmosProcessInfo cpuLoadHistory)
+            public override void Visit(CosmosSystemInfo cpuLoadHistory)
             {
                 Assert.IsTrue(this.isContextVisited);
                 DiagnosticValidator.ValidateProcessInfo(cpuLoadHistory);
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos
                 DiagnosticValidator.ValidateRequestHandlerScope(requestHandlerScope, this.TotalElapsedTime);
             }
 
-            public override void Visit(CosmosProcessInfo cpuLoadHistory)
+            public override void Visit(CosmosSystemInfo cpuLoadHistory)
             {
             }
 

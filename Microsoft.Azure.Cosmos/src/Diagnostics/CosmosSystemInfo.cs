@@ -6,11 +6,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal sealed class CosmosProcessInfo : CosmosDiagnosticsInternal
+    internal sealed class CosmosSystemInfo : CosmosDiagnosticsInternal
     {
         public readonly CpuLoadHistory CpuLoadHistory;
 
-        public CosmosProcessInfo(
+        public CosmosSystemInfo(
             CpuLoadHistory cpuLoadHistory)
         {
             this.CpuLoadHistory = cpuLoadHistory ?? throw new ArgumentNullException(nameof(cpuLoadHistory));

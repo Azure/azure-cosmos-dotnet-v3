@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
             return requestHandlerScope;
         }
 
-        internal override void AddDiagnosticsInternal(CosmosProcessInfo processInfo)
+        internal override void AddDiagnosticsInternal(CosmosSystemInfo processInfo)
         {
             if (processInfo == null)
             {
