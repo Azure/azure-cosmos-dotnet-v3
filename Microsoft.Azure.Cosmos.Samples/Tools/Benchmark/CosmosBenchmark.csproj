@@ -25,6 +25,8 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
+    <!--<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="*" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="1.0.0-preview" />-->
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 </Project>
