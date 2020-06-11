@@ -105,9 +105,7 @@ namespace CosmosBenchmark
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
-                RequestTimeout = new TimeSpan(1, 0, 0),
-                MaxRetryAttemptsOnRateLimitedRequests = 0,
-                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
+                MaxRetryAttemptsOnRateLimitedRequests = 0
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
@@ -136,6 +134,10 @@ namespace CosmosBenchmark
                                 ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
                                 ConnectionProtocol = Protocol.Tcp,
                                 UserAgentSuffix = BenchmarkConfig.UserAgentSuffix,
+                                RetryOptions = new RetryOptions()
+                                {
+                                    MaxRetryAttemptsOnThrottledRequests = 0
+                                }
                             },
                             desiredConsistencyLevel: consistencyLevel);
         }

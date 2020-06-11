@@ -21,12 +21,16 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <!-- Enabled easier integration into master -->
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
-    <!--<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="*" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="1.0.0-preview" />-->
+    <!-- UNCOMMENTING BELOW and REMOVING ABOVE condition above will enable run with latest V3 sources
+    
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="*" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="1.0.0-preview" />
+    -->
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 </Project>
