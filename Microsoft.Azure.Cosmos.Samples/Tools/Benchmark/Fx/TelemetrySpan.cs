@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     internal struct TelemetrySpan : IDisposable
     {
         internal static HistogramBase LatencyHistogram = new IntConcurrentHistogram(1, 10 * 1000, 0);
+        internal static bool IncludePercentile = true;
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
@@ -36,7 +37,11 @@ namespace CosmosBenchmark
             {
                 OperationResult operationResult = this.lazyOperationResult();
 
-                TelemetrySpan.LatencyHistogram.RecordValue(this.stopwatch.ElapsedMilliseconds);
+                if (TelemetrySpan.IncludePercentile)
+                {
+                    TelemetrySpan.LatencyHistogram.RecordValue(this.stopwatch.ElapsedMilliseconds);
+                }
+
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
                     operationResult.DatabseName,
                     operationResult.ContainerName,
