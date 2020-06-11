@@ -9,8 +9,10 @@ namespace CosmosBenchmark
     using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
-    internal class InsertBenchmarkOperation : IBenchmarkOperatrion
+    internal class InsertV3BenchmarkOperation : IBenchmarkOperatrion
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -19,30 +21,29 @@ namespace CosmosBenchmark
         private readonly string databsaeName;
         private readonly string containerName;
 
-        private Stream nextExecutionItemPayload;
-        private string nextExecutionItemPartitionKey;
-
-        public InsertBenchmarkOperation(
-            Container container,
+        public InsertV3BenchmarkOperation(
+            CosmosClient cosmosClient,
+            string dbName,
+            string containerName,
             string partitionKeyPath,
             string sampleJson)
         {
-            this.container = container;
-            this.partitionKeyPath = partitionKeyPath.Replace("/", "");
+            this.databsaeName = dbName;
+            this.containerName = containerName;
 
-            this.databsaeName = container.Database.Id;
-            this.containerName = container.Id;
+            this.container = cosmosClient.GetContainer(this.databsaeName, this.containerName);
+            this.partitionKeyPath = partitionKeyPath.Replace("/", "");
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            using (Stream inputStream = this.nextExecutionItemPayload)
+            using (Stream input = JsonHelper.ToStream(this.sampleJObject))
             {
                 ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
-                        inputStream,
-                        new PartitionKey(this.nextExecutionItemPartitionKey));
+                        input,
+                        new PartitionKey(this.sampleJObject[this.partitionKeyPath].ToString()));
 
                 double ruCharges = itemResponse.Headers.RequestCharge;
                 return new OperationResult()
@@ -60,9 +61,6 @@ namespace CosmosBenchmark
             string newPartitionKey = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = Guid.NewGuid().ToString();
             this.sampleJObject[this.partitionKeyPath] = newPartitionKey;
-
-            this.nextExecutionItemPayload = JsonHelper.ToStream(this.sampleJObject);
-            this.nextExecutionItemPartitionKey = newPartitionKey;
 
             return Task.CompletedTask;
         }

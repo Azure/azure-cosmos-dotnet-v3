@@ -25,7 +25,6 @@ namespace Microsoft.Azure.Cosmos
         public CompositeContinuationToken CurrentToken { get; private set; }
         private static Documents.ShouldRetryResult Retry = Documents.ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         private static Documents.ShouldRetryResult NoRetry = Documents.ShouldRetryResult.NoRetry();
-        private readonly HashSet<string> doneRanges;
         private string initialNoResultsRange;
 
         private FeedRangeCompositeContinuation(
@@ -34,7 +33,6 @@ namespace Microsoft.Azure.Cosmos
             : base(containerRid, feedRange)
         {
             this.CompositeContinuationTokens = new Queue<CompositeContinuationToken>();
-            this.doneRanges = new HashSet<string>();
         }
 
         public override void Accept(
@@ -99,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
             this.CurrentToken = this.CompositeContinuationTokens.Peek();
         }
 
-        public override string GetContinuation() => this.CurrentToken.Token;
+        public override string GetContinuation() => this.CurrentToken?.Token;
 
         public override string ToString()
         {
@@ -108,14 +106,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override void ReplaceContinuation(string continuationToken)
         {
-            if (continuationToken == null)
-            {
-                // Normal ReadFeed can signal termination by CT null, not NotModified
-                // Change Feed never lands here, as it always provides a CT
-                // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
-                this.doneRanges.Add(this.CurrentToken.Range.Min);
-            }
-
             this.CurrentToken.Token = continuationToken;
             this.MoveToNextToken();
         }
@@ -139,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The concept of Done is only for ReadFeed. Change Feed is never done, it is an infinite stream.
         /// </summary>
-        public override bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
+        public override bool IsDone => this.CompositeContinuationTokens.Count == 0;
 
         public override Documents.ShouldRetryResult HandleChangeFeedNotModified(ResponseMessage responseMessage)
         {
@@ -207,6 +197,38 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        private static bool TryParseAsCompositeContinuationToken(
+            string providedContinuation,
+            out CompositeContinuationToken compositeContinuationToken)
+        {
+            compositeContinuationToken = null;
+            try
+            {
+                if (providedContinuation.Trim().StartsWith("[", StringComparison.Ordinal))
+                {
+                    List<CompositeContinuationToken> compositeContinuationTokens = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(providedContinuation);
+
+                    if (compositeContinuationTokens != null && compositeContinuationTokens.Count > 0)
+                    {
+                        compositeContinuationToken = compositeContinuationTokens[0];
+                    }
+
+                    return compositeContinuationToken != null;
+                }
+                else if (providedContinuation.Trim().StartsWith("{", StringComparison.Ordinal))
+                {
+                    compositeContinuationToken = JsonConvert.DeserializeObject<CompositeContinuationToken>(providedContinuation);
+                    return compositeContinuationToken != null;
+                }
+
+                return false;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }    
+
         private static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
             string minInclusive,
             string maxExclusive,
@@ -222,32 +244,52 @@ namespace Microsoft.Azure.Cosmos
         private void MoveToNextToken()
         {
             CompositeContinuationToken recentToken = this.CompositeContinuationTokens.Dequeue();
-            this.CompositeContinuationTokens.Enqueue(recentToken);
-            this.CurrentToken = this.CompositeContinuationTokens.Peek();
-
-            // In a Query / ReadFeed not Change Feed, skip ranges that are done to avoid requests
-            while (!this.IsDone &&
-                this.doneRanges.Contains(this.CurrentToken.Range.Min))
+            if (recentToken.Token != null)
             {
-                this.MoveToNextToken();
+                // Normal ReadFeed can signal termination by CT null, not NotModified
+                // Change Feed never lands here, as it always provides a CT
+                // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
+                this.CompositeContinuationTokens.Enqueue(recentToken);
             }
+            
+            this.CurrentToken = this.CompositeContinuationTokens.Count > 0 ? this.CompositeContinuationTokens.Peek() : null;
         }
 
         private void CreateChildRanges(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
-
             // Update current
             Documents.PartitionKeyRange firstRange = keyRanges[0];
             this.CurrentToken.Range = new Documents.Routing.Range<string>(firstRange.MinInclusive, firstRange.MaxExclusive, true, false);
-            // Add children
-            foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
+            if (FeedRangeCompositeContinuation.TryParseAsCompositeContinuationToken(
+                this.CurrentToken.Token,
+                out CompositeContinuationToken continuationAsComposite))
             {
-                this.CompositeContinuationTokens.Enqueue(
-                    FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
-                        keyRange.MinInclusive,
-                        keyRange.MaxExclusive,
-                        this.CurrentToken.Token));
+                // Update the internal composite continuation
+                continuationAsComposite.Range = this.CurrentToken.Range;
+                this.CurrentToken.Token = JsonConvert.SerializeObject(continuationAsComposite);
+                // Add children
+                foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
+                {
+                    continuationAsComposite.Range = keyRange.ToRange();
+                    this.CompositeContinuationTokens.Enqueue(
+                        FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
+                            keyRange.MinInclusive,
+                            keyRange.MaxExclusive,
+                            JsonConvert.SerializeObject(continuationAsComposite)));
+                }
+            }
+            else
+            {
+                // Add children
+                foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
+                {
+                    this.CompositeContinuationTokens.Enqueue(
+                        FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
+                            keyRange.MinInclusive,
+                            keyRange.MaxExclusive,
+                            this.CurrentToken.Token));
+                }
             }
         }
 
