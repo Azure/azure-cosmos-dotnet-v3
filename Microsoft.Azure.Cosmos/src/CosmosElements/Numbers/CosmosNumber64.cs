@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public bool Equals(CosmosNumber64 cosmosNumber64) => this.GetValue() == cosmosNumber64.GetValue();
 
-        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), 1943952435);
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(Number64.ToDoubleEx(this.GetValue()), 1943952435);
 
         public int CompareTo(CosmosNumber64 cosmosNumber64) => this.GetValue().CompareTo(cosmosNumber64.GetValue());
 

@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public bool Equals(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>) => this.GetValue() == cosmos<#= cosmosNumberType #>.GetValue();
 
-        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), <#= cosmosNumberTypeHashCode[cosmosNumberType] #>);
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(<#= cosmosNumberType == "Number64" ? "Number64.ToDoubleEx(this.GetValue())" : "this.GetValue()" #>, <#= cosmosNumberTypeHashCode[cosmosNumberType] #>);
 
         public int CompareTo(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>) => this.GetValue().CompareTo(cosmos<#= cosmosNumberType #>.GetValue());
 

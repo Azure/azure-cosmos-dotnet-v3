@@ -261,9 +261,9 @@ namespace Microsoft.Azure.Cosmos
                 return 1;
             }
 
-            if (value is Number64)
+            if (value is Number64 number)
             {
-                return this.CompareTo((Number64)value);
+                return this.CompareTo(number);
             }
 
             throw new ArgumentException("Value must be a Number64.");
@@ -312,9 +312,9 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            if (obj is Number64)
+            if (obj is Number64 number)
             {
-                return this.Equals((Number64)obj);
+                return this.Equals(number);
             }
 
             return false;
