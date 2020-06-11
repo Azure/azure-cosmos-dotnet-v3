@@ -61,7 +61,7 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Min thread pool size")]
         public int MinThreadPoolSize { get; set; } = 100;
 
-        [Option(Required = false, HelpText = "Write the task execution failure to console. Useful for debugigng failures")]
+        [Option(Required = false, HelpText = "Write the task execution failure to console. Useful for debugging failures")]
         public bool TraceFailures { get; set; } 
 
         internal int GetTaskCount(int containerThroughput)
