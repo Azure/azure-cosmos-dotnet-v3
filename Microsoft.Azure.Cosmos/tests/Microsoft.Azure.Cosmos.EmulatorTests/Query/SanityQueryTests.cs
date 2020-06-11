@@ -79,25 +79,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 inputDocuments,
                 ImplementationAsync);
 
-            //WeakReference weakReferenceFeedIterator;
-            //{
-            //    using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
-            //        "SELECT * FROM c",
-            //        null,
-            //        new QueryRequestOptions
-            //        {
-            //            MaxItemCount = 1000,
-            //        }))
-            //    {
-            //        weakReferenceFeedIterator = new WeakReference(feedIterator, true);
-            //        FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
-            //        foreach (JObject jObject in response)
-            //        {
-            //            Assert.IsNotNull(jObject);
-            //        }
-            //    }
-            //}
-
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 List<WeakReference> weakReferences = await CreateWeakReferenceToFeedIterator(container);
