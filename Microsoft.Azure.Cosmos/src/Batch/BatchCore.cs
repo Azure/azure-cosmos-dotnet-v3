@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
         public override Task<TransactionalBatchResponse> ExecuteAsync(
-            RequestOptions requestOptions,
+            ItemRequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);

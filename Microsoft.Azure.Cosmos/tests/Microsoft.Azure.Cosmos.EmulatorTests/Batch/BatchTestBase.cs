@@ -292,8 +292,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        protected static RequestOptions GetUpdatedBatchRequestOptions(
-            RequestOptions batchOptions = null,
+        protected static ItemRequestOptions GetUpdatedBatchRequestOptions(
+            ItemRequestOptions batchOptions = null,
             bool isSchematized = false,
             bool useEpk = false,
             object partitionKey = null)
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (batchOptions == null)
                 {
-                    batchOptions = new RequestOptions();
+                    batchOptions = new ItemRequestOptions();
                 }
 
                 if (batchOptions.Properties == null)

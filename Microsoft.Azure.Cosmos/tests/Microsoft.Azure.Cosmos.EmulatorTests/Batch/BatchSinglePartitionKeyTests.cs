@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<TransactionalBatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, Container container)
         {
-            RequestOptions batchOptions = null;
+            ItemRequestOptions batchOptions = null;
             if (isSchematized)
             {
                 await this.CreateSchematizedTestDocsAsync(container);

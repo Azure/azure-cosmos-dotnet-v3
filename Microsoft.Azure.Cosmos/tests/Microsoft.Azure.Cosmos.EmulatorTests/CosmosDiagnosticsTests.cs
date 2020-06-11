@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 batch.ReadItem(createItems[i].id);
             }
 
-            RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
+            ItemRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
             TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
 
             Assert.IsNotNull(response);
