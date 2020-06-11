@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -512,6 +513,17 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 bufferedRawJson = buffer;
                 return true;
+            }
+
+            public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
+            {
+                if (!(jsonNavigatorNode is BinaryNavigatorNode binaryNavigatorNode))
+                {
+                    throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(BinaryNavigatorNode)}");
+                }
+
+                ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
+                return JsonReader.Create(JsonSerializationFormat.Binary, buffer, this.jsonStringDictionary);
             }
 
             private static bool IsStringOrNested(BinaryNavigatorNode binaryNavigatorNode)

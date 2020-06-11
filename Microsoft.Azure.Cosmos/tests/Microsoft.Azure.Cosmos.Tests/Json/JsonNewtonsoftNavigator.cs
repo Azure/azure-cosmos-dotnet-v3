@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json.Linq;
 
@@ -195,6 +196,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             bufferedRawJson = null;
             return false;
+        }
+
+        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Span bufferedUtf8StringValue)
+        {
+            bufferedUtf8StringValue = default;
+            return false;
+        }
+
+        public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
+        {
+            throw new NotImplementedException();
         }
 
         private readonly struct NewtonsoftNode : IJsonNavigatorNode
