@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator setIterator = EncryptionContainerExtensions.ToEncryptionFeedIterator<ToDoActivity>(this.container, linqQueryable);
+        /// FeedIterator setIterator = this.container.ToEncryptionFeedIterator<ToDoActivity>(linqQueryable);
         /// ]]>
         /// </code>
         /// </example>
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator setIterator = EncryptionContainerExtensions.ToEncryptionStreamIterator<ToDoActivity>(this.container, linqQueryable);
+        /// FeedIterator setIterator = this.container.ToEncryptionStreamIterator<ToDoActivity>(linqQueryable);
         /// ]]>
         /// </code>
         /// </example>

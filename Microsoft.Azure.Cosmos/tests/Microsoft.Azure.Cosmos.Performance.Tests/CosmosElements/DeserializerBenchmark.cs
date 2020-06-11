@@ -38,13 +38,13 @@
         [Benchmark]
         public void CosmosElementDeserializer_TryDeserialize_Text()
         {
-            _ = Serializer.Deserialize<IReadOnlyList<Person>>(this.textBuffer);
+            _ = Cosmos.Json.JsonSerializer.Deserialize<IReadOnlyList<Person>>(this.textBuffer);
         }
 
         [Benchmark]
         public void CosmosElementDeserializer_TryDeserialize_Binary()
         {
-            _ = Serializer.Deserialize<IReadOnlyList<Person>>(this.binaryBuffer);
+            _ = Cosmos.Json.JsonSerializer.Deserialize<IReadOnlyList<Person>>(this.binaryBuffer);
         }
 
         [Benchmark]
@@ -56,7 +56,7 @@
         [Benchmark]
         public void JsonConvert_DeserializeObject_Binary()
         {
-            JsonSerializer jsonSerializer = JsonSerializer.CreateDefault();
+            Newtonsoft.Json.JsonSerializer jsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault();
             CosmosDBToNewtonsoftReader cosmosDBToNewtonsoftReader = new CosmosDBToNewtonsoftReader(this.binaryBuffer);
             _ = jsonSerializer.Deserialize<IReadOnlyList<Person>>(cosmosDBToNewtonsoftReader);
         }

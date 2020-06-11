@@ -236,6 +236,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.Diagnostics != null)
             {
+                stringBuilder.Append("--- Cosmos Diagnostics ---");
                 stringBuilder.Append(this.Diagnostics);
             }
 

@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             if (routingMap == null)
             {
-                DefaultTrace.TraceInformation(string.Format("Routing Map Null for collection: {0} for range: {1}, forceRefresh:{2}", collectionRid, range.ToString(), forceRefresh));
+                DefaultTrace.TraceWarning(string.Format("Routing Map Null for collection: {0} for range: {1}, forceRefresh:{2}", collectionRid, range.ToString(), forceRefresh));
                 return null;
             }
 

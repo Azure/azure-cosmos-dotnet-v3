@@ -16,7 +16,14 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticsInternal, IClientSideRequestStatistics
     {
+        public const string DefaultToStringMessage = "Please see CosmosDiagnostics";
         private readonly object lockObject = new object();
+        private readonly long clientSideRequestStatisticsCreateTime;
+
+        private long? firstStartRequestTimestamp;
+        private long? lastStartRequestTimestamp;
+        private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
+        private bool received429ResponseSinceLastStartRequest = false;
 
         public CosmosClientSideRequestStatistics(CosmosDiagnosticsContext diagnosticsContext = null)
         {
@@ -28,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
             this.RegionsContacted = new HashSet<Uri>();
             this.DiagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
             this.DiagnosticsContext.AddDiagnosticsInternal(this);
+            this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
         }
 
         private DateTime RequestStartTimeUtc { get; }
@@ -61,8 +69,43 @@ namespace Microsoft.Azure.Cosmos
 
         public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
+        public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
+
+        public TimeSpan EstimatedClientDelayFromAllCauses
+        {
+            get
+            {
+                if (!this.lastStartRequestTimestamp.HasValue || !this.firstStartRequestTimestamp.HasValue)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                // Stopwatch ticks are not equivalent to DateTime ticks
+                long clientDelayInStopWatchTicks = this.lastStartRequestTimestamp.Value - this.firstStartRequestTimestamp.Value;
+                return TimeSpan.FromSeconds(clientDelayInStopWatchTicks / (double)Stopwatch.Frequency);
+            }
+        }
+
         public void RecordRequest(DocumentServiceRequest request)
         {
+            lock (this.lockObject)
+            {
+                long timestamp = Stopwatch.GetTimestamp();
+                if (this.received429ResponseSinceLastStartRequest)
+                {
+                    long lastTimestamp = this.lastStartRequestTimestamp ?? this.clientSideRequestStatisticsCreateTime;
+                    this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks += timestamp - lastTimestamp;
+                }
+
+                if (!this.firstStartRequestTimestamp.HasValue)
+                {
+                    this.firstStartRequestTimestamp = timestamp;
+                }
+
+                this.lastStartRequestTimestamp = timestamp;
+                this.received429ResponseSinceLastStartRequest = false;
+            }
+
             this.RecordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
         }
 
@@ -107,6 +150,12 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.DiagnosticsContext.AddDiagnosticsInternal(responseStatistics);
+
+                if (!this.received429ResponseSinceLastStartRequest &&
+                    storeResult.StatusCode == StatusCodes.TooManyRequests)
+                {
+                    this.received429ResponseSinceLastStartRequest = true;
+                }
             }
         }
 
@@ -151,20 +200,24 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// The new Cosmos Exception always includes the diagnostics and the
+        /// document client exception message. Some of the older document client exceptions
+        /// include the request statistics in the message causing a circle reference.
+        /// This always returns empty string to prevent the circle reference which
+        /// would cause the diagnostic string to grow exponentially.
+        /// </summary>
         public override string ToString()
         {
-            // This is required for the older IClientSideRequestStatistics
-            // Capture the entire diagnostic context in the toString to avoid losing any information
-            // for any APIs using the older interface.
-            return this.DiagnosticsContext.ToString();
+            return DefaultToStringMessage;
         }
 
+        /// <summary>
+        /// Please see ToString() documentation
+        /// </summary>
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
-            // This is required for the older IClientSideRequestStatistics
-            // Capture the entire diagnostic context in the toString to avoid losing any information
-            // for any APIs using the older interface.
-            stringBuilder.Append(this.DiagnosticsContext.ToString());
+            stringBuilder.Append(DefaultToStringMessage);
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor visitor)

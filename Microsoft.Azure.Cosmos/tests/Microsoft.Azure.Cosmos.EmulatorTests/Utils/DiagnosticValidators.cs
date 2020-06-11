@@ -142,12 +142,23 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["ClientCorrelationId"].ToString());
         }
 
-        private static void ValidateClientSideRequestStatistics(CosmosClientSideRequestStatistics stats)
+        private static void ValidateClientSideRequestStatistics(CosmosClientSideRequestStatistics stats, HttpStatusCode? statusCode)
         {
             Assert.IsNotNull(stats.ContactedReplicas);
             Assert.IsNotNull(stats.DiagnosticsContext);
             Assert.IsNotNull(stats.RegionsContacted);
             Assert.IsNotNull(stats.FailedReplicas);
+
+            if (stats.DiagnosticsContext.FailedRequestCount == 0)
+            {
+                Assert.AreEqual(stats.EstimatedClientDelayFromAllCauses, TimeSpan.Zero);
+                Assert.AreEqual(stats.EstimatedClientDelayFromRateLimiting, TimeSpan.Zero);
+            }
+            else if (statusCode != null && (int)statusCode == 429)
+            {
+                Assert.AreNotEqual(stats.EstimatedClientDelayFromAllCauses, TimeSpan.Zero);
+                Assert.AreNotEqual(stats.EstimatedClientDelayFromRateLimiting, TimeSpan.Zero);
+            }
 
             // If all the request failed it's possible to not contact a region or replica.
             if (stats.DiagnosticsContext.TotalRequestCount < stats.DiagnosticsContext.FailedRequestCount)
@@ -183,7 +194,8 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(stats.RequestUri);
             Assert.IsNotNull(stats.RequestCharge);
-            if (stats.StatusCode != HttpStatusCode.RequestEntityTooLarge)
+            if (stats.StatusCode != HttpStatusCode.RequestEntityTooLarge &&
+                stats.StatusCode != HttpStatusCode.RequestTimeout)
             {
                 Assert.IsTrue(stats.RequestCharge > 0);
             }
@@ -324,6 +336,7 @@ namespace Microsoft.Azure.Cosmos
         {
             private DateTime? StartTimeUtc = null;
             private TimeSpan? TotalElapsedTime = null;
+            private HttpStatusCode? StatusCode = null;
             private bool containsFailures = false;
             private bool isContextVisited = false;
             private bool isRequestHandlerScopeVisited = false;
@@ -340,6 +353,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.containsFailures = true;
                 }
+
+                this.StatusCode = pointOperationStatistics.StatusCode;
             }
 
             public override void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
@@ -391,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Assert.IsTrue(this.isContextVisited);
                 this.isCosmosClientSideRequestStatisticsVisited = true;
-                DiagnosticValidator.ValidateClientSideRequestStatistics(clientSideRequestStatistics);
+                DiagnosticValidator.ValidateClientSideRequestStatistics(clientSideRequestStatistics, this.StatusCode);
             }
 
             public override void Visit(FeedRangeStatistics feedRangeStatistics)

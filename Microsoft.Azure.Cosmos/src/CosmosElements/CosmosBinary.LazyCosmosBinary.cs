@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
-                jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);
+                this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
             }
         }
     }

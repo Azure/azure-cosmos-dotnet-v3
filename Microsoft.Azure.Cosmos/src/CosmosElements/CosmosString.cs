@@ -61,11 +61,31 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
         {
+            if (jsonNavigator == null)
+            {
+                throw new ArgumentNullException(nameof(jsonNavigator));
+            }
+
+            if (jsonNavigatorNode == null)
+            {
+                throw new ArgumentNullException(nameof(jsonNavigatorNode));
+            }
+
             return new LazyCosmosString(jsonNavigator, jsonNavigatorNode);
         }
 
         public static CosmosString Create(string value)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            if (value.Length == 0)
+            {
+                return EagerCosmosString.Empty;
+            }
+
             return new EagerCosmosString(value);
         }
 
