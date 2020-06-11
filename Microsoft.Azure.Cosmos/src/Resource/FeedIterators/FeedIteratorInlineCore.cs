@@ -16,14 +16,12 @@ namespace Microsoft.Azure.Cosmos
         internal FeedIteratorInlineCore(
             FeedIterator feedIterator)
         {
-            if (feedIterator is FeedIteratorInternal feedIteratorInternal)
-            {
-                this.feedIteratorInternal = feedIteratorInternal;
-            }
-            else
+            if (!(feedIterator is FeedIteratorInternal feedIteratorInternal))
             {
                 throw new ArgumentNullException(nameof(feedIterator));
             }
+
+            this.feedIteratorInternal = feedIteratorInternal;
         }
 
         internal FeedIteratorInlineCore(
