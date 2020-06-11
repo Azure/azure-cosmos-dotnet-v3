@@ -326,7 +326,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions)
+            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
+                encryptionItemRequestOptions.EncryptionOptions != null)
             {
                 if (partitionKey == null)
                 {
@@ -409,7 +410,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override TransactionalBatch CreateTransactionalBatch(
             PartitionKey partitionKey)
         {
-            return this.container.CreateTransactionalBatch(partitionKey);
+            return new EncryptionTransactionalBatch(
+                this.container.CreateTransactionalBatch(partitionKey),
+                this.encryptor,
+                this.cosmosSerializer);
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(

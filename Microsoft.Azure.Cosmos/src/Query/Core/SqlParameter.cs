@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
+    using System;
     using System.Runtime.Serialization;
 
     /// <summary>
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     /// Unlike in relation SQL databases, they don't have types associated with them.
     /// </remarks>
     [DataContract]
-    internal sealed class SqlParameter
+    internal sealed class SqlParameter : IEquatable<SqlParameter>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlParameter"/> class for the Azure Cosmos DB service.
@@ -60,5 +61,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <remarks>The value gets serialized and passed in as JSON to the document query.</remarks>
         [DataMember(Name = "value")]
         public object Value { get; set; }
+
+        /// <summary>
+        /// Checking for equality between two Sql parameter objects.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns>True if objects are equal, false otherwise.</returns>
+        public bool Equals(SqlParameter other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+
+            if (Object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return this.Name == other.Name && this.Value == other.Value;
+        }
+
+        /// <summary>
+        /// Simple implementation of hash code for SqlParameter class.
+        /// </summary>
+        /// <returns>Integer representing the hash code.</returns>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = (hash * 233) + (this.Name == null ? 0 : this.Name.GetHashCode());
+                hash = (hash * 233) + (this.Value == null ? 0 : this.Value.GetHashCode());
+                return hash;
+            }
+        }
     }
 }

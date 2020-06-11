@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -293,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IEnumerable<string> tokens = await container.GetChangeFeedTokensAsync();
             Assert.AreEqual(3, tokens.Count());
 
-            Routing.PartitionKeyRangeCache pkRangeCache = await documentClient.GetPartitionKeyRangeCacheAsync();
+            PartitionKeyRangeCache pkRangeCache = await documentClient.GetPartitionKeyRangeCacheAsync();
             foreach (string token in tokens)
             {
                 // Validate that each token represents a StandByFeedContinuationToken with a single Range
