@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading.Tasks;
 
+#nullable enable
     internal abstract class TimerWheelTimer
     {
         /// <summary>

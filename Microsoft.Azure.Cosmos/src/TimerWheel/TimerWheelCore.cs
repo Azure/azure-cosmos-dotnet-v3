@@ -10,7 +10,8 @@ namespace Microsoft.Azure.Cosmos.Timers
     using System.Threading;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
-    internal class TimerWheelCore : TimerWheel, IDisposable
+#nullable enable
+    internal sealed class TimerWheelCore : TimerWheel, IDisposable
     {
         private readonly ConcurrentDictionary<int, ConcurrentQueue<TimerWheelTimer>> timers;
         private readonly int resolutionInTicks;
@@ -23,13 +24,15 @@ namespace Microsoft.Azure.Cosmos.Timers
         private bool isRunning = false;
         private int expirationIndex = 0;
 
-        internal TimerWheelCore(
-            int resolutionInMs,
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+        private TimerWheelCore(
+            double resolution,
             int buckets)
+#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
         {
-            if (resolutionInMs <= 20)
+            if (resolution <= 20)
             {
-                throw new ArgumentOutOfRangeException(nameof(resolutionInMs), "Value is too low, machine resolution less than 20 ms has unexpected results https://docs.microsoft.com/dotnet/api/system.threading.timer");
+                throw new ArgumentOutOfRangeException(nameof(resolution), "Value is too low, machine resolution less than 20 ms has unexpected results https://docs.microsoft.com/dotnet/api/system.threading.timer");
             }
 
             if (buckets <= 0)
@@ -37,12 +40,19 @@ namespace Microsoft.Azure.Cosmos.Timers
                 throw new ArgumentOutOfRangeException(nameof(buckets));
             }
 
-            this.resolutionInMs = resolutionInMs;
-            this.resolutionInTicks = (int)TimeSpan.FromMilliseconds(resolutionInMs).Ticks;
+            this.resolutionInMs = (int)resolution;
+            this.resolutionInTicks = (int)TimeSpan.FromMilliseconds(this.resolutionInMs).Ticks;
             this.buckets = buckets;
             this.timers = new ConcurrentDictionary<int, ConcurrentQueue<TimerWheelTimer>>();
             this.subscriptionLock = new object();
             this.timerConcurrencyLock = new object();
+        }
+
+        internal TimerWheelCore(
+            TimeSpan resolution,
+            int buckets)
+            : this(resolution.TotalMilliseconds, buckets)
+        {
             this.timer = new Timer(this.OnTimer, state: null, this.resolutionInMs, this.resolutionInMs);
         }
 
@@ -50,12 +60,11 @@ namespace Microsoft.Azure.Cosmos.Timers
         /// Used only for unit tests.
         /// </summary>
         internal TimerWheelCore(
-            int resolutionInMs,
+            TimeSpan resolution,
             int buckets,
             Timer timer)
-            : this(resolutionInMs, buckets)
+            : this(resolution.TotalMilliseconds, buckets)
         {
-            this.timer.Dispose();
             this.timer = timer;
         }
 
@@ -71,9 +80,10 @@ namespace Microsoft.Azure.Cosmos.Timers
             this.isDisposed = true;
         }
 
-        public override TimerWheelTimer GetTimer(int timeoutInMs)
+        public override TimerWheelTimer CreateTimer(TimeSpan timeout)
         {
             this.ThrowIfDisposed();
+            int timeoutInMs = (int)timeout.TotalMilliseconds;
             if (timeoutInMs < this.resolutionInMs)
             {
                 throw new ArgumentOutOfRangeException(nameof(timeoutInMs), $"TimerWheel configured with {this.resolutionInMs} resolution, cannot use a smaller timeout of {timeoutInMs}.");
@@ -100,20 +110,12 @@ namespace Microsoft.Azure.Cosmos.Timers
             lock (this.subscriptionLock)
             {
                 int index = this.GetIndexForTimeout(bucket);
-                ConcurrentQueue<TimerWheelTimer> timerQueue;
-                if (this.timers.TryGetValue(index, out timerQueue))
-                {
-                    timerQueue.Enqueue(timer);
-                }
-                else
-                {
-                    timerQueue = this.timers.GetOrAdd(index,
-                        arg =>
+                ConcurrentQueue<TimerWheelTimer> timerQueue = this.timers.GetOrAdd(index,
+                        _ =>
                         {
                             return new ConcurrentQueue<TimerWheelTimer>();
                         });
-                    timerQueue.Enqueue(timer);
-                }
+                timerQueue.Enqueue(timer);
             }
         }
 

@@ -20,18 +20,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public TimerWheelBenchmark()
         {
             this.timeouts = TimerUtilities.GenerateTimeoutList(10000, 10000, 1000);
-            this.mainWheel = TimerWheel.CreateTimerWheel(1000, 10);
+            this.mainWheel = TimerWheel.CreateTimerWheel(TimeSpan.FromMilliseconds(1000), 10);
             this.timerPool = new TimerPool(1);
         }
 
         [Benchmark]
         public async Task TenK_WithTimerWheel()
         {
-            TimerWheel wheel = TimerWheel.CreateTimerWheel(1000, 10);
+            TimerWheel wheel = TimerWheel.CreateTimerWheel(TimeSpan.FromMilliseconds(1000), 10);
             List<Task> timers = new List<Task>(this.timeouts.Count);
             for (int i = 0; i < this.timeouts.Count; i++)
             {
-                TimerWheelTimer timer = wheel.GetTimer(this.timeouts[i]);
+                TimerWheelTimer timer = wheel.CreateTimer(TimeSpan.FromMilliseconds(this.timeouts[i]));
                 timers.Add(timer.StartTimerAsync());
             }
 
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task One_WithTimerWheel()
         {
-            TimerWheelTimer timer = this.mainWheel.GetTimer(1000);
+            TimerWheelTimer timer = this.mainWheel.CreateTimer(TimeSpan.FromMilliseconds(1000));
             await timer.StartTimerAsync();
         }
 
