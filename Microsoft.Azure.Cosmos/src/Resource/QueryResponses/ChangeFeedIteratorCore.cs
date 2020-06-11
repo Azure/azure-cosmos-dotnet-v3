@@ -37,17 +37,16 @@ namespace Microsoft.Azure.Cosmos
             changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
             if (changeFeedRequestOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
             {
-                if (FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
-                {
-                    return new ChangeFeedIteratorCore(container, feedRangeContinuation, changeFeedRequestOptions);
-                }
-                else
+                if (!FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
                     throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, startFromContinuation.Continuation));
+
                 }
+
+                return new ChangeFeedIteratorCore(container, feedRangeContinuation, changeFeedRequestOptions);
             }
 
-            changeFeedRequestOptions.FeedRange ??= FeedRangeEPK.ForCompleteRange();
+            changeFeedRequestOptions.FeedRange ??= FeedRangeEPK.ForFullRange();
             return new ChangeFeedIteratorCore(container, (FeedRangeInternal)changeFeedRequestOptions.FeedRange, changeFeedRequestOptions);
         }
 
@@ -150,7 +149,12 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.ReadFeed,
                 requestOptions: this.changeFeedOptions,
                 cosmosContainerCore: this.container,
-                requestEnricher: default,
+                requestEnricher: request =>
+                {
+                    FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
+                    this.FeedRangeInternal.Accept(feedRangeVisitor);
+                    this.FeedRangeContinuation.Accept(feedRangeVisitor);
+                },
                 partitionKey: default,
                 streamPayload: default,
                 diagnosticsContext: diagnosticsScope,
@@ -167,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
                 // Change Feed read uses Etag for continuation
                 this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
                 this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(responseMessage.Headers.ETag);
-                this.changeFeedOptions.FeedRange = this.FeedRangeInternal;
+                this.changeFeedOptions.FeedRange = this.FeedRangeContinuation.FeedRange;
                 this.hasMoreResults = responseMessage.IsSuccessStatusCode;
                 return FeedRangeResponse.CreateSuccess(
                     responseMessage,

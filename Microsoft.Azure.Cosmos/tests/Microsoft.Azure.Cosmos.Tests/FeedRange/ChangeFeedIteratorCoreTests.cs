@@ -44,7 +44,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void ChangeFeedIteratorCore_FeedRange()
         {
             FeedRangeInternal feedToken = Mock.Of<FeedRangeInternal>();
-            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(Mock.Of<ContainerInternal>(), new ChangeFeedRequestOptions() { FeedRange = feedToken });
+            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
+                Mock.Of<ContainerInternal>(),
+                new ChangeFeedRequestOptions()
+                {
+                    FeedRange = feedToken
+                });
             Assert.AreEqual(feedToken, changeFeedIteratorCore.FeedRangeInternal);
         }
 

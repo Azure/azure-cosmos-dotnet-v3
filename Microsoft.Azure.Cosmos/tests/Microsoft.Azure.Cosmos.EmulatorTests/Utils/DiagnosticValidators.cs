@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public static void ValidatePointOperationDiagnostics(CosmosDiagnosticsContext diagnosticsContext)
         {
-            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            _ = JObject.Parse(diagnosticsContext.ToString());
             PointDiagnosticValidatorHelper validator = new PointDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate();
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static void ValidateChangeFeedOperationDiagnostics(CosmosDiagnosticsContext diagnosticsContext)
         {
-            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            _ = JObject.Parse(diagnosticsContext.ToString());
             ChangeFeedDiagnosticValidatorHelper validator = new ChangeFeedDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate();
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static void ValidateQueryDiagnostics(CosmosDiagnosticsContext diagnosticsContext, bool isFirstPage)
         {
-            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            _ = JObject.Parse(diagnosticsContext.ToString());
             QueryDiagnosticValidatorHelper validator = new QueryDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate(isFirstPage);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         public static void ValidateQueryGatewayPlanDiagnostics(CosmosDiagnosticsContext diagnosticsContext, bool isFirstPage)
         {
             string diagnostics = diagnosticsContext.ToString();
-            JObject jObject = JObject.Parse(diagnostics);
+            _ = JObject.Parse(diagnostics);
             QueryGatewayPlanDiagnosticValidatorHelper validator = new QueryGatewayPlanDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate(isFirstPage);
