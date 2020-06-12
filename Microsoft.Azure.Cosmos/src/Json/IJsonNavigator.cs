@@ -185,6 +185,13 @@ namespace Microsoft.Azure.Cosmos.Json
         bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
 
         /// <summary>
+        /// Creates an <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.
+        /// </summary>
+        /// <param name="jsonNavigatorNode">The node to create a reader from..</param>
+        /// <returns>The <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.</returns>
+        public IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode);
+
+        /// <summary>
         /// Writes a <see cref="IJsonNavigatorNode"/> to a <see cref="IJsonWriter"/>.
         /// </summary>
         /// <param name="jsonNavigatorNode">The <see cref="IJsonNavigatorNode"/> to write.</param>

@@ -280,5 +280,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonNodeType)}: {nodeType}.");
             }
         }
+
+        /// <inheritdoc />
+        public abstract IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode);
     }
 }

@@ -77,6 +77,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
             }
+
+            public override IJsonReader CreateReader()
+            {
+                IJsonReader cosmosDBReader = this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
+                return cosmosDBReader;
+            }
         }
     }
 #if INTERNAL

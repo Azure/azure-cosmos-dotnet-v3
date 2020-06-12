@@ -5,17 +5,13 @@
 namespace CosmosBenchmark
 {
     using System;
-    using System.Collections.Generic;
-    using System.IO;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadBenchmarkOperation : IBenchmarkOperatrion
+    internal class ReadNotExistsV3BenchmarkOperation : IBenchmarkOperatrion
     {
         private readonly Container container;
-        private readonly string partitionKeyPath;
-        private readonly Dictionary<string, object> sampleJObject;
 
         private readonly string databsaeName;
         private readonly string containerName;
@@ -23,18 +19,17 @@ namespace CosmosBenchmark
         private string nextExecutionItemPartitionKey;
         private string nextExecutionItemId;
 
-        public ReadBenchmarkOperation(
-            Container container,
+        public ReadNotExistsV3BenchmarkOperation(
+            CosmosClient cosmosClient,
+            string dbName,
+            string containerName,
             string partitionKeyPath,
             string sampleJson)
         {
-            this.container = container;
-            this.partitionKeyPath = partitionKeyPath.Replace("/", "");
+            this.databsaeName = dbName;
+            this.containerName = containerName;
 
-            this.databsaeName = container.Database.Id;
-            this.containerName = container.Id;
-
-            this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
+            this.container = cosmosClient.GetContainer(this.databsaeName, this.containerName);
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
@@ -43,11 +38,11 @@ namespace CosmosBenchmark
                         this.nextExecutionItemId,
                         new PartitionKey(this.nextExecutionItemPartitionKey)))
             {
-                if (itemResponse.StatusCode != HttpStatusCode.OK)
+                if (itemResponse.StatusCode != HttpStatusCode.NotFound)
                 {
                     throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
                 }
-                
+
                 double ruCharges = itemResponse.Headers.RequestCharge;
                 return new OperationResult()
                 {
@@ -59,29 +54,16 @@ namespace CosmosBenchmark
             }
         }
 
-        public async Task Prepare()
+        public Task Prepare()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
             {
-                string newPartitionKey = Guid.NewGuid().ToString();
-                this.sampleJObject["id"] = Guid.NewGuid().ToString();
-                this.sampleJObject[this.partitionKeyPath] = newPartitionKey;
-
-                this.nextExecutionItemId = newPartitionKey;
-                this.nextExecutionItemPartitionKey = newPartitionKey;
-
-                using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
-                {
-                    ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
-                            inputStream,
-                            new PartitionKey(this.nextExecutionItemPartitionKey));
-                    if (itemResponse.StatusCode != HttpStatusCode.Created)
-                    {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
-                    }
-                }
+                this.nextExecutionItemId = Guid.NewGuid().ToString();
+                this.nextExecutionItemPartitionKey = Guid.NewGuid().ToString();
             }
+
+            return Task.CompletedTask;
         }
     }
 }

@@ -213,6 +213,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         /// </summary>
         public Guid ActivityId { get; private set; }
 
+        public CosmosQueryExecutionInfo CosmosQueryExecutionInfo { get; private set; }
+
         /// <summary>
         /// Gets the current document in this producer.
         /// </summary>
@@ -272,6 +274,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
                     pageSize: pageSize,
                     cancellationToken: token);
+
+                this.CosmosQueryExecutionInfo = feedResponse.CosmosQueryExecutionInfo;
 
                 if ((this.testFlags != null) && this.testFlags.SimulateThrottles)
                 {
