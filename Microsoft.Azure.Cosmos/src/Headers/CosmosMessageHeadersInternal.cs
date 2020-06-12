@@ -39,21 +39,6 @@ namespace Microsoft.Azure.Cosmos
             this.headers.Add(headerName, value);
         }
 
-        public void Add(string headerName, IEnumerable<string> values)
-        {
-            if (headerName == null)
-            {
-                throw new ArgumentNullException(nameof(headerName));
-            }
-
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
-
-            this.Add(headerName, string.Join(",", values));
-        }
-
         public bool TryGetValue(string headerName, out string value)
         {
             if (headerName == null)
