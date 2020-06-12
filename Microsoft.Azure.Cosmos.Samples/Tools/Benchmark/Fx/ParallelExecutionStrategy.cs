@@ -11,12 +11,12 @@ namespace CosmosBenchmark
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
     {
-        private readonly IBenchmarkOperatrion benchmarkOperation;
+        private readonly Func<IBenchmarkOperatrion> benchmarkOperation;
 
         private volatile int pendingExecutorCount;
 
         public ParallelExecutionStrategy(
-            IBenchmarkOperatrion benchmarkOperation)
+            Func<IBenchmarkOperatrion> benchmarkOperation)
         {
             this.benchmarkOperation = benchmarkOperation;
         }
@@ -24,14 +24,16 @@ namespace CosmosBenchmark
         public async Task ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
+            bool traceFailures,
             double warmupFraction)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
-                        benchmarkOperation: this.benchmarkOperation);
+                        benchmarkOperation: this.benchmarkOperation());
             await warmupExecutor.ExecuteAsync(
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
+                    traceFailures: traceFailures,
                     completionCallback: () => { });
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
@@ -39,7 +41,7 @@ namespace CosmosBenchmark
             {
                 executors[i] = new SerialOperationExecutor(
                             executorId: i.ToString(),
-                            benchmarkOperation: this.benchmarkOperation);
+                            benchmarkOperation: this.benchmarkOperation());
             }
 
             this.pendingExecutorCount = serialExecutorConcurrency;
@@ -48,6 +50,7 @@ namespace CosmosBenchmark
                 _ = executors[i].ExecuteAsync(
                         iterationCount: serialExecutorIterationCount,
                         isWarmup: false,
+                        traceFailures: traceFailures,
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
             }
 

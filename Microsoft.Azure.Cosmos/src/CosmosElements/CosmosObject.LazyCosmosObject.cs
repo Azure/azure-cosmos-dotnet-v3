@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public override bool ContainsKey(string key) => this.jsonNavigator.TryGetObjectProperty(
                 this.jsonNavigatorNode,
                 key,
-                out ObjectProperty objectProperty);
+                out _);
 
             public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this
                 .jsonNavigator
@@ -124,6 +124,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
 
                 this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
+            }
+
+            public override IJsonReader CreateReader()
+            {
+                IJsonReader cosmosDBReader = this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
+                return cosmosDBReader;
             }
         }
     }
