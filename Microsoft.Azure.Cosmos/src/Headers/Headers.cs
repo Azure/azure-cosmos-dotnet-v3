@@ -19,27 +19,12 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="RequestMessage"/>
     public class Headers : IEnumerable
     {
-        private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<Headers>();
+        private readonly CosmosMessageHeadersInternal messageHeaders;
 
-        private readonly Lazy<CosmosMessageHeadersInternal> messageHeaders;
-
-        private string contentLength;
-
-        private SubStatusCodes? subStatusCode;
-
-        private string retryAfterInternal;
-
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.RequestCharge)]
-        private string requestCharge
+        private string GetString(string keyName)
         {
-            get
-            {
-                return this.RequestCharge == 0 ? null : this.RequestCharge.ToString();
-            }
-            set
-            {
-                this.RequestCharge = string.IsNullOrEmpty(value) ? 0 : double.Parse(value, CultureInfo.InvariantCulture);
-            }
+            this.TryGetValue(keyName, out string valueTuple);
+            return valueTuple;
         }
 
         internal TimeSpan? RetryAfter;
@@ -48,21 +33,29 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this.subStatusCode.GetValueOrDefault(SubStatusCodes.Unknown);
+                return Headers.GetSubStatusCodes(this.SubStatusCodeLiteral);
             }
             set
             {
-                this.subStatusCode = value;
+                this.SubStatusCodeLiteral = value.ToString();
             }
         }
-
-        internal long ContentLengthAsLong;
 
         /// <summary>
         /// Gets the Continuation Token in the current <see cref="ResponseMessage"/>.
         /// </summary>
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Continuation)]
-        public virtual string ContinuationToken { get; internal set; }
+        public virtual string ContinuationToken
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.Continuation);
+            }
+
+            internal set
+            {
+                this.Set(HttpConstants.HttpHeaders.Continuation, value);
+            }
+        }
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
@@ -70,7 +63,23 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        public virtual double RequestCharge { get; internal set; }
+        public virtual double RequestCharge
+        {
+            get
+            {
+                string value = this.GetString(HttpConstants.HttpHeaders.RequestCharge);
+                if (value == null)
+                {
+                    return 0;
+                }
+
+                return double.Parse(value);
+            }
+            internal set
+            {
+                this.Set(HttpConstants.HttpHeaders.RequestCharge, value.ToString());
+            }
+        }
 
         /// <summary>
         /// Gets the activity ID for the request from the Azure Cosmos DB service.
@@ -78,8 +87,17 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The activity ID for the request.
         /// </value>
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ActivityId)]
-        public virtual string ActivityId { get; internal set; }
+        public virtual string ActivityId
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.ActivityId);
+            }
+            internal set
+            {
+                this.Set(HttpConstants.HttpHeaders.ActivityId, value.ToString());
+            }
+        }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -90,14 +108,32 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ETag)]
-        public virtual string ETag { get; internal set; }
+        public virtual string ETag
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.ETag);
+            }
+            internal set
+            {
+                this.Set(HttpConstants.HttpHeaders.ETag, value.ToString());
+            }
+        }
 
         /// <summary>
         /// Gets the Content Type for the current content in the <see cref="ResponseMessage"/>.
         /// </summary>
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ContentType)]
-        public virtual string ContentType { get; internal set; }
+        public virtual string ContentType
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.ContentType);
+            }
+            internal set
+            {
+                this.Set(HttpConstants.HttpHeaders.ContentType, value.ToString());
+            }
+        }
 
         /// <summary>
         /// Gets the Session Token for the current <see cref="ResponseMessage"/>.
@@ -105,86 +141,162 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Session Token is used along with Session Consistency.
         /// </remarks>
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.SessionToken)]
-        public virtual string Session { get; internal set; }
+        public virtual string Session
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.SessionToken);
+            }
+            internal set
+            {
+                this.Set(HttpConstants.HttpHeaders.SessionToken, value.ToString());
+            }
+        }
 
         /// <summary>
         /// Gets the Content Length for the current content in the <see cref="ResponseMessage"/>.
         /// </summary>
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ContentLength)]
         public virtual string ContentLength
         {
             get
             {
-                return this.contentLength;
+                return this.GetString(HttpConstants.HttpHeaders.ContentLength);
             }
-            set
+            internal set
             {
-                this.ContentLengthAsLong = value != null ? long.Parse(value, CultureInfo.InvariantCulture) : 0;
-                this.contentLength = value;
+                this.Set(HttpConstants.HttpHeaders.ContentLength, value.ToString());
             }
         }
 
         /// <summary>
         /// Gets the Location for the current content in the <see cref="ResponseMessage"/>.
         /// </summary>
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Location)]
-        public virtual string Location { get; internal set; }
+        public virtual string Location
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.Location);
+            }
+            internal set
+            {
+                this.Set(HttpConstants.HttpHeaders.Location, value.ToString());
+            }
+        }
 
-        [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.SubStatus)]
         internal string SubStatusCodeLiteral
         {
             get
             {
-                return this.subStatusCode.HasValue ? ((int)this.SubStatusCode).ToString(CultureInfo.InvariantCulture) : null;
+                return this.GetString(WFConstants.BackendHeaders.SubStatus);
             }
             set
             {
-                this.SubStatusCode = Headers.GetSubStatusCodes(value);
+                this.Set(WFConstants.BackendHeaders.SubStatus, value);
             }
         }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.RetryAfterInMilliseconds)]
         internal string RetryAfterLiteral
         {
             get
             {
-                return this.retryAfterInternal;
+                return this.GetString(HttpConstants.HttpHeaders.RetryAfterInMilliseconds);
             }
             set
             {
-                this.RetryAfter = Headers.GetRetryAfter(value);
-                this.retryAfterInternal = value;
+                this.Set(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, value);
             }
         }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PartitionKey)]
-        internal string PartitionKey { get; set; }
+        internal string PartitionKey
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.PartitionKey);
+            }
+            set
+            {
+                this.Set(HttpConstants.HttpHeaders.PartitionKey, value);
+            }
+        }
 
-        [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.PartitionKeyRangeId)]
-        internal string PartitionKeyRangeId { get; set; }
+        internal string PartitionKeyRangeId
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.PartitionKeyRangeId);
+            }
+            set
+            {
+                this.Set(HttpConstants.HttpHeaders.PartitionKeyRangeId, value);
+            }
+        }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IsUpsert)]
-        internal string IsUpsert { get; set; }
+        internal string IsUpsert
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.IsUpsert);
+            }
+            set
+            {
+                this.Set(HttpConstants.HttpHeaders.IsUpsert, value);
+            }
+        }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.OfferThroughput)]
-        internal string OfferThroughput { get; set; }
+        internal string OfferThroughput
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.OfferThroughput);
+            }
+            set
+            {
+                this.Set(HttpConstants.HttpHeaders.OfferThroughput, value);
+            }
+        }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IfNoneMatch)]
-        internal string IfNoneMatch { get; set; }
+        internal string IfNoneMatch
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.IfNoneMatch);
+            }
+            set
+            {
+                this.Set(HttpConstants.HttpHeaders.IfNoneMatch, value);
+            }
+        }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PageSize)]
-        internal string PageSize { get; set; }
+        internal string PageSize
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.PageSize);
+            }
+            set
+            {
+                this.Set(HttpConstants.HttpHeaders.PageSize, value);
+            }
+        }
 
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.QueryMetrics)]
-        internal string QueryMetricsText { get; set; }
+        internal string QueryMetricsText
+        {
+            get
+            {
+                return this.GetString(HttpConstants.HttpHeaders.QueryMetrics);
+            }
+            set
+            {
+                this.Set(HttpConstants.HttpHeaders.QueryMetrics, value);
+            }
+        }
 
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
         /// </summary>
         public Headers()
         {
-            this.messageHeaders = new Lazy<CosmosMessageHeadersInternal>(this.CreateCosmosMessageHeaders);
+            this.messageHeaders = new CosmosMessageHeadersInternal();
         }
 
         /// <summary>
@@ -194,8 +306,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The header value.</returns>
         public virtual string this[string headerName]
         {
-            get => this.messageHeaders.Value[headerName];
-            set => this.messageHeaders.Value[headerName] = value;
+            get => this.messageHeaders[headerName];
+            set => this.messageHeaders[headerName] = value;
         }
 
         /// <summary>
@@ -204,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An enumator for all headers.</returns>
         public virtual IEnumerator<string> GetEnumerator()
         {
-            return this.messageHeaders.Value.GetEnumerator();
+            return this.messageHeaders.GetEnumerator();
         }
 
         /// <summary>
@@ -214,7 +326,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">Header value.</param>
         public virtual void Add(string headerName, string value)
         {
-            this.messageHeaders.Value.Add(headerName, value);
+            this.messageHeaders.Add(headerName, value);
         }
 
         /// <summary>
@@ -224,7 +336,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="values">List of values to be added as a comma-separated list.</param>
         public virtual void Add(string headerName, IEnumerable<string> values)
         {
-            this.messageHeaders.Value.Add(headerName, values);
+            this.messageHeaders.Add(headerName, values);
         }
 
         /// <summary>
@@ -234,7 +346,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">Header value.</param>
         public virtual void Set(string headerName, string value)
         {
-            this.messageHeaders.Value.Set(headerName, value);
+            this.messageHeaders.Set(headerName, value);
         }
 
         /// <summary>
@@ -244,7 +356,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The header value.</returns>
         public virtual string Get(string headerName)
         {
-            return this.messageHeaders.Value.Get(headerName);
+            return this.messageHeaders.Get(headerName);
         }
 
         /// <summary>
@@ -255,7 +367,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>True or false if the header name existed in the header collection.</returns>
         public virtual bool TryGetValue(string headerName, out string value)
         {
-            return this.messageHeaders.Value.TryGetValue(headerName, out value);
+            return this.messageHeaders.TryGetValue(headerName, out value);
         }
 
         /// <summary>
@@ -279,7 +391,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="headerName">Header name.</param>
         public virtual void Remove(string headerName)
         {
-            this.messageHeaders.Value.Remove(headerName);
+            this.messageHeaders.Remove(headerName);
         }
 
         /// <summary>
@@ -288,7 +400,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An array with all the header names.</returns>
         public virtual string[] AllKeys()
         {
-            return this.messageHeaders.Value.AllKeys();
+            return this.messageHeaders.AllKeys();
         }
 
         /// <summary>
@@ -299,7 +411,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The header value parsed for a particular type.</returns>
         public virtual T GetHeaderValue<T>(string headerName)
         {
-            return this.messageHeaders.Value.GetHeaderValue<T>(headerName);
+            return this.messageHeaders.GetHeaderValue<T>(headerName);
         }
 
         /// <summary>
@@ -327,22 +439,7 @@ namespace Microsoft.Azure.Cosmos
             return new string[1] { this[key] };
         }
 
-        internal CosmosMessageHeadersInternal CosmosMessageHeaders => this.messageHeaders.Value;
-
-        private CosmosMessageHeadersInternal CreateCosmosMessageHeaders()
-        {
-            return new CosmosMessageHeadersInternal(this.CreateKnownDictionary());
-        }
-
-        internal Dictionary<string, CosmosCustomHeader> CreateKnownDictionary()
-        {
-            return Headers.knownHeaderProperties.ToDictionary(
-                    knownProperty => knownProperty.Key,
-                    knownProperty => new CosmosCustomHeader(
-                            () => (string)knownProperty.Value.GetValue(this),
-                            (string value) => { knownProperty.Value.SetValue(this, value); }),
-                    StringComparer.OrdinalIgnoreCase);
-        }
+        internal CosmosMessageHeadersInternal CosmosMessageHeaders => this.messageHeaders;
 
         internal static SubStatusCodes GetSubStatusCodes(string value)
         {
@@ -353,17 +450,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return SubStatusCodes.Unknown;
-        }
-
-        internal static TimeSpan? GetRetryAfter(string value)
-        {
-            long retryIntervalInMilliseconds = 0;
-            if (long.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out retryIntervalInMilliseconds))
-            {
-                return TimeSpan.FromMilliseconds(retryIntervalInMilliseconds);
-            }
-
-            return null;
         }
     }
 }
