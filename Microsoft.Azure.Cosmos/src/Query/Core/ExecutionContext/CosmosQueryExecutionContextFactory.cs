@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         {
                             bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
                             bool hasGroupBy = sqlQuery.GroupByClause != default;
-                            bool hasAggregates = AggregateProjectionDector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
+                            bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
                             bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
 
                             if (createPassthroughQuery)
@@ -581,7 +581,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool ForcePassthrough { get; }
         }
 
-        internal sealed class AggregateProjectionDector
+        internal sealed class AggregateProjectionDetector
         {
             /// <summary>
             /// Determines whether or not the SqlSelectSpec has an aggregate in the outer most query.

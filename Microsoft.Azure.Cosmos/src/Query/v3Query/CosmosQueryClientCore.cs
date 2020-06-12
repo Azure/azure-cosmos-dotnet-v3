@@ -67,14 +67,7 @@ namespace Microsoft.Azure.Cosmos
                     partitionKeyInternal = partitionKey.Value.InternalKey;
                 }
 
-                try
-                {
-                    effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
-                }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
+                effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
             }
 
             return new ContainerQueryProperties(
