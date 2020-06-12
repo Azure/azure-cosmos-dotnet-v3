@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             DateParseHandling = Newtonsoft.Json.DateParseHandling.None,
         };
 
-        protected CosmosElement(CosmosElementType cosmosItemType)
+        protected CosmosElement()
         {
         }
 
