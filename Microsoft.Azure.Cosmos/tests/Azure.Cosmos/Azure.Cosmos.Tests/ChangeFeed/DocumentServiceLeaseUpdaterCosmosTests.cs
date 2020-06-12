@@ -26,7 +26,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("1");
             DocumentServiceLeaseCore leaseToUpdate = new DocumentServiceLeaseCore();
 
-            Stream leaseStream = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate);
+            Stream leaseStream = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate);
 
             Mock<ContainerCore> mockedItems = new Mock<ContainerCore>();
             mockedItems.Setup(i => i.ReplaceItemStreamAsync(
@@ -83,7 +83,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 {
                     return new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate)
+                        Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate)
                     };
                 });
 
@@ -101,7 +101,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 {
                     return Task.FromResult((Response)new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate)
+                        Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate)
                     });
                 });
 
@@ -145,7 +145,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 {
                     return new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate)
+                        Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate)
                     };
                 });
 
@@ -186,7 +186,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 {
                     return new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate)
+                        Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate)
                     };
                 });
 
@@ -204,7 +204,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 {
                     return Task.FromResult((Response)new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate)
+                        Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate)
                     });
                 });
 
@@ -234,7 +234,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 {
                     return new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate)
+                        Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate)
                     };
                 });
 
@@ -252,7 +252,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 {
                     return Task.FromResult((Response)new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate)
+                        Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate)
                     });
                 });
 
@@ -297,7 +297,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 {
                     return Task.FromResult((Response)new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(leaseToUpdate)
+                        Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(leaseToUpdate)
                     });
                 });
 

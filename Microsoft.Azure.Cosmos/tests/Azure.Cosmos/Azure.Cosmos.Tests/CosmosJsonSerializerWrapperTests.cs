@@ -6,6 +6,7 @@ namespace Azure.Cosmos.Tests
 {
     using System;
     using System.IO;
+    using System.Threading.Tasks;
     using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -16,30 +17,39 @@ namespace Azure.Cosmos.Tests
         [ExpectedException(typeof(InvalidOperationException))]
         public void FromStream_Throws()
         {
-            var handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
-            var retval = handler.FromStream<string>(new MemoryStream());
+            CosmosJsonSerializerWrapper handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
+            handler.Deserialize(new MemoryStream(), typeof(string));
         }
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
         public void ToStream_Throws()
         {
-            var handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
-            var retval = handler.ToStream("testValue");
+            CosmosJsonSerializerWrapper handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
+            MemoryStream stream = new MemoryStream();
+            stream.Close();
+            handler.Serialize(stream, "testValue", typeof(string));
         }
 
-        private class CosmosJsonSerializerFails : CosmosSerializer
+        private class CosmosJsonSerializerFails : Azure.Core.ObjectSerializer
         {
-            public override T FromStream<T>(Stream stream)
+            public override object Deserialize(Stream stream, Type returnType)
             {
-                return default(T);
+                return new object();
             }
 
-            public override Stream ToStream<T>(T input)
+            public override ValueTask<object> DeserializeAsync(Stream stream, Type returnType)
             {
-                var memoryStream = new MemoryStream();
-                memoryStream.Close();
-                return memoryStream;
+                return new ValueTask<object>(new object());
+            }
+
+            public override void Serialize(Stream stream, object value, Type inputType)
+            {
+            }
+
+            public override ValueTask SerializeAsync(Stream stream, object value, Type inputType)
+            {
+                return new ValueTask();
             }
         }
     }

@@ -36,7 +36,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateSerializer()
         {
-            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(new CosmosSerializationOptions());
+            CosmosSerializer cosmosDefaultJsonSerializer = CosmosTextJsonSerializer.CreateSerializer();
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -53,7 +53,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateJson()
         {
-            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(new CosmosSerializationOptions());
+            CosmosSerializer cosmosDefaultJsonSerializer = CosmosTextJsonSerializer.CreateSerializer();
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -84,7 +84,7 @@ namespace Azure.Cosmos.Tests
             };
 
             string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""status"":""TBD""}";
-            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = new CosmosTextJsonSerializer(settings);
+            CosmosSerializer cosmosDefaultJsonSerializer = CosmosTextJsonSerializer.CreateSerializer(settings);
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(toDoActivityNoDescription))
             {
                 Assert.IsNotNull(stream);
@@ -206,8 +206,8 @@ namespace Azure.Cosmos.Tests
                 Parameters = sqlParameters
             });
 
-            CosmosTextJsonSerializer userSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(new CosmosSerializationOptions());
-            CosmosTextJsonSerializer propertiesSerializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
+            CosmosSerializer userSerializer = CosmosTextJsonSerializer.CreateSerializer();
+            CosmosSerializer propertiesSerializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
 
             CosmosSerializer sqlQuerySpecSerializer = TextJsonCosmosSqlQuerySpecConverter.CreateSqlQuerySpecSerializer(
                 userSerializer,

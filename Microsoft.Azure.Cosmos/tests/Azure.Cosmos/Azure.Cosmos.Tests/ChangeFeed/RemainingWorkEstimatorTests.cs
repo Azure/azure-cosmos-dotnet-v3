@@ -216,7 +216,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                     firstDocument
                 };
 
-                message.Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(cosmosFeedResponse);
+                message.Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(cosmosFeedResponse);
             }
 
             return message;

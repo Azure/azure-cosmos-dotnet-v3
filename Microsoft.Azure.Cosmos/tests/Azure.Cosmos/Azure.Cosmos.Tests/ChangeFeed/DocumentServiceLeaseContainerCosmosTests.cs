@@ -78,7 +78,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
 
             ResponseMessage mockFeedResponse = new ResponseMessage()
             {
-                Content = CosmosTextJsonSerializer.CreateUserDefaultSerializer().ToStream(cosmosFeedResponse)
+                Content = CosmosTextJsonSerializer.CreateSerializer().ToStream(cosmosFeedResponse)
             };
 
             Mock<IAsyncEnumerable<Response>> mockEnumerable = new Mock<IAsyncEnumerable<Response>>();
