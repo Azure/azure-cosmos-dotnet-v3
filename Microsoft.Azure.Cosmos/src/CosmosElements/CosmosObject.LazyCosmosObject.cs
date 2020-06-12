@@ -112,6 +112,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
+
+            public override IJsonReader CreateReader() => this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
         }
     }
 #if INTERNAL

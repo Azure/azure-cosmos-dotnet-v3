@@ -50,6 +50,10 @@ namespace Microsoft.Azure.Cosmos
             return EmptyCosmosDiagnosticsContext.DefaultScope;
         }
 
+        internal override void AddDiagnosticsInternal(CosmosSystemInfo cpuLoadHistory)
+        {
+        }
+
         internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
         {
         }

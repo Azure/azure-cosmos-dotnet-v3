@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #nullable enable
 
     using System;
+    using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
@@ -21,7 +23,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract class CosmosElement : IEquatable<CosmosElement>, IComparable<CosmosElement>
     {
-        protected CosmosElement()
+        protected static readonly Newtonsoft.Json.JsonSerializer DefaultSerializer = new Newtonsoft.Json.JsonSerializer()
+        {
+            Culture = CultureInfo.InvariantCulture,
+            DateParseHandling = Newtonsoft.Json.DateParseHandling.None,
+        };
+
+        protected CosmosElement(CosmosElementType cosmosItemType)
         {
         }
 
@@ -60,6 +68,25 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor);
 
         public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
+
+        public virtual T Materialize<T>()
+        {
+            Cosmos.Json.IJsonReader cosmosJsonReader = this.CreateReader();
+            Newtonsoft.Json.JsonReader newtonsoftReader = new CosmosDBToNewtonsoftReader(cosmosJsonReader);
+
+            return DefaultSerializer.Deserialize<T>(newtonsoftReader);
+        }
+
+        public virtual IJsonReader CreateReader()
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+            this.WriteTo(jsonWriter);
+
+            ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
+
+            Cosmos.Json.IJsonReader cosmosJsonReader = Cosmos.Json.JsonReader.Create(buffer);
+            return cosmosJsonReader;
+        }
 
         public static class Monadic
         {

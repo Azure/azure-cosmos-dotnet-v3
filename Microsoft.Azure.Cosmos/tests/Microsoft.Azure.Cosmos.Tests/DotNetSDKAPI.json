@@ -2574,6 +2574,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadNextAsync(System.Threading.CancellationToken)"
+        },
+        "Void Dispose()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void Dispose()"
         }
       },
       "NestedTypes": {}
@@ -2595,6 +2600,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.FeedResponse`1[T]] ReadNextAsync(System.Threading.CancellationToken)"
+        },
+        "Void Dispose()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void Dispose()"
         }
       },
       "NestedTypes": {}

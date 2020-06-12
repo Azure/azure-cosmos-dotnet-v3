@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -62,6 +63,115 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task MemoryLeak()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                List<WeakReference> weakReferences = await CreateWeakReferenceToFeedIterator(container);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                foreach(WeakReference weakReference in weakReferences)
+                {
+                    Assert.IsFalse(weakReference.IsAlive);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<List<WeakReference>> CreateWeakReferenceToFeedIterator(
+            Container container)
+        {
+            List<WeakReference> weakReferences = new List<WeakReference>();
+
+            // Test draining typed iterator
+            using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
+                    queryDefinition: null,
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 1000,
+                    }))
+            {
+                weakReferences.Add(new WeakReference(feedIterator, true));
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
+                    foreach (JObject jObject in response)
+                    {
+                        Assert.IsNotNull(jObject);
+                    }
+                }
+            }
+
+            // Test draining stream iterator
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    queryDefinition: null,
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 1000,
+                    }))
+            {
+                weakReferences.Add(new WeakReference(feedIterator, true));
+                while (feedIterator.HasMoreResults)
+                {
+                    using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                    {
+                        Assert.IsNotNull(response.Content);
+                    }
+                }
+            }
+
+            // Test single page typed iterator
+            using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
+                    queryText: "SELECT * FROM c",
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 10,
+                    }))
+            {
+                weakReferences.Add(new WeakReference(feedIterator, true));
+                FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
+                foreach (JObject jObject in response)
+                {
+                    Assert.IsNotNull(jObject);
+                }
+            }
+
+            // Test single page stream iterator
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    queryText: "SELECT * FROM c",
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 10,
+                    }))
+            {
+                weakReferences.Add(new WeakReference(feedIterator, true));
+                using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                {
+                    Assert.IsNotNull(response.Content);
+                }
+            }
+
+            return weakReferences;
         }
 
         [TestMethod]
@@ -469,11 +579,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             // Malformed continuation token
             try
             {
-                FeedIterator<dynamic> itemQuery = container.GetItemQueryIterator<dynamic>(
+                using (FeedIterator<dynamic> itemQuery = container.GetItemQueryIterator<dynamic>(
                     queryText: queryText,
-                    continuationToken: continuationToken);
-                await itemQuery.ReadNextAsync();
-
+                    continuationToken: continuationToken))
+                {
+                    await itemQuery.ReadNextAsync();
+                }
                 Assert.Fail("Expected bad request");
             }
             catch (CosmosException ce)
@@ -640,7 +751,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
 
                             Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
-                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value); 
+                            Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
 
                             Assert.AreEqual(
                                 1,

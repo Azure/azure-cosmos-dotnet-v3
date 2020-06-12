@@ -230,21 +230,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<dynamic> results = new List<dynamic>();
             try
             {
-                FeedIterator<dynamic> feedIterator = containerWithThrottle.GetItemQueryIterator<dynamic>(
+                using (FeedIterator<dynamic> feedIterator = containerWithThrottle.GetItemQueryIterator<dynamic>(
                     "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
                     requestOptions: new QueryRequestOptions()
                     {
                         MaxItemCount = 1,
                         MaxConcurrency = 1
-                    });
-
-                while (feedIterator.HasMoreResults)
+                    }))
                 {
-                    FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
-                    Assert.IsTrue(response.Count <= 1);
-                    Assert.IsTrue(response.Resource.Count() <= 1);
+                    while (feedIterator.HasMoreResults)
+                    {
+                        FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
+                        Assert.IsTrue(response.Count <= 1);
+                        Assert.IsTrue(response.Resource.Count() <= 1);
 
-                    results.AddRange(response);
+                        results.AddRange(response);
+                    }
                 }
                 Assert.Fail("Should throw 429 exception after the first page.");
             }
@@ -365,22 +366,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, results.Count);
 
             // LINQ to feed iterator Read All with partition key
-            FeedIterator<dynamic> iterator = container.GetItemLinqQueryable<dynamic>(
+            using (FeedIterator<dynamic> iterator = container.GetItemLinqQueryable<dynamic>(
                 allowSynchronousQueryExecution: true,
                 requestOptions: new QueryRequestOptions()
                 {
                     MaxItemCount = 1,
                     PartitionKey = new PartitionKey("BasicQueryItem")
-                }).ToFeedIterator();
-
-            List<dynamic> linqResults = new List<dynamic>();
-            while (iterator.HasMoreResults)
+                }).ToFeedIterator())
             {
-                linqResults.AddRange(await iterator.ReadNextAsync());
-            }
+                List<dynamic> linqResults = new List<dynamic>();
+                while (iterator.HasMoreResults)
+                {
+                    linqResults.AddRange(await iterator.ReadNextAsync());
+                }
 
-            Assert.AreEqual(1, linqResults.Count);
-            Assert.AreEqual("BasicQueryItem", linqResults.First().pk.ToString());
+                Assert.AreEqual(1, linqResults.Count);
+                Assert.AreEqual("BasicQueryItem", linqResults.First().pk.ToString());
+            }
         }
 
         [TestMethod]
