@@ -524,6 +524,18 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
+        "Azure.Core.ObjectSerializer get_Serializer()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Azure.Core.ObjectSerializer get_Serializer()"
+        },
+        "Azure.Core.ObjectSerializer Serializer": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Azure.Cosmos.ConnectionMode ConnectionMode": {
           "Type": "Property",
           "Attributes": [],
@@ -533,26 +545,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.ConnectionMode get_ConnectionMode()"
-        },
-        "Azure.Cosmos.Serialization.CosmosSerializationOptions DefaultSerializerOptions": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.Serialization.CosmosSerializationOptions get_DefaultSerializerOptions()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Serialization.CosmosSerializationOptions get_DefaultSerializerOptions()"
-        },
-        "Azure.Cosmos.Serialization.CosmosSerializer get_Serializer()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Serialization.CosmosSerializer get_Serializer()"
-        },
-        "Azure.Cosmos.Serialization.CosmosSerializer Serializer": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -725,11 +717,6 @@
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Azure.Cosmos.ConsistencyLevel])"
         },
-        "Void set_DefaultSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_DefaultSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)"
-        },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
           "Attributes": [],
@@ -783,10 +770,12 @@
           ],
           "MethodInfo": "Void set_RequestTimeout(System.TimeSpan)"
         },
-        "Void set_Serializer(Azure.Cosmos.Serialization.CosmosSerializer)": {
+        "Void set_Serializer(Azure.Core.ObjectSerializer)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_Serializer(Azure.Cosmos.Serialization.CosmosSerializer)"
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Serializer(Azure.Core.ObjectSerializer)"
         },
         "Void set_WebProxy(System.Net.IWebProxy)": {
           "Type": "Method",
@@ -2026,10 +2015,10 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithConsistencyLevel(Azure.Cosmos.ConsistencyLevel)"
         },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Azure.Cosmos.Serialization.CosmosSerializer)": {
+        "Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Azure.Core.ObjectSerializer)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Azure.Cosmos.Serialization.CosmosSerializer)"
+          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Azure.Core.ObjectSerializer)"
         },
         "Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)": {
           "Type": "Method",
@@ -2040,11 +2029,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)"
         },
         "Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)": {
           "Type": "Method",
@@ -3806,111 +3790,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_Id(System.String)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "CosmosPropertyNamingPolicy": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.Serialization.CosmosPropertyNamingPolicy CamelCase": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.Serialization.CosmosPropertyNamingPolicy Default": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        }
-      },
-      "NestedTypes": {}
-    },
-    "CosmosSerializationOptions": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.Serialization.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.Cosmos.Serialization.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()"
-        },
-        "Azure.Cosmos.Serialization.CosmosPropertyNamingPolicy PropertyNamingPolicy": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Boolean get_IgnoreNullValues()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Boolean get_IgnoreNullValues()"
-        },
-        "Boolean get_Indented()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Boolean get_Indented()"
-        },
-        "Boolean IgnoreNullValues": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Boolean Indented": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
-        },
-        "Void set_IgnoreNullValues(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_IgnoreNullValues(Boolean)"
-        },
-        "Void set_Indented(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_Indented(Boolean)"
-        },
-        "Void set_PropertyNamingPolicy(Azure.Cosmos.Serialization.CosmosPropertyNamingPolicy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_PropertyNamingPolicy(Azure.Cosmos.Serialization.CosmosPropertyNamingPolicy)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "CosmosSerializer": {
-      "Subclasses": {},
-      "Members": {
-        "System.IO.Stream ToStream[T](T)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.IO.Stream ToStream[T](T)"
-        },
-        "T FromStream[T](System.IO.Stream)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T FromStream[T](System.IO.Stream)"
         }
       },
       "NestedTypes": {}
