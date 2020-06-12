@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), null, null, null);
             FeedRangeEPK defaultRange = feedTokenIterator.FeedRangeInternal as FeedRangeEPK;
-            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Min, defaultRange.Range.Min);
-            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Max, defaultRange.Range.Max);
+            Assert.AreEqual(FeedRangeEPK.ForFullRange().Range.Min, defaultRange.Range.Min);
+            Assert.AreEqual(FeedRangeEPK.ForFullRange().Range.Max, defaultRange.Range.Max);
             Assert.IsNull(feedTokenIterator.FeedRangeContinuation);
         }
 
@@ -53,8 +53,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             string continuation = Guid.NewGuid().ToString();
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), null, continuation, null);
             FeedRangeEPK defaultRange = feedTokenIterator.FeedRangeInternal as FeedRangeEPK;
-            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Min, defaultRange.Range.Min);
-            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Max, defaultRange.Range.Max);
+            Assert.AreEqual(FeedRangeEPK.ForFullRange().Range.Min, defaultRange.Range.Min);
+            Assert.AreEqual(FeedRangeEPK.ForFullRange().Range.Max, defaultRange.Range.Max);
             Assert.IsNotNull(feedTokenIterator.FeedRangeContinuation);
             Assert.AreEqual(continuation, feedTokenIterator.FeedRangeContinuation.GetContinuation());
         }
@@ -64,12 +64,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
 
             string continuation = Guid.NewGuid().ToString();
-            FeedRangeEPK feedRangeEPK = FeedRangeEPK.ForCompleteRange();
+            FeedRangeEPK feedRangeEPK = FeedRangeEPK.ForFullRange();
             FeedRangeCompositeContinuation feedRangeSimpleContinuation = new FeedRangeCompositeContinuation(Guid.NewGuid().ToString(), feedRangeEPK, new List<Documents.Routing.Range<string>>() { feedRangeEPK.Range }, continuation);
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), null, feedRangeSimpleContinuation.ToString(), null);
             FeedRangeEPK defaultRange = feedTokenIterator.FeedRangeInternal as FeedRangeEPK;
-            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Min, defaultRange.Range.Min);
-            Assert.AreEqual(FeedRangeEPK.ForCompleteRange().Range.Max, defaultRange.Range.Max);
+            Assert.AreEqual(FeedRangeEPK.ForFullRange().Range.Min, defaultRange.Range.Min);
+            Assert.AreEqual(FeedRangeEPK.ForFullRange().Range.Max, defaultRange.Range.Max);
             Assert.IsNotNull(feedTokenIterator.FeedRangeContinuation);
             Assert.AreEqual(continuation, feedTokenIterator.FeedRangeContinuation.GetContinuation());
         }

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
     public class CosmosDiagnosticsTests : BaseCosmosClientHelper
@@ -126,6 +127,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsFalse(string.IsNullOrEmpty(diagnosics));
                     Assert.IsTrue(exception.Contains(diagnosics));
+                    DiagnosticValidator.ValidatePointOperationDiagnostics(ce.DiagnosticsContext);
+                }
+            }
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task PointOperationThrottledDiagnostic(bool disableDiagnostics)
+        {
+            string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
+            Guid exceptionActivityId = Guid.NewGuid();
+            // Set a small retry count to reduce test time
+            CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 5)
+                .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                       transportClient,
+                       (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
+                            uri,
+                            resourceOperation,
+                            request,
+                            exceptionActivityId,
+                            errorMessage)))
+                );
+
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            if (disableDiagnostics)
+            {
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
+            };
+
+            Container containerWithThrottleException = throttleClient.GetContainer(
+                this.database.Id,
+                this.Container.Id);
+
+            //Checking point operation diagnostics on typed operations
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            try
+            {
+                ItemResponse<ToDoActivity> createResponse = await containerWithThrottleException.CreateItemAsync<ToDoActivity>(
+                  item: testItem,
+                  requestOptions: requestOptions);
+                Assert.Fail("Should have thrown a request timeout exception");
+            }
+            catch (CosmosException ce) when ((int)ce.StatusCode == (int)Documents.StatusCodes.TooManyRequests)
+            {
+                string exception = ce.ToString();
+                Assert.IsNotNull(exception);
+                Assert.IsTrue(exception.Contains(exceptionActivityId.ToString()));
+                Assert.IsTrue(exception.Contains(errorMessage));
+
+                string diagnosics = ce.Diagnostics.ToString();
+                if (disableDiagnostics)
+                {
+                    Assert.IsTrue(string.IsNullOrEmpty(diagnosics));
+                }
+                else
+                {
+                    Assert.IsFalse(string.IsNullOrEmpty(diagnosics));
+                    Assert.IsTrue(exception.Contains(diagnosics));
+                    DiagnosticValidator.ValidatePointOperationDiagnostics(ce.DiagnosticsContext);
                 }
             }
         }
@@ -221,7 +283,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (disableDiagnostics)
             {
                 requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
-            };
+            }
+            else
+            {
+                // Add 10 seconds to ensure CPU history is recorded
+                await Task.Delay(TimeSpan.FromSeconds(10));
+            }
 
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();

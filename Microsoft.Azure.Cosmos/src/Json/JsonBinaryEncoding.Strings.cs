@@ -25,12 +25,22 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new JsonInvalidTokenException();
             }
 
-            if (!JsonBinaryEncoding.TryGetBufferedStringValue(stringToken, jsonStringDictionary, out Utf8Memory bufferedUtf8StringValue))
+            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
+                stringToken,
+                out Utf8Memory lengthPrefixedString))
             {
-                throw new JsonInvalidTokenException();
+                return lengthPrefixedString.ToString();
             }
 
-            return bufferedUtf8StringValue.ToString();
+            if (JsonBinaryEncoding.TryGetEncodedStringValue(
+                stringToken.Span,
+                jsonStringDictionary,
+                out UtfAllString encodedStringValue))
+            {
+                return encodedStringValue.Utf16String;
+            }
+
+            throw new JsonInvalidTokenException();
         }
 
         public static bool TryGetBufferedStringValue(
@@ -56,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 jsonStringDictionary,
                 out UtfAllString encodedStringValue))
             {
-                value = encodedStringValue.Utf8String;
+                value = encodedStringValue.Utf8EscapedString;
                 return true;
             }
 
@@ -100,12 +110,6 @@ namespace Microsoft.Azure.Cosmos.Json
             Utf8Span stringToken,
             out UtfAllString value)
         {
-            if (stringToken.IsEmpty)
-            {
-                value = default;
-                return false;
-            }
-
             if (!JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(stringToken.Span[0]))
             {
                 value = default;
@@ -151,12 +155,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private static bool TryGetUserStringId(Utf8Span stringToken, out int userStringId)
         {
-            if (stringToken.IsEmpty)
-            {
-                userStringId = default;
-                return false;
-            }
-
             byte typeMarker = stringToken.Span[0];
             if (!JsonBinaryEncoding.TypeMarker.IsUserString(typeMarker))
             {
@@ -195,12 +193,6 @@ namespace Microsoft.Azure.Cosmos.Json
             Utf8Memory stringToken,
             out Utf8Memory value)
         {
-            if (stringToken.IsEmpty)
-            {
-                value = default;
-                return false;
-            }
-
             ReadOnlySpan<byte> stringTokenSpan = stringToken.Memory.Span;
             byte typeMarker = stringTokenSpan[0];
             stringTokenSpan = stringTokenSpan.Slice(start: 1);
@@ -224,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         }
 
                         start = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength;
-                        length = MemoryMarshal.Read<byte>(stringTokenSpan);
+                        length = stringTokenSpan[0];
                         break;
 
                     case JsonBinaryEncoding.TypeMarker.String2ByteLength:

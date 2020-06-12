@@ -396,13 +396,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
                         // Once the item matches the order by items from the continuation tokens
                         // We still need to remove all the documents that have a lower rid in the rid sort order.
-                        // If there is a tie in the sort order the documents should be in _rid order in the same direction as the first order by field.
-                        // So if it's ORDER BY c.age ASC, c.name DESC the _rids are ASC 
-                        // If ti's ORDER BY c.age DESC, c.name DESC the _rids are DESC
+                        // If there is a tie in the sort order the documents should be in _rid order in the same direction as the index (given by the backend)
                         cmp = continuationRid.Document.CompareTo(rid.Document);
-                        if (sortOrders[0] == SortOrder.Descending)
+                        if (producer.CosmosQueryExecutionInfo.ReverseRidEnabled)
                         {
-                            cmp = -cmp;
+                            // If reverse rid is enabled on the backend then fallback to the old way of doing it.
+                            if (sortOrders[0] == SortOrder.Descending)
+                            {
+                                cmp = -cmp;
+                            }
+                        }
+                        else
+                        {
+                            // Go by the whatever order the index wants
+                            if (producer.CosmosQueryExecutionInfo.ReverseIndexScan)
+                            {
+                                cmp = -cmp;
+                            }
                         }
 
                         // We might have passed the item due to deletions and filters.

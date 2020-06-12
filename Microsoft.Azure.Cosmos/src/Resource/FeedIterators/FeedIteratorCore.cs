@@ -156,5 +156,11 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            this.feedIterator.Dispose();
+            base.Dispose(disposing);
+        }
     }
 }

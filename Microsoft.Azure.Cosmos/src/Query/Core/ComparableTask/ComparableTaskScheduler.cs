@@ -45,29 +45,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
 
         public int MaximumConcurrencyLevel { get; private set; }
 
-        public int CurrentRunningTaskCount
-        {
-            get
-            {
-                return this.MaximumConcurrencyLevel - Math.Max(0, this.canRunTaskSemaphoreSlim.CurrentCount);
-            }
-        }
+        public int CurrentRunningTaskCount => this.MaximumConcurrencyLevel - Math.Max(0, this.canRunTaskSemaphoreSlim.CurrentCount);
 
-        public bool IsStopped
-        {
-            get
-            {
-                return this.isStopped;
-            }
-        }
+        public bool IsStopped => this.isStopped;
 
-        private CancellationToken CancellationToken
-        {
-            get
-            {
-                return this.tokenSource.Token;
-            }
-        }
+        private CancellationToken CancellationToken => this.tokenSource.Token;
 
         public void IncreaseMaximumConcurrencyLevel(int delta)
         {
@@ -83,6 +65,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
         public void Dispose()
         {
             this.Stop();
+
+            this.canRunTaskSemaphoreSlim.Dispose();
+            this.tokenSource.Dispose();
         }
 
         public void Stop()
