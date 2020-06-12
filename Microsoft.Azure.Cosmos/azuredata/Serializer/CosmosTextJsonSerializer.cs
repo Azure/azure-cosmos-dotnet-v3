@@ -20,11 +20,13 @@ namespace Azure.Cosmos
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
             CosmosTextJsonSerializer.InitializeDataContractConverters(jsonSerializerOptions);
             CosmosTextJsonSerializer.InitializeRESTConverters(jsonSerializerOptions);
-            return CosmosTextJsonSerializer.CreateSerializer(jsonSerializerOptions);
+            return CosmosSerializer.ForObjectSerializer(new Azure.Core.JsonObjectSerializer(jsonSerializerOptions));
         }
 
-        internal static CosmosSerializer CreateSerializer(JsonSerializerOptions jsonSerializerOptions)
+        internal static CosmosSerializer CreateSerializer(JsonSerializerOptions jsonSerializerOptions = null)
         {
+            jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions();
+            CosmosTextJsonSerializer.InitializeDataContractConverters(jsonSerializerOptions);
             return CosmosSerializer.ForObjectSerializer(new Azure.Core.JsonObjectSerializer(jsonSerializerOptions));
         }
 

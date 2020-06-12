@@ -449,7 +449,7 @@ namespace Azure.Cosmos
         /// </summary>
         internal CosmosSerializer GetCosmosSerializerWithWrapperOrDefault()
         {
-            return this.Serializer == null ? this.PropertiesSerializer : CosmosSerializer.ForObjectSerializer(this.Serializer);
+            return this.Serializer == null ? this.PropertiesSerializer : CosmosSerializer.ForObjectSerializer(new CosmosJsonSerializerWrapper(this.Serializer));
         }
 
         internal CosmosClientOptions Clone()

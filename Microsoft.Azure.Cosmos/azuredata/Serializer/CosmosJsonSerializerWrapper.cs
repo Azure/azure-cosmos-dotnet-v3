@@ -20,11 +20,6 @@ namespace Azure.Cosmos
         public override void Serialize(Stream stream, object value, Type inputType)
         {
             this.InternalJsonSerializer.Serialize(stream, value, inputType);
-            if (stream == null)
-            {
-                throw new InvalidOperationException("Json Serializer returned a null stream.");
-            }
-
             if (!stream.CanRead)
             {
                 throw new InvalidOperationException("Json Serializer returned a closed stream.");
@@ -34,11 +29,6 @@ namespace Azure.Cosmos
         public override async ValueTask SerializeAsync(Stream stream, object value, Type inputType)
         {
             await this.InternalJsonSerializer.SerializeAsync(stream, value, inputType);
-            if (stream == null)
-            {
-                throw new InvalidOperationException("Json Serializer returned a null stream.");
-            }
-
             if (!stream.CanRead)
             {
                 throw new InvalidOperationException("Json Serializer returned a closed stream.");
@@ -48,10 +38,10 @@ namespace Azure.Cosmos
         public override object Deserialize(Stream stream, Type returnType)
         {
             object item = this.InternalJsonSerializer.Deserialize(stream, returnType);
-            if (stream.CanRead)
-            {
-                throw new InvalidOperationException("Json Serializer left an open stream.");
-            }
+            //if (stream.CanRead)
+            //{
+            //    throw new InvalidOperationException("Json Serializer left an open stream.");
+            //}
 
             return item;
         }
@@ -59,10 +49,10 @@ namespace Azure.Cosmos
         public override async ValueTask<object> DeserializeAsync(Stream stream, Type returnType)
         {
             object item = await this.InternalJsonSerializer.DeserializeAsync(stream, returnType);
-            if (stream.CanRead)
-            {
-                throw new InvalidOperationException("Json Serializer left an open stream.");
-            }
+            //if (stream.CanRead)
+            //{
+            //    throw new InvalidOperationException("Json Serializer left an open stream.");
+            //}
 
             return item;
         }

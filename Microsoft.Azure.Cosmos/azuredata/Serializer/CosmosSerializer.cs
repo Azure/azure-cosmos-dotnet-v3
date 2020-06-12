@@ -19,10 +19,10 @@ namespace Azure.Cosmos.Serialization
                 throw new ArgumentNullException(nameof(objectSerializer));
             }
 
-            return new CosmosSerializer(new CosmosJsonSerializerWrapper(objectSerializer));
+            return new CosmosSerializer(objectSerializer);
         }
 
-        private readonly Azure.Core.ObjectSerializer objectSerializer;
+        internal readonly Azure.Core.ObjectSerializer AzureCoreSerializer;
 
         /// <summary>
         /// For mocking purposes
@@ -33,26 +33,29 @@ namespace Azure.Cosmos.Serialization
 
         private CosmosSerializer(Azure.Core.ObjectSerializer objectSerializer)
         {
-            this.objectSerializer = objectSerializer;
+            this.AzureCoreSerializer = objectSerializer;
         }
 
         public virtual T FromStream<T>(Stream stream)
         {
+            if (stream.CanSeek
+                    && stream.Length == 0)
+            {
+                return default(T);
+            }
+
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
                 return (T)(object)stream;
             }
 
-            using (stream)
-            {
-                return (T)this.objectSerializer.Deserialize(stream, typeof(T));
-            }
+            return (T)this.AzureCoreSerializer.Deserialize(stream, typeof(T));
         }
 
         public virtual Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            this.objectSerializer.Serialize(streamPayload, input, typeof(T));
+            this.AzureCoreSerializer.Serialize(streamPayload, input, typeof(T));
             streamPayload.Position = 0;
             return streamPayload;
         }
