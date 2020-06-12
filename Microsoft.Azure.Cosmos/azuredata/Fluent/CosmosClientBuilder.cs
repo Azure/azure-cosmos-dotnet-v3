@@ -6,7 +6,6 @@ namespace Azure.Cosmos.Fluent
 {
     using System;
     using System.Net;
-    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -318,26 +317,13 @@ namespace Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set a custom serializer option. 
-        /// </summary>
-        /// <param name="cosmosSerializerOptions">The custom class that implements <see cref="CosmosSerializer"/> </param>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        /// <seealso cref="CosmosSerializer"/>
-        /// <seealso cref="CosmosClientOptions.DefaultSerializerOptions"/>
-        public CosmosClientBuilder WithSerializerOptions(CosmosSerializationOptions cosmosSerializerOptions)
-        {
-            this.clientOptions.DefaultSerializerOptions = cosmosSerializerOptions;
-            return this;
-        }
-
-        /// <summary>
         /// Set a custom JSON serializer. 
         /// </summary>
-        /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>
+        /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="Azure.Core.ObjectSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        /// <seealso cref="CosmosSerializer"/>
+        /// <seealso cref="Azure.Core.ObjectSerializer"/>
         /// <seealso cref="CosmosClientOptions.Serializer"/>
-        public CosmosClientBuilder WithCustomSerializer(CosmosSerializer cosmosJsonSerializer)
+        public CosmosClientBuilder WithCustomSerializer(Azure.Core.ObjectSerializer cosmosJsonSerializer)
         {
             this.clientOptions.Serializer = cosmosJsonSerializer;
             return this;

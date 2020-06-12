@@ -7,7 +7,6 @@ namespace Azure.Cosmos
     using System;
     using System.Text.Json;
     using System.Text.Json.Serialization;
-    using Azure.Cosmos.Serialization;
 
     internal sealed class TextJsonCosmosClientOptionsConverter : JsonConverter<CosmosClientOptions>
     {
@@ -37,8 +36,8 @@ namespace Azure.Cosmos
                 writer.WriteString(JsonEncodedStrings.CosmosSerializer, cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
             }
 
-            CosmosSerializer cosmosSerializer = value.Serializer as CosmosSerializer;
-            if (cosmosSerializer is CosmosSerializer)
+            Azure.Core.ObjectSerializer cosmosSerializer = value.Serializer as Azure.Core.ObjectSerializer;
+            if (cosmosSerializer is Azure.Core.ObjectSerializer)
             {
                 writer.WriteString(JsonEncodedStrings.CosmosSerializer, cosmosSerializer.GetType().ToString());
             }

@@ -79,7 +79,7 @@ namespace Azure.Cosmos
 
             settings.Converters.Add(new TextJsonCosmosSqlQuerySpecConverter(cosmosSerializer));
 
-            return new CosmosJsonSerializerWrapper(new CosmosTextJsonSerializer(settings));
+            return CosmosSerializer.ForObjectSerializer(new Azure.Core.JsonObjectSerializer(settings));
         }
     }
 }

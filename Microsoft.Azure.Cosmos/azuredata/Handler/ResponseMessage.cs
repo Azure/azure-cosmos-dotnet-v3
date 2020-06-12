@@ -10,9 +10,11 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Text.Json;
+    using Azure.Cosmos.Serialization;
     using global::Azure;
     using global::Azure.Core;
     using global::Azure.Cosmos;
+    using global::Azure.Cosmos.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -244,6 +246,8 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc />
         protected override IEnumerable<HttpHeader> EnumerateHeaders() => this.CosmosHeaders.GetHttpHeaders();
 
+        // Temporal until V4 sync caches up with V3 diagnostics changes
+        private static Lazy<CosmosSerializer> lazyErrorDeserializer = new Lazy<CosmosSerializer>(() => CosmosTextJsonSerializer.CreateSerializer(TextJsonErrorConverter.ErrorSerializationOptions.Value));
         private void EnsureErrorMessage()
         {
             if (this.Error != null
@@ -257,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    Error error = CosmosTextJsonSerializer.Deserialize<Error>(this.content, TextJsonErrorConverter.ErrorSerializationOptions.Value);
+                    Error error = ResponseMessage.lazyErrorDeserializer.Value.FromStream<Error>(this.content);
                     if (error != null)
                     {
                         // Error format is not consistent across modes

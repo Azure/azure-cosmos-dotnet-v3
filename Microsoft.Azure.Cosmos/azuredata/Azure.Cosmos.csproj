@@ -78,19 +78,7 @@
     <Compile Include="..\src\Serializer\DefaultJsonSerializationSettings.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Serializer\CosmosJsonSerializerWrapper.cs">
-      <Link>Serializer\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
-      <Link>Serializer\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Serializer\CosmosSerializer.cs">
-      <Link>Serializer\%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializationFormatOptions.cs">
-      <Link>Serializer\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Serializer\CosmosPropertyNamingPolicy.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\MediaReadMode.cs">
@@ -228,7 +216,8 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="1.0.0" />
+    <PackageReference Include="Azure.Core" Version="1.2.2" />
+    <PackageReference Include="Azure.Core.Experimental" Version="0.1.0-preview.1" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="System.Text.Json" Version="4.7.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />

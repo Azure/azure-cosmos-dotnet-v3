@@ -52,11 +52,9 @@ namespace Azure.Cosmos
         /// <summary>
         /// Default request timeout
         /// </summary>
-        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(CosmosTextJsonSerializer.CreatePropertiesSerializer());
+        private static readonly CosmosSerializer propertiesSerializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
 
         private int gatewayModeMaxConnectionLimit;
-        private CosmosSerializationOptions serializerOptions;
-        private CosmosSerializer serializer;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -291,35 +289,6 @@ namespace Azure.Cosmos
         }
 
         /// <summary>
-        /// Get to set optional serializer options.
-        /// </summary>
-        /// <example>
-        /// An example on how to configure the serialization option to ignore null values
-        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
-        /// {
-        ///     DefaultSerializerOptions = new CosmosSerializationOptions(){
-        ///         IgnoreNullValues = true
-        ///     }
-        /// };
-        /// 
-        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
-        /// </example>
-        public CosmosSerializationOptions DefaultSerializerOptions
-        {
-            get => this.serializerOptions ?? new CosmosSerializationOptions();
-            set
-            {
-                if (this.serializer != null)
-                {
-                    throw new ArgumentException(
-                        $"{nameof(this.DefaultSerializerOptions)} is not compatible with {nameof(this.Serializer)}. Only one can be set.  ");
-                }
-
-                this.serializerOptions = value;
-            }
-        }
-
-        /// <summary>
         /// Get to set an optional JSON serializer. The client will use it to serialize or de-serialize user's cosmos request/responses.
         /// SDK owned types such as DatabaseProperties and ContainerProperties will always use the SDK default serializer.
         /// </summary>
@@ -334,20 +303,7 @@ namespace Azure.Cosmos
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
         /// </example>
-        public CosmosSerializer Serializer
-        {
-            get => this.serializer;
-            set
-            {
-                if (this.serializerOptions != null)
-                {
-                    throw new ArgumentException(
-                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.DefaultSerializerOptions)}. Only one can be set.  ");
-                }
-
-                this.serializer = value;
-            }
-        }
+        public Azure.Core.ObjectSerializer Serializer { get; set; }
 
         /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClient.
@@ -493,15 +449,7 @@ namespace Azure.Cosmos
         /// </summary>
         internal CosmosSerializer GetCosmosSerializerWithWrapperOrDefault()
         {
-            if (this.serializerOptions != null)
-            {
-                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(this.serializerOptions);
-                return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
-            }
-            else
-            {
-                return this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
-            }
+            return this.Serializer == null ? this.PropertiesSerializer : CosmosSerializer.ForObjectSerializer(this.Serializer);
         }
 
         internal CosmosClientOptions Clone()

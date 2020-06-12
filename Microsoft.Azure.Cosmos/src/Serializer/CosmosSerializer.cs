@@ -2,16 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if AZURECORE
-namespace Azure.Cosmos.Serialization
-#else
 namespace Microsoft.Azure.Cosmos
-#endif
 {
     using System.IO;
-#if AZURECORE
-    using Container = CosmosContainer;
-#endif
 
     /// <summary>
     /// This is an interface to allow a custom serializer to be used by the CosmosClient
