@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos
                             isMinInclusive: true,
                             isMaxInclusive: false),
                         forceRefresh: true);
-            List<FeedRangeEPK> feedTokens = new List<FeedRangeEPK>(partitionKeyRanges.Count);
+            List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
                 feedTokens.Add(new FeedRangeEPK(partitionKeyRange.ToRange()));
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return ChangeFeedIteratorCore.Create(
+            return new ChangeFeedIteratorCore(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
         {
             changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
             changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
-            return ChangeFeedIteratorCore.Create(
+            return new ChangeFeedIteratorCore(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
         {
             changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
             changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
-            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 

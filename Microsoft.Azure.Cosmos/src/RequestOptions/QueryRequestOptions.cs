@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.FeedRange != null)
             {
-                QueryFeedRangeVisitor queryFeedRangeVisitor = new QueryFeedRangeVisitor(request);
+                FeedRangeRequestMessagePopulatorVisitor queryFeedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
                 ((FeedRangeInternal)this.FeedRange).Accept(queryFeedRangeVisitor);
             }
 

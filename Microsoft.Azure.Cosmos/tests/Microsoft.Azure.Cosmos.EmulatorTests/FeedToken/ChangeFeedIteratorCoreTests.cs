@@ -443,10 +443,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int count = 0;
             while (true)
             {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                ChangeFeedRequestOptions requestOptions;
+                if (continuation == null)
                 {
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation),
-                };
+                    requestOptions = new ChangeFeedRequestOptions()
+                    {
+                        From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    };
+                }
+                else
+                {
+                    requestOptions = new ChangeFeedRequestOptions()
+                    {
+                        From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation),
+                    };
+                }
 
                 ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 using (ResponseMessage responseMessage =

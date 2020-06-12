@@ -35,12 +35,6 @@ namespace Microsoft.Azure.Cosmos
             this.CompositeContinuationTokens = new Queue<CompositeContinuationToken>();
         }
 
-        public override void Accept(
-            FeedRangeVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
-
         public FeedRangeCompositeContinuation(
             string containerRid,
             FeedRangeInternal feedRange,
@@ -98,6 +92,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override string GetContinuation() => this.CurrentToken?.Token;
+
+        public override FeedRange GetFeedRange() => this.CurrentToken != null ? new FeedRangeEPK(this.CurrentToken.Range) : null;
 
         public override string ToString()
         {

@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // Backward compatible with old format
-                feedRangeInternal = FeedRangeEPK.ForFullRange();
+                feedRangeInternal = FeedRangeEPK.FullRange;
                 feedRangeContinuation = new FeedRangeCompositeContinuation(
                     string.Empty,
                     feedRangeInternal,
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options);
             }
 
-            feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForFullRange();
+            feedRangeInternal ??= FeedRangeEPK.FullRange;
             return new FeedRangeIteratorCore(containerCore, feedRangeInternal, options);
         }
 

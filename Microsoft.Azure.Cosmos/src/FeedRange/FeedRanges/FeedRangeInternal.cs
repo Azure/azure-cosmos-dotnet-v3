@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract void Accept(IFeedRangeVisitor visitor);
 
+        public abstract Task<TResult> AcceptAsync<TResult>(IFeedRangeAsyncVisitor<TResult> visitor, CancellationToken cancellationToken = default);
+
         public abstract override string ToString();
 
         public override string ToJsonString() => JsonConvert.SerializeObject(this);

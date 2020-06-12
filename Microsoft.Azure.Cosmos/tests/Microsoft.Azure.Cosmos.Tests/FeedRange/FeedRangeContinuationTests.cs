@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -50,41 +49,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, feedRangeInternal, keyRanges);
             Assert.IsTrue(FeedRangeContinuation.TryParse(token.ToString(), out _));
             Assert.IsFalse(FeedRangeContinuation.TryParse("whatever", out _));
-        }
-
-        [TestMethod]
-        public void FeedRangeCompositeContinuation_RequestVisitor()
-        {
-            const string containerRid = "containerRid";
-            const string continuation = "continuation";
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("A", "B", true, false);
-            FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, Mock.Of<FeedRangeInternal>(), new List<Documents.Routing.Range<string>>() { range }, continuation);
-            RequestMessage requestMessage = new RequestMessage();
-            requestMessage.OperationType = Documents.OperationType.ReadFeed;
-            requestMessage.ResourceType = Documents.ResourceType.Document;
-            FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
-            token.Accept(feedRangeVisitor) ;
-            Assert.AreEqual(range.Min, requestMessage.Properties[HandlerConstants.StartEpkString]);
-            Assert.AreEqual(range.Max, requestMessage.Properties[HandlerConstants.EndEpkString]);
-            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
-            Assert.IsTrue(requestMessage.IsPartitionKeyRangeHandlerRequired);
-        }
-
-        [TestMethod]
-        public void FeedRangeCompositeContinuation_RequestVisitor_IfEPKAlreadyExists()
-        {
-            const string containerRid = "containerRid";
-            const string continuation = "continuation";
-            string epkString = Guid.NewGuid().ToString();
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("A", "B", true, false);
-            FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, Mock.Of<FeedRangeInternal>(), new List<Documents.Routing.Range<string>>() { range }, continuation);
-            RequestMessage requestMessage = new RequestMessage();
-            FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
-            requestMessage.Properties[HandlerConstants.StartEpkString] = epkString;
-            requestMessage.Properties[HandlerConstants.EndEpkString] = epkString;
-            token.Accept(feedRangeVisitor);
-            Assert.AreEqual(epkString, requestMessage.Properties[HandlerConstants.StartEpkString]);
-            Assert.AreEqual(epkString, requestMessage.Properties[HandlerConstants.EndEpkString]);
         }
 
         [TestMethod]

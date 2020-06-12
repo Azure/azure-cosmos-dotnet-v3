@@ -33,10 +33,9 @@ namespace Microsoft.Azure.Cosmos
             this.ContainerRid = containerRid;
         }
 
-        public abstract void Accept(
-            FeedRangeVisitor visitor);
-
         public abstract string GetContinuation();
+
+        public abstract FeedRange GetFeedRange();
 
         public abstract void ReplaceContinuation(string continuationToken);
 

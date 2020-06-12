@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or set which ranges to execute the ChangeFeed operation on.
         /// </summary>
-        public FeedRange FeedRange { get; set; }
+        public FeedRange FeedRange { get; set; } = FeedRangeEPK.FullRange;
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.FeedRange != null)
             {
-                FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
+                FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
                 ((FeedRangeInternal)this.FeedRange).Accept(feedRangeVisitor);
             }
 

@@ -22,53 +22,15 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
     {
-        internal FeedRangeInternal FeedRangeInternal;
-        internal FeedRangeContinuation FeedRangeContinuation { get; private set; }
-        private readonly ChangeFeedRequestOptions changeFeedOptions;
-        private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
+        private readonly CosmosClientContext clientContext;
+        private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
-        private bool hasMoreResults = true;
+        private bool hasMoreResults;
 
-        public static ChangeFeedIteratorCore Create(
-            ContainerInternal container,
-            ChangeFeedRequestOptions changeFeedRequestOptions)
-        {
-            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
-            if (changeFeedRequestOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
-            {
-                if (!FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
-                {
-                    throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, startFromContinuation.Continuation));
+        private FeedRangeContinuation FeedRangeContinuation;
 
-                }
-
-                return new ChangeFeedIteratorCore(container, feedRangeContinuation, changeFeedRequestOptions);
-            }
-
-            changeFeedRequestOptions.FeedRange ??= FeedRangeEPK.ForFullRange();
-            return new ChangeFeedIteratorCore(container, (FeedRangeInternal)changeFeedRequestOptions.FeedRange, changeFeedRequestOptions);
-        }
-
-        internal ChangeFeedIteratorCore(
-            ContainerInternal container,
-            FeedRangeContinuation feedRangeContinuation,
-            ChangeFeedRequestOptions changeFeedRequestOptions)
-            : this(container, feedRangeContinuation.FeedRange, changeFeedRequestOptions)
-        {
-            this.FeedRangeContinuation = feedRangeContinuation ?? throw new ArgumentNullException(nameof(feedRangeContinuation));
-        }
-
-        private ChangeFeedIteratorCore(
-            ContainerInternal container,
-            FeedRangeInternal feedRangeInternal,
-            ChangeFeedRequestOptions changeFeedRequestOptions)
-            : this(container, changeFeedRequestOptions)
-        {
-            this.FeedRangeInternal = feedRangeInternal ?? throw new ArgumentNullException(nameof(feedRangeInternal));
-        }
-
-        private ChangeFeedIteratorCore(
+        public ChangeFeedIteratorCore(
             ContainerInternal container,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
@@ -79,6 +41,23 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.TryInitializeContainerRIdAsync(innerCancellationToken);
             });
+            this.hasMoreResults = true;
+
+            if (changeFeedRequestOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+            {
+                if (!FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
+                {
+                    throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, startFromContinuation.Continuation));
+                }
+
+                this.FeedRangeContinuation = feedRangeContinuation;
+                this.changeFeedOptions.FeedRange = feedRangeContinuation.GetFeedRange();
+                string continuationToken = feedRangeContinuation.GetContinuation();
+                if (continuationToken != null)
+                {
+                    this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuationToken);
+                }
+            }
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -88,12 +67,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
             using (diagnostics.GetOverallScope())
             {
-                diagnostics.AddDiagnosticsInternal(new FeedRangeStatistics(this.FeedRangeInternal));
+                diagnostics.AddDiagnosticsInternal(new FeedRangeStatistics(this.changeFeedOptions.FeedRange));
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
                     using (diagnostics.CreateScope("InitializeContainerResourceId"))
@@ -101,7 +80,11 @@ namespace Microsoft.Azure.Cosmos
                         TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
                         if (!tryInitializeContainerRId.Succeeded)
                         {
-                            CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
+                            if (!(tryInitializeContainerRId.Exception.InnerException is CosmosException cosmosException))
+                            {
+                                throw new InvalidOperationException("Failed to convert to CosmosException.");
+                            }
+
                             return cosmosException.ToCosmosResponseMessage(
                                 new RequestMessage(
                                     method: null,
@@ -110,32 +93,35 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    using (diagnostics.CreateScope("InitializeContinuation"))
+                    if (this.FeedRangeContinuation == null)
                     {
-                        if (this.FeedRangeContinuation != null)
+                        using (diagnostics.CreateScope("InitializeContinuation"))
                         {
-                            TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
-                            if (!validateContainer.Succeeded)
-                            {
-                                return CosmosExceptionFactory.CreateBadRequestException(
-                                    message: validateContainer.Exception.InnerException.Message,
-                                    innerException: validateContainer.Exception.InnerException,
-                                    diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
-                            }
+                            await this.InitializeFeedContinuationAsync(cancellationToken);
                         }
+                    }
 
-                        await this.InitializeFeedContinuationAsync(cancellationToken);
+                    TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
+                    if (!validateContainer.Succeeded)
+                    {
+                        return CosmosExceptionFactory
+                            .CreateBadRequestException(
+                                message: validateContainer.Exception.InnerException.Message,
+                                innerException: validateContainer.Exception.InnerException,
+                                diagnosticsContext: diagnostics)
+                            .ToCosmosResponseMessage(
+                                new RequestMessage(
+                                    method: null,
+                                    requestUri: null,
+                                    diagnosticsContext: diagnostics));
                     }
                 }
-
-                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
+
+            return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
         }
 
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return CosmosElement.Parse(this.FeedRangeContinuation.ToString());
-        }
+        public override CosmosElement GetCosmosElementContinuationToken() => CosmosElement.Parse(this.FeedRangeContinuation.ToString());
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsScope,
@@ -143,18 +129,26 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            string continuation = this.FeedRangeContinuation.GetContinuation();
+            if (continuation != null)
+            {
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.FeedRangeContinuation.GetContinuation());
+            }
+
+            if ((this.changeFeedOptions.FeedRange == null) || this.changeFeedOptions.FeedRange is FeedRangeEPK)
+            {
+                // For now the backend does not support EPK Ranges if they don't line up with a PKRangeId
+                // So if the range the user supplied is a logical pk value, then we don't want to overwrite it.
+                this.changeFeedOptions.FeedRange = this.FeedRangeContinuation.GetFeedRange();
+            }
+
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
                 requestOptions: this.changeFeedOptions,
                 cosmosContainerCore: this.container,
-                requestEnricher: request =>
-                {
-                    FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
-                    this.FeedRangeInternal.Accept(feedRangeVisitor);
-                    this.FeedRangeContinuation.Accept(feedRangeVisitor);
-                },
+                requestEnricher: default,
                 partitionKey: default,
                 streamPayload: default,
                 diagnosticsContext: diagnosticsScope,
@@ -169,19 +163,8 @@ namespace Microsoft.Azure.Cosmos
                 || (responseMessage.StatusCode == HttpStatusCode.NotModified))
             {
                 // Change Feed read uses Etag for continuation
-                this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
-                string continuation = this.FeedRangeContinuation.GetContinuation();
-                if (continuation != null)
-                {
-                    this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.FeedRangeContinuation.GetContinuation());
-                }
-                else
-                {
-                    this.changeFeedOptions.From = null;
-                }
-
-                this.changeFeedOptions.FeedRange = this.FeedRangeContinuation.FeedRange;
                 this.hasMoreResults = responseMessage.IsSuccessStatusCode;
+                this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
                 return FeedRangeResponse.CreateSuccess(
                     responseMessage,
                     this.FeedRangeContinuation);
@@ -227,48 +210,20 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
         {
+            // Initializing FeedRangeContinuation (double init pattern, since async needs to be deffered until the first read).
             if (this.FeedRangeContinuation == null)
             {
-                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                List<Documents.Routing.Range<string>> ranges;
-                if (this.FeedRangeInternal is FeedRangePartitionKey)
-                {
-                    PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
-                    ranges = await this.FeedRangeInternal.GetEffectiveRangesAsync(partitionKeyRangeCache, this.lazyContainerRid.Result.Result, partitionKeyDefinition);
-                }
-                else
-                {
-                    IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                            collectionRid: this.lazyContainerRid.Result.Result,
-                            range: (this.FeedRangeInternal as FeedRangeEPK).Range,
-                            forceRefresh: false);
-                    ranges = pkRanges.Select(pkRange => pkRange.ToRange()).ToList();
-                }
+                FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
+
+                IReadOnlyList<Documents.Routing.Range<string>> ranges = await ((FeedRangeInternal)this.changeFeedOptions.FeedRange).AcceptAsync(
+                    feedRangePartitionKeyRangeExtractor,
+                    cancellationToken);
 
                 this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                     containerRid: this.lazyContainerRid.Result.Result,
-                    feedRange: this.FeedRangeInternal,
+                    feedRange: (FeedRangeInternal)this.changeFeedOptions.FeedRange,
                     ranges: ranges);
             }
-            else if (this.FeedRangeInternal is FeedRangePartitionKeyRange)
-            {
-                // Migration from PKRangeId scenario
-                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                List<Documents.Routing.Range<string>> effectiveRanges = await this.FeedRangeInternal.GetEffectiveRangesAsync(
-                    routingMapProvider: partitionKeyRangeCache,
-                    containerRid: this.lazyContainerRid.Result.Result,
-                    partitionKeyDefinition: null);
-
-                // Override the original PKRangeId based FeedRange
-                this.FeedRangeInternal = new FeedRangeEPK(effectiveRanges[0]);
-                this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
-                    containerRid: this.lazyContainerRid.Result.Result,
-                    feedRange: this.FeedRangeInternal,
-                    ranges: effectiveRanges,
-                    continuation: this.FeedRangeContinuation.GetContinuation());
-            }
-
-            this.changeFeedOptions.FeedRange = this.FeedRangeInternal;
         }
     }
 }
