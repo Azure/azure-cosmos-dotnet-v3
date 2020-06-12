@@ -9,15 +9,11 @@ namespace Azure.Cosmos.EmulatorTests
     using System.IO;
     using System.Text.Json;
     using System.Text.Json.Serialization;
-    using Azure.Cosmos;
-    using Azure.Cosmos.Serialization;
+    using System.Threading.Tasks;
 
-    /// <summary>
-    /// Placeholder for VST Logger.
-    /// </summary>
-    internal class CosmosSerializerHelper : CosmosSerializer
+    internal class CosmosSerializerHelper : Azure.Core.ObjectSerializer
     {
-        private readonly CosmosSerializer cosmosSerializer;
+        private readonly Azure.Core.ObjectSerializer cosmosSerializer;
         private readonly Action<dynamic> fromStreamCallback;
         private readonly Action<dynamic> toStreamCallBack;
 
@@ -26,31 +22,35 @@ namespace Azure.Cosmos.EmulatorTests
             Action<dynamic> fromStreamCallback,
             Action<dynamic> toStreamCallBack)
         {
-            if (jsonSerializerSettings == null)
-            {
-                this.cosmosSerializer = TestCommon.Serializer.Value;
-            }
-            else
-            {
-                this.cosmosSerializer = new CosmosTextJsonSerializer(jsonSerializerSettings);
-            }
-
+            this.cosmosSerializer = new Azure.Core.JsonObjectSerializer(jsonSerializerSettings);
             this.fromStreamCallback = fromStreamCallback;
             this.toStreamCallBack = toStreamCallBack;
         }
 
-        public override T FromStream<T>(Stream stream)
+        public override object Deserialize(Stream stream, Type returnType)
         {
-            T item = this.cosmosSerializer.FromStream<T>(stream);
+            object item = this.cosmosSerializer.Deserialize(stream, returnType);
             this.fromStreamCallback?.Invoke(item);
-
             return item;
         }
 
-        public override Stream ToStream<T>(T input)
+        public override async ValueTask<object> DeserializeAsync(Stream stream, Type returnType)
         {
-            this.toStreamCallBack?.Invoke(input);
-            return this.cosmosSerializer.ToStream<T>(input);
+            object item = await this.cosmosSerializer.DeserializeAsync(stream, returnType);
+            this.fromStreamCallback?.Invoke(item);
+            return item;
+        }
+
+        public override void Serialize(Stream stream, object value, Type inputType)
+        {
+            this.toStreamCallBack?.Invoke(value);
+            this.cosmosSerializer.Serialize(stream, value, inputType);
+        }
+
+        public override ValueTask SerializeAsync(Stream stream, object value, Type inputType)
+        {
+            this.toStreamCallBack?.Invoke(value);
+            return this.cosmosSerializer.SerializeAsync(stream, value, inputType);
         }
 
         public sealed class FormatNumbersTextConverter : JsonConverter<int>

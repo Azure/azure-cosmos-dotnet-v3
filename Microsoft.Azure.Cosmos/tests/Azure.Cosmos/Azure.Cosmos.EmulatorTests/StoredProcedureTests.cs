@@ -451,14 +451,24 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.IsTrue(cosmosResponse.GetRawResponse().Headers.GetRequestCharge() > 0);
         }
 
-        private class FaultySerializer : CosmosSerializer
+        private class FaultySerializer : Azure.Core.ObjectSerializer
         {
-            public override T FromStream<T>(Stream stream)
+            public override object Deserialize(Stream stream, Type returnType)
             {
                 throw new NotImplementedException();
             }
 
-            public override Stream ToStream<T>(T input)
+            public override ValueTask<object> DeserializeAsync(Stream stream, Type returnType)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Serialize(Stream stream, object value, Type inputType)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override ValueTask SerializeAsync(Stream stream, object value, Type inputType)
             {
                 throw new NotImplementedException();
             }

@@ -4,6 +4,7 @@
 
 namespace Azure.Cosmos.EmulatorTests
 {
+    using Azure.Cosmos.Serialization;
     using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -88,7 +89,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             };
 
-            CosmosTextJsonSerializer serializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
+            CosmosSerializer serializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
             Stream stream = serializer.ToStream(containerProperties);
             CosmosContainerProperties deserialziedTest = serializer.FromStream<CosmosContainerProperties>(stream);
 

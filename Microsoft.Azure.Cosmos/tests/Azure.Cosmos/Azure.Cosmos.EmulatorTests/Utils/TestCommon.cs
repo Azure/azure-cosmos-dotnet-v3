@@ -57,7 +57,23 @@ namespace Azure.Cosmos.EmulatorTests
             CosmosTextJsonSerializer.InitializeRESTConverters(jsonSerializerOptions);
             CosmosTextJsonSerializer.InitializeDataContractConverters(jsonSerializerOptions);
             TestCommon.AddSpatialConverters(jsonSerializerOptions);
-            return new CosmosTextJsonSerializer(jsonSerializerOptions);
+            return CosmosTextJsonSerializer.CreateSerializer(jsonSerializerOptions);
+        });
+
+        public static Lazy<Azure.Core.JsonObjectSerializer> CoreSerializer = new Lazy<Azure.Core.JsonObjectSerializer>(() =>
+        {
+            // Adding converters to support V2 types in existing tests
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+            jsonSerializerOptions.Converters.Add(new TextJsonJTokenConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonDocumentConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonCosmosElementConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonCosmosElementListConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonJObjectConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonJTokenListConverter());
+            CosmosTextJsonSerializer.InitializeRESTConverters(jsonSerializerOptions);
+            CosmosTextJsonSerializer.InitializeDataContractConverters(jsonSerializerOptions);
+            TestCommon.AddSpatialConverters(jsonSerializerOptions);
+            return new Azure.Core.JsonObjectSerializer(jsonSerializerOptions);
         });
 
         static TestCommon()
@@ -100,7 +116,7 @@ namespace Azure.Cosmos.EmulatorTests
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
-            cosmosClientBuilder.WithCustomSerializer(TestCommon.Serializer.Value);
+            cosmosClientBuilder.WithCustomSerializer(TestCommon.CoreSerializer.Value);
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);

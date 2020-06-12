@@ -41,16 +41,21 @@ namespace Azure.Cosmos.EmulatorTests
             int toStreamCount = 0;
             int fromStreamCount = 0;
 
-            Mock<CosmosSerializer> mockJsonSerializer = new Mock<CosmosSerializer>();
+            Mock<Azure.Core.ObjectSerializer> mockJsonSerializer = new Mock<Azure.Core.ObjectSerializer>();
+
+            Azure.Core.JsonObjectSerializer jsonObjectSerializer = new Core.JsonObjectSerializer();
 
             //The item object will be serialized with the custom json serializer.
             ToDoActivity testItem = this.CreateRandomToDoActivity();
-            mockJsonSerializer.Setup(x => x.ToStream<ToDoActivity>(It.IsAny<ToDoActivity>()))
-                .Callback(() => toStreamCount++)
-                .Returns(TestCommon.Serializer.Value.ToStream<ToDoActivity>(testItem));
+            mockJsonSerializer.Setup(x => x.Serialize(It.IsAny<Stream>(),It.IsAny<object>(), It.IsAny<Type>()))
+                .Callback((Stream stream, object obj, Type returnType) =>
+                {
+                    toStreamCount++;
+                    jsonObjectSerializer.Serialize(stream, testItem, typeof(ToDoActivity));
+                });
 
-            mockJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(It.IsAny<Stream>()))
-                .Callback<Stream>(x => { x.Dispose(); fromStreamCount++; })
+            mockJsonSerializer.Setup(x => x.Deserialize(It.IsAny<Stream>(), It.IsAny<Type>()))
+                .Callback((Stream stream, Type sourceType) => { stream.Dispose(); fromStreamCount++; })
                 .Returns(testItem);
 
             //Create a new cosmos client with the mocked cosmos json serializer
