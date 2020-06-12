@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Patch;
 
     /// <summary>
     /// Represents a batch of operations against items with the same <see cref="PartitionKey"/> in a container that
@@ -193,6 +194,23 @@ namespace Microsoft.Azure.Cosmos
         public abstract TransactionalBatch DeleteItem(
             string id,
             TransactionalBatchItemRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Adds an operation to patch an item into the batch.
+        /// </summary>
+        /// <param name="id">The unique id of the item.</param>
+        /// <param name="patchSpecification">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <returns>The transactional batch instance with the operation added.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            abstract TransactionalBatch PatchItem(
+                string id,
+                PatchSpecification patchSpecification,
+                TransactionalBatchItemRequestOptions requestOptions = null);
 
         /// <summary>
         /// Executes the transactional batch at the Azure Cosmos service as an asynchronous operation.

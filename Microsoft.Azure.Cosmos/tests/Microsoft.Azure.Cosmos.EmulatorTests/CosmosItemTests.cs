@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -1362,6 +1363,113 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual((HttpStatusCode)400, ce.StatusCode);
             }
+        }
+
+        [TestMethod]
+        public async Task ItemPatchFailureTest()
+        {
+            // Create an item
+            ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
+
+            PatchSpecification patchSpecification = new PatchSpecification()
+                .Add("/nonExistentParent/Child", "bar")
+                .Remove("/cost");
+
+            // item does not exist - 404 Resource Not Found error
+            try
+            {
+                await this.Container.PatchItemAsync<ToDoActivity>(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKey: new Cosmos.PartitionKey(testItem.status),
+                    patchSpecification: patchSpecification);
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                Assert.IsTrue(ex.Message.Contains("Resource Not Found"));                
+            }
+
+            // adding a child when prent does not exist - 400 BadRequest response
+            try
+            {
+                await this.Container.PatchItemAsync<ToDoActivity>(
+                    id: testItem.id,
+                    partitionKey: new Cosmos.PartitionKey(testItem.status),
+                    patchSpecification: patchSpecification);
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
+                Assert.IsTrue(ex.Message.Contains("One of the specified inputs is invalid"));
+            }
+
+            // precondition failure - 412 response
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                IfMatchEtag = Guid.NewGuid().ToString()
+            };
+
+            try
+            {
+                await this.Container.PatchItemAsync<ToDoActivity>(
+                    id: testItem.id,
+                    partitionKey: new Cosmos.PartitionKey(testItem.status),
+                    patchSpecification: patchSpecification,
+                    requestOptions);
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.PreconditionFailed, ex.StatusCode);
+                Assert.IsTrue(ex.Message.Contains("One of the specified pre-condition is not met"));
+            }
+        }
+
+        [TestMethod]
+        public async Task ItemPatchSuccessTest()
+        {
+            // Create an item
+            ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
+
+            int originalTaskNum = testItem.taskNum;
+            int newTaskNum = originalTaskNum + 1;
+
+            Assert.IsNull(testItem.children[1].status);
+
+            PatchSpecification patchSpecification = new PatchSpecification()
+                .Add("/children/1/status", "patched")
+                .Remove("/description")
+                .Replace("/taskNum", newTaskNum);
+
+            // without content response
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                EnableContentResponseOnWrite = false
+            };
+
+            ItemResponse<ToDoActivity> response = await this.Container.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(testItem.status),
+                patchSpecification: patchSpecification,
+                requestOptions);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNull(response.Resource);
+
+            patchSpecification = new PatchSpecification()
+                .Set("/children/0/cost", 1);
+
+            // with content response
+            response = await this.Container.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(testItem.status),
+                patchSpecification: patchSpecification);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+            Assert.AreEqual("patched", response.Resource.children[1].status);
+            Assert.IsNull(response.Resource.description);
+            Assert.AreEqual(newTaskNum, response.Resource.taskNum);
+            Assert.AreEqual(1, response.Resource.children[0].cost);
         }
 
         // Read write non partition Container item.

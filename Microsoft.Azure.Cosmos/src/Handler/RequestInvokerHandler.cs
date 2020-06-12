@@ -208,6 +208,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return HttpMethod.Delete;
             }
+            else if (operationType == OperationType.Patch)
+            {
+                // There isn't support for PATCH method in .NetStandard 2.0
+                return new HttpMethod("PATCH");
+            }
             else
             {
                 throw new NotImplementedException();

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -342,6 +343,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingB);
             testDocToReplace.Cost++;
 
+            TestDoc testDocToPatch = this.GetTestDocCopy(this.TestDocPk1ExistingC);
+            PatchSpecification patchSpecification = new PatchSpecification().Replace("/Cost", testDocToPatch.Cost + 1);
+
             // We run CRUD operations where all are expected to return HTTP 2xx.
             TransactionalBatchResponse batchResponse;
             if (!isStream)
@@ -353,7 +357,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .UpsertItem(testDocToUpsert)
                     .UpsertItem(anotherTestDocToUpsert)
                     .DeleteItem(this.TestDocPk1ExistingD.Id)
+                    .PatchItem(testDocToPatch.Id, patchSpecification)
                     .ExecuteAsync();
+
+                BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 7);
             }
             else
             {
@@ -379,9 +386,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized));
 
                 batchResponse = await batch.ExecuteAsync(batchOptions);
-            }
 
-            BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 6);
+                BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 6);
+            }
 
             Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
             Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
@@ -393,6 +400,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (!isStream)
             {
                 Assert.AreEqual(this.TestDocPk1ExistingC, batchResponse.GetOperationResultAtIndex<TestDoc>(1).Resource);
+                Assert.AreEqual(HttpStatusCode.OK, batchResponse[6].StatusCode);
+                testDocToPatch.Cost = testDocToPatch.Cost + 1;
+                await BatchTestBase.VerifyByReadAsync(container, testDocToPatch, isStream, isSchematized, useEpk);
             }
             else
             {

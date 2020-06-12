@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.Azure.Documents;
 
     internal class BatchCore : TransactionalBatch
@@ -248,6 +249,37 @@ namespace Microsoft.Azure.Cosmos
                     resourceStream: patchStream,
                     requestOptions: requestOptions,
                     containerCore: this.container));
+
+            return this;
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override TransactionalBatch PatchItem(
+                string id,
+                PatchSpecification patchSpecification,
+                TransactionalBatchItemRequestOptions requestOptions = null)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (patchSpecification == null)
+            {
+                throw new ArgumentNullException(nameof(patchSpecification));
+            }
+
+            this.operations.Add(new ItemBatchOperation<PatchSpecification>(
+                operationType: OperationType.Patch,
+                operationIndex: this.operations.Count,
+                id: id,
+                resource: patchSpecification,
+                requestOptions: requestOptions,
+                containerCore: this.container));
 
             return this;
         }

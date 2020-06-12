@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -863,6 +864,67 @@ namespace Microsoft.Azure.Cosmos
         private Uri ContcatCachedUriWithId(string resourceId)
         {
             return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override async Task<ItemResponse<T>> PatchItemAsync<T>(
+                string id,
+                PartitionKey partitionKey,
+                PatchSpecification patchSpecification,
+                ItemRequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            if (id == null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (patchSpecification == null)
+            {
+                throw new ArgumentNullException(nameof(patchSpecification));
+            }
+
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
+            {
+                Stream patchSpecificationStream;
+                using (diagnosticsContext.CreateScope("PatchSpecificationSerialize"))
+                {
+                    patchSpecificationStream = this.ClientContext.SerializerCore.ToStream<PatchSpecification>(patchSpecification);
+                }
+
+                Uri resourceUri = this.GetResourceUri(
+                    requestOptions,
+                    OperationType.Patch,
+                    id);
+
+                ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+                    resourceUri: resourceUri,
+                    resourceType: ResourceType.Document,
+                    operationType: OperationType.Patch,
+                    requestOptions: requestOptions,
+                    cosmosContainerCore: this,
+                    partitionKey: partitionKey,
+                    itemId: id,
+                    streamPayload: patchSpecificationStream,
+                    requestEnricher: (requestMessage) =>
+                    {
+                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, "application/json-patch+json");
+                    },
+                    diagnosticsContext: diagnosticsContext,
+                    cancellationToken: cancellationToken);
+
+                return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+            }
         }
     }
 }
