@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                    cosmosQueryContext.QueryClient,
-                   cosmosQueryContext.ResourceLink.OriginalString,
+                   cosmosQueryContext.ResourceLink,
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
                    inputParameters.Properties,

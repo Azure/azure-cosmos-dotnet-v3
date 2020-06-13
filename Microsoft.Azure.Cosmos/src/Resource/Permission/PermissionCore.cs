@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class PermissionCore : Permission
     {
-        private readonly Uri linkUri;
+        private readonly string linkUri;
         private readonly CosmosClientContext clientContext;
 
         internal PermissionCore(
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = userId;
             this.clientContext = clientContext;
             this.linkUri = clientContext.CreateLink(
-                parentLink: user.LinkUri.OriginalString,
+                parentLink: user.LinkUri,
                 uriPathSegment: Paths.PermissionsPathSegment,
                 id: userId);
         }
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
-                linkUriString: this.linkUri.OriginalString,
+                linkUriString: this.linkUri,
                 resourceType: ResourceType.Permission,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,

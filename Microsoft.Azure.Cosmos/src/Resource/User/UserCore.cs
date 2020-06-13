@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = userId;
             this.ClientContext = clientContext;
             this.LinkUri = clientContext.CreateLink(
-                parentLink: database.LinkUri.OriginalString,
+                parentLink: database.LinkUri,
                 uriPathSegment: Paths.UsersPathSegment,
                 id: userId);
 
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Database Database { get; }
 
-        internal virtual Uri LinkUri { get; }
+        internal virtual string LinkUri { get; }
 
         internal virtual CosmosClientContext ClientContext { get; }
 
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.LinkUri.OriginalString,
+               resourceUri: this.LinkUri,
                resourceType: ResourceType.Permission,
                operationType: OperationType.Create,
                cosmosContainerCore: null,
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.LinkUri.OriginalString,
+               resourceUri: this.LinkUri,
                resourceType: ResourceType.Permission,
                operationType: OperationType.Upsert,
                cosmosContainerCore: null,
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
-                linkUri: this.LinkUri.OriginalString,
+                linkUri: this.LinkUri,
                 resourceType: ResourceType.User,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

@@ -42,6 +42,7 @@ namespace Microsoft.Azure.Cosmos
         public RequestMessage(HttpMethod method, Uri requestUri)
         {
             this.Method = method;
+            this.RequestUriString = requestUri?.OriginalString;
             this.InternalRequestUri = requestUri;
             this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }

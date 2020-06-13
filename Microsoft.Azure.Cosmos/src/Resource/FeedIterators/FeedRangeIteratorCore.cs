@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
             cancellationToken.ThrowIfCancellationRequested();
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.containerCore.LinkUri.OriginalString,
+               resourceUri: this.containerCore.LinkUri,
                resourceType: ResourceType.Document,
                operationType: OperationType.ReadFeed,
                requestOptions: this.queryRequestOptions,

@@ -44,13 +44,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(conflict));
             }
 
-            Uri conflictLink = this.clientContext.CreateLink(
-                 parentLink: this.container.LinkUri.OriginalString,
+            string conflictLink = this.clientContext.CreateLink(
+                 parentLink: this.container.LinkUri,
                  uriPathSegment: Paths.ConflictsPathSegment,
                  id: conflict.Id);
 
             return this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: conflictLink.OriginalString,
+                resourceUri: conflictLink,
                 resourceType: ResourceType.Conflict,
                 operationType: OperationType.Delete,
                 requestOptions: null,
@@ -146,23 +146,23 @@ namespace Microsoft.Azure.Cosmos
             string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
             string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
 
-            Uri dbLink = this.clientContext.CreateLink(
+            string dbLink = this.clientContext.CreateLink(
                 parentLink: string.Empty,
                 uriPathSegment: Paths.DatabasesPathSegment,
                 id: databaseResourceId);
 
-            Uri containerLink = this.clientContext.CreateLink(
-                parentLink: dbLink.OriginalString,
+            string containerLink = this.clientContext.CreateLink(
+                parentLink: dbLink,
                 uriPathSegment: Paths.CollectionsPathSegment,
                 id: containerResourceId);
 
-            Uri itemLink = this.clientContext.CreateLink(
-                parentLink: containerLink.OriginalString,
+            string itemLink = this.clientContext.CreateLink(
+                parentLink: containerLink,
                 uriPathSegment: Paths.DocumentsPathSegment,
                 id: cosmosConflict.SourceResourceId);
 
             ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: itemLink.OriginalString,
+                resourceUri: itemLink,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.Read,
                 requestOptions: null,

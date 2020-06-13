@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="uriPathSegment">The URI path segment</param>
         /// <param name="id">The id of the resource</param>
         /// <returns>A resource link in the format of {parentLink}/this.UriPathSegment/this.Name with this.Name being a Uri escaped version</returns>
-        internal override Uri CreateLink(
+        internal override string CreateLink(
             string parentLink,
             string uriPathSegment,
             string id)
@@ -159,6 +159,8 @@ namespace Microsoft.Azure.Cosmos
             this.ThrowIfDisposed();
             int parentLinkLength = parentLink?.Length ?? 0;
             string idUriEscaped = Uri.EscapeUriString(id);
+
+            Debug.Assert(parentLinkLength == 0 || !parentLink.EndsWith("/"));
 
             StringBuilder stringBuilder = new StringBuilder(parentLinkLength + 2 + uriPathSegment.Length + idUriEscaped.Length);
             if (parentLinkLength > 0)
@@ -170,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append(uriPathSegment);
             stringBuilder.Append("/");
             stringBuilder.Append(idUriEscaped);
-            return new Uri(stringBuilder.ToString(), UriKind.Relative);
+            return stringBuilder.ToString();
         }
 
         internal override void ValidateResource(string resourceId)

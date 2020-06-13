@@ -829,7 +829,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 case OperationType.Create:
                 case OperationType.Upsert:
-                    return this.LinkUri.OriginalString;
+                    return this.LinkUri;
 
                 default:
                     return this.ContcatCachedUriWithId(itemId);
@@ -843,9 +843,9 @@ namespace Microsoft.Azure.Cosmos
         private string GetResourceSegmentUriWithoutId()
         {
             // StringBuilder is roughly 2x faster than string.Format
-            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.OriginalString.Length +
+            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.Length +
                                                             Paths.DocumentsPathSegment.Length + 2);
-            stringBuilder.Append(this.LinkUri.OriginalString);
+            stringBuilder.Append(this.LinkUri);
             stringBuilder.Append("/");
             stringBuilder.Append(Paths.DocumentsPathSegment);
             stringBuilder.Append("/");

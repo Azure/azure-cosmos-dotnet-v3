@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.clientContext.ProcessResourceOperationStreamAsync(
                cosmosContainerCore: this.container,
-               resourceUri: this.container.LinkUri.OriginalString,
+               resourceUri: this.container.LinkUri,
                resourceType: Documents.ResourceType.Document,
                operationType: Documents.OperationType.ReadFeed,
                requestOptions: options,

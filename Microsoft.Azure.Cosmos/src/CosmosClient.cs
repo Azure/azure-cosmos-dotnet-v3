@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
     public class CosmosClient : IDisposable
     {
-        private readonly Uri DatabaseRootUri = new Uri(Paths.Databases_Root, UriKind.Relative);
+        private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
 
@@ -852,7 +852,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.DatabaseRootUri.OriginalString,
+                resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
@@ -908,7 +908,7 @@ namespace Microsoft.Azure.Cosmos
                 CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.DatabaseRootUri.OriginalString,
+                resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
