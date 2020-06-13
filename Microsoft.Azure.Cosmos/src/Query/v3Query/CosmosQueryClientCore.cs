@@ -22,10 +22,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
+        private const string QueryExecutionInfoHeader = "x-ms-cosmos-query-execution-info";
+
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal cosmosContainerCore;
         private readonly DocumentClient documentClient;
@@ -317,14 +320,24 @@ namespace Microsoft.Azure.Cosmos
                     resourceType,
                     requestOptions.CosmosSerializationFormatOptions);
 
-                int itemCount = cosmosArray.Count;
+                CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
+                if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+                {
+                    cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
+                }
+                else
+                {
+                    cosmosQueryExecutionInfo = default;
+                }
+
                 return QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
                     requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                     activityId: cosmosResponseMessage.Headers.ActivityId,
                     responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
-                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken);
+                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken,
+                    cosmosQueryExecutionInfo: cosmosQueryExecutionInfo);
             }
         }
 
