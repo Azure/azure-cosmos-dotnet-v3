@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Method = method;
             this.RequestUriString = requestUriString;
-            this.InternalRequestUri = new Uri(requestUriString);
+            this.InternalRequestUri = new Uri(requestUriString, UriKind.Relative);
             this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 
