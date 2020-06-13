@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: storedProcedureId);
 
             return this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
+                resourceUri: linkUri.OriginalString,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ExecuteJavaScript,
                 partitionKey: partitionKey,
@@ -568,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
+                resourceUri: linkUri.OriginalString,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -607,7 +607,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
+                resourceUri: linkUri.OriginalString,
                 resourceType: ResourceType.Trigger,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -619,7 +619,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         private Task<ResponseMessage> ProcessStreamOperationAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Cosmos.PartitionKey? partitionKey,
@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
+                resourceUri: linkUri.OriginalString,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: operationType,
                 requestOptions: requestOptions,

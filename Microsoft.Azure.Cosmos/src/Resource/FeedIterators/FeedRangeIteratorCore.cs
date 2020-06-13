@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                         if (!tryInitializeContainerRId.Succeeded)
                         {
                             CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
-                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUriString: null, diagnosticsContext: diagnostics));
                         }
                     }
 
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                                 return CosmosExceptionFactory.CreateBadRequestException(
                                     message: validateContainer.Exception.InnerException.Message,
                                     innerException: validateContainer.Exception.InnerException,
-                                    diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                                    diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUriString: null, diagnosticsContext: diagnostics));
                             }
                         }
                         else
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
             cancellationToken.ThrowIfCancellationRequested();
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.containerCore.LinkUri,
+               resourceUri: this.containerCore.LinkUri.OriginalString,
                resourceType: ResourceType.Document,
                operationType: OperationType.ReadFeed,
                requestOptions: this.queryRequestOptions,

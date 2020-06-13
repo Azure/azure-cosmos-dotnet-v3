@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -725,7 +726,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
-            Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
+            string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -817,18 +818,18 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
+        private string GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
             if (requestOptions != null && requestOptions.TryGetResourceUri(out Uri resourceUri))
             {
-                return resourceUri;
+                return resourceUri.OriginalString;
             }
 
             switch (operationType)
             {
                 case OperationType.Create:
                 case OperationType.Upsert:
-                    return this.LinkUri;
+                    return this.LinkUri.OriginalString;
 
                 default:
                     return this.ContcatCachedUriWithId(itemId);
@@ -860,9 +861,10 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <remarks>Would be used when creating an <see cref="Attachment"/>, or when replacing or deleting a item in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
-        private Uri ContcatCachedUriWithId(string resourceId)
+        private string ContcatCachedUriWithId(string resourceId)
         {
-            return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+            Debug.Assert(this.cachedUriSegmentWithoutId.EndsWith("/"));
+            return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
         }
     }
 }

@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
-                linkUri: this.LinkUri,
+                linkUri: this.LinkUri.OriginalString,
                 resourceType: ResourceType.Collection,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
            Stream streamPayload,
            OperationType operationType,
-           Uri linkUri,
+           string linkUri,
            ResourceType resourceType,
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))

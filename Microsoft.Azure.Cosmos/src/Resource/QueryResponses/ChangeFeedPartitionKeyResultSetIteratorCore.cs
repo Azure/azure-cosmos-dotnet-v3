@@ -89,10 +89,9 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationStreamAsync(
                cosmosContainerCore: this.container,
-               resourceUri: resourceUri,
+               resourceUri: this.container.LinkUri.OriginalString,
                resourceType: Documents.ResourceType.Document,
                operationType: Documents.OperationType.ReadFeed,
                requestOptions: options,

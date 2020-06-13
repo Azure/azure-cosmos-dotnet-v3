@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.resourceLink,
+               resourceUri: this.resourceLink.OriginalString,
                resourceType: this.resourceType,
                operationType: operation,
                requestOptions: this.requestOptions,

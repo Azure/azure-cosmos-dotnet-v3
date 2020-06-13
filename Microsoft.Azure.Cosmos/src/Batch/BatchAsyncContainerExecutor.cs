@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
                     ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
-                        this.cosmosContainer.LinkUri,
+                        this.cosmosContainer.LinkUri.OriginalString,
                         ResourceType.Document,
                         OperationType.Batch,
                         new RequestOptions(),

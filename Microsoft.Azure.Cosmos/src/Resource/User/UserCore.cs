@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.LinkUri,
+               resourceUri: this.LinkUri.OriginalString,
                resourceType: ResourceType.Permission,
                operationType: OperationType.Create,
                cosmosContainerCore: null,
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.LinkUri,
+               resourceUri: this.LinkUri.OriginalString,
                resourceType: ResourceType.Permission,
                operationType: OperationType.Upsert,
                cosmosContainerCore: null,
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
-                linkUri: this.LinkUri,
+                linkUri: this.LinkUri.OriginalString,
                 resourceType: ResourceType.User,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
            Stream streamPayload,
            OperationType operationType,
-           Uri linkUri,
+           string linkUri,
            ResourceType resourceType,
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))

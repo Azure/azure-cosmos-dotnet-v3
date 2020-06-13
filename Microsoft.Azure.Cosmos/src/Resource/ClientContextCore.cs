@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ThrowIfDisposed();
             return this.RequestHandler.SendAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,

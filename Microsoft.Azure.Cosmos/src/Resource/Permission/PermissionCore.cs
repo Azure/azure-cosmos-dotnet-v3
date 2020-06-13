@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
-                linkUri: this.linkUri,
+                linkUriString: this.linkUri.OriginalString,
                 resourceType: ResourceType.Permission,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
@@ -154,14 +154,14 @@ namespace Microsoft.Azure.Cosmos
         private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
            Stream streamPayload,
            OperationType operationType,
-           Uri linkUri,
+           string linkUriString,
            ResourceType resourceType,
            int? tokenExpiryInSeconds = null,
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.clientContext.ProcessResourceOperationStreamAsync(
-              resourceUri: linkUri,
+              resourceUri: linkUriString,
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,

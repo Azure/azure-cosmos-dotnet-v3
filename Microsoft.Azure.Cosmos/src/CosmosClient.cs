@@ -852,7 +852,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.DatabaseRootUri,
+                resourceUri: this.DatabaseRootUri.OriginalString,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
@@ -908,7 +908,7 @@ namespace Microsoft.Azure.Cosmos
                 CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.DatabaseRootUri,
+                resourceUri: this.DatabaseRootUri.OriginalString,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
