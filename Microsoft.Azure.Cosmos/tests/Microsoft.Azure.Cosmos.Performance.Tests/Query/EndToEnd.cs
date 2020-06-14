@@ -88,7 +88,6 @@
             }
         }
 
-        [Benchmark]
         public async Task ReadFeedBaselineAsync()
         {
             FeedIterator resultIterator = this.container.GetItemQueryStreamIterator(
@@ -108,7 +107,6 @@
             }
         }
 
-        [Benchmark]
         public async Task ChangeFeedBaselineAsync()
         {
             ChangeFeedIteratorCore feedIterator = ((ContainerCore)this.container)
@@ -126,7 +124,6 @@
             }
         }
 
-        [Benchmark]
         [ArgumentsSource(nameof(Data))]
         public Task RunBenchmark(Query query, QueryType queryType, SerializationFormat serializationFormat)
         {

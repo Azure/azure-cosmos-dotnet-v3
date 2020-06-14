@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
 #if false
-        [Benchmark]
         [ArgumentsSource(nameof(Arguments))]
         public void ReaderToWriter(
             CurratedDocsPayload payload,
@@ -67,7 +66,6 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 #endif
 
-        [Benchmark]
         [ArgumentsSource(nameof(NavigatorToWriterArguments))]
         public void NavigatorToWriter(
             CurratedDocsPayload payload,
