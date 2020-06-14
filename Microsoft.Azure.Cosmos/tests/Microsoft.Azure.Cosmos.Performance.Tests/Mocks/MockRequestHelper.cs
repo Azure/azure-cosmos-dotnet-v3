@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
+    using System;
     using System.IO;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
@@ -38,20 +39,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="DocumentServiceResponse"/> instance.</returns>
         public static DocumentServiceResponse GetDocumentServiceResponse(DocumentServiceRequest request)
         {
+            DictionaryNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
+
             if (request.OperationType == OperationType.Read)
             {
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
                     return new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
-                        new DictionaryNameValueCollection(),
+                        headers,
                         System.Net.HttpStatusCode.OK
                     );
                 }
 
                 return new DocumentServiceResponse(
                     Stream.Null,
-                    new DictionaryNameValueCollection(),
+                    headers,
                     System.Net.HttpStatusCode.NotFound
                 );
             }
@@ -62,14 +65,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     return new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
-                        new DictionaryNameValueCollection(),
+                        headers,
                         System.Net.HttpStatusCode.OK
                     );
                 }
 
                 return new DocumentServiceResponse(
                     Stream.Null,
-                    new DictionaryNameValueCollection(),
+                    headers,
                     System.Net.HttpStatusCode.NotFound
                 );
             }
@@ -81,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 return new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
-                        new DictionaryNameValueCollection(),
+                        headers,
                         System.Net.HttpStatusCode.OK
                     );
             }
@@ -91,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 return new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemFeedResponsePayload),
-                        new DictionaryNameValueCollection(),
+                        headers,
                         System.Net.HttpStatusCode.OK
                     );
             }
@@ -106,7 +109,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="StoreResponse"/> instance.</returns>
         public static StoreResponse GetStoreResponse(DocumentServiceRequest request)
         {
-            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+            DictionaryNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
+
             if (request.OperationType == OperationType.Read)
             {
                 headers.Add(WFConstants.BackendHeaders.LSN, "1");
@@ -174,6 +178,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             }
 
             return null;
+        }
+
+        private static DictionaryNameValueCollection GenerateTestHeaders()
+        {
+            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+            for (int i = 0; i < 15; i++)
+            {
+                string random = Guid.NewGuid().ToString();
+                headers[random] = random;
+            }
+
+            return headers;
         }
     }
 }
