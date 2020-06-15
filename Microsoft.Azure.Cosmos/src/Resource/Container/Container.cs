@@ -1073,9 +1073,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        ///  This method creates an iterator to consume a FeedRange's Change Feed.
+        ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
-        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/> or from a previous FeedIterator</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
@@ -1084,7 +1083,13 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
         /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedRanges[0]);
+        ///
+        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+        /// {
+        ///     FeedRange = feedRanges[0]
+        /// }
+        /// 
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1100,7 +1105,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
+        /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1135,9 +1140,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
-        ///  This method creates an iterator to consume a FeedRange's Change Feed.
+        ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
-        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
@@ -1146,7 +1150,13 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
         /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedRanges[0]);
+        ///
+        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+        /// {
+        ///     FeedRange = feedRanges[0]
+        /// }
+        /// 
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(options);
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
@@ -1158,7 +1168,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
+        /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
