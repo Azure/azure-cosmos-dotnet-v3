@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosClient client;
         private readonly ConsistencyLevel? requestedClientConsistencyLevel;
+        private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
         private IReadOnlyCollection<RequestHandler> customHandlers;
@@ -34,6 +35,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
+
+            this.diagnosticsHandler = new DiagnosticsHandler();
+            Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
 
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
@@ -128,6 +132,10 @@ namespace Microsoft.Azure.Cosmos
                     current = current.InnerHandler;
                 }
             }
+
+            Debug.Assert(this.diagnosticsHandler != null, nameof(this.diagnosticsHandler));
+            current.InnerHandler = this.diagnosticsHandler;
+            current = current.InnerHandler;
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;

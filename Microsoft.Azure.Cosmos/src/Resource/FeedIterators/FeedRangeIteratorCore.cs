@@ -6,13 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Runtime.InteropServices;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -46,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // Backward compatible with old format
-                feedRangeInternal = FeedRangeEPK.ForCompleteRange();
+                feedRangeInternal = FeedRangeEPK.ForFullRange();
                 feedRangeContinuation = new FeedRangeCompositeContinuation(
                     string.Empty,
                     feedRangeInternal,
@@ -62,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options);
             }
 
-            feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForCompleteRange();
+            feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForFullRange();
             return new FeedRangeIteratorCore(containerCore, feedRangeInternal, options);
         }
 
