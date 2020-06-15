@@ -101,14 +101,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               clientContext: this.clientContext,
-               this.container.LinkUri,
-               resourceType: ResourceType.Conflict,
-               queryDefinition: queryDefinition,
-               continuationToken: continuationToken,
-               options: requestOptions);
-
+            return FeedRangeIteratorCore.Create(
+                containerCore: this.container,
+                feedRangeInternal: null,
+                continuation: continuationToken,
+                options: requestOptions,
+                resourceType: ResourceType.Conflict);
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
