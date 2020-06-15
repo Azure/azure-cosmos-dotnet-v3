@@ -3,7 +3,14 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
-    internal abstract class SqlPathExpressionVisitor
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract class SqlPathExpressionVisitor
     {
         public abstract void Visit(SqlIdentifierPathExpression sqlObject);
         public abstract void Visit(SqlNumberPathExpression sqlObject);
