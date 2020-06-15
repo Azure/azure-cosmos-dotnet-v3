@@ -74,9 +74,6 @@
             int pageSize,
             CancellationToken cancellationToken)
         {
-            Assert.IsFalse(
-                this.forceQueryPlanGatewayElseServiceInterop && this.QueryPlanCalls == 0,
-                "Query Plan is force gateway mode, but no ExecuteQueryPlanRequestAsync have been called");
             return base.ExecuteItemQueryAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
