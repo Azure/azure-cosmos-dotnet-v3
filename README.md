@@ -11,7 +11,7 @@ This client library enables client applications to connect to Azure Cosmos via t
 Install the Microsoft Azure Cosmos DB .NET SDK V4 with [NuGet][nuget_package]:
 
 ```PowerShell
-dotnet add package Azure.Cosmos --version 1.0.0-preview3
+dotnet add package Azure.Cosmos --version 4.0.0-preview3
 ```
 
 ### Prerequisites
