@@ -2,41 +2,38 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Patch
+namespace Microsoft.Azure.Cosmos
 {
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
-    internal sealed class PatchOperation
+    internal class PatchOperation
     {
-        private const string operationTypePropertyName = "op";
-        private const string pathPropertyName = "path";
-        private const string fromPropertyName = "from";
-        private const string valuePropertyName = "value";
+        private static class PropertyNames
+        {
+            public const string OperationType = "op";
+            public const string Path = "path";
+            public const string From = "from";
+        }
 
-        [JsonProperty(PropertyName = operationTypePropertyName)]
+        [JsonProperty(PropertyName = PropertyNames.OperationType)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public PatchOperationType operationType { get; }
+        public PatchOperationType OperationType { get; }
 
-        [JsonProperty(PropertyName = pathPropertyName)]
-        public string path { get; }
+        [JsonProperty(PropertyName = PropertyNames.Path)]
+        public string Path { get; }
 
-        [JsonProperty(PropertyName = fromPropertyName, NullValueHandling = NullValueHandling.Ignore)]
-        public string from { get; }
-
-        [JsonProperty(PropertyName = valuePropertyName, NullValueHandling = NullValueHandling.Ignore)]
-        public object value { get; }
+        [JsonProperty(PropertyName = PropertyNames.From, NullValueHandling = NullValueHandling.Ignore)]
+        public string From { get; }
 
         public PatchOperation(
             PatchOperationType operationType,
             string path,
-            object value = null,
             string from = null)
         {
-            this.operationType = operationType;
-            this.path = path;
-            this.value = value;
-            this.from = from;
+            this.OperationType = operationType;
+            this.Path = path;
+            this.From = from;
         }
     }
 }

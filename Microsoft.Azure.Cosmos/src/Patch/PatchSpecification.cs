@@ -2,14 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Patch
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Newtonsoft.Json;
 
-    [JsonConverter(typeof(PatchSpecificationConverter))]
 #if PREVIEW
     public
 #else
@@ -19,24 +18,25 @@ namespace Microsoft.Azure.Cosmos.Patch
     {
         private const int maxOperationsAllowed = 100;
 
-        public List<PatchOperation> operations { get; private set; }
+        [JsonProperty(PropertyName = "operations")]
+        internal List<PatchOperation> Operations { get; }
 
         public PatchSpecification()
         {
-            this.operations = new List<PatchOperation>();
+            this.Operations = new List<PatchOperation>();
         }
 
-        public PatchSpecification Add(
+        public PatchSpecification Add<T>(
             string path,
-            object value)
+            T value)
         {
             this.ValidateNumberOfOperations();
-            this.ValidatePathArguement(path);
-            this.ValidateValueArguement(value);
+            this.ValidatePathArgument(path);
+            this.ValidateValueArgument(value);
 
-            this.operations.Add(
-                new PatchOperation(
-                    PatchOperationType.add,
+            this.Operations.Add(
+                new PatchOperation<T>(
+                    PatchOperationType.Add,
                     path,
                     value));
 
@@ -46,51 +46,51 @@ namespace Microsoft.Azure.Cosmos.Patch
         public PatchSpecification Remove(string path)
         {
             this.ValidateNumberOfOperations();
-            this.ValidatePathArguement(path);
+            this.ValidatePathArgument(path);
 
-            this.operations.Add(
+            this.Operations.Add(
                 new PatchOperation(
-                    PatchOperationType.remove,
+                    PatchOperationType.Remove,
                     path));
 
             return this;
         }
 
-        public PatchSpecification Replace(
+        public PatchSpecification Replace<T>(
             string path,
-            object value)
+            T value)
         {
             this.ValidateNumberOfOperations();
-            this.ValidatePathArguement(path);
-            this.ValidateValueArguement(value);
+            this.ValidatePathArgument(path);
+            this.ValidateValueArgument(value);
 
-            this.operations.Add(
-                new PatchOperation(
-                    PatchOperationType.replace,
+            this.Operations.Add(
+                new PatchOperation<T>(
+                    PatchOperationType.Replace,
                     path,
                     value));
 
             return this;
         }
 
-        public PatchSpecification Set(
+        public PatchSpecification Set<T>(
             string path,
-            object value)
+            T value)
         {
             this.ValidateNumberOfOperations();
-            this.ValidatePathArguement(path);
-            this.ValidateValueArguement(value);
+            this.ValidatePathArgument(path);
+            this.ValidateValueArgument(value);
 
-            this.operations.Add(
-                new PatchOperation(
-                    PatchOperationType.set,
+            this.Operations.Add(
+                new PatchOperation<T>(
+                    PatchOperationType.Set,
                     path,
                     value));
 
             return this;
         }
 
-        private void ValidatePathArguement(string path)
+        private void ValidatePathArgument(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Patch
             }
         }
 
-        private void ValidateValueArguement(object value)
+        private void ValidateValueArgument(object value)
         {
             if (value == null)
             {
@@ -108,10 +108,10 @@ namespace Microsoft.Azure.Cosmos.Patch
 
         private void ValidateNumberOfOperations()
         {
-            if (this.operations.Count == maxOperationsAllowed)
+            if (this.Operations.Count == maxOperationsAllowed)
             {
                 throw CosmosExceptionFactory.CreateBadRequestException(
-                    $"Maximum number of operations allowed per PatchSpecification is {maxOperationsAllowed}.");
+                    $"Maximum number of operations allowed per {nameof(PatchSpecification)} is {maxOperationsAllowed}.");
             }
         }
     }

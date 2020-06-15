@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected TestDoc TestDocPk1ExistingB { get; set; }
         protected TestDoc TestDocPk1ExistingC { get; set; }
         protected TestDoc TestDocPk1ExistingD { get; set; }
+        protected TestDoc TestDocPk1ExistingE { get; set; }
 
         public static void ClassInit(TestContext context)
         {

@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -878,7 +877,7 @@ namespace Microsoft.Azure.Cosmos
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
-            if (id == null)
+            if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentNullException(nameof(id));
             }
@@ -902,12 +901,48 @@ namespace Microsoft.Azure.Cosmos
                     patchSpecificationStream = this.ClientContext.SerializerCore.ToStream<PatchSpecification>(patchSpecification);
                 }
 
+                ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                    patchSpecificationStream,
+                    id,
+                    partitionKey,
+                    requestOptions,
+                    cancellationToken);
+
+                return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+            }
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override async Task<ResponseMessage> PatchItemStreamAsync(
+                Stream streamPayload,
+                string id,
+                PartitionKey partitionKey,
+                ItemRequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.GetOverallScope())
+            {
                 Uri resourceUri = this.GetResourceUri(
                     requestOptions,
                     OperationType.Patch,
                     id);
 
-                ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+                return await this.ClientContext.ProcessResourceOperationStreamAsync(
                     resourceUri: resourceUri,
                     resourceType: ResourceType.Document,
                     operationType: OperationType.Patch,
@@ -915,15 +950,14 @@ namespace Microsoft.Azure.Cosmos
                     cosmosContainerCore: this,
                     partitionKey: partitionKey,
                     itemId: id,
-                    streamPayload: patchSpecificationStream,
+                    streamPayload: streamPayload,
                     requestEnricher: (requestMessage) =>
                     {
+                        // TODO: Use constant from Direct package
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, "application/json-patch+json");
                     },
                     diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);
-
-                return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
             }
         }
     }

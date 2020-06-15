@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
@@ -346,6 +345,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task PatchItemStream_WithBulk()
+        {
+            List<MyDocument> createdDocuments = new List<MyDocument>();
+            // Create the items
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 100; i++)
+            {
+                MyDocument createdDocument = CreateItem(i.ToString());
+                createdDocuments.Add(createdDocument);
+                tasks.Add(ExecuteCreateStreamAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(tasks);
+
+            PatchSpecification patch = new PatchSpecification().Add("/description", "patched");
+            List<Task<ResponseMessage>> PatchTasks = new List<Task<ResponseMessage>>();
+            // Patch the items
+            foreach (MyDocument createdDocument in createdDocuments)
+            {
+                PatchTasks.Add(ExecutePatchStreamAsync(this.container, createdDocument, patch));
+            }
+
+            await Task.WhenAll(PatchTasks);
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ResponseMessage> task = PatchTasks[i];
+                ResponseMessage result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
         public async Task PatchItem_WithBulk()
         {
             List<MyDocument> createdDocuments = new List<MyDocument>();
@@ -473,6 +506,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static Task<ResponseMessage> ExecuteReplaceStreamAsync(Container container, MyDocument item)
         {
             return container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(item), item.id, new PartitionKey(item.Status));
+        }
+
+        private static Task<ResponseMessage> ExecutePatchStreamAsync(Container container, MyDocument item, PatchSpecification patch)
+        {
+            return container.PatchItemStreamAsync(TestCommon.SerializerCore.ToStream(patch), item.id, new PartitionKey(item.Status));
         }
 
         private static Task<ResponseMessage> ExecuteDeleteStreamAsync(Container container, MyDocument item)

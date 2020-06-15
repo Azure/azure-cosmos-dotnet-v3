@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public RequestInvokerHandler(
             CosmosClient client,
@@ -211,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             else if (operationType == OperationType.Patch)
             {
                 // There isn't support for PATCH method in .NetStandard 2.0
-                return new HttpMethod("PATCH");
+                return httpPatchMethod;
             }
             else
             {

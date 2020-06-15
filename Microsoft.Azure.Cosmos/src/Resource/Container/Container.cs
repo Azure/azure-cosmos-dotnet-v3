@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.Azure.Cosmos.Query;
 
     /// <summary>
@@ -641,6 +640,63 @@ namespace Microsoft.Azure.Cosmos
         /// The item's partition key value is immutable. 
         /// To change an item's partition key value you must delete the original item and insert a new item.
         /// </remarks>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the PatchSpecification payload.</param>
+        /// <param name="id">The Cosmos item id</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the replace resource record.
+        /// </returns>
+        /// <remarks>
+        /// The Stream operation only throws on client side exceptions. 
+        /// This is to increase performance and prevent the overhead of throwing exceptions. 
+        /// Check the HTTP status code on the response to check if the operation failed.
+        /// </remarks>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
+        /// <example>
+        /// Patch an item in Cosmos
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using(ResponseMessage response = await this.container.PatchItemStreamAsync(stream, "itemId", new PartitionKey("itemPartitionKey"))
+        /// {
+        ///     if (!response.IsSuccessStatusCode)
+        ///     {
+        ///         //Handle and log exception
+        ///         return;
+        ///     }
+        ///     
+        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     {
+        ///         //Read or do other operations with the stream
+        ///         using (StreamReader streamReader = new StreamReader(stream))
+        ///         {
+        ///             string content =  streamReader.ReadToEndAsync();
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            abstract Task<ResponseMessage> PatchItemStreamAsync(
+                Stream streamPayload,
+                string id,
+                PartitionKey partitionKey,
+                ItemRequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Patches an item in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <remarks>
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// </remarks>
         /// <param name="id">The Cosmos item id of the item to be patched.</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
         /// <param name="patchSpecification">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
@@ -649,33 +705,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ItemResponse{T}"/> which wraps the updated resource record.
         /// </returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="id"/>, <paramref name="partitionKey"/> or <paramref name="patchSpecification"/> is not set.</exception>
-        /// <exception cref="CosmosException">
-        /// This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property.
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>400</term><description>BadRequest due to a malformed <paramref name="patchSpecification"/>.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>404</term><description>Resource (Cosmos item referred to) not found.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>412</term><description>When the specified If-Match precondition fails.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the item exceeds the current max entity size. Consult documentation for limits.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>422</term><description>The patch document is valid, but the server is incapable of processing the request.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -685,19 +715,13 @@ namespace Microsoft.Azure.Cosmos
         ///     public string description {get; set;}
         /// }
         /// 
-        /// ToDoActivity test = new ToDoActivity()
-        /// {
-        ///    id = Guid.NewGuid().ToString(),
-        ///    status = "InProgress",
-        ///    description = "Test"
-        /// };
+        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
         ///
         /// PatchSpecification patchSpecification = new PatchSpecification()
         ///                                             .Add("/foo", "bar")
-        ///                                             .Remove("/description")
-        ///                                             .Replace("/status", "Done");
+        ///                                             .Remove("/description");
         ///                                 
-        /// ItemResponse item = await this.container.PatchItemAsync<ToDoActivity>(test.id, new PartitionKey(test.status), patchSpecification);
+        /// ItemResponse item = await this.container.PatchItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchSpecification);
         /// ]]>
         /// </code>
         /// </example>

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Patch;
 
     /// <summary>
     /// Represents a batch of operations against items with the same <see cref="PartitionKey"/> in a container that
@@ -194,6 +193,26 @@ namespace Microsoft.Azure.Cosmos
         public abstract TransactionalBatch DeleteItem(
             string id,
             TransactionalBatchItemRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Adds an operation to patch an item into the batch.
+        /// </summary>
+        /// <param name="id">The unique id of the item.</param>
+        /// <param name="streamPayload">
+        /// A Stream containing the <see cref="PatchSpecification"/> payload for the item.
+        /// The stream must have a UTF-8 encoded JSON object which contains an id property.
+        /// </param>
+        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <returns>The transactional batch instance with the operation added.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            abstract TransactionalBatch PatchItemStream(
+                string id,
+                Stream streamPayload,
+                TransactionalBatchItemRequestOptions requestOptions = null);
 
         /// <summary>
         /// Adds an operation to patch an item into the batch.

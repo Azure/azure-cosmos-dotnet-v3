@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.Azure.Documents;
 
     internal class BatchCore : TransactionalBatch
@@ -237,11 +236,26 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="patchStream">A <see cref="Stream"/> containing the patch specification.</param>
         /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
-        public virtual TransactionalBatch PatchItemStream(
-            string id,
-            Stream patchStream,
-            TransactionalBatchItemRequestOptions requestOptions = null)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override TransactionalBatch PatchItemStream(
+                string id,
+                Stream patchStream,
+                TransactionalBatchItemRequestOptions requestOptions = null)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (patchStream == null)
+            {
+                throw new ArgumentNullException(nameof(patchStream));
+            }
+
             this.operations.Add(new ItemBatchOperation(
                     operationType: OperationType.Patch,
                     operationIndex: this.operations.Count,

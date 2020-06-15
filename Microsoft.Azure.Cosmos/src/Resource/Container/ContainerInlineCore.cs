@@ -187,6 +187,36 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteItemAsync<T>(id, partitionKey, requestOptions, cancellationToken));
         }
 
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override Task<ResponseMessage> PatchItemStreamAsync(
+                Stream streamPayload,
+                string id,
+                PartitionKey partitionKey,
+                ItemRequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => base.PatchItemStreamAsync(streamPayload, id, partitionKey, requestOptions, cancellationToken));
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override Task<ItemResponse<T>> PatchItemAsync<T>(
+                string id,
+                PartitionKey partitionKey,
+                PatchSpecification patchSpecification,
+                ItemRequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => base.PatchItemAsync<T>(id, partitionKey, patchSpecification, requestOptions, cancellationToken));
+        }
+
         public override FeedIterator GetItemQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,

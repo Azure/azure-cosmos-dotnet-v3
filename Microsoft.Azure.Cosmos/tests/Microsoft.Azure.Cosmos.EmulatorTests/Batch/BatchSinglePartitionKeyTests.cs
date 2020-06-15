@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Patch;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -385,10 +384,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         BatchTestBase.GetId(this.TestDocPk1ExistingD, isSchematized),
                         BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized));
 
-                batchResponse = await batch.ExecuteAsync(batchOptions);
+                if (!isSchematized)
+                {
+                    batch = (BatchCore) batch.PatchItemStream(
+                        BatchTestBase.GetId(testDocToPatch, isSchematized),
+                        TestCommon.SerializerCore.ToStream<PatchSpecification>(patchSpecification),
+                        BatchTestBase.GetBatchItemRequestOptions(testDocToPatch, isSchematized: false));
+                }
 
-                BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 6);
+                batchResponse = await batch.ExecuteAsync(batchOptions);
             }
+
+            BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: isSchematized ? 6 :7);
 
             Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
             Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
@@ -400,13 +407,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (!isStream)
             {
                 Assert.AreEqual(this.TestDocPk1ExistingC, batchResponse.GetOperationResultAtIndex<TestDoc>(1).Resource);
-                Assert.AreEqual(HttpStatusCode.OK, batchResponse[6].StatusCode);
-                testDocToPatch.Cost = testDocToPatch.Cost + 1;
-                await BatchTestBase.VerifyByReadAsync(container, testDocToPatch, isStream, isSchematized, useEpk);
             }
             else
             {
                 Assert.AreEqual(this.TestDocPk1ExistingC, BatchTestBase.StreamToTestDoc(batchResponse[1].ResourceStream, isSchematized));
+            }
+
+            if (!isSchematized)
+            {
+                Assert.AreEqual(HttpStatusCode.OK, batchResponse[6].StatusCode);
+                testDocToPatch.Cost = testDocToPatch.Cost + 1;
+                await BatchTestBase.VerifyByReadAsync(container, testDocToPatch, isStream, isSchematized, useEpk);
             }
 
             await BatchTestBase.VerifyByReadAsync(container, testDocToCreate, isStream, isSchematized, useEpk);
