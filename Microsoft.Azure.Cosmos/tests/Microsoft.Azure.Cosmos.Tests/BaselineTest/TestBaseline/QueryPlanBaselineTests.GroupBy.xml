@@ -1,0 +1,552 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>non simple aggregate</Description>
+      <Query>
+                SELECT c.name, ABS(AVG(c.age)) as abs_avg_age
+                FROM c
+                GROUP BY c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT * single</Description>
+      <Query>
+                SELECT *
+                FROM c
+                GROUP BY c.age</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT * multi</Description>
+      <Query>
+                SELECT *
+                FROM c
+                GROUP BY c.age, c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. ---&gt; Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException: {"errors":[{"severity":"Error","location":{"start":25,"end":26},"code":"SC2040","message":"'SELECT *' is only valid with a single input set."}]} ---&gt; System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x800A0B00
+   --- End of inner exception stack trace ---
+   --- End of inner exception stack trace ---
+   at Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPartitionProvider.TryGetPartitionedQueryExecutionInfoInternal(SqlQuerySpec querySpec, PartitionKeyDefinition partitionKeyDefinition, Boolean requireFormattableOrderByQuery, Boolean isContinuationExpected, Boolean allowNonValueAggregateQuery, Boolean hasLogicalPartitionKey)
+   at Microsoft.Azure.Cosmos.Tests.Query.QueryPlanBaselineTests.ExecuteTest(QueryPlanBaselineTestInput input)
+   at Microsoft.Azure.Cosmos.Test.BaselineTest.BaselineTests`2.ExecuteTestSuite(IEnumerable`1 inputs, String testSuiteName)
+   at Microsoft.Azure.Cosmos.Tests.Query.QueryPlanBaselineTests.GroupBy()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Object[] arguments, Signature sig, Boolean constructor, Boolean wrapExceptions)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Extensions.MethodInfoExtensions.InvokeAsSynchronousTask(MethodInfo methodInfo, Object classInstance, Object[] parameters)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternal(Object[] arguments)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.Invoke(Object[] arguments)
+   at Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute.Execute(ITestMethod testMethod)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.RunTestMethod()
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.Execute()
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.UnitTestRunner.RunSingleTest(TestMethod testMethod, IDictionary`2 testRunParameters)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsWithTestRunner(IEnumerable`1 tests, IRunContext runContext, ITestExecutionRecorder testExecutionRecorder, String source, UnitTestRunner testRunner)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsInSource(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, String source, Boolean isDeploymentDone)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, Boolean isDeploymentDone)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, TestRunCancellationToken runCancellationToken)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.MSTestExecutor.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestInternalWithExecutors(IEnumerable`1 executorUriExtensionMap, Int64 totalTests)
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestsInternal()
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTests()
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.ExecutionManager.StartTestRun(IEnumerable`1 tests, String package, String runSettings, TestExecutionContext testExecutionContext, ITestCaseEventsHandler testCaseEventsHandler, ITestRunEventsHandler runEventsHandler)
+   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.TestRequestHandler.&lt;&gt;c__DisplayClass30_4.&lt;OnMessageReceived&gt;b__4()
+   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.SafeProcessJob(T job)
+   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.BackgroundJobProcessor()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task&amp; currentTaskSlot)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT VALUE</Description>
+      <Query>
+                SELECT VALUE c.age
+                FROM c
+                GROUP BY c.age</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT VALUE object create</Description>
+      <Query>
+                SELECT VALUE {"age": c.age}
+                FROM c
+                GROUP BY {"age": c.age}</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Simple GROUP BY with no aggregates</Description>
+      <Query>
+                SELECT c.age, c.name
+                FROM c
+                GROUP BY c.age, c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>GROUP BY with aggregates</Description>
+      <Query>
+                SELECT c.team, c.name, COUNT(1) AS count, AVG(c.age) AS avg_age, MIN(c.age) AS min_age, MAX(c.age) AS max_age 
+                FROM c
+                GROUP BY c.team, c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>GROUP BY arbitrary scalar expressions</Description>
+      <Query>
+                SELECT UPPER(c.name) AS name, SUBSTRING(c.address.city, 0, 3) AS city, Avg(c.income) AS income
+                FROM c
+                GROUP BY UPPER(c.name), SUBSTRING(c.address.city, 0, 3)</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>GROUP BY in subquery</Description>
+      <Query>
+                SELECT c.name, s 
+                FROM c
+                JOIN (
+                    SELECT VALUE score
+                    FROM score IN c.scores
+                    GROUP BY score
+                ) s</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>GROUP BY in both subquery and outer query</Description>
+      <Query>
+                SELECT c.name, s.score, s.repeat, Count(1) AS count
+                FROM c
+                JOIN (
+                    SELECT score, Count(1) AS repeat
+                    FROM score IN c.scores
+                    GROUP BY score
+                ) s
+                GROUP BY c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. ---&gt; Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException: {"errors":[{"severity":"Error","location":{"start":33,"end":40},"code":"SC2102","message":"Property reference 's.score' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."},{"severity":"Error","location":{"start":42,"end":50},"code":"SC2102","message":"Property reference 's.repeat' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]} ---&gt; System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x800A0B00
+   --- End of inner exception stack trace ---
+   --- End of inner exception stack trace ---
+   at Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPartitionProvider.TryGetPartitionedQueryExecutionInfoInternal(SqlQuerySpec querySpec, PartitionKeyDefinition partitionKeyDefinition, Boolean requireFormattableOrderByQuery, Boolean isContinuationExpected, Boolean allowNonValueAggregateQuery, Boolean hasLogicalPartitionKey)
+   at Microsoft.Azure.Cosmos.Tests.Query.QueryPlanBaselineTests.ExecuteTest(QueryPlanBaselineTestInput input)
+   at Microsoft.Azure.Cosmos.Test.BaselineTest.BaselineTests`2.ExecuteTestSuite(IEnumerable`1 inputs, String testSuiteName)
+   at Microsoft.Azure.Cosmos.Tests.Query.QueryPlanBaselineTests.GroupBy()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Object[] arguments, Signature sig, Boolean constructor, Boolean wrapExceptions)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Extensions.MethodInfoExtensions.InvokeAsSynchronousTask(MethodInfo methodInfo, Object classInstance, Object[] parameters)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternal(Object[] arguments)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.Invoke(Object[] arguments)
+   at Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute.Execute(ITestMethod testMethod)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.RunTestMethod()
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.Execute()
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.UnitTestRunner.RunSingleTest(TestMethod testMethod, IDictionary`2 testRunParameters)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsWithTestRunner(IEnumerable`1 tests, IRunContext runContext, ITestExecutionRecorder testExecutionRecorder, String source, UnitTestRunner testRunner)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsInSource(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, String source, Boolean isDeploymentDone)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, Boolean isDeploymentDone)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, TestRunCancellationToken runCancellationToken)
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.MSTestExecutor.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestInternalWithExecutors(IEnumerable`1 executorUriExtensionMap, Int64 totalTests)
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestsInternal()
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTests()
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.ExecutionManager.StartTestRun(IEnumerable`1 tests, String package, String runSettings, TestExecutionContext testExecutionContext, ITestCaseEventsHandler testCaseEventsHandler, ITestRunEventsHandler runEventsHandler)
+   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.TestRequestHandler.&lt;&gt;c__DisplayClass30_4.&lt;OnMessageReceived&gt;b__4()
+   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.SafeProcessJob(T job)
+   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.BackgroundJobProcessor()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task&amp; currentTaskSlot)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>GROUP BY in multiple subqueries and outer query</Description>
+      <Query>
+                SELECT info, Count(1) AS count, g.name AS group_name
+                FROM c
+                JOIN (SELECT VALUE s FROM s IN c.scores GROUP BY s) s
+                JOIN (
+                    SELECT s1 AS score, Avg(s1) AS avg_score, g1.name AS group_name
+                    FROM s1 IN c.scores
+                    JOIN g1 IN c.groups
+                    GROUP BY s1, g1
+                ) info
+                JOIN (SELECT VALUE g FROM g IN c.groups GROUP BY g) g
+                WHERE info.group_name = g.name
+                GROUP BY info, g.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Non property reference without an alias</Description>
+      <Query>
+                SELECT c.name, UPPER(c.name)
+                FROM c
+                GROUP BY c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Aggregate without an alias</Description>
+      <Query>
+                SELECT c.name, AVG(c.age)
+                FROM c
+                GROUP BY c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Aggregate not in select list spec</Description>
+      <Query>
+                SELECT VALUE AVG(c.age)
+                FROM c
+                GROUP BY c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Interleaved projection types</Description>
+      <Query>
+                SELECT c.team, COUNT(1) AS count, c.name, AVG(c.age) AS avg_age, MIN(c.age), MAX(c.age) AS max_age, MAX(c.age)
+                FROM c
+                GROUP BY c.team, c.name</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+</Results>
