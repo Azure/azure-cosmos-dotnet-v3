@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             this.StartUtc = DateTime.UtcNow;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
             this.Diagnostics = new CosmosDiagnosticsCore(this);
-            this.overallScope = new CosmosDiagnosticScope("Overall");
+            this.overallScope = new CosmosDiagnosticScope("Overall", () => this.ContextList.LastOrDefault());
         }
 
         public override DateTime StartUtc { get; }
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDisposable CreateScope(string name)
         {
-            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
+            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name, () => this.ContextList.LastOrDefault());
 
             this.ContextList.Add(scope);
             return scope;
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
-            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
+            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler, () => this.ContextList.LastOrDefault());
             this.ContextList.Add(requestHandlerScope);
             return requestHandlerScope;
         }

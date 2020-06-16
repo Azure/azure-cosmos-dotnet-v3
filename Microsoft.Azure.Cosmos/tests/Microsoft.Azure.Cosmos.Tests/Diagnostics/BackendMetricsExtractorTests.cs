@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
             diagnosticsContext: default(CosmosDiagnosticsContext));
 
-        private static readonly CosmosDiagnosticScope MockCosmosDiagnosticScope = new CosmosDiagnosticScope(name: "asdf");
+        private static readonly CosmosDiagnosticScope MockCosmosDiagnosticScope = new CosmosDiagnosticScope(name: "asdf", () => null);
 
         private static readonly CosmosDiagnosticsContext MockCosmosDiagnosticsContext = new CosmosDiagnosticsContextCore();
 

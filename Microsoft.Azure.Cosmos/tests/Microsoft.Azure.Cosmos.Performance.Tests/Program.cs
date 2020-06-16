@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
     using BenchmarkDotNet.Running;
+    using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
 
     class Program
     {
@@ -14,10 +15,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             //CosmosDBConfiguration environmentConfiguration = ConfigurationService.Configuration;
             //Console.WriteLine($"Starting benchmark and dropping results on {environmentConfiguration.ReportsPath}.");
             //BenchmarkRunner.Run<ItemBenchmark>(new CustomBenchmarkConfiguration(environmentConfiguration));
-
-            BenchmarkSwitcher
-                .FromAssembly(typeof(Program).Assembly)
-                .Run(args);
+            BenchmarkRunner.Run<DiagnosticBenchmark>();
+            //BenchmarkSwitcher
+            //    .FromAssembly(typeof(Program).Assembly)
+            //    .Run(args);
         }
     }
 }

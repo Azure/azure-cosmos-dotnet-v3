@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class EmptyCosmosDiagnosticsContext : CosmosDiagnosticsContext
     {
         private static readonly IReadOnlyList<CosmosDiagnosticsInternal> EmptyList = new List<CosmosDiagnosticsInternal>();
-        private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope");
+        private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope", () => null);
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
 
         private static readonly DateTime DefaultStartUtc = DateTime.MinValue;

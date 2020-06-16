@@ -10,9 +10,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     internal sealed class RequestHandlerScope : CosmosDiagnosticsInternal, IDisposable
     {
         private readonly Stopwatch ElapsedTimeStopWatch;
-        private bool isDisposed = false;
+        private readonly Func<CosmosDiagnosticsInternal> GetLastContextObject;
 
-        public RequestHandlerScope(RequestHandler handler)
+        private bool isDisposed = false;
+        private CosmosDiagnosticsInternal lastNestedDiagnosticsObject = null;
+
+        public RequestHandlerScope(
+            RequestHandler handler,
+            Func<CosmosDiagnosticsInternal> getLastContextObject)
         {
             if (handler == null)
             {
@@ -21,9 +26,22 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             this.Id = handler.GetType().FullName;
             this.ElapsedTimeStopWatch = Stopwatch.StartNew();
+            this.GetLastContextObject = getLastContextObject;
         }
 
         public string Id { get; }
+
+        public bool TryGetEndDiagnosticContextObject(out CosmosDiagnosticsInternal lastDiagnosticNestedObject)
+        {
+            if (this.lastNestedDiagnosticsObject == null)
+            {
+                lastDiagnosticNestedObject = null;
+                return false;
+            }
+
+            lastDiagnosticNestedObject = this.lastNestedDiagnosticsObject;
+            return true;
+        }
 
         public bool TryGetTotalElapsedTime(out TimeSpan elapsedTime)
         {
@@ -53,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return;
             }
 
+            this.lastNestedDiagnosticsObject = this.GetLastContextObject();
             this.ElapsedTimeStopWatch.Stop();
             this.isDisposed = true;
         }
