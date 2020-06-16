@@ -4379,6 +4379,18 @@
           ],
           "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableScanInQuery()"
         },
+        "System.Nullable`1[System.Boolean] get_TryFillPageFully()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_TryFillPageFully()"
+        },
+        "System.Nullable`1[System.Boolean] TryFillPageFully": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.Nullable`1[System.Int32] get_MaxBufferedItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -4504,6 +4516,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_SessionToken(System.String)"
+        },
+        "Void set_TryFillPageFully(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_TryFillPageFully(System.Nullable`1[System.Boolean])"
         }
       },
       "NestedTypes": {}
@@ -5118,6 +5137,18 @@
               ],
               "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableScanInQuery()"
             },
+            "System.Nullable`1[System.Boolean] get_TryFillPageFully()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_TryFillPageFully()"
+            },
+            "System.Nullable`1[System.Boolean] TryFillPageFully": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
             "System.Nullable`1[System.Int32] get_MaxBufferedItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
@@ -5243,6 +5274,13 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_SessionToken(System.String)"
+            },
+            "Void set_TryFillPageFully(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_TryFillPageFully(System.Nullable`1[System.Boolean])"
             }
           },
           "NestedTypes": {}
