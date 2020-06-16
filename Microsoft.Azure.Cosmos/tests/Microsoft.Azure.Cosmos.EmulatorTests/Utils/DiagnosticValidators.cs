@@ -356,7 +356,6 @@ namespace Microsoft.Azure.Cosmos
             private HttpStatusCode? StatusCode = null;
             private bool containsFailures = false;
             private bool isContextVisited = false;
-            private bool isRequestHandlerScopeVisited = false;
             private bool isStoreResponseStatisticsVisited = false;
             private bool isCosmosClientSideRequestStatisticsVisited = false;
             private bool isPointOperationStatisticsVisited = false;
@@ -392,7 +391,6 @@ namespace Microsoft.Azure.Cosmos
             public override void Visit(RequestHandlerScope requestHandlerScope)
             {
                 Assert.IsTrue(this.isContextVisited);
-                this.isRequestHandlerScopeVisited = true;
                 DiagnosticValidator.ValidateRequestHandlerScope(requestHandlerScope, this.TotalElapsedTime);
             }
 
@@ -442,7 +440,6 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsTrue(this.isContextVisited);
                 Assert.IsNotNull(this.StartTimeUtc);
                 Assert.IsNotNull(this.TotalElapsedTime);
-                Assert.IsTrue(this.isRequestHandlerScopeVisited);
 
                 // If HA layer throws DocumentClientException then it will be recorded as a PointOperationStatistics object. 
                 if (!this.containsFailures)

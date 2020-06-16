@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json;
@@ -16,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     {
         private const string DiagnosticsVersion = "3";
         private readonly JsonWriter jsonWriter;
-        private IEnumerator<CosmosDiagnosticsInternal> diagnosticsInternalsEnumerator = null;
 
         public CosmosDiagnosticsSerializerVisitor(TextWriter textWriter)
         {
@@ -99,15 +99,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("Context");
             this.jsonWriter.WriteStartArray();
 
-            IEnumerator<CosmosDiagnosticsInternal> previous = this.diagnosticsInternalsEnumerator;
-            this.diagnosticsInternalsEnumerator = cosmosDiagnosticsContext.GetEnumerator();
-            while (this.diagnosticsInternalsEnumerator.MoveNext())
+            foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in cosmosDiagnosticsContext)
             {
-                CosmosDiagnosticsInternal cosmosDiagnosticsInternal = this.diagnosticsInternalsEnumerator.Current;
                 cosmosDiagnosticsInternal.Accept(this);
             }
-
-            this.diagnosticsInternalsEnumerator = previous;
 
             this.jsonWriter.WriteEndArray();
 
@@ -132,16 +127,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             this.jsonWriter.WriteValue(cosmosDiagnosticScope.GetElapsedTime().TotalMilliseconds);
 
-            if (cosmosDiagnosticScope.TryGetEndDiagnosticContextObject(out CosmosDiagnosticsInternal diagnosticsInternal)
-                && diagnosticsInternal != null
-                && !object.ReferenceEquals(cosmosDiagnosticScope, diagnosticsInternal))
+            if (cosmosDiagnosticScope.Any())
             {
-                this.jsonWriter.WritePropertyName("Args");
+                this.jsonWriter.WritePropertyName("Inner");
                 this.jsonWriter.WriteStartArray();
-                while (this.diagnosticsInternalsEnumerator.MoveNext() &&
-                    !object.ReferenceEquals(cosmosDiagnosticScope, diagnosticsInternal))
+                foreach (CosmosDiagnosticsInternal innerDiagnostics in cosmosDiagnosticScope)
                 {
-                    CosmosDiagnosticsInternal cosmosDiagnosticsInternal = this.diagnosticsInternalsEnumerator.Current;
+                    CosmosDiagnosticsInternal cosmosDiagnosticsInternal = innerDiagnostics;
                     cosmosDiagnosticsInternal.Accept(this);
                 }
 
@@ -299,23 +291,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             {
                 this.jsonWriter.WritePropertyName("HandlerRunningElapsedTimeInMs");
                 this.jsonWriter.WriteValue(requestHandlerScope.GetCurrentElapsedTime());
-            }
-
-            if (this.diagnosticsInternalsEnumerator != null
-                && requestHandlerScope.TryGetEndDiagnosticContextObject(out CosmosDiagnosticsInternal diagnosticsInternal)
-                && diagnosticsInternal != null
-                && !object.ReferenceEquals(requestHandlerScope, diagnosticsInternal))
-            {
-                this.jsonWriter.WritePropertyName("Args");
-                this.jsonWriter.WriteStartArray();
-                while (this.diagnosticsInternalsEnumerator.MoveNext() &&
-                    !object.ReferenceEquals(requestHandlerScope, diagnosticsInternal))
-                {
-                    CosmosDiagnosticsInternal cosmosDiagnosticsInternal = this.diagnosticsInternalsEnumerator.Current;
-                    cosmosDiagnosticsInternal.Accept(this);
-                }
-
-                this.jsonWriter.WriteEndArray();
             }
 
             this.jsonWriter.WriteEndObject();

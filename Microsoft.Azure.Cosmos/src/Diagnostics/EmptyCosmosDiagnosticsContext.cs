@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class EmptyCosmosDiagnosticsContext : CosmosDiagnosticsContext
     {
         private static readonly IReadOnlyList<CosmosDiagnosticsInternal> EmptyList = new List<CosmosDiagnosticsInternal>();
-        private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope", () => null);
+        private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope", EmptyCosmosDiagnosticsContext.NoOp);
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
 
         private static readonly DateTime DefaultStartUtc = DateTime.MinValue;
@@ -108,6 +108,10 @@ namespace Microsoft.Azure.Cosmos
         internal override bool IsComplete()
         {
             return true;
+        }
+
+        private static void NoOp()
+        {
         }
     }
 }

@@ -19,11 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class CosmosDiagnosticsContextCore : CosmosDiagnosticsContext
     {
-        /// <summary>
-        /// Detailed view of all the operations.
-        /// </summary>
-        private List<CosmosDiagnosticsInternal> ContextList { get; }
-
+        private readonly Stack<CosmosDiagnosticScope> CurrentScope;
         private static readonly string DefaultUserAgentString;
 
         private readonly CosmosDiagnosticScope overallScope;
@@ -40,9 +36,10 @@ namespace Microsoft.Azure.Cosmos
         public CosmosDiagnosticsContextCore()
         {
             this.StartUtc = DateTime.UtcNow;
-            this.ContextList = new List<CosmosDiagnosticsInternal>();
+            this.CurrentScope = new Stack<CosmosDiagnosticScope>();
             this.Diagnostics = new CosmosDiagnosticsCore(this);
-            this.overallScope = new CosmosDiagnosticScope("Overall", () => this.ContextList.LastOrDefault());
+            this.overallScope = new CosmosDiagnosticScope("Overall", this.UpdateCurrentScope);
+            this.CurrentScope.Push(this.overallScope);
         }
 
         public override DateTime StartUtc { get; }
@@ -72,17 +69,21 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDisposable CreateScope(string name)
         {
-            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name, () => this.ContextList.LastOrDefault());
+            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name, this.UpdateCurrentScope);
 
-            this.ContextList.Add(scope);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(scope);
+            this.CurrentScope.Push(scope);
             return scope;
         }
 
         internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
-            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler, () => this.ContextList.LastOrDefault());
-            this.ContextList.Add(requestHandlerScope);
-            return requestHandlerScope;
+            if (requestHandler == null)
+            {
+                throw new ArgumentNullException(nameof(requestHandler));
+            }
+
+            return this.CreateScope(requestHandler.GetType().FullName);
         }
 
         internal override void AddDiagnosticsInternal(CosmosSystemInfo processInfo)
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(processInfo));
             }
 
-            this.ContextList.Add(processInfo);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(processInfo);
         }
 
         internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
@@ -104,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.AddRequestCount((int)pointOperationStatistics.StatusCode);
 
-            this.ContextList.Add(pointOperationStatistics);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(pointOperationStatistics);
         }
 
         internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
@@ -114,22 +115,22 @@ namespace Microsoft.Azure.Cosmos
                 this.AddRequestCount((int)storeResponseStatistics.StoreResult.StatusCode);
             }
 
-            this.ContextList.Add(storeResponseStatistics);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(storeResponseStatistics);
         }
 
         internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
         {
-            this.ContextList.Add(addressResolutionStatistics);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(addressResolutionStatistics);
         }
 
         internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
-            this.ContextList.Add(clientSideRequestStatistics);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(clientSideRequestStatistics);
         }
 
         internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
         {
-            this.ContextList.Add(feedRangeStatistics);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(feedRangeStatistics);
         }
 
         internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
@@ -144,14 +145,14 @@ namespace Microsoft.Azure.Cosmos
                 this.AddSummaryInfo(queryPageDiagnostics.DiagnosticsContext);
             }
 
-            this.ContextList.Add(queryPageDiagnostics);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(queryPageDiagnostics);
         }
 
         internal override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
         {
             this.AddSummaryInfo(newContext);
 
-            this.ContextList.AddRange(newContext);
+            this.CurrentScope.Peek().AddDiagnosticsInternal(newContext);
         }
 
         internal override void SetSdkUserAgent(string userAgent)
@@ -175,10 +176,12 @@ namespace Microsoft.Azure.Cosmos
             // Using a for loop with a yield prevents Issue #1467 which causes
             // ThrowInvalidOperationException if a new diagnostics is getting added
             // while the enumerator is being used.
-            for (int i = 0; i < this.ContextList.Count; i++)
-            {
-                yield return this.ContextList[i];
-            }
+            return this.overallScope.GetEnumerator();
+        }
+
+        private void UpdateCurrentScope()
+        {
+            this.CurrentScope.Pop();
         }
 
         private void AddRequestCount(int statusCode)

@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
 
     /// <summary>
@@ -12,36 +14,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     /// A scope is a section of code that is important to track.
     /// For example there is a scope for serialization, retry handlers, etc..
     /// </summary>
-    internal sealed class CosmosDiagnosticScope : CosmosDiagnosticsInternal, IDisposable
+    internal sealed class CosmosDiagnosticScope : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>, IDisposable
     {
         private readonly Stopwatch ElapsedTimeStopWatch;
-        private readonly Func<CosmosDiagnosticsInternal> GetLastContextObject;
+        private readonly Action OnDisposeCallBack;
+        private readonly List<CosmosDiagnosticsInternal> InnerDiagnostics;
 
         private bool isDisposed = false;
-        private CosmosDiagnosticsInternal lastNestedDiagnosticsObject = null;
 
         public CosmosDiagnosticScope(
             string name,
-            Func<CosmosDiagnosticsInternal> getLastContextObject)
+            Action onDisposeCallBack)
         {
             this.Id = name;
             this.ElapsedTimeStopWatch = Stopwatch.StartNew();
-            this.GetLastContextObject = getLastContextObject;
+            this.OnDisposeCallBack = onDisposeCallBack;
+            this.InnerDiagnostics = new List<CosmosDiagnosticsInternal>();
         }
 
         public string Id { get; }
-
-        public bool TryGetEndDiagnosticContextObject(out CosmosDiagnosticsInternal lastDiagnosticNestedObject)
-        {
-            if (this.lastNestedDiagnosticsObject == null)
-            {
-                lastDiagnosticNestedObject = null;
-                return false;
-            }
-
-            lastDiagnosticNestedObject = this.lastNestedDiagnosticsObject;
-            return true;
-        }
 
         public bool TryGetElapsedTime(out TimeSpan elapsedTime)
         {
@@ -52,6 +43,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             elapsedTime = this.ElapsedTimeStopWatch.Elapsed;
             return true;
+        }
+
+        internal void AddDiagnosticsInternal(CosmosDiagnosticsInternal diagnosticsInternal)
+        {
+            if (diagnosticsInternal == null)
+            {
+                throw new ArgumentNullException(nameof(diagnosticsInternal));
+            }
+
+            this.InnerDiagnostics.Add(diagnosticsInternal);
         }
 
         internal TimeSpan GetElapsedTime()
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return;
             }
 
-            this.lastNestedDiagnosticsObject = this.GetLastContextObject();
+            this.OnDisposeCallBack();
             this.ElapsedTimeStopWatch.Stop();
             this.isDisposed = true;
         }
@@ -84,6 +85,22 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
         {
             return visitor.Visit(this);
+        }
+
+        public IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
+        {
+            // Using a for loop with a yield prevents Issue #1467 which causes
+            // ThrowInvalidOperationException if a new diagnostics is getting added
+            // while the enumerator is being used.
+            for (int i = 0; i < this.InnerDiagnostics.Count; i++)
+            {
+                yield return this.InnerDiagnostics[i];
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
         }
     }
 }
