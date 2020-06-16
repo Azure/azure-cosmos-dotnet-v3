@@ -12,9 +12,24 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     enum SqlUnaryScalarOperatorKind
     {
+        /// <summary>
+        /// Bitwise Not.
+        /// </summary>
         BitwiseNot,
+
+        /// <summary>
+        /// Not.
+        /// </summary>
         Not,
+
+        /// <summary>
+        /// Minus.
+        /// </summary>
         Minus,
+
+        /// <summary>
+        /// Plus.
+        /// </summary>
         Plus,
     }
 }
