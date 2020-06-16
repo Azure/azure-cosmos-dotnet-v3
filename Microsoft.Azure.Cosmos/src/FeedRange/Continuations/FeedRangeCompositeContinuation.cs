@@ -311,5 +311,7 @@ namespace Microsoft.Azure.Cosmos
 
             return keyRanges;
         }
+
+        public override void Accept(IFeedRangeContinuationVisitor visitor) => visitor.Visit(this);
     }
 }

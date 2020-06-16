@@ -62,5 +62,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken);
+
+        public abstract void Accept(IFeedRangeContinuationVisitor visitor);
     }
 }

@@ -185,6 +185,10 @@ namespace Microsoft.Azure.Cosmos
                {
                    FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
                    this.FeedRangeInternal.Accept(feedRangeVisitor);
+
+                   FeedRangeContinuationRequestMessagePopulatorVisitor feedRangeContinuationVisitor = new FeedRangeContinuationRequestMessagePopulatorVisitor(request, QueryRequestOptions.FillContinuationToken);
+                   this.FeedRangeContinuation.Accept(feedRangeContinuationVisitor);
+
                    if (this.querySpec != null)
                    {
                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
