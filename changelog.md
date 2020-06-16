@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#1550](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1550) CosmosOperationCanceledException: CosmosDiagnostics is now avaiable when operation cancelled exception occurs.
 - [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Add optimization to access the stream buffer
+- [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Add support for ignore case for [Contains](https://docs.microsoft.com/azure/cosmos-db/sql-query-contains) and [StartsWith](https://docs.microsoft.com/azure/cosmos-db/sql-query-startswith) functions.
 - [#1602](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1602) Diagnostics: Add CPU usage to all operations
 - [#1603](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1603) Documentation: Add new exception handling documentation
 
@@ -19,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) ApplicationRegion: Fix ApplicationRegion to ensure the correct order is being used for failover scenarios
 - [#1585](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1585) Query : Fix Multi- ORDER BY continuation token support with QueryExecutionInfo response headers
 - [#1613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1613) Query: Fix memory leak by making FeedIterator IDisposable. WARNING: This will require changes to fix static anlysis tools checking for dispose.
+
 ## <a name="3.9.1"/> [3.9.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.1) - 2020-05-19
 ## <a name="3.9.1-preview"/> [3.9.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.1-preview) - 2020-05-19
 
