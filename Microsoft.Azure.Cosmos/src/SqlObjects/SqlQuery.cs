@@ -4,6 +4,10 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
+    using System.Runtime.ExceptionServices;
+    using Antlr4.Runtime;
+    using Antlr4.Runtime.Misc;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
 
     internal sealed class SqlQuery : SqlObject
     {
@@ -35,6 +39,12 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public SqlOffsetLimitClause OffsetLimitClause { get; }
 
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+
         public static SqlQuery Create(
             SqlSelectClause selectClause,
             SqlFromClause fromClause,
@@ -49,10 +59,83 @@ namespace Microsoft.Azure.Cosmos.Sql
                 orderByClause,
                 offsetLimitClause);
 
-        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+        public static bool TryParse(string text, out SqlQuery sqlQuery)
+        {
+            if (text == null)
+            {
+                throw new ArgumentNullException(nameof(text));
+            }
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+            AntlrInputStream str = new AntlrInputStream(text);
+            sqlLexer lexer = new sqlLexer(str);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            sqlParser parser = new sqlParser(tokens)
+            {
+                ErrorHandler = ThrowExceptionOnErrors.Singleton,
+            };
+            ErrorListener<IToken> listener = new ErrorListener<IToken>(parser, lexer, tokens);
+            parser.AddErrorListener(listener);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+            sqlParser.ProgramContext programContext;
+            try
+            {
+                programContext = parser.program();
+            }
+            catch (Exception)
+            {
+                sqlQuery = default;
+                return false;
+            }
+
+            if (listener.hadError)
+            {
+                sqlQuery = default;
+                return false;
+            }
+
+            sqlQuery = (SqlQuery)CstToAstVisitor.Singleton.Visit(programContext);
+            return true;
+        }
+
+        private sealed class ThrowExceptionOnErrors : IAntlrErrorStrategy
+        {
+            public static readonly ThrowExceptionOnErrors Singleton = new ThrowExceptionOnErrors();
+
+            public bool InErrorRecoveryMode(Parser recognizer)
+            {
+                return false;
+            }
+
+            public void Recover(Parser recognizer, RecognitionException e)
+            {
+                ExceptionDispatchInfo.Capture(e).Throw();
+            }
+
+            [return: NotNull]
+            public IToken RecoverInline(Parser recognizer)
+            {
+                throw new NotSupportedException("can not recover.");
+            }
+
+            public void ReportError(Parser recognizer, RecognitionException e)
+            {
+                ExceptionDispatchInfo.Capture(e).Throw();
+            }
+
+            public void ReportMatch(Parser recognizer)
+            {
+                // Do nothing
+            }
+
+            public void Reset(Parser recognizer)
+            {
+                // Do nothing
+            }
+
+            public void Sync(Parser recognizer)
+            {
+                // Do nothing
+            }
+        }
     }
 }

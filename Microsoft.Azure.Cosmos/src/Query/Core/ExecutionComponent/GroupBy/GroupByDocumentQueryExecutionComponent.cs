@@ -159,18 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 }
             }
 
-            public CosmosElement Payload
-            {
-                get
-                {
-                    if (!this.cosmosObject.TryGetValue(PayloadPropertyName, out CosmosElement cosmosElement))
-                    {
-                        throw new InvalidOperationException($"Underlying object does not have an 'payload' field.");
-                    }
-
-                    return cosmosElement;
-                }
-            }
+            public bool TryGetPayload(out CosmosElement payload) => this.cosmosObject.TryGetValue(PayloadPropertyName, out payload);
         }
 
         protected sealed class GroupingTable : IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>
@@ -199,21 +188,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
             public void AddPayload(RewrittenGroupByProjection rewrittenGroupByProjection)
             {
-                UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
-
-                if (!this.table.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
+                // For VALUE queries the payload will be undefined if the field was undefined.
+                if (rewrittenGroupByProjection.TryGetPayload(out CosmosElement payload))
                 {
-                    singleGroupAggregator = SingleGroupAggregator.TryCreate(
-                        EmptyAggregateOperators,
-                        this.groupByAliasToAggregateType,
-                        this.orderedAliases,
-                        this.hasSelectValue,
-                        continuationToken: null).Result;
-                    this.table[groupByKeysHash] = singleGroupAggregator;
-                }
+                    UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
 
-                CosmosElement payload = rewrittenGroupByProjection.Payload;
-                singleGroupAggregator.AddValues(payload);
+                    if (!this.table.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
+                    {
+                        singleGroupAggregator = SingleGroupAggregator.TryCreate(
+                            EmptyAggregateOperators,
+                            this.groupByAliasToAggregateType,
+                            this.orderedAliases,
+                            this.hasSelectValue,
+                            continuationToken: null).Result;
+                        this.table[groupByKeysHash] = singleGroupAggregator;
+                    }
+
+                    singleGroupAggregator.AddValues(payload);
+                }
             }
 
             public IReadOnlyList<CosmosElement> Drain(int maxItemCount)

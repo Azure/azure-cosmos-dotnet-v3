@@ -1,7 +1,7 @@
 ﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Linq;
@@ -123,6 +123,146 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         }
 
         /// <summary>
+        /// Multiplies two UInt128s together.
+        /// </summary>
+        /// <param name="multiplicand">The multiplicand.</param>
+        /// <param name="multiplier">The multiplier</param>
+        /// <returns>The multiplication of the two UInt128s.</returns>
+        public static UInt128 operator *(UInt128 multiplicand, UInt128 multiplier)
+        {
+            (UInt128 high, UInt128 low) = UInt128.Mult128To256(multiplicand, multiplier);
+            if (high != 0)
+            {
+                throw new OverflowException();
+            }
+
+            return low;
+        }
+
+        private static (ulong h, ulong l) Mult64To128(ulong u, ulong v)
+        {
+            //https://www.codeproject.com/Tips/618570/UInt-Multiplication-Squaring
+            ulong u1 = u & 0xffffffff;
+            ulong v1 = v & 0xffffffff;
+            ulong t = u1 * v1;
+            ulong w3 = t & 0xffffffff;
+            ulong k = t >> 32;
+
+            u >>= 32;
+            t = (u * v1) + k;
+            k = t & 0xffffffff;
+            ulong w1 = t >> 32;
+
+            v >>= 32;
+            t = (u1 * v) + k;
+            k = t >> 32;
+
+            ulong h = (u * v) + w1 + k;
+            ulong l = (t << 32) + w3;
+            return (h, l);
+        }
+
+        private static (UInt128 h, UInt128 l) Mult128To256(UInt128 n, UInt128 m)
+        {
+            //https://www.codeproject.com/Tips/618570/UInt-Multiplication-Squaring
+
+            // Step 1
+            (ulong hh, ulong hl) = Mult64To128(n.high, m.high);
+            (ulong lh, ulong ll) = Mult64To128(n.low, m.low);
+
+            // Step 2
+            {
+                (ulong th, ulong tl) = Mult64To128(n.high, m.low);
+
+                lh += tl;
+                if (lh < tl)
+                {
+                    // lh overflowed;
+                    UInt128 hInc = UInt128.Create(hl, hh) + 1;
+                    hh = hInc.high;
+                    hl = hInc.low;
+                }
+
+                hl += th;
+                if (hl < th)
+                {
+                    // hl overflowed
+                    hh++;
+                }
+            }
+
+            // Step 3
+            {
+                (ulong th, ulong tl) = Mult64To128(n.low, m.high);
+
+                lh += tl;
+                if (lh < tl)
+                {
+                    // lh overflowed;
+                    UInt128 hInc = UInt128.Create(hl, hh) + 1;
+                    hh = hInc.high;
+                    hl = hInc.low;
+                }
+
+                hl += th;
+                if (hl < th)
+                {
+                    // hl overflowed
+                    hh++;
+                }
+            }
+
+            return (UInt128.Create(hl, hh), UInt128.Create(ll, lh));
+        }
+
+        /// <summary>
+        /// Divides one UInt128 by another UInt128
+        /// </summary>
+        /// <param name="dividend">The dividend.</param>
+        /// <param name="divisor">The divisor</param>
+        /// <returns>The multiplication of the two UInt128s.</returns>
+        public static UInt128 operator /(UInt128 dividend, UInt128 divisor)
+        {
+            if (divisor == 0)
+            {
+                throw new DivideByZeroException();
+            }
+
+            if (divisor > uint.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException($"{divisor} must be less than 32 bits.");
+            }
+
+            uint divisor32 = (uint)divisor.low;
+
+            // let high be represented as 2 32 bit numbers, h1h2
+            // let low be represented as 2 32 bit numbers, l1l2
+            if (dividend == 0)
+            {
+                return UInt128.Create(0, 0);
+            }
+
+            ulong h1 = dividend.high >> 32;
+            ulong h2 = dividend.high & 0xffffffff;
+            ulong l1 = dividend.low >> 32;
+            ulong l2 = dividend.low & 0xffffffff;
+
+            ulong result = h1;
+            h1 = (result / divisor32) & 0xffffffff;
+            result = ((result % divisor32) << 32) + h2;
+            h2 = (result / divisor32) & 0xffffffff;
+            result = ((result % divisor32) << 32) + l1;
+            l1 = (result / divisor32) & 0xffffffff;
+            result = ((result % divisor32) << 32) + l2;
+            l2 = (result / divisor32) & 0xffffffff;
+
+            ulong nhigh = (h1 << 32) + h2;
+            ulong nlow = (l1 << 32) + l2;
+
+            return UInt128.Create(nlow, nhigh);
+        }
+
+        /// <summary>
         /// Returns if one UInt128 is less than another UInt128.
         /// </summary>
         /// <param name="left">The left hand side of the operator.</param>
@@ -220,6 +360,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         public static UInt128 operator ^(UInt128 left, UInt128 right)
         {
             return new UInt128(left.low ^ right.low, left.high ^ right.high);
+        }
+
+        public static UInt128 operator ++(UInt128 value)
+        {
+            return value + 1;
+        }
+
+        public static UInt128 operator --(UInt128 value)
+        {
+            return value - 1;
         }
 
         /// <summary>
