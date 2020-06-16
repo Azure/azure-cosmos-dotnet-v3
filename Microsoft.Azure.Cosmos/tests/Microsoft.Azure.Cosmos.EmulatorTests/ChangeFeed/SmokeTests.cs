@@ -130,7 +130,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithInMemoryLeaseContainer().Build();
+                .WithInMemoryLeaseContainer()
+                .Build();
 
             await processor.StartAsync();
             // Letting processor initialize

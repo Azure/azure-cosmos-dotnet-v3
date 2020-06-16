@@ -25,13 +25,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             {
                 startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromTime(startTime.Value);
             }
-            else if (!startFromBeginning)
+            else if (startFromBeginning)
             {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromNow();
+                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
             }
             else
             {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromNow();
             }
 
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()

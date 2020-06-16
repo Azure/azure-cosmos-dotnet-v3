@@ -108,7 +108,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (totalElapsedTime.HasValue)
             {
-                Assert.IsTrue(scopeTotalElapsedTime <= totalElapsedTime, $"RequestHandlerScope should not have larger time than the entire context. Scope: {totalElapsedTime} Total: {totalElapsedTime.Value}");
+                Assert.IsTrue(
+                    scopeTotalElapsedTime <= totalElapsedTime,
+                    $"RequestHandlerScope should not have larger time than the entire context. Scope: {totalElapsedTime} Total: {totalElapsedTime.Value}");
             }
 
             string info = scope.ToString();
