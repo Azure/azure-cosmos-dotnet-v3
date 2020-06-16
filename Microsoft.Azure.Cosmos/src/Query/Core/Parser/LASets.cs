@@ -6,6 +6,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
+#if false
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
     internal class LASets
     {
+
         private readonly Dictionary<Pair<ATNState, int>, bool> visited = new Dictionary<Pair<ATNState, int>, bool>();
         private readonly bool logParse = false;
         private readonly bool logClosure = false;
@@ -795,4 +797,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return sb.ToString();
         }
     }
+#endif
 }
