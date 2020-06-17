@@ -323,7 +323,7 @@ namespace Azure.Cosmos.EmulatorTests
                 string sprocName = "customresolsproc";
                 conflictResolutionPolicy = new ConflictResolutionPolicy();
                 conflictResolutionPolicy.Mode = ConflictResolutionMode.Custom;
-                conflictResolutionPolicy.ResolutionProcedure = sprocName;
+                conflictResolutionPolicy.ResolutionProcedure = $"dbs/conflictResolutionContainerTest/colls/{containerName}/sprocs/{sprocName}";
                 containerResponse = await databaseForConflicts.CreateContainerAsync(new CosmosContainerProperties(containerName, partitionKeyPath) { ConflictResolutionPolicy = conflictResolutionPolicy });
 
                 Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);

@@ -1,19 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-#if AZURECORE
-namespace Azure.Cosmos.Fluent
-#else
 namespace Microsoft.Azure.Cosmos.Fluent
-#endif
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-#if AZURECORE
-    using Azure.Cosmos.Spatial;
-    using Container = CosmosContainer;    
-#endif
 
     /// <summary>
     /// Indexing Policy fluent definition.

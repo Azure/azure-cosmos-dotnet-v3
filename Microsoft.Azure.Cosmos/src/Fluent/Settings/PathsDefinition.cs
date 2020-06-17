@@ -1,11 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-#if AZURECORE
-namespace Azure.Cosmos.Fluent
-#else
 namespace Microsoft.Azure.Cosmos.Fluent
-#endif
 {
     using System;
     using System.Collections.Generic;
