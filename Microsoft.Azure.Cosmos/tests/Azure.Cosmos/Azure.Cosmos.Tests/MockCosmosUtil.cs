@@ -8,7 +8,6 @@ namespace Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure.Cosmos.Fluent;
     using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Query;

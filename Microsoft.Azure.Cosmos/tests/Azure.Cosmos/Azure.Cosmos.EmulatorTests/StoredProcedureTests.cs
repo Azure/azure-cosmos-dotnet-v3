@@ -11,7 +11,6 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure.Cosmos.Fluent;
     using Azure.Cosmos.Scripts;
     using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

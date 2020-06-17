@@ -231,13 +231,11 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
+            IndexingPolicy indexingPolicy = new IndexingPolicy();
+            indexingPolicy.Automatic = false;
+            indexingPolicy.IndexingMode = IndexingMode.None;
             CosmosContainerResponse containerResponse =
-                await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithIndexingPolicy()
-                        .WithIndexingMode(IndexingMode.None)
-                        .WithAutomaticIndexing(false)
-                        .Attach()
-                    .CreateAsync();
+                await this.database.CreateContainerAsync(new CosmosContainerProperties(containerName, partitionKeyPath) { IndexingPolicy = indexingPolicy });
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -263,13 +261,11 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
+            UniqueKeyPolicy uniqueKeyPolicy = new UniqueKeyPolicy();
+            uniqueKeyPolicy.UniqueKeys.Add(new UniqueKey() { Paths = new Collection<string>() { "/attribute1", "/attribute2" } });
+
             CosmosContainerResponse containerResponse =
-                await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithUniqueKey()
-                        .Path("/attribute1")
-                        .Path("/attribute2")
-                        .Attach()
-                    .CreateAsync();
+                await this.database.CreateContainerAsync(new CosmosContainerProperties(containerName, partitionKeyPath) { UniqueKeyPolicy = uniqueKeyPolicy });
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -304,12 +300,12 @@ namespace Azure.Cosmos.EmulatorTests
                 string containerName = "conflictResolutionContainerTest";
                 string partitionKeyPath = "/users";
 
+                ConflictResolutionPolicy conflictResolutionPolicy = new ConflictResolutionPolicy();
+                conflictResolutionPolicy.Mode = ConflictResolutionMode.LastWriterWins;
+                conflictResolutionPolicy.ResolutionPath = "/lww";
+
                 CosmosContainerResponse containerResponse =
-                    await databaseForConflicts.DefineContainer(containerName, partitionKeyPath)
-                        .WithConflictResolution()
-                            .WithLastWriterWinsResolution("/lww")
-                            .Attach()
-                        .CreateAsync();
+                    await databaseForConflicts.CreateContainerAsync(new CosmosContainerProperties(containerName, partitionKeyPath) { ConflictResolutionPolicy = conflictResolutionPolicy });
 
                 Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
                 Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -325,11 +321,10 @@ namespace Azure.Cosmos.EmulatorTests
 
                 // Re-create with custom policy
                 string sprocName = "customresolsproc";
-                containerResponse = await databaseForConflicts.DefineContainer(containerName, partitionKeyPath)
-                        .WithConflictResolution()
-                            .WithCustomStoredProcedureResolution(sprocName)
-                            .Attach()
-                        .CreateAsync();
+                conflictResolutionPolicy = new ConflictResolutionPolicy();
+                conflictResolutionPolicy.Mode = ConflictResolutionMode.Custom;
+                conflictResolutionPolicy.ResolutionProcedure = sprocName;
+                containerResponse = await databaseForConflicts.CreateContainerAsync(new CosmosContainerProperties(containerName, partitionKeyPath) { ConflictResolutionPolicy = conflictResolutionPolicy });
 
                 Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
                 Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -352,22 +347,13 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
+            IndexingPolicy indexingPolicy = new IndexingPolicy();
+            indexingPolicy.IncludedPaths.Add(new IncludedPath() { Path = "/included1/*" });
+            indexingPolicy.IncludedPaths.Add(new IncludedPath() { Path = "/included2/*" });
+            indexingPolicy.ExcludedPaths.Add(new ExcludedPath() { Path = "/*" });
+            indexingPolicy.CompositeIndexes.Add(new Collection<CompositePath>() { new CompositePath() { Path = "/composite1" }, new CompositePath() { Path = "/composite2", Order = CompositePathSortOrder.Descending } });
             CosmosContainerResponse containerResponse =
-                await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithIndexingPolicy()
-                        .WithIncludedPaths()
-                            .Path("/included1/*")
-                            .Path("/included2/*")
-                            .Attach()
-                        .WithExcludedPaths()
-                            .Path("/*")
-                            .Attach()
-                        .WithCompositeIndex()
-                            .Path("/composite1")
-                            .Path("/composite2", CompositePathSortOrder.Descending)
-                            .Attach()
-                        .Attach()
-                    .CreateAsync();
+                await this.database.CreateContainerAsync(new CosmosContainerProperties(containerName, partitionKeyPath) { IndexingPolicy = indexingPolicy });
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -407,8 +393,7 @@ namespace Azure.Cosmos.EmulatorTests
             string partitionKeyPath = "/users";
 
             CosmosContainerResponse containerResponse
-                = await this.database.DefineContainer(containerName, partitionKeyPath)
-                        .CreateAsync(expectedThroughput);
+                = await this.database.CreateContainerAsync(containerName, partitionKeyPath, expectedThroughput);
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             CosmosContainer container = this.database.GetContainer(containerName);
@@ -429,8 +414,7 @@ namespace Azure.Cosmos.EmulatorTests
             string partitionKeyPath = "/users";
 
             CosmosContainerResponse containerResponse
-                = await this.database.DefineContainer(containerName, partitionKeyPath)
-                        .CreateAsync(expectedThroughput);
+                = await this.database.CreateContainerAsync(containerName, partitionKeyPath, expectedThroughput);
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             CosmosContainer container = this.database.GetContainer(containerName);
@@ -470,9 +454,7 @@ namespace Azure.Cosmos.EmulatorTests
                 string containerName = Guid.NewGuid().ToString();
                 string partitionKeyPath = "/users";
                 int timeToLiveInSeconds = 10;
-                CosmosContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithDefaultTimeToLiveInSeconds(timeToLiveInSeconds)
-                    .CreateAsync();
+                CosmosContainerResponse containerResponse = await this.database.CreateContainerAsync(new CosmosContainerProperties(containerName, partitionKeyPath) { DefaultTimeToLiveInSeconds = timeToLiveInSeconds });
 
                 Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
                 CosmosContainer container = containerResponse;
@@ -502,8 +484,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             try
             {
-                await this.database.DefineContainer(containerName, null)
-                    .CreateAsync();
+                await this.database.CreateContainerAsync(containerName, null);
                 Assert.Fail("Create should throw null ref exception");
             }
             catch (ArgumentNullException ae)
