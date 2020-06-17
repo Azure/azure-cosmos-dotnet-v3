@@ -46,6 +46,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             return cosmosClientBuilder.Build(documentClient);
         }
 
+        public static CosmosDiagnosticsContext CreateDiagnosticsContext()
+        {
+            return new CosmosDiagnosticsContextCore(
+                nameof(CreateDiagnosticsContext),
+                "DiagnosticValidatorUserAgentString");
+        }
+
         public static Mock<ContainerInternal> CreateMockContainer(
             string dbName = "myDb",
             string containerName = "myContainer")

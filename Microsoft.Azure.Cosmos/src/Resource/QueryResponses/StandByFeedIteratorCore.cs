@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                cosmosContainerCore: this.container,
+                containerInternal: this.container,
                 requestEnricher: request =>
                 {
                     ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);

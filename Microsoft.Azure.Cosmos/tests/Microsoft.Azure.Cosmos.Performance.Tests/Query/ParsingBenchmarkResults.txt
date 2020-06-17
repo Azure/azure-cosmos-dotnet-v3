@@ -1,0 +1,8 @@
+﻿|         Method | queryLength | parserType |        Mean |     Error |    StdDev |       Gen 0 |      Gen 1 | Gen 2 | Allocated |
+|--------------- |------------ |----------- |------------:|----------:|----------:|------------:|-----------:|------:|----------:|
+| ParseBenchmark |       Short |    Managed |    16.45 ms |  0.177 ms |  0.165 ms |   3156.2500 |          - |     - |  12.71 MB |
+| ParseBenchmark |       Short |     Native |    62.54 ms |  1.248 ms |  2.578 ms |   2000.0000 |          - |     - |   8.67 MB |
+| ParseBenchmark |      Medium |    Managed |    54.22 ms |  0.593 ms |  0.554 ms |   8000.0000 |   100.0000 |     - |  32.28 MB |
+| ParseBenchmark |      Medium |     Native |   155.26 ms |  2.932 ms |  2.743 ms |   3000.0000 |          - |     - |  12.26 MB |
+| ParseBenchmark |        Long |    Managed | 1,374.28 ms | 20.313 ms | 16.962 ms | 167000.0000 | 48000.0000 |     - | 802.35 MB |
+| ParseBenchmark |        Long |     Native | 1,506.99 ms |  9.197 ms |  8.603 ms |   7000.0000 |          - |     - |  31.48 MB |
