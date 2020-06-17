@@ -31,6 +31,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
+            string stackTrace = new StackTrace().ToString();
+
+            await Task.Run(() =>
+            {
+                string st = new StackTrace().ToString();
+                Console.WriteLine(st);
+            });
+
             try
             {
                 using (new ActivityScope(Guid.NewGuid()))

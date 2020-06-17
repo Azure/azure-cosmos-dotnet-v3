@@ -179,6 +179,35 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
+        internal override Task<TResult> OperationHelperAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                return this.RunWithDiagnosticsHelperAsync(
+                    operationName,
+                    requestOptions,
+                    task);
+            }
+
+            return this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
+                    operationName,
+                    requestOptions,
+                    task);
+        }
+
+        internal override CosmosDiagnosticsContext CreateDiagnosticContext(
+            string operationName,
+            RequestOptions requestOptions)
+        {
+            return CosmosDiagnosticsContextCore.Create(
+                operationName,
+                requestOptions,
+                this.UserAgent);
+        }
+
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
@@ -271,6 +300,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
+
             return this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -290,22 +320,26 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
-            CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore();
-            ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
-            try
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions: null);
+            using (diagnosticsContext.GetOverallScope())
             {
-                using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+                try
                 {
-                    return await collectionCache.ResolveByNameAsync(
-                        HttpConstants.Versions.CurrentVersion,
-                        containerUri,
-                        cancellationToken);
+                    using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                    {
+                        return await collectionCache.ResolveByNameAsync(
+                            HttpConstants.Versions.CurrentVersion,
+                            containerUri,
+                            cancellationToken);
+                    }
+                }
+                catch (DocumentClientException ex)
+                {
+                    throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
                 }
             }
-            catch (DocumentClientException ex)
-            {
-                throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
-            }
+
         }
 
         internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerInternal container)
@@ -340,6 +374,42 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.isDisposed = true;
+            }
+        }
+
+        private Task<TResult> RunWithSynchronizationContextAndDiagnosticsHelperAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+        {
+            Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
+
+            CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
+                operationName,
+                requestOptions);
+
+            // Used on NETFX applications with SynchronizationContext when doing locking calls
+            return Task.Run(async () =>
+            {
+                using (diagnosticsContext.GetOverallScope())
+                using (diagnosticsContext.CreateScope("SynchronizationContext"))
+                {
+                    return await task(diagnosticsContext);
+                }
+            });
+        }
+
+        private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+        {
+            CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
+                operationName,
+                requestOptions);
+            using (diagnosticsContext.GetOverallScope())
+            {
+                return await task(diagnosticsContext).ConfigureAwait(false);
             }
         }
 
