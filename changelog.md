@@ -9,12 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#1613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1613) Query FeedIterator: Add IDisposable to fix memory leak. WARNING: This will require changes to fix static anlysis tools checking for dispose.
 - [#1550](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1550) CosmosOperationCanceledException: This enables users to access the diagnsotics when an operation is canceled via the cancellation token. The new type extends OperationCanceledException so it does not break current exception handling and includes the CosmosDiagnostic in the ToString().
-- [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Add optimization to access the stream buffer
+- [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Add memory optimization to prevent coping the buffer
 - [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Add support for ignore case for [Contains](https://docs.microsoft.com/azure/cosmos-db/sql-query-contains) and [StartsWith](https://docs.microsoft.com/azure/cosmos-db/sql-query-startswith) functions.
 - [#1602](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1602) Diagnostics: Add CPU usage to all operations
 - [#1603](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1603) Documentation: Add new exception handling documentation
-- [#1613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1613) Query FeedIterator: Add IDisposable to fix memory leak. WARNING: This will require changes to fix static anlysis tools checking for dispose.
+
 
 ### Fixed
 
