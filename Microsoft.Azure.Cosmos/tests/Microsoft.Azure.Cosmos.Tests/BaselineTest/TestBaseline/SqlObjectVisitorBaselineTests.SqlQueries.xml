@@ -540,13 +540,13 @@ some alias IN (
       <Description>SqlWhereClause</Description>
       <SqlObject><![CDATA[{
   "FilterExpression": {
-    "Left": {
+    "LeftExpression": {
       "Literal": {
         "Value": "this path"
       }
     },
     "OperatorKind": "LessThan",
-    "Right": {
+    "RightExpression": {
       "Literal": {
         "Value": 42
       }
@@ -894,13 +894,13 @@ OFFSET 0 LIMIT 0
   },
   "WhereClause": {
     "FilterExpression": {
-      "Left": {
+      "LeftExpression": {
         "Literal": {
           "Value": "this path"
         }
       },
       "OperatorKind": "LessThan",
-      "Right": {
+      "RightExpression": {
         "Literal": {
           "Value": 42
         }
@@ -1031,13 +1031,13 @@ OFFSET 0 LIMIT 0
     },
     "WhereClause": {
       "FilterExpression": {
-        "Left": {
+        "LeftExpression": {
           "Literal": {
             "Value": "this path"
           }
         },
         "OperatorKind": "LessThan",
-        "Right": {
+        "RightExpression": {
           "Literal": {
             "Value": 42
           }
@@ -1171,13 +1171,13 @@ OFFSET 0 LIMIT 0
     },
     "WhereClause": {
       "FilterExpression": {
-        "Left": {
+        "LeftExpression": {
           "Literal": {
             "Value": "this path"
           }
         },
         "OperatorKind": "LessThan",
-        "Right": {
+        "RightExpression": {
           "Literal": {
             "Value": 42
           }
@@ -1311,13 +1311,13 @@ ARRAY(
     },
     "WhereClause": {
       "FilterExpression": {
-        "Left": {
+        "LeftExpression": {
           "Literal": {
             "Value": "this path"
           }
         },
         "OperatorKind": "LessThan",
-        "Right": {
+        "RightExpression": {
           "Literal": {
             "Value": 42
           }
