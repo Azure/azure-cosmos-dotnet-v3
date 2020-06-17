@@ -71,11 +71,10 @@ namespace Azure.Cosmos
     /// </example>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
-    /// The CosmosClient is created through builder pattern <see cref="Fluent.CosmosClientBuilder"/>.
+    /// The CosmosClient is created through builder pattern <see cref="CosmosClientBuilder"/>.
     /// <code language="c#">
     /// <![CDATA[
     /// using Azure.Cosmos;
-    /// using Azure.Cosmos.Fluent;
     /// 
     /// CosmosClient cosmosClient = new CosmosClientBuilder("connection-string-from-portal")
     ///     .WithApplicationRegion("East US 2")
@@ -90,7 +89,7 @@ namespace Azure.Cosmos
     /// </example>
     /// <remarks>
     /// <seealso cref="CosmosClientOptions"/>
-    /// <seealso cref="Fluent.CosmosClientBuilder"/>
+    /// <seealso cref="CosmosClientBuilder"/>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally" />
@@ -143,7 +142,7 @@ namespace Azure.Cosmos
         /// </example>
         /// <remarks>
         /// <seealso cref="CosmosClientOptions"/>
-        /// <seealso cref="Fluent.CosmosClientBuilder"/>
+        /// <seealso cref="CosmosClientBuilder"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
         /// </remarks>
@@ -182,7 +181,7 @@ namespace Azure.Cosmos
         /// </example>
         /// <remarks>
         /// <seealso cref="CosmosClientOptions"/>
-        /// <seealso cref="Fluent.CosmosClientBuilder"/>
+        /// <seealso cref="CosmosClientBuilder"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
         /// </remarks>
@@ -226,7 +225,7 @@ namespace Azure.Cosmos
         /// </example>
         /// <remarks>
         /// <seealso cref="CosmosClientOptions"/>
-        /// <seealso cref="Fluent.CosmosClientBuilder"/>
+        /// <seealso cref="CosmosClientBuilder"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
         /// </remarks>

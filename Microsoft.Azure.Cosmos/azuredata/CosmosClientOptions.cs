@@ -11,7 +11,6 @@ namespace Azure.Cosmos
     using System.Net;
     using System.Text.Json;
     using Azure.Core;
-    using Azure.Cosmos.Fluent;
     using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;    
     using Microsoft.Azure.Documents;

@@ -69,9 +69,6 @@
     <Compile Include="..\src\SqlObjects\**\*.cs">
       <Link>SqlObjects\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Fluent\Settings\*.cs" Exclude="..\src\Fluent\Settings\ContainerBuilder.cs;..\src\Fluent\Settings\ContainerDefinition.cs">
-      <Link>Fluent\Settings\%(RecursiveDir)\%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\Json\**\*.cs">
       <Link>Json\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
