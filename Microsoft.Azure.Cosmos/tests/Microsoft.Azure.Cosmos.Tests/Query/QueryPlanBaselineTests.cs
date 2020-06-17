@@ -14,6 +14,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using System.Linq;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -1138,6 +1139,108 @@
                     @"SELECT c.name FROM c WHERE c.key = 5 GROUP BY c.name OFFSET 1 LIMIT 2",
                     @"/key"),
             };
+
+            this.ExecuteTestSuite(testVariations);
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void SystemFunctions()
+        {
+            string[] systemFunctionExpressions = new string[]
+            {
+                // Array
+                "ARRAY_CONCAT([1, 2, 3], [4, 5, 6])",
+                "ARRAY_CONCAT([1, 2, 3], [4, 5, 6], [7, 8, 9])",
+                "ARRAY_CONTAINS([1, 2, 3], [4, 5, 6])",
+                "ARRAY_CONTAINS([1, 2, 3], [4, 5, 6], true)",
+                "ARRAY_LENGTH([1, 2, 3])",
+                "ARRAY_SLICE([1, 2, 3], 2)",
+                "ARRAY_SLICE([1, 2, 3], 2, 3)",
+
+                // Date and Time
+                "GetCurrentDateTime()",
+                "GetCurrentTimestamp()",
+
+                // Mathematical
+                "ABS(42)",
+                "ACOS(42)",
+                "ASIN(42)",
+                "ATAN(42)",
+                "ATN2(42, 1337)",
+                "CEILING(42)",
+                "COS(42)",
+                "COT(42)",
+                "DEGREES(42)",
+                "EXP(42)",
+                "FLOOR(42)",
+                "LOG(42)",
+                "LOG(42, 1337)",
+                "LOG10(42)",
+                "PI()",
+                "POWER(42, 1337)",
+                "RADIANS(42)",
+                "RAND()",
+                "SIGN(42)",
+                "SIN(42)",
+                "SQRT(42)",
+                "SQUARE(42)",
+                "TAN(42)",
+                "TRUNC(42)",
+
+                // Spatial
+                "ST_DISTANCE(42, 1337)",
+                "ST_INTERSECTS(42, 1337)",
+                "ST_ISVALID(42)",
+                "ST_ISVALIDDETAILED(42)",
+                "ST_WITHIN(42, 1337)",
+
+                // String
+                "CONCAT('hello', 'world')",
+                "CONCAT('hello', 'world', 'bye')",
+                "CONTAINS('hello', 'world')",
+                "CONTAINS('hello', 'world', true)",
+                "ENDSWITH('hello', 'world')",
+                "ENDSWITH('hello', 'world', true)",
+                "INDEX_OF('hello', 'world')",
+                "INDEX_OF('hello', 'world', 42)",
+                "LEFT('hello', 42)",
+                "LENGTH('hello')",
+                "LOWER('hello')",
+                "LTRIM('hello')",
+                "REPLACE('hello', 'world', 'bye')",
+                "REPLICATE('hello', 5)",
+                "REVERSE('hello')",
+                "RIGHT('hello', 2)",
+                "RTRIM('hello')",
+                "STARTSWITH('hello', 'world')",
+                "STARTSWITH('hello', 'world', true)",
+                "StringToArray('[]')",
+                "StringToBoolean('false')",
+                "StringToNull('null')",
+                "StringToNumber('42')",
+                "StringToObject('{}')",
+                "SUBSTRING('hello', 2, 3)",
+                "ToString('hello')",
+                "TRIM('hello')",
+                "UPPER('hello')",
+
+                // Type Checking
+                "IS_ARRAY([])",
+                "IS_BOOL(true)",
+                "IS_DEFINED(true)",
+                "IS_NULL(true)",
+                "IS_NUMBER(42)",
+                "IS_OBJECT({})",
+                "IS_PRIMITIVE({})",
+                "IS_STRING('asdf')",
+            };
+
+            List<QueryPlanBaselineTestInput> testVariations = systemFunctionExpressions
+                .Select((systemFunctionExpression) => Hash(
+                    description: systemFunctionExpression,
+                    query: $"SELECT VALUE {systemFunctionExpression}",
+                    partitionkeys: @"/key")).ToList();
 
             this.ExecuteTestSuite(testVariations);
         }
