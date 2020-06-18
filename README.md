@@ -206,7 +206,7 @@ using (Response response = await container.ReadItemAsync("myItem", new Partition
 Azure Cosmos DB supports [optimistic concurrency control][cosmos_optimistic] to prevent lost updates or deletes and detection of conflicting operations. Users are expected to use the `Etag` and detect PreconditionFailed scenarios like so:
 
 ```csharp
-public async Task OptimisticConcurrencyReplaceAsync(CosmosContainer container, string id, PartitionKey partitionKey)
+public async Task OptimisticConcurrencyReplaceAsync(CosmosContainer container, string id, PartitionKey partitionKey, int maxRetries = 3)
 {
     ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(id, partitionKey);
     MyItem item = readResponse.Value;
@@ -221,8 +221,12 @@ public async Task OptimisticConcurrencyReplaceAsync(CosmosContainer container, s
     }
     catch (CosmosException cosmosException) when (cosmosException.Status == (int)System.Net.HttpStatusCode.PreconditionFailed))
     {
+        if (maxRetries == 0)
+        {
+            throw;
+        }
         // Retry the operation doing another read of the Etag and applying the update again
-        return await OptimisticConcurrencyReplaceAsync(container, id, partitionKey);
+        return await OptimisticConcurrencyReplaceAsync(container, id, partitionKey, maxRetries -1);
     }
 }
 ```
