@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[
     /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
     ///               .WithParameter("@status", "Failure");
-    /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+    /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
     ///     queryDefinition);
     /// while (feedIterator.HasMoreResults)
     /// {
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {

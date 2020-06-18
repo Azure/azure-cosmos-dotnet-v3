@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     ///     .WithParameter("@expensive", 9000)
     ///     .WithParameter("@status", "Done");
     ///
-    /// FeedIterator<double> feedIterator = this.container.Items.GetItemsQueryIterator<double>(
+    /// using (FeedIterator<double> feedIterator = this.container.Items.GetItemsQueryIterator<double>(
     ///     sqlQueryDefinition: sqlQuery,
     ///     partitionKey: "Done");
     ///

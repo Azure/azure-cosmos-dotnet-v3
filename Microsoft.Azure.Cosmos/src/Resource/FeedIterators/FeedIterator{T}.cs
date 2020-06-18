@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[
     /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
     ///               .WithParameter("@status", "Failure");
-    /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+    /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
     ///     queryDefinition);
     /// while (feedIterator.HasMoreResults)
     /// {
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
         ///     queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
         ///     queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {

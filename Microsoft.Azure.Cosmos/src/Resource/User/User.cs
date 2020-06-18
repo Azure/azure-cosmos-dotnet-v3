@@ -25,19 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.
         /// </returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to read did not exist.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -59,19 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the replace resource record.
         /// </returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to read did not exist.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -93,16 +69,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the user request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which will contain information about the request issued.</returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to delete did not exist.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -142,19 +109,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the permission request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new permission.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="PermissionProperties"/> with an id matching the id you supplied already existed.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///
         /// <code language="c#">
@@ -179,16 +134,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the permission request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new permission.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///
         /// <code language="c#">
@@ -213,12 +159,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the permission</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// 1. This create the type feed iterator for permission with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.status like 'start%'";
-        /// FeedIterator<PermissionProperties> feedIterator = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
+        /// using (FeedIterator<PermissionProperties> feedIterator = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
@@ -234,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
         /// 2. This create the type feed iterator for permissions without queryText, retrieving all permissions.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<PermissionProperties> feedIterator = this.user.GetPermissionQueryIterator<PermissionProperties>();
+        /// using (FeedIterator<PermissionProperties> feedIterator = this.user.GetPermissionQueryIterator<PermissionProperties>();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
@@ -262,18 +209,21 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the permissions</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the type feed iterator for permissions with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.status like @status")
         ///     .WithParameter("@status", "start%");
-        /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>(queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>(queryDefinition))
         /// {
-        ///     foreach (PermissionProperties properties in await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(properties.Id);
+        ///         foreach (PermissionProperties properties in await feedIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(properties.Id);
+        ///         }
         ///     }
         /// }
         /// ]]>
