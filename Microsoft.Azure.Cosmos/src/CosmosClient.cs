@@ -194,12 +194,12 @@ namespace Microsoft.Azure.Cosmos
             string authKeyOrResourceToken,
             CosmosClientOptions clientOptions = null)
         {
-            if (accountEndpoint == null)
+            if (string.IsNullOrEmpty(accountEndpoint))
             {
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (authKeyOrResourceToken == null)
+            if (string.IsNullOrEmpty(authKeyOrResourceToken))
             {
                 throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
@@ -222,12 +222,12 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
-            if (accountEndpoint == null)
+            if (string.IsNullOrEmpty(accountEndpoint))
             {
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (authKeyOrResourceToken == null)
+            if (string.IsNullOrEmpty(authKeyOrResourceToken))
             {
                 throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
