@@ -33,13 +33,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
     ///
     /// using (FeedIterator<double> feedIterator = this.container.Items.GetItemsQueryIterator<double>(
     ///     sqlQueryDefinition: sqlQuery,
-    ///     partitionKey: "Done");
-    ///
-    /// while (feedIterator.HasMoreResults)
+    ///     partitionKey: "Done"))
     /// {
-    ///     foreach (var tax in await feedIterator.ReadNextAsync())
+    ///     while (feedIterator.HasMoreResults)
     ///     {
-    ///         Console.WriteLine(tax);
+    ///         foreach (var tax in await feedIterator.ReadNextAsync())
+    ///         {
+    ///             Console.WriteLine(tax);
+    ///         }
     ///     }
     /// }
     /// ]]>

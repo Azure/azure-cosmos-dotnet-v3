@@ -165,13 +165,15 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.status like 'start%'";
-        /// using (FeedIterator<PermissionProperties> feedIterator = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<PermissionProperties> feedIterator = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText))
         /// {
-        ///     FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var permission in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(permission);
+        ///         FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var permission in response)
+        ///         {
+        ///             Console.WriteLine(permission);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -181,13 +183,15 @@ namespace Microsoft.Azure.Cosmos
         /// 2. This create the type feed iterator for permissions without queryText, retrieving all permissions.
         /// <code language="c#">
         /// <![CDATA[
-        /// using (FeedIterator<PermissionProperties> feedIterator = this.user.GetPermissionQueryIterator<PermissionProperties>();
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<PermissionProperties> feedIterator = this.user.GetPermissionQueryIterator<PermissionProperties>())
         /// {
-        ///     FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var permission in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(permission);
+        ///         FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var permission in response)
+        ///         {
+        ///             Console.WriteLine(permission);
+        ///         }
         ///     }
         /// }
         /// ]]>
