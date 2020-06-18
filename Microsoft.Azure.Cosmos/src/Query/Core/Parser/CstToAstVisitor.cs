@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
+#if false
     using System;
     using System.Collections.Generic;
     using Antlr4.Runtime.Tree;
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 sqlOffsetLimitClause);
         }
 
-        #region SELECT
+    #region SELECT
         public override SqlObject VisitSelect_clause(sqlParser.Select_clauseContext context)
         {
             SqlSelectSpec sqlSelectSpec = (SqlSelectSpec)this.Visit(context.selection());
@@ -200,8 +201,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Number64 topCount = CstToAstVisitor.GetNumber64ValueFromNode(context.NUMERIC_LITERAL());
             return SqlTopSpec.Create(SqlNumberLiteral.Create(topCount));
         }
-        #endregion
-        #region FROM
+    #endregion
+    #region FROM
         public override SqlObject VisitFrom_clause(sqlParser.From_clauseContext context)
         {
             Contract.Requires(context != null);
@@ -310,16 +311,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             return SqlStringPathExpression.Create(pathExpression, stringIndex);
         }
-        #endregion
-        #region WHERE
+    #endregion
+    #region WHERE
         public override SqlObject VisitWhere_clause(sqlParser.Where_clauseContext context)
         {
             Contract.Requires(context != null);
             SqlScalarExpression sqlScalarExpression = (SqlScalarExpression)this.Visit(context.scalar_expression());
             return SqlWhereClause.Create(sqlScalarExpression);
         }
-        #endregion
-        #region GROUP BY
+    #endregion
+    #region GROUP BY
         public override SqlObject VisitGroup_by_clause(sqlParser.Group_by_clauseContext context)
         {
             Contract.Requires(context != null);
@@ -332,8 +333,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             return SqlGroupByClause.Create(groupByColumns);
         }
-        #endregion
-        #region ORDER BY
+    #endregion
+    #region ORDER BY
         public override SqlObject VisitOrder_by_clause(sqlParser.Order_by_clauseContext context)
         {
             Contract.Requires(context != null);
@@ -365,8 +366,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             return SqlOrderbyClause.Create(orderByItems);
         }
-        #endregion
-        #region OFFSET LIMIT
+    #endregion
+    #region OFFSET LIMIT
         public override SqlObject VisitOffset_limit_clause(sqlParser.Offset_limit_clauseContext context)
         {
             Contract.Requires(context != null);
@@ -383,8 +384,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             return SqlOffsetLimitClause.Create(sqlOffsetSpec, sqlLimitSpec);
         }
-        #endregion
-        #region ScalarExpressions
+    #endregion
+    #region ScalarExpressions
         public override SqlObject VisitArrayCreateScalarExpression(sqlParser.ArrayCreateScalarExpressionContext context)
         {
             Contract.Requires(context != null);
@@ -637,9 +638,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             return SqlUnaryScalarExpression.Create(unaryOperator, expression);
         }
-        #endregion
+    #endregion
 
-        #region NOT IMPLEMENTED ON PURPOSE
+    #region NOT IMPLEMENTED ON PURPOSE
         public override SqlObject VisitBinary_operator(sqlParser.Binary_operatorContext context)
         {
             throw new NotSupportedException();
@@ -689,7 +690,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         {
             throw new NotSupportedException();
         }
-        #endregion
+    #endregion
 
         private sealed class UnknownSqlObjectException : ArgumentOutOfRangeException
         {
@@ -724,4 +725,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return number64;
         }
     }
+#endif
 }

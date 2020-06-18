@@ -267,58 +267,62 @@
             //******************************************************************************************************************
             Console.WriteLine("\n1.3 - Read all items with query using a specific partition key");
 
-            FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
+            List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
+            using (FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
                 queryDefinition: null,
                 requestOptions: new QueryRequestOptions()
                 {
                     PartitionKey = new PartitionKey("Account1")
-                });
-
-            List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
-            while (resultSet.HasMoreResults)
+                }))
             {
-                FeedResponse<SalesOrder> response = await resultSet.ReadNextAsync();
-                SalesOrder sale = response.First();
-                Console.WriteLine($"\n1.3.1 Account Number: {sale.AccountNumber}; Id: {sale.Id};");
-                if (response.Diagnostics != null)
+                while (resultSet.HasMoreResults)
                 {
-                    Console.WriteLine($" Diagnostics {response.Diagnostics.ToString()}");
-                }
+                    FeedResponse<SalesOrder> response = await resultSet.ReadNextAsync();
+                    SalesOrder sale = response.First();
+                    Console.WriteLine($"\n1.3.1 Account Number: {sale.AccountNumber}; Id: {sale.Id};");
+                    if (response.Diagnostics != null)
+                    {
+                        Console.WriteLine($" Diagnostics {response.Diagnostics.ToString()}");
+                    }
 
-                allSalesForAccount1.AddRange(response);
+                    allSalesForAccount1.AddRange(response);
+                }
             }
+
+              
 
             Console.WriteLine($"\n1.3.2 Read all items found {allSalesForAccount1.Count} items.");
 
             // Use the same query as before but get the cosmos response message to access the stream directly
-            FeedIterator streamResultSet = container.GetItemQueryStreamIterator(
+            List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
+            using (FeedIterator streamResultSet = container.GetItemQueryStreamIterator(
                 queryDefinition: null,
                 requestOptions: new QueryRequestOptions()
                 {
                     PartitionKey = new PartitionKey("Account1")
-                });
-
-            List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
-            while (streamResultSet.HasMoreResults)
+                }))
             {
-                using (ResponseMessage responseMessage = await streamResultSet.ReadNextAsync())
+                while (streamResultSet.HasMoreResults)
                 {
-                    // Item stream operations do not throw exceptions for better performance
-                    if (responseMessage.IsSuccessStatusCode)
+                    using (ResponseMessage responseMessage = await streamResultSet.ReadNextAsync())
                     {
-                        dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
-                        List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
-                        Console.WriteLine($"\n1.3.3 - Read all items via stream {salesOrders.Count}");
-                        allSalesForAccount1FromStream.AddRange(salesOrders);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Read all items from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                        // Item stream operations do not throw exceptions for better performance
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
+                            List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
+                            Console.WriteLine($"\n1.3.3 - Read all items via stream {salesOrders.Count}");
+                            allSalesForAccount1FromStream.AddRange(salesOrders);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Read all items from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                        }
                     }
                 }
-            }
 
-            Console.WriteLine($"\n1.3.4 Read all items found {allSalesForAccount1FromStream.Count} items.");
+                Console.WriteLine($"\n1.3.4 Read all items found {allSalesForAccount1FromStream.Count} items.");
+            }
 
             if (allSalesForAccount1.Count != allSalesForAccount1FromStream.Count)
             {
@@ -343,56 +347,58 @@
                 "select * from sales s where s.AccountNumber = @AccountInput ")
                 .WithParameter("@AccountInput", "Account1");
 
-            FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
+            List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
+            using (FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
                 query,
                 requestOptions: new QueryRequestOptions()
                 {
                     PartitionKey = new PartitionKey("Account1"),
                     MaxItemCount = 1
-                });
-
-            List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
-            while (resultSet.HasMoreResults)
+                }))
             {
-                FeedResponse<SalesOrder> response = await resultSet.ReadNextAsync();
-                SalesOrder sale = response.First();
-                Console.WriteLine($"\n1.4.1 Account Number: {sale.AccountNumber}; Id: {sale.Id};");
-                if(response.Diagnostics != null)
+                while (resultSet.HasMoreResults)
                 {
-                    Console.WriteLine($" Diagnostics {response.Diagnostics.ToString()}");
-                }
+                    FeedResponse<SalesOrder> response = await resultSet.ReadNextAsync();
+                    SalesOrder sale = response.First();
+                    Console.WriteLine($"\n1.4.1 Account Number: {sale.AccountNumber}; Id: {sale.Id};");
+                    if (response.Diagnostics != null)
+                    {
+                        Console.WriteLine($" Diagnostics {response.Diagnostics.ToString()}");
+                    }
 
-                allSalesForAccount1.AddRange(response);
+                    allSalesForAccount1.AddRange(response);
+                }
             }
 
             Console.WriteLine($"\n1.4.2 Query found {allSalesForAccount1.Count} items.");
 
             // Use the same query as before but get the cosmos response message to access the stream directly
-            FeedIterator streamResultSet = container.GetItemQueryStreamIterator(
+            List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
+            using (FeedIterator streamResultSet = container.GetItemQueryStreamIterator(
                 query,
                 requestOptions: new QueryRequestOptions()
                 {
                     PartitionKey = new PartitionKey("Account1"),
                     MaxItemCount = 10,
                     MaxConcurrency = 1
-                });
-
-            List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
-            while (streamResultSet.HasMoreResults)
+                }))
             {
-                using (ResponseMessage responseMessage = await streamResultSet.ReadNextAsync())
+                while (streamResultSet.HasMoreResults)
                 {
-                    // Item stream operations do not throw exceptions for better performance
-                    if (responseMessage.IsSuccessStatusCode)
+                    using (ResponseMessage responseMessage = await streamResultSet.ReadNextAsync())
                     {
-                        dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
-                        List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
-                        Console.WriteLine($"\n1.4.3 - Item Query via stream {salesOrders.Count}");
-                        allSalesForAccount1FromStream.AddRange(salesOrders);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Query item from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                        // Item stream operations do not throw exceptions for better performance
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
+                            List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
+                            Console.WriteLine($"\n1.4.3 - Item Query via stream {salesOrders.Count}");
+                            allSalesForAccount1FromStream.AddRange(salesOrders);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Query item from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                        }
                     }
                 }
             }
