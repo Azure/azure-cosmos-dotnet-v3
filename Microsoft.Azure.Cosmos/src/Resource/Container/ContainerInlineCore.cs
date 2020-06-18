@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
-    internal sealed partial class ContainerInlineCore : ContainerCore
+    internal sealed class ContainerInlineCore : ContainerCore
     {
         internal ContainerInlineCore(
             CosmosClientContext clientContext,
@@ -31,14 +31,20 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadContainerAsync(requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadContainerAsync),
+                requestOptions,
+                (diagnostics) => base.ReadContainerAsync(diagnostics, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReadContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadContainerStreamAsync(requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadContainerStreamAsync),
+                requestOptions,
+                (diagnostics) => base.ReadContainerStreamAsync(diagnostics, requestOptions, cancellationToken));
         }
 
         public override Task<ContainerResponse> ReplaceContainerAsync(
@@ -46,7 +52,10 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceContainerAsync(containerProperties, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceContainerAsync),
+                requestOptions,
+                (diagnostics) => base.ReplaceContainerAsync(diagnostics, containerProperties, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReplaceContainerStreamAsync(
@@ -54,33 +63,48 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceContainerStreamAsync(containerProperties, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceContainerStreamAsync),
+                requestOptions,
+                (diagnostics) => base.ReplaceContainerStreamAsync(diagnostics, containerProperties, requestOptions, cancellationToken));
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteContainerAsync(requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(DeleteContainerAsync),
+                requestOptions,
+                (diagnostics) => base.DeleteContainerAsync(diagnostics, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteContainerStreamAsync(requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(DeleteContainerStreamAsync),
+                requestOptions,
+                (diagnostics) => base.DeleteContainerStreamAsync(diagnostics, requestOptions, cancellationToken));
         }
 
         public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadThroughputAsync(cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadThroughputAsync),
+                null,
+                (diagnostics) => base.ReadThroughputAsync(diagnostics, cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadThroughputAsync(requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadThroughputAsync),
+                requestOptions,
+                (diagnostics) => base.ReadThroughputAsync(diagnostics, requestOptions, cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -88,12 +112,37 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceThroughputAsync),
+                requestOptions,
+                (diagnostics) => base.ReplaceThroughputAsync(diagnostics, throughput, requestOptions, cancellationToken));
         }
 
-        public override Task<ThroughputResponse> ReplaceThroughputAsync(ThroughputProperties throughputProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ThroughputResponse> ReplaceThroughputAsync(
+            ThroughputProperties throughputProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceThroughputAsync(throughputProperties, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceThroughputAsync),
+                requestOptions,
+                (diagnostics) => base.ReplaceThroughputAsync(diagnostics, throughputProperties, requestOptions, cancellationToken));
+        }
+
+        public override Task<ThroughputResponse> ReadThroughputIfExistsAsync(RequestOptions requestOptions, CancellationToken cancellationToken)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadThroughputIfExistsAsync),
+                requestOptions,
+                (diagnostics) => base.ReadThroughputIfExistsAsync(diagnostics,  requestOptions, cancellationToken));
+        }
+
+        public override Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(ThroughputProperties throughput, RequestOptions requestOptions, CancellationToken cancellationToken)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceThroughputIfExistsAsync),
+                requestOptions,
+                (diagnostics) => base.ReplaceThroughputIfExistsAsync(diagnostics, throughput, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> CreateItemStreamAsync(
@@ -102,7 +151,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.CreateItemStreamAsync(streamPayload, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateItemStreamAsync),
+                requestOptions,
+                (diagnostics) => base.CreateItemStreamAsync(diagnostics, streamPayload, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(T item,
@@ -110,7 +162,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.CreateItemAsync<T>(item, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateItemAsync),
+                requestOptions,
+                (diagnostics) => base.CreateItemAsync<T>(diagnostics, item, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
@@ -119,7 +174,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadItemStreamAsync(id, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadItemStreamAsync),
+                requestOptions,
+                (diagnostics) => base.ReadItemStreamAsync(diagnostics, id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -128,7 +186,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadItemAsync<T>(id, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadItemAsync),
+                requestOptions,
+                (diagnostics) => base.ReadItemAsync<T>(diagnostics, id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
@@ -137,7 +198,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.UpsertItemStreamAsync(streamPayload, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(UpsertItemStreamAsync),
+                requestOptions,
+                (diagnostics) => base.UpsertItemStreamAsync(diagnostics, streamPayload, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(
@@ -146,7 +210,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.UpsertItemAsync<T>(item, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(UpsertItemAsync),
+                requestOptions,
+                (diagnostics) => base.UpsertItemAsync<T>(diagnostics, item, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReplaceItemStreamAsync(
@@ -156,7 +223,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceItemStreamAsync(streamPayload, id, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceItemStreamAsync),
+                requestOptions,
+                (diagnostics) => base.ReplaceItemStreamAsync(diagnostics, streamPayload, id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
@@ -166,7 +236,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceItemAsync<T>(item, id, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceItemAsync),
+                requestOptions,
+                (diagnostics) => base.ReplaceItemAsync<T>(diagnostics, item, id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ResponseMessage> DeleteItemStreamAsync(
@@ -175,7 +248,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteItemStreamAsync(id, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(DeleteItemStreamAsync),
+                requestOptions,
+                (diagnostics) => base.DeleteItemStreamAsync(diagnostics, id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> DeleteItemAsync<T>(
@@ -184,13 +260,16 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteItemAsync<T>(id, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(DeleteItemAsync),
+                requestOptions,
+                (diagnostics) => base.DeleteItemAsync<T>(diagnostics, id, partitionKey, requestOptions, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+                  QueryDefinition queryDefinition,
+                  string continuationToken = null,
+                  QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorInlineCore(base.GetItemQueryStreamIterator(
                     queryDefinition,
@@ -261,7 +340,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.GetFeedRangesAsync(cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(GetFeedRangesAsync),
+                null,
+                (diagnostics) => base.GetFeedRangesAsync(diagnostics, cancellationToken));
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
@@ -310,7 +392,10 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.GetPartitionKeyRangesAsync(feedRange, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(GetPartitionKeyRangesAsync),
+                null,
+                (diagnostics) => base.GetPartitionKeyRangesAsync(feedRange, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
