@@ -21,6 +21,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
+    #if false
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
     using IToken = Antlr4.Runtime.IToken;
@@ -359,4 +360,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         /// <return>The visitor result.</return>
         Result VisitLiteral([NotNull] sqlParser.LiteralContext context);
     }
+#endif
 }

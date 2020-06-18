@@ -7,9 +7,9 @@ The SDK was designed with the following two scenarios.
 This is for most users that want a simple interface that follows the normal Dot NET guidelines. Typed APIs is any method that returns the deserialized body, and can be identified as any method that does not return a ResponseMessage.
 
 1. Will throw the following exceptions types:
-  1. CosmosException is used for all service related issues like 404 Not found
-  2. ArgumentException
-  3. OperationCancelledException
+   1. CosmosException is used for all service related issues like 404 Not found
+   2. ArgumentException
+   3. OperationCancelledException
 2. CosmosException.ToString() includes the message, stack trace, and diagnostics. All of these properties are needed to troubleshoot issues
 
 ### ResponseMessage from Stream APIs <a id="stream-api"></a>
