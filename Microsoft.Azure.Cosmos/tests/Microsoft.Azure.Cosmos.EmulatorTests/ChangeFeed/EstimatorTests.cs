@@ -82,7 +82,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         /// <summary>
-        /// This test checks that when the ContinuationToken is null, we send the StartFromBeginning flag, but since there is no documents, it returns 0
+        /// This test checks that when the ContinuationToken is null,
+        /// we send the StartFromBeginning flag,
+        /// but since there is no documents,
+        /// it returns 0
         /// </summary>
         /// <returns></returns>
         [TestMethod]
@@ -117,8 +120,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
                 .GetChangeFeedEstimatorBuilder(
-                    "test",
-                    (long estimation, CancellationToken token) =>
+                    processorName: "test",
+                    estimationDelegate: (long estimation, CancellationToken token) =>
                     {
                         receivedEstimation = estimation;
                         return Task.CompletedTask;
