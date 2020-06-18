@@ -460,8 +460,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 }
 
                 ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
-                using (ResponseMessage responseMessage =
-                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     if (responseMessage.IsSuccessStatusCode)
                     {

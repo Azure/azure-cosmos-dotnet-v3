@@ -134,8 +134,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .Build();
 
             await processor.StartAsync();
+
             // Letting processor initialize
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
             // Inserting documents
             foreach (int id in expectedIds)
             {
@@ -145,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Waiting on all notifications to finish
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
+
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
         }

@@ -68,10 +68,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                 }
 
+                FeedRangeEPK feedRangeEpk = feedRange as FeedRangeEPK;
+
                 // Construct the continuation's range, using PKRangeId + ETag
-                List<dynamic> ct = new List<dynamic>() { new { min = string.Empty, max = string.Empty, token = firstResponse.Headers.ETag } };
+                List<dynamic> ct = new List<dynamic>()
+                {
+                    new
+                    {
+                        min = feedRangeEpk.Range.Min,
+                        max = feedRangeEpk.Range.Max,
+                        token = firstResponse.Headers.ETag
+                    }
+                };
+
                 // Extract Etag and manually construct the continuation
-                dynamic oldContinuation = new { V = 0, PKRangeId = pkRangeIds.First(), Continuation = ct };
+                dynamic oldContinuation = new
+                {
+                    V = 0,
+                    PKRangeId = pkRangeIds.First(),
+                    Continuation = ct
+                };
                 continuations.Add(JsonConvert.SerializeObject(oldContinuation));
             }
 

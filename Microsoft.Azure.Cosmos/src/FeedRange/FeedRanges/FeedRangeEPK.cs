@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -23,6 +24,11 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedRangeEPK(Documents.Routing.Range<string> range)
         {
+            if (range == null)
+            {
+                throw new ArgumentNullException(nameof(range));
+            }
+
             this.Range = range;
         }
 

@@ -93,7 +93,20 @@ namespace Microsoft.Azure.Cosmos
 
         public override string GetContinuation() => this.CurrentToken?.Token;
 
-        public override FeedRange GetFeedRange() => this.CurrentToken != null ? new FeedRangeEPK(this.CurrentToken.Range) : null;
+        public override FeedRange GetFeedRange()
+        {
+            if (this.FeedRange is FeedRangePartitionKeyRange)
+            {
+                return this.FeedRange;
+            }
+
+            if (this.CurrentToken != null)
+            {
+                return new FeedRangeEPK(this.CurrentToken.Range);
+            }
+
+            return null;
+        }
 
         public override string ToString()
         {
@@ -223,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return false;
             }
-        }    
+        }
 
         private static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
             string minInclusive,
@@ -247,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
                 // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
                 this.CompositeContinuationTokens.Enqueue(recentToken);
             }
-            
+
             this.CurrentToken = this.CompositeContinuationTokens.Count > 0 ? this.CompositeContinuationTokens.Peek() : null;
         }
 
