@@ -219,13 +219,10 @@ public async Task OptimisticConcurrencyReplaceAsync(CosmosContainer container, s
         };
         ItemResponse<MyItem> replaceItem = await container.ReplaceItemAsync<MyItem>(item, id, partitionKey, requestOptions);
     }
-    catch (CosmosException cosmosException)
+    catch (CosmosException cosmosException) when (cosmosException.Status == (int)System.Net.HttpStatusCode.PreconditionFailed))
     {
-        if (cosmosException.Status == (int)System.Net.HttpStatusCode.PreconditionFailed))
-        {
-            // Retry the operation doing another read of the Etag and applying the update again
-            return await OptimisticConcurrencyReplaceAsync(container, id, partitionKey);
-        }
+        // Retry the operation doing another read of the Etag and applying the update again
+        return await OptimisticConcurrencyReplaceAsync(container, id, partitionKey);
     }
 }
 ```
