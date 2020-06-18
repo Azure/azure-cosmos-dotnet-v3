@@ -318,5 +318,15 @@ namespace Microsoft.Azure.Cosmos
                 visitor.Visit(this);
             }
         }
+
+        internal ChangeFeedRequestOptions Clone()
+        {
+            return new ChangeFeedRequestOptions()
+            {
+                MaxItemCount = this.maxItemCount,
+                From = this.From,
+                FeedRange = this.FeedRange,
+            };
+        }
     }
 }
