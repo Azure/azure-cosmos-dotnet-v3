@@ -106,6 +106,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(currentRangeToken.Token);
             }
+            else
+            {
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+            }
 
             this.changeFeedOptions.FeedRange = new FeedRangePartitionKeyRange(rangeId);
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.changeFeedOptions, cancellationToken);

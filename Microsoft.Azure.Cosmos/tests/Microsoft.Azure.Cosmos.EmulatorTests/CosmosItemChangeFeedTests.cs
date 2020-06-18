@@ -398,6 +398,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(totalDocuments, documentsRead);
         }
 
+        [TestMethod]
+        public async Task GetChangeFeedTokensAsync_DrainFromJustOnePartition()
+        {
+            int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
+            ContainerInternal itemsCore = this.LargerContainer;
+            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
+            Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
+            Assert.AreEqual(pkRangesCount, tokens.Count());
+            int totalDocuments = 200;
+            await this.CreateRandomItems(this.LargerContainer, totalDocuments, randomPartitionKey: true);
+            string token = tokens.First();
+
+            int count = 0;
+            FeedIterator iteratorForToken =
+                itemsCore.GetStandByFeedIterator(
+                    requestOptions: new ChangeFeedRequestOptions()
+                    {
+                        From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(token),
+                    });
+            while (iteratorForToken.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage = await iteratorForToken.ReadNextAsync(this.cancellationToken))
+                {
+                    if (!responseMessage.IsSuccessStatusCode)
+                    {
+                        break;
+                    }
+
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    count += response.Count;
+                }
+            }
+
+            Assert.IsTrue(count > 0 && count < totalDocuments);
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
