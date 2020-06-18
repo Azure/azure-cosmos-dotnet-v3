@@ -62,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.continuationToken = responseMessage.Headers.ETag;
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
+            responseMessage.Headers.ContinuationToken = this.continuationToken;
 
             return responseMessage;
         }
