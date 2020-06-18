@@ -21,6 +21,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
+    #if false
     using Antlr4.Runtime.Misc;
     using IParseTreeListener = Antlr4.Runtime.Tree.IParseTreeListener;
 
@@ -582,4 +583,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         /// <param name="context">The parse tree.</param>
         void ExitLiteral([NotNull] sqlParser.LiteralContext context);
     }
+#endif
 }
