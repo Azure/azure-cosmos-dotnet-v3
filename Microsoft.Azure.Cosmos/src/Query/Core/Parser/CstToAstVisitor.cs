@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     using System.Collections.Generic;
     using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.Core;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
 
     /// <summary>
     /// Converts from ANTLR's CST to a CosmosDB SQL AST.
