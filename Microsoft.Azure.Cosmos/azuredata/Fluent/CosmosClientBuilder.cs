@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Fluent
+namespace Azure.Cosmos
 {
     using System;
     using System.Net;

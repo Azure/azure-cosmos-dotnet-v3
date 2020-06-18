@@ -521,6 +521,77 @@
       },
       "NestedTypes": {}
     },
+    "CosmosClientBuilder": {
+      "Subclasses": {},
+      "Members": {
+        "Azure.Cosmos.CosmosClient Build()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClient Build()"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithApplicationName(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithApplicationName(System.String)"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithApplicationRegion(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithApplicationRegion(System.String)"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithConnectionModeDirect()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithConnectionModeDirect()"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], System.Net.IWebProxy)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], System.Net.IWebProxy)"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithConsistencyLevel(Azure.Cosmos.ConsistencyLevel)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithConsistencyLevel(Azure.Cosmos.ConsistencyLevel)"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithCustomSerializer(Azure.Cosmos.Serialization.CosmosSerializer)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithCustomSerializer(Azure.Cosmos.Serialization.CosmosSerializer)"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithLimitToEndpoint(Boolean)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithLimitToEndpoint(Boolean)"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)"
+        },
+        "Azure.Cosmos.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)"
+        },
+        "Void .ctor(System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String)"
+        },
+        "Void .ctor(System.String, System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String, System.String)"
+        }
+      },
+      "NestedTypes": {}
+    },
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
@@ -1210,11 +1281,6 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.CosmosUser GetUser(System.String)"
         },
-        "Azure.Cosmos.Fluent.ContainerBuilder DefineContainer(System.String, System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.ContainerBuilder DefineContainer(System.String, System.String)"
-        },
         "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetContainerQueryStreamResultsAsync(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
@@ -1881,284 +1947,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_Path(System.String)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "CompositeIndexDefinition`1": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String)"
-        },
-        "Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String, Azure.Cosmos.CompositePathSortOrder)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String, Azure.Cosmos.CompositePathSortOrder)"
-        },
-        "T Attach()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T Attach()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "ConflictResolutionDefinition": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.Fluent.ConflictResolutionDefinition WithCustomStoredProcedureResolution(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.ConflictResolutionDefinition WithCustomStoredProcedureResolution(System.String)"
-        },
-        "Azure.Cosmos.Fluent.ConflictResolutionDefinition WithLastWriterWinsResolution(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.ConflictResolutionDefinition WithLastWriterWinsResolution(System.String)"
-        },
-        "Azure.Cosmos.Fluent.ContainerBuilder Attach()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.ContainerBuilder Attach()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "ContainerBuilder": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.CosmosContainerProperties Build()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.CosmosContainerProperties Build()"
-        },
-        "Azure.Cosmos.Fluent.ConflictResolutionDefinition WithConflictResolution()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.ConflictResolutionDefinition WithConflictResolution()"
-        },
-        "Azure.Cosmos.Fluent.UniqueKeyDefinition WithUniqueKey()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.UniqueKeyDefinition WithUniqueKey()"
-        },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateAsync(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>d__9))]": {
-          "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateAsync(System.Nullable`1[System.Int32])"
-        },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>d__10))]": {
-          "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.CosmosContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "ContainerDefinition`1": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.CosmosContainerProperties Build()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.CosmosContainerProperties Build()"
-        },
-        "Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithIndexingPolicy()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithIndexingPolicy()"
-        },
-        "T WithDefaultTimeToLiveInSeconds(Int32)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T WithDefaultTimeToLiveInSeconds(Int32)"
-        },
-        "T WithPartitionKeyDefinitionVersion(Azure.Cosmos.PartitionKeyDefinitionVersion)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T WithPartitionKeyDefinitionVersion(Azure.Cosmos.PartitionKeyDefinitionVersion)"
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "CosmosClientBuilder": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.CosmosClient Build()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.CosmosClient Build()"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], System.Net.IWebProxy)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], System.Net.IWebProxy)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithConsistencyLevel(Azure.Cosmos.ConsistencyLevel)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithConsistencyLevel(Azure.Cosmos.ConsistencyLevel)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Azure.Cosmos.Serialization.CosmosSerializer)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Azure.Cosmos.Serialization.CosmosSerializer)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)"
-        },
-        "Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)"
-        },
-        "Void .ctor(System.String)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(System.String)"
-        },
-        "Void .ctor(System.String, System.String)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(System.String, System.String)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "IndexingPolicyDefinition`1": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.Fluent.CompositeIndexDefinition`1[Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithCompositeIndex()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.CompositeIndexDefinition`1[Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithCompositeIndex()"
-        },
-        "Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithAutomaticIndexing(Boolean)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithAutomaticIndexing(Boolean)"
-        },
-        "Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithIndexingMode(Azure.Cosmos.IndexingMode)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithIndexingMode(Azure.Cosmos.IndexingMode)"
-        },
-        "Azure.Cosmos.Fluent.PathsDefinition`1[Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithExcludedPaths()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.PathsDefinition`1[Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithExcludedPaths()"
-        },
-        "Azure.Cosmos.Fluent.PathsDefinition`1[Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithIncludedPaths()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.PathsDefinition`1[Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithIncludedPaths()"
-        },
-        "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithSpatialIndex()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithSpatialIndex()"
-        },
-        "T Attach()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T Attach()"
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "PathsDefinition`1": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.Fluent.PathsDefinition`1[T] Path(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.PathsDefinition`1[T] Path(System.String)"
-        },
-        "T Attach()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T Attach()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "SpatialIndexDefinition`1": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String)"
-        },
-        "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String, Azure.Cosmos.SpatialType[])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String, Azure.Cosmos.SpatialType[])"
-        },
-        "T Attach()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T Attach()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "UniqueKeyDefinition": {
-      "Subclasses": {},
-      "Members": {
-        "Azure.Cosmos.Fluent.ContainerBuilder Attach()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.ContainerBuilder Attach()"
-        },
-        "Azure.Cosmos.Fluent.UniqueKeyDefinition Path(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Fluent.UniqueKeyDefinition Path(System.String)"
         }
       },
       "NestedTypes": {}
