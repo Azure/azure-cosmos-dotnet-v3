@@ -400,7 +400,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             using(StreamReader streamReader = new StreamReader(response.Content))
                             using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
                             {
-                                string content = await streamReader.ReadToEndAsync();
                                 // Output will be:
                                 // { "_rid":"","Databases":["Zoo","Abcdefg","Bcdefgh"],"_count":3}
                                 JObject jObject = await JObject.LoadAsync(jsonTextReader);
