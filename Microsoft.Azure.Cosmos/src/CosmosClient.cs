@@ -370,6 +370,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
@@ -415,6 +416,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
@@ -472,6 +474,7 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
@@ -557,6 +560,7 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
@@ -581,6 +585,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the databases.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <remarks>
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
@@ -593,13 +598,15 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.status like @status")
         ///     .WithParameter("@status", "start%");
-        /// FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryDefinition))
         /// {
-        ///     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var database in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(database);
+        ///         FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var database in response)
+        ///         {
+        ///             Console.WriteLine(database);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -625,6 +632,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the query request.</param>
         /// <returns>An iterator to go through the databases</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <remarks>
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
@@ -637,17 +645,19 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select * From c where c._rid = @rid")
         ///               .WithParameter("@rid", "TheRidValue");
-        /// FeedIterator feedIterator = this.CosmosClient.GetDatabaseQueryStreamIterator(
-        ///     queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.CosmosClient.GetDatabaseQueryStreamIterator(
+        ///     queryDefinition)
         /// {
-        ///     // Stream iterator returns a response with status for errors
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario. 
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///         }
         ///     }
         /// }
@@ -674,6 +684,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the databases.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <remarks>
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
@@ -685,13 +696,15 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.status like 'start%'";
-        /// FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryText);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryText)
         /// {
-        ///     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var database in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(database);
+        ///         FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var database in response)
+        ///         {
+        ///             Console.WriteLine(database);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -723,6 +736,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the query request.</param>
         /// <returns>An iterator to go through the databases</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <remarks>
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
@@ -733,17 +747,19 @@ namespace Microsoft.Azure.Cosmos
         /// Example on how to fully drain the query results.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator feedIterator = this.CosmosClient.GetDatabaseQueryStreamIterator(
-        ///     ("select * From c where c._rid = 'TheRidValue'");
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.CosmosClient.GetDatabaseQueryStreamIterator(
+        ///     ("select * From c where c._rid = 'TheRidValue'")
         /// {
-        ///     // Stream iterator returns a response with status for errors
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario. 
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///         }
         ///     }
         /// }
@@ -784,6 +800,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public virtual Task<ResponseMessage> CreateDatabaseStreamAsync(
                 DatabaseProperties databaseProperties,
