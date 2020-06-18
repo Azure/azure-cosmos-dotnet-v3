@@ -135,6 +135,10 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
+
+        public abstract QueryFeedIterator GetQueryFeedIterator(
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions = null);
 #endif
 
         public abstract class TryExecuteQueryResult

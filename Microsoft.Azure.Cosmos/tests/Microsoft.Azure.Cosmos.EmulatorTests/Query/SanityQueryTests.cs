@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
 
-                foreach(WeakReference weakReference in weakReferences)
+                foreach (WeakReference weakReference in weakReferences)
                 {
                     Assert.IsFalse(weakReference.IsAlive);
                 }
@@ -853,6 +854,47 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             }
                         }
                     }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestQueryFeedIterator()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                ContainerInternal containerInternal = (ContainerInternal)container;
+
+                using (QueryFeedIterator queryFeedIterator = containerInternal.GetQueryFeedIterator(new QueryDefinition("SELECT * FROM c")))
+                {
+                    List<CosmosElement> retrievedDocuments = new List<CosmosElement>();
+                    double requestCharge = 0;
+                    while (queryFeedIterator.HasMoreResults)
+                    {
+                        QueryFeedIterator.Response response = await queryFeedIterator.ReadNextPageAsync();
+                        if (!(response is QueryFeedIterator.SuccessResponse successResponse))
+                        {
+                            Assert.Fail("Did not get a success feed response");
+                            throw new Exception();
+                        }
+
+                        retrievedDocuments.AddRange(successResponse.Documents);
+                        requestCharge += successResponse.RequestCharge;
+                    }
+
+                    Assert.AreEqual(documents.Count, retrievedDocuments.Count);
+                    Assert.IsTrue(requestCharge >= 0);
                 }
             }
         }

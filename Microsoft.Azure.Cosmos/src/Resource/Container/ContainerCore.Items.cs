@@ -451,6 +451,21 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
 
+        public override QueryFeedIterator GetQueryFeedIterator(
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions = null)
+        {
+            queryRequestOptions ??= new QueryRequestOptions();
+            queryRequestOptions.ExecutionEnvironment = Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+            queryRequestOptions.CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
+                contentSerializationFormat: ContentSerializationFormat.CosmosBinary.ToString(),
+                createCustomNavigator: (content) => JsonNavigator.Create(content),
+                createCustomWriter: () => JsonWriter.Create(JsonSerializationFormat.Binary));
+
+            FeedIterator feedIterator = this.GetItemQueryStreamIterator(queryDefinition, continuationToken: null, queryRequestOptions);
+            return new QueryFeedIterator((FeedIteratorInternal)feedIterator);
+        }
+
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
