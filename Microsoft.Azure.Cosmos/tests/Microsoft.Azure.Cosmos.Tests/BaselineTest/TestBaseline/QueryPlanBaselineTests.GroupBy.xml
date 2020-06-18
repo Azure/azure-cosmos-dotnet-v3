@@ -78,38 +78,7 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. ---&gt; Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException: {"errors":[{"severity":"Error","location":{"start":25,"end":26},"code":"SC2040","message":"'SELECT *' is only valid with a single input set."}]} ---&gt; System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x800A0B00
-   --- End of inner exception stack trace ---
-   --- End of inner exception stack trace ---
-   at Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPartitionProvider.TryGetPartitionedQueryExecutionInfoInternal(SqlQuerySpec querySpec, PartitionKeyDefinition partitionKeyDefinition, Boolean requireFormattableOrderByQuery, Boolean isContinuationExpected, Boolean allowNonValueAggregateQuery, Boolean hasLogicalPartitionKey)
-   at Microsoft.Azure.Cosmos.Tests.Query.QueryPlanBaselineTests.ExecuteTest(QueryPlanBaselineTestInput input)
-   at Microsoft.Azure.Cosmos.Test.BaselineTest.BaselineTests`2.ExecuteTestSuite(IEnumerable`1 inputs, String testSuiteName)
-   at Microsoft.Azure.Cosmos.Tests.Query.QueryPlanBaselineTests.GroupBy()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Object[] arguments, Signature sig, Boolean constructor, Boolean wrapExceptions)
-   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Extensions.MethodInfoExtensions.InvokeAsSynchronousTask(MethodInfo methodInfo, Object classInstance, Object[] parameters)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternal(Object[] arguments)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.Invoke(Object[] arguments)
-   at Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute.Execute(ITestMethod testMethod)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.RunTestMethod()
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.Execute()
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.UnitTestRunner.RunSingleTest(TestMethod testMethod, IDictionary`2 testRunParameters)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsWithTestRunner(IEnumerable`1 tests, IRunContext runContext, ITestExecutionRecorder testExecutionRecorder, String source, UnitTestRunner testRunner)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsInSource(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, String source, Boolean isDeploymentDone)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, Boolean isDeploymentDone)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, TestRunCancellationToken runCancellationToken)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.MSTestExecutor.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestInternalWithExecutors(IEnumerable`1 executorUriExtensionMap, Int64 totalTests)
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestsInternal()
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTests()
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.ExecutionManager.StartTestRun(IEnumerable`1 tests, String package, String runSettings, TestExecutionContext testExecutionContext, ITestCaseEventsHandler testCaseEventsHandler, ITestRunEventsHandler runEventsHandler)
-   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.TestRequestHandler.&lt;&gt;c__DisplayClass30_4.&lt;OnMessageReceived&gt;b__4()
-   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.SafeProcessJob(T job)
-   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.BackgroundJobProcessor()
-   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
-   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task&amp; currentTaskSlot)
-   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
-</Exception>
+      <Exception>TryCatch resulted in an exception.</Exception>
     </Output>
   </Result>
   <Result>
@@ -336,38 +305,7 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. ---&gt; Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException: {"errors":[{"severity":"Error","location":{"start":33,"end":40},"code":"SC2102","message":"Property reference 's.score' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."},{"severity":"Error","location":{"start":42,"end":50},"code":"SC2102","message":"Property reference 's.repeat' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]} ---&gt; System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x800A0B00
-   --- End of inner exception stack trace ---
-   --- End of inner exception stack trace ---
-   at Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPartitionProvider.TryGetPartitionedQueryExecutionInfoInternal(SqlQuerySpec querySpec, PartitionKeyDefinition partitionKeyDefinition, Boolean requireFormattableOrderByQuery, Boolean isContinuationExpected, Boolean allowNonValueAggregateQuery, Boolean hasLogicalPartitionKey)
-   at Microsoft.Azure.Cosmos.Tests.Query.QueryPlanBaselineTests.ExecuteTest(QueryPlanBaselineTestInput input)
-   at Microsoft.Azure.Cosmos.Test.BaselineTest.BaselineTests`2.ExecuteTestSuite(IEnumerable`1 inputs, String testSuiteName)
-   at Microsoft.Azure.Cosmos.Tests.Query.QueryPlanBaselineTests.GroupBy()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Object[] arguments, Signature sig, Boolean constructor, Boolean wrapExceptions)
-   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Extensions.MethodInfoExtensions.InvokeAsSynchronousTask(MethodInfo methodInfo, Object classInstance, Object[] parameters)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternal(Object[] arguments)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.Invoke(Object[] arguments)
-   at Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute.Execute(ITestMethod testMethod)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.RunTestMethod()
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.Execute()
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.UnitTestRunner.RunSingleTest(TestMethod testMethod, IDictionary`2 testRunParameters)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsWithTestRunner(IEnumerable`1 tests, IRunContext runContext, ITestExecutionRecorder testExecutionRecorder, String source, UnitTestRunner testRunner)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsInSource(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, String source, Boolean isDeploymentDone)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, Boolean isDeploymentDone)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, TestRunCancellationToken runCancellationToken)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.MSTestExecutor.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestInternalWithExecutors(IEnumerable`1 executorUriExtensionMap, Int64 totalTests)
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestsInternal()
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTests()
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.ExecutionManager.StartTestRun(IEnumerable`1 tests, String package, String runSettings, TestExecutionContext testExecutionContext, ITestCaseEventsHandler testCaseEventsHandler, ITestRunEventsHandler runEventsHandler)
-   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.TestRequestHandler.&lt;&gt;c__DisplayClass30_4.&lt;OnMessageReceived&gt;b__4()
-   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.SafeProcessJob(T job)
-   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.BackgroundJobProcessor()
-   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
-   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task&amp; currentTaskSlot)
-   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
-</Exception>
+      <Exception>TryCatch resulted in an exception.</Exception>
     </Output>
   </Result>
   <Result>

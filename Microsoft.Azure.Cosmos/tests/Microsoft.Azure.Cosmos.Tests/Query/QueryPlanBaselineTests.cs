@@ -1457,7 +1457,7 @@
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
-            xmlWriter.WriteElementString(nameof(this.Exception), this.Exception.ToString());
+            xmlWriter.WriteElementString(nameof(this.Exception), this.Exception.Message);
         }
 
         public Exception Exception { get; }
