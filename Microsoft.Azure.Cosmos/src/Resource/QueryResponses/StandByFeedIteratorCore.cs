@@ -94,21 +94,37 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.container.GetRIDAsync(cancellationToken);
-                this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
-                    this.containerRid,
-                    (this.changeFeedOptions?.From as ChangeFeedRequestOptions.StartFromContinuation)?.Continuation,
-                    pkRangeCache.TryGetOverlappingRangesAsync);
+
+                if (this.changeFeedOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+                {
+                    this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
+                        this.containerRid,
+                        startFromContinuation.Continuation,
+                        pkRangeCache.TryGetOverlappingRangesAsync);
+                    (CompositeContinuationToken token, string id) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+
+                    if (token.Token != null)
+                    {
+                        this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(token.Token);
+                    }
+                    else
+                    {
+                        this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+                    }
+                }
+                else
+                {
+                    this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
+                        this.containerRid,
+                        initialStandByFeedContinuationToken: null,
+                        pkRangeCache.TryGetOverlappingRangesAsync);
+                }
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-
             if (currentRangeToken.Token != null)
             {
                 this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(currentRangeToken.Token);
-            }
-            else
-            {
-                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
             }
 
             this.changeFeedOptions.FeedRange = new FeedRangePartitionKeyRange(rangeId);

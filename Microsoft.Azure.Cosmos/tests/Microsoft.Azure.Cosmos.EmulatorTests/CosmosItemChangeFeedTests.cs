@@ -297,11 +297,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
             ContainerCore itemsCore = (ContainerCore)this.LargerContainer;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(
-                requestOptions: new ChangeFeedRequestOptions());
-            while (true)
+                requestOptions: new ChangeFeedRequestOptions()
+                {
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning()
+                });
+            while (feedIterator.HasMoreResults)
             {
-                using (ResponseMessage responseMessage =
-                await feedIterator.ReadNextAsync(this.cancellationToken))
+                using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     string continuationToken = responseMessage.Headers.ContinuationToken;
                     List<CompositeContinuationToken> deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(responseMessage.Headers.ContinuationToken);
