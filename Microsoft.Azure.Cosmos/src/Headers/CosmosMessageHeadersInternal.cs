@@ -18,7 +18,10 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosMessageHeadersInternal : INameValueCollection
     {
-        private readonly Dictionary<string, string> headers = CosmosMessageHeadersInternal.CreateDictionary();
+        private const int HeadersDefaultCapacity = 16;
+        private readonly Dictionary<string, string> headers = new Dictionary<string, string>(
+                CosmosMessageHeadersInternal.HeadersDefaultCapacity,
+                StringComparer.OrdinalIgnoreCase);
 
         public CosmosMessageHeadersInternal()
         {
@@ -184,11 +187,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return (T)(object)value;
-        }
-
-        private static Dictionary<string, string> CreateDictionary()
-        {
-            return new Dictionary<string, string>(16, StringComparer.OrdinalIgnoreCase);
         }
 
         private int CountHeaders()
