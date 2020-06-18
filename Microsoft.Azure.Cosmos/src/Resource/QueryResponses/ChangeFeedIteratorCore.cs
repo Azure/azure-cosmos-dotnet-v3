@@ -120,9 +120,9 @@ namespace Microsoft.Azure.Cosmos
                                     diagnosticsContext: diagnostics));
                     }
                 }
-            }
 
-            return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+            }
         }
 
         public override CosmosElement GetCosmosElementContinuationToken() => CosmosElement.Parse(this.FeedRangeContinuation.ToString());
