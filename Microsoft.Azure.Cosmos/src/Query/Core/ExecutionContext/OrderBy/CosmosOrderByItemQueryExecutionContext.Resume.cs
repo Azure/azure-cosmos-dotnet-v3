@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                         // We still need to remove all the documents that have a lower rid in the rid sort order.
                         // If there is a tie in the sort order the documents should be in _rid order in the same direction as the index (given by the backend)
                         cmp = continuationRid.Document.CompareTo(rid.Document);
-                        if (producer.CosmosQueryExecutionInfo.ReverseRidEnabled)
+                        if ((producer.CosmosQueryExecutionInfo == null) || producer.CosmosQueryExecutionInfo.ReverseRidEnabled)
                         {
                             // If reverse rid is enabled on the backend then fallback to the old way of doing it.
                             if (sortOrders[0] == SortOrder.Descending)
