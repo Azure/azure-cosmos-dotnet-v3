@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private bool hasMoreResultsInternal;
+        private string continuationToken;
 
         public ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
@@ -32,50 +33,37 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotImplementedException();
-        }
+        public override CosmosElement GetCosmosElementContinuationToken() => throw new NotImplementedException();
 
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            // Change Feed read uses Etag for continuation
+            if (this.continuationToken != null)
+            {
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.continuationToken);
+            }
 
-            return this.NextResultSetDelegateAsync(
-                this.changeFeedOptions,
-                cancellationToken)
-                .ContinueWith(task =>
-                {
-                    ResponseMessage response = task.Result;
-                    // Change Feed uses ETAG
-                    this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
-                    response.Headers.ContinuationToken = response.Headers.ETag;
-                    return response;
-                }, cancellationToken);
-        }
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                cosmosContainerCore: this.container,
+                resourceUri: this.container.LinkUri,
+                resourceType: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: this.changeFeedOptions,
+                requestEnricher: default,
+                partitionKey: default,
+                streamPayload: default,
+                diagnosticsContext: default,
+                cancellationToken: cancellationToken);
 
-        private Task<ResponseMessage> NextResultSetDelegateAsync(
-            ChangeFeedRequestOptions options,
-            CancellationToken cancellationToken)
-        {
-            Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationStreamAsync(
-               cosmosContainerCore: this.container,
-               resourceUri: resourceUri,
-               resourceType: Documents.ResourceType.Document,
-               operationType: Documents.OperationType.ReadFeed,
-               requestOptions: options,
-               requestEnricher: default,
-               partitionKey: default,
-               streamPayload: default,
-               diagnosticsContext: default,
-               cancellationToken: cancellationToken);
+            this.continuationToken = responseMessage.Headers.ETag;
+            this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
 
+            return responseMessage;
         }
     }
 }
