@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
-                requestUri: new Uri("http://localhost"),
+                requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
-                requestUri: new Uri("http://localhost"),
+                requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
-                requestUri: new Uri("http://localhost"),
+                requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
-                requestUri: new Uri("http://localhost"),
+                requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
