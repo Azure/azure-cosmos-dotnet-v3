@@ -57,6 +57,10 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuationToken);
                 }
+                else
+                {
+                    this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+                }
             }
         }
 
@@ -133,6 +137,10 @@ namespace Microsoft.Azure.Cosmos
             if (continuation != null)
             {
                 this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.FeedRangeContinuation.GetContinuation());
+            }
+            else
+            {
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
             }
 
             if ((this.changeFeedOptions.FeedRange == null) || this.changeFeedOptions.FeedRange is FeedRangeEPK)

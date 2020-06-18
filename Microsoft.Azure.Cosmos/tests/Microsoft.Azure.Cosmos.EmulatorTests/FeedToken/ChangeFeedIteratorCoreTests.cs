@@ -467,6 +467,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                         count += response.Count;
                     }
+                    else
+                    {
+                        if (responseMessage.StatusCode != HttpStatusCode.NotModified)
+                        {
+                            Assert.Fail(responseMessage.ErrorMessage);
+                        }
+                    }
 
                     continuation = responseMessage.ContinuationToken;
                 }
@@ -478,7 +485,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
                 if (iterations++ > pkRangesCount)
                 {
-                    Assert.Fail("Feed does not contain all elements even after looping through PK ranges. Either the continuation is not moving forward or there is some state problem.");
+                    Assert.Fail("" +
+                        "Feed does not contain all elements even after looping through PK ranges. " +
+                        "Either the continuation is not moving forward or there is some state problem.");
                 }
             }
         }
