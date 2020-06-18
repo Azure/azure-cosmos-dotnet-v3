@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestCategory("Windows")]
     [TestClass]
@@ -87,6 +88,17 @@ namespace Microsoft.Azure.Cosmos
         {
             // Contract validation that JsonReaderFactory is present 
             DocumentServiceResponse.JsonReaderFactory = (stream) => null;
+        }
+
+        [TestMethod]
+        public void ProjectPackageDependenciesTest()
+        {
+            string csprojFile = "Microsoft.Azure.Cosmos.csproj";
+            Dictionary<string, string> projDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
+            string dependencies = JsonConvert.SerializeObject(projDependencies);
+            Assert.AreEqual(
+                "{\"System.Numerics.Vectors\":\"4.5.0\",\"Newtonsoft.Json\":\"10.0.2\",\"System.Configuration.ConfigurationManager\":\"4.5.0\",\"System.ServiceModel.Primitives\":\"4.5.0\",\"System.Memory\":\"4.5.1\",\"System.Runtime.CompilerServices.Unsafe\":\"4.5.1\",\"System.Threading.Tasks.Extensions\":\"4.5.1\",\"System.ValueTuple\":\"4.5.0\"}",
+                dependencies);
         }
 
         [TestMethod]
