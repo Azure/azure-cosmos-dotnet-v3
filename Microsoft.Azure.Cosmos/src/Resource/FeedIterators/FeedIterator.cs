@@ -17,17 +17,19 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[
     /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
     ///               .WithParameter("@status", "Failure");
-    /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-    ///     queryDefinition);
-    /// while (feedIterator.HasMoreResults)
+    /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+    ///     queryDefinition))
     /// {
-    ///     // Stream iterator returns a response with status code
-    ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+    ///     while (feedIterator.HasMoreResults)
     ///     {
-    ///         // Handle failure scenario
-    ///         if(!response.IsSuccessStatusCode)
+    ///         // Stream iterator returns a response with status code
+    ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
     ///         {
-    ///             // Log the response.Diagnostics and handle the error
+    ///             // Handle failure scenario
+    ///             if(!response.IsSuccessStatusCode)
+    ///             {
+    ///                 // Log the response.Diagnostics and handle the error
+    ///             }
     ///         }
     ///     }
     /// }
@@ -47,17 +49,19 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        ///     queryDefinition))
         /// {
-        ///     // Stream iterator returns a response with status code
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status code
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
+        ///             // Handle failure scenario
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///         }
         ///     }
         /// }
@@ -77,17 +81,19 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        ///     queryDefinition))
         /// {
-        ///     // Stream iterator returns a response with status code
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status code
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
+        ///             // Handle failure scenario
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///         }
         ///     }
         /// }

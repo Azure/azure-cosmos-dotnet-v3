@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<dynamic> queryResults = await this.ToListAsync(
                   container.GetItemQueryStreamIterator,
                  container.GetItemQueryIterator<dynamic>,
-                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
+                 "select * from T where STARTSWITH(T.id, \"basicQueryItem\", true)",
                  CosmosBasicQueryTests.RequestOptions);
 
             if (queryResults.Count < 3)
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryResults = await this.ToListAsync(
                   container.GetItemQueryStreamIterator,
                  container.GetItemQueryIterator<dynamic>,
-                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
+                 "select * from T where Contains(T.id, \"basicqueryitem\", true)",
                  CosmosBasicQueryTests.RequestOptions);
             }
 
