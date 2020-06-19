@@ -194,12 +194,14 @@
         {
             Console.WriteLine("\n5. Reading all CosmosContainer resources for a database");
 
-            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>();
-            while (resultSetIterator.HasMoreResults)
+            using (FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>())
             {
-                foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())
+                while (resultSetIterator.HasMoreResults)
                 {
-                    Console.WriteLine(container.Id);
+                    foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())
+                    {
+                        Console.WriteLine(container.Id);
+                    }
                 }
             }
         }
