@@ -93,14 +93,16 @@
             }
 
             Console.WriteLine("\n5. Reading all databases resources for an account");
-            FeedIterator<DatabaseProperties> iterator = client.GetDatabaseQueryIterator<DatabaseProperties>();
-            do
+            using (FeedIterator<DatabaseProperties> iterator = client.GetDatabaseQueryIterator<DatabaseProperties>())
             {
-                foreach (DatabaseProperties db in await iterator.ReadNextAsync())
+                while(iterator.HasMoreResults)
                 {
-                    Console.WriteLine(db.Id);
+                    foreach (DatabaseProperties db in await iterator.ReadNextAsync())
+                    {
+                        Console.WriteLine(db.Id);
+                    }
                 }
-            } while (iterator.HasMoreResults);
+            }
 
             // Delete the database from Azure Cosmos.
             await database.DeleteAsync();

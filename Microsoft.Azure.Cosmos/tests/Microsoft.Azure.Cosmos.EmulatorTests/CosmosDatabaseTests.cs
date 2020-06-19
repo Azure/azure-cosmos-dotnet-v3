@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -13,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosDatabaseTests
@@ -372,17 +375,55 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DatabaseResponse createResponse3 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(thirdDb);
                 deleteList.Add(createResponse3.Database);
 
-                FeedIterator<DatabaseProperties> feedIterator =
-                    this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
-                        new QueryDefinition("select c.id From c where c.id = @id ")
-                        .WithParameter("@id", createResponse.Database.Id),
-                        requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+                using (FeedIterator<DatabaseProperties> feedIterator =
+                   this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                       new QueryDefinition("select c.id From c where c.id = @id ")
+                       .WithParameter("@id", createResponse.Database.Id),
+                       requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }))
+                {
+                    FeedResponse<DatabaseProperties> iterator = await feedIterator.ReadNextAsync(this.cancellationToken);
+                    Assert.AreEqual(1, iterator.Resource.Count());
+                    Assert.AreEqual(firstDb, iterator.First().Id);
 
-                FeedResponse<DatabaseProperties> iterator = await feedIterator.ReadNextAsync(this.cancellationToken);
-                Assert.AreEqual(1, iterator.Resource.Count());
-                Assert.AreEqual(firstDb, iterator.First().Id);
+                    Assert.IsFalse(feedIterator.HasMoreResults);
+                }
 
-                Assert.IsFalse(feedIterator.HasMoreResults);
+                using (FeedIterator feedIterator =
+                    this.cosmosClient.GetDatabaseQueryStreamIterator(
+                        "select value c.id From c "))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        using (ResponseMessage response = await feedIterator.ReadNextAsync(this.cancellationToken))
+                        {
+                            response.EnsureSuccessStatusCode();
+                            using(StreamReader streamReader = new StreamReader(response.Content))
+                            using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
+                            {
+                                // Output will be:
+                                // { "_rid":"","Databases":["Zoo","Abcdefg","Bcdefgh"],"_count":3}
+                                JObject jObject = await JObject.LoadAsync(jsonTextReader);
+                                Assert.IsNotNull(jObject["_rid"].ToString());
+                                Assert.IsTrue(jObject["Databases"].ToObject<JArray>().Count > 0);
+                                Assert.IsTrue(jObject["_count"].ToObject<int>() > 0);
+                            }
+                        }
+                    }
+                }
+
+                List<string> ids = new List<string>();
+                using (FeedIterator<string> feedIterator =
+                    this.cosmosClient.GetDatabaseQueryIterator<string>(
+                        "select value c.id From c "))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        FeedResponse<string> iterator = await feedIterator.ReadNextAsync(this.cancellationToken);
+                        ids.AddRange(iterator);
+                    }
+                }
+                
+                Assert.IsTrue(ids.Count >= 2);
             }
             finally
             {
