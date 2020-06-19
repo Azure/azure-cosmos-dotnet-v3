@@ -15,3 +15,4 @@ Microsoft.Azure.Cosmos/src/Spatial @lalithamv @sboshra @kirankumarkolli @j82w
 Microsoft.Azure.Cosmos/tests @khdang @sboshra @bchong95 @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
 Microsoft.Azure.Cosmos.Samples @khdang @sboshra @bchong95 @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/DotNetSDKAPI.json @kirillg @kirankumarkolli
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/DirectContractTests.cs @kirillg @kirankumarkolli
