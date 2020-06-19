@@ -242,9 +242,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
-          string queryText = null,
-          string continuationToken = null,
-          QueryRequestOptions requestOptions = null)
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
