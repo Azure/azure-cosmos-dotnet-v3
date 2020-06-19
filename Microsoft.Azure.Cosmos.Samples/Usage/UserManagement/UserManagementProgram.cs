@@ -178,12 +178,15 @@
 
             // All user1's permissions in a List
             List<PermissionProperties> user1Permissions = new List<PermissionProperties>();
-            FeedIterator<PermissionProperties> feedIterator = user1.GetPermissionQueryIterator<PermissionProperties>();
-            while (feedIterator.HasMoreResults)
+            using (FeedIterator<PermissionProperties> feedIterator = user1.GetPermissionQueryIterator<PermissionProperties>())
             {
-                FeedResponse<PermissionProperties> permissions = await feedIterator.ReadNextAsync();
-                user1Permissions.AddRange(permissions);
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<PermissionProperties> permissions = await feedIterator.ReadNextAsync();
+                    user1Permissions.AddRange(permissions);
+                }
             }
+
         }
         // </RunDemoAsync>
 
@@ -220,7 +223,7 @@
 
                 // Write sales order item
                 await permissionContainer.UpsertItemAsync<SalesOrder>(
-                    readSalesOrder, 
+                    readSalesOrder,
                     new PartitionKey(salesOrder.AccountNumber));
                 Console.WriteLine("Upsert item will all permission succeeded.");
 
@@ -228,13 +231,16 @@
                 //and therefore cannot access anything outside of that partition key value.
                 try
                 {
-                    FeedIterator<SalesOrder> itemIterator = permissionContainer.GetItemQueryIterator<SalesOrder>(
-                        "select * from T");
-                    while (itemIterator.HasMoreResults)
+                    using (FeedIterator<SalesOrder> itemIterator = permissionContainer.GetItemQueryIterator<SalesOrder>(
+                        "select * from T"))
                     {
-                        await itemIterator.ReadNextAsync();
-                        throw new ApplicationException("Should never get here");
+                        while (itemIterator.HasMoreResults)
+                        {
+                            await itemIterator.ReadNextAsync();
+                            throw new ApplicationException("Should never get here");
+                        }
                     }
+                        
                 }
                 catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
@@ -265,13 +271,15 @@
                 Container readContainer = readClient.GetContainer(databaseName, container.Id);
 
                 //try read items should succeed because user1 was granted Read permission on container1
-                FeedIterator<SalesOrder> feedIterator = readContainer.GetItemQueryIterator<SalesOrder>();
-                while (feedIterator.HasMoreResults)
+                using (FeedIterator<SalesOrder> feedIterator = readContainer.GetItemQueryIterator<SalesOrder>())
                 {
-                    FeedResponse<SalesOrder> salesOrders = await feedIterator.ReadNextAsync();
-                    foreach (SalesOrder salesOrder in salesOrders)
+                    while (feedIterator.HasMoreResults)
                     {
-                        Console.WriteLine(JsonConvert.SerializeObject(salesOrder));
+                        FeedResponse<SalesOrder> salesOrders = await feedIterator.ReadNextAsync();
+                        foreach (SalesOrder salesOrder in salesOrders)
+                        {
+                            Console.WriteLine(JsonConvert.SerializeObject(salesOrder));
+                        }
                     }
                 }
 
@@ -280,11 +288,13 @@
                 //cannot access anything outside of that container.
                 try
                 {
-                    FeedIterator<DatabaseProperties> databaseIterator = readClient.GetDatabaseQueryIterator<DatabaseProperties>("select T.* from T");
-                    while (databaseIterator.HasMoreResults)
+                    using (FeedIterator<DatabaseProperties> databaseIterator = readClient.GetDatabaseQueryIterator<DatabaseProperties>("select T.* from T"))
                     {
-                        await databaseIterator.ReadNextAsync();
-                        throw new ApplicationException("Should never get here");
+                        while (databaseIterator.HasMoreResults)
+                        {
+                            await databaseIterator.ReadNextAsync();
+                            throw new ApplicationException("Should never get here");
+                        }
                     }
                 }
                 catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.Forbidden)
