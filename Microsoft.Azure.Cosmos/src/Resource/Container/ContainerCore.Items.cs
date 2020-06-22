@@ -542,17 +542,13 @@ namespace Microsoft.Azure.Cosmos
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
-        public override FeedIterator GetStandByFeedIterator(
-            string continuationToken = null,
-            int? maxItemCount = null,
+        internal override FeedIterator GetStandByFeedIterator(
             ChangeFeedRequestOptions requestOptions = null)
         {
             ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 
             return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,
-                continuationToken: continuationToken,
-                maxItemCount: maxItemCount,
                 container: this,
                 options: cosmosQueryRequestOptions);
         }
