@@ -1215,6 +1215,8 @@
                 "RTRIM('hello')",
                 "STARTSWITH('hello', 'world')",
                 "STARTSWITH('hello', 'world', true)",
+                "STRINGEQUALS('hello', 'world')",
+                "STRINGEQUALS('hello', 'world', true)",
                 "StringToArray('[]')",
                 "StringToBoolean('false')",
                 "StringToNull('null')",
