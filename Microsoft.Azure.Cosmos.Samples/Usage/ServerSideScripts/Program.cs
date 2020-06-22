@@ -201,11 +201,13 @@
             // 8. Validate
             int numDocs = 0;
 
-            FeedIterator<dynamic> setIterator = container.GetItemQueryIterator<dynamic>();
-            while (setIterator.HasMoreResults)
+            using (FeedIterator<dynamic> setIterator = container.GetItemQueryIterator<dynamic>())
             {
-                FeedResponse<dynamic> response = await setIterator.ReadNextAsync();
-                numDocs += response.Count();
+                while (setIterator.HasMoreResults)
+                {
+                    FeedResponse<dynamic> response = await setIterator.ReadNextAsync();
+                    numDocs += response.Count();
+                }
             }
 
             Console.WriteLine("Found {0} documents in the collection. There were originally {1} files in the Data directory\r\n", numDocs, fileCount);

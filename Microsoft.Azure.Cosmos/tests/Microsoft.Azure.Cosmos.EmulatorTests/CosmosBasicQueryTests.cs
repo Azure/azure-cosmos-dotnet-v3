@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<dynamic> queryResults = await this.ToListAsync(
                   container.GetItemQueryStreamIterator,
                  container.GetItemQueryIterator<dynamic>,
-                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
+                 "select * from T where STARTSWITH(T.id, \"basicQueryItem\", true)",
                  CosmosBasicQueryTests.RequestOptions);
 
             if (queryResults.Count < 3)
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryResults = await this.ToListAsync(
                   container.GetItemQueryStreamIterator,
                  container.GetItemQueryIterator<dynamic>,
-                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
+                 "select * from T where Contains(T.id, \"basicqueryitem\", true)",
                  CosmosBasicQueryTests.RequestOptions);
             }
 
@@ -665,6 +665,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 await user?.DeleteAsync();
             }
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ConclictsTests(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            //Read All
+            List<ConflictProperties> results = await this.ToListAsync(
+                container.Conflicts.GetConflictQueryStreamIterator,
+                container.Conflicts.GetConflictQueryIterator<ConflictProperties>,
+                null,
+                CosmosBasicQueryTests.RequestOptions
+            );
+
+            // There is no way to simulate MM conflicts on the emulator but the list operations should work
         }
 
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);

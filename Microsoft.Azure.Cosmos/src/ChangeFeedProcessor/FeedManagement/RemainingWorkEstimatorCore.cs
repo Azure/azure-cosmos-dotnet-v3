@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             // Current lease schema maps Token to PKRangeId
             string partitionKeyRangeId = existingLease.CurrentLeaseToken;
-            FeedIterator iterator = this.feedCreator(
+            using FeedIterator iterator = this.feedCreator(
                 partitionKeyRangeId,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));
