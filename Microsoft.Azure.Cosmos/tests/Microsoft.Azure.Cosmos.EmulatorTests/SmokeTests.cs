@@ -205,14 +205,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await container.CreateItemAsync<Person>(new Person() { Id = id + Guid.NewGuid().ToString(), FirstName = "James", LastName = "Smith" });
             }
 
-            FeedIterator<dynamic> query =
-                container.GetItemQueryIterator<dynamic>("SELECT TOP 10 * FROM coll");
             List<dynamic> list = new List<dynamic>();
-            while (query.HasMoreResults)
+            using (FeedIterator<dynamic> query =
+                container.GetItemQueryIterator<dynamic>("SELECT TOP 10 * FROM coll"))
             {
-                list.AddRange(await query.ReadNextAsync());
+                while (query.HasMoreResults)
+                {
+                    list.AddRange(await query.ReadNextAsync());
+                }
             }
-            
+
             await this.CleanupDocumentCollection(container);
         }
 

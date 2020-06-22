@@ -49,19 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.
         /// </returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to read did not exist.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -86,19 +74,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the replace resource record.
         /// </returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to read did not exist.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>        
         /// <code language="c#">
         /// <![CDATA[
@@ -121,16 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the user request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which will contain information about the request issued.</returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to delete did not exist.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[

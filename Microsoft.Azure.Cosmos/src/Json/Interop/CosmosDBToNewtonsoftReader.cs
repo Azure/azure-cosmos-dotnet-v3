@@ -42,10 +42,10 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <summary>
         /// Initializes a new instance of the NewtonsoftReader class.
         /// </summary>
-        /// <param name="buffer">The buffer to read from.</param>
-        public CosmosDBToNewtonsoftReader(ReadOnlyMemory<byte> buffer)
+        /// <param name="jsonReader">The reader to interop with.</param>
+        public CosmosDBToNewtonsoftReader(IJsonReader jsonReader)
         {
-            this.jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(buffer);
+            this.jsonReader = jsonReader ?? throw new ArgumentNullException(nameof(jsonReader));
         }
 
         /// <summary>
@@ -125,6 +125,51 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
                     value = this.jsonReader.GetStringValue();
                     break;
 
+                case JsonTokenType.Int8:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt8Value();
+                    break;
+
+                case JsonTokenType.Int16:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt16Value();
+                    break;
+
+                case JsonTokenType.Int32:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt32Value();
+                    break;
+
+                case JsonTokenType.Int64:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt64Value();
+                    break;
+
+                case JsonTokenType.UInt32:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetUInt32Value();
+                    break;
+
+                case JsonTokenType.Float32:
+                    newtonsoftToken = JsonToken.Float;
+                    value = this.jsonReader.GetFloat32Value();
+                    break;
+
+                case JsonTokenType.Float64:
+                    newtonsoftToken = JsonToken.Float;
+                    value = this.jsonReader.GetFloat64Value();
+                    break;
+
+                case JsonTokenType.Guid:
+                    newtonsoftToken = JsonToken.String;
+                    value = this.jsonReader.GetGuidValue().ToString();
+                    break;
+
+                case JsonTokenType.Binary:
+                    newtonsoftToken = JsonToken.Bytes;
+                    value = this.jsonReader.GetBinaryValue().ToArray();
+                    break;
+
                 default:
                     throw new ArgumentException($"Unexpected jsonTokenType: {jsonTokenType}");
             }
@@ -156,11 +201,15 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <returns>A <see cref="Nullable{T}"/> of <see cref="DateTime"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override DateTime? ReadAsDateTime()
         {
-            DateTime? dateTime = (DateTime?)this.ReadAsTypeFromString<DateTime>(DateTime.Parse);
-            if (dateTime != null)
+            this.Read();
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
-                this.SetToken(JsonToken.Date, dateTime);
+                return null;
             }
+
+            string stringValue = this.jsonReader.GetStringValue();
+            DateTime dateTime = DateTime.Parse(stringValue);
+            this.SetToken(JsonToken.Date, dateTime);
 
             return dateTime;
         }
@@ -171,11 +220,15 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <returns>A <see cref="Nullable{T}"/> of <see cref="DateTimeOffset"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override DateTimeOffset? ReadAsDateTimeOffset()
         {
-            DateTimeOffset? dateTimeOffset = (DateTimeOffset?)this.ReadAsTypeFromString<DateTimeOffset>(DateTimeOffset.Parse);
-            if (dateTimeOffset != null)
+            this.Read();
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
-                this.SetToken(JsonToken.Date, dateTimeOffset);
+                return null;
             }
+
+            string stringValue = this.jsonReader.GetStringValue();
+            DateTimeOffset dateTimeOffset = DateTimeOffset.Parse(stringValue);
+            this.SetToken(JsonToken.Date, dateTimeOffset);
 
             return dateTimeOffset;
         }
@@ -216,36 +269,16 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <returns>A <see cref="String"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override string ReadAsString()
         {
-            string value = (string)this.ReadAsTypeFromString<string>((x) => x);
-            if (value != null)
-            {
-                this.SetToken(JsonToken.String, value);
-            }
-
-            return value;
-        }
-
-        /// <summary>
-        /// Reads the next string token and deserializes it to a type.
-        /// </summary>
-        /// <typeparam name="T">The type to deserialize to.</typeparam>
-        /// <param name="parse">The function that deserializes the token.</param>
-        /// <returns>The next string token deserialized to a type or null if at the end of an array.</returns>
-        private object ReadAsTypeFromString<T>(Func<string, T> parse)
-        {
             this.Read();
-            object value;
             if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
-                value = null;
-            }
-            else
-            {
-                string stringValue = this.jsonReader.GetStringValue();
-                value = parse(stringValue);
+                return null;
             }
 
-            return value;
+            string stringValue = this.jsonReader.GetStringValue();
+            this.SetToken(JsonToken.String, stringValue);
+
+            return stringValue;
         }
 
         /// <summary>
@@ -255,17 +288,14 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         private double? ReadNumberValue()
         {
             this.Read();
-            double? value;
             if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
-                value = null;
-            }
-            else
-            {
-                value = Number64.ToDouble(this.jsonReader.GetNumberValue());
+                return null;
             }
 
-            return value;
+            Number64 value = this.jsonReader.GetNumberValue();
+            double doubleValue = Number64.ToDouble(value);
+            return doubleValue;
         }
     }
 }

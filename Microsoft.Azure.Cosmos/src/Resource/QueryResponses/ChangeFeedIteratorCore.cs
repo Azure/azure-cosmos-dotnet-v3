@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForCompleteRange();
+            feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForFullRange();
             return new ChangeFeedIteratorCore(container, feedRangeInternal, changeFeedRequestOptions);
         }
 

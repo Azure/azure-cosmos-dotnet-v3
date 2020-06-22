@@ -17,14 +17,16 @@ dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue"
 ItemResponse<dynamic> createResponse = await container.CreateItemAsync(testItem);
 
 // Query for an item
-FeedIterator<dynamic> feedIterator = await container.GetItemQueryIterator<dynamic>(
-    "select * from T where T.status = 'done'");
-while (feedIterator.HasMoreResults)
+using (FeedIterator<dynamic> feedIterator = await container.GetItemQueryIterator<dynamic>(
+    "select * from T where T.status = 'done'"))
 {
-    FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
-    foreach (var item in response)
+    while (feedIterator.HasMoreResults)
     {
-        Console.WriteLine(item);
+        FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
+        foreach (var item in response)
+        {
+            Console.WriteLine(item);
+        }
     }
 }
 ```

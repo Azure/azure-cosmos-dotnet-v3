@@ -4,13 +4,14 @@
 
 namespace CosmosBenchmark
 {
+    using System;
     using System.Threading.Tasks;
 
     internal interface IExecutionStrategy
     {
         public static IExecutionStrategy StartNew(
             BenchmarkConfig config,
-            IBenchmarkOperatrion benchmarkOperation)
+            Func<IBenchmarkOperatrion> benchmarkOperation)
         {
             return new ParallelExecutionStrategy(benchmarkOperation);
         }
@@ -18,6 +19,7 @@ namespace CosmosBenchmark
         public Task ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
+            bool traceFalures,
             double warmupFraction);
 
     }

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using Newtonsoft.Json.Converters;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     [TestClass]
     public class NewtonsoftInteropTests
@@ -190,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 new JProperty("string", "XCPCFXPHHF"),
                 new JProperty("boolean", true),
                 new JProperty("null", null),
-                //new JProperty("datetime", "2526-07-11T18:18:16.4520716"), datetime has issues.
+                new JProperty("datetime", "2526-07-11T18:18:16.4520716"),
                 new JProperty("spatialPoint", new JObject(
                     new JProperty("type", "Point"),
                     new JProperty("coordinate", new double[] { 118.9897, -46.6781 }))),
@@ -200,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         public enum Day { Sun, Mon, Tue, Wed, Thu, Fri, Sat };
 
-        public class ObjectWithAttributes
+        public sealed class ObjectWithAttributes
         {
             [JsonProperty(PropertyName = "name")]
             public string Name { get; }
@@ -242,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         private static void VerifyReader<T>(ReadOnlyMemory<byte> payload, T expectedDeserializedValue)
         {
-            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(payload))
+            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(Cosmos.Json.JsonReader.Create(payload)))
             {
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
                 T actualDeserializedValue = serializer.Deserialize<T>(reader);
@@ -273,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
                 serializer.Serialize(writer, expectedDeserializedValue);
 
-                byte[] result = writer.GetResult().ToArray();
+                ReadOnlyMemory<byte> result = writer.GetResult();
                 string actualSerializedValue;
                 if (jsonSerializationFormat == JsonSerializationFormat.Binary)
                 {
@@ -281,11 +282,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 }
                 else
                 {
-                    actualSerializedValue = Encoding.UTF8.GetString(result);
+                    actualSerializedValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(result.Span).ToString();
                 }
 
                 actualSerializedValue = NewtonsoftInteropTests.NewtonsoftFormat(actualSerializedValue);
-                string expectedSerializedValue = NewtonsoftInteropTests.NewtonsoftFormat(JsonConvert.SerializeObject(expectedDeserializedValue));
+                string expectedSerializedValue = NewtonsoftInteropTests.NewtonsoftFormat(
+                    JsonConvert.SerializeObject(
+                        expectedDeserializedValue));
                 Assert.AreEqual(expectedSerializedValue, actualSerializedValue);
             }
         }
@@ -316,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         /// </summary>
         private sealed class UnixDateTimeConverter : DateTimeConverterBase
         {
-            private static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
             /// <summary>
             /// Writes the JSON representation of the DateTime object.
@@ -326,9 +329,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             /// <param name="serializer">The calling serializer.</param>
             public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
             {
-                if (value is DateTime)
+                if (value is DateTime time)
                 {
-                    Int64 totalSeconds = (Int64)((DateTime)value - UnixStartTime).TotalSeconds;
+                    Int64 totalSeconds = (Int64)(time - UnixStartTime).TotalSeconds;
                     writer.WriteValue(totalSeconds);
                 }
                 else
@@ -354,8 +357,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     throw new Exception(RMResources.DateTimeConverterInvalidReaderValue);
                 }
 
-                double totalSeconds = 0;
-
+                double totalSeconds;
                 try
                 {
                     totalSeconds = Convert.ToDouble(reader.Value, CultureInfo.InvariantCulture);
