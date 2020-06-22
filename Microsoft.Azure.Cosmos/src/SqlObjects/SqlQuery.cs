@@ -1,15 +1,25 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
     using System.Runtime.ExceptionServices;
+#if false
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
+#endif
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
-    internal sealed class SqlQuery : SqlObject
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class SqlQuery : SqlObject
     {
         private SqlQuery(
             SqlSelectClause selectClause,
@@ -66,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 throw new ArgumentNullException(nameof(text));
             }
 
+#if false
             AntlrInputStream str = new AntlrInputStream(text);
             sqlLexer lexer = new sqlLexer(str);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -95,8 +106,13 @@ namespace Microsoft.Azure.Cosmos.Sql
 
             sqlQuery = (SqlQuery)CstToAstVisitor.Singleton.Visit(programContext);
             return true;
+#else
+            sqlQuery = default;
+            return false;
+#endif
         }
 
+#if false
         private sealed class ThrowExceptionOnErrors : IAntlrErrorStrategy
         {
             public static readonly ThrowExceptionOnErrors Singleton = new ThrowExceptionOnErrors();
@@ -137,5 +153,6 @@ namespace Microsoft.Azure.Cosmos.Sql
                 // Do nothing
             }
         }
+#endif
     }
 }

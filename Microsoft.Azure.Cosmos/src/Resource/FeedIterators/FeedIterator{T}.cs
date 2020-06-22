@@ -17,14 +17,16 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[
     /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
     ///               .WithParameter("@status", "Failure");
-    /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
-    ///     queryDefinition);
-    /// while (feedIterator.HasMoreResults)
+    /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+    ///     queryDefinition))
     /// {
-    ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-    ///     foreach (var item in response)
+    ///     while (feedIterator.HasMoreResults)
     ///     {
-    ///         Console.WriteLine(item);
+    ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+    ///         foreach (var item in response)
+    ///         {
+    ///             Console.WriteLine(item);
+    ///         }
     ///     }
     /// }
     /// ]]>
@@ -43,14 +45,16 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
-        ///     queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        ///     queryDefinition))
         /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item);
+        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var item in response)
+        ///         {
+        ///             Console.WriteLine(item);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -69,14 +73,16 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
-        ///     queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        ///     queryDefinition))
         /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item);
+        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var item in response)
+        ///         {
+        ///             Console.WriteLine(item);
+        ///         }
         ///     }
         /// }
         /// ]]>

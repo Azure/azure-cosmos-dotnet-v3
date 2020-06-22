@@ -8,11 +8,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Text;
     using BenchmarkDotNet.Attributes;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
 
     [MemoryDiagnoser]
