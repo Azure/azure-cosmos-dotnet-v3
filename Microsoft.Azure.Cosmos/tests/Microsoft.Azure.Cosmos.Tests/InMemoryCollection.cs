@@ -7,17 +7,18 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
-    internal sealed class InMemoryContainer
+    internal sealed class InMemoryCollection
     {
         private readonly PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private readonly PartitionKeyDefinition partitionKeyDefinition;
 
-        public InMemoryContainer(PartitionKeyDefinition partitionKeyDefinition)
+        public InMemoryCollection(PartitionKeyDefinition partitionKeyDefinition)
         {
             PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: null);
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
@@ -35,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKeyHash partitionKeyHash = GetHashFromPayload(payload, this.partitionKeyDefinition);
             if (!this.partitionedRecords.TryGetValue(partitionKeyHash, out Records records))
             {
-                this.partitionedRecords[partitionKeyHash] = new Records();
+                records = new Records();
+                this.partitionedRecords[partitionKeyHash] = records;
             }
 
             return records.Add(payload);
@@ -81,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new ArgumentOutOfRangeException("Can only support a single partition key path.");
             }
 
-            string[] tokens = partitionKeyDefinition.Paths[0].Split("/");
+            IEnumerable<string> tokens = partitionKeyDefinition.Paths[0].Split("/").Skip(1);
 
             CosmosElement partitionKey = payload;
             foreach (string token in tokens)
