@@ -271,7 +271,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task CreateDropAutoscaleContainerStreamApi()
         {
             DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
@@ -299,7 +298,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task CreateDropAutoscaleContainer()
         {
             DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
@@ -326,7 +324,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task ReadFixedWithAutoscaleTests()
         {
             DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
