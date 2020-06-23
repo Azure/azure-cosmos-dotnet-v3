@@ -16,10 +16,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -309,15 +309,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<DatabaseProperties> allDatabases = client.GetDatabaseQueryIterator<DatabaseProperties>();
-
-            while (allDatabases.HasMoreResults)
+            using (FeedIterator<DatabaseProperties> allDatabases = client.GetDatabaseQueryIterator<DatabaseProperties>())
             {
-                foreach (DatabaseProperties db in await allDatabases.ReadNextAsync())
+                while (allDatabases.HasMoreResults)
                 {
-                    await client.GetDatabase(db.Id).DeleteAsync();
+                    foreach (DatabaseProperties db in await allDatabases.ReadNextAsync())
+                    {
+                        await client.GetDatabase(db.Id).DeleteAsync();
+                    }
                 }
-            }
+            } 
         }
 
         internal async Task RunWithApiVersion(string apiVersion, Func<Task> function)
@@ -513,13 +514,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
             catch (Exception ex) when (ex.GetType() != typeof(AssertFailedException))
             {
-                while (ex.InnerException != null) ex = ex.InnerException;
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
 
                 ExceptionDispatchInfo.Capture(ex).Throw();
             }
         }
 
-        static ConnectionMode GetTargetConnectionMode(ConnectionModes connectionMode)
+        private static ConnectionMode GetTargetConnectionMode(ConnectionModes connectionMode)
         {
             ConnectionMode targetConnectionMode;
             switch (connectionMode)
@@ -583,39 +587,38 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
 
-                FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
+                using (FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
-                   requestOptions: computeRequestOptions);
-                try
+                   requestOptions: computeRequestOptions))
                 {
-                    FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    try
                     {
-                        Assert.IsTrue(
-                            cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                            "Max Item Count is not being honored");
-                    }
+                        FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                        if (queryRequestOptions.MaxItemCount.HasValue)
+                        {
+                            Assert.IsTrue(
+                                cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                                "Max Item Count is not being honored");
+                        }
 
-                    resultsFromCosmosElementContinuationToken.AddRange(cosmosQueryResponse);
+                        resultsFromCosmosElementContinuationToken.AddRange(cosmosQueryResponse);
 
-                    // Force a rewrite of the continuation token, so that we test the case where we roundtrip it over the wire.
-                    // There was a bug where resuming from double.NaN lead to an exception,
-                    // since we parsed the type assuming it was always a double and not a string.
-                    CosmosElement originalContinuationToken = itemQuery.GetCosmosElementContinuationToken();
-                    if(originalContinuationToken != null)
-                    {
-                        continuationToken = CosmosElement.Parse(originalContinuationToken.ToString());
+                        // Force a rewrite of the continuation token, so that we test the case where we roundtrip it over the wire.
+                        // There was a bug where resuming from double.NaN lead to an exception,
+                        // since we parsed the type assuming it was always a double and not a string.
+                        CosmosElement originalContinuationToken = itemQuery.GetCosmosElementContinuationToken();
+                        if (originalContinuationToken != null)
+                        {
+                            continuationToken = CosmosElement.Parse(originalContinuationToken.ToString());
+                        }
+                        else
+                        {
+                            continuationToken = null;
+                        }
                     }
-                    else
+                    catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                     {
-                        continuationToken = null;
                     }
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
-                {
-                    itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
-                            queryText: query,
-                            requestOptions: queryRequestOptions);
                 }
             } while (continuationToken != null);
 
@@ -641,29 +644,37 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken);
 
-                while (true)
+                try
                 {
-                    try
+                    while (true)
                     {
-                        FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                        if (queryRequestOptions.MaxItemCount.HasValue)
+                        try
                         {
-                            Assert.IsTrue(
-                                cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                                "Max Item Count is not being honored");
-                        }
+                            FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                            if (queryRequestOptions.MaxItemCount.HasValue)
+                            {
+                                Assert.IsTrue(
+                                    cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                                    "Max Item Count is not being honored");
+                            }
 
-                        resultsFromContinuationToken.AddRange(cosmosQueryResponse);
-                        continuationToken = cosmosQueryResponse.ContinuationToken;
-                        break;
+                            resultsFromContinuationToken.AddRange(cosmosQueryResponse);
+                            continuationToken = cosmosQueryResponse.ContinuationToken;
+                            break;
+                        }
+                        catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                        {
+                            itemQuery.Dispose();
+                            itemQuery = container.GetItemQueryIterator<T>(
+                                queryText: query,
+                                requestOptions: queryRequestOptions,
+                                continuationToken: continuationToken);
+                        }
                     }
-                    catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
-                    {
-                        itemQuery = container.GetItemQueryIterator<T>(
-                            queryText: query,
-                            requestOptions: queryRequestOptions,
-                            continuationToken: continuationToken);
-                    }
+                }
+                finally
+                {
+                    itemQuery.Dispose();
                 }
             } while (continuationToken != null);
 
@@ -684,44 +695,51 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
                 queryText: query,
                 requestOptions: queryRequestOptions);
-
-            string continuationTokenForRetries = null;
-            while (itemQuery.HasMoreResults)
+            try
             {
-                try
+                string continuationTokenForRetries = null;
+                while (itemQuery.HasMoreResults)
                 {
-                    FeedResponse<T> page = await itemQuery.ReadNextAsync();
-                    results.AddRange(page);
-
-                    if (queryRequestOptions.MaxItemCount.HasValue)
-                    {
-                        Assert.IsTrue(
-                            page.Count <= queryRequestOptions.MaxItemCount.Value,
-                            "Max Item Count is not being honored");
-                    }
-
                     try
                     {
-                        continuationTokenForRetries = page.ContinuationToken;
-                    }
-                    catch (Exception)
-                    {
-                        // Grabbing a continuation token is not supported on all queries.
-                    }
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
-                {
-                    itemQuery = container.GetItemQueryIterator<T>(
-                        queryText: query,
-                        requestOptions: queryRequestOptions,
-                        continuationToken: continuationTokenForRetries);
+                        FeedResponse<T> page = await itemQuery.ReadNextAsync();
+                        results.AddRange(page);
 
-                    if (continuationTokenForRetries == null)
+                        if (queryRequestOptions.MaxItemCount.HasValue)
+                        {
+                            Assert.IsTrue(
+                                page.Count <= queryRequestOptions.MaxItemCount.Value,
+                                "Max Item Count is not being honored");
+                        }
+
+                        try
+                        {
+                            continuationTokenForRetries = page.ContinuationToken;
+                        }
+                        catch (Exception)
+                        {
+                            // Grabbing a continuation token is not supported on all queries.
+                        }
+                    }
+                    catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                     {
-                        // The query failed and we don't have a save point, so just restart the whole thing.
-                        results = new List<T>();
+                        itemQuery.Dispose();
+                        itemQuery = container.GetItemQueryIterator<T>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions,
+                            continuationToken: continuationTokenForRetries);
+
+                        if (continuationTokenForRetries == null)
+                        {
+                            // The query failed and we don't have a save point, so just restart the whole thing.
+                            results = new List<T>();
+                        }
                     }
                 }
+            }
+            finally
+            {
+                itemQuery.Dispose();
             }
 
             return results;
@@ -821,14 +839,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             string query,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator<T> resultSetIterator = container.GetItemQueryIterator<T>(
-                query,
-                requestOptions: requestOptions);
-
             List<T> items = new List<T>();
-            while (resultSetIterator.HasMoreResults)
+            using (FeedIterator<T> resultSetIterator = container.GetItemQueryIterator<T>(
+                query,
+                requestOptions: requestOptions))
             {
-                items.AddRange(await resultSetIterator.ReadNextAsync());
+                while (resultSetIterator.HasMoreResults)
+                {
+                    items.AddRange(await resultSetIterator.ReadNextAsync());
+                }
             }
 
             return items;

@@ -283,7 +283,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (disableDiagnostics)
             {
                 requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
-            };
+            }
+            else
+            {
+                // Add 10 seconds to ensure CPU history is recorded
+                await Task.Delay(TimeSpan.FromSeconds(10));
+            }
 
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -421,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(createItemsTasks);
 
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
-            FeedIterator changeFeedIterator = ((ContainerInternal)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
+            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
             {
                 using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())
@@ -613,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
 
             // If all the pages are buffered then several of the normal summary validation will fail.
-            if (diagnosticsContext.TotalRequestCount > 0)
+            if (diagnosticsContext.GetTotalRequestCount() > 0)
             {
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }

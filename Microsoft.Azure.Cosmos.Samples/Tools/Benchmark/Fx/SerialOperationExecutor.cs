@@ -33,6 +33,7 @@ namespace CosmosBenchmark
         public async Task ExecuteAsync(
                 int iterationCount,
                 bool isWarmup,
+                bool traceFaiures,
                 Action completionCallback)
         {
             Trace.TraceInformation($"Executor {this.executorId} started");
@@ -60,6 +61,11 @@ namespace CosmosBenchmark
                         }
                         catch (Exception ex)
                         {
+                            if (traceFaiures)
+                            {
+                                Console.WriteLine(ex.ToString());
+                            }
+
                             // failure case
                             this.FailedOperationCount++;
 
