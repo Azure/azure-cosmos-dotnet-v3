@@ -100,13 +100,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (tags.Any())
             {
-                var needsLoopAnd = false;
+                var needsAnd = false;
                 var machineTags = tags.Select(Parse);
                 var tagsByGroup = machineTags.GroupBy(x => x.Namespace + ":" + x.Name);
                 foreach (var grouping in tagsByGroup)
                 {
-                    var needsRegularsAnd = false;
-                    var needsNotsAnd = false;
                     var tagName = grouping.Key;
                     var regulars = grouping.Where(x => x.Operator == nullOperator).ToArray();
                     var nots = grouping.Where(x => x.IsNot);
@@ -119,23 +117,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         if (nots.Any(x => x.IsWildcard))
                         {
-                            if (needsLoopAnd)
+                            if (needsAnd)
                                 sb.Append(" AND ");
 
                             sb.Append($"NOT({regularProp} = true)");
-                            needsNotsAnd = true;
-                            needsLoopAnd = true;
+                            needsAnd = true;
                         }
                         else
                         {
-                            if (needsLoopAnd)
+                            if (needsAnd)
                                 sb.Append(" AND ");
 
                             sb.Append($"NOT(ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\"))");
                             foreach (var not in nots)
                                 sb.Append($" AND NOT(ARRAY_CONTAINS({tagProp}, \"{not.Tag.Substring(1)}\"))");
-                            needsNotsAnd = true;
-                            needsLoopAnd = true;
+                            needsAnd = true;
                         }
                     }
                     if (regulars.Any())
@@ -144,18 +140,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                         {
                             if (queryOptions.HasFlag(TagsQueryOptions.DocumentNotTags))
                             {
-                                if (needsLoopAnd || needsNotsAnd)
+                                if (needsAnd)
                                     sb.Append(" AND ");
 
                                 sb.Append($"NOT({notProp} = true)");
 
-                                needsRegularsAnd = true;
-                                needsLoopAnd = true;
+                                needsAnd = true;
                             }
                         }
                         else
                         {
-                            if (needsLoopAnd || needsNotsAnd)
+                            if (needsAnd)
                                 sb.Append(" AND ");
 
                             if (queryOptions.HasFlag(TagsQueryOptions.DocumentNotTags))
@@ -192,13 +187,12 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                             sb.Append(")");
 
-                            needsRegularsAnd = true;
-                            needsLoopAnd = true;
+                            needsAnd = true;
                         }
                     }
                     if (requireds.Any())
                     {
-                        if (needsLoopAnd || needsNotsAnd || needsRegularsAnd)
+                        if (needsAnd)
                             sb.Append(" AND ");
                         sb.Append("(");
                         sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
@@ -211,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         }
                         sb.Append(")");
 
-                        needsLoopAnd = true;
+                        needsAnd = true;
                     }
                 }
 
