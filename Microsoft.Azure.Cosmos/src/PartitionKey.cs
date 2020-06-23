@@ -98,6 +98,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a new partition key value.
         /// </summary>
+        /// <param name="value">The value to use as partition key.</param>
+        internal PartitionKey(object[] value)
+        {
+            this.InternalKey = new Documents.PartitionKey(value).InternalKey;
+            this.IsNone = false;
+        }
+
+        /// <summary>
+        /// Creates a new partition key value.
+        /// </summary>
         /// <param name="partitionKeyInternal">The value to use as partition key.</param>
         /// <param name="isNone">The value to decide partitionKey is None.</param>
         private PartitionKey(PartitionKeyInternal partitionKeyInternal, bool isNone = false)

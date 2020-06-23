@@ -1786,6 +1786,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateCosmosClient(true));
         }
 
+        [TestMethod]
+        public async Task VerifyDocumentCrudWithMultiHashKind()
+        {
+            DocumentClient client = TestCommon.CreateClient(false);
+            await client.CreateDatabaseAsync(new Database { Id = "db1" });
+            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pKey", "/Id" }), Kind = PartitionKind.MultiHash };
+            DocumentCollection coll1 = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+
+            DocumentCollection collTemp1 = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri("db1", "coll1"));
+            Assert.AreEqual(collTemp1, coll1);
+
+            PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] {"/Id" }), Kind = PartitionKind.MultiHash };
+            DocumentCollection coll2 = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll2", PartitionKey = partitionKeyDefinition2 });
+
+            DocumentCollection collTemp2 = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri("db1", "coll2"));
+            Assert.AreEqual(collTemp2, coll2);
+
+            PartitionKeyDefinition partitionKeyDefinition3 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pKey", "/Id", "/Name" }), Kind = PartitionKind.MultiHash };
+            DocumentCollection coll3 = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll3", PartitionKey = partitionKeyDefinition3 });
+
+            DocumentCollection collTemp3 = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri("db1", "coll3"));
+            Assert.AreEqual(collTemp3, coll3);
+
+        }
+
         internal async Task TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(CosmosClient client)
         {
             await TestCommon.DeleteAllDatabasesAsync();
