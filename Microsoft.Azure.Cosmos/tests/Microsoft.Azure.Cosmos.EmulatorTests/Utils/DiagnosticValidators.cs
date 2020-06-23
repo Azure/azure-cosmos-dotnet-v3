@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public static void ValidatePointOperationDiagnostics(CosmosDiagnosticsContext diagnosticsContext)
         {
-            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            _ = JObject.Parse(diagnosticsContext.ToString());
             PointDiagnosticValidatorHelper validator = new PointDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate();
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static void ValidateChangeFeedOperationDiagnostics(CosmosDiagnosticsContext diagnosticsContext)
         {
-            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            _ = JObject.Parse(diagnosticsContext.ToString());
             ChangeFeedDiagnosticValidatorHelper validator = new ChangeFeedDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate();
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static void ValidateQueryDiagnostics(CosmosDiagnosticsContext diagnosticsContext, bool isFirstPage)
         {
-            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            _ = JObject.Parse(diagnosticsContext.ToString());
             QueryDiagnosticValidatorHelper validator = new QueryDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate(isFirstPage);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         public static void ValidateQueryGatewayPlanDiagnostics(CosmosDiagnosticsContext diagnosticsContext, bool isFirstPage)
         {
             string diagnostics = diagnosticsContext.ToString();
-            JObject jObject = JObject.Parse(diagnostics);
+            _ = JObject.Parse(diagnostics);
             QueryGatewayPlanDiagnosticValidatorHelper validator = new QueryGatewayPlanDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate(isFirstPage);
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
             Assert.IsTrue((cosmosDiagnosticsContext.StartUtc - DateTime.UtcNow) < TimeSpan.FromHours(12), $"Start Time is not valid {cosmosDiagnosticsContext.StartUtc}");
-            Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent.ToString(), new UserAgentContainer().UserAgent.ToString(), "User agent not set");
+            Assert.IsTrue(cosmosDiagnosticsContext.UserAgent.ToString().Contains("cosmos-netstandard-sdk"));
             Assert.IsTrue(cosmosDiagnosticsContext.GetTotalRequestCount() > 0, "No request found");
             Assert.IsTrue(cosmosDiagnosticsContext.IsComplete(), "OverallClientRequestTime should be stopped");
             Assert.IsTrue(cosmosDiagnosticsContext.GetRunningElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["DiagnosticVersion"].ToString()); 
             JToken summary = jObject["Summary"];
             Assert.IsNotNull(summary["UserAgent"].ToString());
-            Assert.AreNotEqual(summary["UserAgent"].ToString(), new UserAgentContainer().UserAgent);
+            Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"));
             Assert.IsNotNull(summary["StartUtc"].ToString());
             Assert.IsNotNull(summary["TotalElapsedTimeInMs"].ToString());
         }
@@ -108,7 +108,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (totalElapsedTime.HasValue)
             {
-                Assert.IsTrue(scopeTotalElapsedTime <= totalElapsedTime, $"RequestHandlerScope should not have larger time than the entire context. Scope: {totalElapsedTime} Total: {totalElapsedTime.Value}");
+                Assert.IsTrue(
+                    scopeTotalElapsedTime <= totalElapsedTime,
+                    $"RequestHandlerScope should not have larger time than the entire context. Scope: {totalElapsedTime} Total: {totalElapsedTime.Value}");
             }
 
             string info = scope.ToString();

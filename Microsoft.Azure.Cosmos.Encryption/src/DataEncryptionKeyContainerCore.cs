@@ -69,12 +69,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return dekResponse;
         }
 
-
         /// <inheritdoc/>
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> ReadDataEncryptionKeyAsync(
             string id,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ItemResponse<DataEncryptionKeyProperties> response = await this.ReadInternalAsync(
                 id,
@@ -91,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
            string id,
            EncryptionKeyWrapMetadata newWrapMetadata,
            ItemRequestOptions requestOptions = null,
-           CancellationToken cancellationToken = default(CancellationToken))
+           CancellationToken cancellationToken = default)
         {
             if (newWrapMetadata == null)
             {
@@ -120,9 +119,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             requestOptions.IfMatchEtag = dekProperties.ETag;
 
-            DataEncryptionKeyProperties newDekProperties = new DataEncryptionKeyProperties(dekProperties);
-            newDekProperties.WrappedDataEncryptionKey = wrappedDek;
-            newDekProperties.EncryptionKeyWrapMetadata = updatedMetadata;
+            DataEncryptionKeyProperties newDekProperties = new DataEncryptionKeyProperties(dekProperties)
+            {
+                WrappedDataEncryptionKey = wrappedDek,
+                EncryptionKeyWrapMetadata = updatedMetadata,
+            };
 
             ItemResponse<DataEncryptionKeyProperties> response = await this.DekProvider.Container.ReplaceItemAsync(
                 newDekProperties,
@@ -144,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             try
-            { 
+            {
                 DataEncryptionKeyProperties dekProperties = await this.DekProvider.DekCache.GetOrAddDekPropertiesAsync(
                     id,
                     this.ReadResourceAsync,
