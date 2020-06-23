@@ -10,7 +10,8 @@
         //Read configuration
         private static readonly string databaseId = "samples";
         private static readonly string containerId = "container-samples";
-        private static readonly string partitionKey = "/activityId";
+        private static readonly string autoscaleContainerId = "autoscale-container-samples";
+        private static readonly string partitionKeyPath = "/activityId";
 
         private static Database database = null;
 
@@ -73,6 +74,8 @@
 
             Container simpleContainer = await Program.CreateContainer();
 
+            await Program.CreateAndUpdateAutoscaleContainer();
+
             await Program.CreateContainerWithCustomIndexingPolicy();
 
             await Program.CreateContainerWithTtlExpiration();
@@ -99,13 +102,60 @@
             // Set throughput to the minimum value of 400 RU/s
             ContainerResponse simpleContainer = await database.CreateContainerIfNotExistsAsync(
                 id: containerId,
-                partitionKeyPath: partitionKey,
+                partitionKeyPath: partitionKeyPath,
                 throughput: 400);
 
-            Console.WriteLine($"\n1.1. Created container :{simpleContainer.Container.Id}");
+            Console.WriteLine($"{Environment.NewLine}1.1. Created container :{simpleContainer.Container.Id}");
             return simpleContainer;
         }
         // </CreateContainer>
+
+        // <CreateAndUpdateAutoscaleContainer>
+        private static async Task CreateAndUpdateAutoscaleContainer()
+        {
+            // Set autoscale throughput to the maximum value of 10000 RU/s
+            ContainerProperties containerProperties = new ContainerProperties(autoscaleContainerId, partitionKeyPath);
+
+            Container autoscaleContainer = await database.CreateContainerIfNotExistsAsync(
+                containerProperties: containerProperties,
+                throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(autoscaleMaxThroughput: 10000));
+
+            Console.WriteLine($"{Environment.NewLine}1.2. Created autoscale container :{autoscaleContainer.Id}");
+
+            //*********************************************************************************************
+            // Get configured performance of a CosmosContainer
+            //**********************************************************************************************
+            ThroughputResponse throughputResponse = await autoscaleContainer.ReadThroughputAsync(requestOptions: null);
+
+            Console.WriteLine($"{Environment.NewLine}1.2.1. Found autoscale throughput {Environment.NewLine}The current throughput: {throughputResponse.Resource.Throughput} Max throughput: {throughputResponse.Resource.AutoscaleMaxThroughput} " +
+                $"using container's id: {autoscaleContainer.Id}");
+
+            //*********************************************************************************************
+            // Get the current throughput configured for a Container
+            //**********************************************************************************************
+            int? currentThroughput = await autoscaleContainer.ReadThroughputAsync();
+
+            Console.WriteLine($"{Environment.NewLine}1.2.2. Found autoscale throughput {Environment.NewLine}The current throughput: {currentThroughput} using container's id: {autoscaleContainer.Id}");
+
+            //******************************************************************************************************************
+            // Change performance (reserved throughput) of CosmosContainer
+            //    Let's change the performance of the autoscale container to a maximum throughput of 15000 RU/s
+            //******************************************************************************************************************
+            ThroughputResponse throughputUpdateResponse = await autoscaleContainer.ReplaceThroughputAsync(ThroughputProperties.CreateAutoscaleThroughput(15000));
+
+            Console.WriteLine($"{Environment.NewLine}1.2.3. Replaced autoscale throughput. {Environment.NewLine}The current throughput: {throughputUpdateResponse.Resource.Throughput} Max throughput: {throughputUpdateResponse.Resource.AutoscaleMaxThroughput} " +
+                $"using container's id: {autoscaleContainer.Id}");
+
+            // Get the offer again after replace
+            throughputResponse = await autoscaleContainer.ReadThroughputAsync(requestOptions: null);
+
+            Console.WriteLine($"{Environment.NewLine}1.2.4. Found autoscale throughput {Environment.NewLine}The current throughput: {throughputResponse.Resource.Throughput} Max throughput: {throughputResponse.Resource.AutoscaleMaxThroughput} " +
+                $"using container's id: {autoscaleContainer.Id}{Environment.NewLine}");
+
+            // Delete the container
+            await autoscaleContainer.DeleteContainerAsync();
+        }
+        // </CreateAndUpdateAutoscaleContainer>
 
         // <CreateContainerWithCustomIndexingPolicy>
         private static async Task CreateContainerWithCustomIndexingPolicy()
@@ -114,14 +164,14 @@
             // We cover index policies in detail in IndexManagement sample project
             ContainerProperties containerProperties = new ContainerProperties(
                 id: "SampleContainerWithCustomIndexPolicy",
-                partitionKeyPath: partitionKey);
+                partitionKeyPath: partitionKeyPath);
             containerProperties.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
             Container containerWithConsistentIndexing = await database.CreateContainerIfNotExistsAsync(
                 containerProperties,
                 throughput: 400);
 
-            Console.WriteLine($"1.2. Created Container {containerWithConsistentIndexing.Id}, with custom index policy \n");
+            Console.WriteLine($"1.3 Created Container {containerWithConsistentIndexing.Id}, with custom index policy {Environment.NewLine}");
 
             await containerWithConsistentIndexing.DeleteContainerAsync();
         }
@@ -132,14 +182,14 @@
         {
             ContainerProperties properties = new ContainerProperties
                 (id: "TtlExpiryContainer",
-                partitionKeyPath: partitionKey);
+                partitionKeyPath: partitionKeyPath);
             properties.DefaultTimeToLive = (int)TimeSpan.FromDays(1).TotalSeconds; //expire in 1 day
 
             ContainerResponse ttlEnabledContainerResponse = await database.CreateContainerIfNotExistsAsync(
                 containerProperties: properties);
             ContainerProperties returnedProperties = ttlEnabledContainerResponse;
 
-            Console.WriteLine($"\n1.3. Created Container \n{returnedProperties.Id} with TTL expiration of {returnedProperties.DefaultTimeToLive}");
+            Console.WriteLine($"{Environment.NewLine}1.4 Created Container {Environment.NewLine}{returnedProperties.Id} with TTL expiration of {returnedProperties.DefaultTimeToLive}");
 
             await ttlEnabledContainerResponse.Container.DeleteContainerAsync();
         }
@@ -154,7 +204,7 @@
             //**********************************************************************************************
             int? throughputResponse = await simpleContainer.ReadThroughputAsync();
 
-            Console.WriteLine($"\n2. Found throughput \n{throughputResponse}\nusing container's id \n{simpleContainer.Id}");
+            Console.WriteLine($"{Environment.NewLine}2. Found throughput {Environment.NewLine}{throughputResponse}{Environment.NewLine}using container's id {Environment.NewLine}{simpleContainer.Id}");
 
             //******************************************************************************************************************
             // Change performance (reserved throughput) of CosmosContainer
@@ -163,12 +213,12 @@
 
             await simpleContainer.ReplaceThroughputAsync(500);
 
-            Console.WriteLine("\n3. Replaced throughput. Throughput is now 500.\n");
+            Console.WriteLine($"{Environment.NewLine}3. Replaced throughput. Throughput is now 500.{Environment.NewLine}");
 
             // Get the offer again after replace
             throughputResponse = await simpleContainer.ReadThroughputAsync();
 
-            Console.WriteLine($"3. Found throughput \n{throughputResponse}\n using container's ResourceId {simpleContainer.Id}.\n");
+            Console.WriteLine($"3. Found throughput {Environment.NewLine}{throughputResponse}{Environment.NewLine} using container's ResourceId {simpleContainer.Id}.{Environment.NewLine}");
         }
         // </GetAndChangeContainerPerformance>
 
@@ -181,7 +231,7 @@
             Container container = database.GetContainer(containerId);
             ContainerProperties containerProperties = await container.ReadContainerAsync();
 
-            Console.WriteLine($"\n4. Found Container \n{containerProperties.Id}\n");
+            Console.WriteLine($"{Environment.NewLine}4. Found Container {Environment.NewLine}{containerProperties.Id}{Environment.NewLine}");
         }
         // </ReadContainerProperties>
 
@@ -192,7 +242,7 @@
         // <ListContainersInDatabase>
         private static async Task ListContainersInDatabase()
         {
-            Console.WriteLine("\n5. Reading all CosmosContainer resources for a database");
+            Console.WriteLine($"{Environment.NewLine}5. Reading all CosmosContainer resources for a database");
 
             using (FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>())
             {
@@ -215,7 +265,7 @@
         private static async Task DeleteContainer()
         {
             await database.GetContainer(containerId).DeleteContainerAsync();
-            Console.WriteLine("\n6. Deleted Container\n");
+            Console.WriteLine($"{Environment.NewLine}6. Deleted Container{Environment.NewLine}");
         }
         // </DeleteContainer>
     }
