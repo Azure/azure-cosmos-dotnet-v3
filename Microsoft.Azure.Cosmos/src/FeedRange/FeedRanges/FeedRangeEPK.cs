@@ -13,20 +13,20 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// FeedRange that represents an effective partition key range.
     /// </summary>
-    internal sealed class FeedRangeEPK : FeedRangeInternal
+    internal sealed class FeedRangeEpk : FeedRangeInternal
     {
         public Documents.Routing.Range<string> Range { get; }
 
-        public static FeedRangeEPK ForFullRange()
+        public static FeedRangeEpk ForFullRange()
         {
-            return new FeedRangeEPK(new Documents.Routing.Range<string>(
+            return new FeedRangeEpk(new Documents.Routing.Range<string>(
                     Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                     Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                     isMinInclusive: true,
                     isMaxInclusive: false));
         }
 
-        public FeedRangeEPK(Documents.Routing.Range<string> range)
+        public FeedRangeEpk(Documents.Routing.Range<string> range)
         {
             this.Range = range;
         }

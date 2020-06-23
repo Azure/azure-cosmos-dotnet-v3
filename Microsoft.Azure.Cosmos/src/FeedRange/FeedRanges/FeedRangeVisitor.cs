@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions.FillPartitionKeyRangeId(this.request, feedRange.PartitionKeyRangeId);
         }
 
-        public void Visit(FeedRangeEPK feedRange)
+        public void Visit(FeedRangeEpk feedRange)
         {
             // No-op since the range is defined by the composite continuation token
         }

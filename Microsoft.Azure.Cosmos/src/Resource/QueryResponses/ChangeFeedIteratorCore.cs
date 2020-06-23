@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            feedRangeInternal = feedRangeInternal ?? FeedRangeEPK.ForFullRange();
+            feedRangeInternal = feedRangeInternal ?? FeedRangeEpk.ForFullRange();
             return new ChangeFeedIteratorCore(container, feedRangeInternal, changeFeedRequestOptions);
         }
 
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                             collectionRid: this.lazyContainerRid.Result.Result,
-                            range: (this.FeedRangeInternal as FeedRangeEPK).Range,
+                            range: (this.FeedRangeInternal as FeedRangeEpk).Range,
                             forceRefresh: false);
                     ranges = pkRanges.Select(pkRange => pkRange.ToRange()).ToList();
                 }
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos
                     partitionKeyDefinition: null);
 
                 // Override the original PKRangeId based FeedRange
-                this.FeedRangeInternal = new FeedRangeEPK(effectiveRanges[0]);
+                this.FeedRangeInternal = new FeedRangeEpk(effectiveRanges[0]);
                 this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                     containerRid: this.lazyContainerRid.Result.Result,
                     feedRange: this.FeedRangeInternal,

@@ -241,10 +241,10 @@ namespace Microsoft.Azure.Cosmos
                             isMinInclusive: true,
                             isMaxInclusive: false),
                         forceRefresh: true);
-            List<FeedRangeEPK> feedTokens = new List<FeedRangeEPK>(partitionKeyRanges.Count);
+            List<FeedRangeEpk> feedTokens = new List<FeedRangeEpk>(partitionKeyRanges.Count);
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
-                feedTokens.Add(new FeedRangeEPK(partitionKeyRange.ToRange()));
+                feedTokens.Add(new FeedRangeEpk(partitionKeyRange.ToRange()));
             }
 
             return feedTokens;

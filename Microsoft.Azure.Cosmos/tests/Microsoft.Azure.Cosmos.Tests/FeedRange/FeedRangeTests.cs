@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangeEPK_Range()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEPK feedRangeEPK = new FeedRangeEPK(range);
+            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
             Assert.AreEqual(range, feedRangeEPK.Range);
         }
 
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public async Task FeedRangeEPK_GetEffectiveRangesAsync()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEPK feedRangeEPK = new FeedRangeEPK(range);
+            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
             List<Documents.Routing.Range<string>> ranges = await feedRangeEPK.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null);
             Assert.AreEqual(1, ranges.Count);
             Assert.AreEqual(range, ranges[0]);
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.Is<Documents.Routing.Range<string>>(s => s == range), It.IsAny<bool>()))
                 .ReturnsAsync(new List<Documents.PartitionKeyRange>() { partitionKeyRange });
 
-            FeedRangeEPK feedRangeEPK = new FeedRangeEPK(range);
+            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
             IEnumerable<string> pkRanges = await feedRangeEPK.GetPartitionKeyRangesAsync(routingProvider, null, null, default(CancellationToken));
             Assert.AreEqual(1, pkRanges.Count());
             Assert.AreEqual(partitionKeyRange.Id, pkRanges.First());
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangeEPK_RequestVisitor()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEPK feedRange = new FeedRangeEPK(range);
+            FeedRangeEpk feedRange = new FeedRangeEpk(range);
             RequestMessage requestMessage = new RequestMessage();
             FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
             feedRange.Accept(feedRangeVisitor);
@@ -199,9 +199,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangeEPK_ToJsonFromJson()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEPK feedRangeEPK = new FeedRangeEPK(range);
+            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
             string representation = feedRangeEPK.ToJsonString();
-            FeedRangeEPK feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEPK;
+            FeedRangeEpk feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEpk;
             Assert.IsNotNull(feedRangeEPKDeserialized);
             Assert.AreEqual(feedRangeEPK.Range.Min, feedRangeEPKDeserialized.Range.Min);
             Assert.AreEqual(feedRangeEPK.Range.Max, feedRangeEPKDeserialized.Range.Max);
