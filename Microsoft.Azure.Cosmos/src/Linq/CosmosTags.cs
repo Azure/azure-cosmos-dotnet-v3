@@ -115,22 +115,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                     var regularProp = $"{tagsProp}[\"tags\"][\"{tagName}\"]";
                     var notProp = $"{tagsProp}[\"tags\"][\"!{tagName}\"]";
 
-                    if (needsLoopAnd)
-                    {
-                        sb.Append(" AND ");
-                        needsLoopAnd = false;
-                    }
-
                     if (nots.Any())
                     {
                         if (nots.Any(x => x.IsWildcard))
                         {
-                            sb.Append($"NOT(IS_DEFINED({regularProp}))");
+                            if (needsLoopAnd)
+                                sb.Append(" AND ");
+
+                            sb.Append($"NOT({regularProp} = true)");
                             needsNotsAnd = true;
                             needsLoopAnd = true;
                         }
                         else
                         {
+                            if (needsLoopAnd)
+                                sb.Append(" AND ");
+
                             sb.Append($"NOT(ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\"))");
                             foreach (var not in nots)
                                 sb.Append($" AND NOT(ARRAY_CONTAINS({tagProp}, \"{not.Tag.Substring(1)}\"))");
@@ -144,9 +144,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                         {
                             if (queryOptions.HasFlag(TagsQueryOptions.DocumentNotTags))
                             {
-                                if (needsNotsAnd)
+                                if (needsLoopAnd || needsNotsAnd)
                                     sb.Append(" AND ");
-                                sb.Append($"NOT(IS_DEFINED({notProp}))");
+
+                                sb.Append($"NOT({notProp} = true)");
 
                                 needsRegularsAnd = true;
                                 needsLoopAnd = true;
@@ -154,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         }
                         else
                         {
-                            if (needsNotsAnd)
+                            if (needsLoopAnd || needsNotsAnd)
                                 sb.Append(" AND ");
 
                             if (queryOptions.HasFlag(TagsQueryOptions.DocumentNotTags))
@@ -162,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                                 sb.Append("(");
 
                                 // No document "not" tags set
-                                sb.Append($"NOT(IS_DEFINED({notProp}))");
+                                sb.Append($"NOT({notProp} = true)");
                                 sb.Append(" OR ");
                                 // Explicit document "not" wildcard is set
                                 sb.Append($"NOT(ARRAY_CONTAINS({tagProp}, \"!{wildcardTag}\"))");
@@ -180,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                             sb.Append("(");
                             // Implicit document wildcard
-                            sb.Append($"NOT(IS_DEFINED({regularProp}))");
+                            sb.Append($"NOT({regularProp} = true)");
                             sb.Append(" OR ");
                             // Explicit document wildcard
                             sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
@@ -197,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                     if (requireds.Any())
                     {
-                        if (needsNotsAnd || needsRegularsAnd)
+                        if (needsLoopAnd || needsNotsAnd || needsRegularsAnd)
                             sb.Append(" AND ");
                         sb.Append("(");
                         sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
