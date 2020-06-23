@@ -1789,25 +1789,86 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
         {
-            DocumentClient client = TestCommon.CreateClient(false);
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pKey", "/Id" }), Kind = PartitionKind.MultiHash };
-            DocumentCollection coll1 = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+            DocumentClient client = TestCommon.CreateClient(true);
+            Database database = await client.CreateDatabaseAsync(new Database { Id = "mydb" });
+            try
+            {
+                TestCommon.SetBooleanConfigurationProperty("enableSubPartitioning", true);
+                DocumentCollection collection = await TestCommon.CreateCollectionAsync(client,
+                 "/dbs/mydb",
+                 new DocumentCollection
+                 {
+                     Id = "mycoll",
+                     PartitionKey = new PartitionKeyDefinition
+                     {
+                         Paths = new Collection<string> { "/ZipCode", "/Address" },
+                         Kind = PartitionKind.MultiHash,
+                         Version = PartitionKeyDefinitionVersion.V2
+                     }
+                 });
 
-            DocumentCollection collTemp1 = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri("db1", "coll1"));
-            Assert.AreEqual(collTemp1, coll1);
+                //Document create.
+                ResourceResponse<Document>[] documents = new ResourceResponse<Document>[3];
+                Document doc1 = new Document { Id = "document1" };
+                doc1.SetValue("ZipCode", "500026");
+                doc1.SetValue("Address", "Secunderabad");
+                documents[0] = await client.CreateDocumentAsync("/dbs/mydb/colls/mycoll", doc1);
 
-            PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] {"/Id" }), Kind = PartitionKind.MultiHash };
-            DocumentCollection coll2 = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll2", PartitionKey = partitionKeyDefinition2 });
+                doc1 = new Document { Id = "document2" };
+                doc1.SetValue("ZipCode", "15232");
+                doc1.SetValue("Address", "Pittsburgh");
+                documents[1] = await client.CreateDocumentAsync("/dbs/mydb/colls/mycoll", doc1);
 
-            DocumentCollection collTemp2 = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri("db1", "coll2"));
-            Assert.AreEqual(collTemp2, coll2);
+                doc1 = new Document { Id = "document3" };
+                doc1.SetValue("ZipCode", "11790");
+                doc1.SetValue("Address", "Stonybrook");
+                documents[2] = await client.CreateDocumentAsync("/dbs/mydb/colls/mycoll", doc1);
 
-            PartitionKeyDefinition partitionKeyDefinition3 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pKey", "/Id", "/Name" }), Kind = PartitionKind.MultiHash };
-            DocumentCollection coll3 = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll3", PartitionKey = partitionKeyDefinition3 });
+                Assert.AreEqual(3, documents.Select(document => ((Document)document).SelfLink).Distinct().Count());
 
-            DocumentCollection collTemp3 = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri("db1", "coll3"));
-            Assert.AreEqual(collTemp3, coll3);
+                //Document Read.
+                foreach (Document document in documents)
+                {
+                    PartitionKey pKey = new PartitionKey(new object[] { document.GetValue<string>("ZipCode"), document.GetPropertyValue<string>("Address") });
+                    Document readDocument = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(database.Id, collection.Id, document.Id), new RequestOptions { PartitionKey = pKey });
+                    Assert.AreEqual(document.ToString(), readDocument.ToString());
+                }
+
+                //Document Update.
+                foreach (ResourceResponse<Document> obj in documents)
+                {
+                    PartitionKey pKey = new PartitionKey(new object[] { obj.Resource.GetValue<string>("ZipCode"), obj.Resource.GetPropertyValue<string>("Address") });
+                    Document document = (await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(database.Id, collection.Id, obj.Resource.Id), new RequestOptions { PartitionKey = pKey })).Resource;
+                    document.SetPropertyValue("Name", document.Id);
+                    Document readDocument = await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database.Id, collection.Id), document);//, new RequestOptions { PartitionKey = pKey });
+                    Assert.AreEqual(readDocument.GetValue<string>("Name"), document.GetValue<string>("Name"));
+                }
+
+                //Document Delete.
+                foreach (Document document in documents)
+                {
+                    PartitionKey pKey = new PartitionKey(new object[] { document.GetValue<string>("ZipCode"), document.GetPropertyValue<string>("Address") });
+                    Document readDocument = await client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(database.Id, collection.Id, document.Id), new RequestOptions { PartitionKey = pKey });
+                    try
+                    {
+                        readDocument = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(database.Id, collection.Id, document.Id), new RequestOptions { PartitionKey = pKey });
+                    }
+                    catch (DocumentClientException clientException)
+                    {
+                        TestCommon.AssertException(clientException, HttpStatusCode.NotFound);
+                    }
+                }
+
+            }
+            catch (Exception)
+            {
+                Assert.Fail();
+            }
+            finally
+            {
+                await client.DeleteDatabaseAsync(database);
+                TestCommon.SetBooleanConfigurationProperty("enableSubPartitioning", false);
+            }
 
         }
 
