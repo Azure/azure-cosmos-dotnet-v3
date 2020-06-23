@@ -127,7 +127,7 @@
             //**********************************************************************************************
             ThroughputResponse throughputResponse = await autoscaleContainer.ReadThroughputAsync(requestOptions: null);
 
-            Console.WriteLine($"{Environment.NewLine}1.2.1. Found autoscale throughput {Environment.NewLine}The current throughput: {throughputResponse.Resource.Throughput} Max throughput: {throughputResponse.Resource.AutoscaleMaxThroughput}" +
+            Console.WriteLine($"{Environment.NewLine}1.2.1. Found autoscale throughput {Environment.NewLine}The current throughput: {throughputResponse.Resource.Throughput} Max throughput: {throughputResponse.Resource.AutoscaleMaxThroughput} " +
                 $"using container's id: {autoscaleContainer.Id}");
 
             //*********************************************************************************************
@@ -143,14 +143,14 @@
             //******************************************************************************************************************
             ThroughputResponse throughputUpdateResponse = await autoscaleContainer.ReplaceThroughputAsync(ThroughputProperties.CreateAutoscaleThroughput(15000));
 
-            Console.WriteLine($"{Environment.NewLine}1.2.3. Replaced autoscale throughput. {Environment.NewLine}The current throughput: {throughputUpdateResponse.Resource.Throughput} Max throughput: {throughputUpdateResponse.Resource.AutoscaleMaxThroughput}" +
+            Console.WriteLine($"{Environment.NewLine}1.2.3. Replaced autoscale throughput. {Environment.NewLine}The current throughput: {throughputUpdateResponse.Resource.Throughput} Max throughput: {throughputUpdateResponse.Resource.AutoscaleMaxThroughput} " +
                 $"using container's id: {autoscaleContainer.Id}");
 
             // Get the offer again after replace
             throughputResponse = await autoscaleContainer.ReadThroughputAsync(requestOptions: null);
 
-            Console.WriteLine($"{Environment.NewLine}1.2.4. Found autoscale throughput {Environment.NewLine}The current throughput: {throughputResponse.Resource.Throughput} Max throughput: {throughputResponse.Resource.AutoscaleMaxThroughput}" +
-                $"using container's id: {autoscaleContainer.Id}");
+            Console.WriteLine($"{Environment.NewLine}1.2.4. Found autoscale throughput {Environment.NewLine}The current throughput: {throughputResponse.Resource.Throughput} Max throughput: {throughputResponse.Resource.AutoscaleMaxThroughput} " +
+                $"using container's id: {autoscaleContainer.Id}{Environment.NewLine}");
 
             // Delete the container
             await autoscaleContainer.DeleteContainerAsync();
@@ -171,7 +171,7 @@
                 containerProperties,
                 throughput: 400);
 
-            Console.WriteLine($"1.2. Created Container {containerWithConsistentIndexing.Id}, with custom index policy {Environment.NewLine}");
+            Console.WriteLine($"1.3 Created Container {containerWithConsistentIndexing.Id}, with custom index policy {Environment.NewLine}");
 
             await containerWithConsistentIndexing.DeleteContainerAsync();
         }
@@ -189,7 +189,7 @@
                 containerProperties: properties);
             ContainerProperties returnedProperties = ttlEnabledContainerResponse;
 
-            Console.WriteLine($"{Environment.NewLine}1.3. Created Container {Environment.NewLine}{returnedProperties.Id} with TTL expiration of {returnedProperties.DefaultTimeToLive}");
+            Console.WriteLine($"{Environment.NewLine}1.4 Created Container {Environment.NewLine}{returnedProperties.Id} with TTL expiration of {returnedProperties.DefaultTimeToLive}");
 
             await ttlEnabledContainerResponse.Container.DeleteContainerAsync();
         }
