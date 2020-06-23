@@ -4,36 +4,27 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
-    internal class PatchOperation
+    internal abstract class PatchOperation
     {
-        private static class PropertyNames
-        {
-            public const string OperationType = "op";
-            public const string Path = "path";
-            public const string From = "from";
-        }
-
-        [JsonProperty(PropertyName = PropertyNames.OperationType)]
+        [JsonProperty(PropertyName = PatchConstants.PropertyNames.OperationType)]
         [JsonConverter(typeof(StringEnumConverter))]
         public PatchOperationType OperationType { get; }
 
-        [JsonProperty(PropertyName = PropertyNames.Path)]
+        [JsonProperty(PropertyName = PatchConstants.PropertyNames.Path)]
         public string Path { get; }
-
-        [JsonProperty(PropertyName = PropertyNames.From, NullValueHandling = NullValueHandling.Ignore)]
-        public string From { get; }
 
         public PatchOperation(
             PatchOperationType operationType,
-            string path,
-            string from = null)
+            string path)
         {
             this.OperationType = operationType;
-            this.Path = path;
-            this.From = from;
+            this.Path = string.IsNullOrWhiteSpace(path)
+                ? throw new ArgumentNullException(nameof(path))
+                : path;
         }
     }
 }

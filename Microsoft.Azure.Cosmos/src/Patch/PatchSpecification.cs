@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
         sealed class PatchSpecification
     {
-        private const int maxOperationsAllowed = 100;
-
         [JsonProperty(PropertyName = "operations")]
         internal List<PatchOperation> Operations { get; }
 
@@ -26,93 +24,75 @@ namespace Microsoft.Azure.Cosmos
             this.Operations = new List<PatchOperation>();
         }
 
+        /// <summary>
+        /// Adds an operation to add a value.
+        /// </summary>
+        /// <typeparam name="T">Type of <paramref name="value"/></typeparam>
+        /// <param name="path">Target location reference.</param>
+        /// <param name="value">The value to be added.</param>
+        /// <returns>The patch specification instance with the operation added.</returns>
         public PatchSpecification Add<T>(
             string path,
             T value)
         {
-            this.ValidateNumberOfOperations();
-            this.ValidatePathArgument(path);
-            this.ValidateValueArgument(value);
-
             this.Operations.Add(
-                new PatchOperation<T>(
-                    PatchOperationType.Add,
+                new AddPatchOperation<T>(
                     path,
                     value));
 
             return this;
         }
 
+        /// <summary>
+        /// Adds an operation to remove a value.
+        /// </summary>
+        /// <param name="path">Target location reference.</param>
+        /// <returns>The patch specification instance with the operation added.</returns>
         public PatchSpecification Remove(string path)
         {
-            this.ValidateNumberOfOperations();
-            this.ValidatePathArgument(path);
-
             this.Operations.Add(
-                new PatchOperation(
-                    PatchOperationType.Remove,
+                new RemovePatchOperation(
                     path));
 
             return this;
         }
 
+        /// <summary>
+        /// Adds an operation to replace a value.
+        /// </summary>
+        /// <typeparam name="T">Type of <paramref name="value"/></typeparam>
+        /// <param name="path">Target location reference.</param>
+        /// <param name="value">The new value.</param>
+        /// <returns>The patch specification instance with the operation added.</returns>
         public PatchSpecification Replace<T>(
             string path,
             T value)
         {
-            this.ValidateNumberOfOperations();
-            this.ValidatePathArgument(path);
-            this.ValidateValueArgument(value);
-
             this.Operations.Add(
-                new PatchOperation<T>(
-                    PatchOperationType.Replace,
+                new ReplacePatchOperation<T>(
                     path,
                     value));
 
             return this;
         }
 
+        /// <summary>
+        /// Adds an operation to set a value.
+        /// </summary>
+        /// <typeparam name="T">Type of <paramref name="value"/></typeparam>
+        /// <param name="path">Target location reference.</param>
+        /// <param name="value">The value to be set at the specified path.</param>
+        /// <returns>The patch specification instance with the operation added.</returns>
         public PatchSpecification Set<T>(
             string path,
             T value)
         {
-            this.ValidateNumberOfOperations();
-            this.ValidatePathArgument(path);
-            this.ValidateValueArgument(value);
-
             this.Operations.Add(
-                new PatchOperation<T>(
-                    PatchOperationType.Set,
+                new SetPatchOperation<T>(
                     path,
                     value));
 
             return this;
-        }
-
-        private void ValidatePathArgument(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-        }
-
-        private void ValidateValueArgument(object value)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-        }
-
-        private void ValidateNumberOfOperations()
-        {
-            if (this.Operations.Count == maxOperationsAllowed)
-            {
-                throw CosmosExceptionFactory.CreateBadRequestException(
-                    $"Maximum number of operations allowed per {nameof(PatchSpecification)} is {maxOperationsAllowed}.");
-            }
         }
     }
 }
