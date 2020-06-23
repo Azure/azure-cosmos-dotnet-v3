@@ -33,7 +33,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (!this.dictionary.TryGetValue(range, out (bool valueSet, T value) nullableValue))
+            return this.TryGetValue(range, out value);
+        }
+
+        public bool TryGetValue(PartitionKeyHashRange partitionKeyHashRange, out T value)
+        {
+            if (!this.dictionary.TryGetValue(partitionKeyHashRange, out (bool valueSet, T value) nullableValue))
             {
                 value = default;
                 return false;
@@ -68,6 +73,28 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 this.dictionary[range] = (true, value);
+            }
+        }
+
+        public T this[PartitionKeyHashRange key]
+        {
+            get
+            {
+                if (!this.TryGetValue(key, out T value))
+                {
+                    throw new KeyNotFoundException();
+                }
+
+                return value;
+            }
+            set
+            {
+                if (!this.TryGetValue(key, out _))
+                {
+                    throw new NotSupportedException("Dictionary does not support adding new elements.");
+                }
+
+                this.dictionary[key] = (true, value);
             }
         }
 

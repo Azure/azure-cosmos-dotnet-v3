@@ -11,12 +11,15 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Moq;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal sealed class InMemoryCollection
     {
-        private readonly PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private readonly PartitionKeyDefinition partitionKeyDefinition;
+
+        private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
+        private Dictionary<int, PartitionKeyHashRange> partitionKeyRangeIdToHashRange;
 
         public InMemoryCollection(PartitionKeyDefinition partitionKeyDefinition)
         {
@@ -24,6 +27,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
+            this.partitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
+            {
+                { 0, fullRange }
+            };
         }
 
         public Record CreateItem(CosmosObject payload)
@@ -54,7 +61,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (Record candidate in records)
             {
-                if (candidate.Identifier == identifier)
+                bool identifierMatches = candidate.Identifier == identifier;
+
+                CosmosElement candidatePartitionKey = GetPartitionKeyFromPayload(candidate.Payload, this.partitionKeyDefinition);
+                bool partitionKeyMatches = CosmosElementEqualityComparer.Value.Equals(candidatePartitionKey, partitionKey);
+
+                if (identifierMatches && partitionKeyMatches)
                 {
                     record = candidate;
                     return true;
@@ -65,7 +77,80 @@ namespace Microsoft.Azure.Cosmos.Tests
             return false;
         }
 
+        public bool TryReadFeed(int partitionKeyRangeId, int pageIndex, int pageSize, out List<Record> page)
+        {
+            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange range))
+            {
+                page = default;
+                return false;
+            }
+
+            if (!this.partitionedRecords.TryGetValue(range, out Records records))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            page = records.Skip(pageIndex * pageSize).Take(pageSize).ToList();
+            return true;
+        }
+
+        public IReadOnlyDictionary<int, PartitionKeyHashRange> PartitionKeyRangeFeedReed() => this.partitionKeyRangeIdToHashRange;
+
+        public void Split(int partitionKeyRangeId)
+        {
+            // Get the current range and records
+            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange parentRange))
+            {
+                throw new InvalidOperationException("Failed to find the range.");
+            }
+
+            if (!this.partitionedRecords.TryGetValue(parentRange, out Records records))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            int maxPartitionKeyRangeId = this.partitionKeyRangeIdToHashRange.Keys.Max();
+
+            // Split the range space
+            PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(parentRange, 2);
+
+            // Update the partition routing map
+            Dictionary<int, PartitionKeyHashRange> newPartitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
+            {
+                { maxPartitionKeyRangeId + 1, partitionKeyHashRanges.First() },
+                { maxPartitionKeyRangeId + 2, partitionKeyHashRanges.Last() },
+            };
+
+            // Copy over the partitioned records (minus the parent range)
+            PartitionKeyHashRangeDictionary<Records> newPartitionedRecords = new PartitionKeyHashRangeDictionary<Records>(
+                PartitionKeyHashRanges.Create(
+                    newPartitionKeyRangeIdToHashRange.Values));
+
+            foreach (PartitionKeyHashRange range in this.partitionKeyRangeIdToHashRange.Values)
+            {
+                if (!range.Equals(parentRange))
+                {
+                    newPartitionedRecords[range] = this.partitionedRecords[range];
+                }
+            }
+
+            this.partitionedRecords = newPartitionedRecords;
+            this.partitionKeyRangeIdToHashRange = newPartitionKeyRangeIdToHashRange;
+
+            // Rehash the records in the parent range
+            foreach (Record record in records)
+            {
+                this.CreateItem(record.Payload);
+            }
+        }
+
         private static PartitionKeyHash GetHashFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            CosmosElement partitionKey = GetPartitionKeyFromPayload(payload, partitionKeyDefinition);
+            return GetHashFromPartitionKey(partitionKey, partitionKeyDefinition);
+        }
+
+        private static CosmosElement GetPartitionKeyFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
         {
             // Restrict the partition key definition for now to keep things simple
             if (partitionKeyDefinition.Kind != PartitionKind.Hash)
@@ -97,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            return GetHashFromPartitionKey(partitionKey, partitionKeyDefinition);
+            return partitionKey;
         }
 
         private static PartitionKeyHash GetHashFromPartitionKey(CosmosElement partitionKey, PartitionKeyDefinition partitionKeyDefinition)
