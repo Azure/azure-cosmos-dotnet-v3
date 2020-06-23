@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Security.Policy;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
