@@ -82,8 +82,6 @@
 
             await Program.GetAndChangeContainerPerformance(simpleContainer);
 
-            await Program.GetAndChangeContainerPerformance(simpleContainer);
-
             await Program.ReadContainerProperties();
 
             await Program.ListContainersInDatabase();
