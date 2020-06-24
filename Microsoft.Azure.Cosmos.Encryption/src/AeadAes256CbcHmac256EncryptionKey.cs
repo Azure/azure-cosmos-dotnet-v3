@@ -16,37 +16,37 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class AeadAes256CbcHmac256EncryptionKey : SymmetricKey
     {
         /// <summary>
-        /// Key size in bits
+        /// Key size in bits.
         /// </summary>
         internal const int KeySize = 256;
 
         /// <summary>
         /// Encryption Key Salt format. This is used to derive the encryption key from the root key.
         /// </summary>
-        private const string encryptionKeySaltFormat = @"Microsoft Azure Cosmos DB encryption key with encryption algorithm:{0} and key length:{1}";
+        private const string EncryptionKeySaltFormat = @"Microsoft Azure Cosmos DB encryption key with encryption algorithm:{0} and key length:{1}";
 
         /// <summary>
         /// MAC Key Salt format. This is used to derive the MAC key from the root key.
         /// </summary>
-        private const string macKeySaltFormat = @"Microsoft Azure Cosmos DB MAC key with encryption algorithm:{0} and key length:{1}";
+        private const string MacKeySaltFormat = @"Microsoft Azure Cosmos DB MAC key with encryption algorithm:{0} and key length:{1}";
 
         /// <summary>
         /// IV Key Salt format. This is used to derive the IV key from the root key. This is only used for Deterministic encryption.
         /// </summary>
-        private const string ivKeySaltFormat = @"Microsoft Azure Cosmos DB IV key with encryption algorithm:{0} and key length:{1}";
+        private const string IvKeySaltFormat = @"Microsoft Azure Cosmos DB IV key with encryption algorithm:{0} and key length:{1}";
 
         /// <summary>
-        /// Encryption Key
+        /// Encryption Key.
         /// </summary>
         private readonly SymmetricKey encryptionKey;
 
         /// <summary>
-        /// MAC key
+        /// MAC key.
         /// </summary>
         private readonly SymmetricKey macKey;
 
         /// <summary>
-        /// IV Key
+        /// IV Key.
         /// </summary>
         private readonly SymmetricKey ivKey;
 
@@ -77,28 +77,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // Derive keys from the root key
             //
             // Derive encryption key
-            string encryptionKeySalt = string.Format(encryptionKeySaltFormat,
-                                                    this.algorithmName,
-                                                    KeySize);
+            string encryptionKeySalt = string.Format(
+                EncryptionKeySaltFormat,
+                this.algorithmName,
+                KeySize);
             byte[] buff1 = new byte[keySizeInBytes];
             SecurityUtility.GetHMACWithSHA256(Encoding.Unicode.GetBytes(encryptionKeySalt), this.RootKey, buff1);
             this.encryptionKey = new SymmetricKey(buff1);
 
             // Derive mac key
-            string macKeySalt = string.Format(macKeySaltFormat, this.algorithmName, KeySize);
+            string macKeySalt = string.Format(MacKeySaltFormat, this.algorithmName, KeySize);
             byte[] buff2 = new byte[keySizeInBytes];
             SecurityUtility.GetHMACWithSHA256(Encoding.Unicode.GetBytes(macKeySalt), this.RootKey, buff2);
             this.macKey = new SymmetricKey(buff2);
 
             // Derive iv key
-            string ivKeySalt = string.Format(ivKeySaltFormat, this.algorithmName, KeySize);
+            string ivKeySalt = string.Format(IvKeySaltFormat, this.algorithmName, KeySize);
             byte[] buff3 = new byte[keySizeInBytes];
             SecurityUtility.GetHMACWithSHA256(Encoding.Unicode.GetBytes(ivKeySalt), this.RootKey, buff3);
             this.ivKey = new SymmetricKey(buff3);
         }
 
         /// <summary>
-        /// Encryption key should be used for encryption and decryption
+        /// Gets Encryption key that should be used for encryption and decryption.
         /// </summary>
         internal byte[] EncryptionKey
         {
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// MAC key should be used to compute and validate HMAC
+        /// Gets MAC key should be used to compute and validate HMAC.
         /// </summary>
         internal byte[] MACKey
         {
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// IV key should be used to compute synthetic IV from a given plain text
+        /// Gets IV key should be used to compute synthetic IV from a given plain text.
         /// </summary>
         internal byte[] IVKey
         {
