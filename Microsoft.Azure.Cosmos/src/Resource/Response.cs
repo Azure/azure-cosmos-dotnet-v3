@@ -32,7 +32,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets the request completion status code from the Azure Cosmos DB service.
+        /// This can be used to in scenario like CreateDatabaseIfNotExists to help determine if the database was created or already existed.
         /// </summary>
+        /// <remarks>This is only used for success scenarios. The operation will throw a CosmosException on failures. For more info: https://aka.ms/cosmosdb-dot-net-exceptions</remarks>
         /// <value>The request completion status code</value>
         public abstract HttpStatusCode StatusCode { get; }
 
