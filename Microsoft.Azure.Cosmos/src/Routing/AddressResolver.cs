@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
@@ -13,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -71,6 +73,20 @@ namespace Microsoft.Azure.Cosmos
             await this.requestSigner.SignRequestAsync(request, cancellationToken);
 
             return result.Addresses;
+        }
+
+        public Task UpdateAsync(
+            IReadOnlyList<AddressCacheToken> addressCacheTokens,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UpdateAsync(
+           ServerKey serverKey,
+           CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
         }
 
         private static bool IsSameCollection(PartitionKeyRange initiallyResolved, PartitionKeyRange newlyResolved)
