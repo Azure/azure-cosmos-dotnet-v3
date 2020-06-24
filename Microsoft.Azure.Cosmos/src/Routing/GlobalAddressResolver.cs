@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
@@ -129,6 +130,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             await Task.WhenAll(tasks);
+        }
+
+        public Task UpdateAsync(
+           ServerKey serverKey,
+           CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
