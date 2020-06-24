@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
 
         public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
-            if ((exception is AdalException || WebExceptionUtility.IsWebExceptionRetriable(exception)) &&
+            if ((exception is AdalException || WebExceptionUtility.IsWebExceptionRetriable(exception) || exception is System.NullReferenceException) &&
                 this.retriesAttempted < this.maxRetries && !cancellationToken.IsCancellationRequested)
             {
                 this.retriesAttempted++;

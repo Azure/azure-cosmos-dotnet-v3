@@ -32,8 +32,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
         private readonly int aadRetryCount;
 
         private readonly ClientAssertionCertificate clientAssertionCertificate;
-        private readonly AsyncCache<bool, IAADTokenProvider> aadTokenProvider;
-
+        // cache the toke provider and Token based on KeyVault URI and Directory/Tenant ID
+        private readonly AsyncCache<string, IAADTokenProvider> aadTokenProvider;
+        private readonly AsyncCache<IAADTokenProvider, string> aadTokenCache;
+        private readonly AsyncCache<Uri, string> EndPointCache;
         private readonly HttpClient httpClient;
 
         /// <summary>
@@ -49,7 +51,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
             int aadRetryCount)
         {
             this.clientAssertionCertificate = new ClientAssertionCertificate(clientId, certificate);
-            this.aadTokenProvider = new AsyncCache<bool, IAADTokenProvider>();
+            this.aadTokenProvider = new AsyncCache<string, IAADTokenProvider>();
+            this.aadTokenCache = new AsyncCache<IAADTokenProvider, string>();
+            this.EndPointCache = new AsyncCache<Uri, string>();
             this.httpClient = httpClient;
 
             this.aadRetryInterval = aadRetryInterval;
@@ -109,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
                 keyVaultKeyUri,
                 cancellationToken);
 
-         
+
             string keyDeletionRecoveryLevel = getKeyResponse?.Attributes?.RecoveryLevel;
             DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: KeyVaultKey {0} has Deletion Recovery Level {1}.",
                 keyVaultKeyUri,
@@ -313,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
                 return JsonConvert.DeserializeObject<InternalGetKeyResponse>(jsonResponse);
             }
         }
-		
+
         /// <summary>
         /// Get The Key Information like public key and recovery level.
         /// </summary>
@@ -368,12 +372,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            IAADTokenProvider aadTokenProvider = await this.aadTokenProvider.GetAsync(
-                key: true,
+            string tenantid = await this.EndPointCache.GetAsync(
+                key: keyVaultKeyUri,
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
                 {
                     await this.InitializeLoginUrlAndResourceEndpointAsync(keyVaultKeyUri, cancellationToken);
+                    new AADTokenProvider(
+                        this.aadLoginUrl,
+                        this.keyVaultResourceEndpoint,
+                        this.clientAssertionCertificate,
+                        this.aadRetryInterval,
+                        this.aadRetryCount);
+
+                    return this.aadLoginUrl.Substring(this.aadLoginUrl.LastIndexOf('/') + 1);
+
+                },
+                cancellationToken: cancellationToken);
+
+            
+            IAADTokenProvider aadTokenProvider = await this.aadTokenProvider.GetAsync(
+                key: tenantid,
+                obsoleteValue: null,
+                singleValueInitFunc: async () =>
+                {
 
                     return new AADTokenProvider(
                         this.aadLoginUrl,
@@ -387,7 +409,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
 
             try
             {
-                return await aadTokenProvider.GetAccessTokenAsync(cancellationToken);
+                string cacheToken = await this.aadTokenCache.GetAsync(
+                key: aadTokenProvider,
+                obsoleteValue: null,
+                singleValueInitFunc: async () =>
+                {
+                    return await aadTokenProvider.GetAccessTokenAsync(cancellationToken);
+                },
+                cancellationToken: cancellationToken);
+
+                return cacheToken;
             }
             catch (AdalException ex)
             {
