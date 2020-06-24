@@ -1,9 +1,10 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
     // This class represents a collection expression that is comprised of a collection definition and an 
     // optional alias.
@@ -11,7 +12,14 @@ namespace Microsoft.Azure.Cosmos.Sql
     //  FROM Person p
     //  FROM [1, 3, 5, 7] a
 
-    internal sealed class SqlAliasedCollectionExpression : SqlCollectionExpression
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class SqlAliasedCollectionExpression : SqlCollectionExpression
     {
         private SqlAliasedCollectionExpression(
             SqlCollection collection,

@@ -474,6 +474,26 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.ResponseFactory).Returns(context.ResponseFactory);
             mockContext.Setup(x => x.SerializerCore).Returns(context.SerializerCore);
             mockContext.Setup(x => x.DocumentClient).Returns(context.DocumentClient);
+
+            mockContext.Setup(x => x.CreateDiagnosticContext(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>()))
+                .Returns<string, RequestOptions>((x, y) => new CosmosDiagnosticsContextCore(x, "MockUserAgentString"));
+
+            mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+
+            mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<Uri>(),
                 It.IsAny<ResourceType>(),

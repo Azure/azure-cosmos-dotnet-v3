@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
 
     /// <summary>
     /// Wrapper class for translating LINQ to DocDB SQL.
