@@ -762,26 +762,33 @@ namespace Microsoft.Azure.Cosmos
                     stream.CopyTo(memoryStream);
                 }
 
+                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
                 // TODO: Avoid copy 
                 IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
                 IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                 CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
+                List<CosmosElement> partitionValues = new List<CosmosElement>();
 
-                string[] tokens = await this.GetPartitionKeyPathTokensAsync(cancellation);
-                for (int i = 0; i < tokens.Length - 1; i++)
+                for (int j = 0; j < partitionKeyDefinition.Paths.Count; j++)
                 {
-                    if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
+                    string[] tokens = await this.GetPartitionKeyPathTokensAsync(cancellation, j);
+                    for (int i = 0; i < tokens.Length - 1; i++)
+                    {
+                        if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
+                        {
+                            return PartitionKey.None;
+                        }
+                    }
+
+                    if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out CosmosElement partitionKeyValue))
                     {
                         return PartitionKey.None;
                     }
+
+                    partitionValues.Add(partitionKeyValue);
                 }
 
-                if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out CosmosElement partitionKeyValue))
-                {
-                    return PartitionKey.None;
-                }
-
-                return this.CosmosElementToPartitionKeyObject(partitionKeyValue);
+                return this.CosmosElementToPartitionKeyObject(CosmosArray.Create(partitionValues));
             }
             finally
             {
@@ -810,6 +817,35 @@ namespace Microsoft.Azure.Cosmos
 
                 case CosmosElementType.Null:
                     return PartitionKey.Null;
+
+                case CosmosElementType.Array:
+                    CosmosArray array = cosmosElement as CosmosArray;
+                    object[] pKeys = new object[array.ToArray<Object>().Length];
+                    int i = 0;
+                    foreach (CosmosElement ce in array.ToArray<Object>())
+                    {
+                        Object cse;
+                        switch (ce.Type)
+                        {
+                            case CosmosElementType.String:
+                                cse = (ce as CosmosString).Value;
+                                break;
+
+                            case CosmosElementType.Number:
+                                cse = Number64.ToDouble((ce as CosmosNumber).Value);
+                                break;
+
+                            case CosmosElementType.Boolean:
+                                cse = (ce as CosmosBoolean).Value;
+                                break;
+
+                            default:
+                                throw new ArgumentException(
+                                    string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, ce));
+                        }
+                        pKeys[i++] = cse;
+                    }
+                    return new PartitionKey(pKeys);
 
                 default:
                     throw new ArgumentException(

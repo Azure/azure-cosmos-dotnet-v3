@@ -1789,73 +1789,69 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
         {
-            DocumentClient client = TestCommon.CreateClient(true);
-            Database database = await client.CreateDatabaseAsync(new Database { Id = "mydb" });
+            CosmosClient client = TestCommon.CreateCosmosClient(true);
+            Cosmos.Database database = null;
+            database = await client.CreateDatabaseAsync("mydb");
             try
             {
                 TestCommon.SetBooleanConfigurationProperty("enableSubPartitioning", true);
-                DocumentCollection collection = await TestCommon.CreateCollectionAsync(client,
-                 "/dbs/mydb",
-                 new DocumentCollection
-                 {
-                     Id = "mycoll",
-                     PartitionKey = new PartitionKeyDefinition
-                     {
-                         Paths = new Collection<string> { "/ZipCode", "/Address" },
-                         Kind = PartitionKind.MultiHash,
-                         Version = PartitionKeyDefinitionVersion.V2
-                     }
-                 });
-
+                PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition
+                {
+                    Paths = new Collection<string> { "/ZipCode", "/Address" },
+                    Kind = PartitionKind.MultiHash,
+                    Version = PartitionKeyDefinitionVersion.V2
+                };
+                Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "mycoll", PartitionKey = pKDefinition });
+                
                 //Document create.
-                ResourceResponse<Document>[] documents = new ResourceResponse<Document>[3];
+                ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
                 Document doc1 = new Document { Id = "document1" };
                 doc1.SetValue("ZipCode", "500026");
                 doc1.SetValue("Address", "Secunderabad");
-                documents[0] = await client.CreateDocumentAsync("/dbs/mydb/colls/mycoll", doc1);
+                documents[0] = await container.CreateItemAsync<Document>(doc1);
 
                 doc1 = new Document { Id = "document2" };
                 doc1.SetValue("ZipCode", "15232");
                 doc1.SetValue("Address", "Pittsburgh");
-                documents[1] = await client.CreateDocumentAsync("/dbs/mydb/colls/mycoll", doc1);
+                documents[1] = await container.CreateItemAsync<Document>(doc1);
 
                 doc1 = new Document { Id = "document3" };
                 doc1.SetValue("ZipCode", "11790");
                 doc1.SetValue("Address", "Stonybrook");
-                documents[2] = await client.CreateDocumentAsync("/dbs/mydb/colls/mycoll", doc1);
+                documents[2] = await container.CreateItemAsync<Document>(doc1);
 
                 Assert.AreEqual(3, documents.Select(document => ((Document)document).SelfLink).Distinct().Count());
 
                 //Document Read.
                 foreach (Document document in documents)
                 {
-                    PartitionKey pKey = new PartitionKey(new object[] { document.GetValue<string>("ZipCode"), document.GetPropertyValue<string>("Address") });
-                    Document readDocument = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(database.Id, collection.Id, document.Id), new RequestOptions { PartitionKey = pKey });
+                    Cosmos.PartitionKey pKey = new Cosmos.PartitionKey(new object[] { document.GetValue<string>("ZipCode"), document.GetPropertyValue<string>("Address") });
+                    Document readDocument = (await container.ReadItemAsync<Document>(document.Id, pKey)).Resource;
                     Assert.AreEqual(document.ToString(), readDocument.ToString());
                 }
 
                 //Document Update.
-                foreach (ResourceResponse<Document> obj in documents)
+                foreach (ItemResponse<Document> obj in documents)
                 {
-                    PartitionKey pKey = new PartitionKey(new object[] { obj.Resource.GetValue<string>("ZipCode"), obj.Resource.GetPropertyValue<string>("Address") });
-                    Document document = (await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(database.Id, collection.Id, obj.Resource.Id), new RequestOptions { PartitionKey = pKey })).Resource;
+                    Cosmos.PartitionKey pKey = new Cosmos.PartitionKey(new object[] { obj.Resource.GetValue<string>("ZipCode"), obj.Resource.GetPropertyValue<string>("Address") });
+                    Document document = (await container.ReadItemAsync<Document>(obj.Resource.Id, pKey)).Resource;
                     document.SetPropertyValue("Name", document.Id);
-                    Document readDocument = await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database.Id, collection.Id), document);//, new RequestOptions { PartitionKey = pKey });
+                    Document readDocument = (await container.ReplaceItemAsync<Document>(document, document.Id, pKey)).Resource;
                     Assert.AreEqual(readDocument.GetValue<string>("Name"), document.GetValue<string>("Name"));
                 }
 
                 //Document Delete.
                 foreach (Document document in documents)
                 {
-                    PartitionKey pKey = new PartitionKey(new object[] { document.GetValue<string>("ZipCode"), document.GetPropertyValue<string>("Address") });
-                    Document readDocument = await client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(database.Id, collection.Id, document.Id), new RequestOptions { PartitionKey = pKey });
+                    Cosmos.PartitionKey pKey = new Cosmos.PartitionKey(new object[] { document.GetValue<string>("ZipCode"), document.GetPropertyValue<string>("Address") });
+                    Document readDocument = (await container.DeleteItemAsync<Document>(document.Id, pKey)).Resource;
                     try
                     {
-                        readDocument = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(database.Id, collection.Id, document.Id), new RequestOptions { PartitionKey = pKey });
+                        readDocument = await container.ReadItemAsync<Document>(document.Id, pKey);
                     }
-                    catch (DocumentClientException clientException)
+                    catch (CosmosException clientException)
                     {
-                        TestCommon.AssertException(clientException, HttpStatusCode.NotFound);
+                        Assert.AreEqual(clientException.StatusCode, HttpStatusCode.NotFound);
                     }
                 }
 
@@ -1866,7 +1862,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                await client.DeleteDatabaseAsync(database);
+                await database.DeleteAsync();
                 TestCommon.SetBooleanConfigurationProperty("enableSubPartitioning", false);
             }
 

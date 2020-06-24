@@ -519,7 +519,7 @@ namespace Microsoft.Azure.Cosmos
                     return this.partitionKeyPathTokens;
                 }
 
-                if (this.PartitionKey.Paths.Count > 1)
+                if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != PartitionKind.MultiHash) 
                 {
                     throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
                 }
@@ -558,6 +558,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
             }
+        }
+
+        internal string[] getPartitionKeyPath(int index)
+        {
+            return this.PartitionKey?.Paths[index].Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
         }
     }
 }
