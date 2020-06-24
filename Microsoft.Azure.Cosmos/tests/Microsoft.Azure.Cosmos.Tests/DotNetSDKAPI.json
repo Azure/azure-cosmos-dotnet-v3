@@ -1023,12 +1023,26 @@
           ],
           "MethodInfo": null
         },
+        "System.Nullable`1[System.Int32] AnalyticalStoreTimeToLiveInSeconds[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"analyticalStorageTtl\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
+        },
         "System.Nullable`1[System.Int32] DefaultTimeToLive[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"defaultTtl\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
+        },
+        "System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds()"
         },
         "System.Nullable`1[System.Int32] get_DefaultTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1113,6 +1127,13 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor(System.String, System.String)"
+        },
+        "Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32])"
         },
         "Void set_ConflictResolutionPolicy(Microsoft.Azure.Cosmos.ConflictResolutionPolicy)": {
           "Type": "Method",
@@ -1927,6 +1948,99 @@
       },
       "NestedTypes": {}
     },
+    "CosmosOperationCanceledException": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
+        "System.Collections.IDictionary Data": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Collections.IDictionary get_Data()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.IDictionary get_Data()"
+        },
+        "System.Exception GetBaseException()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Exception GetBaseException()"
+        },
+        "System.String get_HelpLink()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_HelpLink()"
+        },
+        "System.String get_Message()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_Message()"
+        },
+        "System.String get_Source()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_Source()"
+        },
+        "System.String get_StackTrace()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_StackTrace()"
+        },
+        "System.String HelpLink": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String Message": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String Source": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String StackTrace": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ToString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToString()"
+        },
+        "Void .ctor(System.OperationCanceledException, Microsoft.Azure.Cosmos.CosmosDiagnostics)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.OperationCanceledException, Microsoft.Azure.Cosmos.CosmosDiagnostics)"
+        },
+        "Void set_HelpLink(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_HelpLink(System.String)"
+        },
+        "Void set_Source(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_Source(System.String)"
+        }
+      },
+      "NestedTypes": {}
+    },
     "CosmosPropertyNamingPolicy": {
       "Subclasses": {},
       "Members": {
@@ -2460,6 +2574,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadNextAsync(System.Threading.CancellationToken)"
+        },
+        "Void Dispose()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void Dispose()"
         }
       },
       "NestedTypes": {}
@@ -2481,6 +2600,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.FeedResponse`1[T]] ReadNextAsync(System.Threading.CancellationToken)"
+        },
+        "Void Dispose()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void Dispose()"
         }
       },
       "NestedTypes": {}
@@ -4408,6 +4532,11 @@
           "MethodInfo": null
         },
         "System.String BrazilSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String BrazilSoutheast": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null

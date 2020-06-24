@@ -1,0 +1,738 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: False, hasProjections: False, hasOrderByDescriptors: False, hasFilter: False</Description>
+      <Query>
+                                SELECT  *
+                                FROM c
+                                
+                                ORDER BY c.orderByField1 , c.orderByField2 </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, c AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY c.orderByField1, c.orderByField2]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: False, hasProjections: True, hasOrderByDescriptors: False, hasFilter: False</Description>
+      <Query>
+                                SELECT  c.property1, c.property2, c.property3
+                                FROM c
+                                
+                                ORDER BY c.orderByField1 , c.orderByField2 </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, {"property1": c.property1, "property2": c.property2, "property3": c.property3} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY c.orderByField1, c.orderByField2]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: False, hasProjections: False, hasOrderByDescriptors: True, hasFilter: False</Description>
+      <Query>
+                                SELECT  *
+                                FROM c
+                                
+                                ORDER BY c.orderByField1 ASC, c.orderByField2 ASC</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, c AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY c.orderByField1 ASC, c.orderByField2 ASC]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: False, hasProjections: True, hasOrderByDescriptors: True, hasFilter: False</Description>
+      <Query>
+                                SELECT  c.property1, c.property2, c.property3
+                                FROM c
+                                
+                                ORDER BY c.orderByField1 ASC, c.orderByField2 ASC</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, {"property1": c.property1, "property2": c.property2, "property3": c.property3} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY c.orderByField1 ASC, c.orderByField2 ASC]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: True, hasProjections: False, hasOrderByDescriptors: False, hasFilter: False</Description>
+      <Query>
+                                SELECT TOP 10 *
+                                FROM c
+                                
+                                ORDER BY c.orderByField1 , c.orderByField2 </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>10</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT TOP 10 c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, c AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY c.orderByField1, c.orderByField2]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: True, hasProjections: True, hasOrderByDescriptors: False, hasFilter: False</Description>
+      <Query>
+                                SELECT TOP 10 c.property1, c.property2, c.property3
+                                FROM c
+                                
+                                ORDER BY c.orderByField1 , c.orderByField2 </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>10</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT TOP 10 c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, {"property1": c.property1, "property2": c.property2, "property3": c.property3} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY c.orderByField1, c.orderByField2]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: True, hasProjections: False, hasOrderByDescriptors: True, hasFilter: False</Description>
+      <Query>
+                                SELECT TOP 10 *
+                                FROM c
+                                
+                                ORDER BY c.orderByField1 ASC, c.orderByField2 ASC</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>10</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT TOP 10 c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, c AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY c.orderByField1 ASC, c.orderByField2 ASC]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: True, hasProjections: True, hasOrderByDescriptors: True, hasFilter: False</Description>
+      <Query>
+                                SELECT TOP 10 c.property1, c.property2, c.property3
+                                FROM c
+                                
+                                ORDER BY c.orderByField1 ASC, c.orderByField2 ASC</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>10</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT TOP 10 c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, {"property1": c.property1, "property2": c.property2, "property3": c.property3} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY c.orderByField1 ASC, c.orderByField2 ASC]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: False, hasProjections: False, hasOrderByDescriptors: False, hasFilter: True</Description>
+      <Query>
+                                SELECT  *
+                                FROM c
+                                WHERE c.property4 = 'asdf'
+                                ORDER BY c.orderByField1 , c.orderByField2 </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, c AS payload
+FROM c
+WHERE ((c.property4 = "asdf") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY c.orderByField1, c.orderByField2]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: False, hasProjections: True, hasOrderByDescriptors: False, hasFilter: True</Description>
+      <Query>
+                                SELECT  c.property1, c.property2, c.property3
+                                FROM c
+                                WHERE c.property4 = 'asdf'
+                                ORDER BY c.orderByField1 , c.orderByField2 </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, {"property1": c.property1, "property2": c.property2, "property3": c.property3} AS payload
+FROM c
+WHERE ((c.property4 = "asdf") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY c.orderByField1, c.orderByField2]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: False, hasProjections: False, hasOrderByDescriptors: True, hasFilter: True</Description>
+      <Query>
+                                SELECT  *
+                                FROM c
+                                WHERE c.property4 = 'asdf'
+                                ORDER BY c.orderByField1 ASC, c.orderByField2 ASC</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, c AS payload
+FROM c
+WHERE ((c.property4 = "asdf") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY c.orderByField1 ASC, c.orderByField2 ASC]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: False, hasProjections: True, hasOrderByDescriptors: True, hasFilter: True</Description>
+      <Query>
+                                SELECT  c.property1, c.property2, c.property3
+                                FROM c
+                                WHERE c.property4 = 'asdf'
+                                ORDER BY c.orderByField1 ASC, c.orderByField2 ASC</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, {"property1": c.property1, "property2": c.property2, "property3": c.property3} AS payload
+FROM c
+WHERE ((c.property4 = "asdf") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY c.orderByField1 ASC, c.orderByField2 ASC]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: True, hasProjections: False, hasOrderByDescriptors: False, hasFilter: True</Description>
+      <Query>
+                                SELECT TOP 10 *
+                                FROM c
+                                WHERE c.property4 = 'asdf'
+                                ORDER BY c.orderByField1 , c.orderByField2 </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>10</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT TOP 10 c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, c AS payload
+FROM c
+WHERE ((c.property4 = "asdf") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY c.orderByField1, c.orderByField2]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: True, hasProjections: True, hasOrderByDescriptors: False, hasFilter: True</Description>
+      <Query>
+                                SELECT TOP 10 c.property1, c.property2, c.property3
+                                FROM c
+                                WHERE c.property4 = 'asdf'
+                                ORDER BY c.orderByField1 , c.orderByField2 </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>10</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT TOP 10 c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, {"property1": c.property1, "property2": c.property2, "property3": c.property3} AS payload
+FROM c
+WHERE ((c.property4 = "asdf") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY c.orderByField1, c.orderByField2]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: True, hasProjections: False, hasOrderByDescriptors: True, hasFilter: True</Description>
+      <Query>
+                                SELECT TOP 10 *
+                                FROM c
+                                WHERE c.property4 = 'asdf'
+                                ORDER BY c.orderByField1 ASC, c.orderByField2 ASC</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>10</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT TOP 10 c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, c AS payload
+FROM c
+WHERE ((c.property4 = "asdf") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY c.orderByField1 ASC, c.orderByField2 ASC]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multi Order By hasTop: True, hasProjections: True, hasOrderByDescriptors: True, hasFilter: True</Description>
+      <Query>
+                                SELECT TOP 10 c.property1, c.property2, c.property3
+                                FROM c
+                                WHERE c.property4 = 'asdf'
+                                ORDER BY c.orderByField1 ASC, c.orderByField2 ASC</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>10</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>c.orderByField1</OrderByExpression>
+            <OrderByExpression>c.orderByField2</OrderByExpression>
+          </OrderByExpressions>
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT TOP 10 c._rid, [{"item": c.orderByField1}, {"item": c.orderByField2}] AS orderByItems, {"property1": c.property1, "property2": c.property2, "property3": c.property3} AS payload
+FROM c
+WHERE ((c.property4 = "asdf") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY c.orderByField1 ASC, c.orderByField2 ASC]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+</Results>

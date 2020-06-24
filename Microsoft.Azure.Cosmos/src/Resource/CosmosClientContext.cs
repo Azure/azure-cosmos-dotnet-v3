@@ -56,7 +56,16 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             string containerUri,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken);
+
+        internal abstract Task<TResult> OperationHelperAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<CosmosDiagnosticsContext, Task<TResult>> task);
+
+        internal abstract CosmosDiagnosticsContext CreateDiagnosticContext(
+            string operationName,
+            RequestOptions requestOptions);
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
@@ -100,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,
-           ContainerInternal cosmosContainerCore,
+           ContainerInternal containerInternal,
            PartitionKey? partitionKey,
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,

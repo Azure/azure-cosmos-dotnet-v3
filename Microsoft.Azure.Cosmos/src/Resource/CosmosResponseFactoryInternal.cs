@@ -12,10 +12,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedResponse<T> CreateChangeFeedUserTypeResponse<T>(
             ResponseMessage responseMessage);
 
-        public abstract FeedResponse<T> CreateChangeFeedUserTypeResponse<T>(
-            ResponseMessage responseMessage,
-            Documents.ResourceType resourceType);
-
         public abstract FeedResponse<T> CreateQueryFeedUserTypeResponse<T>(
             ResponseMessage responseMessage);
 

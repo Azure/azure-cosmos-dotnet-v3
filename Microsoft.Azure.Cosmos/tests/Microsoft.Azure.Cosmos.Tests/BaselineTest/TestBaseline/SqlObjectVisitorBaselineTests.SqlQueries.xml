@@ -3,21 +3,15 @@
     <Input>
       <Description>SqlSelectClause useStar: True, useTop: True, hasDistinct: True</Description>
       <SqlObject><![CDATA[{
-  "SelectSpec": {
-    "Kind": "SelectStarSpec"
-  },
+  "SelectSpec": {},
   "TopSpec": {
     "TopExpresion": {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    "Kind": "TopSpec"
+        "Value": 42
+      }
+    }
   },
-  "HasDistinct": true,
-  "Kind": "SelectClause"
+  "HasDistinct": true
 }]]></SqlObject>
     </Input>
     <Output>
@@ -33,21 +27,15 @@ SELECT DISTINCT TOP 42 *
     <Input>
       <Description>SqlSelectClause useStar: True, useTop: True, hasDistinct: False</Description>
       <SqlObject><![CDATA[{
-  "SelectSpec": {
-    "Kind": "SelectStarSpec"
-  },
+  "SelectSpec": {},
   "TopSpec": {
     "TopExpresion": {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    "Kind": "TopSpec"
+        "Value": 42
+      }
+    }
   },
-  "HasDistinct": false,
-  "Kind": "SelectClause"
+  "HasDistinct": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -63,12 +51,9 @@ SELECT TOP 42 *
     <Input>
       <Description>SqlSelectClause useStar: True, useTop: False, hasDistinct: True</Description>
       <SqlObject><![CDATA[{
-  "SelectSpec": {
-    "Kind": "SelectStarSpec"
-  },
+  "SelectSpec": {},
   "TopSpec": null,
-  "HasDistinct": true,
-  "Kind": "SelectClause"
+  "HasDistinct": true
 }]]></SqlObject>
     </Input>
     <Output>
@@ -84,12 +69,9 @@ SELECT DISTINCT *
     <Input>
       <Description>SqlSelectClause useStar: True, useTop: False, hasDistinct: False</Description>
       <SqlObject><![CDATA[{
-  "SelectSpec": {
-    "Kind": "SelectStarSpec"
-  },
+  "SelectSpec": {},
   "TopSpec": null,
-  "HasDistinct": false,
-  "Kind": "SelectClause"
+  "HasDistinct": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -109,63 +91,45 @@ SELECT *
     "Items": [
       {
         "Expression": {
-          "MemberExpression": {
-            "MemberExpression": {
-              "MemberExpression": {
+          "Member": {
+            "Member": {
+              "Member": {
                 "Literal": {
-                  "Value": "some",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
+                  "Value": "some"
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "random",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "random"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "path",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "path"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": 42,
-              "Kind": "NumberLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": 42
+            }
+          }
         },
         "Alias": {
-          "Value": "some alias",
-          "Kind": "Identifier"
-        },
-        "Kind": "SelectItem"
+          "Value": "some alias"
+        }
       }
-    ],
-    "Kind": "SelectListSpec"
+    ]
   },
   "TopSpec": {
     "TopExpresion": {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    "Kind": "TopSpec"
+        "Value": 42
+      }
+    }
   },
-  "HasDistinct": true,
-  "Kind": "SelectClause"
+  "HasDistinct": true
 }]]></SqlObject>
     </Input>
     <Output>
@@ -185,63 +149,45 @@ SELECT DISTINCT TOP 42 "some"["random"]["path"][42] AS some alias
     "Items": [
       {
         "Expression": {
-          "MemberExpression": {
-            "MemberExpression": {
-              "MemberExpression": {
+          "Member": {
+            "Member": {
+              "Member": {
                 "Literal": {
-                  "Value": "some",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
+                  "Value": "some"
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "random",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "random"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "path",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "path"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": 42,
-              "Kind": "NumberLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": 42
+            }
+          }
         },
         "Alias": {
-          "Value": "some alias",
-          "Kind": "Identifier"
-        },
-        "Kind": "SelectItem"
+          "Value": "some alias"
+        }
       }
-    ],
-    "Kind": "SelectListSpec"
+    ]
   },
   "TopSpec": {
     "TopExpresion": {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    "Kind": "TopSpec"
+        "Value": 42
+      }
+    }
   },
-  "HasDistinct": false,
-  "Kind": "SelectClause"
+  "HasDistinct": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -261,54 +207,39 @@ SELECT TOP 42 "some"["random"]["path"][42] AS some alias
     "Items": [
       {
         "Expression": {
-          "MemberExpression": {
-            "MemberExpression": {
-              "MemberExpression": {
+          "Member": {
+            "Member": {
+              "Member": {
                 "Literal": {
-                  "Value": "some",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
+                  "Value": "some"
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "random",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "random"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "path",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "path"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": 42,
-              "Kind": "NumberLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": 42
+            }
+          }
         },
         "Alias": {
-          "Value": "some alias",
-          "Kind": "Identifier"
-        },
-        "Kind": "SelectItem"
+          "Value": "some alias"
+        }
       }
-    ],
-    "Kind": "SelectListSpec"
+    ]
   },
   "TopSpec": null,
-  "HasDistinct": true,
-  "Kind": "SelectClause"
+  "HasDistinct": true
 }]]></SqlObject>
     </Input>
     <Output>
@@ -328,54 +259,39 @@ SELECT DISTINCT "some"["random"]["path"][42] AS some alias
     "Items": [
       {
         "Expression": {
-          "MemberExpression": {
-            "MemberExpression": {
-              "MemberExpression": {
+          "Member": {
+            "Member": {
+              "Member": {
                 "Literal": {
-                  "Value": "some",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
+                  "Value": "some"
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "random",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "random"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "path",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "path"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": 42,
-              "Kind": "NumberLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": 42
+            }
+          }
         },
         "Alias": {
-          "Value": "some alias",
-          "Kind": "Identifier"
-        },
-        "Kind": "SelectItem"
+          "Value": "some alias"
+        }
       }
-    ],
-    "Kind": "SelectListSpec"
+    ]
   },
   "TopSpec": null,
-  "HasDistinct": false,
-  "Kind": "SelectClause"
+  "HasDistinct": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -393,24 +309,18 @@ SELECT "some"["random"]["path"][42] AS some alias
       <SqlObject><![CDATA[{
   "Collection": {
     "Input": {
-      "Value": "inputPathCollection",
-      "Kind": "Identifier"
+      "Value": "inputPathCollection"
     },
     "RelativePath": {
       "Value": {
-        "Value": "somePath",
-        "Kind": "StringLiteral"
+        "Value": "somePath"
       },
-      "ParentPath": null,
-      "Kind": "StringPathExpression"
-    },
-    "Kind": "InputPathCollection"
+      "ParentPath": null
+    }
   },
   "Alias": {
-    "Value": "some alias",
-    "Kind": "Identifier"
-  },
-  "Kind": "AliasedCollectionExpression"
+    "Value": "some alias"
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -426,26 +336,20 @@ inputPathCollection["somePath"] AS some alias
     <Input>
       <Description>SqlArrayIteratorCollectionExpression collectionType: SqlInputPathCollection</Description>
       <SqlObject><![CDATA[{
-  "Alias": {
-    "Value": "some alias",
-    "Kind": "Identifier"
+  "Identifier": {
+    "Value": "some alias"
   },
   "Collection": {
     "Input": {
-      "Value": "inputPathCollection",
-      "Kind": "Identifier"
+      "Value": "inputPathCollection"
     },
     "RelativePath": {
       "Value": {
-        "Value": "somePath",
-        "Kind": "StringLiteral"
+        "Value": "somePath"
       },
-      "ParentPath": null,
-      "Kind": "StringPathExpression"
-    },
-    "Kind": "InputPathCollection"
-  },
-  "Kind": "ArrayIteratorCollectionExpression"
+      "ParentPath": null
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -461,51 +365,38 @@ some alias IN inputPathCollection["somePath"]
     <Input>
       <Description>SqlJoinCollectionExpression collectionType: SqlInputPathCollection</Description>
       <SqlObject><![CDATA[{
-  "LeftExpression": {
+  "Left": {
     "Collection": {
       "Input": {
-        "Value": "inputPathCollection",
-        "Kind": "Identifier"
+        "Value": "inputPathCollection"
       },
       "RelativePath": {
         "Value": {
-          "Value": "somePath",
-          "Kind": "StringLiteral"
+          "Value": "somePath"
         },
-        "ParentPath": null,
-        "Kind": "StringPathExpression"
-      },
-      "Kind": "InputPathCollection"
+        "ParentPath": null
+      }
     },
     "Alias": {
-      "Value": "some alias",
-      "Kind": "Identifier"
-    },
-    "Kind": "AliasedCollectionExpression"
+      "Value": "some alias"
+    }
   },
-  "RightExpression": {
-    "Alias": {
-      "Value": "some alias",
-      "Kind": "Identifier"
+  "Right": {
+    "Identifier": {
+      "Value": "some alias"
     },
     "Collection": {
       "Input": {
-        "Value": "inputPathCollection",
-        "Kind": "Identifier"
+        "Value": "inputPathCollection"
       },
       "RelativePath": {
         "Value": {
-          "Value": "somePath",
-          "Kind": "StringLiteral"
+          "Value": "somePath"
         },
-        "ParentPath": null,
-        "Kind": "StringPathExpression"
-      },
-      "Kind": "InputPathCollection"
-    },
-    "Kind": "ArrayIteratorCollectionExpression"
-  },
-  "Kind": "JoinCollectionExpression"
+        "ParentPath": null
+      }
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -520,332 +411,128 @@ inputPathCollection["somePath"] AS some alias
   </Result>
   <Result>
     <Input>
-      <Description>SqlAliasedCollectionExpression collectionType: SqlLiteralArrayCollection</Description>
-      <SqlObject><![CDATA[{
-  "Collection": {
-    "Items": [
-      {
-        "Literal": {
-          "Value": "some",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      {
-        "Literal": {
-          "Value": "SqlLiteralArrayCollection",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      {
-        "Literal": {
-          "Value": "items",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      }
-    ],
-    "Kind": "LiteralArrayCollection"
-  },
-  "Alias": {
-    "Value": "some alias",
-    "Kind": "Identifier"
-  },
-  "Kind": "AliasedCollectionExpression"
-}]]></SqlObject>
-    </Input>
-    <Output>
-      <TextOutput><![CDATA[["some", "SqlLiteralArrayCollection", "items"] AS some alias]]></TextOutput>
-      <PrettyPrint><![CDATA[
-["some", "SqlLiteralArrayCollection", "items"] AS some alias
-]]></PrettyPrint>
-      <HashCode>627944240</HashCode>
-      <ObfusctedQuery><![CDATA[["str1", "str2__25", "str3"] AS ident1__10]]></ObfusctedQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>SqlArrayIteratorCollectionExpression collectionType: SqlLiteralArrayCollection</Description>
-      <SqlObject><![CDATA[{
-  "Alias": {
-    "Value": "some alias",
-    "Kind": "Identifier"
-  },
-  "Collection": {
-    "Items": [
-      {
-        "Literal": {
-          "Value": "some",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      {
-        "Literal": {
-          "Value": "SqlLiteralArrayCollection",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      {
-        "Literal": {
-          "Value": "items",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      }
-    ],
-    "Kind": "LiteralArrayCollection"
-  },
-  "Kind": "ArrayIteratorCollectionExpression"
-}]]></SqlObject>
-    </Input>
-    <Output>
-      <TextOutput><![CDATA[some alias IN ["some", "SqlLiteralArrayCollection", "items"]]]></TextOutput>
-      <PrettyPrint><![CDATA[
-some alias IN ["some", "SqlLiteralArrayCollection", "items"]
-]]></PrettyPrint>
-      <HashCode>-1418104862</HashCode>
-      <ObfusctedQuery><![CDATA[ident1__10 IN ["str1", "str2__25", "str3"]]]></ObfusctedQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>SqlJoinCollectionExpression collectionType: SqlLiteralArrayCollection</Description>
-      <SqlObject><![CDATA[{
-  "LeftExpression": {
-    "Collection": {
-      "Items": [
-        {
-          "Literal": {
-            "Value": "some",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        {
-          "Literal": {
-            "Value": "SqlLiteralArrayCollection",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        {
-          "Literal": {
-            "Value": "items",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        }
-      ],
-      "Kind": "LiteralArrayCollection"
-    },
-    "Alias": {
-      "Value": "some alias",
-      "Kind": "Identifier"
-    },
-    "Kind": "AliasedCollectionExpression"
-  },
-  "RightExpression": {
-    "Alias": {
-      "Value": "some alias",
-      "Kind": "Identifier"
-    },
-    "Collection": {
-      "Items": [
-        {
-          "Literal": {
-            "Value": "some",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        {
-          "Literal": {
-            "Value": "SqlLiteralArrayCollection",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        {
-          "Literal": {
-            "Value": "items",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        }
-      ],
-      "Kind": "LiteralArrayCollection"
-    },
-    "Kind": "ArrayIteratorCollectionExpression"
-  },
-  "Kind": "JoinCollectionExpression"
-}]]></SqlObject>
-    </Input>
-    <Output>
-      <TextOutput><![CDATA[["some", "SqlLiteralArrayCollection", "items"] AS some alias JOIN some alias IN ["some", "SqlLiteralArrayCollection", "items"]]]></TextOutput>
-      <PrettyPrint><![CDATA[
-["some", "SqlLiteralArrayCollection", "items"] AS some alias
- JOIN some alias IN ["some", "SqlLiteralArrayCollection", "items"]
-]]></PrettyPrint>
-      <HashCode>-296987947</HashCode>
-      <ObfusctedQuery><![CDATA[["str1", "str2__25", "str3"] AS ident1__10 JOIN ident1__10 IN ["str1", "str2__25", "str3"]]]></ObfusctedQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
       <Description>SqlAliasedCollectionExpression collectionType: SqlSubqueryCollection</Description>
       <SqlObject><![CDATA[{
   "Collection": {
     "Query": {
       "SelectClause": {
-        "SelectSpec": {
-          "Kind": "SelectStarSpec"
-        },
+        "SelectSpec": {},
         "TopSpec": null,
-        "HasDistinct": false,
-        "Kind": "SelectClause"
+        "HasDistinct": false
       },
       "FromClause": null,
       "WhereClause": null,
       "GroupByClause": null,
       "OrderbyClause": null,
-      "OffsetLimitClause": null,
-      "Kind": "Query"
-    },
-    "Kind": "SubqueryCollection"
+      "OffsetLimitClause": null
+    }
   },
   "Alias": {
-    "Value": "some alias",
-    "Kind": "Identifier"
-  },
-  "Kind": "AliasedCollectionExpression"
+    "Value": "some alias"
+  }
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[(SELECT * ) AS some alias]]></TextOutput>
+      <TextOutput><![CDATA[(SELECT *) AS some alias]]></TextOutput>
       <PrettyPrint><![CDATA[
 (
-    SELECT * 
+    SELECT *
 ) AS some alias
 ]]></PrettyPrint>
       <HashCode>-1405666129</HashCode>
-      <ObfusctedQuery><![CDATA[(SELECT * ) AS ident1__10]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[(SELECT *) AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description>SqlArrayIteratorCollectionExpression collectionType: SqlSubqueryCollection</Description>
       <SqlObject><![CDATA[{
-  "Alias": {
-    "Value": "some alias",
-    "Kind": "Identifier"
+  "Identifier": {
+    "Value": "some alias"
   },
   "Collection": {
     "Query": {
       "SelectClause": {
-        "SelectSpec": {
-          "Kind": "SelectStarSpec"
-        },
+        "SelectSpec": {},
         "TopSpec": null,
-        "HasDistinct": false,
-        "Kind": "SelectClause"
+        "HasDistinct": false
       },
       "FromClause": null,
       "WhereClause": null,
       "GroupByClause": null,
       "OrderbyClause": null,
-      "OffsetLimitClause": null,
-      "Kind": "Query"
-    },
-    "Kind": "SubqueryCollection"
-  },
-  "Kind": "ArrayIteratorCollectionExpression"
+      "OffsetLimitClause": null
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[some alias IN (SELECT * )]]></TextOutput>
+      <TextOutput><![CDATA[some alias IN (SELECT *)]]></TextOutput>
       <PrettyPrint><![CDATA[
 some alias IN (
-    SELECT * 
+    SELECT *
 )
 ]]></PrettyPrint>
       <HashCode>1487656476</HashCode>
-      <ObfusctedQuery><![CDATA[ident1__10 IN (SELECT * )]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[ident1__10 IN (SELECT *)]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description>SqlJoinCollectionExpression collectionType: SqlSubqueryCollection</Description>
       <SqlObject><![CDATA[{
-  "LeftExpression": {
+  "Left": {
     "Collection": {
       "Query": {
         "SelectClause": {
-          "SelectSpec": {
-            "Kind": "SelectStarSpec"
-          },
+          "SelectSpec": {},
           "TopSpec": null,
-          "HasDistinct": false,
-          "Kind": "SelectClause"
+          "HasDistinct": false
         },
         "FromClause": null,
         "WhereClause": null,
         "GroupByClause": null,
         "OrderbyClause": null,
-        "OffsetLimitClause": null,
-        "Kind": "Query"
-      },
-      "Kind": "SubqueryCollection"
+        "OffsetLimitClause": null
+      }
     },
     "Alias": {
-      "Value": "some alias",
-      "Kind": "Identifier"
-    },
-    "Kind": "AliasedCollectionExpression"
+      "Value": "some alias"
+    }
   },
-  "RightExpression": {
-    "Alias": {
-      "Value": "some alias",
-      "Kind": "Identifier"
+  "Right": {
+    "Identifier": {
+      "Value": "some alias"
     },
     "Collection": {
       "Query": {
         "SelectClause": {
-          "SelectSpec": {
-            "Kind": "SelectStarSpec"
-          },
+          "SelectSpec": {},
           "TopSpec": null,
-          "HasDistinct": false,
-          "Kind": "SelectClause"
+          "HasDistinct": false
         },
         "FromClause": null,
         "WhereClause": null,
         "GroupByClause": null,
         "OrderbyClause": null,
-        "OffsetLimitClause": null,
-        "Kind": "Query"
-      },
-      "Kind": "SubqueryCollection"
-    },
-    "Kind": "ArrayIteratorCollectionExpression"
-  },
-  "Kind": "JoinCollectionExpression"
+        "OffsetLimitClause": null
+      }
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[(SELECT * ) AS some alias JOIN some alias IN (SELECT * )]]></TextOutput>
+      <TextOutput><![CDATA[(SELECT *) AS some alias JOIN some alias IN (SELECT *)]]></TextOutput>
       <PrettyPrint><![CDATA[
 (
-    SELECT * 
+    SELECT *
 ) AS some alias
  JOIN some alias IN (
-    SELECT * 
+    SELECT *
 )
 ]]></PrettyPrint>
       <HashCode>-1208716422</HashCode>
-      <ObfusctedQuery><![CDATA[(SELECT * ) AS ident1__10 JOIN ident1__10 IN (SELECT * )]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[(SELECT *) AS ident1__10 JOIN ident1__10 IN (SELECT *)]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -853,24 +540,18 @@ some alias IN (
       <Description>SqlWhereClause</Description>
       <SqlObject><![CDATA[{
   "FilterExpression": {
-    "OperatorKind": "LessThan",
     "LeftExpression": {
       "Literal": {
-        "Value": "this path",
-        "Kind": "StringLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
+        "Value": "this path"
+      }
     },
+    "OperatorKind": "LessThan",
     "RightExpression": {
       "Literal": {
-        "Value": 42,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    "Kind": "BinaryScalarExpression"
-  },
-  "Kind": "WhereClause"
+        "Value": 42
+      }
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -888,44 +569,32 @@ WHERE ("this path" < 42)
       <SqlObject><![CDATA[{
   "Expressions": [
     {
-      "MemberExpression": {
-        "MemberExpression": {
-          "MemberExpression": {
+      "Member": {
+        "Member": {
+          "Member": {
             "Literal": {
-              "Value": "some",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
+              "Value": "some"
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": "random",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": "random"
+            }
+          }
         },
-        "IndexExpression": {
+        "Indexer": {
           "Literal": {
-            "Value": "path",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "MemberIndexerScalarExpression"
+            "Value": "path"
+          }
+        }
       },
-      "IndexExpression": {
+      "Indexer": {
         "Literal": {
-          "Value": 42,
-          "Kind": "NumberLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "MemberIndexerScalarExpression"
+          "Value": 42
+        }
+      }
     }
-  ],
-  "Kind": "GroupByClause"
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -943,81 +612,58 @@ GROUP BY "some"["random"]["path"][42]
       <SqlObject><![CDATA[{
   "Expressions": [
     {
-      "MemberExpression": {
-        "MemberExpression": {
-          "MemberExpression": {
+      "Member": {
+        "Member": {
+          "Member": {
             "Literal": {
-              "Value": "some",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
+              "Value": "some"
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": "random",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": "random"
+            }
+          }
         },
-        "IndexExpression": {
+        "Indexer": {
           "Literal": {
-            "Value": "path",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "MemberIndexerScalarExpression"
+            "Value": "path"
+          }
+        }
       },
-      "IndexExpression": {
+      "Indexer": {
         "Literal": {
-          "Value": 42,
-          "Kind": "NumberLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "MemberIndexerScalarExpression"
+          "Value": 42
+        }
+      }
     },
     {
-      "MemberExpression": {
-        "MemberExpression": {
-          "MemberExpression": {
+      "Member": {
+        "Member": {
+          "Member": {
             "Literal": {
-              "Value": "some",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
+              "Value": "some"
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": "random",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": "random"
+            }
+          }
         },
-        "IndexExpression": {
+        "Indexer": {
           "Literal": {
-            "Value": "path",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "MemberIndexerScalarExpression"
+            "Value": "path"
+          }
+        }
       },
-      "IndexExpression": {
+      "Indexer": {
         "Literal": {
-          "Value": 42,
-          "Kind": "NumberLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "MemberIndexerScalarExpression"
+          "Value": 42
+        }
+      }
     }
-  ],
-  "Kind": "GroupByClause"
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1036,47 +682,34 @@ GROUP BY "some"["random"]["path"][42], "some"["random"]["path"][42]
   "OrderbyItems": [
     {
       "Expression": {
-        "MemberExpression": {
-          "MemberExpression": {
-            "MemberExpression": {
+        "Member": {
+          "Member": {
+            "Member": {
               "Literal": {
-                "Value": "some",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
+                "Value": "some"
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "random",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "random"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": "path",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": "path"
+            }
+          }
         },
-        "IndexExpression": {
+        "Indexer": {
           "Literal": {
-            "Value": 42,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "MemberIndexerScalarExpression"
+            "Value": 42
+          }
+        }
       },
-      "IsDescending": false,
-      "Kind": "OrderByItem"
+      "IsDescending": false
     }
-  ],
-  "Kind": "OrderByClause"
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1095,88 +728,63 @@ ORDER BY "some"["random"]["path"][42] ASC
   "OrderbyItems": [
     {
       "Expression": {
-        "MemberExpression": {
-          "MemberExpression": {
-            "MemberExpression": {
+        "Member": {
+          "Member": {
+            "Member": {
               "Literal": {
-                "Value": "some",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
+                "Value": "some"
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "random",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "random"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": "path",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": "path"
+            }
+          }
         },
-        "IndexExpression": {
+        "Indexer": {
           "Literal": {
-            "Value": 42,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "MemberIndexerScalarExpression"
+            "Value": 42
+          }
+        }
       },
-      "IsDescending": false,
-      "Kind": "OrderByItem"
+      "IsDescending": false
     },
     {
       "Expression": {
-        "MemberExpression": {
-          "MemberExpression": {
-            "MemberExpression": {
+        "Member": {
+          "Member": {
+            "Member": {
               "Literal": {
-                "Value": "some",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
+                "Value": "some"
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "random",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "random"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": "path",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": "path"
+            }
+          }
         },
-        "IndexExpression": {
+        "Indexer": {
           "Literal": {
-            "Value": 42,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "MemberIndexerScalarExpression"
+            "Value": 42
+          }
+        }
       },
-      "IsDescending": true,
-      "Kind": "OrderByItem"
+      "IsDescending": true
     }
-  ],
-  "Kind": "OrderByClause"
+  ]
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1194,12 +802,9 @@ ORDER BY "some"["random"]["path"][42] ASC, "some"["random"]["path"][42] DESC
       <SqlObject><![CDATA[{
   "OffsetExpression": {
     "Literal": {
-      "Value": 0,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "OffsetSpec"
+      "Value": 0
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1217,12 +822,9 @@ OFFSET 0
       <SqlObject><![CDATA[{
   "LimitExpression": {
     "Literal": {
-      "Value": 0,
-      "Kind": "NumberLiteral"
-    },
-    "Kind": "LiteralScalarExpression"
-  },
-  "Kind": "LimitSpec"
+      "Value": 0
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1241,24 +843,17 @@ LIMIT 0
   "OffsetSpec": {
     "OffsetExpression": {
       "Literal": {
-        "Value": 0,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    "Kind": "OffsetSpec"
+        "Value": 0
+      }
+    }
   },
   "LimitSpec": {
     "LimitExpression": {
       "Literal": {
-        "Value": 0,
-        "Kind": "NumberLiteral"
-      },
-      "Kind": "LiteralScalarExpression"
-    },
-    "Kind": "LimitSpec"
-  },
-  "Kind": "OffsetLimitClause"
+        "Value": 0
+      }
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
@@ -1275,184 +870,135 @@ OFFSET 0 LIMIT 0
       <Description>SqlQuery</Description>
       <SqlObject><![CDATA[{
   "SelectClause": {
-    "SelectSpec": {
-      "Kind": "SelectStarSpec"
-    },
+    "SelectSpec": {},
     "TopSpec": null,
-    "HasDistinct": false,
-    "Kind": "SelectClause"
+    "HasDistinct": false
   },
   "FromClause": {
     "Expression": {
       "Collection": {
         "Input": {
-          "Value": "inputPathCollection",
-          "Kind": "Identifier"
+          "Value": "inputPathCollection"
         },
         "RelativePath": {
           "Value": {
-            "Value": "somePath",
-            "Kind": "StringLiteral"
+            "Value": "somePath"
           },
-          "ParentPath": null,
-          "Kind": "StringPathExpression"
-        },
-        "Kind": "InputPathCollection"
+          "ParentPath": null
+        }
       },
       "Alias": {
-        "Value": "some alias",
-        "Kind": "Identifier"
-      },
-      "Kind": "AliasedCollectionExpression"
-    },
-    "Kind": "FromClause"
+        "Value": "some alias"
+      }
+    }
   },
   "WhereClause": {
     "FilterExpression": {
-      "OperatorKind": "LessThan",
       "LeftExpression": {
         "Literal": {
-          "Value": "this path",
-          "Kind": "StringLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
+          "Value": "this path"
+        }
       },
+      "OperatorKind": "LessThan",
       "RightExpression": {
         "Literal": {
-          "Value": 42,
-          "Kind": "NumberLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "BinaryScalarExpression"
-    },
-    "Kind": "WhereClause"
+          "Value": 42
+        }
+      }
+    }
   },
   "GroupByClause": {
     "Expressions": [
       {
-        "MemberExpression": {
-          "MemberExpression": {
-            "MemberExpression": {
+        "Member": {
+          "Member": {
+            "Member": {
               "Literal": {
-                "Value": "some",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
+                "Value": "some"
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "random",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "random"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": "path",
-              "Kind": "StringLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": "path"
+            }
+          }
         },
-        "IndexExpression": {
+        "Indexer": {
           "Literal": {
-            "Value": 42,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "MemberIndexerScalarExpression"
+            "Value": 42
+          }
+        }
       }
-    ],
-    "Kind": "GroupByClause"
+    ]
   },
   "OrderbyClause": {
     "OrderbyItems": [
       {
         "Expression": {
-          "MemberExpression": {
-            "MemberExpression": {
-              "MemberExpression": {
+          "Member": {
+            "Member": {
+              "Member": {
                 "Literal": {
-                  "Value": "some",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
+                  "Value": "some"
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "random",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "random"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "path",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "path"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": 42,
-              "Kind": "NumberLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": 42
+            }
+          }
         },
-        "IsDescending": false,
-        "Kind": "OrderByItem"
+        "IsDescending": false
       }
-    ],
-    "Kind": "OrderByClause"
+    ]
   },
   "OffsetLimitClause": {
     "OffsetSpec": {
       "OffsetExpression": {
         "Literal": {
-          "Value": 0,
-          "Kind": "NumberLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "OffsetSpec"
+          "Value": 0
+        }
+      }
     },
     "LimitSpec": {
       "LimitExpression": {
         "Literal": {
-          "Value": 0,
-          "Kind": "NumberLiteral"
-        },
-        "Kind": "LiteralScalarExpression"
-      },
-      "Kind": "LimitSpec"
-    },
-    "Kind": "OffsetLimitClause"
-  },
-  "Kind": "Query"
+          "Value": 0
+        }
+      }
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 ]]></TextOutput>
+      <TextOutput><![CDATA[SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0]]></TextOutput>
       <PrettyPrint><![CDATA[
 SELECT * 
 FROM inputPathCollection["somePath"] AS some alias 
 WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
 ORDER BY "some"["random"]["path"][42] ASC 
-OFFSET 0 LIMIT 0 
+OFFSET 0 LIMIT 0
 ]]></PrettyPrint>
       <HashCode>-245344741</HashCode>
-      <ObfusctedQuery><![CDATA[SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 ]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -1461,188 +1007,138 @@ OFFSET 0 LIMIT 0
       <SqlObject><![CDATA[{
   "Query": {
     "SelectClause": {
-      "SelectSpec": {
-        "Kind": "SelectStarSpec"
-      },
+      "SelectSpec": {},
       "TopSpec": null,
-      "HasDistinct": false,
-      "Kind": "SelectClause"
+      "HasDistinct": false
     },
     "FromClause": {
       "Expression": {
         "Collection": {
           "Input": {
-            "Value": "inputPathCollection",
-            "Kind": "Identifier"
+            "Value": "inputPathCollection"
           },
           "RelativePath": {
             "Value": {
-              "Value": "somePath",
-              "Kind": "StringLiteral"
+              "Value": "somePath"
             },
-            "ParentPath": null,
-            "Kind": "StringPathExpression"
-          },
-          "Kind": "InputPathCollection"
+            "ParentPath": null
+          }
         },
         "Alias": {
-          "Value": "some alias",
-          "Kind": "Identifier"
-        },
-        "Kind": "AliasedCollectionExpression"
-      },
-      "Kind": "FromClause"
+          "Value": "some alias"
+        }
+      }
     },
     "WhereClause": {
       "FilterExpression": {
-        "OperatorKind": "LessThan",
         "LeftExpression": {
           "Literal": {
-            "Value": "this path",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": "this path"
+          }
         },
+        "OperatorKind": "LessThan",
         "RightExpression": {
           "Literal": {
-            "Value": 42,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "BinaryScalarExpression"
-      },
-      "Kind": "WhereClause"
+            "Value": 42
+          }
+        }
+      }
     },
     "GroupByClause": {
       "Expressions": [
         {
-          "MemberExpression": {
-            "MemberExpression": {
-              "MemberExpression": {
+          "Member": {
+            "Member": {
+              "Member": {
                 "Literal": {
-                  "Value": "some",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
+                  "Value": "some"
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "random",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "random"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "path",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "path"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": 42,
-              "Kind": "NumberLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": 42
+            }
+          }
         }
-      ],
-      "Kind": "GroupByClause"
+      ]
     },
     "OrderbyClause": {
       "OrderbyItems": [
         {
           "Expression": {
-            "MemberExpression": {
-              "MemberExpression": {
-                "MemberExpression": {
+            "Member": {
+              "Member": {
+                "Member": {
                   "Literal": {
-                    "Value": "some",
-                    "Kind": "StringLiteral"
-                  },
-                  "Kind": "LiteralScalarExpression"
+                    "Value": "some"
+                  }
                 },
-                "IndexExpression": {
+                "Indexer": {
                   "Literal": {
-                    "Value": "random",
-                    "Kind": "StringLiteral"
-                  },
-                  "Kind": "LiteralScalarExpression"
-                },
-                "Kind": "MemberIndexerScalarExpression"
+                    "Value": "random"
+                  }
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "path",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "path"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": 42,
-                "Kind": "NumberLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": 42
+              }
+            }
           },
-          "IsDescending": false,
-          "Kind": "OrderByItem"
+          "IsDescending": false
         }
-      ],
-      "Kind": "OrderByClause"
+      ]
     },
     "OffsetLimitClause": {
       "OffsetSpec": {
         "OffsetExpression": {
           "Literal": {
-            "Value": 0,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "OffsetSpec"
+            "Value": 0
+          }
+        }
       },
       "LimitSpec": {
         "LimitExpression": {
           "Literal": {
-            "Value": 0,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "LimitSpec"
-      },
-      "Kind": "OffsetLimitClause"
-    },
-    "Kind": "Query"
-  },
-  "Kind": "SubqueryScalarExpression"
+            "Value": 0
+          }
+        }
+      }
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 )]]></TextOutput>
+      <TextOutput><![CDATA[(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
       <PrettyPrint><![CDATA[
 (
     SELECT * 
     FROM inputPathCollection["somePath"] AS some alias 
     WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
     ORDER BY "some"["random"]["path"][42] ASC 
-    OFFSET 0 LIMIT 0 
+    OFFSET 0 LIMIT 0
 )
 ]]></PrettyPrint>
       <HashCode>51808704</HashCode>
-      <ObfusctedQuery><![CDATA[(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -1651,378 +1147,278 @@ OFFSET 0 LIMIT 0
       <SqlObject><![CDATA[{
   "SqlQuery": {
     "SelectClause": {
-      "SelectSpec": {
-        "Kind": "SelectStarSpec"
-      },
+      "SelectSpec": {},
       "TopSpec": null,
-      "HasDistinct": false,
-      "Kind": "SelectClause"
+      "HasDistinct": false
     },
     "FromClause": {
       "Expression": {
         "Collection": {
           "Input": {
-            "Value": "inputPathCollection",
-            "Kind": "Identifier"
+            "Value": "inputPathCollection"
           },
           "RelativePath": {
             "Value": {
-              "Value": "somePath",
-              "Kind": "StringLiteral"
+              "Value": "somePath"
             },
-            "ParentPath": null,
-            "Kind": "StringPathExpression"
-          },
-          "Kind": "InputPathCollection"
+            "ParentPath": null
+          }
         },
         "Alias": {
-          "Value": "some alias",
-          "Kind": "Identifier"
-        },
-        "Kind": "AliasedCollectionExpression"
-      },
-      "Kind": "FromClause"
+          "Value": "some alias"
+        }
+      }
     },
     "WhereClause": {
       "FilterExpression": {
-        "OperatorKind": "LessThan",
         "LeftExpression": {
           "Literal": {
-            "Value": "this path",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": "this path"
+          }
         },
+        "OperatorKind": "LessThan",
         "RightExpression": {
           "Literal": {
-            "Value": 42,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "BinaryScalarExpression"
-      },
-      "Kind": "WhereClause"
+            "Value": 42
+          }
+        }
+      }
     },
     "GroupByClause": {
       "Expressions": [
         {
-          "MemberExpression": {
-            "MemberExpression": {
-              "MemberExpression": {
+          "Member": {
+            "Member": {
+              "Member": {
                 "Literal": {
-                  "Value": "some",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
+                  "Value": "some"
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "random",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "random"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "path",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "path"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": 42,
-              "Kind": "NumberLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": 42
+            }
+          }
         }
-      ],
-      "Kind": "GroupByClause"
+      ]
     },
     "OrderbyClause": {
       "OrderbyItems": [
         {
           "Expression": {
-            "MemberExpression": {
-              "MemberExpression": {
-                "MemberExpression": {
+            "Member": {
+              "Member": {
+                "Member": {
                   "Literal": {
-                    "Value": "some",
-                    "Kind": "StringLiteral"
-                  },
-                  "Kind": "LiteralScalarExpression"
+                    "Value": "some"
+                  }
                 },
-                "IndexExpression": {
+                "Indexer": {
                   "Literal": {
-                    "Value": "random",
-                    "Kind": "StringLiteral"
-                  },
-                  "Kind": "LiteralScalarExpression"
-                },
-                "Kind": "MemberIndexerScalarExpression"
+                    "Value": "random"
+                  }
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "path",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "path"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": 42,
-                "Kind": "NumberLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": 42
+              }
+            }
           },
-          "IsDescending": false,
-          "Kind": "OrderByItem"
+          "IsDescending": false
         }
-      ],
-      "Kind": "OrderByClause"
+      ]
     },
     "OffsetLimitClause": {
       "OffsetSpec": {
         "OffsetExpression": {
           "Literal": {
-            "Value": 0,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "OffsetSpec"
+            "Value": 0
+          }
+        }
       },
       "LimitSpec": {
         "LimitExpression": {
           "Literal": {
-            "Value": 0,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "LimitSpec"
-      },
-      "Kind": "OffsetLimitClause"
-    },
-    "Kind": "Query"
-  },
-  "Kind": "ArrayScalarExpression"
+            "Value": 0
+          }
+        }
+      }
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[ARRAY(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 )]]></TextOutput>
+      <TextOutput><![CDATA[ARRAY(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
       <PrettyPrint><![CDATA[
 ARRAY(
     SELECT * 
     FROM inputPathCollection["somePath"] AS some alias 
     WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
     ORDER BY "some"["random"]["path"][42] ASC 
-    OFFSET 0 LIMIT 0 
+    OFFSET 0 LIMIT 0
 )
 ]]></PrettyPrint>
       <HashCode>-1922520573</HashCode>
-      <ObfusctedQuery><![CDATA[ARRAY(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[ARRAY(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description>SqlExistsScalarExpression</Description>
       <SqlObject><![CDATA[{
-  "SqlQuery": {
+  "Subquery": {
     "SelectClause": {
-      "SelectSpec": {
-        "Kind": "SelectStarSpec"
-      },
+      "SelectSpec": {},
       "TopSpec": null,
-      "HasDistinct": false,
-      "Kind": "SelectClause"
+      "HasDistinct": false
     },
     "FromClause": {
       "Expression": {
         "Collection": {
           "Input": {
-            "Value": "inputPathCollection",
-            "Kind": "Identifier"
+            "Value": "inputPathCollection"
           },
           "RelativePath": {
             "Value": {
-              "Value": "somePath",
-              "Kind": "StringLiteral"
+              "Value": "somePath"
             },
-            "ParentPath": null,
-            "Kind": "StringPathExpression"
-          },
-          "Kind": "InputPathCollection"
+            "ParentPath": null
+          }
         },
         "Alias": {
-          "Value": "some alias",
-          "Kind": "Identifier"
-        },
-        "Kind": "AliasedCollectionExpression"
-      },
-      "Kind": "FromClause"
+          "Value": "some alias"
+        }
+      }
     },
     "WhereClause": {
       "FilterExpression": {
-        "OperatorKind": "LessThan",
         "LeftExpression": {
           "Literal": {
-            "Value": "this path",
-            "Kind": "StringLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
+            "Value": "this path"
+          }
         },
+        "OperatorKind": "LessThan",
         "RightExpression": {
           "Literal": {
-            "Value": 42,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "BinaryScalarExpression"
-      },
-      "Kind": "WhereClause"
+            "Value": 42
+          }
+        }
+      }
     },
     "GroupByClause": {
       "Expressions": [
         {
-          "MemberExpression": {
-            "MemberExpression": {
-              "MemberExpression": {
+          "Member": {
+            "Member": {
+              "Member": {
                 "Literal": {
-                  "Value": "some",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
+                  "Value": "some"
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "random",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "random"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": "path",
-                "Kind": "StringLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": "path"
+              }
+            }
           },
-          "IndexExpression": {
+          "Indexer": {
             "Literal": {
-              "Value": 42,
-              "Kind": "NumberLiteral"
-            },
-            "Kind": "LiteralScalarExpression"
-          },
-          "Kind": "MemberIndexerScalarExpression"
+              "Value": 42
+            }
+          }
         }
-      ],
-      "Kind": "GroupByClause"
+      ]
     },
     "OrderbyClause": {
       "OrderbyItems": [
         {
           "Expression": {
-            "MemberExpression": {
-              "MemberExpression": {
-                "MemberExpression": {
+            "Member": {
+              "Member": {
+                "Member": {
                   "Literal": {
-                    "Value": "some",
-                    "Kind": "StringLiteral"
-                  },
-                  "Kind": "LiteralScalarExpression"
+                    "Value": "some"
+                  }
                 },
-                "IndexExpression": {
+                "Indexer": {
                   "Literal": {
-                    "Value": "random",
-                    "Kind": "StringLiteral"
-                  },
-                  "Kind": "LiteralScalarExpression"
-                },
-                "Kind": "MemberIndexerScalarExpression"
+                    "Value": "random"
+                  }
+                }
               },
-              "IndexExpression": {
+              "Indexer": {
                 "Literal": {
-                  "Value": "path",
-                  "Kind": "StringLiteral"
-                },
-                "Kind": "LiteralScalarExpression"
-              },
-              "Kind": "MemberIndexerScalarExpression"
+                  "Value": "path"
+                }
+              }
             },
-            "IndexExpression": {
+            "Indexer": {
               "Literal": {
-                "Value": 42,
-                "Kind": "NumberLiteral"
-              },
-              "Kind": "LiteralScalarExpression"
-            },
-            "Kind": "MemberIndexerScalarExpression"
+                "Value": 42
+              }
+            }
           },
-          "IsDescending": false,
-          "Kind": "OrderByItem"
+          "IsDescending": false
         }
-      ],
-      "Kind": "OrderByClause"
+      ]
     },
     "OffsetLimitClause": {
       "OffsetSpec": {
         "OffsetExpression": {
           "Literal": {
-            "Value": 0,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "OffsetSpec"
+            "Value": 0
+          }
+        }
       },
       "LimitSpec": {
         "LimitExpression": {
           "Literal": {
-            "Value": 0,
-            "Kind": "NumberLiteral"
-          },
-          "Kind": "LiteralScalarExpression"
-        },
-        "Kind": "LimitSpec"
-      },
-      "Kind": "OffsetLimitClause"
-    },
-    "Kind": "Query"
-  },
-  "Kind": "ExistsScalarExpression"
+            "Value": 0
+          }
+        }
+      }
+    }
+  }
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[EXISTS(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 )]]></TextOutput>
+      <TextOutput><![CDATA[EXISTS(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
       <PrettyPrint><![CDATA[
 EXISTS(
     SELECT * 
     FROM inputPathCollection["somePath"] AS some alias 
     WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
     ORDER BY "some"["random"]["path"][42] ASC 
-    OFFSET 0 LIMIT 0 
+    OFFSET 0 LIMIT 0
 )
 ]]></PrettyPrint>
       <HashCode>1317938775</HashCode>
-      <ObfusctedQuery><![CDATA[EXISTS(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[EXISTS(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
     </Output>
   </Result>
 </Results>

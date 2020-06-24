@@ -16,8 +16,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        internal static readonly CosmosJsonDotNetSerializer baseSerializer = new CosmosJsonDotNetSerializer();
+        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer();
 
+        /// <remarks>
+        /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
+        /// Else input stream will be disposed, and a new stream is returned.
+        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// </remarks>
         public static async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
@@ -25,10 +30,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(encryptionOptions != null);
             Debug.Assert(diagnosticsContext != null);
+
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            if (encryptor == null)
+            {
+                throw new ArgumentNullException(nameof(encryptor));
+            }
+
+            if (encryptionOptions == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionOptions));
+            }
 
             if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
             {
@@ -58,24 +75,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
+            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
             JObject toEncryptJObj = new JObject();
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
                 string propertyName = pathToEncrypt.Substring(1);
-                JToken propertyValueHolder = itemJObj.Property(propertyName).Value;
-
-                // Even null in the JSON is a JToken with Type Null, this null check is just a sanity check
-                if (propertyValueHolder != null)
+                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                 {
-                    toEncryptJObj.Add(propertyName, propertyValueHolder.Value<JToken>());
-                    itemJObj.Remove(propertyName);
+                    throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
                 }
+
+                toEncryptJObj.Add(propertyName, propertyValue.Value<JToken>());
+                itemJObj.Remove(propertyName);
             }
 
-            MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj);
+            MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream<JObject>(toEncryptJObj);
             Debug.Assert(memoryStream != null);
             Debug.Assert(memoryStream.TryGetBuffer(out _));
             byte[] plainText = memoryStream.ToArray();
@@ -98,9 +114,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptedData: cipherText);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
-            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+            input.Dispose();
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
+        /// <remarks>
+        /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
+        /// Else input stream will be disposed, and a new stream is returned.
+        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// </remarks>
         public static async Task<Stream> DecryptAsync(
             Stream input,
             Encryptor encryptor,
@@ -114,11 +136,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             JObject itemJObj;
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
             {
-                using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
-                {
-                    itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
-                }
+                itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
             }
 
             JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.EncryptedInfo);
@@ -148,7 +168,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             itemJObj.Remove(Constants.EncryptedInfo);
-            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+            input.Dispose();
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         public static async Task<JObject> DecryptAsync(
@@ -175,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
 
             document.Remove(Constants.EncryptedInfo);
-            
+
             foreach (JProperty property in plainTextJObj.Properties())
             {
                 document.Add(property.Name, property.Value);

@@ -354,6 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Id",
                 "UniqueKeyPolicy",
                 "DefaultTimeToLive",
+                "AnalyticalStoreTimeToLiveInSeconds",
                 "IndexingPolicy",
                 "GeospatialConfig",
                 "TimeToLivePropertyPath",

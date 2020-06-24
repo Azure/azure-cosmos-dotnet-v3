@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
     public abstract class DataEncryptionKey
     {
         /// <summary>
-        /// Raw key bytes of the data encryption key.
+        /// Gets raw key bytes of the data encryption key.
         /// </summary>
         public abstract byte[] RawKey { get; }
 
         /// <summary>
-        /// Encryption algorithm to be used with this data encryption key.
+        /// Gets Encryption algorithm to be used with this data encryption key.
         /// </summary>
         public abstract string EncryptionAlgorithm { get; }
 

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// The underlying key material
         /// </summary>
-        protected readonly byte[] rootKey;
+        private readonly byte[] rootKey;
 
         /// <summary>
         /// Constructor that initializes the root key.
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Returns a copy of the plain text key
+        /// Gets a copy of the plain text key
         /// This is needed for actual encryption/decryption.
         /// </summary>
         internal virtual byte[] RootKey

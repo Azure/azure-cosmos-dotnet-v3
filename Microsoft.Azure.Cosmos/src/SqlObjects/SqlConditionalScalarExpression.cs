@@ -1,89 +1,51 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
-    internal sealed class SqlConditionalScalarExpression : SqlScalarExpression
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class SqlConditionalScalarExpression : SqlScalarExpression
     {
         private SqlConditionalScalarExpression(
             SqlScalarExpression condition,
-            SqlScalarExpression first,
-            SqlScalarExpression second)
-            : base(SqlObjectKind.ConditionalScalarExpression)
+            SqlScalarExpression consequent,
+            SqlScalarExpression alternative)
         {
-            if (condition == null)
-            {
-                throw new ArgumentNullException("condition");
-            }
-
-            if (first == null)
-            {
-                throw new ArgumentNullException("first");
-            }
-
-            if (second == null)
-            {
-                throw new ArgumentNullException("second");
-            }
-
-            this.ConditionExpression = condition;
-            this.FirstExpression = first;
-            this.SecondExpression = second;
+            this.Condition = condition ?? throw new ArgumentNullException(nameof(condition));
+            this.Consequent = consequent ?? throw new ArgumentNullException(nameof(consequent));
+            this.Alternative = alternative ?? throw new ArgumentNullException(nameof(alternative));
         }
 
-        public SqlScalarExpression ConditionExpression
-        {
-            get;
-        }
+        public SqlScalarExpression Condition { get; }
 
-        public SqlScalarExpression FirstExpression
-        {
-            get;
-        }
+        public SqlScalarExpression Consequent { get; }
 
-        public SqlScalarExpression SecondExpression
-        {
-            get;
-        }
+        public SqlScalarExpression Alternative { get; }
 
         public static SqlConditionalScalarExpression Create(
             SqlScalarExpression condition,
-            SqlScalarExpression first,
-            SqlScalarExpression second)
-        {
-            return new SqlConditionalScalarExpression(condition, first, second);
-        }
+            SqlScalarExpression consequent,
+            SqlScalarExpression alternative) => new SqlConditionalScalarExpression(condition, consequent, alternative);
 
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
-        public override void Accept(SqlScalarExpressionVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(SqlScalarExpressionVisitor visitor) => visitor.Visit(this);
 
-        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor) => visitor.Visit(this);
 
-        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
     }
 }

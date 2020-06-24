@@ -6,26 +6,21 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using Newtonsoft.Json.Serialization;
 
     [TestClass]
     public class CosmosJsonSeriliazerUnitTests
     {
-        private ToDoActivity toDoActivity = new ToDoActivity()
+        private readonly ToDoActivity toDoActivity = new ToDoActivity()
         {
             id = "c1d433c1-369d-430e-91e5-14e3ce588f71",
             taskNum = 42,
@@ -34,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             status = "TBD"
         };
 
-        private string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
+        private readonly string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
 
         [TestMethod]
         public void ValidateSerializer()
@@ -178,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage triggerResponse = this.CreateResponse();
             ResponseMessage udfResponse = this.CreateResponse();
             ResponseMessage itemResponse = this.CreateResponse();
-            
+
 
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
@@ -198,9 +193,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             // Test read feed scenario
             ResponseMessage readFeedResponse = this.CreateReadFeedResponse();
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity[]>(It.IsAny<Stream>()))
+                .Callback<Stream>(input => input.Dispose())
+                .Returns(new ToDoActivity[] { new ToDoActivity() });
             FeedResponse<ToDoActivity> feedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(readFeedResponse);
-            foreach(ToDoActivity toDoActivity in feedResponse)
+            foreach (ToDoActivity toDoActivity in feedResponse)
             {
                 Assert.IsNotNull(toDoActivity);
             }
@@ -213,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             Assert.IsFalse(changeFeedResponse.Resource.Any());
 
             ResponseMessage queryResponse = this.CreateReadFeedResponse();
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity[]>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity[] { new ToDoActivity() });
             FeedResponse<ToDoActivity> queryFeedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(queryResponse);
             foreach (ToDoActivity toDoActivity in queryFeedResponse)
             {
@@ -258,25 +255,29 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateSqlQuerySpecSerializer()
         {
-            List<SqlQuerySpec> sqlQuerySpecs = new List<SqlQuerySpec>();
-            sqlQuerySpecs.Add(new SqlQuerySpec()
+            List<SqlQuerySpec> sqlQuerySpecs = new List<SqlQuerySpec>
             {
-                QueryText = "SELECT root._rid, [{\"item\": root[\"NumberField\"]}] AS orderByItems, root AS payload\nFROM root\nWHERE (true)\nORDER BY root[\"NumberField\"] DESC"
-            });
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT root._rid, [{\"item\": root[\"NumberField\"]}] AS orderByItems, root AS payload\nFROM root\nWHERE (true)\nORDER BY root[\"NumberField\"] DESC"
+                },
 
-            sqlQuerySpecs.Add(new SqlQuerySpec()
+                new SqlQuerySpec()
+                {
+                    QueryText = "Select * from something"
+                },
+
+                new SqlQuerySpec()
+                {
+                    QueryText = "Select * from something",
+                    Parameters = new SqlParameterCollection()
+                }
+            };
+
+            SqlParameterCollection sqlParameters = new SqlParameterCollection
             {
-                QueryText = "Select * from something"
-            });
-
-            sqlQuerySpecs.Add(new SqlQuerySpec()
-            {
-                QueryText = "Select * from something",
-                Parameters = new SqlParameterCollection()
-            });
-
-            SqlParameterCollection sqlParameters = new SqlParameterCollection();
-            sqlParameters.Add(new SqlParameter("@id", "test1"));
+                new SqlParameter("@id", "test1")
+            };
 
             sqlQuerySpecs.Add(new SqlQuerySpec()
             {
@@ -284,12 +285,14 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Parameters = sqlParameters
             });
 
-            sqlParameters = new SqlParameterCollection();
-            sqlParameters.Add(new SqlParameter("@id", "test2"));
-            sqlParameters.Add(new SqlParameter("@double", 42.42));
-            sqlParameters.Add(new SqlParameter("@int", 9001));
-            sqlParameters.Add(new SqlParameter("@null", null));
-            sqlParameters.Add(new SqlParameter("@datetime", DateTime.UtcNow));
+            sqlParameters = new SqlParameterCollection
+            {
+                new SqlParameter("@id", "test2"),
+                new SqlParameter("@double", 42.42),
+                new SqlParameter("@int", 9001),
+                new SqlParameter("@null", null),
+                new SqlParameter("@datetime", DateTime.UtcNow)
+            };
 
             sqlQuerySpecs.Add(new SqlQuerySpec()
             {
@@ -380,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
         private string GetSerializedToDoActivity()
         {
-            return @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""status"":""TBD""}";  
+            return @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""status"":""TBD""}";
         }
 
         public class ToDoActivity
