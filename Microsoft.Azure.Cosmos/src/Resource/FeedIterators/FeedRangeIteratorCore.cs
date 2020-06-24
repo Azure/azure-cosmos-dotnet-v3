@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
+        private readonly Action<RequestMessage> requestEnricherFunc;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
@@ -39,13 +40,14 @@ namespace Microsoft.Azure.Cosmos
             string continuation,
             QueryRequestOptions options,
             ResourceType resourceType = ResourceType.Document,
-            QueryDefinition queryDefinition = null)
+            QueryDefinition queryDefinition = null,
+            Action<RequestMessage> requestEnricherFunc = null)
         {
             if (!string.IsNullOrEmpty(continuation))
             {
                 if (FeedRangeContinuation.TryParse(continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
-                    return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options, resourceType, queryDefinition);
+                    return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options, resourceType, queryDefinition, requestEnricherFunc);
                 }
 
                 // Backward compatible with old format
@@ -62,11 +64,11 @@ namespace Microsoft.Azure.Cosmos
                                 isMaxInclusive: false)
                     },
                     continuation);
-                return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options, resourceType, queryDefinition);
+                return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options, resourceType, queryDefinition, requestEnricherFunc);
             }
 
             feedRangeInternal ??= FeedRangeEPK.FullRange;
-            return new FeedRangeIteratorCore(containerCore, feedRangeInternal, options, resourceType, queryDefinition);
+            return new FeedRangeIteratorCore(containerCore, feedRangeInternal, options, resourceType, queryDefinition, requestEnricherFunc);
         }
 
         /// <summary>
@@ -77,8 +79,9 @@ namespace Microsoft.Azure.Cosmos
             FeedRangeContinuation feedRangeContinuation,
             QueryRequestOptions options,
             ResourceType resourceType,
-            QueryDefinition queryDefinition)
-            : this(containerCore, feedRangeContinuation.FeedRange, options, resourceType, queryDefinition)
+            QueryDefinition queryDefinition,
+            Action<RequestMessage> requestEnricherFunc)
+            : this(containerCore, feedRangeContinuation.FeedRange, options, resourceType, queryDefinition, requestEnricherFunc)
         {
             this.FeedRangeContinuation = feedRangeContinuation;
         }
@@ -88,8 +91,9 @@ namespace Microsoft.Azure.Cosmos
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions options,
             ResourceType resourceType,
-            QueryDefinition queryDefinition)
-            : this(containerCore, options, resourceType, queryDefinition)
+            QueryDefinition queryDefinition,
+            Action<RequestMessage> requestEnricherFunc)
+            : this(containerCore, options, resourceType, queryDefinition, requestEnricherFunc)
         {
             this.FeedRangeInternal = feedRangeInternal ?? throw new ArgumentNullException(nameof(feedRangeInternal));
         }
@@ -98,7 +102,8 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal containerCore,
             QueryRequestOptions options,
             ResourceType resourceType,
-            QueryDefinition queryDefinition)
+            QueryDefinition queryDefinition,
+            Action<RequestMessage> requestEnricherFunc)
         {
             this.containerCore = containerCore ?? throw new ArgumentNullException(nameof(containerCore));
             this.clientContext = containerCore.ClientContext;
@@ -106,6 +111,7 @@ namespace Microsoft.Azure.Cosmos
             this.hasMoreResultsInternal = true;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
+            this.requestEnricherFunc = requestEnricherFunc;
             this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
             {
                 return this.TryInitializeContainerRIdAsync(innerCancellationToken);
@@ -183,6 +189,8 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: stream,
                requestEnricher: request =>
                {
+                   this.requestEnricherFunc?.Invoke(request);
+
                    FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
                    this.FeedRangeInternal.Accept(feedRangeVisitor);
 

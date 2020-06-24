@@ -117,8 +117,8 @@ namespace Microsoft.Azure.Cosmos
         /// where the partition key range needs to be computed. 
         /// </summary>
         internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed &&
-            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) &&
-            this.PartitionKeyRangeId == null && this.Headers.PartitionKey == null;
+            this.ResourceType.IsPartitioned() && this.PartitionKeyRangeId == null &&
+            this.Headers.PartitionKey == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
