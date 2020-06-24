@@ -378,15 +378,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
                 singleValueInitFunc: async () =>
                 {
                     await this.InitializeLoginUrlAndResourceEndpointAsync(keyVaultKeyUri, cancellationToken);
-                    new AADTokenProvider(
-                        this.aadLoginUrl,
-                        this.keyVaultResourceEndpoint,
-                        this.clientAssertionCertificate,
-                        this.aadRetryInterval,
-                        this.aadRetryCount);
-
                     return this.aadLoginUrl.Substring(this.aadLoginUrl.LastIndexOf('/') + 1);
-
                 },
                 cancellationToken: cancellationToken);
 
