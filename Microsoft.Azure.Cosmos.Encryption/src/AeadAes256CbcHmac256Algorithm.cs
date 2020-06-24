@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Security.Cryptography;
 
     /// <summary>
-    /// This class implements authenticated encryption algorithm with associated data as described in 
+    /// This class implements authenticated encryption algorithm with associated data as described in
     /// http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05 - specifically this implements
     /// AEAD_AES_256_CBC_HMAC_SHA256 algorithm.
     /// This (and AeadAes256CbcHmac256EncryptionKey) implementation for Cosmos DB is same as the existing
@@ -44,11 +44,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Cipher Mode. For this algorithm, we only use CBC mode.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1303:Const field names should begin with upper-case letter", Justification = "This code is borrowed and we may want to pull bug fixes if they happen on the original.")]
         private const CipherMode cipherMode = CipherMode.CBC;
 
         /// <summary>
         /// Padding mode. This algorithm uses PKCS7.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1303:Const field names should begin with upper-case letter", Justification = "This code is borrowed and we may want to pull bug fixes if they happen on the original.")]
         private const PaddingMode paddingMode = PaddingMode.PKCS7;
 
         /// <summary>
@@ -76,11 +78,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Byte array with algorithm version used for authentication tag computation.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1311:Static readonly fields should begin with upper-case letter", Justification = "This code is borrowed and we may want to pull bug fixes if they happen on the original.")]
         private static readonly byte[] version = new byte[] { 0x01 };
 
         /// <summary>
         /// Byte array with algorithm version size used for authentication tag computation.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1311:Static readonly fields should begin with upper-case letter", Justification = "This code is borrowed and we may want to pull bug fixes if they happen on the original.")]
         private static readonly byte[] versionSize = new byte[] { sizeof(byte) };
 
         public override byte[] RawKey => this.dataEncryptionKey.RootKey;
@@ -93,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptionKey">
         /// Root encryption key from which three other keys will be derived
         /// </param>
-        /// <param name="encryptionType">Encryption Type, accepted values are Deterministic and Randomized. 
+        /// <param name="encryptionType">Encryption Type, accepted values are Deterministic and Randomized.
         /// For Deterministic encryption, a synthetic IV will be genenrated during encryption
         /// For Randomized encryption, a random IV will be generated during encryption.
         /// </param>
@@ -362,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // Always set the IV since it changes from cell to cell.
                 aesAlg.IV = iv;
 
-                // Create the streams used for decryption. 
+                // Create the streams used for decryption.
                 using (MemoryStream msDecrypt = new MemoryStream())
                 {
                     // Create an encryptor to perform the stream transform.

@@ -1,10 +1,10 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description>Projection Only</Description>
-      <Query>SELECT 5</Query>
+      <Description>Just OFFSET LIMIT</Description>
+      <Query>SELECT * FROM c OFFSET 1 LIMIT 2</Query>
       <PartitionKeys>
-        <Key>/a</Key>
+        <Key>/key</Key>
       </PartitionKeys>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
@@ -13,65 +13,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],[]]</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Projection And Top</Description>
-      <Query>SELECT TOP 2 5</Query>
-      <PartitionKeys>
-        <Key>/a</Key>
-      </PartitionKeys>
-      <PartitionKeyType>Hash</PartitionKeyType>
-    </Input>
-    <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],[]]</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>All</Description>
-      <Query>SELECT * FROM c WHERE true</Query>
-      <PartitionKeys>
-        <Key>/a</Key>
-      </PartitionKeys>
-      <PartitionKeyType>Hash</PartitionKeyType>
-    </Input>
-    <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -80,108 +30,41 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description>None</Description>
-      <Query>SELECT * FROM c WHERE false</Query>
+      <Description>Parameterized OFFSET and LIMIT</Description>
+      <Query>SELECT * FROM c OFFSET @OFFSETCOUNT LIMIT @LIMITCOUNT</Query>
       <PartitionKeys>
-        <Key>/a</Key>
+        <Key>/key</Key>
       </PartitionKeys>
       <PartitionKeyType>Hash</PartitionKeyType>
+      <QueryParameters><![CDATA[[
+  {
+    "name": "@OFFSETCOUNT",
+    "value": 42
+  },
+  {
+    "name": "@LIMITCOUNT",
+    "value": 1337
+  }
+]]]></QueryParameters>
     </Input>
     <Output>
       <PartitionedQueryExecutionInfoInternal>
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],[]]</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Key Is True</Description>
-      <Query>SELECT * FROM Root r WHERE r.a.b.c</Query>
-      <PartitionKeys>
-        <Key>/a/b/c</Key>
-      </PartitionKeys>
-      <PartitionKeyType>Hash</PartitionKeyType>
-    </Input>
-    <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[true],[true]]</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Key Is False</Description>
-      <Query>SELECT * FROM Root r WHERE not r.a.b.c</Query>
-      <PartitionKeys>
-        <Key>/a/b/c</Key>
-      </PartitionKeys>
-      <PartitionKeyType>Hash</PartitionKeyType>
-    </Input>
-    <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[false],[false]]</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>SELECT * NonPartitioned</Description>
-      <Query>SELECT * FROM c</Query>
-      <PartitionKeys />
-      <PartitionKeyType>Hash</PartitionKeyType>
-    </Input>
-    <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -190,15 +73,14 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description>SELECT *</Description>
-      <Query>SELECT * FROM c</Query>
+      <Description>OFFSET LIMIT and non partition filter</Description>
+      <Query>SELECT * FROM c WHERE c.blah = 5 OFFSET 1 LIMIT 2</Query>
       <PartitionKeys>
-        <Key>/a</Key>
+        <Key>/key</Key>
       </PartitionKeys>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
@@ -207,9 +89,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -218,15 +106,14 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description>UDF</Description>
-      <Query>SELECT udf.func(1) as x FROM Root r</Query>
+      <Description>OFFSET LIMIT and partition filter</Description>
+      <Query>SELECT * FROM c WHERE c.key = 5 OFFSET 1 LIMIT 2</Query>
       <PartitionKeys>
-        <Key>/a</Key>
+        <Key>/key</Key>
       </PartitionKeys>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
@@ -235,9 +122,48 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>OFFSET LIMIT 0</Description>
+      <Query>SELECT * FROM c OFFSET 0 LIMIT 0</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -246,7 +172,140 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>OFFSET LIMIT 0 with partition key filter</Description>
+      <Query>SELECT * FROM c WHERE c.key = 5 OFFSET 0 LIMIT 0</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>OFFSET LIMIT and partition filter but aggregates</Description>
+      <Query>SELECT VALUE COUNT(1) FROM c WHERE c.key = 5 OFFSET 1 LIMIT 2</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>OFFSET LIMIT and partition filter but distinct</Description>
+      <Query>SELECT DISTINCT *  FROM c WHERE c.key = 5 OFFSET 1 LIMIT 2</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>Unordered</DistinctType>
+          <Top />
+          <Offset>1</Offset>
+          <Limit>2</Limit>
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT DISTINCT *
+FROM c
+WHERE (c.key = 5)]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>OFFSET LIMIT and partition filter but group by</Description>
+      <Query>SELECT c.name FROM c WHERE c.key = 5 GROUP BY c.name OFFSET 1 LIMIT 2</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
 </Results>

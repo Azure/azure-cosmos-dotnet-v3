@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public void TestCopyConstructor()
         {
             FeedOptions fo = new FeedOptions();
-            FeedOptions f01 = new FeedOptions(fo);
+            _ = new FeedOptions(fo);
         }
 
         internal class TestQueryExecutionContext : DocumentQueryExecutionContextBase

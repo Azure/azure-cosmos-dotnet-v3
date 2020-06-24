@@ -347,17 +347,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
-            string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedStreamIterator(continuationToken, changeFeedRequestOptions);
-        }
-
-        public override FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return base.GetChangeFeedStreamIterator(feedRange, changeFeedRequestOptions);
+            return base.GetChangeFeedStreamIterator(changeFeedRequestOptions);
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
@@ -368,17 +360,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
-            string continuationToken = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(continuationToken, changeFeedRequestOptions);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return base.GetChangeFeedIterator<T>(feedRange, changeFeedRequestOptions);
+            return base.GetChangeFeedIterator<T>(changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
