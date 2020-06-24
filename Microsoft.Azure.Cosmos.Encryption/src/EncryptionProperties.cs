@@ -19,17 +19,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         [JsonProperty(PropertyName = Constants.EncryptedData)]
         public byte[] EncryptedData { get; }
+        [JsonProperty(PropertyName = Constants.EncryptedPaths)]
+        public string EncryptedPaths { get; }
 
         public EncryptionProperties(
             int encryptionFormatVersion,
             string encryptionAlgorithm,
             string dataEncryptionKeyId,
-            byte[] encryptedData)
+            byte[] encryptedData,
+            string encryptedPaths = null)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
             this.EncryptionAlgorithm = encryptionAlgorithm;
             this.DataEncryptionKeyId = dataEncryptionKeyId;
             this.EncryptedData = encryptedData;
+            this.EncryptedPaths = encryptedPaths;
         }
     }
 }

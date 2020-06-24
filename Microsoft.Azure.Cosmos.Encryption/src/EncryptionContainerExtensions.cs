@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
@@ -19,14 +21,39 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+
         public static Container WithEncryptor(
             this Container container,
             Encryptor encryptor)
         {
+
             return new EncryptionContainer(
-                container,
-                encryptor);
+               container,
+               encryptor);
         }
+
+        public static Container WithPropEncryptor(this Container container, Encryptor encryptor, Dictionary<string, List<string>> toEncrypt)
+        {
+            List<EncryptionOptions> pencryptionOptions = new List<EncryptionOptions>();
+            foreach (KeyValuePair<string, List<string>> entry in toEncrypt)
+            {
+                pencryptionOptions.Add(
+                    new EncryptionOptions()
+                    {
+                        DataEncryptionKeyId = entry.Key,
+                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                        PathsToEncrypt = entry.Value
+                    }
+                ); ;
+            }
+
+            return new EncryptionContainer(
+           container,
+           encryptor, pencryptionOptions);
+
+        }
+
+
 
         /// <summary>
         /// This method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
@@ -102,10 +129,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 decryptionResultHandler = null;
             }
-
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
-                encryptionContainer.Encryptor,
+                encryptionContainer.encryptor,
+                null,
                 decryptionResultHandler);
         }
     }

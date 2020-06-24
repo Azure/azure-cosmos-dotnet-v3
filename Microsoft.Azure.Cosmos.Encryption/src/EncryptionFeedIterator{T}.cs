@@ -5,12 +5,17 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class EncryptionFeedIterator<T> : FeedIterator<T>
     {
-        private readonly FeedIterator feedIterator;
+        private FeedIterator feedIterator;
         private readonly CosmosResponseFactory responseFactory;
 
         public EncryptionFeedIterator(
