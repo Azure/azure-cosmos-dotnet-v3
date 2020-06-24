@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerInternal container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new string[] { "pk" }));
+                .Returns(Task.FromResult((IReadOnlyList<string[]>)new List<string[]> { new string[] { "pk" } }));
             containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
                 .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
 
@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerInternal container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new string[] { "a", "b", "c" }));
+                .Returns(Task.FromResult((IReadOnlyList<string[]>) new List<string[]>{ new string[] { "a", "b", "c" } }));
             containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
                 .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
 

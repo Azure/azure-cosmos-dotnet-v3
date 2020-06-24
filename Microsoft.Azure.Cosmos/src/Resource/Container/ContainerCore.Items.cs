@@ -767,22 +767,24 @@ namespace Microsoft.Azure.Cosmos
                 IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
                 IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                 CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
-                List<CosmosElement> partitionValues = new List<CosmosElement>();
 
-                for (int j = 0; j < partitionKeyDefinition.Paths.Count; j++)
+                List<CosmosElement> partitionValues = new List<CosmosElement>();
+                IReadOnlyList<string[]> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
+                foreach (string[] tokens in tokenslist)
                 {
-                    string[] tokens = await this.GetPartitionKeyPathTokensAsync(cancellation, j);
+                    CosmosElement partitionKeyValue;
                     for (int i = 0; i < tokens.Length - 1; i++)
                     {
                         if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                         {
-                            return PartitionKey.None;
+                            partitionKeyValue = CosmosNull.Create();
+                            break;
                         }
                     }
 
-                    if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out CosmosElement partitionKeyValue))
+                    if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out partitionKeyValue))
                     {
-                        return PartitionKey.None;
+                        partitionKeyValue = CosmosNull.Create();
                     }
 
                     partitionValues.Add(partitionKeyValue);
@@ -839,6 +841,7 @@ namespace Microsoft.Azure.Cosmos
                                 cse = (ce as CosmosBoolean).Value;
                                 break;
 
+                            case CosmosElementType.Null:
                             default:
                                 throw new ArgumentException(
                                     string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, ce));

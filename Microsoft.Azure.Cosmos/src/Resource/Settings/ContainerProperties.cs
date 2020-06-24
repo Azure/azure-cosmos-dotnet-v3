@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -70,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
-        private string[] partitionKeyPathTokens;
+        private IList<string[]> partitionKeyPathTokens;
         private string id;
 
         /// <summary>
@@ -510,13 +511,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool HasPartitionKey => this.PartitionKey != null;
 
-        internal string[] PartitionKeyPathTokens
+        internal IReadOnlyList<string[]> PartitionKeyPathTokens
         {
             get
             {
                 if (this.partitionKeyPathTokens != null)
                 {
-                    return this.partitionKeyPathTokens;
+                    return (IReadOnlyList<string[]>)this.partitionKeyPathTokens;
                 }
 
                 if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != PartitionKind.MultiHash) 
@@ -529,8 +530,12 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
-                return this.partitionKeyPathTokens;
+                this.partitionKeyPathTokens = new List<string[]>();
+                foreach (string s in this.PartitionKey?.Paths)
+                {
+                    this.partitionKeyPathTokens.Add(s.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries));
+                }
+                return (IReadOnlyList<string[]>)this.partitionKeyPathTokens;
             }
         }
 
@@ -560,9 +565,5 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal string[] getPartitionKeyPath(int index)
-        {
-            return this.PartitionKey?.Paths[index].Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
-        }
     }
 }
