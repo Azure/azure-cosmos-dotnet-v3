@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public Dictionary<List<string>, string> ToEncrypt = new Dictionary<List<string>, string>();
 
-        List<EncryptionOptions> pEncryptionOptions = null;
+        private readonly IReadOnlyList<EncryptionOptions> encryptionOptions;
 
         public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
