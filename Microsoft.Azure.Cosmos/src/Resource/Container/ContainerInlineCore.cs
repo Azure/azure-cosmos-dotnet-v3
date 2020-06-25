@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
           CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteItemAsync),
+                nameof(DeleteAllItemsByPartitionKeyAsync),
                 requestOptions,
                 (diagnostics) => base.DeleteAllItemsByPartitionKeyAsync(partitionKey, requestOptions, cancellationToken));
         }
