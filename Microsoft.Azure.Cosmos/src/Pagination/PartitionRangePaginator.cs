@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -12,16 +13,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
     /// <summary>
     /// Has the ability to page through a partition range.
     /// </summary>
-    internal abstract class PartitionRangePaginator
+    internal abstract class PartitionRangePaginator : IAsyncEnumerator<TryCatch<Page>>
     {
         public PartitionKeyHashRange Range { get; }
 
-        public Page CurrentPage { get; protected set; }
+        public TryCatch<Page> Current { get; protected set; }
 
-        public bool HasMoreResults { get; protected set; }
+        public abstract ValueTask DisposeAsync();
 
         public abstract State GetState();
 
-        public abstract Task<TryCatch> TryMoveNextPageAsync(CancellationToken cancellationToken = default);
+        public abstract ValueTask<bool> MoveNextAsync();
     }
 }
