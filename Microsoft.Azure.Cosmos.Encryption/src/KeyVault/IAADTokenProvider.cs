@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System.Threading;
     using System.Threading.Tasks;
@@ -9,8 +9,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
     /// <summary>
     /// Interface for retrieving an access token for Active Directory authentication.
     /// </summary>
-    internal interface IAADTokenProvider
+    internal abstract class IAADTokenProvider
     {
-        Task<string> GetAccessTokenAsync(CancellationToken cancellationToken);
+        public abstract ValueTask<string> GetAccessTokenAsync(CancellationToken cancellationToken);
     }
 }

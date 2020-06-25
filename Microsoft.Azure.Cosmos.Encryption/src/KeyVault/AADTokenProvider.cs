@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Threading;
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
             this.tokenCache = new TokenCache();
         }
 
-        public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
+        public override async ValueTask <string> GetAccessTokenAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

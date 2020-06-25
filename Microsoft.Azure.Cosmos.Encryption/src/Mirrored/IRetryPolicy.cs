@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
     }
 
-    internal interface IRetryPolicy
+    internal abstract class IRetryPolicy
     {
         /// <summary>
         /// Method that is called to determine from the policy that needs to retry on the exception
@@ -92,10 +92,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="exception">Exception during the callback method invocation</param>
         /// <param name="cancellationToken"></param>
         /// <returns>If the retry needs to be attempted or not</returns>
-        Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken);
+        public abstract Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken);
     }
 
-    internal interface IRetryPolicy<TPolicyArg1>
+    internal abstract class IRetryPolicy<TPolicyArg1>
     {
         /// <summary>
         /// Method that is called to determine from the policy that needs to retry on the exception
@@ -103,12 +103,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="exception">Exception during the callback method invocation</param>
         /// <param name="cancellationToken"></param>
         /// <returns>If the retry needs to be attempted or not</returns>
-        Task<ShouldRetryResult<TPolicyArg1>> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken);
+        public abstract Task<ShouldRetryResult<TPolicyArg1>> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken);
 
         /// <summary>
         /// Initial value of the template argument
         /// </summary>
-        TPolicyArg1 InitialArgumentValue
+        public abstract TPolicyArg1 InitialArgumentValue
         {
             get;
         }

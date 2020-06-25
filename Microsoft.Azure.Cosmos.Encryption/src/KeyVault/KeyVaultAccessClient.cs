@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Linq;
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
         /// <param name="bytesInBase64">encrypted bytes encoded to base64 string. </param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Result including KeyIdentifier and decrypted bytes in base64 string format, can be convert to bytes using Convert.FromBase64String().</returns>
-        public async Task<KeyVaultUnwrapResult> UnwrapKeyAsync(
+        public override async Task<KeyVaultUnwrapResult> UnwrapKeyAsync(
             string bytesInBase64,
             Uri keyVaultKeyUri,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
         /// <param name="keyVaultKeyUri">Sample Format: https://{keyvault-name}.vault.azure.net/keys/{key-name}/{key-version}, the /{key-version} is optional.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Result including KeyIdentifier and encrypted bytes in base64 string format.</returns>
-        public async Task<KeyVaultWrapResult> WrapKeyAsync(
+        public override async Task<KeyVaultWrapResult> WrapKeyAsync(
             string bytesInBase64,
             Uri keyVaultKeyUri,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Whether The Customer has the correct Deletion Level. </returns>
-        public async Task<bool> ValidatePurgeProtectionAndSoftDeleteSettingsAsync(
+        public override async Task<bool> ValidatePurgeProtectionAndSoftDeleteSettingsAsync(
             Uri keyVaultKeyUri,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
                 {
-
+                    await Task.FromResult(true);
                     return new AADTokenProvider(
                         this.aadLoginUrl,
                         this.keyVaultResourceEndpoint,

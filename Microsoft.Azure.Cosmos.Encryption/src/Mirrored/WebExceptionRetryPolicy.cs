@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public WebExceptionRetryPolicy()
         {
-            durationTimer.Start();
+            this.durationTimer.Start();
         }
 
-        public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
+        public override Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
             TimeSpan backoffTime = TimeSpan.FromSeconds(0);
 
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             // Don't penalise first retry with delay.
-            if (attemptCount++ > 1)
+            if (this.attemptCount++ > 1)
             {
                 int remainingSeconds = WebExceptionRetryPolicy.waitTimeInSeconds - this.durationTimer.Elapsed.Seconds;
                 if (remainingSeconds <= 0)

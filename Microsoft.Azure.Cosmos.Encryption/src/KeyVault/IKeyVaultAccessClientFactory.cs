@@ -1,17 +1,19 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Security.Cryptography.X509Certificates;
 
-    internal interface IKeyVaultAccessClientFactory : IDisposable
+    internal abstract class IKeyVaultAccessClientFactory : IDisposable
     {
-        IKeyVaultAccessClient CreateKeyVaultAccessClient(
+        public abstract IKeyVaultAccessClient CreateKeyVaultAccessClient(
             string clientId,
             X509Certificate2 certificate,
             int aadRetryIntervalInSeconds = KeyVaultConstants.DefaultAadRetryIntervalInSeconds,
             int aadRetryCount = KeyVaultConstants.DefaultAadRetryCount);
+
+        public abstract void Dispose();
     }
 }

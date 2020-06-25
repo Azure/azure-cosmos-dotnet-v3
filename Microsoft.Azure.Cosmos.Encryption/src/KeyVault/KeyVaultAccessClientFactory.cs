@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Net.Http;
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
             this.singletonLock = new object();
         }
 
-        public IKeyVaultAccessClient CreateKeyVaultAccessClient(
+        public override IKeyVaultAccessClient CreateKeyVaultAccessClient(
             string clientId,
             X509Certificate2 certificate,
             int aadRetryIntervalInSeconds = KeyVaultConstants.DefaultAadRetryIntervalInSeconds, 
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
                 aadRetryCount: aadRetryCount);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             this.httpClient?.Dispose();
         }

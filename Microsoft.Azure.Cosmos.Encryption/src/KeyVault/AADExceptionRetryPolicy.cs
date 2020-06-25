@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Threading;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
             this.retryBackoffTime = retryInterval;
         }
 
-        public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
+        public override Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
             if ((exception is AdalException || WebExceptionUtility.IsWebExceptionRetriable(exception) || exception is System.NullReferenceException) &&
                 this.retriesAttempted < this.maxRetries && !cancellationToken.IsCancellationRequested)
