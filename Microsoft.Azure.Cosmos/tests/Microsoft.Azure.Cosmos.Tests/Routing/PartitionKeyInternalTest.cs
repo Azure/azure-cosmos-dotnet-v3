@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Text;
@@ -53,6 +54,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "aa", null, true, false, Undefined.Value, 5, 5.5 }, true), partitionKey);
 
             Assert.AreEqual(@"[""aa"",null,true,false,{},5.0,5.5]", partitionKey.ToJsonString());
+        }
+
+        [TestMethod]
+        public void Baseline()
+        {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+            {
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V1,
+                Paths = new Collection<string>()
+                {
+                    "/pk"
+                }
+            };
+
+            string[] jsonValues = { "\"aa\"", "null", "true", "false", "{ }", "5", "5.5" };
+            foreach(string jsonValue in jsonValues)
+            {
+                PartitionKeyInternal partitionKey = PartitionKeyInternal.FromJsonString($"[{jsonValue}]");
+                Console.WriteLine($"Json Value: {jsonValue}, EpkString: {partitionKey.GetEffectivePartitionKeyString(partitionKeyDefinition)}");
+            }
         }
 
         /// <summary>
