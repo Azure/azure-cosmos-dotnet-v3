@@ -7,25 +7,24 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System;
     using System.Collections.Generic;
     using System.Net;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
-    /// Coordinates draining pages from multiple <see cref="PartitionRangePaginator"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
+    /// Coordinates draining pages from multiple <see cref="PartitionRangePageEnumerator"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
     /// </summary>
-    internal abstract class CrossPartitionRangePaginator
+    internal sealed class CrossPartitionRangePageEnumerator : IAsyncEnumerator<TryCatch<Page>>
     {
         private readonly FeedRangeProvider feedRangeProvider;
-        private readonly Func<FeedRange, State, PartitionRangePaginator> createPartitionRangePaginator;
-        private readonly PriorityQueue<PartitionRangePaginator> paginators;
+        private readonly Func<FeedRange, State, PartitionRangePageEnumerator> createPartitionRangePaginator;
+        private readonly PriorityQueue<PartitionRangePageEnumerator> paginators;
 
-        public CrossPartitionRangePaginator(
+        public CrossPartitionRangePageEnumerator(
             FeedRangeProvider feedRangeProvider,
-            Func<FeedRange, State, PartitionRangePaginator> createPartitionRangePaginator,
-            IEnumerable<PartitionRangePaginator> paginators,
-            IComparer<PartitionRangePaginator> comparer)
+            Func<FeedRange, State, PartitionRangePageEnumerator> createPartitionRangePaginator,
+            IEnumerable<PartitionRangePageEnumerator> paginators,
+            IComparer<PartitionRangePageEnumerator> comparer)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
             this.createPartitionRangePaginator = createPartitionRangePaginator ?? throw new ArgumentNullException(nameof(createPartitionRangePaginator));
@@ -40,45 +39,53 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(paginators));
             }
 
-            this.paginators = new PriorityQueue<PartitionRangePaginator>(paginators, comparer);
+            this.paginators = new PriorityQueue<PartitionRangePageEnumerator>(paginators, comparer);
         }
 
-        public Page CurrentPage { get; set; }
+        public TryCatch<Page> Current { get; private set; }
 
-        public async Task<TryCatch> TryMoveNextPageAsync(CancellationToken cancellationToken = default)
+        public async ValueTask<bool> MoveNextAsync()
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            PartitionRangePaginator currentPaginator = this.paginators.Dequeue();
-            TryCatch tryMoveNextPageAsync = await currentPaginator.TryMoveNextPageAsync(cancellationToken);
-            if (tryMoveNextPageAsync.Failed)
+            PartitionRangePageEnumerator currentPaginator = this.paginators.Dequeue();
+            bool movedNext = await currentPaginator.MoveNextAsync();
+            if (!movedNext)
             {
-                Exception exception = tryMoveNextPageAsync.Exception;
+                return false;
+            }
+
+            if (currentPaginator.Current.Failed)
+            {
+                // Check if it's a retryable exception.
+                Exception exception = currentPaginator.Current.Exception;
                 if (IsSplitException(exception))
                 {
                     // Handle split
-                    IEnumerable<FeedRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(currentPaginator.FeedRange, cancellationToken);
+                    IEnumerable<FeedRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(currentPaginator.Range);
                     foreach (FeedRange childRange in childRanges)
                     {
-                        PartitionRangePaginator childPaginator = this.createPartitionRangePaginator(childRange, currentPaginator.GetState());
+                        PartitionRangePageEnumerator childPaginator = this.createPartitionRangePaginator(childRange, currentPaginator.GetState());
                         this.paginators.Enqueue(childPaginator);
                     }
 
                     // Recursively retry
-                    return await this.TryMoveNextPageAsync(cancellationToken);
+                    return await this.MoveNextAsync();
                 }
 
                 if (IsMergeException(exception))
                 {
                     throw new NotImplementedException();
                 }
-
-                return tryMoveNextPageAsync;
             }
 
-            this.CurrentPage = currentPaginator.CurrentPage;
+            this.Current = currentPaginator.Current;
             this.paginators.Enqueue(currentPaginator);
 
-            return TryCatch.FromResult();
+            return true;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            throw new NotImplementedException();
         }
 
         private static bool IsSplitException(Exception exeception)
