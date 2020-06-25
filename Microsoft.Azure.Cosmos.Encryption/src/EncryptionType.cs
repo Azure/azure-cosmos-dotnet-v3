@@ -10,6 +10,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal enum EncryptionType
     {
         PlainText = 0,
-        Randomized
+        Randomized,
     }
 }

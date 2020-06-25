@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.IO;
     using System.Text;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
 
     /// <summary>
     /// The default Cosmos JSON.NET serializer.
@@ -16,10 +15,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class CosmosJsonDotNetSerializer
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(
-            encoderShouldEmitUTF8Identifier: false, 
+            encoderShouldEmitUTF8Identifier: false,
             throwOnInvalidBytes: true);
 
-        private readonly JsonSerializerSettings SerializerSettings;
+        private readonly JsonSerializerSettings serializerSettings;
 
         /// <summary>
         /// Create a serializer that uses the JSON.net serializer
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </remarks>
         internal CosmosJsonDotNetSerializer(JsonSerializerSettings jsonSerializerSettings = null)
         {
-            this.SerializerSettings = jsonSerializerSettings;
+            this.serializerSettings = jsonSerializerSettings;
         }
 
         /// <summary>
@@ -52,17 +51,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             using (StreamReader sr = new StreamReader(stream))
+            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
             {
-                using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
-                {
-                    JsonSerializer jsonSerializer = this.GetSerializer();
-                    return jsonSerializer.Deserialize<T>(jsonTextReader);
-                }
+                JsonSerializer jsonSerializer = this.GetSerializer();
+                return jsonSerializer.Deserialize<T>(jsonTextReader);
             }
         }
 
         /// <summary>
-        /// Converts an object to a open readable stream
+        /// Converts an object to a open readable stream.
         /// </summary>
         /// <typeparam name="T">The type of object being serialized</typeparam>
         /// <param name="input">The object to be serialized</param>
@@ -71,15 +68,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             MemoryStream streamPayload = new MemoryStream();
             using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (JsonWriter writer = new JsonTextWriter(streamWriter))
             {
-                using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    JsonSerializer jsonSerializer = this.GetSerializer();
-                    jsonSerializer.Serialize(writer, input);
-                    writer.Flush();
-                    streamWriter.Flush();
-                }
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                JsonSerializer jsonSerializer = this.GetSerializer();
+                jsonSerializer.Serialize(writer, input);
+                writer.Flush();
+                streamWriter.Flush();
             }
 
             streamPayload.Position = 0;
@@ -92,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         private JsonSerializer GetSerializer()
         {
-            return JsonSerializer.Create(this.SerializerSettings);
+            return JsonSerializer.Create(this.serializerSettings);
         }
     }
 }

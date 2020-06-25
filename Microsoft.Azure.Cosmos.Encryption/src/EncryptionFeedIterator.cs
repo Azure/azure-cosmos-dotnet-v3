@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
-        Action<DecryptionResult> decryptionResultHandler;
+        private readonly Action<DecryptionResult> decryptionResultHandler;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         responseMessage.Content,
                         diagnosticsContext,
                         cancellationToken);
-                        
+
                     return new DecryptedResponseMessage(responseMessage, decryptedContent);
                 }
 
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            JObject contentJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(content);
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
             JArray result = new JArray();
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     result.Add(value);
                     continue;
                 }
-                
+
                 try
                 {
                     JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
@@ -90,10 +90,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     result.Add(document);
 
-                    MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream(document);
+                    MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream(document);
                     Debug.Assert(memoryStream != null);
-                    ArraySegment<byte> encryptedStream;
-                    bool wasBufferReturned = memoryStream.TryGetBuffer(out encryptedStream);
+                    bool wasBufferReturned = memoryStream.TryGetBuffer(out ArraySegment<byte> encryptedStream);
                     Debug.Assert(wasBufferReturned);
 
                     this.decryptionResultHandler(
@@ -102,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             exception));
                 }
             }
-            
+
             JObject decryptedResponse = new JObject();
             foreach (JProperty property in contentJObj.Properties())
             {
@@ -116,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            return EncryptionProcessor.baseSerializer.ToStream(decryptedResponse); 
+            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
         }
     }
 }
