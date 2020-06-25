@@ -1822,6 +1822,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.AreEqual(3, documents.Select(document => ((Document)document).SelfLink).Distinct().Count());
 
+                try
+                {
+                    doc1 = new Document { Id = "doc1" };
+                    doc1.SetValue("Zipcode", "11790");
+                    Cosmos.PartitionKey pKeyErr = new Cosmos.PartitionKey(new Object[] { doc1.GetPropertyValue<string>("ZipCode") });
+                    await container.CreateItemAsync<Document>(doc1, pKeyErr);
+                }
+                catch (ArgumentException ar)
+                {
+                    Assert.AreEqual(ar.Message, RMResources.PartitionKeyMismatch);
+                }
                 //Document Read.
                 foreach (Document document in documents)
                 {

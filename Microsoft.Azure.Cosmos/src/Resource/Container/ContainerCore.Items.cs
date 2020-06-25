@@ -626,6 +626,11 @@ namespace Microsoft.Azure.Cosmos
             // User specified PK value, no need to extract it
             if (partitionKey.HasValue)
             {
+                PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+                if (((PartitionKey)partitionKey).InternalKey.Components.Count != pKeyDefinition.Paths.Count)
+                {
+                    throw new ArgumentException(RMResources.PartitionKeyMismatch);
+                }
                 return await this.ProcessItemStreamAsync(
                         partitionKey,
                         itemId,
@@ -728,7 +733,6 @@ namespace Microsoft.Azure.Cosmos
                     stream.CopyTo(memoryStream);
                 }
 
-                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
                 // TODO: Avoid copy 
                 IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
                 IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
@@ -743,16 +747,18 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                         {
-                            partitionKeyValue = CosmosNull.Create();
-                            break;
+                            if (tokenslist.Count == 1) return PartitionKey.None;
+                            throw new ArgumentException(RMResources.PartitionKeyMismatch);
                         }
                     }
 
                     if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out partitionKeyValue))
                     {
-                        partitionKeyValue = CosmosNull.Create();
+                        if (tokenslist.Count == 1) return PartitionKey.None;
+                        throw new ArgumentException(RMResources.PartitionKeyMismatch);
                     }
 
+                    if (partitionKeyValue == null) partitionKeyValue = CosmosNull.Create();
                     partitionValues.Add(partitionKeyValue);
                 }
 
@@ -808,6 +814,9 @@ namespace Microsoft.Azure.Cosmos
                                 break;
 
                             case CosmosElementType.Null:
+                                cse = Undefined.Value;
+                                break;
+
                             default:
                                 throw new ArgumentException(
                                     string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, ce));
