@@ -153,8 +153,9 @@ namespace Microsoft.Azure.Cosmos
         public
 #else
         internal
-        double? PartitionKeyDeleteThroughputFraction { get; set; }
 #endif
+        double? PartitionKeyDeleteThroughputFraction{ get; set; }
+
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>

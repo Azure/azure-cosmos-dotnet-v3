@@ -405,7 +405,10 @@ namespace Microsoft.Azure.Cosmos
           ItemRequestOptions requestOptions = null,
           CancellationToken cancellationToken = default(CancellationToken))
         {
-            return base.DeleteAllItemsByPartitionKeyAsync(partitionKey, requestOptions, cancellationToken);
+            return this.ClientContext.OperationHelperAsync(
+                nameof(DeleteItemAsync),
+                requestOptions,
+                (diagnostics) => base.DeleteAllItemsByPartitionKeyAsync(partitionKey, requestOptions, cancellationToken));
         }
     }
 }
