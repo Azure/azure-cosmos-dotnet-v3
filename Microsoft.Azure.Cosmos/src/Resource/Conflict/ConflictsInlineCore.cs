@@ -25,9 +25,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteAsync),
-                null,
-                (diagnostics) => base.DeleteAsync(diagnostics, conflict, partitionKey, cancellationToken));
+                operationName: nameof(DeleteAsync),
+                requestOptions: null,
+                task: (diagnostics) => base.DeleteAsync(diagnostics, conflict, partitionKey, cancellationToken));
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
