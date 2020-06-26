@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Linq;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
@@ -99,9 +100,10 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new partition key value.
         /// </summary>
         /// <param name="value">The value to use as partition key.</param>
-        internal PartitionKey(object[] value)
+        internal PartitionKey(PartitionKeyValueList value)
         {
-            this.InternalKey = new Documents.PartitionKey(value).InternalKey;
+            object[] valueArray = value.partitionKeyObjects.ToArray();
+            this.InternalKey = new Documents.PartitionKey(valueArray).InternalKey;
             this.IsNone = false;
         }
 

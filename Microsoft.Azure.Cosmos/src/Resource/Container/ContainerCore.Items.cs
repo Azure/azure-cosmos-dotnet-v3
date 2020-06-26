@@ -738,8 +738,9 @@ namespace Microsoft.Azure.Cosmos
                 IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                 CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
-                List<CosmosElement> partitionValues = new List<CosmosElement>();
                 IReadOnlyList<string[]> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
+                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+                PartitionKeyValueList partitionKeyValueList = new PartitionKeyValueList();
                 foreach (string[] tokens in tokenslist)
                 {
                     CosmosElement partitionKeyValue;
@@ -748,21 +749,24 @@ namespace Microsoft.Azure.Cosmos
                         if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                         {
                             if (tokenslist.Count == 1) return PartitionKey.None;
-                            throw new ArgumentException(RMResources.PartitionKeyMismatch);
+                            break;
                         }
                     }
 
                     if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out partitionKeyValue))
                     {
                         if (tokenslist.Count == 1) return PartitionKey.None;
-                        throw new ArgumentException(RMResources.PartitionKeyMismatch);
                     }
 
-                    if (partitionKeyValue == null) partitionKeyValue = CosmosNull.Create();
-                    partitionValues.Add(partitionKeyValue);
-                }
+                    if (partitionKeyValue == null)
+                    {
+                        partitionKeyValue = CosmosNull.Create();
+                    }
 
-                return this.CosmosElementToPartitionKeyObject(CosmosArray.Create(partitionValues));
+                    this.CosmosElementToPartitionKeyObject(partitionKeyValue, partitionKeyValueList, partitionKeyDefinition);
+                }
+                 
+                return new PartitionKey(partitionKeyValueList); 
             }
             finally
             {
@@ -771,59 +775,37 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
+        private void CosmosElementToPartitionKeyObject(CosmosElement cosmosElement, PartitionKeyValueList partitionKeyValueList, PartitionKeyDefinition partitionKeyDefinition)
         {
             // TODO: Leverage original serialization and avoid re-serialization (bug)
             switch (cosmosElement.Type)
             {
                 case CosmosElementType.String:
                     CosmosString cosmosString = cosmosElement as CosmosString;
-                    return new PartitionKey(cosmosString.Value);
+                    partitionKeyValueList.Add(cosmosString.Value);
+                    break;
 
                 case CosmosElementType.Number:
                     CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
                     double value = Number64.ToDouble(cosmosNumber.Value);
-                    return new PartitionKey(value);
+                    partitionKeyValueList.Add(value);
+                    break;
 
                 case CosmosElementType.Boolean:
                     CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
-                    return new PartitionKey(cosmosBool.Value);
+                    partitionKeyValueList.Add(cosmosBool.Value);
+                    break;
 
                 case CosmosElementType.Null:
-                    return PartitionKey.Null;
-
-                case CosmosElementType.Array:
-                    CosmosArray array = cosmosElement as CosmosArray;
-                    object[] pKeys = new object[array.ToArray<Object>().Length];
-                    int i = 0;
-                    foreach (CosmosElement ce in array.ToArray<Object>())
+                    if (partitionKeyDefinition == null)
                     {
-                        Object cse;
-                        switch (ce.Type)
-                        {
-                            case CosmosElementType.String:
-                                cse = (ce as CosmosString).Value;
-                                break;
-
-                            case CosmosElementType.Number:
-                                cse = Number64.ToDouble((ce as CosmosNumber).Value);
-                                break;
-
-                            case CosmosElementType.Boolean:
-                                cse = (ce as CosmosBoolean).Value;
-                                break;
-
-                            case CosmosElementType.Null:
-                                cse = Undefined.Value;
-                                break;
-
-                            default:
-                                throw new ArgumentException(
-                                    string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, ce));
-                        }
-                        pKeys[i++] = cse;
+                        throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
                     }
-                    return new PartitionKey(pKeys);
+                    else
+                    {
+                        partitionKeyValueList.Add(null); // This is translated to PartitionKey.Undefined
+                    }
+                    break;
 
                 default:
                     throw new ArgumentException(
