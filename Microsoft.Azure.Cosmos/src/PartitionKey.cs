@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a new partition key value.
         /// </summary>
-        /// <param name="value">The value to use as partition key.</param>
+        /// <param name="value">An object of Type PartitionKeyValueList which supports multiple partition key paths.</param>
         internal PartitionKey(PartitionKeyValueList value)
         {
             object[] valueArray = value.partitionKeyObjects.ToArray();

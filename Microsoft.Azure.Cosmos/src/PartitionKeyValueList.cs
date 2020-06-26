@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         private IList<object> partitionKeyValues;
 
         /// <summary>
-        /// Creates a new partition key value list.
+        /// Creates a new partition key value list object.
         /// </summary>
         public PartitionKeyValueList()
         {

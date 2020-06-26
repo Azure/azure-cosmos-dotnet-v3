@@ -629,7 +629,7 @@ namespace Microsoft.Azure.Cosmos
                 PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
                 if (((PartitionKey)partitionKey).InternalKey.Components.Count != pKeyDefinition.Paths.Count)
                 {
-                    throw new ArgumentException(RMResources.PartitionKeyMismatch);
+                    throw new ArgumentException(RMResources.MissingPartitionKeyValue);
                 }
                 return await this.ProcessItemStreamAsync(
                         partitionKey,
