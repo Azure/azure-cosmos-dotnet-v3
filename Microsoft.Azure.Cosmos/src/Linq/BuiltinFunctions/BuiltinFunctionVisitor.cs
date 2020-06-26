@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
 
     internal abstract class BuiltinFunctionVisitor

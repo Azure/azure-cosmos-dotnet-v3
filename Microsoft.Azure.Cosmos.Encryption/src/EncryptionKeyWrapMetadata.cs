@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal string Algorithm { get; private set; }
 
         /// <summary>
-        /// Serialized form of metadata.
+        /// Gets serialized form of metadata.
         /// Note: This value is saved in the Cosmos DB service.
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>

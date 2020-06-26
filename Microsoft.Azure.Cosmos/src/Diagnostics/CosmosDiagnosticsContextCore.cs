@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
+    using System.Security.Policy;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -24,8 +25,6 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosDiagnosticScope overallScope;
 
-        private bool IsDefaultUserAgent = true;
-
         static CosmosDiagnosticsContextCore()
         {
             // Default user agent string does not contain client id or features.
@@ -34,7 +33,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public CosmosDiagnosticsContextCore()
+            : this(nameof(CosmosDiagnosticsContextCore),
+                  CosmosDiagnosticsContextCore.DefaultUserAgentString)
         {
+        }
+
+        public CosmosDiagnosticsContextCore(
+            string operationName,
+            string userAgentString)
+        {
+            this.UserAgent = userAgentString ?? throw new ArgumentNullException(nameof(userAgentString));
+            this.OperationName = operationName ?? throw new ArgumentNullException(nameof(operationName));
             this.StartUtc = DateTime.UtcNow;
             this.CurrentScope = new Stack<CosmosDiagnosticScope>();
             this.Diagnostics = new CosmosDiagnosticsCore(this);
@@ -44,17 +53,25 @@ namespace Microsoft.Azure.Cosmos
 
         public override DateTime StartUtc { get; }
 
-        public override int TotalRequestCount { get; protected set; }
+        public override string UserAgent { get; }
 
-        public override int FailedRequestCount { get; protected set; }
-
-        public override string UserAgent { get; protected set; } = CosmosDiagnosticsContextCore.DefaultUserAgentString;
+        public override string OperationName { get; }
 
         internal override CosmosDiagnostics Diagnostics { get; }
 
-        internal override TimeSpan GetClientElapsedTime()
+        internal override IDisposable GetOverallScope()
+        {
+            return this.overallScope;
+        }
+
+        internal override TimeSpan GetRunningElapsedTime()
         {
             return this.overallScope.GetElapsedTime();
+        }
+
+        internal override bool TryGetTotalElapsedTime(out TimeSpan timeSpan)
+        {
+            return this.overallScope.TryGetElapsedTime(out timeSpan);
         }
 
         internal override bool IsComplete()
@@ -62,9 +79,14 @@ namespace Microsoft.Azure.Cosmos
             return this.overallScope.IsComplete();
         }
 
-        internal override IDisposable GetOverallScope()
+        public override int GetTotalRequestCount()
         {
-            return this.overallScope;
+            return this.totalRequestCount;
+        }
+
+        public override int GetFailedRequestCount()
+        {
+            return this.failedRequestCount;
         }
 
         internal override IDisposable CreateScope(string name)
@@ -155,12 +177,6 @@ namespace Microsoft.Azure.Cosmos
             this.CurrentScope.Peek().AddDiagnosticsInternal(newContext);
         }
 
-        internal override void SetSdkUserAgent(string userAgent)
-        {
-            this.IsDefaultUserAgent = false;
-            this.UserAgent = userAgent;
-        }
-
         public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
         {
             cosmosDiagnosticsInternalVisitor.Visit(this);
@@ -186,10 +202,10 @@ namespace Microsoft.Azure.Cosmos
 
         private void AddRequestCount(int statusCode)
         {
-            this.TotalRequestCount++;
+            this.totalRequestCount++;
             if (statusCode < 200 || statusCode > 299)
             {
-                this.FailedRequestCount++;
+                this.failedRequestCount++;
             }
         }
 
@@ -200,13 +216,8 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (this.IsDefaultUserAgent && newContext.UserAgent != null)
-            {
-                this.SetSdkUserAgent(newContext.UserAgent);
-            }
-
-            this.TotalRequestCount += newContext.TotalRequestCount;
-            this.FailedRequestCount += newContext.FailedRequestCount;
+            this.totalRequestCount += newContext.GetTotalRequestCount();
+            this.failedRequestCount += newContext.GetFailedRequestCount();
         }
     }
 }
