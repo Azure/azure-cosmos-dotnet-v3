@@ -1,9 +1,17 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+
+namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
-    internal abstract class SqlObjectVisitor
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract class SqlObjectVisitor
     {
         public abstract void Visit(SqlAliasedCollectionExpression sqlObject);
         public abstract void Visit(SqlArrayCreateScalarExpression sqlObject);
@@ -54,111 +62,5 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract void Visit(SqlUnaryScalarExpression sqlObject);
         public abstract void Visit(SqlUndefinedLiteral sqlObject);
         public abstract void Visit(SqlWhereClause sqlObject);
-    }
-
-    internal abstract class SqlObjectVisitor<TResult>
-    {
-        public abstract TResult Visit(SqlAliasedCollectionExpression sqlObject);
-        public abstract TResult Visit(SqlArrayCreateScalarExpression sqlObject);
-        public abstract TResult Visit(SqlArrayIteratorCollectionExpression sqlObject);
-        public abstract TResult Visit(SqlArrayScalarExpression sqlObject);
-        public abstract TResult Visit(SqlBetweenScalarExpression sqlObject);
-        public abstract TResult Visit(SqlBinaryScalarExpression sqlObject);
-        public abstract TResult Visit(SqlBooleanLiteral sqlObject);
-        public abstract TResult Visit(SqlCoalesceScalarExpression sqlObject);
-        public abstract TResult Visit(SqlConditionalScalarExpression sqlObject);
-        public abstract TResult Visit(SqlExistsScalarExpression sqlObject);
-        public abstract TResult Visit(SqlFromClause sqlObject);
-        public abstract TResult Visit(SqlFunctionCallScalarExpression sqlObject);
-        public abstract TResult Visit(SqlGroupByClause sqlObject);
-        public abstract TResult Visit(SqlIdentifier sqlObject);
-        public abstract TResult Visit(SqlIdentifierPathExpression sqlObject);
-        public abstract TResult Visit(SqlInputPathCollection sqlObject);
-        public abstract TResult Visit(SqlInScalarExpression sqlObject);
-        public abstract TResult Visit(SqlLimitSpec sqlObject);
-        public abstract TResult Visit(SqlJoinCollectionExpression sqlObject);
-        public abstract TResult Visit(SqlLiteralScalarExpression sqlObject);
-        public abstract TResult Visit(SqlMemberIndexerScalarExpression sqlObject);
-        public abstract TResult Visit(SqlNullLiteral sqlObject);
-        public abstract TResult Visit(SqlNumberLiteral sqlObject);
-        public abstract TResult Visit(SqlNumberPathExpression sqlObject);
-        public abstract TResult Visit(SqlObjectCreateScalarExpression sqlObject);
-        public abstract TResult Visit(SqlObjectProperty sqlObject);
-        public abstract TResult Visit(SqlOffsetLimitClause sqlObject);
-        public abstract TResult Visit(SqlOffsetSpec sqlObject);
-        public abstract TResult Visit(SqlOrderbyClause sqlObject);
-        public abstract TResult Visit(SqlOrderByItem sqlObject);
-        public abstract TResult Visit(SqlParameter sqlObject);
-        public abstract TResult Visit(SqlParameterRefScalarExpression sqlObject);
-        public abstract TResult Visit(SqlProgram sqlObject);
-        public abstract TResult Visit(SqlPropertyName sqlObject);
-        public abstract TResult Visit(SqlPropertyRefScalarExpression sqlObject);
-        public abstract TResult Visit(SqlQuery sqlObject);
-        public abstract TResult Visit(SqlSelectClause sqlObject);
-        public abstract TResult Visit(SqlSelectItem sqlObject);
-        public abstract TResult Visit(SqlSelectListSpec sqlObject);
-        public abstract TResult Visit(SqlSelectStarSpec sqlObject);
-        public abstract TResult Visit(SqlSelectValueSpec sqlObject);
-        public abstract TResult Visit(SqlStringLiteral sqlObject);
-        public abstract TResult Visit(SqlStringPathExpression sqlObject);
-        public abstract TResult Visit(SqlSubqueryCollection sqlObject);
-        public abstract TResult Visit(SqlSubqueryScalarExpression sqlObject);
-        public abstract TResult Visit(SqlTopSpec sqlObject);
-        public abstract TResult Visit(SqlUnaryScalarExpression sqlObject);
-        public abstract TResult Visit(SqlUndefinedLiteral sqlObject);
-        public abstract TResult Visit(SqlWhereClause sqlObject);
-    }
-
-    internal abstract class SqlObjectVisitor<TArg, TOutput>
-    {
-        public abstract TOutput Visit(SqlAliasedCollectionExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlArrayCreateScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlArrayIteratorCollectionExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlArrayScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlBetweenScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlBinaryScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlBooleanLiteral sqlObject, TArg input);
-        public abstract TOutput Visit(SqlCoalesceScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlConditionalScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlExistsScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlFromClause sqlObject, TArg input);
-        public abstract TOutput Visit(SqlFunctionCallScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlGroupByClause sqlObject, TArg input);
-        public abstract TOutput Visit(SqlIdentifier sqlObject, TArg input);
-        public abstract TOutput Visit(SqlIdentifierPathExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlInputPathCollection sqlObject, TArg input);
-        public abstract TOutput Visit(SqlInScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlJoinCollectionExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlLimitSpec sqlObject, TArg input);
-        public abstract TOutput Visit(SqlLiteralScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlMemberIndexerScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlNullLiteral sqlObject, TArg input);
-        public abstract TOutput Visit(SqlNumberLiteral sqlObject, TArg input);
-        public abstract TOutput Visit(SqlNumberPathExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlObjectCreateScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlObjectProperty sqlObject, TArg input);
-        public abstract TOutput Visit(SqlOffsetLimitClause sqlObject, TArg input);
-        public abstract TOutput Visit(SqlOffsetSpec sqlObject, TArg input);
-        public abstract TOutput Visit(SqlOrderbyClause sqlObject, TArg input);
-        public abstract TOutput Visit(SqlOrderByItem sqlObject, TArg input);
-        public abstract TOutput Visit(SqlParameter sqlObject, TArg input);
-        public abstract TOutput Visit(SqlParameterRefScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlProgram sqlObject, TArg input);
-        public abstract TOutput Visit(SqlPropertyName sqlObject, TArg input);
-        public abstract TOutput Visit(SqlPropertyRefScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlQuery sqlObject, TArg input);
-        public abstract TOutput Visit(SqlSelectClause sqlObject, TArg input);
-        public abstract TOutput Visit(SqlSelectItem sqlObject, TArg input);
-        public abstract TOutput Visit(SqlSelectListSpec sqlObject, TArg input);
-        public abstract TOutput Visit(SqlSelectStarSpec sqlObject, TArg input);
-        public abstract TOutput Visit(SqlSelectValueSpec sqlObject, TArg input);
-        public abstract TOutput Visit(SqlStringLiteral sqlObject, TArg input);
-        public abstract TOutput Visit(SqlStringPathExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlSubqueryCollection sqlObject, TArg input);
-        public abstract TOutput Visit(SqlSubqueryScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlTopSpec sqlObject, TArg input);
-        public abstract TOutput Visit(SqlUnaryScalarExpression sqlObject, TArg input);
-        public abstract TOutput Visit(SqlUndefinedLiteral sqlObject, TArg input);
-        public abstract TOutput Visit(SqlWhereClause sqlObject, TArg input);
     }
 }

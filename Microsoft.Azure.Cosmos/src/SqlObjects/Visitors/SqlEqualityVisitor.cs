@@ -6,8 +6,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Sql;
-    using Newtonsoft.Json.Bson;
+    using Microsoft.Azure.Cosmos.SqlObjects;
 
     internal sealed class SqlEqualityVisitor : SqlObjectVisitor<SqlObject, bool>
     {

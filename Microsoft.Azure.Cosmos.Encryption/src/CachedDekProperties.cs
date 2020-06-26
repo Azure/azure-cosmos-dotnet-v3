@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class CachedDekProperties
     {
-        public DataEncryptionKeyProperties ServerProperties { get;  }
+        public DataEncryptionKeyProperties ServerProperties { get; }
 
         public DateTime ServerPropertiesExpiryUtc { get; }
 

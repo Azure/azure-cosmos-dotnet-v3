@@ -13,9 +13,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -24,7 +30,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
 </Results>

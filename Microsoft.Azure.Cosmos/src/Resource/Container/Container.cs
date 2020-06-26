@@ -823,19 +823,20 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
         ///     .WithParameter("@expensive", 9000);
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     queryDefinition,
         ///     null,
-        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")});
-        ///
-        /// while (feedIterator.HasMoreResults)
+        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
         ///         }
         ///     }
         /// }
@@ -868,16 +869,17 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
         ///     .WithParameter("@expensive", 9000);
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+        /// using (FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     queryDefinition,
         ///     null,
-        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")});
-        ///
-        /// while (feedIterator.HasMoreResults)
+        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         /// {
-        ///     foreach(var item in await feedIterator.ReadNextAsync()){
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item.cost); 
+        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         {
+        ///             Console.WriteLine(item.cost); 
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -910,19 +912,20 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     "select * from ToDos t where t.cost > 9000",
         ///     null,
-        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")});
-        ///
-        /// while (feedIterator.HasMoreResults)
+        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
         ///         }
         ///     }
         /// }
@@ -939,19 +942,20 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         ///
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     null,
         ///     null,
-        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")});
-        ///
-        /// while (feedIterator.HasMoreResults)
+        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
         ///         }
         ///     }
         /// }
@@ -982,16 +986,17 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+        /// using (FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     "select * from ToDos t where t.cost > 9000",
         ///     null,
-        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")});
-        ///
-        /// while (feedIterator.HasMoreResults)
+        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         /// {
-        ///     foreach(var item in await feedIterator.ReadNextAsync()){
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item.cost);
+        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         {
+        ///             Console.WriteLine(item.cost);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -1007,16 +1012,17 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         ///
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+        /// using (FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     null,
         ///     null,
-        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")});
-        ///
-        /// while (feedIterator.HasMoreResults)
+        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
         /// {
-        ///     foreach(var item in await feedIterator.ReadNextAsync()){
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item.cost); 
+        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         {
+        ///             Console.WriteLine(item.cost); 
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -1087,19 +1093,19 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         ///
         /// // LINQ query generation
-        /// var setIterator = container.GetItemLinqQueryable<Book>()
+        /// using (FeedIterator setIterator = container.GetItemLinqQueryable<Book>()
         ///                      .Where(b => b.Title == "War and Peace")
-        ///                      .ToFeedIterator();
-        ///                      
-        /// //Asynchronous query execution
-        /// while (setIterator.HasMoreResults)
-        /// {
-        ///     foreach(var item in await feedIterator.ReadNextAsync()){
+        ///                      .ToFeedIterator())
+        /// {                   
+        ///     //Asynchronous query execution
+        ///     while (setIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item.cost); 
+        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         {
+        ///             Console.WriteLine(item.cost); 
+        ///         }
         ///     }
         /// }
-        ///
         /// ]]>
         /// </code>
         /// </example>
@@ -1177,39 +1183,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// This method creates an iterator to consume the container's Change Feed.
+        ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
-        /// <param name="continuationToken">(Optional) The continuation from a previous Change Feed iterator.</param>
-        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <returns>An iterator to go through the Change Feed.</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
-        ///
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
-        ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
-        ///         {
-        ///             JObject result = JObject.Load(jtr);
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            string continuationToken = null,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        ///  This method creates an iterator to consume a FeedRange's Change Feed.
-        /// </summary>
-        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/> or from a previous FeedIterator</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
@@ -1218,25 +1193,33 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
         /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedRanges[0]);
+        ///
+        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+        /// {
+        ///     FeedRange = feedRanges[0]
+        /// }
+        /// 
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
         ///         }
         ///     }
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
+        /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1248,16 +1231,17 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(new PartitionKey("myPartitionKey"));
-        ///
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(new PartitionKey("myPartitionKey")))
         /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
         ///         }
         ///     }
         /// }
@@ -1270,35 +1254,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
-        ///  This method creates an iterator to consume the container's Change Feed.
+        ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
-        /// <param name="continuationToken">(Optional) The continuation from a previous Change Feed iterator.</param>
-        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <returns>An iterator to go through the Change Feed.</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
-        ///     {
-        ///         Console.WriteLine(item);
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            string continuationToken = null,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        ///  This method creates an iterator to consume a FeedRange's Change Feed.
-        /// </summary>
-        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
@@ -1307,21 +1264,29 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
         /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedRanges[0]);
+        ///
+        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+        /// {
+        ///     FeedRange = feedRanges[0]
+        /// }
+        /// 
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(options);
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item);
+        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var item in response)
+        ///         {
+        ///             Console.WriteLine(item);
+        ///         }
         ///     }
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
+        /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1333,13 +1298,15 @@ namespace Microsoft.Azure.Cosmos
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(new PartitionKey("myPartitionKey"));
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(new PartitionKey("myPartitionKey")))
         /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item);
+        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var item in response)
+        ///         {
+        ///             Console.WriteLine(item);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -1388,20 +1355,21 @@ namespace Microsoft.Azure.Cosmos
         /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
         ///     .WithParameter("@expensive", 9000);
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     feedRanges[0],
         ///     queryDefinition,
         ///     null,
-        ///     new QueryRequestOptions() { });
-        ///
-        /// while (feedIterator.HasMoreResults)
+        ///     new QueryRequestOptions() { }))
         /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             JObject result = JObject.Load(jtr);
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
         ///         }
         ///     }
         /// }
@@ -1440,17 +1408,18 @@ namespace Microsoft.Azure.Cosmos
         /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
         ///     .WithParameter("@expensive", 9000);
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+        /// using (FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     feedRanges[0],
         ///     queryDefinition,
         ///     null,
-        ///     new QueryRequestOptions() { });
-        ///
-        /// while (feedIterator.HasMoreResults)
+        ///     new QueryRequestOptions() { }))
         /// {
-        ///     foreach(var item in await feedIterator.ReadNextAsync()){
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(item.cost); 
+        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         {
+        ///             Console.WriteLine(item.cost); 
+        ///         }
         ///     }
         /// }
         /// ]]>
