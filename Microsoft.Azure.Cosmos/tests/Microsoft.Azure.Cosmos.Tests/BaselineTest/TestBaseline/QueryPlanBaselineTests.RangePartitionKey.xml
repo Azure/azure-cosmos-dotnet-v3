@@ -13,9 +13,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -24,7 +30,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -43,9 +48,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -54,7 +65,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -71,9 +81,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -82,7 +98,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -99,9 +114,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -110,7 +131,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -128,9 +148,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -139,16 +165,15 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
     <Input>
       <Description>Complex filter</Description>
-      <Query>SELECT * FROM Root r WHERE ((r.a.b.c BETWEEN 2 AND 3) AND r.a = 4 AND r.a.c = 5) OR ((r.a.b.c BETWEEN 9 AND 10) AND r.a = 2 AND r.a.c != 7)</Query>
+      <Query>SELECT * FROM Root r WHERE ((r.a.b.c BETWEEN 2 AND 3) AND r.b = 4 AND r.a.c = 5) OR ((r.a.b.c BETWEEN 9 AND 10) AND r.b = 2 AND r.a.c != 7)</Query>
       <PartitionKeys>
         <Key>/a/b/c</Key>
-        <Key>/a</Key>
+        <Key>/b</Key>
         <Key>/a/c</Key>
       </PartitionKeys>
       <PartitionKeyType>Range</PartitionKeyType>
@@ -158,9 +183,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -170,7 +201,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -187,9 +217,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -198,7 +234,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -215,9 +250,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -226,7 +267,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -243,9 +283,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -254,7 +300,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -271,9 +316,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -282,7 +333,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -299,9 +349,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -310,7 +366,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -328,9 +383,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -339,7 +400,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
   <Result>
@@ -357,9 +417,15 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
           <Range>
@@ -369,7 +435,6 @@
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
-      <Error />
     </Output>
   </Result>
 </Results>

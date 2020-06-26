@@ -74,25 +74,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("StartUtc");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.StartUtc.ToString("o", CultureInfo.InvariantCulture));
 
-            if (cosmosDiagnosticsContext.IsComplete())
+            if (cosmosDiagnosticsContext.TryGetTotalElapsedTime(out TimeSpan totalElapsedTime))
             {
                 this.jsonWriter.WritePropertyName("TotalElapsedTimeInMs");
+                this.jsonWriter.WriteValue(totalElapsedTime.TotalMilliseconds);
             }
             else
             {
                 this.jsonWriter.WritePropertyName("RunningElapsedTimeInMs");
+                this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetRunningElapsedTime().TotalMilliseconds);
             }
             
-            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetClientElapsedTime().TotalMilliseconds);
-
             this.jsonWriter.WritePropertyName("UserAgent");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserAgent);
 
             this.jsonWriter.WritePropertyName("TotalRequestCount");
-            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.TotalRequestCount);
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetTotalRequestCount());
 
             this.jsonWriter.WritePropertyName("FailedRequestCount");
-            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.FailedRequestCount);
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetFailedRequestCount());
 
             this.jsonWriter.WriteEndObject();
 

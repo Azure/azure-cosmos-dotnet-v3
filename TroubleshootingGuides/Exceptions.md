@@ -7,9 +7,9 @@ The SDK was designed with the following two scenarios.
 This is for most users that want a simple interface that follows the normal Dot NET guidelines. Typed APIs is any method that returns the deserialized body, and can be identified as any method that does not return a ResponseMessage.
 
 1. Will throw the following exceptions types:
-  1. CosmosException is used for all service related issues like 404 Not found
-  2. ArgumentException
-  3. OperationCancelledException
+   1. CosmosException is used for all service related issues like 404 Not found
+   2. ArgumentException
+   3. OperationCancelledException
 2. CosmosException.ToString() includes the message, stack trace, and diagnostics. All of these properties are needed to troubleshoot issues
 
 ### ResponseMessage from Stream APIs <a id="stream-api"></a>
@@ -36,6 +36,6 @@ These APIs are designed for more advance scenario where perfomance is critical o
 | 409 | Conflict (Only for Create/Replace/Upsert) | User's application should handle the conflict |
 | 410 | Gone exceptions | SDK handles the retries. If the retry logic is exceeded it will get converted to a 503 error. This can be caused by many scenarios like partition was moved to a larger machine because of a scaling operation. This is an expected exception and will not impact the Cosmos DB SLA. |
 | 413 | [Request Entity Too Large](https://docs.microsoft.com/en-us/azure/cosmos-db/concepts-limits#per-item-limits) | User's application should handle the payload being to large |
-| 429 | [To many requests](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/TroubleshootingGuides/CosmosRequestRateTooLarge.md) | The SDK has built in logic, and it is user configurable for most SDKs |
+| 429 | [Too many requests](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/TroubleshootingGuides/CosmosRequestRateTooLarge.md) | The SDK has built in logic, and it is user configurable for most SDKs |
 | 500 | Azure Cosmos DB failure | User's application should have retry logic. |
 | 503 | Was not able to reach Azure Cosmos DB | User's application should have retry logic. |

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "To be fixed, tracked in issue #1575")]
     internal sealed class EncryptionTransactionalBatch : TransactionalBatch
     {
         private readonly Encryptor encryptor;

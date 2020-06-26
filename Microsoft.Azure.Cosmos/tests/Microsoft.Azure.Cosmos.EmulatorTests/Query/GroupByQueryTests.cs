@@ -325,6 +325,18 @@
                             }))
                         .ToList()
                 ),
+
+                // ------------------------------------------
+                // GROUP BY partition key
+                // ------------------------------------------
+
+                (
+                    "SELECT VALUE c.id FROM c GROUP BY c.id",
+                    documents
+                        .GroupBy(document => document["id"])
+                        .Select(grouping => grouping.Key)
+                        .ToList()
+                ),
             };
 
             // Test query correctness.

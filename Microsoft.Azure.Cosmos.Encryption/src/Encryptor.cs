@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Encrypts the plainText using the key and algorithm provided.
         /// </summary>
-        /// <param name="plainText"></param>
+        /// <param name="plainText">Plain text.</param>
         /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
         /// <param name="encryptionAlgorithm">Identifier for the encryption algorithm.</param>
         /// <param name="cancellationToken">Token for cancellation.</param>
@@ -40,6 +40,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default);
-
     }
 }
