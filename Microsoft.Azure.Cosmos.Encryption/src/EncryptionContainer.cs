@@ -9,23 +9,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Runtime.Serialization;
+    using System.Runtime.Serialization.Formatters.Binary;
+    using System.Runtime.Serialization.Json;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Resource;
+    using Microsoft.Azure.Cosmos.Sql;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using System.Text;
-    using System.Runtime.Serialization;
-    using System.Runtime.Serialization.Json;
-    using System.Runtime.Serialization.Formatters.Binary;
-    using Microsoft.Azure.Cosmos.Resource;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Sql;
 
     internal sealed class EncryptionContainer : Container
     {
         private readonly Container container;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly IReadOnlyList<EncryptionOptions> propertyEncryptionOptions;
 
         internal Encryptor Encryptor { get; }
 
@@ -39,12 +40,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionContainer(
             Container container,
             Encryptor encryptor,
-            List<EncryptionOptions> pencryptionOption = null)
+            IReadOnlyList<EncryptionOptions> propertyencryptionOption = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
-            this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
-            this.pEncryptionOptions = pencryptionOption;
-            this.responseFactory = this.Database.Client.ResponseFactory;
+            this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.propertyEncryptionOptions = propertyencryptionOption;
+            this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.cosmosSerializer = this.Database.Client.ClientOptions.Serializer;
         }
 
@@ -56,9 +57,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override Database Database => this.container.Database;
 
-        public Dictionary<List<string>, string> ToEncrypt = new Dictionary<List<string>, string>();
-
-        private readonly IReadOnlyList<EncryptionOptions> encryptionOptions;
+        // A dictionary of the property paths to encrypt with their corresponding key
+        // 1 or more paths can be stored in the List to encrypt with the corresponding key
+        private readonly Dictionary<List<string>, string> toEncrypt = new Dictionary<List<string>, string>();
 
         public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (this.pEncryptionOptions != null)
+            if (this.propertyEncryptionOptions != null)
             {
                 if (partitionKey == null)
                 {
@@ -79,27 +80,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
-                foreach (EncryptionOptions entry in this.pEncryptionOptions)
+                foreach (EncryptionOptions pEncryptionOptions in this.propertyEncryptionOptions)
                 {
                     CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
 
-                    itemStream = await EncryptionProcessor.EncryptAsync(
+                    itemStream = await PropertyEncryptionProcessor.EncryptAsync(
                         itemStream,
-                        this.encryptor,
-                        entry,
+                        this.Encryptor,
+                        pEncryptionOptions,
                         diagnosticsContext,
-                        cancellationToken, true);
-
+                        cancellationToken);
                 }
+
                 using (ResponseMessage responseMessage = await this.CreateItemStreamAsync(
                     itemStream,
                     partitionKey.Value,
                     requestOptions,
                     cancellationToken))
                 {
-                    return this.responseFactory.CreateItemResponse<T>(responseMessage);
+                    return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
                 }
-
             }
             else if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions && encryptionItemRequestOptions.EncryptionOptions != null)
             {
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("CreateItemStream"))
             {
-                if (this.pEncryptionOptions != null)
+                if (this.propertyEncryptionOptions != null)
                 {
                     ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
                          streamPayload,
@@ -161,8 +161,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         decryptionErroHandler,
                         diagnosticsContext,
                         cancellationToken);
-                    return responseMessage;
 
+                    return responseMessage;
                 }
                 else if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
                     encryptionItemRequestOptions.EncryptionOptions != null)
@@ -629,30 +629,32 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 decryptionResultHandler = null;
             }
+
             if (queryDefinition != null)
             {
-                if (this.pEncryptionOptions != null)
+                if (this.propertyEncryptionOptions != null)
                 {
-                    foreach (EncryptionOptions encryptionOptions in this.pEncryptionOptions)
+                    foreach (EncryptionOptions encryptionOptions in this.propertyEncryptionOptions)
                     {
-                        if (!this.ToEncrypt.ContainsKey((List<string>)encryptionOptions.PathsToEncrypt))
+                        if (!this.toEncrypt.ContainsKey((List<string>)encryptionOptions.PathsToEncrypt))
                         {
-                            this.ToEncrypt.Add((List<string>)encryptionOptions.PathsToEncrypt, encryptionOptions.DataEncryptionKeyId);
+                            this.toEncrypt.Add((List<string>)encryptionOptions.PathsToEncrypt, encryptionOptions.DataEncryptionKeyId);
                         }
                     }
+
                     foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
                     {
-                        foreach (List<string> path in this.ToEncrypt.Keys)
+                        foreach (List<string> path in this.toEncrypt.Keys)
                         {
                             if (path.Contains("/" + parameters.Key.Substring(4)))
                             {
                                 return new EncryptionFeedIterator(
                                         queryDefinition,
-                                        this.ToEncrypt,
+                                        this.toEncrypt,
                                         requestOptions,
-                                        this.encryptor,
+                                        this.Encryptor,
                                         this.container,
-                                        DecryptionResultHandler,
+                                        decryptionResultHandler,
                                         continuationToken);
                             }
                         }
@@ -665,11 +667,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     queryDefinition,
                     continuationToken,
                     requestOptions),
-                this.encryptor,
-                this.ToEncrypt,
-                DecryptionResultHandler);
+                this.Encryptor,
+                this.toEncrypt,
+                decryptionResultHandler);
         }
-
 
         public override FeedIterator GetItemQueryStreamIterator(
             string queryText = null,
@@ -685,31 +686,32 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 decryptionResultHandler = null;
             }
+
             if (queryText != null)
             {
-                if (this.pEncryptionOptions != null)
+                if (this.propertyEncryptionOptions != null)
                 {
-                    foreach (EncryptionOptions encryptionOptions in this.pEncryptionOptions)
+                    foreach (EncryptionOptions encryptionOptions in this.propertyEncryptionOptions)
                     {
-                        if (!this.ToEncrypt.ContainsKey((List<string>)encryptionOptions.PathsToEncrypt))
+                        if (!this.toEncrypt.ContainsKey((List<string>)encryptionOptions.PathsToEncrypt))
                         {
-                            this.ToEncrypt.Add((List<string>)encryptionOptions.PathsToEncrypt, encryptionOptions.DataEncryptionKeyId);
+                            this.toEncrypt.Add((List<string>)encryptionOptions.PathsToEncrypt, encryptionOptions.DataEncryptionKeyId);
                         }
                     }
-                    foreach (List<string> Paths in this.ToEncrypt.Keys)
-                    {
-                        foreach (string Path in Paths)
-                        {
 
-                            if (queryText.Contains(Path.Substring(1)))
+                    foreach (List<string> paths in this.toEncrypt.Keys)
+                    {
+                        foreach (string path in paths)
+                        {
+                            if (queryText.Contains(path.Substring(1)))
                             {
                                 return new EncryptionFeedIterator(
                                        queryText,
-                                       this.ToEncrypt,
+                                       this.toEncrypt,
                                        requestOptions,
-                                       this.encryptor,
+                                       this.Encryptor,
                                        this.container,
-                                       DecryptionResultHandler,
+                                       decryptionResultHandler,
                                        continuationToken);
                             }
                         }
@@ -722,10 +724,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     queryText,
                     continuationToken,
                     requestOptions),
-                this.encryptor,
-                this.ToEncrypt,
-                DecryptionResultHandler);
-
+                this.Encryptor,
+                this.toEncrypt,
+                decryptionResultHandler);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -774,9 +775,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.container.GetChangeFeedStreamIterator(
                     continuationToken,
                     changeFeedRequestOptions),
-                this.encryptor,
-                this.ToEncrypt,
-                DecryptionResultHandler);
+                this.Encryptor,
+                this.toEncrypt,
+                decryptionResultHandler);
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
@@ -797,9 +798,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.container.GetChangeFeedStreamIterator(
                     feedRange,
                     changeFeedRequestOptions),
-                this.encryptor,
-                this.ToEncrypt,
-                DecryptionResultHandler);
+                this.Encryptor,
+                this.toEncrypt,
+                decryptionResultHandler);
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
@@ -820,9 +821,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.container.GetChangeFeedStreamIterator(
                     partitionKey,
                     changeFeedRequestOptions),
-                this.encryptor,
-                this.ToEncrypt,
-                DecryptionResultHandler);
+                this.Encryptor,
+                this.toEncrypt,
+                decryptionResultHandler);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -887,9 +888,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                    queryDefinition,
                    continuationToken,
                    requestOptions),
-               this.encryptor,
-               this.ToEncrypt,
-               DecryptionResultHandler);
+               this.Encryptor,
+               this.toEncrypt,
+               decryptionResultHandler);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -920,24 +921,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             try
             {
-                if (this.pEncryptionOptions != null)
+                if (this.propertyEncryptionOptions != null)
                 {
-                    foreach (EncryptionOptions encryptionOptions in this.pEncryptionOptions)
+                    foreach (EncryptionOptions encryptionOptions in this.propertyEncryptionOptions)
                     {
-                        if (!this.ToEncrypt.ContainsKey((List<string>)encryptionOptions.PathsToEncrypt))
+                        if (!this.toEncrypt.ContainsKey((List<string>)encryptionOptions.PathsToEncrypt))
                         {
-                            this.ToEncrypt.Add((List<string>)encryptionOptions.PathsToEncrypt, encryptionOptions.DataEncryptionKeyId);
+                            this.toEncrypt.Add((List<string>)encryptionOptions.PathsToEncrypt, encryptionOptions.DataEncryptionKeyId);
                         }
                     }
                 }
 
-                return await EncryptionProcessor.DecryptAsync(
+                return await PropertyEncryptionProcessor.DecryptAsync(
                       input,
-                      this.encryptor,
+                      this.Encryptor,
                       diagnosticsContext,
-                      cancellationToken,
-                      this.ToEncrypt);
-
+                      this.toEncrypt,
+                      cancellationToken);
             }
             catch (Exception exception)
             {
@@ -963,6 +963,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return input;
             }
         }
-
     }
 }

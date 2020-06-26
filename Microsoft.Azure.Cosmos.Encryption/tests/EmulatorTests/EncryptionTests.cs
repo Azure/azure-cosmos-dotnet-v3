@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static TestEncryptor encryptor;
         private static string decryptionFailedDocId;
         private const string pdekId = "mypdek";
-        public Dictionary<string, List<string>> ToEncrypt = new Dictionary<string, List<string>>();
+        public Dictionary<List<string>, string> ToEncrypt = new Dictionary<List<string>, string>();
         private const string pdekId2 = "mypdek2";
 
 
@@ -232,13 +232,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
         [TestMethod]
-        public async Task CreateItemWithpropEncr()
+        public async Task CreateItemWithPropertyEncr()
         {
-            EncryptionTests.pdekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
+            EncryptionTests.pdekProperties = await EncryptionTests.CreatePropertyDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
 
-            this.ToEncrypt.Add(pdekId, TestDoc.pPathsToEncrypt);
+            this.ToEncrypt.Add(TestDoc.PropertyPathsToEncrypt, pdekId);
 
-            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithPropEncryptor(encryptor, this.ToEncrypt);
+            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, this.ToEncrypt);
 
             TestDoc testDoc = TestDoc.Create();
 
@@ -302,15 +302,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         }
         [TestMethod]
-        public async Task CreateItemWith2propEncr()
+        public async Task CreateItemWith2PropertyEncr()
         {
-            EncryptionTests.pdekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
-            EncryptionTests.pdek2Properties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId2);
+            EncryptionTests.pdekProperties = await EncryptionTests.CreatePropertyDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
+            EncryptionTests.pdek2Properties = await EncryptionTests.CreatePropertyDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId2);
 
-            this.ToEncrypt.Add(pdekId, TestDoc.pPathsToEncrypt);
-            this.ToEncrypt.Add(pdekId2, TestDoc.pPathsToEncrypt2);
+            this.ToEncrypt.Add(TestDoc.PropertyPathsToEncrypt, pdekId);
+            this.ToEncrypt.Add(TestDoc.PropertyPathsToEncrypt2, pdekId2);
 
-            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithPropEncryptor(encryptor, this.ToEncrypt);
+            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, this.ToEncrypt);
 
             TestDoc testDoc = TestDoc.Create();
             ItemResponse<TestDoc> createResponse = await EncryptionTests.encryptionContainer.CreateItemAsync(
@@ -393,13 +393,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         }
         [TestMethod]
-        public async Task ENcryptionCreateItemWithpropEncr()
+        public async Task EncryptionCreateItemWithPropertyEncr()
         {
-            EncryptionTests.pdekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
+            EncryptionTests.pdekProperties = await EncryptionTests.CreatePropertyDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
 
-            this.ToEncrypt.Add(pdekId, TestDoc.pPathsToEncrypt);
+            this.ToEncrypt.Add(TestDoc.PropertyPathsToEncrypt, pdekId);
 
-            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithPropEncryptor(encryptor, this.ToEncrypt);
+            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, this.ToEncrypt);
 
             TestDoc testDoc = await CreateItemAsync(EncryptionTests.encryptionContainer, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
 
@@ -464,16 +464,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        public async Task propEncrAndEncryptionChangeFeedDecryptionSuccessful()
+        public async Task PropertyEncrAndEncryptionChangeFeedDecryptionSuccessful()
         {
-            EncryptionTests.pdekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
+            EncryptionTests.pdekProperties = await EncryptionTests.CreatePropertyDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
 
-            this.ToEncrypt.Add(pdekId, TestDoc.pPathsToEncrypt);
+            this.ToEncrypt.Add(TestDoc.PropertyPathsToEncrypt, pdekId);
 
-            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithPropEncryptor(encryptor, this.ToEncrypt);
+            EncryptionTests.encryptionContainer = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, this.ToEncrypt);
 
-            string dek2 = "dek2ForChangeFeed";
-            await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, dek2);
+            string pdek2 = "pdek2ForChangeFeed";
+            await EncryptionTests.CreatePropertyDekAsync(EncryptionTests.dekProvider, pdek2);
 
             TestDoc testDoc1 = TestDoc.Create();
             ItemResponse<TestDoc> createResponse = await EncryptionTests.encryptionContainer.CreateItemAsync(
@@ -1368,7 +1368,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             return VerifyDekResponse(dekResponse,
                 dekId);
         }
+        private static async Task<DataEncryptionKeyProperties> CreatePropertyDekAsync(CosmosDataEncryptionKeyProvider dekProvider, string dekId)
+        {
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
+                dekId,
+                CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                EncryptionTests.metadata1);
 
+            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
+
+            return VerifyDekResponse(dekResponse,
+                dekId);
+        }
         private static DataEncryptionKeyProperties VerifyDekResponse(
             ItemResponse<DataEncryptionKeyProperties> dekResponse,
             string dekId)
@@ -1415,8 +1426,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
 
             public static List<string> PathsToEncrypt { get; } = new List<string>() { "/Sensitive" };
-            public static List<string> pPathsToEncrypt { get; } = new List<string> { "/Name" };
-            public static List<string> pPathsToEncrypt2 { get; } = new List<string> { "/City" };
+            public static List<string> PropertyPathsToEncrypt { get; } = new List<string> { "/Name" };
+            public static List<string> PropertyPathsToEncrypt2 { get; } = new List<string> { "/City" };
 
             [JsonProperty("id")]
             public string Id { get; set; }

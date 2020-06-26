@@ -21,39 +21,34 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
-
         public static Container WithEncryptor(
             this Container container,
             Encryptor encryptor)
         {
-
             return new EncryptionContainer(
                container,
                encryptor);
         }
 
-        public static Container WithPropEncryptor(this Container container, Encryptor encryptor, Dictionary<string, List<string>> toEncrypt)
+        public static Container WithPropertyEncryptor(this Container container, Encryptor encryptor, IReadOnlyDictionary<List<string>, string> toEncrypt)
         {
-            List<EncryptionOptions> pencryptionOptions = new List<EncryptionOptions>();
-            foreach (KeyValuePair<string, List<string>> entry in toEncrypt)
+            List<EncryptionOptions> propertyEncryptionOptions = new List<EncryptionOptions>();
+            foreach (KeyValuePair<List<string>, string> entry in toEncrypt)
             {
-                pencryptionOptions.Add(
+                propertyEncryptionOptions.Add(
                     new EncryptionOptions()
                     {
-                        DataEncryptionKeyId = entry.Key,
-                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                        PathsToEncrypt = entry.Value
-                    }
-                ); ;
+                        DataEncryptionKeyId = entry.Value,
+                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                        PathsToEncrypt = entry.Key,
+                    });
             }
 
             return new EncryptionContainer(
-           container,
-           encryptor, pencryptionOptions);
-
+                container,
+                encryptor,
+                propertyEncryptionOptions);
         }
-
-
 
         /// <summary>
         /// This method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
@@ -129,10 +124,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 decryptionResultHandler = null;
             }
+
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
-                encryptionContainer.encryptor,
-                null,
+                encryptionContainer.Encryptor,
+                toEncrypt: null,
                 decryptionResultHandler);
         }
     }

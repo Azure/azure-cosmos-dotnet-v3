@@ -2,7 +2,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ClientOfficialVersion>3.10.1</ClientOfficialVersion>
-    <ClientPreviewVersion>3.9.1</ClientPreviewVersion>
+    <ClientPreviewVersion>3.9.2</ClientPreviewVersion>
     <DirectVersion>3.10.0</DirectVersion>
     <EncryptionVersion>1.0.0-preview4</EncryptionVersion>
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>

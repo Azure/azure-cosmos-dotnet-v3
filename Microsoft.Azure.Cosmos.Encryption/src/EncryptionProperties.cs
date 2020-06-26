@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         [JsonProperty(PropertyName = Constants.EncryptedData)]
         public byte[] EncryptedData { get; }
+
         [JsonProperty(PropertyName = Constants.EncryptedPaths)]
         public string EncryptedPaths { get; }
 
