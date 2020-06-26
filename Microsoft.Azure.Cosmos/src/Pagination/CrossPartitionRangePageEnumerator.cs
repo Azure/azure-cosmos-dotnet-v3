@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            PriorityQueue<PartitionRangePageEnumerator> enumerators = await this.lazyEnumerators.GetValueAsync();
+            PriorityQueue<PartitionRangePageEnumerator> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: default);
             PartitionRangePageEnumerator currentPaginator = enumerators.Dequeue();
             bool movedNext = await currentPaginator.MoveNextAsync();
             if (!movedNext)

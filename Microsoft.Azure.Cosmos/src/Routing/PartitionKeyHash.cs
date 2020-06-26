@@ -71,11 +71,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.Value.GetHashCode();
         }
 
-        public string ToHexString()
-        {
-            throw new NotImplementedException();
-        }
-
         public static class V1
         {
             private const int MaxStringLength = 100;
