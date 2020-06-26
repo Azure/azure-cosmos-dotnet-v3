@@ -80,9 +80,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadCurrentAsync),
-                null,
-                (diagnostics) => base.ReadCurrentAsync<T>(diagnostics, cosmosConflict, partitionKey, cancellationToken));
+                operationName: nameof(ReadCurrentAsync),
+                requestOptions: null,
+                task: (diagnostics) => base.ReadCurrentAsync<T>(diagnostics, cosmosConflict, partitionKey, cancellationToken));
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)
