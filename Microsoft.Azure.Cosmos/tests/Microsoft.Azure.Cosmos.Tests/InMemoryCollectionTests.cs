@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -136,14 +137,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             int AssertChildPartition(int partitionKeyRangeId)
             {
-                Assert.IsTrue(inMemoryCollection.TryReadFeed(
+                TryCatch<List<InMemoryCollection.Record>> tryGetPartitionRecords = inMemoryCollection.ReadFeed(
                     partitionKeyRangeId: partitionKeyRangeId,
-                    pageIndex: 0,
-                    pageSize: 100,
-                    out List<InMemoryCollection.Record> partitionRecords));
+                    resourceIndentifer: 0,
+                    pageSize: 100);
+                tryGetPartitionRecords.ThrowIfFailed();
 
                 List<long> values = new List<long>();
-                foreach (InMemoryCollection.Record record in partitionRecords)
+                foreach (InMemoryCollection.Record record in tryGetPartitionRecords.Result)
                 {
                     values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
                 }
@@ -156,6 +157,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             int count = AssertChildPartition(partitionKeyRangeId: 1) + AssertChildPartition(partitionKeyRangeId: 2);
             Assert.AreEqual(numItemsToInsert, count);
-        }
+            }
     }
 }

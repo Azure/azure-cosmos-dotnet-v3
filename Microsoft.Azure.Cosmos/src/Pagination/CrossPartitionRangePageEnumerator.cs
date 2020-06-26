@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     IEnumerable<FeedRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(currentPaginator.Range);
                     foreach (FeedRange childRange in childRanges)
                     {
-                        PartitionRangePageEnumerator childPaginator = this.createPartitionRangePaginator(childRange, currentPaginator.GetState());
+                        PartitionRangePageEnumerator childPaginator = this.createPartitionRangePaginator(childRange, currentPaginator.State);
                         this.paginators.Enqueue(childPaginator);
                     }
 

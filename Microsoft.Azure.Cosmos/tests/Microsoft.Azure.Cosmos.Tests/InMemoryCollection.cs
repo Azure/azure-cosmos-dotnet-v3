@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Moq;
@@ -77,12 +78,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             return false;
         }
 
-        public bool TryReadFeed(int partitionKeyRangeId, int pageIndex, int pageSize, out List<Record> page)
+        public TryCatch<List<Record>> ReadFeed(int partitionKeyRangeId, long resourceIndentifer, int pageSize)
         {
             if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange range))
             {
-                page = default;
-                return false;
+                return TryCatch<List<Record>>.FromException(
+                    new CosmosException(
+                        message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: default));
             }
 
             if (!this.partitionedRecords.TryGetValue(range, out Records records))
@@ -90,8 +96,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new InvalidOperationException("failed to find the range.");
             }
 
-            page = records.Skip(pageIndex * pageSize).Take(pageSize).ToList();
-            return true;
+            List<Record> page = records
+                .Where(record => record.ResourceIdentifier > resourceIndentifer)
+                .Take(pageSize)
+                .ToList();
+
+            return TryCatch<List<Record>>.FromResult(page);
         }
 
         public IReadOnlyDictionary<int, PartitionKeyHashRange> PartitionKeyRangeFeedReed() => this.partitionKeyRangeIdToHashRange;
@@ -104,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new InvalidOperationException("Failed to find the range.");
             }
 
-            if (!this.partitionedRecords.TryGetValue(parentRange, out Records records))
+            if (!this.partitionedRecords.TryGetValue(parentRange, out Records parentRecords))
             {
                 throw new InvalidOperationException("failed to find the range.");
             }
@@ -138,9 +148,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.partitionKeyRangeIdToHashRange = newPartitionKeyRangeIdToHashRange;
 
             // Rehash the records in the parent range
-            foreach (Record record in records)
+            foreach (Record record in parentRecords)
             {
-                this.CreateItem(record.Payload);
+                PartitionKeyHash partitionKeyHash = GetHashFromPayload(record.Payload, this.partitionKeyDefinition);
+                if (!this.partitionedRecords.TryGetValue(partitionKeyHash, out Records records))
+                {
+                    records = new Records();
+                    this.partitionedRecords[partitionKeyHash] = records;
+                }
+
+                records.Add(record);
             }
         }
 
@@ -203,33 +220,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new ArgumentOutOfRangeException("Can only support a single partition key path.");
             }
 
-            PartitionKeyHash partitionKeyHash;
-            switch (partitionKey)
+            PartitionKeyHash partitionKeyHash = partitionKey switch
             {
-                case null:
-                    partitionKeyHash = PartitionKeyHash.V2.HashUndefined();
-                    break;
-
-                case CosmosString stringPartitionKey:
-                    partitionKeyHash = PartitionKeyHash.V2.Hash(stringPartitionKey.Value);
-                    break;
-
-                case CosmosNumber numberPartitionKey:
-                    partitionKeyHash = PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value));
-                    break;
-
-                case CosmosBoolean cosmosBoolean:
-                    partitionKeyHash = PartitionKeyHash.V2.Hash(cosmosBoolean.Value);
-                    break;
-
-                case CosmosNull _:
-                    partitionKeyHash = PartitionKeyHash.V2.HashNull();
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
+                null => PartitionKeyHash.V2.HashUndefined(),
+                CosmosString stringPartitionKey => PartitionKeyHash.V2.Hash(stringPartitionKey.Value),
+                CosmosNumber numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
+                CosmosBoolean cosmosBoolean => PartitionKeyHash.V2.Hash(cosmosBoolean.Value),
+                CosmosNull _ => PartitionKeyHash.V2.HashNull(),
+                _ => throw new ArgumentOutOfRangeException(),
+            };
             return partitionKeyHash;
         }
 
@@ -287,6 +286,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 Record record = Record.Create(previousResourceId, payload);
+                this.storage.Add(record);
+                return record;
+            }
+
+            public Record Add(Record record)
+            {
                 this.storage.Add(record);
                 return record;
             }
