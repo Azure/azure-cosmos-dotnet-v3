@@ -172,10 +172,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 requestEnricher?.Invoke(request);
                 return await this.SendAsync(request, cancellationToken);
             }
-            catch (OperationCanceledException oe)
-            {
-                throw new CosmosOperationCanceledException(oe, diagnosticsContext);
-            }
             finally
             {
                 if (disposeDiagnosticContext)

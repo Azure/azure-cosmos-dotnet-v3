@@ -32,14 +32,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(feedRange));
             }
 
-            if (!(feedRange is FeedRangeEpk feedRangeEPK))
+            if (!(feedRange is FeedRangeEpk feedRangeEpk))
             {
                 throw new ArgumentOutOfRangeException(nameof(feedRange));
             }
 
             IReadOnlyList<Documents.PartitionKeyRange> replacementRanges = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
                 this.collectionRid,
-                new Documents.Routing.Range<string>(feedRangeEPK.Range.Min, feedRangeEPK.Range.Max, isMaxInclusive: true, isMinInclusive: false),
+                new Documents.Routing.Range<string>(feedRangeEpk.Range.Min, feedRangeEpk.Range.Max, isMaxInclusive: true, isMinInclusive: false),
                 forceRefresh: true);
 
             List<FeedRange> childFeedRanges = new List<FeedRange>(replacementRanges.Count);
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<IEnumerable<FeedRange>> GetFeedRangesAsync(
             CancellationToken cancellationToken = default) => this.GetChildRangeAsync(
-                FeedRangeEpk.ForFullRange(),
+                FeedRangeEpk.FullRange,
                 cancellationToken);
     }
 }

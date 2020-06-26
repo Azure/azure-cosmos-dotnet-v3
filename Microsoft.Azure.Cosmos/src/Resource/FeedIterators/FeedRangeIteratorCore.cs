@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // Backward compatible with old format
-                feedRangeInternal = FeedRangeEpk.ForFullRange();
+                feedRangeInternal = FeedRangeEpk.FullRange;
                 feedRangeContinuation = new FeedRangeCompositeContinuation(
                     string.Empty,
                     feedRangeInternal,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 return new FeedRangeIteratorCore(containerCore, feedRangeContinuation, options, resourceType, queryDefinition);
             }
 
-            feedRangeInternal = feedRangeInternal ?? FeedRangeEpk.ForFullRange();
+            feedRangeInternal ??= FeedRangeEpk.FullRange;
             return new FeedRangeIteratorCore(containerCore, feedRangeInternal, options, resourceType, queryDefinition);
         }
 
@@ -183,9 +183,12 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: stream,
                requestEnricher: request =>
                {
-                   FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(request);
+                   FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
                    this.FeedRangeInternal.Accept(feedRangeVisitor);
-                   this.FeedRangeContinuation.Accept(feedRangeVisitor, QueryRequestOptions.FillContinuationToken);
+
+                   FeedRangeContinuationRequestMessagePopulatorVisitor feedRangeContinuationVisitor = new FeedRangeContinuationRequestMessagePopulatorVisitor(request, QueryRequestOptions.FillContinuationToken);
+                   this.FeedRangeContinuation.Accept(feedRangeContinuationVisitor);
+
                    if (this.querySpec != null)
                    {
                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
