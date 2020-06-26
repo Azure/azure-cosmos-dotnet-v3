@@ -17,17 +17,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
     internal sealed class CrossPartitionRangePageEnumerator : IAsyncEnumerator<TryCatch<Page>>
     {
         private readonly FeedRangeProvider feedRangeProvider;
-        private readonly Func<FeedRange, State, PartitionRangePageEnumerator> createPartitionRangePaginator;
+        private readonly CreatePartitionRangePageEnumerator createPartitionRangeEnumerator;
         private readonly PriorityQueue<PartitionRangePageEnumerator> paginators;
 
         public CrossPartitionRangePageEnumerator(
             FeedRangeProvider feedRangeProvider,
-            Func<FeedRange, State, PartitionRangePageEnumerator> createPartitionRangePaginator,
+            CreatePartitionRangePageEnumerator createPartitionRangeEnumerator,
             IEnumerable<PartitionRangePageEnumerator> paginators,
             IComparer<PartitionRangePageEnumerator> comparer)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
-            this.createPartitionRangePaginator = createPartitionRangePaginator ?? throw new ArgumentNullException(nameof(createPartitionRangePaginator));
+            this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
 
             if (paginators == null)
             {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     IEnumerable<FeedRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(currentPaginator.Range);
                     foreach (FeedRange childRange in childRanges)
                     {
-                        PartitionRangePageEnumerator childPaginator = this.createPartitionRangePaginator(childRange, currentPaginator.State);
+                        PartitionRangePageEnumerator childPaginator = this.createPartitionRangeEnumerator(childRange, currentPaginator.State);
                         this.paginators.Enqueue(childPaginator);
                     }
 

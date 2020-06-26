@@ -4,17 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
-    using System.Security.Cryptography.X509Certificates;
+    using System;
+    using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using System.Threading;
-    using System;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
     using System.Linq;
 
     [TestClass]
@@ -23,45 +20,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         [TestMethod]
         public async Task TestDrainFullyAsync()
         {
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection();
-            IAsyncEnumerable<TryCatch<Page>> enumerable = new PageEnumeratorToEnumerableAdaptor(() =>
-            {
-                return new InMemoryCollectionPartitionRangeEnumerator(
+            int numItems = 100;
+            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
+            PartitionRangePageEnumerable enumerable = new PartitionRangePageEnumerable(
+                range: new FeedRangePartitionKeyRange("0"),
+                state: default,
+                (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
                     inMemoryCollection,
-                    partitionKeyRangeId: 0,
-                    pageSize: 10);
-            });
+                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                    pageSize: 10,
+                    state: state));
 
-            List<InMemoryCollection.Record> records = new List<InMemoryCollection.Record>();
-            await foreach (TryCatch<Page> tryGetPage in enumerable)
-            {
-                tryGetPage.ThrowIfFailed();
-
-                if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
-                {
-                    throw new InvalidCastException();
-                }
-
-                records.AddRange(page.Records);
-            }
-
-            Assert.AreEqual(100, new HashSet<long>(records.Select(record => record.ResourceIdentifier)).Count);
+            HashSet<long> resourceIdentifiers = await GetResourceIdentifiersAsync(enumerable);
+            Assert.AreEqual(numItems, resourceIdentifiers.Count);
         }
 
         [TestMethod]
         public async Task TestResumingFromState()
         {
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection();
+            int numItems = 100;
+            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
             InMemoryCollectionPartitionRangeEnumerator enumerator = new InMemoryCollectionPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    partitionKeyRangeId: 0,
-                    pageSize: 10);
+                inMemoryCollection,
+                partitionKeyRangeId: 0,
+                pageSize: 10);
 
             List<InMemoryCollection.Record> records = new List<InMemoryCollection.Record>();
             State state = default;
 
             // Drain a couple of iterations
-            for(int i = 0; i < 3; i++)
+            for (int i = 0; i < 3; i++)
             {
                 await enumerator.MoveNextAsync();
 
@@ -84,30 +72,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 pageSize: 10,
                 state: state);
 
-            IAsyncEnumerable<TryCatch<Page>> enumerable = new PageEnumeratorToEnumerableAdaptor(() => enumerator);
-            await foreach (TryCatch<Page> tryGetPage in enumerable)
-            {
-                tryGetPage.ThrowIfFailed();
+            PartitionRangePageEnumerable enumerable = new PartitionRangePageEnumerable(
+                range: new FeedRangePartitionKeyRange("0"),
+                state: state,
+                (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
+                    inMemoryCollection,
+                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                    pageSize: 10,
+                    state: state));
+            HashSet<long> resourceIdentifiers = await GetResourceIdentifiersAsync(enumerable);
 
-                if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
-                {
-                    throw new InvalidCastException();
-                }
-
-                records.AddRange(page.Records);
-            }
-
-            Assert.AreEqual(100, new HashSet<long>(records.Select(record => record.ResourceIdentifier)).Count);
+            Assert.AreEqual(numItems, records.Count + resourceIdentifiers.Count);
         }
 
         [TestMethod]
         public async Task TestSplitAsync()
         {
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection();
+            int numItems = 100;
+            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
             InMemoryCollectionPartitionRangeEnumerator enumerator = new InMemoryCollectionPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    partitionKeyRangeId: 0,
-                    pageSize: 10);
+                inMemoryCollection,
+                partitionKeyRangeId: 0,
+                pageSize: 10);
 
             List<InMemoryCollection.Record> records = new List<InMemoryCollection.Record>();
             State state = default;
@@ -136,49 +122,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Assert.IsTrue(enumerator.Current.Failed);
 
             // Resume on the children using the parent continuaiton token
-            InMemoryCollectionPartitionRangeEnumerator enumerator1 = new InMemoryCollectionPartitionRangeEnumerator(
-                inMemoryCollection,
-                partitionKeyRangeId: 1,
-                pageSize: 10,
-                state: state);
+            PartitionRangePageEnumerable enumerable1 = new PartitionRangePageEnumerable(
+                range: new FeedRangePartitionKeyRange("1"),
+                state: state,
+                (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
+                    inMemoryCollection,
+                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                    pageSize: 10,
+                    state: state));
+            HashSet<long> resourceIdentifiers1 = await GetResourceIdentifiersAsync(enumerable1);
 
-            InMemoryCollectionPartitionRangeEnumerator enumerator2 = new InMemoryCollectionPartitionRangeEnumerator(
-                inMemoryCollection,
-                partitionKeyRangeId: 2,
-                pageSize: 10,
-                state: state);
+            PartitionRangePageEnumerable enumerable2 = new PartitionRangePageEnumerable(
+                range: new FeedRangePartitionKeyRange("2"),
+                state: state,
+                (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
+                    inMemoryCollection,
+                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                    pageSize: 10,
+                    state: state));
+            HashSet<long> resourceIdentifiers2 = await GetResourceIdentifiersAsync(enumerable2);
 
-            IAsyncEnumerable<TryCatch<Page>> enumerable;
-            enumerable = new PageEnumeratorToEnumerableAdaptor(() => enumerator1);
-            await foreach (TryCatch<Page> tryGetPage in enumerable)
-            {
-                tryGetPage.ThrowIfFailed();
+            List<long> commonAmongChildren = resourceIdentifiers1.Intersect(resourceIdentifiers2).ToList();
+            Assert.AreEqual(0, commonAmongChildren.Count);
 
-                if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
-                {
-                    throw new InvalidCastException();
-                }
-
-                records.AddRange(page.Records);
-            }
-
-            enumerable = new PageEnumeratorToEnumerableAdaptor(() => enumerator2);
-            await foreach (TryCatch<Page> tryGetPage in enumerable)
-            {
-                tryGetPage.ThrowIfFailed();
-
-                if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
-                {
-                    throw new InvalidCastException();
-                }
-
-                records.AddRange(page.Records);
-            }
-
-            Assert.AreEqual(100, new HashSet<long>(records.Select(record => record.ResourceIdentifier)).Count);
+            Assert.AreEqual(numItems, records.Count + resourceIdentifiers1.Count + resourceIdentifiers2.Count);
         }
 
-        private static InMemoryCollection CreateInMemoryCollection()
+        private static InMemoryCollection CreateInMemoryCollection(int numItems)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -192,8 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition);
 
-            int numItemsToInsert = 100;
-            for (int i = 0; i < numItemsToInsert; i++)
+            for (int i = 0; i < numItems; i++)
             {
                 // Insert an item
                 CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
@@ -203,19 +172,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return inMemoryCollection;
         }
 
-        private sealed class PageEnumeratorToEnumerableAdaptor : IAsyncEnumerable<TryCatch<Page>>
+        private static async Task<HashSet<long>> GetResourceIdentifiersAsync(
+            PartitionRangePageEnumerable enumerable,
+            int? numIterations = default)
         {
-            private readonly Func<IAsyncEnumerator<TryCatch<Page>>> factory;
-
-            public PageEnumeratorToEnumerableAdaptor(Func<IAsyncEnumerator<TryCatch<Page>>> factory)
+            int iterationNumber = 0;
+            HashSet<long> resourceIdentifiers = new HashSet<long>();
+            await foreach (TryCatch<Page> tryGetPage in enumerable)
             {
-                this.factory = factory;
+                if (numIterations.HasValue && iterationNumber >= numIterations)
+                {
+                    break;
+                }
+
+                tryGetPage.ThrowIfFailed();
+
+                if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
+                {
+                    throw new InvalidCastException();
+                }
+
+                foreach (InMemoryCollection.Record record in page.Records)
+                {
+                    resourceIdentifiers.Add(record.ResourceIdentifier);
+                }
+
+                iterationNumber++;
             }
 
-            public IAsyncEnumerator<TryCatch<Page>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-            {
-                return this.factory();
-            }
+            return resourceIdentifiers;
         }
     }
 }
