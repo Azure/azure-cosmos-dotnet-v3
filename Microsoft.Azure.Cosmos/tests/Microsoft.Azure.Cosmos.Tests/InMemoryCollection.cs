@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     internal sealed class InMemoryCollection
     {
         private readonly PartitionKeyDefinition partitionKeyDefinition;
+        private readonly Dictionary<int, (int, int)> parentToChildMapping;
 
         private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private Dictionary<int, PartitionKeyHashRange> partitionKeyRangeIdToHashRange;
@@ -27,11 +28,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: null);
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
+            this.partitionedRecords[fullRange] = new Records();
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
             this.partitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
             {
                 { 0, fullRange }
             };
+            this.parentToChildMapping = new Dictionary<int, (int, int)>();
         }
 
         public Record CreateItem(CosmosObject payload)
@@ -125,16 +128,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(parentRange, 2);
 
             // Update the partition routing map
+            this.parentToChildMapping[partitionKeyRangeId] = (maxPartitionKeyRangeId + 1, maxPartitionKeyRangeId + 2);
             Dictionary<int, PartitionKeyHashRange> newPartitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
             {
                 { maxPartitionKeyRangeId + 1, partitionKeyHashRanges.First() },
                 { maxPartitionKeyRangeId + 2, partitionKeyHashRanges.Last() },
             };
 
+            foreach (KeyValuePair<int, PartitionKeyHashRange> kvp in this.partitionKeyRangeIdToHashRange)
+            {
+                int oldRangeId = kvp.Key;
+                PartitionKeyHashRange oldRange = kvp.Value;
+                if (!oldRange.Equals(parentRange))
+                {
+                    newPartitionKeyRangeIdToHashRange[oldRangeId] = oldRange;
+                }
+            }
+
             // Copy over the partitioned records (minus the parent range)
             PartitionKeyHashRangeDictionary<Records> newPartitionedRecords = new PartitionKeyHashRangeDictionary<Records>(
-                PartitionKeyHashRanges.Create(
-                    newPartitionKeyRangeIdToHashRange.Values));
+                PartitionKeyHashRanges.Create(newPartitionKeyRangeIdToHashRange.Values));
+
+            newPartitionedRecords[partitionKeyHashRanges.First()] = new Records();
+            newPartitionedRecords[partitionKeyHashRanges.Last()] = new Records();
 
             foreach (PartitionKeyHashRange range in this.partitionKeyRangeIdToHashRange.Values)
             {
@@ -160,6 +176,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 records.Add(record);
             }
         }
+
+        public (int, int) GetChildRanges(int partitionKeyRangeId) => this.parentToChildMapping[partitionKeyRangeId];
 
         private static PartitionKeyHash GetHashFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
         {

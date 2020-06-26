@@ -28,9 +28,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public State State { get; private set; }
 
+        public bool HasMoreResults => !this.hasStarted || (this.State != default);
+
         public async ValueTask<bool> MoveNextAsync()
         {
-            if (this.hasStarted && (this.State == default))
+            if (!this.HasMoreResults)
             {
                 return false;
             }

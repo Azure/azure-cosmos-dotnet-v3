@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
-    internal sealed class FeedRangeProvider
+    internal sealed class FeedRangeProvider : IFeedRangeProvider
     {
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly string collectionRid;
@@ -51,5 +51,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             return childFeedRanges;
         }
+
+        public Task<IEnumerable<FeedRange>> GetFeedRangesAsync(
+            CancellationToken cancellationToken = default) => this.GetChildRangeAsync(
+                FeedRangeEpk.ForFullRange(),
+                cancellationToken);
     }
 }

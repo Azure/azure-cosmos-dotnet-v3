@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public bool ValueInitialized { get; private set; }
 
-        public async Task<T> GetValueAsync(CancellationToken cancellationToken)
+        public async Task<T> GetValueAsync(CancellationToken cancellationToken = default)
         {
             // Note that this class is not thread safe.
             // if the valueFactory has side effects than this will have issues.

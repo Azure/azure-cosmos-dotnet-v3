@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             set
             {
-                if (!this.TryGetValue(key, out _))
+                if (!this.dictionary.TryGetValue(key, out _))
                 {
                     throw new NotSupportedException("Dictionary does not support adding new elements.");
                 }

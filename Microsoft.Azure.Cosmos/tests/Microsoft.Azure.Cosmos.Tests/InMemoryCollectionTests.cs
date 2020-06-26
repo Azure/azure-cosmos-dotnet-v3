@@ -134,6 +134,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             inMemoryCollection.Split(partitionKeyRangeId: 0);
 
             Assert.AreEqual(2, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
+            (int leftChild, int rightChild) = inMemoryCollection.GetChildRanges(partitionKeyRangeId: 0);
+            Assert.AreEqual(1, leftChild);
+            Assert.AreEqual(2, rightChild);
 
             int AssertChildPartition(int partitionKeyRangeId)
             {
@@ -157,6 +160,78 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             int count = AssertChildPartition(partitionKeyRangeId: 1) + AssertChildPartition(partitionKeyRangeId: 2);
             Assert.AreEqual(numItemsToInsert, count);
+        }
+
+        [TestMethod]
+        public void MultiSplit()
+        {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+            {
+                Paths = new System.Collections.ObjectModel.Collection<string>()
+                {
+                    "/pk"
+                },
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2,
+            };
+
+            InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition);
+
+            int numItemsToInsert = 10;
+            for (int i = 0; i < numItemsToInsert; i++)
+            {
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                inMemoryCollection.CreateItem(item);
             }
+
+            Assert.AreEqual(1, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
+
+            inMemoryCollection.Split(partitionKeyRangeId: 0);
+
+            Assert.AreEqual(2, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
+            (int leftChild, int rightChild) = inMemoryCollection.GetChildRanges(partitionKeyRangeId: 0);
+            Assert.AreEqual(1, leftChild);
+            Assert.AreEqual(2, rightChild);
+
+            inMemoryCollection.Split(partitionKeyRangeId: 1);
+            inMemoryCollection.Split(partitionKeyRangeId: 2);
+
+
+            Assert.AreEqual(4, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
+            (int leftChild1, int rightChild1) = inMemoryCollection.GetChildRanges(partitionKeyRangeId: 1);
+            Assert.AreEqual(3, leftChild1);
+            Assert.AreEqual(4, rightChild1);
+
+            (int leftChild2, int rightChild2) = inMemoryCollection.GetChildRanges(partitionKeyRangeId: 2);
+            Assert.AreEqual(5, leftChild2);
+            Assert.AreEqual(6, rightChild2);
+
+            int AssertChildPartition(int partitionKeyRangeId)
+            {
+                TryCatch<List<InMemoryCollection.Record>> tryGetPartitionRecords = inMemoryCollection.ReadFeed(
+                    partitionKeyRangeId: partitionKeyRangeId,
+                    resourceIndentifer: 0,
+                    pageSize: 100);
+                tryGetPartitionRecords.ThrowIfFailed();
+
+                List<long> values = new List<long>();
+                foreach (InMemoryCollection.Record record in tryGetPartitionRecords.Result)
+                {
+                    values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
+                }
+
+                List<long> sortedValues = values.OrderBy(x => x).ToList();
+                Assert.IsTrue(values.SequenceEqual(sortedValues));
+
+                return values.Count;
+            }
+
+            int count = AssertChildPartition(partitionKeyRangeId: 3)
+                + AssertChildPartition(partitionKeyRangeId: 4)
+                + AssertChildPartition(partitionKeyRangeId: 5)
+                + AssertChildPartition(partitionKeyRangeId: 6);
+            Assert.AreEqual(numItemsToInsert, count);
+        }
     }
 }
