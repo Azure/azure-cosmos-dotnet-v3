@@ -64,6 +64,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CreateDropItemWithInvalidIdCharactersTest()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            testItem.id = "Invalid#/\\?Id";
+            await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.status));
+
+            try
+            {
+                await this.Container.ReadItemAsync<JObject>(testItem.id, new Cosmos.PartitionKey(testItem.status));
+                Assert.Fail("Read item should fail because id has invalid characters");
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+            {
+                string message = ce.ToString();
+                Assert.IsNotNull(message);
+            }
+
+            // Get a container reference that use RID values
+            ContainerProperties containerProperties = await this.Container.ReadContainerAsync();
+            string[] selfLinkSegments = containerProperties.SelfLink.Split('/');
+            string databaseRid = selfLinkSegments[1];
+            string containerRid = selfLinkSegments[3];
+            Container containerByRid = this.cosmosClient.GetContainer(databaseRid, containerRid);
+
+            // List of invalid characters are listed here.
+            //https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.resource.id?view=azure-dotnet#remarks
+            FeedIterator<JObject> invalidItemsIterator = this.Container.GetItemQueryIterator<JObject>(
+                @"select * from t where CONTAINS(t.id, ""/"") or CONTAINS(t.id, ""#"") or CONTAINS(t.id, ""?"") or CONTAINS(t.id, ""\\"") ");
+            while (invalidItemsIterator.HasMoreResults)
+            {
+                foreach (JObject itemWithInvalidId in await invalidItemsIterator.ReadNextAsync())
+                {
+                    // It recommend to chose a new id that does not contain special characters, but
+                    // if that is not possible then it can be Base64 encoded to escape the special characters
+                    byte[] plainTextBytes = Encoding.UTF8.GetBytes(itemWithInvalidId["id"].ToString());
+                    itemWithInvalidId["id"] = Convert.ToBase64String(plainTextBytes);
+
+                    // Update the item with the new id value using the rid based container reference
+                    JObject item = await containerByRid.ReplaceItemAsync<JObject>(
+                        item: itemWithInvalidId,
+                        id: itemWithInvalidId["_rid"].ToString(),
+                        partitionKey: new Cosmos.PartitionKey(itemWithInvalidId["status"].ToString()));
+
+                    // Validate the new id can be read using the original name based contianer reference
+                    await this.Container.ReadItemAsync<ToDoActivity>(
+                       item["id"].ToString(),
+                       new Cosmos.PartitionKey(item["status"].ToString())); ;
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task CreateDropItemTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();

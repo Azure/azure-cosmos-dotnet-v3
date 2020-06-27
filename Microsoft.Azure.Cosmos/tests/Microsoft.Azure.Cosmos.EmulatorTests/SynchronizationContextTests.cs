@@ -65,6 +65,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
                         ItemResponse<ToDoActivity> response = container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
                         Assert.IsNotNull(response);
+                        string diagnostics = response.Diagnostics.ToString();
+                        Assert.IsTrue(diagnostics.Contains("SynchronizationContext"));
+
+                        using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+                        try
+                        {
+                            ToDoActivity tempItem = ToDoActivity.CreateRandomToDoActivity();
+                            CancellationToken cancellationToken = cancellationTokenSource.Token;
+                            cancellationTokenSource.Cancel();
+                            container.CreateItemAsync<ToDoActivity>(item: tempItem, cancellationToken: cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
+                            Assert.Fail("Should have thrown a cancellation token");
+
+                        }catch(CosmosOperationCanceledException oe)
+                        {
+                            string exception = oe.ToString();
+                            Assert.IsTrue(exception.Contains("SynchronizationContext"));
+                        }
 
                         // Test read feed
                         container.GetItemLinqQueryable<ToDoActivity>(

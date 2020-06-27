@@ -90,7 +90,6 @@
 
     <!--Direct Dependencies-->
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
-    <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
 
     <!--HybridRow Dependencies-->
     <PackageReference Include="System.Memory" Version="4.5.1" />
