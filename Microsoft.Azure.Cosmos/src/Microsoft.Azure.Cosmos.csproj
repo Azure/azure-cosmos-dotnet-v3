@@ -16,7 +16,7 @@
     <FileVersion>$(ClientVersion)</FileVersion>
     <Authors>Microsoft</Authors>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
     <Title>Microsoft Azure Cosmos DB Client library</Title>
@@ -90,7 +90,6 @@
 
     <!--Direct Dependencies-->
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
-    <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
 
     <!--HybridRow Dependencies-->
     <PackageReference Include="System.Memory" Version="4.5.1" />
