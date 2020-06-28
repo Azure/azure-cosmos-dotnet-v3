@@ -6,7 +6,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
-#if false
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -797,5 +796,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return sb.ToString();
         }
     }
-#endif
 }

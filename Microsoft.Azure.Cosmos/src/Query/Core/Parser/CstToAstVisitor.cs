@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
-#if false
     using System;
     using System.Collections.Generic;
     using Antlr4.Runtime.Tree;
@@ -725,5 +724,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return number64;
         }
     }
-#endif
 }

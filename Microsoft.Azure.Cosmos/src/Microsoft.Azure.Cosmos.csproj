@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <ispreview>true</ispreview>
     <Company>Microsoft Corporation</Company>
     <Product>Microsoft(R) Azure Cosmos</Product>
     <Description>This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/. </Description>
@@ -30,7 +29,7 @@
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ShippingScope>External</ShippingScope>
@@ -83,6 +82,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />

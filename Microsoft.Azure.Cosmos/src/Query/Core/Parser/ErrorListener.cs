@@ -6,7 +6,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
-    #if false
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -67,5 +66,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             base.SyntaxError(output, recognizer, offendingSymbol, line, col, msg, e);
         }
     }
-#endif
 }
