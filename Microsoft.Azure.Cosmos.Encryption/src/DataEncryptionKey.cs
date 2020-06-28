@@ -69,19 +69,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(rawKey));
             }
 
-            if ((encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) && (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256))
+            switch (encryptionAlgorithm)
             {
-                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
-            }
-            else if (encryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
-            {
-                AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
-                return new AeadAes256CbcHmac256Algorithm(aeKey, EncryptionType.Randomized, algorithmVersion: 1);
-            }
-            else
-            {
-                AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
-                return new AeadAes256CbcHmac256Algorithm(aeKey, EncryptionType.Deterministic, algorithmVersion: 1);
+                case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
+                    AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+                    return new AeadAes256CbcHmac256Algorithm(aeKey, EncryptionType.Randomized, algorithmVersion: 1);
+
+                case CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256:
+                    AeadAes256CbcHmac256EncryptionKey aedKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+                    return new AeadAes256CbcHmac256Algorithm(aedKey, EncryptionType.Deterministic, algorithmVersion: 1);
+
+                default:
+                    throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
             }
         }
     }

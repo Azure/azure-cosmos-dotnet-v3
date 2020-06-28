@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             // Validate encryption type for this algorithm
             // This algorithm can only provide randomized or deterministic encryption types.
-            // Right now, we support Both randomized encryption and Deterministic for Cosmos DB client side encryption.
+            // Right now, we support both randomized and deterministic IV based encryption for Cosmos DB client side encryption.
             Debug.Assert((encryptionType == EncryptionType.Randomized) || (encryptionType == EncryptionType.Deterministic), "Invalid Encryption Type detected in AeadAes256CbcHmac256Algorithm");
 
             if (encryptionType == EncryptionType.Deterministic)
