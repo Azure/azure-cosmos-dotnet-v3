@@ -12,61 +12,44 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
-        private FeedIterator feedIterator;
         private readonly Encryptor encryptor;
         private readonly Container container;
-        Action<DecryptionResult> decryptionResultHandler;
-        private string continuationToken;
-        private QueryDefinition queryDefinition;
-        private string queryText;
-        private QueryRequestOptions requestOptions;
-        public Dictionary<List<string>, string> ToEncrypt = new Dictionary<List<string>, string>();
+        private readonly Action<DecryptionResult> decryptionResultHandler;
+        private readonly QueryDefinition queryDefinition;
+        private readonly QueryRequestOptions requestOptions;
+        private readonly string continuationToken;
+        private readonly IReadOnlyDictionary<List<string>, string> pathsToEncrypt = new Dictionary<List<string>, string>();
+        private FeedIterator feedIterator;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
-            Dictionary<List<string>, string> toEncrypt,
+            IReadOnlyDictionary<List<string>, string> toEncrypt,
             Action<DecryptionResult> decryptionResultHandler = null)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
-            this.ToEncrypt = toEncrypt;
+            this.pathsToEncrypt = toEncrypt;
             this.decryptionResultHandler = decryptionResultHandler;
         }
 
         public EncryptionFeedIterator(
             QueryDefinition queryDefinition,
-            Dictionary<List<string>, string> toEncrypt,
+            IReadOnlyDictionary<List<string>, string> toEncrypt,
             QueryRequestOptions requestOptions,
             Encryptor encryptor,
             Container container,
-            Action<DecryptionResult> decryptionResultHandler, String continuationToken = null)
+            Action<DecryptionResult> decryptionResultHandler,
+            string continuationToken = null)
         {
             this.queryDefinition = queryDefinition;
-            this.ToEncrypt = toEncrypt;
-            this.requestOptions = requestOptions;
-            this.encryptor = encryptor;
-            this.container = container;
-            this.decryptionResultHandler = decryptionResultHandler;
-            this.continuationToken = continuationToken;
-        }
-
-        public EncryptionFeedIterator(
-            string queryText,
-            Dictionary<List<string>, string> toEncrypt,
-            QueryRequestOptions requestOptions,
-            Encryptor encryptor,
-            Container container,
-            Action<DecryptionResult> decryptionResultHandler, String continuationToken = null)
-        {
-            this.queryText = queryText;
-            this.ToEncrypt = toEncrypt;
+            this.pathsToEncrypt = toEncrypt;
             this.requestOptions = requestOptions;
             this.encryptor = encryptor;
             this.container = container;
@@ -82,67 +65,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (this.queryDefinition != null)
                 {
-                    QueryDefinition changed = new QueryDefinition(this.queryDefinition.QueryText);
-                    foreach (KeyValuePair<string, SqlParameter> parameters in this.queryDefinition.Parameters)
-                    {
-                        foreach (List<string> path in this.ToEncrypt.Keys)
-                        {
-                            if (path.Contains("/" + parameters.Key.Substring(4)))
-                            {
-                                byte[] plaintext = System.Text.Encoding.UTF8.GetBytes((string)parameters.Value.Value);
-                                byte[] cyphertext = await this.encryptor.EncryptAsync(
-                                    plaintext,
-                                    this.ToEncrypt[path],
-                                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
-
-                                changed.WithParameter(parameters.Key, cyphertext);
-                            }
-                        }
-                    }
-
-                    this.feedIterator = this.container.GetItemQueryStreamIterator(
-                                            changed,
-                                            this.continuationToken,
-                                            this.requestOptions);
-
+                    this.feedIterator = await this.InitializeInternalFeedIteratorAsync(this.queryDefinition);
                 }
-                else if (this.queryText != null)
-                {
-                    QueryDefinition query = new QueryDefinition(this.queryText);// = new QueryDefinition(this.queryText);
-                    foreach (List<string> Paths in this.ToEncrypt.Keys)
-                    {
-                        foreach (string Path in Paths)
-                        {
-                            if (this.queryText.Contains(Path.Substring(1)))
-                            {
-                                int startindex = this.queryText.IndexOf(Path.Substring(1) + " = '") + (Path.Substring(1) + " = '").Length;
-                                string plainVal = this.queryText.Substring(startindex);
-                                int endindex = plainVal.IndexOf("'");
-                                if (endindex > 0)
-                                {
-                                    plainVal = plainVal.Substring(0, endindex);
-                                }
-                                string newqueryText = this.queryText.Replace("'" + plainVal + "'", "@the" + Path.Substring(1));
-
-                                query = new QueryDefinition(newqueryText);
-
-                                byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(plainVal);
-                                byte[] cypher = await this.encryptor.EncryptAsync(
-                                    plaintext,
-                                    this.ToEncrypt[Paths],
-                                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
-                                query.WithParameter("@the" + Path.Substring(1), cypher);
-
-                            }
-                        }
-                    }
-                    this.feedIterator = this.container.GetItemQueryStreamIterator(
-                                                    query,
-                                                    this.continuationToken,
-                                                    this.requestOptions);
-
-                }
-
             }
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
@@ -155,8 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
                         diagnosticsContext,
-                        cancellationToken,
-                         this.ToEncrypt);
+                        cancellationToken);
 
                     return new DecryptedResponseMessage(responseMessage, decryptedContent);
                 }
@@ -165,12 +88,49 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
+        private async Task<FeedIterator> InitializeInternalFeedIteratorAsync(QueryDefinition queryDefinition)
+        {
+            QueryDefinition queryWithEncryptedParameters = new QueryDefinition(this.queryDefinition.QueryText);
+            foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in this.queryDefinition.Parameters)
+            {
+                foreach (List<string> paths in this.pathsToEncrypt.Keys)
+                {
+                    string modifiedText = queryDefinition.QueryText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
+
+                    if (SqlQuery.TryParse(modifiedText, out SqlQuery sqlQuery)
+                        && (sqlQuery.WhereClause != null)
+                        && (sqlQuery.WhereClause.FilterExpression != null)
+                        && (sqlQuery.WhereClause.FilterExpression is SqlBinaryScalarExpression expression)
+                        && (expression.OperatorKind == SqlBinaryScalarOperatorKind.Equal))
+                    {
+                        foreach (string path in paths)
+                        {
+                            string rightExpression = expression.RightExpression.ToString();
+                            if (rightExpression.Contains(path.Substring(1)))
+                            {
+                                byte[] plaintext = System.Text.Encoding.UTF8.GetBytes((string)parameters.Value.Value);
+                                byte[] ciphertext = await this.encryptor.EncryptAsync(
+                                    plaintext,
+                                    this.pathsToEncrypt[paths],
+                                    CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256);
+
+                                queryWithEncryptedParameters.WithParameter(parameters.Key, ciphertext);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return this.container.GetItemQueryStreamIterator(
+                                    queryWithEncryptedParameters,
+                                    this.continuationToken,
+                                    this.requestOptions);
+        }
 
         private async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken,
-             Dictionary<List<string>, string> toEncrypt)
+            CancellationToken cancellationToken)
         {
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
             JArray result = new JArray();
@@ -191,13 +151,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 try
                 {
                     JObject decryptedDocument;
-                    if (this.ToEncrypt != null)
+                    if (this.pathsToEncrypt != null)
                     {
-                        decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                        decryptedDocument = await PropertyEncryptionProcessor.DecryptAsync(
                             document,
                             this.encryptor,
                             diagnosticsContext,
-                            cancellationToken, this.ToEncrypt);
+                            this.pathsToEncrypt,
+                            cancellationToken);
                     }
                     else
                     {

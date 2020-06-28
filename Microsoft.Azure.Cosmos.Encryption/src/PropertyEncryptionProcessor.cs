@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
-            EncryptionOptions encryptionOptions,
+            List<EncryptionOptions> propertyEncryptionOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -44,80 +44,71 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptor));
             }
 
-            if (encryptionOptions == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions));
-            }
-
-            if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
-            }
-
-            if (string.IsNullOrWhiteSpace(encryptionOptions.EncryptionAlgorithm))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
-            }
-
-            if (encryptionOptions.PathsToEncrypt == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
-            }
-
-            if (!encryptionOptions.PathsToEncrypt.Any())
-            {
-                return input;
-            }
-
-            foreach (string path in encryptionOptions.PathsToEncrypt)
-            {
-                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
-                {
-                    throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
-                }
-            }
-
-            List<EncryptionProperties> list = new List<EncryptionProperties>();
-
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
-            JObject toEncryptJObj = new JObject();
-            if (itemJObj != null)
+            foreach (EncryptionOptions encryptionOptions in propertyEncryptionOptions)
             {
-                foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
+                if (encryptionOptions == null)
                 {
-                    string propertyName = pathToEncrypt.Substring(1);
-                    if (itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                    throw new ArgumentNullException(nameof(encryptionOptions));
+                }
+
+                if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
+                {
+                    throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
+                }
+
+                if (string.IsNullOrWhiteSpace(encryptionOptions.EncryptionAlgorithm))
+                {
+                    throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
+                }
+
+                if (encryptionOptions.PathsToEncrypt == null)
+                {
+                    throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
+                }
+
+                if (!encryptionOptions.PathsToEncrypt.Any())
+                {
+                    return input;
+                }
+
+                foreach (string path in encryptionOptions.PathsToEncrypt)
+                {
+                    if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
                     {
-                        string s = propertyValue.Value<string>();
-                        byte[] plainText = System.Text.Encoding.UTF8.GetBytes(s);
-
-                        byte[] cipherText = await encryptor.EncryptAsync(
-                            plainText,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptionOptions.EncryptionAlgorithm,
-                            cancellationToken);
-
-                        if (cipherText == null)
-                        {
-                            throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
-                        }
-
-                        EncryptionProperties encryptionProperties = new EncryptionProperties(
-                                encryptionFormatVersion: 2,
-                                encryptionOptions.EncryptionAlgorithm,
-                                encryptionOptions.DataEncryptionKeyId,
-                                encryptedData: cipherText,
-                                encryptedPaths: propertyName);
-
-                        itemJObj[propertyName] = cipherText;
-                        input.Dispose();
+                        throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
                     }
+                }
 
-                    toEncryptJObj.Remove(propertyName);
+                if (itemJObj != null)
+                {
+                    foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
+                    {
+                        string propertyName = pathToEncrypt.Substring(1);
+                        if (itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                        {
+                            string value = propertyValue.Value<string>();
+                            byte[] plainText = System.Text.Encoding.UTF8.GetBytes(value);
+
+                            byte[] cipherText = await encryptor.EncryptAsync(
+                                plainText,
+                                encryptionOptions.DataEncryptionKeyId,
+                                encryptionOptions.EncryptionAlgorithm,
+                                cancellationToken);
+
+                            if (cipherText == null)
+                            {
+                                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
+                            }
+
+                            itemJObj[propertyName] = cipherText;
+                        }
+                    }
                 }
             }
 
+            input.Dispose();
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
@@ -130,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream input,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
-            Dictionary<List<string>, string> toEncrypt,
+            IReadOnlyDictionary<List<string>, string> toEncrypt,
             CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
@@ -159,55 +150,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                     path);
 
                         JObject propPlainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                        encryptionProperties,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
+                                    encryptionProperties,
+                                    encryptor,
+                                    diagnosticsContext,
+                                    cancellationToken);
 
                         foreach (JProperty property in propPlainTextJObj.Properties())
                         {
-                            itemJObj.Remove(property.Name);
                             itemJObj[property.Name] = property.Value;
                         }
                     }
                 }
-
-                input.Dispose();
             }
 
-            JToken token = itemJObj[Constants.EncryptedInfo];
-            if (token != null)
-            {
-                JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.EncryptedInfo);
-                JObject encryptionPropertiesJObj = null;
-                if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
-                {
-                    encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
-                }
-
-                if (encryptionPropertiesJObj == null)
-                {
-                    input.Position = 0;
-                    return input;
-                }
-
-                EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-
-                JObject plainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                    encryptionProperties,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
-
-                foreach (JProperty property in plainTextJObj.Properties())
-                {
-                    itemJObj.Add(property.Name, property.Value);
-                }
-
-                itemJObj.Remove(Constants.EncryptedInfo);
-                input.Dispose();
-            }
-
+            input.Dispose();
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
@@ -215,8 +171,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject document,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken,
-            Dictionary<List<string>, string> toEncrypt)
+            IReadOnlyDictionary<List<string>, string> toEncrypt,
+            CancellationToken cancellationToken)
         {
             Debug.Assert(document != null);
             Debug.Assert(encryptor != null);
@@ -245,24 +201,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             document[property.Name] = property.Value;
                         }
                     }
-                }
-            }
-
-            if (document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo))
-            {
-                EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
-
-                JObject plainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                    encryptionProperties,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
-
-                document.Remove(Constants.EncryptedInfo);
-
-                foreach (JProperty property in plainTextJObj.Properties())
-                {
-                    document.Add(property.Name, property.Value);
                 }
             }
 

@@ -30,24 +30,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                encryptor);
         }
 
-        public static Container WithPropertyEncryptor(this Container container, Encryptor encryptor, IReadOnlyDictionary<List<string>, string> toEncrypt)
+        /// <summary>
+        /// Get container with <see cref="Encryptor"/> with encrypted properties for performing operations using client-side encryption.
+        /// </summary>
+        /// <param name="container">Regular cosmos container.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="pathsToEncrypt">list of all the paths to encrypt along with their corresponding keys</param>
+        /// <returns>Container to perform operations supporting property and item level client-side encryption / decryption.</returns>
+        public static Container WithPropertyEncryptor(
+            this Container container,
+            Encryptor encryptor,
+            Dictionary<List<string>, string> pathsToEncrypt)
         {
             List<EncryptionOptions> propertyEncryptionOptions = new List<EncryptionOptions>();
-            foreach (KeyValuePair<List<string>, string> entry in toEncrypt)
-            {
-                propertyEncryptionOptions.Add(
-                    new EncryptionOptions()
-                    {
-                        DataEncryptionKeyId = entry.Value,
-                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
-                        PathsToEncrypt = entry.Key,
-                    });
-            }
-
             return new EncryptionContainer(
                 container,
                 encryptor,
-                propertyEncryptionOptions);
+                pathsToEncrypt);
         }
 
         /// <summary>
