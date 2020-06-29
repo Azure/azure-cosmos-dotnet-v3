@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class AADExceptionRetryPolicy : IRetryPolicy
     {
         private int maxRetries;
-        private int retriesAttempted = 0;
+        private int retriesAttempted;
         private TimeSpan retryBackoffTime;
 
         public AADExceptionRetryPolicy(TimeSpan retryInterval, int retryCount)

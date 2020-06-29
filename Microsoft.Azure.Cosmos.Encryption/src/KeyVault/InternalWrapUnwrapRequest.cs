@@ -5,8 +5,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     internal sealed class InternalWrapUnwrapRequest
     {
-        public string Alg { get; set; }
+        public InternalWrapUnwrapRequest(string Alg, string Value)
+        {
+            this.Alg = Alg;
+            this.Value = Value;
+        }
+        public string Alg { get;}
 
-        public string Value { get; set; }
+        public string Value { get;}
+                
     }
 }
