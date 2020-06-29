@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.tokenCache = new TokenCache();
         }
 
-        public override async ValueTask <string> GetAccessTokenAsync(CancellationToken cancellationToken)
+        public override async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

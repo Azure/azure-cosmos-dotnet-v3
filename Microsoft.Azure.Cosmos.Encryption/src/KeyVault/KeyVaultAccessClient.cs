@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly AsyncCache<string, IAADTokenProvider> aadTokenProvider;
         private readonly AsyncCache<IAADTokenProvider, string> aadTokenCache;
         private readonly AsyncCache<Uri, string> EndPointCache;
-        private readonly HttpClient httpClient;
+        private readonly KeyVaultHttpClient  keyvaulthttpclient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="KeyVaultAccessClient"/> class.
@@ -54,8 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.aadTokenProvider = new AsyncCache<string, IAADTokenProvider>();
             this.aadTokenCache = new AsyncCache<IAADTokenProvider, string>();
             this.EndPointCache = new AsyncCache<Uri, string>();
-            this.httpClient = httpClient;
-
+            this.keyvaulthttpclient = new KeyVaultHttpClient(httpClient);
             this.aadRetryInterval = aadRetryInterval;
             this.aadRetryCount = aadRetryCount;
         }
@@ -73,11 +72,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Uri keyVaultKeyUri,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return (KeyVaultUnwrapResult)await this.WrapOrUnWrapKeyAsync(
-                keyVaultKeyUri: keyVaultKeyUri,
-                bytesInBase64: bytesInBase64,
-                shouldWrapKey: false,
-                cancellationToken: cancellationToken);
+            string keyvaultUri = keyVaultKeyUri + KeyVaultConstants.UnwrapKeySegment;
+            InternalWrapUnwrapResponse internalWrapUnwrapResponse = await this.InternalWrapUnwrapAsync(keyVaultKeyUri, keyvaultUri, bytesInBase64, cancellationToken);
+            
+            string responseBytesInBase64 = KeyVaultAccessClient.ConvertBase64UrlToBase64String(internalWrapUnwrapResponse.Value);
+            Uri responseKeyVaultKeyUri = new Uri(internalWrapUnwrapResponse.Kid);
+
+            return new KeyVaultUnwrapResult(
+                unwrappedKeyBytesInBase64: responseBytesInBase64,
+                keyVaultKeyUri: responseKeyVaultKeyUri);
+            
         }
 
         /// <summary>
@@ -93,11 +97,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Uri keyVaultKeyUri,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return (KeyVaultWrapResult)await this.WrapOrUnWrapKeyAsync(
-                keyVaultKeyUri: keyVaultKeyUri,
-                bytesInBase64: bytesInBase64,
-                shouldWrapKey: true,
-                cancellationToken: cancellationToken);
+            string keyvaultUri = keyVaultKeyUri + KeyVaultConstants.WrapKeySegment;
+            InternalWrapUnwrapResponse internalWrapUnwrapResponse = await this.InternalWrapUnwrapAsync(keyVaultKeyUri, keyvaultUri, bytesInBase64, cancellationToken);
+
+            string responseBytesInBase64 = KeyVaultAccessClient.ConvertBase64UrlToBase64String(internalWrapUnwrapResponse.Value);
+            Uri responseKeyVaultKeyUri = new Uri(internalWrapUnwrapResponse.Kid);
+
+            return new KeyVaultWrapResult(
+                wrappedKeyBytesInBase64: responseBytesInBase64,
+                keyVaultKeyUri: responseKeyVaultKeyUri);
+                       
         }
 
         /// <summary>
@@ -119,25 +128,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 keyVaultKeyUri,
                 keyDeletionRecoveryLevel);
 
-            return keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.Recoverable);
+            return keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.Recoverable)
+                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.RecoverableProtectedSubscription)
+                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverable)
+                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverableProtectedSubscription);
         }
 
-        /// Wrap/Unwrap the plain/encrypted Key.
-        /// Currently supports encrypted bytes in base64 format.
+        /// <summary>
+        /// Internal Processing of Wrap/UnWrap requests.
         /// </summary>
-        /// <param name="bytesInBase64">encrypted bytes encoded to base64 string. </param>
-        /// <param name="keyVaultKeyUri">Sample Format: https://{keyvault-name}.vault.azure.net/keys/{key-name}/{key-version}, the /{key-version} is optional.</param>
-        /// <param name="shouldWrapKey"> Choose Wrap or Unwrap.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Result including Wrapped or Unwrapped bytes in Base64 string format & KeyIdentifier.</returns>
-        private async Task<object> WrapOrUnWrapKeyAsync(
+        private async Task<InternalWrapUnwrapResponse> InternalWrapUnwrapAsync(
             Uri keyVaultKeyUri,
+            string keyvaultUri,
             string bytesInBase64,
-            bool shouldWrapKey,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             if (!KeyVaultAccessClient.ValidateKeyVaultKeyUrl(keyVaultKeyUri))
             {
                 throw new KeyVaultAccessException(HttpStatusCode.BadRequest, KeyVaultErrorCode.InvalidKeyVaultKeyURI, "Invalid KeyVaultKeyURI");
@@ -149,15 +154,28 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             string accessToken = await this.GetAadAccessTokenAsync(keyVaultKeyUri, cancellationToken);
+            return await this.ExecuteKeyVaultRequestAsync(keyvaultUri, accessToken, bytesInBase64, cancellationToken);
+                       
+        }
+        /// <summary>
+        /// Helper Method for ExecuteKeyVaultRequestAsync.
+        /// </summary>
+        private async Task<InternalWrapUnwrapResponse> ExecuteKeyVaultRequestAsync(
+        string keyvaultUri,
+        string accessToken,
+        string bytesInBase64,
+        CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
-            using (HttpResponseMessage response = await this.InternalWrapUnwrapAsync(keyVaultKeyUri, bytesInBase64, accessToken, shouldWrapKey, cancellationToken))
+            using HttpResponseMessage response = await this.keyvaulthttpclient.ExecuteHttpRequestAsync(HttpMethod.Post,keyvaultUri, accessToken:accessToken, bytesInBase64:bytesInBase64, cancellationToken:cancellationToken);
             {
                 string jsonResponse = await response.Content.ReadAsStringAsync();
                 jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
 
                 if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    DefaultTrace.TraceInformation("WrapOrUnWrapKeyAsync: Receive HttpStatusCode {0}, KeyVaultErrorCode {1}, Errors: {2}. ", response.StatusCode, KeyVaultErrorCode.KeyVaultAuthenticationFailure, jsonResponse);
+                    DefaultTrace.TraceInformation($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultAuthenticationFailure}, Errors: {jsonResponse}. ");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultAuthenticationFailure,
@@ -166,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    DefaultTrace.TraceInformation("WrapOrUnWrapKeyAsync: Receive HttpStatusCode {0}, KeyVaultErrorCode {1}, Errors: {2}. ", response.StatusCode, KeyVaultErrorCode.KeyVaultKeyNotFound, jsonResponse);
+                    DefaultTrace.TraceInformation($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultKeyNotFound}, Errors: {jsonResponse}. ");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultKeyNotFound,
@@ -175,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (response.StatusCode == HttpStatusCode.BadRequest)
                 {
-                    DefaultTrace.TraceInformation("WrapOrUnWrapKeyAsync: Receive HttpStatusCode {0}, KeyVaultErrorCode {1}, Errors: {2}. ", response.StatusCode, KeyVaultErrorCode.KeyVaultWrapUnwrapFailure, jsonResponse);
+                    DefaultTrace.TraceInformation($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultWrapUnwrapFailure}, Errors: {jsonResponse}.");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultWrapUnwrapFailure,
@@ -184,92 +202,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    DefaultTrace.TraceInformation("WrapOrUnWrapKeyAsync: Receive HttpStatusCode {0}, KeyVaultErrorCode {1}, Errors: {2}. ", response.StatusCode, KeyVaultErrorCode.KeyVaultInternalServerError, jsonResponse);
+                    DefaultTrace.TraceInformation($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode { response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultInternalServerError}, Errors: {jsonResponse}.");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultInternalServerError,
                         jsonResponse);
                 }
 
-                DefaultTrace.TraceInformation("WrapOrUnWrapKeyAsync succeed.");
-
-                InternalWrapUnwrapResponse internalWrapUnwrapResponse = JsonConvert.DeserializeObject<InternalWrapUnwrapResponse>(jsonResponse);
-
-                string responseBytesInBase64 = KeyVaultAccessClient.ConvertBase64UrlToBase64String(internalWrapUnwrapResponse.Value);
-                Uri responseKeyVaultKeyUri = new Uri(internalWrapUnwrapResponse.Kid);
-
-                if (shouldWrapKey)
-                {
-                    return new KeyVaultWrapResult(
-                        wrappedKeyBytesInBase64: responseBytesInBase64,
-                        keyVaultKeyUri: responseKeyVaultKeyUri);
-                }
-                else
-                {
-                    return new KeyVaultUnwrapResult(
-                        unwrappedKeyBytesInBase64: responseBytesInBase64,
-                        keyVaultKeyUri: responseKeyVaultKeyUri);
-                }
+                DefaultTrace.TraceInformation("ExecuteKeyVaultRequestAsync succeed.");
+                return JsonConvert.DeserializeObject<InternalWrapUnwrapResponse>(jsonResponse);
             }
-        }
 
-        /// <summary>
-        /// Helper Method for WrapOrUnWrapKeyAsync.
-        /// </summary>
-        private async Task<HttpResponseMessage> InternalWrapUnwrapAsync(
-            Uri keyVaultKeyUri,
-            string bytesInBase64,
-            string accessToken,
-            bool wrapKey,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            string keyvaultUri = keyVaultKeyUri + (wrapKey ? KeyVaultConstants.WrapKeySegment : KeyVaultConstants.UnwrapKeySegment);
-
-            using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, keyvaultUri + "?" + KeyVaultConstants.ApiVersionQueryParameters))
-            {
-                request.Headers.Add(HttpConstantsHttpHeadersAccept, RuntimeConstantsMediaTypesJson);
-                request.Headers.Authorization = new AuthenticationHeaderValue(KeyVaultConstants.Bearer, accessToken);
-
-                InternalWrapUnwrapRequest keyVaultRequest = new InternalWrapUnwrapRequest
-                {
-                    Alg = KeyVaultConstants.RsaOaep256,
-                    Value = bytesInBase64.TrimEnd('=').Replace('+', '-').Replace('/', '_') // Format base 64 encoded string for http transfer
-                };
-
-                request.Content = new StringContent(
-                    JsonConvert.SerializeObject(keyVaultRequest),
-                    Encoding.UTF8,
-                    RuntimeConstantsMediaTypesJson);
-
-                string correlationId = Guid.NewGuid().ToString();
-                DefaultTrace.TraceInformation("InternalWrapUnwrapAsync: request correlationId {0}.", correlationId);
-
-                // InternalWrapUnwrapAsync
-                request.Headers.Add(
-                    KeyVaultConstants.CorrelationId,
-                    correlationId);
-
-                try
-                {
-                    return await BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
-                                            () =>
-                                            {
-                                                return this.httpClient.SendAsync(request, cancellationToken);
-                                            },
-                                            new WebExceptionRetryPolicy(),
-                                            cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceInformation("InternalWrapUnwrapAsync: caught exception while trying to send http request: {0}.", ex.ToString());
-                    throw new KeyVaultAccessException(
-                        HttpStatusCode.ServiceUnavailable,
-                        KeyVaultErrorCode.KeyVaultServiceUnavailable,
-                        ex.ToString());
-                }
-            }
         }
 
         private async Task<InternalGetKeyResponse> GetKeyVaultKeyResponseAsync(
@@ -280,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             string accessToken = await this.GetAadAccessTokenAsync(keyVaultKeyUri, cancellationToken);
 
-            using (HttpResponseMessage response = await this.InternalGetKeyAsync(keyVaultKeyUri, accessToken, cancellationToken))
+            using HttpResponseMessage response = await this.InternalGetKeyAsync(keyVaultKeyUri, accessToken, cancellationToken);
             {
                 string jsonResponse = await response.Content.ReadAsStringAsync();
                 jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
@@ -313,7 +256,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 DefaultTrace.TraceInformation("GetKeyResponseAsync succeed.");
-
                 return JsonConvert.DeserializeObject<InternalGetKeyResponse>(jsonResponse);
             }
         }
@@ -328,38 +270,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, keyVaultKeyUri + "?" + KeyVaultConstants.ApiVersionQueryParameters))
-            {
-                request.Headers.Add(HttpConstantsHttpHeadersAccept, RuntimeConstantsMediaTypesJson);
-                request.Headers.Authorization = new AuthenticationHeaderValue(KeyVaultConstants.Bearer, accessToken);
+            return await this.keyvaulthttpclient.ExecuteHttpRequestAsync(HttpMethod.Get,keyVaultKeyUri.ToString(), accessToken:accessToken, cancellationToken:cancellationToken);
 
-                string correlationId = Guid.NewGuid().ToString();
-                DefaultTrace.TraceInformation("InternalGetKeyAsync: request correlationId {0}.", correlationId);
-
-                // InternalGetKeyAsync
-                request.Headers.Add(
-                    KeyVaultConstants.CorrelationId,
-                    correlationId);
-
-                try
-                {
-                    return await BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
-                                            () =>
-                                            {
-                                                return this.httpClient.SendAsync(request, cancellationToken);
-                                            },
-                                            new WebExceptionRetryPolicy(),
-                                            cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceInformation("InternalGetKeyAsync: caught exception while trying to send http request: {0}.", ex.ToString());
-                    throw new KeyVaultAccessException(
-                        HttpStatusCode.ServiceUnavailable,
-                        KeyVaultErrorCode.KeyVaultServiceUnavailable,
-                        ex.ToString());
-                }
-            }
         }
 
         /// <summary>
@@ -427,56 +339,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, keyVaultKeyUri + "?" + KeyVaultConstants.ApiVersionQueryParameters))
+            using HttpResponseMessage response = await this.keyvaulthttpclient.ExecuteHttpRequestAsync(HttpMethod.Get, keyVaultKeyUri.ToString(), cancellationToken:cancellationToken);
             {
-                string correlationId = Guid.NewGuid().ToString();
-                DefaultTrace.TraceInformation("InitializeLoginUrlAndResourceEndpointAsync: request correlationId {0}.", correlationId);
+                // authenticationHeaderValue Sample:
+                // Bearer authorization="https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47", resource="https://vault.azure.net"
+                AuthenticationHeaderValue authenticationHeaderValue = response.Headers.WwwAuthenticate.Single();
 
-                request.Headers.Add(
-                    KeyVaultConstants.CorrelationId,
-                    correlationId);
+                string[] source = authenticationHeaderValue.Parameter.Split('=', ',');
 
-                try
-                {
-                    using (HttpResponseMessage response = await BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
-                                            () =>
-                                            {
-                                                return this.httpClient.SendAsync(request, cancellationToken);
-                                            },
-                                            new Encryption.WebExceptionRetryPolicy(),
-                                            cancellationToken))
-                    {
+                // Sample aadLoginUrl: https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47
+                this.aadLoginUrl = source.ElementAt(1).Trim('"');
 
-                        if (response.StatusCode != HttpStatusCode.Unauthorized)
-                        {
-                            DefaultTrace.TraceInformation("InitializeLoginUrlAndResourceEndpointAsync: Receive HttpStatusCode {0}, KeyVaultErrorCode {1}, The Status Code for the first try should be Unauthorized.", response.StatusCode, KeyVaultErrorCode.AadClientCredentialsGrantFailure);
-                            throw new KeyVaultAccessException(
-                                response.StatusCode,
-                                KeyVaultErrorCode.AadClientCredentialsGrantFailure,
-                                "The Status Code for the first try should be Unauthorized.");
-                        }
-
-                        // authenticationHeaderValue Sample:
-                        // Bearer authorization="https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47", resource="https://vault.azure.net"
-                        AuthenticationHeaderValue authenticationHeaderValue = response.Headers.WwwAuthenticate.Single();
-
-                        string[] source = authenticationHeaderValue.Parameter.Split('=', ',');
-
-                        // Sample aadLoginUrl: https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47
-                        this.aadLoginUrl = source.ElementAt(1).Trim('"');
-
-                        // Sample keyVaultResourceEndpoint: https://vault.azure.net
-                        this.keyVaultResourceEndpoint = source.ElementAt(3).Trim('"');
-                    }
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceInformation("InitializeLoginUrlAndResourceEndpointAsync: caught exception while trying to send http request: {0}.", ex.ToString());
-                    throw new KeyVaultAccessException(
-                        HttpStatusCode.ServiceUnavailable,
-                        KeyVaultErrorCode.KeyVaultServiceUnavailable,
-                        ex.ToString());
-                }
+                // Sample keyVaultResourceEndpoint: https://vault.azure.net
+                this.keyVaultResourceEndpoint = source.ElementAt(3).Trim('"');
             }
         }
 
