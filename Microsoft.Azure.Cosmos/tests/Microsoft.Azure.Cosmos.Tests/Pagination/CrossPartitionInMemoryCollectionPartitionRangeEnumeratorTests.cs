@@ -137,7 +137,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                 tryGetPage.ThrowIfFailed();
 
-                if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
+                if (!(tryGetPage.Result is CrossPartitionRangePageEnumerator.CrossPartitionPage crossPartitionPage))
+                {
+                    throw new InvalidCastException();
+                }
+
+                if (!(crossPartitionPage.Page is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
                 {
                     throw new InvalidCastException();
                 }
@@ -192,7 +197,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 tryGetPage.ThrowIfFailed();
 
-                if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
+                if (!(tryGetPage.Result is CrossPartitionRangePageEnumerator.CrossPartitionPage crossPartitionPage))
+                {
+                    throw new InvalidCastException();
+                }
+
+                if (!(crossPartitionPage.Page is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
                 {
                     throw new InvalidCastException();
                 }
@@ -221,7 +231,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 TryCatch<Page> tryGetPage = enumerator.Current;
                 tryGetPage.ThrowIfFailed();
 
-                if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
+                if (!(tryGetPage.Result is CrossPartitionRangePageEnumerator.CrossPartitionPage crossPartitionPage))
+                {
+                    throw new InvalidCastException();
+                }
+
+                if (!(crossPartitionPage.Page is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
                 {
                     throw new InvalidCastException();
                 }
@@ -231,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     identifiers.Add(record.Identifier);
                 }
 
-                state = enumerator.GetState();
+                state = tryGetPage.Result.State;
             }
 
             return (identifiers, state);

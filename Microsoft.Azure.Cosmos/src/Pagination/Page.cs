@@ -4,11 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
-
     internal abstract class Page
     {
+        protected Page(State state)
+        {
+            this.State = state;
+        }
+
+        public State State { get; }
     }
 }

@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return default;
         }
 
-        public override Task<(TryCatch<Page>, State)> GetNextPageAsync(CancellationToken cancellationToken = default)
+        public override Task<TryCatch<Page>> GetNextPageAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -51,21 +51,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 pageSize: this.pageSize);
             if (tryReadPage.Failed)
             {
-                return Task.FromResult((TryCatch<Page>.FromException(tryReadPage.Exception), this.State));
+                return Task.FromResult(TryCatch<Page>.FromException(tryReadPage.Exception));
             }
 
             if (tryReadPage.Result.Count == 0)
             {
-                InMemoryCollectionPage emptyPage = new InMemoryCollectionPage(new List<InMemoryCollection.Record>());
-                InMemoryCollectionState nullContinuation = default;
-                return Task.FromResult((TryCatch<Page>.FromResult(emptyPage), (State)nullContinuation));
+                InMemoryCollectionPage emptyPage = new InMemoryCollectionPage(new List<InMemoryCollection.Record>(), state: default);
+                return Task.FromResult(TryCatch<Page>.FromResult(emptyPage));
             }
 
-            InMemoryCollectionPage page = new InMemoryCollectionPage(tryReadPage.Result);
-            State inMemoryCollectionState = new InMemoryCollectionState(page.Records.Last().ResourceIdentifier);
-            (TryCatch<Page>, State) tryPageAndState = (TryCatch<Page>.FromResult(page), inMemoryCollectionState);
+            State inMemoryCollectionState = new InMemoryCollectionState(tryReadPage.Result.Last().ResourceIdentifier);
+            InMemoryCollectionPage page = new InMemoryCollectionPage(tryReadPage.Result, inMemoryCollectionState);
 
-            return Task.FromResult(tryPageAndState);
+            return Task.FromResult(TryCatch<Page>.FromResult(page));
         }
 
         private sealed class InMemoryCollectionState : State
@@ -80,7 +78,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public sealed class InMemoryCollectionPage : Page
         {
-            public InMemoryCollectionPage(List<InMemoryCollection.Record> records)
+            public InMemoryCollectionPage(List<InMemoryCollection.Record> records, State state)
+                : base(state)
             {
                 this.Records = records;
             }
