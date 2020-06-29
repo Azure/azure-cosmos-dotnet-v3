@@ -184,17 +184,19 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<CosmosDiagnosticsContext, Task<TResult>> task)
         {
+            CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
+               operationName,
+               requestOptions);
+
             if (SynchronizationContext.Current == null)
             {
                 return this.RunWithDiagnosticsHelperAsync(
-                    operationName,
-                    requestOptions,
+                    diagnosticsContext,
                     task);
             }
 
             return this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
-                    operationName,
-                    requestOptions,
+                    diagnosticsContext,
                     task);
         }
 
@@ -235,8 +237,6 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 return this.ProcessResourceOperationAsBulkStreamAsync(
-                    resourceUri: resourceUri,
-                    resourceType: resourceType,
                     operationType: operationType,
                     requestOptions: requestOptions,
                     cosmosContainerCore: cosmosContainerCore,
@@ -378,44 +378,40 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<TResult> RunWithSynchronizationContextAndDiagnosticsHelperAsync<TResult>(
-            string operationName,
-            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             Func<CosmosDiagnosticsContext, Task<TResult>> task)
         {
             Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
-            CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
-                operationName,
-                requestOptions);
-
             // Used on NETFX applications with SynchronizationContext when doing locking calls
-            return Task.Run(async () =>
+            IDisposable synchronizationContextScope = diagnosticsContext.CreateScope("SynchronizationContext");
+            return Task.Run(() =>
             {
-                using (diagnosticsContext.GetOverallScope())
-                using (diagnosticsContext.CreateScope("SynchronizationContext"))
-                {
-                    return await task(diagnosticsContext);
-                }
+                synchronizationContextScope.Dispose();
+                return this.RunWithDiagnosticsHelperAsync<TResult>(
+                    diagnosticsContext,
+                    task);
             });
         }
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
-            string operationName,
-            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             Func<CosmosDiagnosticsContext, Task<TResult>> task)
         {
-            CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
-                operationName,
-                requestOptions);
-            using (diagnosticsContext.GetOverallScope())
+            try
             {
-                return await task(diagnosticsContext).ConfigureAwait(false);
+                using (diagnosticsContext.GetOverallScope())
+                {
+                    return await task(diagnosticsContext).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
+            {
+                throw new CosmosOperationCanceledException(oe, diagnosticsContext);
             }
         }
 
         private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(
-            Uri resourceUri,
-            ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerInternal cosmosContainerCore,
