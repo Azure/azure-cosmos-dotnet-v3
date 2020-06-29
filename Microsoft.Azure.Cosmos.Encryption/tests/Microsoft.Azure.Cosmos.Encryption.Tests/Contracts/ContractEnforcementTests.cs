@@ -8,15 +8,12 @@
     [TestClass]
     public class ContractEnforcementTests
     {
-        private const string DllName = "Microsoft.Azure.Cosmos.Encryption";
-        private const string OfficialBaselinePath = "DotNetSDKEncryptionAPI.json";
-
         [TestMethod]
         public void ContractChanges()
         {
-            Cosmos.Tests.ContractEnforcement.ValidateContractContainBreakingChanges(
-                dllName: DllName,
-                baselinePath: OfficialBaselinePath,
+            Cosmos.Tests.Contracts.ContractEnforcement.ValidateContractContainBreakingChanges(
+                dllName: "Microsoft.Azure.Cosmos.Encryption",
+                baselinePath: "DotNetSDKEncryptionAPI.json",
                 breakingChangesPath: "DotNetSDKEncryptionAPIChanges.json");
         }
     }

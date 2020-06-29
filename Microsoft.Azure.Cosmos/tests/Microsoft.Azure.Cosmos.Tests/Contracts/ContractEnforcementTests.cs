@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests
+﻿namespace Microsoft.Azure.Cosmos.Tests.Contracts
 {
     using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

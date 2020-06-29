@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests
+﻿namespace Microsoft.Azure.Cosmos.Tests.Contracts
 {
     using System;
     using System.Collections;
@@ -113,7 +113,7 @@
             string breakingChangesPath)
         {
             string localJson = GetCurrentContract(dllName);
-            File.WriteAllText($"{breakingChangesPath}", localJson);
+            File.WriteAllText($"Contracts/{breakingChangesPath}", localJson);
 
             string baselineJson = GetBaselineContract(baselinePath);
             ContractEnforcement.ValidateJsonAreSame(localJson, baselineJson);
@@ -129,7 +129,7 @@
               dllName);
 
             JObject currentJObject = JObject.Parse(currentPreviewJson);
-            JObject officialBaselineJObject = JObject.Parse(File.ReadAllText(officialBaselinePath));
+            JObject officialBaselineJObject = JObject.Parse(File.ReadAllText("Contracts/" + officialBaselinePath));
 
             string currentJsonNoOfficialContract = ContractEnforcement.RemoveDuplicateContractElements(
                 localContract: currentJObject,
@@ -138,7 +138,7 @@
             Assert.IsNotNull(currentJsonNoOfficialContract);
 
             string baselinePreviewJson = ContractEnforcement.GetBaselineContract(previewBaselinePath);
-            File.WriteAllText($"{previewBreakingChangesPath}", currentJsonNoOfficialContract);
+            File.WriteAllText($"Contracts/{previewBreakingChangesPath}", currentJsonNoOfficialContract);
 
             ContractEnforcement.ValidateJsonAreSame(baselinePreviewJson, currentJsonNoOfficialContract);
         }
@@ -156,7 +156,7 @@
 
         public static string GetBaselineContract(string baselinePath)
         {
-            string baselineFile = File.ReadAllText(baselinePath);
+            string baselineFile = File.ReadAllText("Contracts/" + baselinePath);
             return NormalizeJsonString(baselineFile);
         }
 

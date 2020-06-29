@@ -7,11 +7,11 @@ $projResult = dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos
 
 $noContractsUpdated = $true
 
-$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\netcoreapp2.0\DotNetSDKAPIChanges.json"
+$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\netcoreapp2.0\Contracts\DotNetSDKAPIChanges.json"
 if(!(Test-Path -Path $updatedContractFile)){
     Write-warning ("Please run ContractEnforcement.ContractChanges tests to generate an updated contract at " + $updatedContractFile)
 }else{
-    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\DotNetSDKAPI.json"
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetSDKAPI.json"
     Write-Output ("Updated contract " + $updatedContractFile)
     $noContractsUpdated = $false
 }
@@ -28,11 +28,11 @@ if(!(Test-Path -Path $updatedContractFolder)){
 #Run the Cosmos DB SDK Preview contract tests
 $projResult = dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -p:IsPreview=true
 
-$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\netcoreapp2.0\DotNetPreviewSDKAPIChanges.json"
+$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\netcoreapp2.0\Contracts\DotNetPreviewSDKAPIChanges.json"
 if(!(Test-Path -Path $updatedContractFile)){
     Write-warning ("Please run ContractEnforcement.ContractChanges tests to generate an updated contract at " + $updatedContractFile)
 }else{
-    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\DotNetPreviewSDKAPI.json"
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetPreviewSDKAPI.json"
     Write-Output ("Updated contract " + $updatedContractFile)
     $noContractsUpdated = $false
 }
@@ -40,11 +40,11 @@ if(!(Test-Path -Path $updatedContractFile)){
 #Run the Encryption SDK contract tests
 $projResult = dotnet test '.\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
 
-$updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Release\netcoreapp2.0\DotNetSDKEncryptionAPIChanges.json"
+$updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Release\netcoreapp2.0\Contracts\DotNetSDKEncryptionAPIChanges.json"
 if(!(Test-Path -Path $updatedContractFile)){
     Write-warning ("Please run ContractEnforcement.ContractChanges tests to generate an updated contract at " + $updatedContractFile)
 }else{
-    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\DotNetSDKEncryptionAPI.json"
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Contracts\DotNetSDKEncryptionAPI.json"
     Write-Output ("Updated contract " + $updatedContractFile)
     $noContractsUpdated = $false
 }
