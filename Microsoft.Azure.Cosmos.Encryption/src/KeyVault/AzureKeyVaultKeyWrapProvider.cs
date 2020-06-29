@@ -10,18 +10,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     /// <summary>
     /// Provides functionality to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys stored in Azure Key Vault.
-    /// See https://docs.microsoft.com/en-us/rest/api/azure/index#register-your-client-application-with-azure-ad for details on registering your application with Azure AD.
+    /// See <a href="https://docs.microsoft.com/en-us/rest/api/azure/index#register-your-client-application-with-azure-ad">this link</a> for details on registering your application with Azure AD.
     /// The registered application must have the keys/readKey, keys/wrapKey and keys/unwrapKey permissions on the Azure Key Vaults that will be used for wrapping and unwrapping data encryption keys
-    /// - see https://docs.microsoft.com/en-us/azure/key-vault/about-keys-secrets-and-certificates#key-access-control for details on this.
+    /// - see <a href="https://docs.microsoft.com/en-us/azure/key-vault/about-keys-secrets-and-certificates#key-access-control">this link</a> for details on this.
     /// Azure key vaults used with client side encryption for Cosmos DB need to have soft delete and purge protection enabled - see
-    /// https://docs.microsoft.com/en-us/azure/key-vault/key-vault-ovw-soft-delete for details regarding the same.
+    /// <a href="https://docs.microsoft.com/en-us/azure/key-vault/key-vault-ovw-soft-delete">this link</a> for details regarding the same.
     /// Unwrapped data encryption keys will be cached within the client SDK for a period of 1 hour.
     /// </summary>
     internal class AzureKeyVaultKeyWrapProvider : EncryptionKeyWrapProvider
     {
-        private static KeyVaultAccessClientFactory keyVaultAccessClientFactory = new KeyVaultAccessClientFactory();
-        private IKeyVaultAccessClient keyVaultAccessClient;
-        private readonly TimeSpan rawDekCacheTimeToLive = TimeSpan.FromHours(1);
+        private static readonly KeyVaultAccessClientFactory keyVaultAccessClientFactory = new KeyVaultAccessClientFactory();
+        private readonly IKeyVaultAccessClient keyVaultAccessClient;
+        private readonly TimeSpan rawDekCacheTimeToLive;
 
         /// <summary>
         /// Creates a new instance of a provider to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys stored in Azure Key Vault.
@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             X509Certificate2 certificate)
         {
             this.keyVaultAccessClient = AzureKeyVaultKeyWrapProvider.keyVaultAccessClientFactory.CreateKeyVaultAccessClient(clientId, certificate);
+            this.rawDekCacheTimeToLive = TimeSpan.FromHours(1);
         }
 
         /// <inheritdoc />

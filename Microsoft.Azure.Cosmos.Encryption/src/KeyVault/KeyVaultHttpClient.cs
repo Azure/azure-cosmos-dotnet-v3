@@ -46,11 +46,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (!String.IsNullOrEmpty(bytesInBase64))
                 {
-                    InternalWrapUnwrapRequest keyVaultRequest = new InternalWrapUnwrapRequest
-                    {
-                        Alg = KeyVaultConstants.RsaOaep256,
-                        Value = bytesInBase64.TrimEnd('=').Replace('+', '-').Replace('/', '_') // Format base 64 encoded string for http transfer
-                    };
+                    String Alg = KeyVaultConstants.RsaOaep256;
+                    String Value = bytesInBase64.TrimEnd('=').Replace('+', '-').Replace('/', '_'); // Format base 64 encoded string for http transfer
+                    InternalWrapUnwrapRequest keyVaultRequest = new InternalWrapUnwrapRequest(Alg, Value);
 
                     request.Content = new StringContent(
                         JsonConvert.SerializeObject(keyVaultRequest),
@@ -65,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     KeyVaultConstants.CorrelationId,
                     correlationId);
 
-                WebExceptionRetryPolicy webex = new WebExceptionRetryPolicy();
                 try
                 {
                     return await BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
@@ -73,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                             {
                                                  return this.httpClient.SendAsync(request, cancellationToken);
                                             },
-                                            webex,
+                                            new WebExceptionRetryPolicy(),
                                             cancellationToken);
                 }
                 catch (Exception ex)
