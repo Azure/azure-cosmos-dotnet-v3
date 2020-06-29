@@ -4,23 +4,33 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     
     [TestCategory("Windows")]
+    [TestCategory("UpdateContract")]
     [TestClass]
     public class ContractEnforcementTests
     {
-        private const string BaselinePath = "DotNetSDKAPI.json";
-        private const string BreakingChangesPath = "DotNetSDKAPIChanges.json";
+        private const string DllName = "Microsoft.Azure.Cosmos.Client";
+        private const string OfficialBaselinePath = "DotNetSDKAPI.json";
 
+#if PREVIEW
+        [TestMethod]
+        public void PreviewContractChanges()
+        {
+            ContractEnforcement.ValidatePreviewContractContainBreakingChanges(
+                dllName: DllName,
+                officialBaselinePath: OfficialBaselinePath,
+                previewBaselinePath: "DotNetPreviewSDKAPI.json",
+                previewBreakingChangesPath: "DotNetPreviewSDKAPIChanges.json");
+        }
+#else
         [TestMethod]
         public void ContractChanges()
         {
-            Assert.IsFalse(
-                ContractEnforcement.DoesContractContainBreakingChanges(
-                    "Microsoft.Azure.Cosmos.Client",
-                    BaselinePath,
-                    BreakingChangesPath),
-                $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
-            );
+            ContractEnforcement.ValidateContractContainBreakingChanges(
+                dllName: DllName,
+                baselinePath: OfficialBaselinePath,
+                breakingChangesPath: "DotNetSDKAPIChanges.json");
         }
+#endif
 
         [TestMethod]
         public void UniqueKeyUnsealed()

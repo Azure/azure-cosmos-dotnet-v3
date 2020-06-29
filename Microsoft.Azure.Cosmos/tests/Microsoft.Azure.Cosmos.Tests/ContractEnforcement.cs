@@ -6,8 +6,10 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Linq;
 
     public class ContractEnforcement
     {
@@ -105,27 +107,103 @@
             return root;
         }
 
-        public static bool DoesContractContainBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
+        public static void ValidateContractContainBreakingChanges(
+            string dllName,
+            string baselinePath,
+            string breakingChangesPath)
+        {
+            string localJson = GetCurrentContract(dllName);
+            File.WriteAllText($"{breakingChangesPath}", localJson);
+
+            string baselineJson = GetBaselineContract(baselinePath);
+            ContractEnforcement.ValidateJsonAreSame(localJson, baselineJson);
+        }
+
+        public static void ValidatePreviewContractContainBreakingChanges(
+            string dllName,
+            string officialBaselinePath,
+            string previewBaselinePath,
+            string previewBreakingChangesPath)
+        {
+            string currentPreviewJson = ContractEnforcement.GetCurrentContract(
+              dllName);
+
+            JObject currentJObject = JObject.Parse(currentPreviewJson);
+            JObject officialBaselineJObject = JObject.Parse(File.ReadAllText(officialBaselinePath));
+
+            string currentJsonNoOfficialContract = ContractEnforcement.RemoveDuplicateContractElements(
+                localContract: currentJObject,
+                officialContract: officialBaselineJObject);
+
+            Assert.IsNotNull(currentJsonNoOfficialContract);
+
+            string baselinePreviewJson = ContractEnforcement.GetBaselineContract(previewBaselinePath);
+            File.WriteAllText($"{previewBreakingChangesPath}", currentJsonNoOfficialContract);
+
+            ContractEnforcement.ValidateJsonAreSame(baselinePreviewJson, currentJsonNoOfficialContract);
+        }
+
+        public static string GetCurrentContract(string dllName)
         {
             TypeTree locally = new TypeTree(typeof(object));
-            ContractEnforcement.BuildTypeTree(locally, ContractEnforcement.GetAssemblyLocally(dllName).GetExportedTypes());
-
-            TypeTree baseline = JsonConvert.DeserializeObject<TypeTree>(File.ReadAllText(baselinePath));
+            Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
+            Type[] exportedTypes = assembly.GetExportedTypes();
+            ContractEnforcement.BuildTypeTree(locally, exportedTypes);
 
             string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
-            File.WriteAllText($"{breakingChangesPath}", localJson);
-            string baselineJson = JsonConvert.SerializeObject(baseline, Formatting.Indented);
+            return localJson;
+        }
 
-            System.Diagnostics.Trace.TraceWarning($"String length Expected: {baselineJson.Length};Actual:{localJson.Length}");
-            if (string.Equals(localJson, baselineJson, StringComparison.InvariantCulture))
+        public static string GetBaselineContract(string baselinePath)
+        {
+            string baselineFile = File.ReadAllText(baselinePath);
+            return NormalizeJsonString(baselineFile);
+        }
+
+        public static string RemoveDuplicateContractElements(JObject localContract, JObject officialContract)
+        {
+            RemoveDuplicateContractHelper(localContract, officialContract);
+            string noDuplicates = localContract.ToString();
+            return NormalizeJsonString(noDuplicates);
+        }
+
+        private static string NormalizeJsonString(string file)
+        {
+            TypeTree baseline = JsonConvert.DeserializeObject<TypeTree>(file);
+            string updatedString = JsonConvert.SerializeObject(baseline, Formatting.Indented);
+            return updatedString;
+        }
+
+        private static void RemoveDuplicateContractHelper(JObject previewContract, JObject officialContract)
+        {
+            foreach (KeyValuePair<string, JToken> token in officialContract)
             {
-                return false;
+                JToken previewLocalToken = previewContract[token.Key];
+                if (previewLocalToken != null)
+                {
+                    if (JToken.DeepEquals(previewLocalToken, token.Value))
+                    {
+                        previewContract.Remove(token.Key);
+                    }
+                    else if (previewLocalToken.Type == JTokenType.Object && token.Value.Type == JTokenType.Object)
+                    {
+                        RemoveDuplicateContractHelper(previewLocalToken as JObject, token.Value as JObject);
+                    }
+                }
             }
-            else
+        }
+
+        public static void ValidateJsonAreSame(string baselineJson, string currentJson)
+        {
+            // This prevents failures caused by it being serialized slightly different order
+            string normalizedBaselineJson = NormalizeJsonString(baselineJson);
+            string normalizedCurrentJson = NormalizeJsonString(currentJson);
+            System.Diagnostics.Trace.TraceWarning($"String length Expected: {normalizedBaselineJson.Length};Actual:{normalizedCurrentJson.Length}");
+            if (!string.Equals(normalizedCurrentJson, normalizedBaselineJson, StringComparison.InvariantCulture))
             {
-                System.Diagnostics.Trace.TraceWarning($"Expected: {baselineJson}");
-                System.Diagnostics.Trace.TraceWarning($"Actual: {localJson}");
-                return true;
+                System.Diagnostics.Trace.TraceWarning($"Expected: {normalizedBaselineJson}");
+                System.Diagnostics.Trace.TraceWarning($"Actual: {normalizedCurrentJson}");
+                Assert.Fail($@"Public API has changed. If this is expected, then run (EnlistmentRoot)\UpdateContracts.ps1 . To see the differences run the update script and use git diff.");
             }
         }
 
