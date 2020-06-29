@@ -8,13 +8,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     internal sealed class InternalWrapUnwrapResponse
     {
-        public InternalWrapUnwrapResponse(string Kid, string Value)
-        {
-            this.Kid = Kid;
-            this.Value = Value;
-        }
-        public string Kid { get; }
-        public string Value { get; }
+        public string Kid { get; set; }
 
+        public string Value { get; set; }
     }
 }

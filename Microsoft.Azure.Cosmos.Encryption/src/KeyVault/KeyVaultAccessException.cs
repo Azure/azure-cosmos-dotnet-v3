@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Runtime.Serialization;
 
     [Serializable]
+    //[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1032:Implement standard exception constructors", Justification = "Code guideline", Scope = "type")]
     internal class KeyVaultAccessException : Exception
     {
         public KeyVaultAccessException(

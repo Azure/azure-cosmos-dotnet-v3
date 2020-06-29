@@ -33,19 +33,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TimeSpan retryInterval,
             int retryCount)
         {
-            if (String.IsNullOrEmpty(defaultAuthority))
-            {
-                throw new ArgumentException("defaultAuthority empty");
-            }
-
-            if (String.IsNullOrEmpty(defaultResource))
-            {
-                throw new ArgumentException("defaultResource empty");
-            }
-
             this.defaultAuthority = defaultAuthority;
             this.defaultResource = defaultResource;
             this.clientAssertionCertificate = clientAssertionCertificate;
+
             this.retryInterval = retryInterval;
             this.retryCount = retryCount;
 
@@ -62,12 +53,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 tokenCache: this.tokenCache);
 
             AuthenticationResult result = await BackoffRetryUtility<AuthenticationResult>.ExecuteAsync(
-                                                            () =>
-                                                            {
-                                                                return context.AcquireTokenAsync(this.defaultResource, this.clientAssertionCertificate);
-                                                            },
-                                                            new AADExceptionRetryPolicy(this.retryInterval, this.retryCount),
-                                                            cancellationToken);
+                                                () =>
+                                                {
+                                                    return context.AcquireTokenAsync(this.defaultResource, this.clientAssertionCertificate);
+                                                },
+                                                new AADExceptionRetryPolicy(this.retryInterval, this.retryCount),
+                                                cancellationToken);
 
             return result.AccessToken;
         }

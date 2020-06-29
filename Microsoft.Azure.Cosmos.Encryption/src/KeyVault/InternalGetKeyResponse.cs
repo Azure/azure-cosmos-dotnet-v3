@@ -8,13 +8,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     internal sealed class InternalGetKeyResponse
     {
-        public InternalGetKeyResponse(JsonWebKey Key, KeyAttributes Attributes)
-        {
-            this.Key = Key;
-            this.Attributes = Attributes;
-        }
-        public JsonWebKey Key { get; }
+        public JsonWebKey Key { get; set; }
 
-        public KeyAttributes Attributes { get; }
+        public KeyAttributes Attributes { get; set; }
     }
 }
