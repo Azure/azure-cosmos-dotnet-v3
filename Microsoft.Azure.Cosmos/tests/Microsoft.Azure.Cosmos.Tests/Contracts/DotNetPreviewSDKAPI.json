@@ -117,11 +117,6 @@
               "Attributes": [],
               "MethodInfo": "StartFrom CreateFromContinuation(System.String)"
             },
-            "StartFrom CreateFromNow()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "StartFrom CreateFromNow()"
-            },
             "StartFrom CreateFromTime(System.DateTime)": {
               "Type": "Method",
               "Attributes": [],
