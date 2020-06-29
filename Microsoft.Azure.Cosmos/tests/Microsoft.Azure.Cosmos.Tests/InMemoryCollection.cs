@@ -12,24 +12,34 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Moq;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal sealed class InMemoryCollection
     {
+        private static readonly CosmosException RequestRateTooLargeException = new CosmosException(
+            message: "Request Rate Too Large",
+            statusCode: (System.Net.HttpStatusCode)429,
+            subStatusCode: default,
+            activityId: Guid.NewGuid().ToString(),
+            requestCharge: default);
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
+        private readonly FailureConfigs failureConfigs;
+        private readonly Random random;
 
         private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private Dictionary<int, PartitionKeyHashRange> partitionKeyRangeIdToHashRange;
 
-        public InMemoryCollection(PartitionKeyDefinition partitionKeyDefinition)
+        public InMemoryCollection(PartitionKeyDefinition partitionKeyDefinition, FailureConfigs failureConfigs = default)
         {
+            this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
+            this.failureConfigs = failureConfigs;
+            this.random = new Random();
+
             PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: null);
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
             this.partitionedRecords[fullRange] = new Records();
-            this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
             this.partitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
             {
                 { 0, fullRange }
@@ -83,6 +93,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public TryCatch<List<Record>> ReadFeed(int partitionKeyRangeId, long resourceIndentifer, int pageSize)
         {
+            if (this.Return429())
+            {
+                return TryCatch<List<Record>>.FromException(RequestRateTooLargeException);
+            }
+
             if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange range))
             {
                 return TryCatch<List<Record>>.FromException(
@@ -179,6 +194,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public (int, int) GetChildRanges(int partitionKeyRangeId) => this.parentToChildMapping[partitionKeyRangeId];
 
+        public bool Return429() => (this.failureConfigs != null) && this.failureConfigs.Inject429s && ((this.random.Next() % 2) == 0);
+
         private static PartitionKeyHash GetHashFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
         {
             CosmosElement partitionKey = GetPartitionKeyFromPayload(payload, partitionKeyDefinition);
@@ -272,6 +289,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 return new Record(previousResourceIdentifier + 1, DateTime.UtcNow.Ticks, Guid.NewGuid(), payload);
             }
+        }
+
+        public sealed class FailureConfigs
+        {
+            public FailureConfigs(bool inject429s)
+            {
+                this.Inject429s = inject429s;
+            }
+
+            public bool Inject429s { get; }
         }
 
         private sealed class Records : IReadOnlyList<Record>

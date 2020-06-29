@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using System.Linq;
+    using System.Security.Policy;
 
     [TestClass]
     public class InMemoryCollectionPartitionRangeEnumeratorTests
@@ -106,7 +107,110 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Assert.AreEqual(numItems, parentIdentifiers.Count + childIdentifiers.Count);
         }
 
-        private static InMemoryCollection CreateInMemoryCollection(int numItems)
+        [TestMethod]
+        public async Task Test429sAsync()
+        {
+            int numItems = 100;
+            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems, new InMemoryCollection.FailureConfigs(inject429s: true));
+            PartitionRangePageEnumerable enumerable = new PartitionRangePageEnumerable(
+                range: new FeedRangePartitionKeyRange("0"),
+                state: default,
+                (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
+                    inMemoryCollection,
+                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                    pageSize: 10,
+                    state: state));
+
+            HashSet<Guid> identifiers = new HashSet<Guid>();
+            await foreach (TryCatch<Page> tryGetPage in enumerable)
+            {
+                if (tryGetPage.Failed)
+                {
+                    Exception exception = tryGetPage.Exception;
+                    while (exception.InnerException != null)
+                    {
+                        exception = exception.InnerException;
+                    }
+
+                    if (!((exception is CosmosException cosmosException) && (cosmosException.StatusCode == (System.Net.HttpStatusCode)429)))
+                    {
+                        throw tryGetPage.Exception;
+                    }
+                }
+                else
+                {
+                    if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
+                    {
+                        throw new InvalidCastException();
+                    }
+
+                    foreach (InMemoryCollection.Record record in page.Records)
+                    {
+                        identifiers.Add(record.Identifier);
+                    }
+                }
+            }
+
+            Assert.AreEqual(numItems, identifiers.Count);
+        }
+
+        [TestMethod]
+        public async Task Test429sWithContinuationsAsync()
+        {
+            int numItems = 100;
+            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems, new InMemoryCollection.FailureConfigs(inject429s: true));
+
+            HashSet<Guid> identifiers = new HashSet<Guid>();
+            State state = default;
+
+            InMemoryCollectionPartitionRangeEnumerator enumerator = new InMemoryCollectionPartitionRangeEnumerator(
+                inMemoryCollection,
+                partitionKeyRangeId: 0,
+                pageSize: 10);
+
+            while (await enumerator.MoveNextAsync())
+            {
+                TryCatch<Page> tryGetPage = enumerator.Current;
+                if (tryGetPage.Failed)
+                {
+                    Exception exception = tryGetPage.Exception;
+                    while (exception.InnerException != null)
+                    {
+                        exception = exception.InnerException;
+                    }
+
+                    if (!((exception is CosmosException cosmosException) && (cosmosException.StatusCode == (System.Net.HttpStatusCode)429)))
+                    {
+                        throw tryGetPage.Exception;
+                    }
+
+                    // Create a new enumerator from that state to simulate when the user want's to start resume later from a continuation token.
+                    enumerator = new InMemoryCollectionPartitionRangeEnumerator(
+                        inMemoryCollection,
+                        partitionKeyRangeId: 0,
+                        pageSize: 10,
+                        state: state);
+                }
+                else
+                {
+                    if (!(tryGetPage.Result is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
+                    {
+                        throw new InvalidCastException();
+                    }
+
+                    foreach (InMemoryCollection.Record record in page.Records)
+                    {
+                        identifiers.Add(record.Identifier);
+                    }
+
+                    state = tryGetPage.Result.State;
+                }
+            }
+
+            Assert.AreEqual(numItems, identifiers.Count);
+        }
+
+        private static InMemoryCollection CreateInMemoryCollection(int numItems, InMemoryCollection.FailureConfigs failureConfigs = default)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -118,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition);
+            InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition, failureConfigs);
 
             for (int i = 0; i < numItems; i++)
             {
@@ -150,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     throw new InvalidCastException();
                 }
 
-                foreach(InMemoryCollection.Record record in page.Records)
+                foreach (InMemoryCollection.Record record in page.Records)
                 {
                     identifiers.Add(record.Identifier);
                 }
