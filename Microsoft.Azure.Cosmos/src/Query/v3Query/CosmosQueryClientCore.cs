@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -281,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.ClearTokenByCollectionFullname(collectionFullName);
         }
 
-        private static QueryResponseCore GetCosmosElementResponse(
+        private static TryCatch<QueryPage> GetCosmosElementResponse(
             Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
@@ -301,12 +302,22 @@ namespace Microsoft.Azure.Cosmos
 
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
-                    return QueryResponseCore.CreateFailure(
-                        statusCode: cosmosResponseMessage.StatusCode,
-                        subStatusCodes: cosmosResponseMessage.Headers.SubStatusCode,
-                        cosmosException: cosmosResponseMessage.CosmosException,
-                        requestCharge: cosmosResponseMessage.Headers.RequestCharge,
-                        activityId: cosmosResponseMessage.Headers.ActivityId);
+                    CosmosException exception;
+                    if (cosmosResponseMessage.CosmosException != null)
+                    {
+                        exception = cosmosResponseMessage.CosmosException;
+                    }
+                    else
+                    {
+                        exception = new CosmosException(
+                            cosmosResponseMessage.ErrorMessage,
+                            cosmosResponseMessage.StatusCode,
+                            (int)cosmosResponseMessage.Headers.SubStatusCode,
+                            cosmosResponseMessage.Headers.ActivityId,
+                            cosmosResponseMessage.Headers.RequestCharge);
+                    }
+
+                    return TryCatch<QueryPage>.FromException(exception);
                 }
 
                 if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
@@ -316,7 +327,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 long responseLengthBytes = memoryStream.Length;
-                CosmosArray cosmosArray = CosmosQueryClientCore.ParseElementsFromRestStream(
+                CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
                     memoryStream,
                     resourceType,
                     requestOptions.CosmosSerializationFormatOptions);
@@ -331,14 +342,14 @@ namespace Microsoft.Azure.Cosmos
                     cosmosQueryExecutionInfo = default;
                 }
 
-                return QueryResponseCore.CreateSuccess(
-                    result: cosmosArray,
-                    requestCharge: cosmosResponseMessage.Headers.RequestCharge,
-                    activityId: cosmosResponseMessage.Headers.ActivityId,
-                    responseLengthBytes: responseLengthBytes,
-                    disallowContinuationTokenMessage: null,
-                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken,
-                    cosmosQueryExecutionInfo: cosmosQueryExecutionInfo);
+                QueryPage response = new QueryPage(
+                    documents,
+                    cosmosResponseMessage.Headers.RequestCharge,
+                    cosmosResponseMessage.Headers.ActivityId,
+                    responseLengthBytes,
+                    cosmosQueryExecutionInfo);
+
+                return TryCatch<QueryPage>.FromResult(response);
             }
         }
 
