@@ -1806,6 +1806,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
+        public async Task PartitionKeyPropertyNameWithSpecialCharactersTest()
+        {
+            const string PartitionKeyPath = "/\"/my !@#$%&*()_+|?.,><~`/ pk\"";
+            const string ItemJsonPayload = "{\"label\":\"blah\",\"id\":\"08d39221-15f5-4312-ad9a-bd40923469e8\",\"\\\"mypk\\\"\":\"blah2\"}";
+            const string ItemPartitionKey = "blah2";
+
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Cosmos.Database database = null;
+            try
+            {
+                string dbName = Guid.NewGuid().ToString();
+                string containerName = Guid.NewGuid().ToString();
+
+                database = await client.CreateDatabaseAsync(dbName);
+                this.containerSettings = new ContainerProperties(
+                    id: containerName,
+                    partitionKeyPath: PartitionKeyPath);
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                    this.containerSettings,
+                    cancellationToken: this.cancellationToken);
+                Assert.IsNotNull(containerResponse);
+                Assert.IsNotNull(containerResponse.Container);
+                Assert.IsNotNull(containerResponse.Resource);
+
+                using (Stream itemPayloadStream = new MemoryStream(Encoding.UTF8.GetBytes(ItemJsonPayload)))
+                {
+                    using (ResponseMessage createItemResponse = await containerResponse.Container.CreateItemStreamAsync(
+                        streamPayload: itemPayloadStream,
+                        partitionKey: new Cosmos.PartitionKey(ItemPartitionKey)))
+                    {
+                        Assert.IsNotNull(createItemResponse);
+                        Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+                        Assert.IsTrue(createItemResponse.Headers.RequestCharge > 0);
+                        Assert.IsNotNull(createItemResponse.Headers.ActivityId);
+                        Assert.IsNotNull(createItemResponse.Headers.ETag);
+                    }
+                }
+            }
+            finally
+            {
+                await database.DeleteAsync();
+                client.Dispose();
+            }
+        }
+
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
         {
             string autoId = Guid.NewGuid().ToString();
