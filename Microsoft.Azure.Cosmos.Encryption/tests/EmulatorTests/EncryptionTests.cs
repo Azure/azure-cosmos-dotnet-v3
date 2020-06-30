@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.encryptionContainer,
                 string.Format(
-                    "SELECT * FROM c where c.Name = '{0}'",
+                    "SELECT * FROM c where c.Name = {0}",
                     expectedDoc.Name),
                     expectedDoc);
           
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.encryptionContainer,
-                 "SELECT c.id, c.PK, c.Name,c.City, c.Sensitive, c.NonSensitive FROM c",
+                 "SELECT c.id, c.PK, c.Name,c.City, c.Sensitive, c.NonSensitive, c.SSN FROM c",
                  expectedDoc);
 
         }
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.encryptionContainer,
                 string.Format(
-                    "SELECT * FROM c where c.Name = '{0}'",
+                    "SELECT * FROM c where c.Name = {0}",
                     expectedDoc.Name),
                     expectedDoc);
 
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.encryptionContainer,
-                 "SELECT c.id, c.PK, c.Name,c.City, c.Sensitive, c.NonSensitive FROM c",
+                 "SELECT c.id, c.PK, c.Name,c.City,c.SSN, c.Sensitive, c.NonSensitive FROM c",
                  expectedDoc);
 
         }
@@ -414,13 +414,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.encryptionContainer,
                  string.Format(
-                     "SELECT * FROM c where c.Name = '{0}'",
+                     "SELECT * FROM c where c.Name = {0}",
                      expectedDoc.Name),
                      expectedDoc);
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.encryptionContainer,
                  string.Format(
-                     "SELECT * FROM c where c.City = '{0}'",
+                     "SELECT * FROM c where c.City = {0}",
                      expectedDoc.City),
                      expectedDoc);
 
@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.encryptionContainer,
-                 "SELECT c.id, c.PK, c.Name,c.City, c.Sensitive, c.NonSensitive FROM c",
+                 "SELECT c.id, c.PK, c.Name,c.City,c.SSN, c.Sensitive, c.NonSensitive FROM c",
                  expectedDoc);
 
         }
@@ -506,7 +506,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.encryptionContainer,
                 string.Format(
-                    "SELECT * FROM c where c.SSN = '{0}' and c.Name={1}",
+                    "SELECT * FROM c where c.SSN = '{0}' and c.Name='{1}'",
                     expectedDoc.SSN,expectedDoc.Name),
                     expectedDoc);
 
@@ -614,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.encryptionContainer,
-                 "SELECT c.id, c.PK, c.Name, c.City, c.Sensitive, c.NonSensitive FROM c",
+                 "SELECT c.id, c.PK, c.Name, c.City, c.Sensitive, c.NonSensitive, c.SSN FROM c",
                  expectedDoc);
 
         }
@@ -735,12 +735,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.encryptionContainer,
-                "SELECT c.id, c.PK, c.Name, c.City, c.Sensitive, c.NonSensitive FROM c",
+                "SELECT c.id, c.PK, c.Name, c.City, c.SSN, c.Sensitive, c.NonSensitive FROM c",
                 expectedDoc);
 
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.encryptionContainer,
-                "SELECT c.id, c.PK, c.Name, c.City, c.NonSensitive FROM c",
+                "SELECT c.id, c.PK, c.Name, c.City, c.SSN, c.NonSensitive FROM c",
                 expectedDoc);
 
             await EncryptionTests.ValidateSprocResultsAsync(
@@ -1279,13 +1279,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2,
             Action<DecryptionResult> DecryptionResultHandler = null)
         {
-            ChangeFeedRequestOptions.StartFrom startFrom;
-
+            ChangeFeedRequestOptions.StartFrom StartTime = ChangeFeedRequestOptions.StartFrom.CreateFromTime(DateTime.MinValue.ToUniversalTime());
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
                 continuationToken: null,
                 new EncryptionChangeFeedRequestOptions()
                 {
-                    StartTime = DateTime.MinValue.ToUniversalTime(),
+                    startTime = time  DateTime.MinValue.ToUniversalTime(),
                     DecryptionResultHandler = DecryptionResultHandler
                 }); 
 
@@ -1306,7 +1305,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
             Assert.AreEqual(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
         }
-
+        
         private async Task ValidateChangeFeedProcessorResponse(
             Container container,
             TestDoc testDoc1,
@@ -1633,9 +1632,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             public string PK { get; set; }
             public string Name { get; set; }
             public string City { get; set; }
+            public int SSN { get; set; }
             public string NonSensitive { get; set; }
             public string Sensitive { get; set; }
-            public int SSN { get; set; }
             public TestDoc()
             {
             }
@@ -1646,9 +1645,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 this.PK = other.PK;
                 this.Name = other.Name;
                 this.City = other.City;
+                this.SSN = other.SSN;
                 this.NonSensitive = other.NonSensitive;
                 this.Sensitive = other.Sensitive;
-                this.SSN = other.SSN;
             }
 
             public override bool Equals(object obj)
@@ -1658,9 +1657,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                        && this.PK == doc.PK
                        && this.Name == doc.Name
                        && this.City == doc.City
+                       && this.SSN == doc.SSN
                        && this.NonSensitive == doc.NonSensitive
-                       && this.Sensitive == doc.Sensitive
-                       && this.SSN == doc.SSN;
+                       && this.Sensitive == doc.Sensitive;
             }
 
             public override int GetHashCode()
@@ -1684,9 +1683,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     PK = partitionKey ?? Guid.NewGuid().ToString(),
                     Name = "myName",
                     City = "myCity",
+                    SSN = 123,
                     NonSensitive = Guid.NewGuid().ToString(),
                     Sensitive = Guid.NewGuid().ToString(),
-                    SSN = 123,
                 };
             }
 

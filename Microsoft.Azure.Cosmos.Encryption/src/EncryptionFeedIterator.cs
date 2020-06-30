@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionFeedIterator(
             QueryDefinition queryDefinition,
-            IReadOnlyDictionary<List<string>, string> toEncrypt,
+            IReadOnlyDictionary<List<string>, string> pathsToEncrypt,
             QueryRequestOptions requestOptions,
             Encryptor encryptor,
             Container container,
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null)
         {
             this.queryDefinition = queryDefinition;
-            this.pathsToEncrypt = toEncrypt;
+            this.pathsToEncrypt = pathsToEncrypt;
             this.requestOptions = requestOptions;
             this.encryptor = encryptor;
             this.container = container;
@@ -90,12 +90,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<FeedIterator> InitializeInternalFeedIteratorAsync(QueryDefinition queryDefinition)
         {
-            QueryDefinition queryWithEncryptedParameters = new QueryDefinition(this.queryDefinition.QueryText);
-            foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in this.queryDefinition.Parameters)
+            QueryDefinition newqueryDefinition = queryDefinition;
+            if (queryDefinition.Parameters.Count == 0)
+            {
+                newqueryDefinition = this.CreateDefinition(this.queryDefinition.QueryText);
+            }
+
+            QueryDefinition queryWithEncryptedParameters = new QueryDefinition(newqueryDefinition.QueryText);
+
+            foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in newqueryDefinition.Parameters)
             {
                 foreach (List<string> paths in this.pathsToEncrypt.Keys)
                 {
-                    string modifiedText = queryDefinition.QueryText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
+                    string modifiedText = newqueryDefinition.QueryText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
 
                     if (SqlQuery.TryParse(modifiedText, out SqlQuery sqlQuery)
                         && (sqlQuery.WhereClause != null)
@@ -125,6 +132,30 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                     queryWithEncryptedParameters,
                                     this.continuationToken,
                                     this.requestOptions);
+        }
+
+        private QueryDefinition CreateDefinition(string queryText)
+        {
+            QueryDefinition queryDefinition = new QueryDefinition(queryText);
+            foreach (List<string> paths in this.pathsToEncrypt.Keys)
+            {
+                if (SqlQuery.TryParse(queryText, out SqlQuery sqlQuery)
+                    && (sqlQuery.WhereClause != null)
+                    && (sqlQuery.WhereClause.FilterExpression != null)
+                    && (sqlQuery.WhereClause.FilterExpression is SqlBinaryScalarExpression expression)
+                    && (expression.OperatorKind == SqlBinaryScalarOperatorKind.Equal))
+                {
+                    foreach (string path in paths)
+                    {
+                        string rightExpression = expression.RightExpression.ToString();
+                        string newExpression = queryText.Replace(rightExpression, "@" + path.Substring(1));
+                        queryDefinition = new QueryDefinition(newExpression);
+                        queryDefinition.WithParameter("@" + path.Substring(1), rightExpression);
+                    }
+                }
+            }
+
+            return queryDefinition;
         }
 
         private async Task<Stream> DeserializeAndDecryptResponseAsync(

@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(streamPayload));
             }
 
-            if (this.pathsToEncrypt.Count != 0 && this.pathsToEncrypt != null)
+            if (this.pathsToEncrypt != null && this.pathsToEncrypt.Count != 0)
             {
                 CosmosDiagnosticsContext diagnosticsContexts = CosmosDiagnosticsContext.Create(options: null);
 
@@ -157,15 +157,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                          requestOptions,
                          cancellationToken);
 
-                    Action<DecryptionResult> decryptionErrorHandler = null;
+                    Action<DecryptionResult> decryptionErroHandler = null;
                     if (requestOptions is EncryptionItemRequestOptions propencryptionItemRequestOptions)
                     {
-                        decryptionErrorHandler = propencryptionItemRequestOptions.DecryptionResultHandler;
+                        decryptionErroHandler = propencryptionItemRequestOptions.DecryptionResultHandler;
                     }
 
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content,
-                        decryptionErrorHandler,
+                        decryptionErroHandler,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -828,108 +828,107 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.container.GetFeedRangesAsync(cancellationToken);
         }
+        
+             public override FeedIterator GetChangeFeedStreamIterator(
+                 string continuationToken = null,
+                 ChangeFeedRequestOptions changeFeedRequestOptions = null)
+             {
+                 Action<DecryptionResult> decryptionResultHandler;
+                 if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
+                 {
+                     decryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
+                 }
+                 else
+                 {
+                     decryptionResultHandler = null;
+                 }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            string continuationToken = null,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            Action<DecryptionResult> decryptionResultHandler;
-            if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
-            {
-                decryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
-            }
-            else
-            {
-                decryptionResultHandler = null;
-            }
+                 return new EncryptionFeedIterator(
+                     this.container.GetChangeFeedStreamIterator(
+                         continuationToken,
+                         changeFeedRequestOptions),
+                     this.Encryptor,
+                     this.PathsToEncrypt,
+                     decryptionResultHandler);
+             }
 
-            return new EncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
-                    continuationToken,
-                    changeFeedRequestOptions),
-                this.Encryptor,
-                this.PathsToEncrypt,
-                decryptionResultHandler);
-        }
+             public override FeedIterator GetChangeFeedStreamIterator(
+                 FeedRange feedRange,
+                 ChangeFeedRequestOptions changeFeedRequestOptions = null)
+             {
+                 Action<DecryptionResult> decryptionResultHandler;
+                 if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
+                 {
+                     decryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
+                 }
+                 else
+                 {
+                     decryptionResultHandler = null;
+                 }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            Action<DecryptionResult> decryptionResultHandler;
-            if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
-            {
-                decryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
-            }
-            else
-            {
-                decryptionResultHandler = null;
-            }
+                 return new EncryptionFeedIterator(
+                     this.container.GetChangeFeedStreamIterator(
+                         feedRange,
+                         changeFeedRequestOptions),
+                     this.Encryptor,
+                     this.PathsToEncrypt,
+                     decryptionResultHandler);
+             }
 
-            return new EncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
-                    feedRange,
-                    changeFeedRequestOptions),
-                this.Encryptor,
-                this.PathsToEncrypt,
-                decryptionResultHandler);
-        }
+             public override FeedIterator GetChangeFeedStreamIterator(
+                 PartitionKey partitionKey,
+                 ChangeFeedRequestOptions changeFeedRequestOptions = null)
+             {
+                 Action<DecryptionResult> decryptionResultHandler;
+                 if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
+                 {
+                     decryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
+                 }
+                 else
+                 {
+                     decryptionResultHandler = null;
+                 }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            Action<DecryptionResult> decryptionResultHandler;
-            if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
-            {
-                decryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
-            }
-            else
-            {
-                decryptionResultHandler = null;
-            }
+                 return new EncryptionFeedIterator(
+                     this.container.GetChangeFeedStreamIterator(
+                         partitionKey,
+                         changeFeedRequestOptions),
+                     this.Encryptor,
+                     this.PathsToEncrypt,
+                     decryptionResultHandler);
+             }
 
-            return new EncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
-                    partitionKey,
-                    changeFeedRequestOptions),
-                this.Encryptor,
-                this.PathsToEncrypt,
-                decryptionResultHandler);
-        }
+             public override FeedIterator<T> GetChangeFeedIterator<T>(
+                 string continuationToken = null,
+                 ChangeFeedRequestOptions changeFeedRequestOptions = null)
+             {
+                 return new EncryptionFeedIterator<T>(
+                     (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
+                         continuationToken,
+                         changeFeedRequestOptions),
+                     this.ResponseFactory);
+             }
 
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            string continuationToken = null,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    continuationToken,
-                    changeFeedRequestOptions),
-                this.ResponseFactory);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    feedRange,
-                    changeFeedRequestOptions),
-                this.ResponseFactory);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    partitionKey,
-                    changeFeedRequestOptions),
-                this.ResponseFactory);
-        }
+             public override FeedIterator<T> GetChangeFeedIterator<T>(
+                 FeedRange feedRange,
+                 ChangeFeedRequestOptions changeFeedRequestOptions = null)
+             {
+                 return new EncryptionFeedIterator<T>(
+                     (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
+                         feedRange,
+                         changeFeedRequestOptions),
+                     this.ResponseFactory);
+             }
+             public override FeedIterator<T> GetChangeFeedIterator<T>(
+                 PartitionKey partitionKey,
+                 ChangeFeedRequestOptions changeFeedRequestOptions = null)
+             {
+                 return new EncryptionFeedIterator<T>(
+                     (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
+                         partitionKey,
+                         changeFeedRequestOptions),
+                     this.ResponseFactory);
+             }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,

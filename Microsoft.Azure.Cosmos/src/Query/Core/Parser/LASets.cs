@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
     internal class LASets
     {
-
         private readonly Dictionary<Pair<ATNState, int>, bool> visited = new Dictionary<Pair<ATNState, int>, bool>();
         private readonly bool logParse = false;
         private readonly bool logClosure = false;

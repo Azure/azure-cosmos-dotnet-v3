@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream input,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
-            IReadOnlyDictionary<List<string>, string> toEncrypt,
+            IReadOnlyDictionary<List<string>, string> pathsToEncrypt,
             CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
@@ -136,34 +136,71 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
             }
 
-            foreach (List<string> paths in toEncrypt.Keys)
+            if (pathsToEncrypt != null)
             {
-                foreach (string path in paths)
+                foreach (List<string> paths in pathsToEncrypt.Keys)
                 {
-                    if (itemJObj.TryGetValue(path.Substring(1), out JToken propertyValue))
+                    foreach (string path in paths)
                     {
-                        EncryptionProperties encryptionProperties = new EncryptionProperties(
-                                    encryptionFormatVersion: 2,
-                                    CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
-                                    toEncrypt[paths],
-                                    propertyValue.ToObject<byte[]>(),
-                                    path);
-
-                        JObject propPlainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                                    encryptionProperties,
-                                    encryptor,
-                                    diagnosticsContext,
-                                    cancellationToken);
-
-                        foreach (JProperty property in propPlainTextJObj.Properties())
+                        if (itemJObj.TryGetValue(path.Substring(1), out JToken propertyValue))
                         {
-                            itemJObj[property.Name] = property.Value;
+                            EncryptionProperties encryptionProperties = new EncryptionProperties(
+                                        encryptionFormatVersion: 2,
+                                        CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                                        pathsToEncrypt[paths],
+                                        propertyValue.ToObject<byte[]>(),
+                                        path);
+
+                            JObject propPlainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
+                            encryptionProperties,
+                            encryptor,
+                            diagnosticsContext,
+                            cancellationToken);
+
+                            foreach (JProperty property in propPlainTextJObj.Properties())
+                            {
+                                itemJObj[property.Name] = property.Value;
+                            }
                         }
                     }
+
+                    input.Dispose();
                 }
             }
 
-            input.Dispose();
+            JToken token = itemJObj[Constants.EncryptedInfo];
+            if (token != null)
+            {
+                JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.EncryptedInfo);
+                JObject encryptionPropertiesJObj = null;
+                if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
+                {
+                    encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
+                }
+
+                if (encryptionPropertiesJObj == null)
+                {
+                    input.Position = 0;
+                    return input;
+                }
+
+                EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+
+                JObject plainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
+                    encryptionProperties,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                foreach (JProperty property in plainTextJObj.Properties())
+                {
+                    itemJObj.Add(property.Name, property.Value);
+                }
+
+                itemJObj.Remove(Constants.EncryptedInfo);
+                input.Dispose();
+            }
+
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
@@ -201,6 +238,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             document[property.Name] = property.Value;
                         }
                     }
+                }
+            }
+
+            if (document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo))
+            {
+                EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
+
+                JObject plainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
+                    encryptionProperties,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                document.Remove(Constants.EncryptedInfo);
+
+                foreach (JProperty property in plainTextJObj.Properties())
+                {
+                    document.Add(property.Name, property.Value);
                 }
             }
 
