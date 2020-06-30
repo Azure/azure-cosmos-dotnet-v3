@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Net.Http;
 
     [TestClass]
-    internal sealed class CosmosDiagnosticsSerializerTests : BaselineTests<CosmosDiagnosticsSerializerBaselineInput, CosmosDiagnosticsSerializerBaselineOutput>
+    public sealed class CosmosDiagnosticsSerializerTests : BaselineTests<CosmosDiagnosticsSerializerBaselineInput, CosmosDiagnosticsSerializerBaselineOutput>
     {
         [TestMethod]
         public void TestPointOperationStatistics()
@@ -40,25 +40,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override CosmosDiagnosticsSerializerBaselineOutput ExecuteTest(CosmosDiagnosticsSerializerBaselineInput input)
         {
-            return new CosmosDiagnosticsSerializerBaselineOutput(input.iagnosticsInternal.ToString());
+            return new CosmosDiagnosticsSerializerBaselineOutput(input.DiagnosticsInternal.ToString());
         }
     }
 
-    internal sealed class CosmosDiagnosticsSerializerBaselineInput : BaselineTestInput
+    public sealed class CosmosDiagnosticsSerializerBaselineInput : BaselineTestInput
     {
-        public CosmosDiagnosticsSerializerBaselineInput(string description, CosmosDiagnosticsInternal diagnosticsInternal)
+        internal CosmosDiagnosticsSerializerBaselineInput(string description, CosmosDiagnosticsInternal diagnosticsInternal)
             : base(description)
         {
-            this.iagnosticsInternal = diagnosticsInternal ?? throw new ArgumentNullException(nameof(diagnosticsInternal));
+            this.DiagnosticsInternal = diagnosticsInternal ?? throw new ArgumentNullException(nameof(diagnosticsInternal));
         }
 
-        public CosmosDiagnosticsInternal iagnosticsInternal { get; }
+        internal CosmosDiagnosticsInternal DiagnosticsInternal { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
             xmlWriter.WriteElementString(nameof(this.Description), this.Description);
-            xmlWriter.WriteStartElement(nameof(this.iagnosticsInternal));
-            xmlWriter.WriteCData(JsonConvert.SerializeObject(this.iagnosticsInternal, Newtonsoft.Json.Formatting.Indented));
+            xmlWriter.WriteStartElement(nameof(this.DiagnosticsInternal));
+            xmlWriter.WriteCData(JsonConvert.SerializeObject(this.DiagnosticsInternal, Newtonsoft.Json.Formatting.Indented));
             xmlWriter.WriteEndElement();
         }
     }
