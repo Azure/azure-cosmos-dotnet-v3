@@ -10,6 +10,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     internal sealed class JsonWebKey
     {
+        ///<param name="Kid"> Key identifier.</param>
+        ///<param name="Kty"> JsonWebKey Key Type.</param>
+        ///<param name="Key_ops"> Supported key operations.</param>
+        ///<param name="N"> RSA modulus.</param>
+        ///<param name="E"> RSA public exponent.</param>
         public JsonWebKey(string Kid, string Kty, IReadOnlyList<string> Key_ops,
                             string N, string E)
         {
@@ -19,14 +24,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.N = N;
             this.E = E;
         }
-        public string Kid { get; } // Key identifier.
+        public string Kid { get; } 
 
-        public string Kty { get; } // JsonWebKey Key Type (kty),
+        public string Kty { get; } 
 
-        public IReadOnlyList<string> Key_ops { get; } // Supported key operations.
+        public IReadOnlyList<string> Key_ops { get; } 
 
-        public string N { get; } // RSA modulus.
+        public string N { get; }
 
-        public string E { get; } // RSA public exponent.
+        public string E { get; }
     }
 }

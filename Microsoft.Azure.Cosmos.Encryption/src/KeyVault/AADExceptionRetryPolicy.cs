@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
+            // TODO/FIXME the "System.NullReferenceException" here is a bug in ADAL library,will move it out once we move to Fixed Version of ADAL  lib.
             if ((exception is AdalException || WebExceptionUtility.IsWebExceptionRetriable(exception) || exception is System.NullReferenceException) &&
                 this.retriesAttempted < this.maxRetries && !cancellationToken.IsCancellationRequested)
             {

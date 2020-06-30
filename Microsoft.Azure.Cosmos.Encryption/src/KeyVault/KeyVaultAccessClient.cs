@@ -118,20 +118,32 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Uri keyVaultKeyUri,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            InternalGetKeyResponse getKeyResponse = await this.GetKeyVaultKeyResponseAsync(
-                keyVaultKeyUri,
-                cancellationToken);
+            
+           InternalGetKeyResponse getKeyResponse = await this.GetKeyVaultKeyResponseAsync(
+                                                    keyVaultKeyUri,
+                                                    cancellationToken);
 
-
-            string keyDeletionRecoveryLevel = getKeyResponse?.Attributes?.RecoveryLevel;
-            DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: KeyVaultKey {0} has Deletion Recovery Level {1}.",
+            if (getKeyResponse != null)
+            {
+                string keyDeletionRecoveryLevel = getKeyResponse?.Attributes?.RecoveryLevel;
+                DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: KeyVaultKey {0} has Deletion Recovery Level {1}.",
                 keyVaultKeyUri,
                 keyDeletionRecoveryLevel);
 
-            return keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.Recoverable)
-                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.RecoverableProtectedSubscription)
-                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverable)
-                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverableProtectedSubscription);
+                return keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.Recoverable)
+                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.RecoverableProtectedSubscription)
+                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverable)
+                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverableProtectedSubscription);
+            }
+            else
+            {
+                DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: caught exception while trying to GetKeyVaultKeyResponseAsync");
+                throw new KeyVaultAccessException(
+                    HttpStatusCode.ServiceUnavailable,
+                    KeyVaultErrorCode.KeyVaultServiceUnavailable,
+                    "GetKeyVaultKeyResponseAsync failed with bad HTTP response");
+            }
+            
         }
 
         /// <summary>
@@ -154,65 +166,81 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             string accessToken = await this.GetAadAccessTokenAsync(keyVaultKeyUri, cancellationToken);
-            return await this.ExecuteKeyVaultRequestAsync(keyvaultUri, accessToken, bytesInBase64, cancellationToken);
-                       
+
+            InternalWrapUnwrapResponse IWUresponse = await this.ExecuteKeyVaultRequestAsync(keyvaultUri, accessToken, bytesInBase64, cancellationToken);
+
+            if (IWUresponse != null)
+            {
+                return IWUresponse;
+            }
+            else
+            {
+                DefaultTrace.TraceInformation("InternalWrapUnwrapAsync: caught exception while trying to ExecuteKeyVaultRequestAsync");
+                throw new KeyVaultAccessException(
+                    HttpStatusCode.ServiceUnavailable,
+                    KeyVaultErrorCode.KeyVaultServiceUnavailable,
+                    "ExecuteKeyVaultRequestAsync failed with bad HTTP response");
+            }
+
         }
         /// <summary>
         /// Helper Method for ExecuteKeyVaultRequestAsync.
         /// </summary>
         private async Task<InternalWrapUnwrapResponse> ExecuteKeyVaultRequestAsync(
-        string keyvaultUri,
-        string accessToken,
-        string bytesInBase64,
-        CancellationToken cancellationToken)
+            string keyvaultUri,
+            string accessToken,
+            string bytesInBase64,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             using HttpResponseMessage response = await this.keyvaulthttpclient.ExecuteHttpRequestAsync(HttpMethod.Post,keyvaultUri, accessToken:accessToken, bytesInBase64:bytesInBase64, cancellationToken:cancellationToken);
             {
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
-
-                if (response.StatusCode == HttpStatusCode.Forbidden)
+                
+                if (response.StatusCode == HttpStatusCode.OK)
                 {
-                    DefaultTrace.TraceInformation($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultAuthenticationFailure}, Errors: {jsonResponse}. ");
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
+                    return JsonConvert.DeserializeObject<InternalWrapUnwrapResponse>(jsonResponse);
+                }
+                else if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    DefaultTrace.TraceWarning($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultAuthenticationFailure}.");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultAuthenticationFailure,
-                        jsonResponse);
+                        "ExecuteKeyVaultRequestAsync Failed with HTTP status Forbidden 403");
                 }
-
-                if (response.StatusCode == HttpStatusCode.NotFound)
+                else if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    DefaultTrace.TraceInformation($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultKeyNotFound}, Errors: {jsonResponse}. ");
+                    DefaultTrace.TraceWarning($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultKeyNotFound}.");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultKeyNotFound,
-                        jsonResponse);
+                        "ExecuteKeyVaultRequestAsync Failed with HTTP status NotFound 404");
                 }
-
-                if (response.StatusCode == HttpStatusCode.BadRequest)
+                else if (response.StatusCode == HttpStatusCode.BadRequest)
                 {
-                    DefaultTrace.TraceInformation($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultWrapUnwrapFailure}, Errors: {jsonResponse}.");
+                    DefaultTrace.TraceWarning($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultWrapUnwrapFailure}.");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultWrapUnwrapFailure,
-                        jsonResponse);
+                        "ExecuteKeyVaultRequestAsync Failed with HTTP status BadRequest 400");
                 }
-
-                if (response.StatusCode != HttpStatusCode.OK)
+                else if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    DefaultTrace.TraceInformation($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode { response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultInternalServerError}, Errors: {jsonResponse}.");
+                    DefaultTrace.TraceWarning($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode { response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultInternalServerError}");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultInternalServerError,
-                        jsonResponse);
+                        "ExecuteKeyVaultRequestAsync Failed with Bad HTTP response.");
                 }
-
-                DefaultTrace.TraceInformation("ExecuteKeyVaultRequestAsync succeed.");
-                return JsonConvert.DeserializeObject<InternalWrapUnwrapResponse>(jsonResponse);
+                else
+                {
+                    /// when all else fails unlikely
+                    return null;
+                }                                
             }
-
         }
 
         private async Task<InternalGetKeyResponse> GetKeyVaultKeyResponseAsync(
@@ -225,38 +253,41 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             using HttpResponseMessage response = await this.InternalGetKeyAsync(keyVaultKeyUri, accessToken, cancellationToken);
             {
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
-
-                if (response.StatusCode == HttpStatusCode.Forbidden)
+                if (response.StatusCode == HttpStatusCode.OK)
                 {
-                    DefaultTrace.TraceInformation("GetKeyResponseAsync: Receive HttpStatusCode {0}, KeyVaultErrorCode {1}, Errors: {2}. ", response.StatusCode, KeyVaultErrorCode.KeyVaultAuthenticationFailure, jsonResponse);
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
+                    return JsonConvert.DeserializeObject<InternalGetKeyResponse>(jsonResponse);
+                }
+                else if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    DefaultTrace.TraceWarning($"GetKeyResponseAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultAuthenticationFailure}.");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultAuthenticationFailure,
-                        jsonResponse);
+                        "GetKeyVaultKeyResponseAsync Failed with HTTP status Forbidden 403");
                 }
-
-                if (response.StatusCode == HttpStatusCode.NotFound)
+                else if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    DefaultTrace.TraceInformation("GetKeyResponseAsync: Receive HttpStatusCode {0}, KeyVaultErrorCode {1}, Errors: {2}. ", response.StatusCode, KeyVaultErrorCode.KeyVaultKeyNotFound, jsonResponse);
+                    DefaultTrace.TraceWarning($"GetKeyResponseAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultKeyNotFound}.");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultKeyNotFound,
-                        jsonResponse);
+                        "GetKeyVaultKeyResponseAsync Failed with HTTP status NotFound 404");
                 }
-
-                if (response.StatusCode != HttpStatusCode.OK)
+                else if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    DefaultTrace.TraceInformation("GetKeyResponseAsync: Receive HttpStatusCode {0}, KeyVaultErrorCode {1}, Errors: {2}. ", response.StatusCode, KeyVaultErrorCode.KeyVaultInternalServerError, jsonResponse);
+                    DefaultTrace.TraceWarning($"GetKeyResponseAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultInternalServerError}.");
                     throw new KeyVaultAccessException(
                         response.StatusCode,
                         KeyVaultErrorCode.KeyVaultInternalServerError,
-                        jsonResponse);
+                        "GetKeyVaultKeyResponseAsync Failed with Bad HTTP response.");
                 }
-
-                DefaultTrace.TraceInformation("GetKeyResponseAsync succeed.");
-                return JsonConvert.DeserializeObject<InternalGetKeyResponse>(jsonResponse);
+                else
+                {
+                    /// when all else fails unlikely
+                    return null;
+                }
             }
         }
 
@@ -346,12 +377,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 AuthenticationHeaderValue authenticationHeaderValue = response.Headers.WwwAuthenticate.Single();
 
                 string[] source = authenticationHeaderValue.Parameter.Split('=', ',');
+                               
+                try
+                {
+                    // Sample aadLoginUrl: https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47
+                    this.aadLoginUrl = source.ElementAt(1).Trim('"');
 
-                // Sample aadLoginUrl: https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47
-                this.aadLoginUrl = source.ElementAt(1).Trim('"');
-
-                // Sample keyVaultResourceEndpoint: https://vault.azure.net
-                this.keyVaultResourceEndpoint = source.ElementAt(3).Trim('"');
+                    // Sample keyVaultResourceEndpoint: https://vault.azure.net
+                    this.keyVaultResourceEndpoint = source.ElementAt(3).Trim('"');
+                }
+                catch(ArgumentOutOfRangeException ex)
+                {
+                    DefaultTrace.TraceWarning("InitializeLoginUrlAndResourceEndpointAsync: Caught Out of Range ex {0}", ex.ToString());
+                }
+                                
             }
         }
 
