@@ -38,7 +38,11 @@
         public async Task Test429sAsync()
         {
             int numItems = 100;
-            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems, new InMemoryCollection.FailureConfigs(inject429s: true));
+            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(
+                numItems,
+                new InMemoryCollection.FailureConfigs(
+                    inject429s: true,
+                    injectEmptyPages: false));
 
             IAsyncEnumerable<TryCatch<Page>> enumerable = this.CreateEnumerable(inMemoryCollection);
 
@@ -75,7 +79,11 @@
         public async Task Test429sWithContinuationsAsync()
         {
             int numItems = 100;
-            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems, new InMemoryCollection.FailureConfigs(inject429s: true));
+            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(
+                numItems,
+                new InMemoryCollection.FailureConfigs(
+                    inject429s: true,
+                    injectEmptyPages: false));
 
             IAsyncEnumerator<TryCatch<Page>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
@@ -113,6 +121,20 @@
                 }
             }
 
+            Assert.AreEqual(numItems, identifiers.Count);
+        }
+
+        [TestMethod]
+        public async Task TestEmptyPages()
+        {
+            int numItems = 100;
+            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(
+                numItems,
+                new InMemoryCollection.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: true));
+            IAsyncEnumerable<TryCatch<Page>> enumerable = this.CreateEnumerable(inMemoryCollection);
+            HashSet<Guid> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
 

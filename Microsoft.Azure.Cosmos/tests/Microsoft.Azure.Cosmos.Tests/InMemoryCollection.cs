@@ -91,16 +91,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             return false;
         }
 
-        public TryCatch<List<Record>> ReadFeed(int partitionKeyRangeId, long resourceIndentifer, int pageSize)
+        public TryCatch<(List<Record>, long?)> ReadFeed(int partitionKeyRangeId, long resourceIndentifer, int pageSize)
         {
             if (this.Return429())
             {
-                return TryCatch<List<Record>>.FromException(RequestRateTooLargeException);
+                return TryCatch<(List<Record>, long?)>.FromException(RequestRateTooLargeException);
+            }
+
+            if (this.ReturnEmptyPage())
+            {
+                return TryCatch<(List<Record>, long?)>.FromResult((new List<Record>(), resourceIndentifer));
             }
 
             if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange range))
             {
-                return TryCatch<List<Record>>.FromException(
+                return TryCatch<(List<Record>, long?)>.FromException(
                     new CosmosException(
                         message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
                         statusCode: System.Net.HttpStatusCode.Gone,
@@ -119,7 +124,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Take(pageSize)
                 .ToList();
 
-            return TryCatch<List<Record>>.FromResult(page);
+            if (page.Count == 0)
+            {
+                return TryCatch<(List<Record>, long?)>.FromResult((page, null));
+            }
+
+            return TryCatch<(List<Record>, long?)>.FromResult((page, page.Last().ResourceIdentifier));
         }
 
         public IReadOnlyDictionary<int, PartitionKeyHashRange> PartitionKeyRangeFeedReed() => this.partitionKeyRangeIdToHashRange;
@@ -195,6 +205,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public (int, int) GetChildRanges(int partitionKeyRangeId) => this.parentToChildMapping[partitionKeyRangeId];
 
         public bool Return429() => (this.failureConfigs != null) && this.failureConfigs.Inject429s && ((this.random.Next() % 2) == 0);
+
+        public bool ReturnEmptyPage() => (this.failureConfigs != null) && this.failureConfigs.InjectEmptyPages && ((this.random.Next() % 2) == 0);
 
         private static PartitionKeyHash GetHashFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
         {
@@ -293,12 +305,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public sealed class FailureConfigs
         {
-            public FailureConfigs(bool inject429s)
+            public FailureConfigs(bool inject429s, bool injectEmptyPages)
             {
                 this.Inject429s = inject429s;
+                this.InjectEmptyPages = injectEmptyPages;
             }
 
             public bool Inject429s { get; }
+
+            public bool InjectEmptyPages { get; }
         }
 
         private sealed class Records : IReadOnlyList<Record>

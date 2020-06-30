@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
 
     internal sealed class InMemoryCollectionPartitionRangeEnumerator : PartitionRangePageEnumerator
     {
@@ -44,23 +45,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TryCatch<List<InMemoryCollection.Record>> tryReadPage = this.inMemoryCollection.ReadFeed(
+            TryCatch<(List<InMemoryCollection.Record> records, long? continuation)> tryReadPage = this.inMemoryCollection.ReadFeed(
                 partitionKeyRangeId: this.partitionKeyRangeId,
                 resourceIndentifer: ((InMemoryCollectionState)this.State).ResourceIdentifier,
                 pageSize: this.pageSize);
+
             if (tryReadPage.Failed)
             {
                 return Task.FromResult(TryCatch<Page>.FromException(tryReadPage.Exception));
             }
 
-            if (tryReadPage.Result.Count == 0)
-            {
-                InMemoryCollectionPage emptyPage = new InMemoryCollectionPage(new List<InMemoryCollection.Record>(), state: default);
-                return Task.FromResult(TryCatch<Page>.FromResult(emptyPage));
-            }
-
-            State inMemoryCollectionState = new InMemoryCollectionState(tryReadPage.Result.Last().ResourceIdentifier);
-            InMemoryCollectionPage page = new InMemoryCollectionPage(tryReadPage.Result, inMemoryCollectionState);
+            State inMemoryCollectionState = tryReadPage.Result.continuation.HasValue ? new InMemoryCollectionState(tryReadPage.Result.continuation.Value) : default;
+            InMemoryCollectionPage page = new InMemoryCollectionPage(tryReadPage.Result.records, inMemoryCollectionState);
 
             return Task.FromResult(TryCatch<Page>.FromResult(page));
         }
