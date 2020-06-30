@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -130,6 +131,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             return TryCatch<(List<Record>, long?)>.FromResult((page, page.Last().ResourceIdentifier));
+        }
+
+        public TryCatch<(List<Record>, long?)> Query(SqlQuerySpec sqlQuerySpec, int partitionKeyRangeId, long resourceIdentifier, int pageSize)
+        {
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            // for now just always do a "SELECT * FROM c" query
+            return this.ReadFeed(partitionKeyRangeId, resourceIdentifier, pageSize);
         }
 
         public IReadOnlyDictionary<int, PartitionKeyHashRange> PartitionKeyRangeFeedReed() => this.partitionKeyRangeIdToHashRange;
