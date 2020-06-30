@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -140,14 +141,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             int AssertChildPartition(int partitionKeyRangeId)
             {
-                TryCatch<List<InMemoryCollection.Record>> tryGetPartitionRecords = inMemoryCollection.ReadFeed(
+                TryCatch<(List<InMemoryCollection.Record> records, long? continuation)> tryGetPartitionRecords = inMemoryCollection.ReadFeed(
                     partitionKeyRangeId: partitionKeyRangeId,
                     resourceIndentifer: 0,
                     pageSize: 100);
                 tryGetPartitionRecords.ThrowIfFailed();
 
                 List<long> values = new List<long>();
-                foreach (InMemoryCollection.Record record in tryGetPartitionRecords.Result)
+                foreach (InMemoryCollection.Record record in tryGetPartitionRecords.Result.records)
                 {
                     values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
                 }
@@ -209,14 +210,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             int AssertChildPartition(int partitionKeyRangeId)
             {
-                TryCatch<List<InMemoryCollection.Record>> tryGetPartitionRecords = inMemoryCollection.ReadFeed(
+                TryCatch<(List<InMemoryCollection.Record> records, long? continuation)> tryGetPartitionRecords = inMemoryCollection.ReadFeed(
                     partitionKeyRangeId: partitionKeyRangeId,
                     resourceIndentifer: 0,
                     pageSize: 100);
                 tryGetPartitionRecords.ThrowIfFailed();
 
                 List<long> values = new List<long>();
-                foreach (InMemoryCollection.Record record in tryGetPartitionRecords.Result)
+                foreach (InMemoryCollection.Record record in tryGetPartitionRecords.Result.records)
                 {
                     values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
                 }

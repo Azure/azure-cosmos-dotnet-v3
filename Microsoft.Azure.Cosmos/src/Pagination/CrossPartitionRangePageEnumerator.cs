@@ -76,23 +76,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public TryCatch<Page> Current { get; private set; }
 
-        public State GetState()
-        {
-            if (!this.lazyEnumerators.ValueInitialized)
-            {
-                return this.originalState;
-            }
-
-            PriorityQueue<PartitionRangePageEnumerator> enumerators = this.lazyEnumerators.Result;
-            List<(FeedRange, State)> feedRangeAndStates = new List<(FeedRange, State)>(enumerators.Count);
-            foreach (PartitionRangePageEnumerator enumerator in enumerators)
-            {
-                feedRangeAndStates.Add((enumerator.Range, enumerator.State));
-            }
-
-            return new CrossPartitionState(feedRangeAndStates);
-        }
-
         public async ValueTask<bool> MoveNextAsync()
         {
             PriorityQueue<PartitionRangePageEnumerator> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: default);
@@ -132,9 +115,23 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 }
             }
 
-            this.Current = currentPaginator.Current;
             enumerators.Enqueue(currentPaginator);
 
+            TryCatch<Page> backendPage = currentPaginator.Current;
+            if (backendPage.Failed)
+            {
+                this.Current = backendPage;
+                return true;
+            }
+
+            List<(FeedRange, State)> feedRangeAndStates = new List<(FeedRange, State)>(enumerators.Count);
+            foreach (PartitionRangePageEnumerator enumerator in enumerators)
+            {
+                feedRangeAndStates.Add((enumerator.Range, enumerator.State));
+            }
+
+            CrossPartitionState crossPartitionState = new CrossPartitionState(feedRangeAndStates);
+            this.Current = TryCatch<Page>.FromResult(new CrossPartitionPage(backendPage.Result, crossPartitionState));
             return true;
         }
 
@@ -155,6 +152,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             // TODO: code this out
             return false;
+        }
+
+        public sealed class CrossPartitionPage : Page
+        {
+            public CrossPartitionPage(Page backendEndPage, State state)
+                : base(state)
+            {
+                this.Page = backendEndPage;
+            }
+
+            public Page Page { get; }
         }
 
         private sealed class CrossPartitionState : State

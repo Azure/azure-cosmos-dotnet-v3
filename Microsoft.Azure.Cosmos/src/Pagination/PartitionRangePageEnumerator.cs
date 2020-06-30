@@ -39,14 +39,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             this.hasStarted = true;
 
-            (TryCatch<Page> page, State state) = await this.GetNextPageAsync();
-            this.State = state;
-            this.Current = page;
+            this.Current = await this.GetNextPageAsync(default);
+            if (this.Current.Succeeded)
+            {
+                this.State = this.Current.Result.State;
+            }
 
             return true;
         }
 
-        public abstract Task<(TryCatch<Page>, State)> GetNextPageAsync(CancellationToken cancellationToken = default);
+        public abstract Task<TryCatch<Page>> GetNextPageAsync(CancellationToken cancellationToken);
 
         public abstract ValueTask DisposeAsync();
     }

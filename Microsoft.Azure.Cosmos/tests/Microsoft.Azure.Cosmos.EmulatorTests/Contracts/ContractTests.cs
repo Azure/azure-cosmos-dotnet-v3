@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using Newtonsoft.Json;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
+    using System.IO;
+    using Newtonsoft.Json.Linq;
 
     [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper
@@ -28,6 +30,104 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         public async Task Cleanup()
         {
             await base.TestCleanup();
+        }
+
+        [TestMethod]
+        public async Task ItemStreamContractVerifier()
+        {
+            string PartitionKey = "/status";
+            Container container = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                cancellationToken: this.cancellationToken);
+
+            int totalCount = 4;
+            Dictionary<string, ToDoActivity> toDoActivities = new Dictionary<string, ToDoActivity>();
+            // Create 3 constant items;
+            for (int i = 0; i < totalCount; i++)
+            {
+                ToDoActivity toDoActivity = new ToDoActivity()
+                {
+                    id = "toDoActivity" + i,
+                    status = "InProgress",
+                    cost = 9000 + i,
+                    description = "Constant to do activity",
+                    taskNum = i
+                };
+
+                toDoActivities.Add(toDoActivity.id, toDoActivity);
+
+                await container.CreateItemAsync<ToDoActivity>(toDoActivity);
+            }
+
+            List<FeedIterator> FeedIterators = new List<FeedIterator>();
+
+            // The stream contract should return the same contract as read feed.
+            // {
+            //    "_rid": "containerRid",
+            //    "Documents": [{
+            //        "id": "03230",
+            //        "_rid": "qHVdAImeKAQBAAAAAAAAAA==",
+            //        "_self": "dbs\/qHVdAA==\/colls\/qHVdAImeKAQ=\/docs\/qHVdAImeKAQBAAAAAAAAAA==\/",
+            //        "_etag": "\"410000b0-0000-0000-0000-597916b00000\"",
+            //        "_attachments": "attachments\/",
+            //        "_ts": 1501107886
+            //    }],
+            //    "_count": 1
+            // }
+
+            FeedIterator setIterator =
+                container.GetItemQueryStreamIterator();
+            FeedIterators.Add(setIterator);
+
+            QueryRequestOptions options = new QueryRequestOptions()
+            {
+                MaxItemCount = 4,
+                MaxConcurrency = 1,
+            };
+
+            FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+                    queryText: @"select * from t where t.id != """" ",
+                    requestOptions: options);
+
+            FeedIterators.Add(queryIterator);
+            foreach (FeedIterator iterator in FeedIterators)
+            {
+                int count = 0;
+                while (iterator.HasMoreResults)
+                {
+                    ResponseMessage response = await iterator.ReadNextAsync(this.cancellationToken);
+                    response.EnsureSuccessStatusCode();
+
+                    using (StreamReader sr = new StreamReader(response.Content))
+                    {
+                        string jsonString = await sr.ReadToEndAsync();
+                        Assert.IsNotNull(jsonString);
+                        JObject jObject = JsonConvert.DeserializeObject<JObject>(jsonString);
+                        Assert.IsNotNull(jObject["Documents"]);
+                        Assert.IsNotNull(jObject["_rid"]);
+                        Assert.IsNotNull(jObject["_count"]);
+                        Assert.IsTrue(jObject["_count"].ToObject<int>() >= 0);
+                        foreach (JObject item in jObject["Documents"])
+                        {
+                            count++;
+                            Assert.IsNotNull(item["id"]);
+                            ToDoActivity createdItem = toDoActivities[item["id"].ToString()];
+
+                            Assert.AreEqual(createdItem.taskNum, item["taskNum"].ToObject<int>());
+                            Assert.AreEqual(createdItem.cost, item["cost"].ToObject<double>());
+                            Assert.AreEqual(createdItem.description, item["description"].ToString());
+                            Assert.AreEqual(createdItem.status, item["status"].ToString());
+                            Assert.IsNotNull(item["_rid"]);
+                            Assert.IsNotNull(item["_self"]);
+                            Assert.IsNotNull(item["_etag"]);
+                            Assert.IsNotNull(item["_attachments"]);
+                            Assert.IsNotNull(item["_ts"]);
+                        }
+                    }
+                }
+
+                Assert.AreEqual(totalCount, count);
+            }
         }
 
         /// <summary>

@@ -4,9 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -14,6 +12,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
     {
         public Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec sqlQuerySpec,
-            )
+            string continuationToken,
+            int partitionKeyRangeId,
+            int pageSize,
+            CancellationToken cancellationToken);
     }
 }

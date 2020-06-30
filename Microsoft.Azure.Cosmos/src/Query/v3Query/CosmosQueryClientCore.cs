@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey);
         }
 
-        public override async Task<QueryResponseCore> ExecuteItemQueryAsync(
+        public override async Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -347,7 +347,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers.RequestCharge,
                     cosmosResponseMessage.Headers.ActivityId,
                     responseLengthBytes,
-                    cosmosQueryExecutionInfo);
+                    cosmosQueryExecutionInfo,
+                    cosmosResponseMessage.Headers.ContinuationToken);
 
                 return TryCatch<QueryPage>.FromResult(response);
             }

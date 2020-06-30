@@ -9,6 +9,8 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
 
     /// <summary>
     /// A helper that forces the SDK to use the gateway or the service interop for the query plan
@@ -60,7 +62,7 @@
                 cancellationToken);
         }
 
-        public override Task<QueryResponseCore> ExecuteItemQueryAsync(
+        public override Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
