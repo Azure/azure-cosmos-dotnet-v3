@@ -15,63 +15,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CrossPartitionInMemoryCollectionPartitionRangeEnumeratorTests
+    public class CrossPartitionInMemoryCollectionPartitionRangeEnumeratorTests : InMemoryCollectionPartitionRangeEnumeratorTests
     {
-        [TestMethod]
-        public async Task TestDrainFullyAsync()
-        {
-            int numItems = 1000;
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
-
-            CrossPartitionRangePageEnumerable enumerable = new CrossPartitionRangePageEnumerable(
-                feedRangeProvider: new InMemoryCollectionFeedRangeProvider(inMemoryCollection),
-                createPartitionRangeEnumerator: (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
-                    pageSize: 10,
-                    state: state),
-                comparer: PartitionRangePageEnumeratorComparer.Singleton);
-
-            HashSet<Guid> identifiers = await DrainFullyAsync(enumerable);
-            Assert.AreEqual(numItems, identifiers.Count);
-        }
-
-        [TestMethod]
-        public async Task TestResumingFromStateAsync()
-        {
-            int numItems = 1000;
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
-
-            IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
-            CreatePartitionRangePageEnumerator createEnumerator = (Cosmos.FeedRange range, State state) => new InMemoryCollectionPartitionRangeEnumerator(
-                inMemoryCollection,
-                partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
-                pageSize: 10,
-                state: state);
-
-            CrossPartitionRangePageEnumerator enumerator = new CrossPartitionRangePageEnumerator(
-                feedRangeProvider: feedRangeProvider,
-                createPartitionRangeEnumerator: createEnumerator,
-                comparer: PartitionRangePageEnumeratorComparer.Singleton);
-
-            (HashSet<Guid> firstDrainResults, State state) = await PartialDrainAsync(enumerator, numIterations: 3);
-
-            // Resume from state
-            CrossPartitionRangePageEnumerable enumerable = new CrossPartitionRangePageEnumerable(
-                feedRangeProvider: feedRangeProvider,
-                createPartitionRangeEnumerator: createEnumerator,
-                comparer: PartitionRangePageEnumeratorComparer.Singleton,
-                state: state);
-
-            HashSet<Guid> secondDrainResults = await DrainFullyAsync(enumerable);
-            Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
-        }
-
         [TestMethod]
         public async Task TestSplitWithResumeContinuationAsync()
         {
             int numItems = 1000;
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
+            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems);
 
             IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
             CreatePartitionRangePageEnumerator createEnumerator = (Cosmos.FeedRange range, State state) => new InMemoryCollectionPartitionRangeEnumerator(
@@ -85,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 createPartitionRangeEnumerator: createEnumerator,
                 comparer: PartitionRangePageEnumeratorComparer.Singleton);
 
-            (HashSet<Guid> firstDrainResults, State state) = await PartialDrainAsync(enumerator, numIterations: 3);
+            (HashSet<Guid> firstDrainResults, State state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
             int minPartitionKeyRangeId = inMemoryCollection.PartitionKeyRangeFeedReed().Keys.Min();
             int maxPartitionKeyRangeId = inMemoryCollection.PartitionKeyRangeFeedReed().Keys.Max();
@@ -102,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 comparer: PartitionRangePageEnumeratorComparer.Singleton,
                 state: state);
 
-            HashSet<Guid> secondDrainResults = await DrainFullyAsync(enumerable);
+            HashSet<Guid> secondDrainResults = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
         }
 
@@ -110,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public async Task TestSplitWithDuringDrainAsync()
         {
             int numItems = 1000;
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
+            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems);
 
             IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
             CreatePartitionRangePageEnumerator createEnumerator = (Cosmos.FeedRange range, State state) => new InMemoryCollectionPartitionRangeEnumerator(
@@ -156,127 +106,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
-        [TestMethod]
-        public async Task Test429sAsync()
+        internal override List<InMemoryCollection.Record> GetRecordsFromPage(Page page)
         {
-            int numItems = 100;
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems, new InMemoryCollection.FailureConfigs(inject429s: true));
-            CrossPartitionRangePageEnumerable enumerable = new CrossPartitionRangePageEnumerable(
-                feedRangeProvider: new InMemoryCollectionFeedRangeProvider(inMemoryCollection),
-                createPartitionRangeEnumerator: (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
-                    pageSize: 10,
-                    state: state),
-                comparer: PartitionRangePageEnumeratorComparer.Singleton);
-
-            HashSet<Guid> identifiers = new HashSet<Guid>();
-            await foreach (TryCatch<Page> tryGetPage in enumerable)
+            if (!(page is CrossPartitionRangePageEnumerator.CrossPartitionPage crossPartitionPage))
             {
-                if (tryGetPage.Failed)
-                {
-                    Exception exception = tryGetPage.Exception;
-                    while (exception.InnerException != null)
-                    {
-                        exception = exception.InnerException;
-                    }
-
-                    if (!((exception is CosmosException cosmosException) && (cosmosException.StatusCode == (System.Net.HttpStatusCode)429)))
-                    {
-                        throw tryGetPage.Exception;
-                    }
-                }
-                else
-                {
-                    if (!(tryGetPage.Result is CrossPartitionRangePageEnumerator.CrossPartitionPage crossPartitionPage))
-                    {
-                        throw new InvalidCastException();
-                    }
-
-                    if (!(crossPartitionPage.Page is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
-                    {
-                        throw new InvalidCastException();
-                    }
-
-                    foreach (InMemoryCollection.Record record in page.Records)
-                    {
-                        identifiers.Add(record.Identifier);
-                    }
-                }
+                throw new InvalidCastException();
             }
 
-            Assert.AreEqual(numItems, identifiers.Count);
-        }
-
-        [TestMethod]
-        public async Task Test429sWithContinuationsAsync()
-        {
-            int numItems = 100;
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems, new InMemoryCollection.FailureConfigs(inject429s: true));
-
-            IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
-            CreatePartitionRangePageEnumerator createEnumerator = (Cosmos.FeedRange range, State state) => new InMemoryCollectionPartitionRangeEnumerator(
-                inMemoryCollection,
-                partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
-                pageSize: 10,
-                state: state);
-
-            CrossPartitionRangePageEnumerator enumerator = new CrossPartitionRangePageEnumerator(
-                feedRangeProvider: feedRangeProvider,
-                createPartitionRangeEnumerator: createEnumerator,
-                comparer: PartitionRangePageEnumeratorComparer.Singleton);
-
-            HashSet<Guid> identifiers = new HashSet<Guid>();
-            State state = default;
-
-            while (await enumerator.MoveNextAsync())
+            if (!(crossPartitionPage.Page is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage inMemoryCollectionPage))
             {
-                TryCatch<Page> tryGetPage = enumerator.Current;
-                if (tryGetPage.Failed)
-                {
-                    Exception exception = tryGetPage.Exception;
-                    while (exception.InnerException != null)
-                    {
-                        exception = exception.InnerException;
-                    }
-
-                    if (!((exception is CosmosException cosmosException) && (cosmosException.StatusCode == (System.Net.HttpStatusCode)429)))
-                    {
-                        throw tryGetPage.Exception;
-                    }
-
-                    // Create a new enumerator from that state to simulate when the user want's to start resume later from a continuation token.
-                    enumerator = new CrossPartitionRangePageEnumerator(
-                        feedRangeProvider: feedRangeProvider,
-                        createPartitionRangeEnumerator: createEnumerator,
-                        comparer: PartitionRangePageEnumeratorComparer.Singleton,
-                        state: state);
-                }
-                else
-                {
-                    if (!(tryGetPage.Result is CrossPartitionRangePageEnumerator.CrossPartitionPage crossPartitionPage))
-                    {
-                        throw new InvalidCastException();
-                    }
-
-                    if (!(crossPartitionPage.Page is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
-                    {
-                        throw new InvalidCastException();
-                    }
-
-                    foreach (InMemoryCollection.Record record in page.Records)
-                    {
-                        identifiers.Add(record.Identifier);
-                    }
-
-                    state = tryGetPage.Result.State;
-                }
+                throw new InvalidCastException();
             }
 
-            Assert.AreEqual(numItems, identifiers.Count);
+            return inMemoryCollectionPage.Records;
         }
 
-        private static InMemoryCollection CreateInMemoryCollection(int numItems, InMemoryCollection.FailureConfigs failureConfigs = default)
+        internal override InMemoryCollection CreateInMemoryCollection(int numItems, InMemoryCollection.FailureConfigs failureConfigs = null)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -310,66 +155,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return inMemoryCollection;
         }
 
-        private static async Task<HashSet<Guid>> DrainFullyAsync(CrossPartitionRangePageEnumerable enumerable)
+        internal override IAsyncEnumerable<TryCatch<Page>> CreateEnumerable(InMemoryCollection inMemoryCollection, State state = null)
         {
-            HashSet<Guid> identifiers = new HashSet<Guid>();
-            await foreach (TryCatch<Page> tryGetPage in enumerable)
-            {
-                tryGetPage.ThrowIfFailed();
+            IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
+            CreatePartitionRangePageEnumerator createEnumerator = (Cosmos.FeedRange range, State state) => new InMemoryCollectionPartitionRangeEnumerator(
+                inMemoryCollection,
+                partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                pageSize: 10,
+                state: state);
 
-                if (!(tryGetPage.Result is CrossPartitionRangePageEnumerator.CrossPartitionPage crossPartitionPage))
-                {
-                    throw new InvalidCastException();
-                }
-
-                if (!(crossPartitionPage.Page is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
-                {
-                    throw new InvalidCastException();
-                }
-
-                foreach (InMemoryCollection.Record record in page.Records)
-                {
-                    identifiers.Add(record.Identifier);
-                }
-            }
-
-            return identifiers;
+            return new CrossPartitionRangePageEnumerable(
+                feedRangeProvider: feedRangeProvider,
+                createPartitionRangeEnumerator: createEnumerator,
+                comparer: PartitionRangePageEnumeratorComparer.Singleton,
+                state: state);
         }
 
-        private static async Task<(HashSet<Guid>, State)> PartialDrainAsync(
-            CrossPartitionRangePageEnumerator enumerator,
-            int numIterations)
+        internal override IAsyncEnumerator<TryCatch<Page>> CreateEnumerator(InMemoryCollection inMemoryCollection, State state = null)
         {
-            HashSet<Guid> identifiers = new HashSet<Guid>();
-            State state = default;
+            IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
+            CreatePartitionRangePageEnumerator createEnumerator = (Cosmos.FeedRange range, State state) => new InMemoryCollectionPartitionRangeEnumerator(
+                inMemoryCollection,
+                partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                pageSize: 10,
+                state: state);
 
-            // Drain a couple of iterations
-            for (int i = 0; i < numIterations; i++)
-            {
-                await enumerator.MoveNextAsync();
+            CrossPartitionRangePageEnumerator enumerator = new CrossPartitionRangePageEnumerator(
+                feedRangeProvider: feedRangeProvider,
+                createPartitionRangeEnumerator: createEnumerator,
+                comparer: PartitionRangePageEnumeratorComparer.Singleton,
+                state: state);
 
-                TryCatch<Page> tryGetPage = enumerator.Current;
-                tryGetPage.ThrowIfFailed();
-
-                if (!(tryGetPage.Result is CrossPartitionRangePageEnumerator.CrossPartitionPage crossPartitionPage))
-                {
-                    throw new InvalidCastException();
-                }
-
-                if (!(crossPartitionPage.Page is InMemoryCollectionPartitionRangeEnumerator.InMemoryCollectionPage page))
-                {
-                    throw new InvalidCastException();
-                }
-
-                foreach (InMemoryCollection.Record record in page.Records)
-                {
-                    identifiers.Add(record.Identifier);
-                }
-
-                state = tryGetPage.Result.State;
-            }
-
-            return (identifiers, state);
+            return enumerator;
         }
 
         private sealed class PartitionRangePageEnumeratorComparer : IComparer<PartitionRangePageEnumerator>

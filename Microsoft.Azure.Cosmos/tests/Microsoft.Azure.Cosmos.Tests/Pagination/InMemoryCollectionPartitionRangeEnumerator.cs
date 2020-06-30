@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
 
     internal sealed class InMemoryCollectionPartitionRangeEnumerator : PartitionRangePageEnumerator
     {
