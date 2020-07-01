@@ -140,6 +140,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new ArgumentNullException(nameof(sqlQuerySpec));
             }
 
+            if (!sqlQuerySpec.QueryText.Equals("SELECT * FROM c", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new NotSupportedException("InMemoryCollection only supports SELECT * FROM c queries");
+            }
+
             // for now just always do a "SELECT * FROM c" query
             return this.ReadFeed(partitionKeyRangeId, resourceIdentifier, pageSize);
         }
@@ -293,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public sealed class Record
         {
-            private Record(long resourceIdentifier, long timestamp, Guid identifier, CosmosObject payload)
+            public Record(long resourceIdentifier, long timestamp, Guid identifier, CosmosObject payload)
             {
                 this.ResourceIdentifier = resourceIdentifier < 0 ? throw new ArgumentOutOfRangeException(nameof(resourceIdentifier)) : resourceIdentifier;
                 this.Timestamp = timestamp < 0 ? throw new ArgumentOutOfRangeException(nameof(timestamp)) : timestamp;

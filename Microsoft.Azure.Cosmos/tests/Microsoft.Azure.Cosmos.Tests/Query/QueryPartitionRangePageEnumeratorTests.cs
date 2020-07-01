@@ -1,20 +1,18 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-
-namespace Microsoft.Azure.Cosmos.Tests.Pagination
+﻿namespace Microsoft.Azure.Cosmos.Tests.Query
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
-    using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class SinglePartitionInMemoryCollectionPartitionRangeEnumeratorTests
+    public class QueryPartitionRangePageEnumeratorTests
     {
         [TestMethod]
         public async Task Test429sAsync()
@@ -59,19 +57,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestClass]
-        private sealed class Implementation : InMemoryCollectionPartitionRangeEnumeratorTests<InMemoryCollectionPage, InMemoryCollectionState>
+        private sealed class Implementation : InMemoryCollectionPartitionRangeEnumeratorTests<QueryPage, QueryState>
         {
             [TestMethod]
             public async Task TestSplitAsync()
             {
                 int numItems = 100;
                 InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems);
-                InMemoryCollectionPartitionRangeEnumerator enumerator = new InMemoryCollectionPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    partitionKeyRangeId: 0,
-                    pageSize: 10);
+                IAsyncEnumerator<TryCatch<QueryPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
-                (HashSet<Guid> parentIdentifiers, InMemoryCollectionState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+                (HashSet<Guid> parentIdentifiers, QueryState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
                 inMemoryCollection.Split(partitionKeyRangeId: 0);
@@ -84,14 +79,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 HashSet<Guid> childIdentifiers = new HashSet<Guid>();
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
-                    PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState> enumerable = new PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState>(
+                    IAsyncEnumerable<TryCatch<QueryPage>> enumerable = new PartitionRangePageEnumerable<QueryPage, QueryState>(
                         range: new FeedRangePartitionKeyRange(partitionKeyRangeId.ToString()),
-                            state: state,
-                            (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
-                                inMemoryCollection,
-                                partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
-                                pageSize: 10,
-                                state: state));
+                        state: state,
+                        (range, state) => new QueryPartitionRangePageEnumerator(
+                            queryDataSource: new InMemoryCollectionQueryDataSource(inMemoryCollection),
+                            sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
+                            feedRange: range,
+                            pageSize: 10,
+                            state: state));
                     HashSet<Guid> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
                     childIdentifiers.UnionWith(resourceIdentifiers);
@@ -100,9 +96,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(numItems, parentIdentifiers.Count + childIdentifiers.Count);
             }
 
-            internal override List<InMemoryCollection.Record> GetRecordsFromPage(InMemoryCollectionPage page)
+            internal override List<InMemoryCollection.Record> GetRecordsFromPage(QueryPage page)
             {
-                return page.Records;
+                List<InMemoryCollection.Record> records = new List<InMemoryCollection.Record>(page.Documents.Count);
+                foreach (CosmosElement element in page.Documents)
+                {
+                    CosmosObject document = (CosmosObject)element;
+                    long resourceIdentifier = Number64.ToLong(((CosmosNumber)document["_rid"]).Value);
+                    long timestamp = Number64.ToLong(((CosmosNumber)document["_ts"]).Value);
+                    Guid identifer = Guid.Parse(((CosmosString)document["id"]).Value);
+
+                    records.Add(new InMemoryCollection.Record(resourceIdentifier, timestamp, identifer, document));
+                }
+
+                return records;
             }
 
             internal override InMemoryCollection CreateInMemoryCollection(int numItems, InMemoryCollection.FailureConfigs failureConfigs = null)
@@ -129,27 +136,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return inMemoryCollection;
             }
 
-            internal override IAsyncEnumerable<TryCatch<InMemoryCollectionPage>> CreateEnumerable(
+            internal override IAsyncEnumerable<TryCatch<QueryPage>> CreateEnumerable(
                 InMemoryCollection inMemoryCollection,
-                InMemoryCollectionState state = null)
+                QueryState state = null)
             {
-                return new PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState>(
+                return new PartitionRangePageEnumerable<QueryPage, QueryState>(
                     range: new FeedRangePartitionKeyRange("0"),
                     state: state,
-                    (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
-                        inMemoryCollection,
-                        partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                    (range, state) => new QueryPartitionRangePageEnumerator(
+                        queryDataSource: new InMemoryCollectionQueryDataSource(inMemoryCollection),
+                        sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
+                        feedRange: range,
                         pageSize: 10,
                         state: state));
             }
 
-            internal override IAsyncEnumerator<TryCatch<InMemoryCollectionPage>> CreateEnumerator(
+            internal override IAsyncEnumerator<TryCatch<QueryPage>> CreateEnumerator(
                 InMemoryCollection inMemoryCollection,
-                InMemoryCollectionState state = null)
+                QueryState state = default)
             {
-                return new InMemoryCollectionPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    partitionKeyRangeId: 0,
+                return new QueryPartitionRangePageEnumerator(
+                    queryDataSource: new InMemoryCollectionQueryDataSource(inMemoryCollection),
+                    sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
+                    feedRange: new FeedRangePartitionKeyRange("0"),
                     pageSize: 10,
                     state: state);
             }

@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers.ActivityId,
                     responseLengthBytes,
                     cosmosQueryExecutionInfo,
-                    cosmosResponseMessage.Headers.ContinuationToken);
+                    new QueryState(cosmosResponseMessage.Headers.ContinuationToken));
 
                 return TryCatch<QueryPage>.FromResult(response);
             }

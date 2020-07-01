@@ -14,20 +14,21 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
-    /// Coordinates draining pages from multiple <see cref="PartitionRangePageEnumerator"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
+    /// Coordinates draining pages from multiple <see cref="PartitionRangePageEnumerator{TPage, TState}"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
     /// </summary>
-    internal sealed class CrossPartitionRangePageEnumerator : IAsyncEnumerator<TryCatch<Page>>
+    internal sealed class CrossPartitionRangePageEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<CrossPartitionPage<TPage, TState>>>
+        where TPage : Page<TState>
+        where TState : State
     {
         private readonly IFeedRangeProvider feedRangeProvider;
-        private readonly CreatePartitionRangePageEnumerator createPartitionRangeEnumerator;
-        private readonly AsyncLazy<PriorityQueue<PartitionRangePageEnumerator>> lazyEnumerators;
-        private readonly State originalState;
+        private readonly CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator;
+        private readonly AsyncLazy<PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>> lazyEnumerators;
 
         public CrossPartitionRangePageEnumerator(
             IFeedRangeProvider feedRangeProvider,
-            CreatePartitionRangePageEnumerator createPartitionRangeEnumerator,
-            IComparer<PartitionRangePageEnumerator> comparer,
-            State state = default)
+            CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator,
+            IComparer<PartitionRangePageEnumerator<TPage, TState>> comparer,
+            CrossPartitionState<TState> state = default)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
             this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
@@ -37,36 +38,31 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(comparer));
             }
 
-            this.originalState = state;
-
-            this.lazyEnumerators = new AsyncLazy<PriorityQueue<PartitionRangePageEnumerator>>(async (CancellationToken token) =>
+            this.lazyEnumerators = new AsyncLazy<PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>>(async (CancellationToken token) =>
             {
-                List<(FeedRange, State)> rangeAndStates;
-                if (state == default)
+                IReadOnlyList<(FeedRange, TState)> rangeAndStates;
+                if (state != default)
+                {
+                    rangeAndStates = state.Value;
+                }
+                else
                 {
                     // Fan out to all partitions with default state
                     IEnumerable<FeedRange> ranges = await feedRangeProvider.GetFeedRangesAsync(token);
 
-                    rangeAndStates = new List<(FeedRange, State)>();
+                    List<(FeedRange, TState)> rangesAndStatesBuilder = new List<(FeedRange, TState)>();
                     foreach (FeedRange range in ranges)
                     {
-                        rangeAndStates.Add((range, default));
-                    }
-                }
-                else
-                {
-                    if (!(state is CrossPartitionState crossPartitionState))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(state));
+                        rangesAndStatesBuilder.Add((range, default));
                     }
 
-                    rangeAndStates = crossPartitionState.Value;
+                    rangeAndStates = rangesAndStatesBuilder;
                 }
 
-                PriorityQueue<PartitionRangePageEnumerator> enumerators = new PriorityQueue<PartitionRangePageEnumerator>(comparer);
-                foreach ((FeedRange range, State rangeState) in rangeAndStates)
+                PriorityQueue<PartitionRangePageEnumerator<TPage, TState>> enumerators = new PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>(comparer);
+                foreach ((FeedRange range, TState rangeState) in rangeAndStates)
                 {
-                    PartitionRangePageEnumerator enumerator = createPartitionRangeEnumerator(range, rangeState);
+                    PartitionRangePageEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(range, rangeState);
                     enumerators.Enqueue(enumerator);
                 }
 
@@ -74,12 +70,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
             });
         }
 
-        public TryCatch<Page> Current { get; private set; }
+        public TryCatch<CrossPartitionPage<TPage, TState>> Current { get; private set; }
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            PriorityQueue<PartitionRangePageEnumerator> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: default);
-            PartitionRangePageEnumerator currentPaginator = enumerators.Dequeue();
+            PriorityQueue<PartitionRangePageEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: default);
+            PartitionRangePageEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
             bool movedNext = await currentPaginator.MoveNextAsync();
             if (!movedNext)
             {
@@ -101,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     IEnumerable<FeedRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(currentPaginator.Range);
                     foreach (FeedRange childRange in childRanges)
                     {
-                        PartitionRangePageEnumerator childPaginator = this.createPartitionRangeEnumerator(childRange, currentPaginator.State);
+                        PartitionRangePageEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(childRange, currentPaginator.State);
                         enumerators.Enqueue(childPaginator);
                     }
 
@@ -117,21 +113,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             enumerators.Enqueue(currentPaginator);
 
-            TryCatch<Page> backendPage = currentPaginator.Current;
+            TryCatch<TPage> backendPage = currentPaginator.Current;
             if (backendPage.Failed)
             {
-                this.Current = backendPage;
+                this.Current = TryCatch<CrossPartitionPage<TPage, TState>>.FromException(backendPage.Exception);
                 return true;
             }
 
-            List<(FeedRange, State)> feedRangeAndStates = new List<(FeedRange, State)>(enumerators.Count);
-            foreach (PartitionRangePageEnumerator enumerator in enumerators)
+            List<(FeedRange, TState)> feedRangeAndStates = new List<(FeedRange, TState)>(enumerators.Count);
+            foreach (PartitionRangePageEnumerator<TPage, TState> enumerator in enumerators)
             {
                 feedRangeAndStates.Add((enumerator.Range, enumerator.State));
             }
 
-            CrossPartitionState crossPartitionState = new CrossPartitionState(feedRangeAndStates);
-            this.Current = TryCatch<Page>.FromResult(new CrossPartitionPage(backendPage.Result, crossPartitionState));
+            CrossPartitionState<TState> crossPartitionState = new CrossPartitionState<TState>(feedRangeAndStates);
+            this.Current = TryCatch<CrossPartitionPage<TPage, TState>>.FromResult(
+                new CrossPartitionPage<TPage, TState>(backendPage.Result, crossPartitionState));
             return true;
         }
 
@@ -152,27 +149,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             // TODO: code this out
             return false;
-        }
-
-        public sealed class CrossPartitionPage : Page
-        {
-            public CrossPartitionPage(Page backendEndPage, State state)
-                : base(state)
-            {
-                this.Page = backendEndPage;
-            }
-
-            public Page Page { get; }
-        }
-
-        private sealed class CrossPartitionState : State
-        {
-            public CrossPartitionState(List<(FeedRange, State)> value)
-            {
-                this.Value = value;
-            }
-
-            public List<(FeedRange, State)> Value { get; }
         }
     }
 }

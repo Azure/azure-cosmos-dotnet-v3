@@ -6,22 +6,23 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal sealed class CrossPartitionRangePageEnumerable : IAsyncEnumerable<TryCatch<Page>>
+    internal sealed class CrossPartitionRangePageEnumerable<TPage, TState> : IAsyncEnumerable<TryCatch<CrossPartitionPage<TPage, TState>>>
+        where TPage : Page<TState>
+        where TState : State
     {
-        private readonly State state;
-        private readonly CreatePartitionRangePageEnumerator createPartitionRangeEnumerator;
-        private readonly IComparer<PartitionRangePageEnumerator> comparer;
+        private readonly CrossPartitionState<TState> state;
+        private readonly CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator;
+        private readonly IComparer<PartitionRangePageEnumerator<TPage, TState>> comparer;
         private readonly IFeedRangeProvider feedRangeProvider;
 
         public CrossPartitionRangePageEnumerable(
             IFeedRangeProvider feedRangeProvider,
-            CreatePartitionRangePageEnumerator createPartitionRangeEnumerator,
-            IComparer<PartitionRangePageEnumerator> comparer,
-            State state = default)
+            CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator,
+            IComparer<PartitionRangePageEnumerator<TPage, TState>> comparer,
+            CrossPartitionState<TState> state = default)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(comparer));
             this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
@@ -29,11 +30,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.state = state;
         }
 
-        public IAsyncEnumerator<TryCatch<Page>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        public IAsyncEnumerator<TryCatch<CrossPartitionPage<TPage, TState>>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return new CrossPartitionRangePageEnumerator(
+            return new CrossPartitionRangePageEnumerator<TPage, TState>(
                 this.feedRangeProvider,
                 this.createPartitionRangeEnumerator,
                 this.comparer,

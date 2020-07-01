@@ -12,11 +12,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
     /// <summary>
     /// Has the ability to page through a partition range.
     /// </summary>
-    internal abstract class PartitionRangePageEnumerator : IAsyncEnumerator<TryCatch<Page>>
+    internal abstract class PartitionRangePageEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<TPage>>
+        where TPage : Page<TState>
+        where TState : State
     {
         private bool hasStarted;
 
-        protected PartitionRangePageEnumerator(FeedRange range, State state = null)
+        protected PartitionRangePageEnumerator(FeedRange range, TState state = null)
         {
             this.Range = range;
             this.State = state;
@@ -24,9 +26,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public FeedRange Range { get; }
 
-        public TryCatch<Page> Current { get; private set; }
+        public TryCatch<TPage> Current { get; private set; }
 
-        public State State { get; private set; }
+        public TState State { get; private set; }
 
         public bool HasMoreResults => !this.hasStarted || (this.State != default);
 
@@ -48,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return true;
         }
 
-        public abstract Task<TryCatch<Page>> GetNextPageAsync(CancellationToken cancellationToken);
+        public abstract Task<TryCatch<TPage>> GetNextPageAsync(CancellationToken cancellationToken = default);
 
         public abstract ValueTask DisposeAsync();
     }

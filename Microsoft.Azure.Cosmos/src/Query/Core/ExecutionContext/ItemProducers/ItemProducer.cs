@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
@@ -265,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
 
                 int pageSize = (int)Math.Min(this.pageSize, int.MaxValue);
 
-                QueryResponseCore feedResponse = await this.queryContext.ExecuteQueryAsync(
+                TryCatch<QueryPage> tryGetQueryPage = await this.queryContext.ExecuteQueryAsync(
                     querySpecForInit: this.querySpecForInit,
                     continuationToken: this.BackendContinuationToken,
                     partitionKeyRange: new PartitionKeyRangeIdentity(
@@ -274,6 +275,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
                     pageSize: pageSize,
                     cancellationToken: token);
+
+                QueryResponseCore feedResponse;
+                if (tryGetQueryPage.Succeeded)
+                {
+                    feedResponse = QueryResponseCore.CreateSuccess(
+                        result: tryGetQueryPage.Result.Documents,
+                        requestCharge: tryGetQueryPage.Result.RequestCharge,
+                        activityId: tryGetQueryPage.Result.ActivityId,
+                        responseLengthBytes: tryGetQueryPage.Result.ResponseLengthInBytes,
+                        disallowContinuationTokenMessage: default,
+                        continuationToken: tryGetQueryPage.Result.State.ContinuationToken,
+                        cosmosQueryExecutionInfo: tryGetQueryPage.Result.CosmosQueryExecutionInfo);
+                }
+                else
+                {
+                    feedResponse = QueryResponseCore.CreateFailure(
+                        statusCode: ((CosmosException)tryGetQueryPage.Exception).StatusCode,
+                        subStatusCodes: (SubStatusCodes)((CosmosException)tryGetQueryPage.Exception).SubStatusCode,
+                        cosmosException: (CosmosException)tryGetQueryPage.Exception,
+                        requestCharge: ((CosmosException)tryGetQueryPage.Exception).RequestCharge,
+                        activityId: ((CosmosException)tryGetQueryPage.Exception).ActivityId);
+                }
 
                 this.CosmosQueryExecutionInfo = feedResponse.CosmosQueryExecutionInfo;
 

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
-    internal sealed class QueryPage : Page
+    internal sealed class QueryPage : Page<QueryState>
     {
         public QueryPage(
             IReadOnlyList<CosmosElement> documents,
@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             string activityId,
             long responseLengthInBytes,
             CosmosQueryExecutionInfo cosmosQueryExecutionInfo,
-            string continuaitonToken)
-            : base(continuaitonToken != null ? new ContinuationTokenState(continuaitonToken) : null)
+            QueryState state)
+            : base(state)
         {
             this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
@@ -37,15 +37,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         public long ResponseLengthInBytes { get; }
 
         public CosmosQueryExecutionInfo CosmosQueryExecutionInfo { get; }
-
-        public sealed class ContinuationTokenState : State
-        {
-            public ContinuationTokenState(string continuationToken)
-            {
-                this.ContinuationToken = continuationToken ?? throw new ArgumentNullException(nameof(continuationToken));
-            }
-
-            public string ContinuationToken { get; }
-        }
     }
 }
