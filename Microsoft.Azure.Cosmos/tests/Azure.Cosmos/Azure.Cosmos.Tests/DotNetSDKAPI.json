@@ -529,10 +529,10 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.CosmosClient Build()"
         },
-        "Azure.Cosmos.CosmosClientBuilder WithApplicationName(System.String)": {
+        "Azure.Cosmos.CosmosClientBuilder WithApplicationId(System.String)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithApplicationName(System.String)"
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithApplicationId(System.String)"
         },
         "Azure.Cosmos.CosmosClientBuilder WithApplicationRegion(System.String)": {
           "Type": "Method",
@@ -733,20 +733,10 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.String ApplicationName": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
         "System.String ApplicationRegion": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
-        },
-        "System.String get_ApplicationName()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String get_ApplicationName()"
         },
         "System.String get_ApplicationRegion()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -767,15 +757,10 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Void .ctor()": {
+        "Void .ctor(System.String)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor()"
-        },
-        "Void set_ApplicationName(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_ApplicationName(System.String)"
+          "MethodInfo": "Void .ctor(System.String)"
         },
         "Void set_ApplicationRegion(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
