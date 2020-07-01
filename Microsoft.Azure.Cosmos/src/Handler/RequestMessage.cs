@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal string RequestUriString { get; private set; }
+        internal string RequestUriString { get; }
 
         internal Uri InternalRequestUri { get; private set; }
 
