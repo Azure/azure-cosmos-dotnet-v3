@@ -68,9 +68,9 @@ namespace Azure.Cosmos
         /// <summary>
         /// Creates a new CosmosClientOptions
         /// </summary>
-        /// <param name="applicationName">A suffix to be added to the default user-agent for the Azure Cosmos DB service.</param>
+        /// <param name="applicationId">A suffix to be added to the default user-agent for the Azure Cosmos DB service.</param>
         public CosmosClientOptions(
-            string applicationName = null)
+            string applicationId = null)
         {
             this.UserAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer();
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
@@ -80,9 +80,9 @@ namespace Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.InitializeLoggedHeaderNames();
-            if (applicationName != null)
+            if (applicationId != null)
             {
-                this.ApplicationName = applicationName;
+                this.ApplicationName = applicationId;
             }
         }
 
