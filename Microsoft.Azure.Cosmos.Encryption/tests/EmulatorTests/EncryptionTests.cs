@@ -543,7 +543,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.encryptionContainer,
-                 "SELECT c.id, c.PK, c.Name,c.City, c.Sensitive, c.NonSensitive FROM c",
+                 "SELECT c.id, c.PK, c.Name,c.City,c.SSN, c.Sensitive, c.NonSensitive FROM c",
                  expectedDoc);
 
         }
@@ -579,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.encryptionContainer,
                  string.Format(
-                     "SELECT * FROM c where c.Name = '{0}'",
+                     "SELECT * FROM c where c.Name = {0}",
                      expectedDoc.Name),
                      expectedDoc);
 
@@ -812,7 +812,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testDoc2,
                 query: null,
                 queryRequestOptions);
-
+            
             await this.ValidateChangeFeedIteratorResponse(
                 EncryptionTests.encryptionContainer,
                 testDoc1,
