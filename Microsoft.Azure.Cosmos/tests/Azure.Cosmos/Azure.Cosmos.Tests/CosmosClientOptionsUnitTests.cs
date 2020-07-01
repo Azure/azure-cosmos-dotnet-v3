@@ -177,9 +177,10 @@ namespace Azure.Cosmos.Tests
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             string userAgentSuffix = "testSuffix";
-            cosmosClientOptions.ApplicationName = userAgentSuffix;
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions(userAgentSuffix);
+            Assert.AreEqual(cosmosClientOptions.ApplicationName, userAgentSuffix);
+            Assert.AreEqual(cosmosClientOptions.Diagnostics.ApplicationId, userAgentSuffix);
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.Diagnostics.ApplicationId);
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.UserAgentContainer.Suffix);
