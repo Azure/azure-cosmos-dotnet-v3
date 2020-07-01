@@ -9,34 +9,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class KeyVaultAccessClientFactory : IKeyVaultAccessClientFactory
     {
-        private readonly object singletonLock;
         private HttpClient httpClient;
-
         public KeyVaultAccessClientFactory()
         {
-            this.singletonLock = new object();
+            this.httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(KeyVaultConstants.DefaultHttpClientTimeoutInSeconds)
+            };
         }
-
         public override IKeyVaultAccessClient CreateKeyVaultAccessClient(
             string clientId,
             X509Certificate2 certificate,
             int aadRetryIntervalInSeconds = KeyVaultConstants.DefaultAadRetryIntervalInSeconds, 
             int aadRetryCount = KeyVaultConstants.DefaultAadRetryCount)
         {
-            if (this.httpClient == null)
-            {
-                lock (this.singletonLock)
-                {
-                    if (this.httpClient == null)
-                    {
-                        this.httpClient = new HttpClient
-                        {
-                            Timeout = TimeSpan.FromSeconds(KeyVaultConstants.DefaultHttpClientTimeoutInSeconds)
-                        };
-                    }   
-                }
-            }
-
             return new KeyVaultAccessClient(
                 clientId: clientId,
                 certificate: certificate,
