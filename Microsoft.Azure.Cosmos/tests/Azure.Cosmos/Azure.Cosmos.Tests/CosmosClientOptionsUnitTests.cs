@@ -61,7 +61,7 @@ namespace Azure.Cosmos.Tests
             Assert.AreNotEqual(connectionMode, clientOptions.ConnectionMode);
             Assert.AreNotEqual(maxConnections, clientOptions.GatewayModeMaxConnectionLimit);
             Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
-            Assert.AreNotEqual(userAgentSuffix, clientOptions.ApplicationName);
+            Assert.AreNotEqual(userAgentSuffix, clientOptions.ApplicationId);
             Assert.AreNotEqual(apiType, clientOptions.ApiType);
             Assert.IsFalse(clientOptions.AllowBulkExecution);
             Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
@@ -85,7 +85,7 @@ namespace Azure.Cosmos.Tests
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
                 .WithRequestTimeout(requestTimeout)
-                .WithApplicationName(userAgentSuffix)
+                .WithApplicationId(userAgentSuffix)
                 .AddCustomHandlers(preProcessHandler)
                 .WithApiType(apiType)
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
@@ -100,7 +100,7 @@ namespace Azure.Cosmos.Tests
             Assert.AreEqual(connectionMode, clientOptions.ConnectionMode);
             Assert.AreEqual(maxConnections, clientOptions.GatewayModeMaxConnectionLimit);
             Assert.AreEqual(requestTimeout, clientOptions.RequestTimeout);
-            Assert.AreEqual(userAgentSuffix, clientOptions.ApplicationName);
+            Assert.AreEqual(userAgentSuffix, clientOptions.ApplicationId);
             Assert.AreEqual(userAgentSuffix, clientOptions.Diagnostics.ApplicationId);
             Assert.AreEqual(preProcessHandler, clientOptions.CustomHandlers[0]);
             Assert.AreEqual(apiType, clientOptions.ApiType);
@@ -179,9 +179,9 @@ namespace Azure.Cosmos.Tests
             string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
             string userAgentSuffix = "testSuffix";
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions(userAgentSuffix);
-            Assert.AreEqual(cosmosClientOptions.ApplicationName, userAgentSuffix);
+            Assert.AreEqual(cosmosClientOptions.ApplicationId, userAgentSuffix);
             Assert.AreEqual(cosmosClientOptions.Diagnostics.ApplicationId, userAgentSuffix);
-            Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+            Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationId);
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.Diagnostics.ApplicationId);
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.UserAgentContainer.Suffix);
             Assert.IsTrue(cosmosClientOptions.UserAgentContainer.UserAgent.StartsWith(expectedValue));

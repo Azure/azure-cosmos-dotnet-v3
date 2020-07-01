@@ -529,10 +529,10 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.CosmosClient Build()"
         },
-        "Azure.Cosmos.CosmosClientBuilder WithApplicationName(System.String)": {
+        "Azure.Cosmos.CosmosClientBuilder WithApplicationId(System.String)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithApplicationName(System.String)"
+          "MethodInfo": "Azure.Cosmos.CosmosClientBuilder WithApplicationId(System.String)"
         },
         "Azure.Cosmos.CosmosClientBuilder WithApplicationRegion(System.String)": {
           "Type": "Method",

@@ -112,14 +112,14 @@ namespace Azure.Cosmos
         /// <summary>
         /// A suffix to be added to the default user-agent for the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="applicationName">A string to use as suffix in the User Agent.</param>
+        /// <param name="applicationId">A string to use as suffix in the User Agent.</param>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        public CosmosClientBuilder WithApplicationName(string applicationName)
+        public CosmosClientBuilder WithApplicationId(string applicationId)
         {
-            this.clientOptions.ApplicationName = applicationName;
+            this.clientOptions.ApplicationId = applicationId;
             return this;
         }
 

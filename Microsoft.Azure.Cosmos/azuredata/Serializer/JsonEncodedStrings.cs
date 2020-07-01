@@ -15,7 +15,7 @@ namespace Azure.Cosmos
         public readonly static JsonEncodedText Query = JsonEncodedText.Encode("query");
         public readonly static JsonEncodedText Parameters = JsonEncodedText.Encode("parameters");
         public readonly static JsonEncodedText CosmosSerializer = JsonEncodedText.Encode("CosmosSerializer");
-        public readonly static JsonEncodedText ApplicationName = JsonEncodedText.Encode("ApplicationName");
+        public readonly static JsonEncodedText ApplicationName = JsonEncodedText.Encode("ApplicationId");
         public readonly static JsonEncodedText GatewayModeMaxConnectionLimit = JsonEncodedText.Encode("GatewayModeMaxConnectionLimit");
         public readonly static JsonEncodedText RequestTimeout = JsonEncodedText.Encode("RequestTimeout");
         public readonly static JsonEncodedText ConnectionMode = JsonEncodedText.Encode("ConnectionMode");

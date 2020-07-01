@@ -43,9 +43,9 @@ namespace Azure.Cosmos
                 writer.WriteString(JsonEncodedStrings.CosmosSerializer, cosmosSerializer.GetType().ToString());
             }
 
-            if (!string.IsNullOrEmpty(value.ApplicationName))
+            if (!string.IsNullOrEmpty(value.ApplicationId))
             {
-                writer.WriteString(JsonEncodedStrings.ApplicationName, value.ApplicationName);
+                writer.WriteString(JsonEncodedStrings.ApplicationName, value.ApplicationId);
             }
 
             if (value.GatewayModeMaxConnectionLimit > 0)

@@ -82,7 +82,7 @@ namespace Azure.Cosmos
             this.InitializeLoggedHeaderNames();
             if (applicationId != null)
             {
-                this.ApplicationName = applicationId;
+                this.ApplicationId = applicationId;
             }
         }
 
@@ -371,7 +371,7 @@ namespace Azure.Cosmos
 
         internal Collection<RequestHandler> CustomHandlers { get; }
 
-        internal string ApplicationName
+        internal string ApplicationId
         {
             get => this.UserAgentContainer.Suffix;
             set
