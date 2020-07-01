@@ -224,24 +224,28 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions(){ };
-
-            ChangeFeedRequestOptions.FillContinuationToken(request, "something");
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+            {
+                From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation("something"),
+            };
             requestOptions.PopulateRequestOptions(request);
 
-            Assert.AreEqual("something", request.Headers.IfNoneMatch);
+            Assert.AreEqual(expected: "something", actual: request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 
         [TestMethod]
-        public void ChangeFeedRequestOptions_DefaultValues()
+        public void ChangeFeedRequestOptions_StartFromNow()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+            {
+                From = ChangeFeedRequestOptions.StartFrom.CreateFromNow(),
+            };
 
             requestOptions.PopulateRequestOptions(request);
 
-            Assert.AreEqual(ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
+            Assert.AreEqual(expected: "*", request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 
@@ -249,7 +253,10 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_StartFromBeginning()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() };
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+            {
+                From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+            };
 
             requestOptions.PopulateRequestOptions(request);
 
@@ -258,32 +265,32 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
-        {
-            RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
-
-            ChangeFeedRequestOptions.FillMaxItemCount(request, 10);
-            requestOptions.PopulateRequestOptions(request);
-
-            Assert.AreEqual("10", request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
-            Assert.AreEqual(ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
-            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
-        }
-
-        [TestMethod]
-        public void ChangeFeedRequestOptions_ContinuationBeatsStartTime()
+        public void ChangeFeedRequestOptions_Default()
         {
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                StartTime = new DateTime(1985, 1, 1)
             };
 
-            ChangeFeedRequestOptions.FillContinuationToken(request, "something");
             requestOptions.PopulateRequestOptions(request);
 
-            Assert.AreEqual("something", request.Headers.IfNoneMatch);
+            Assert.AreEqual(expected: "*", request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+        }
+
+        [TestMethod]
+        public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
+        {
+            RequestMessage request = new RequestMessage();
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+            {
+                MaxItemCount = 10,
+                From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+            };
+            requestOptions.PopulateRequestOptions(request);
+
+            Assert.AreEqual(expected: "10", actual: request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
+            Assert.IsNull(request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 
@@ -293,12 +300,13 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                StartTime = new DateTime(1985, 1, 1, 0, 0,0, DateTimeKind.Utc)
+                From = ChangeFeedRequestOptions.StartFrom.CreateFromTime(new DateTime(1985, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
             };
-
             requestOptions.PopulateRequestOptions(request);
 
-            Assert.AreEqual("Tue, 01 Jan 1985 00:00:00 GMT", request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+            Assert.AreEqual(
+                expected: "Tue, 01 Jan 1985 00:00:00 GMT",
+                actual: request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
             Assert.IsNull(request.Headers.IfNoneMatch);
         }
 
@@ -306,11 +314,13 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_AddsPartitionKeyRangeId()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+            {
+                FeedRange = new FeedRangePartitionKeyRange("randomPK")
+            };
+            requestOptions.PopulateRequestOptions(request);
 
-            ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, "randomPK");
-
-            Assert.AreEqual("randomPK", request.PartitionKeyRangeId.PartitionKeyRangeId);
+            Assert.AreEqual(expected: "randomPK", actual: request.PartitionKeyRangeId.PartitionKeyRangeId);
         }
 
         private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)

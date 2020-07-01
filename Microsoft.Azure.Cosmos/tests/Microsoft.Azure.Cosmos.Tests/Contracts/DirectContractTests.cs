@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Contracts
 {
     using System;
     using System.Collections.Generic;
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
             string csprojFile = "Microsoft.Azure.Cosmos.csproj";
             Dictionary<string, string> projDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
             Dictionary<string, string> baselineDependencies = JsonConvert.DeserializeObject< Dictionary<string, string>>(
-                "{\"System.Numerics.Vectors\":\"4.5.0\",\"Newtonsoft.Json\":\"10.0.2\",\"System.Configuration.ConfigurationManager\":\"4.5.0\",\"System.ServiceModel.Primitives\":\"4.5.0\",\"System.Memory\":\"4.5.1\",\"System.Runtime.CompilerServices.Unsafe\":\"4.5.1\",\"System.Threading.Tasks.Extensions\":\"4.5.1\",\"System.ValueTuple\":\"4.5.0\"}");
+                "{\"System.Numerics.Vectors\":\"4.5.0\",\"Newtonsoft.Json\":\"10.0.2\",\"System.Configuration.ConfigurationManager\":\"4.5.0\",\"System.Memory\":\"4.5.1\",\"System.Runtime.CompilerServices.Unsafe\":\"4.5.1\",\"System.Threading.Tasks.Extensions\":\"4.5.1\",\"System.ValueTuple\":\"4.5.0\"}");
 
             Assert.AreEqual(projDependencies.Count, baselineDependencies.Count);
             foreach(KeyValuePair<string, string> projectDependency in projDependencies)

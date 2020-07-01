@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     },
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
-            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
+            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation);
 
             Mock.Get(mockContainer.Object)
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     },
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
-            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
+            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation);
 
             Mock.Get(mockContainer.Object)
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     },
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
-            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
+            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation);
 
             Mock.Get(mockContainer.Object)
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     },
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
-            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
+            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation);
 
             Mock.Get(mockContainer.Object)

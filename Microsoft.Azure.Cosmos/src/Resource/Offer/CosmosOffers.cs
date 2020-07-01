@@ -173,11 +173,12 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition = new QueryDefinition("select * from root r where r.offerResourceId= @targetRID");
             queryDefinition.WithParameter("@targetRID", targetRID);
 
-            FeedIterator<T> databaseStreamIterator = this.GetOfferQueryIterator<T>(
-                 queryDefinition: queryDefinition,
-                 continuationToken: null,
-                 requestOptions: null,
-                 cancellationToken: cancellationToken);
+            using FeedIterator<T> databaseStreamIterator = this.GetOfferQueryIterator<T>(
+                queryDefinition: queryDefinition,
+                continuationToken: null,
+                requestOptions: null,
+                cancellationToken: cancellationToken);
+
             T offerV2 = await this.SingleOrDefaultAsync<T>(databaseStreamIterator);
 
             if (offerV2 == null &&

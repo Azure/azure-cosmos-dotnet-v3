@@ -12,12 +12,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
     public sealed class DecryptionResult
     {
         /// <summary>
-        /// The encrypted document returned as is (without decryption) in case of failure
+        /// Gets the encrypted document returned as is (without decryption) in case of failure
         /// </summary>
         public ReadOnlyMemory<byte> EncryptedStream { get; }
 
         /// <summary>
-        /// Represents the exception encountered.
+        /// Gets the exception encountered.
         /// </summary>
         public Exception Exception { get; }
 
