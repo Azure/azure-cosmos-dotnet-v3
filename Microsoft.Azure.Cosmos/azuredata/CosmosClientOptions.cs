@@ -68,7 +68,9 @@ namespace Azure.Cosmos
         /// <summary>
         /// Creates a new CosmosClientOptions
         /// </summary>
-        public CosmosClientOptions()
+        /// <param name="applicationName">A suffix to be added to the default user-agent for the Azure Cosmos DB service.</param>
+        public CosmosClientOptions(
+            string applicationName = null)
         {
             this.UserAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer();
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
@@ -77,23 +79,8 @@ namespace Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
+            this.ApplicationName = applicationName;
             this.InitializeLoggedHeaderNames();
-        }
-
-        /// <summary>
-        /// Get or set user-agent suffix to include with every Azure Cosmos DB service interaction.
-        /// </summary>
-        /// <remarks>
-        /// Setting this property after sending any request won't have any effect.
-        /// </remarks>
-        public string ApplicationName
-        {
-            get => this.UserAgentContainer.Suffix;
-            set
-            {
-                this.UserAgentContainer.Suffix = value;
-                this.Diagnostics.ApplicationId = value;
-            }
         }
 
         /// <summary>
@@ -380,6 +367,16 @@ namespace Azure.Cosmos
         internal CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
 
         internal Collection<RequestHandler> CustomHandlers { get; }
+
+        internal string ApplicationName
+        {
+            get => this.UserAgentContainer.Suffix;
+            set
+            {
+                this.UserAgentContainer.Suffix = value;
+                this.Diagnostics.ApplicationId = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
