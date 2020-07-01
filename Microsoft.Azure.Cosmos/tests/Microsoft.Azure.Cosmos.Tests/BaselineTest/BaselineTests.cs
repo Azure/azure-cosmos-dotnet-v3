@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Test.BaselineTest
     /// </summary>
     /// <typeparam name="TInput">The type of the input for each test (which derives from BaselineTestInput).</typeparam>
     /// <typeparam name="TOutput">The type of the output for each test (which derives from BaselineTestOutput).</typeparam>
+    [TestCategory("UpdateContract")]
     public abstract class BaselineTests<TInput, TOutput> where TInput : BaselineTestInput where TOutput : BaselineTestOutput
     {
         /// <summary>
