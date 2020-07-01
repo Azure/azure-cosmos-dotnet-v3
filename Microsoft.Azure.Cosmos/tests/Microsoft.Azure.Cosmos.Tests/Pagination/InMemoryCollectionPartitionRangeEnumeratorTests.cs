@@ -7,14 +7,16 @@
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    public abstract class InMemoryCollectionPartitionRangeEnumeratorTests
+    internal abstract class InMemoryCollectionPartitionRangeEnumeratorTests<TPage, TState>
+        where TPage : Page<TState>
+        where TState : State
     {
         [TestMethod]
         public async Task TestDrainFullyAsync()
         {
             int numItems = 1000;
             InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems);
-            IAsyncEnumerable<TryCatch<Page>> enumerable = this.CreateEnumerable(inMemoryCollection);
+            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
             HashSet<Guid> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
@@ -25,10 +27,10 @@
             int numItems = 1000;
             InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems);
 
-            IAsyncEnumerator<TryCatch<Page>> enumerator = this.CreateEnumerator(inMemoryCollection);
-            (HashSet<Guid> firstDrainResults, State state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+            IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
+            (HashSet<Guid> firstDrainResults, TState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
-            IAsyncEnumerable<TryCatch<Page>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
+            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
             HashSet<Guid> secondDrainResults = await this.DrainFullyAsync(enumerable);
 
             Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
@@ -44,10 +46,10 @@
                     inject429s: true,
                     injectEmptyPages: false));
 
-            IAsyncEnumerable<TryCatch<Page>> enumerable = this.CreateEnumerable(inMemoryCollection);
+            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
 
             HashSet<Guid> identifiers = new HashSet<Guid>();
-            await foreach (TryCatch<Page> tryGetPage in enumerable)
+            await foreach (TryCatch<TPage> tryGetPage in enumerable)
             {
                 if (tryGetPage.Failed)
                 {
@@ -85,14 +87,14 @@
                     inject429s: true,
                     injectEmptyPages: false));
 
-            IAsyncEnumerator<TryCatch<Page>> enumerator = this.CreateEnumerator(inMemoryCollection);
+            IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
             HashSet<Guid> identifiers = new HashSet<Guid>();
-            State state = default;
+            TState state = default;
 
             while (await enumerator.MoveNextAsync())
             {
-                TryCatch<Page> tryGetPage = enumerator.Current;
+                TryCatch<TPage> tryGetPage = enumerator.Current;
                 if (tryGetPage.Failed)
                 {
                     Exception exception = tryGetPage.Exception;
@@ -133,23 +135,23 @@
                 new InMemoryCollection.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: true));
-            IAsyncEnumerable<TryCatch<Page>> enumerable = this.CreateEnumerable(inMemoryCollection);
+            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
             HashSet<Guid> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
-        internal abstract List<InMemoryCollection.Record> GetRecordsFromPage(Page page);
+        internal abstract List<InMemoryCollection.Record> GetRecordsFromPage(TPage page);
 
         internal abstract InMemoryCollection CreateInMemoryCollection(int numItems, InMemoryCollection.FailureConfigs failureConfigs = default);
 
-        internal abstract IAsyncEnumerable<TryCatch<Page>> CreateEnumerable(InMemoryCollection inMemoryCollection, State state = null);
+        internal abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(InMemoryCollection inMemoryCollection, TState state = null);
 
-        internal abstract IAsyncEnumerator<TryCatch<Page>> CreateEnumerator(InMemoryCollection inMemoryCollection, State state = null);
+        internal abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(InMemoryCollection inMemoryCollection, TState state = null);
 
-        internal async Task<HashSet<Guid>> DrainFullyAsync(IAsyncEnumerable<TryCatch<Page>> enumerable)
+        internal async Task<HashSet<Guid>> DrainFullyAsync(IAsyncEnumerable<TryCatch<TPage>> enumerable)
         {
             HashSet<Guid> identifiers = new HashSet<Guid>();
-            await foreach (TryCatch<Page> tryGetPage in enumerable)
+            await foreach (TryCatch<TPage> tryGetPage in enumerable)
             {
                 tryGetPage.ThrowIfFailed();
 
@@ -164,19 +166,19 @@
             return identifiers;
         }
 
-        internal async Task<(HashSet<Guid>, State)> PartialDrainAsync(
-            IAsyncEnumerator<TryCatch<Page>> enumerator,
+        internal async Task<(HashSet<Guid>, TState)> PartialDrainAsync(
+            IAsyncEnumerator<TryCatch<TPage>> enumerator,
             int numIterations)
         {
             HashSet<Guid> identifiers = new HashSet<Guid>();
-            State state = default;
+            TState state = default;
 
             // Drain a couple of iterations
             for (int i = 0; i < numIterations; i++)
             {
                 await enumerator.MoveNextAsync();
 
-                TryCatch<Page> tryGetPage = enumerator.Current;
+                TryCatch<TPage> tryGetPage = enumerator.Current;
                 tryGetPage.ThrowIfFailed();
 
                 List<InMemoryCollection.Record> records = this.GetRecordsFromPage(tryGetPage.Result);
