@@ -79,8 +79,11 @@ namespace Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
-            this.ApplicationName = applicationName;
             this.InitializeLoggedHeaderNames();
+            if (applicationName != null)
+            {
+                this.ApplicationName = applicationName;
+            }
         }
 
         /// <summary>
