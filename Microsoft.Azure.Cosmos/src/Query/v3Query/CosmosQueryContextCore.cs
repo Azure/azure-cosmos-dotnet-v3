@@ -77,18 +77,18 @@ namespace Microsoft.Azure.Cosmos.Query
             }    
 
             return this.QueryClient.ExecuteItemQueryAsync(
-                           resourceUri: this.ResourceLink,
-                           resourceType: this.ResourceTypeEnum,
-                           operationType: this.OperationTypeEnum,
-                           clientQueryCorrelationId: this.CorrelatedActivityId,
-                           requestOptions: requestOptions,
-                           sqlQuerySpec: querySpecForInit,
-                           continuationToken: continuationToken,
-                           partitionKeyRange: partitionKeyRange,
-                           isContinuationExpected: isContinuationExpected,
-                           pageSize: pageSize,
-                           queryPageDiagnostics: this.AddQueryPageDiagnostic,
-                           cancellationToken: cancellationToken);
+                resourceUri: this.ResourceLink,
+                resourceType: this.ResourceTypeEnum,
+                operationType: this.OperationTypeEnum,
+                clientQueryCorrelationId: this.CorrelatedActivityId,
+                requestOptions: requestOptions,
+                sqlQuerySpec: querySpecForInit,
+                continuationToken: continuationToken,
+                partitionKeyRange: partitionKeyRange,
+                isContinuationExpected: isContinuationExpected,
+                pageSize: pageSize,
+                queryPageDiagnostics: this.AddQueryPageDiagnostic,
+                cancellationToken: cancellationToken);
         }
 
         internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(

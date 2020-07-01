@@ -5,15 +5,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## <a name="3.10.1"/> [3.10.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.10.1) - 2020-06-18
+
+- [#1637](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1637) TransportHandler : Removed stack trace print. Introduced in 3.10.0 PR 1587 
+
+## <a name="3.10.0"/> [3.10.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.10.0) - 2020-06-18
+
 ### Added
 
+- [#1613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1613) Query FeedIterator: Add IDisposable to fix memory leak. WARNING: This will require changes to fix static anlysis tools checking for dispose.
+- [#1550](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1550) CosmosOperationCanceledException: This enables users to access the diagnsotics when an operation is canceled via the cancellation token. The new type extends OperationCanceledException so it does not break current exception handling and includes the CosmosDiagnostic in the ToString().
+- [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Add memory optimization to prevent coping the buffer
+- [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Add support for ignore case for [Contains](https://docs.microsoft.com/azure/cosmos-db/sql-query-contains) and [StartsWith](https://docs.microsoft.com/azure/cosmos-db/sql-query-startswith) functions.
+- [#1602](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1602) Diagnostics: Add CPU usage to all operations
+- [#1603](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1603) Documentation: Add new exception handling documentation
+
+
 ### Fixed
+
+- [#1530](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1530) ContainerDefinition : Fix WithDefaultTimeToLive argument spelling (Thanks to tony-xia)
+- [#1547](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1547) & [#1582](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1582) Query and Readfeed: Fix exceptions caused by not properly handling splits
+- [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) ApplicationRegion: Fix ApplicationRegion to ensure the correct order is being used for failover scenarios
+- [#1585](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1585) Query : Fix Multi- ORDER BY continuation token support with QueryExecutionInfo response headers
 
 ## <a name="3.9.1"/> [3.9.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.1) - 2020-05-19
 ## <a name="3.9.1-preview"/> [3.9.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.1-preview) - 2020-05-19
 
 ### Fixed
-- [#1539](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1539) Diagnostics: Fix ToString() to not grow exponentially with retries
+- [#1539](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1539) CosmosException and Diagnostics: Fix ToString() to not grow exponentially with retries. Introduced in 3.7.0 in PR [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189).
 
 ## <a name="3.9.0"/> [3.9.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.9.0) - 2020-05-18
 

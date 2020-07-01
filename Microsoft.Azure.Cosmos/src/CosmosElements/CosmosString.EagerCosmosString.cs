@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class EagerCosmosString : CosmosString
         {
+            public static readonly EagerCosmosString Empty = new EagerCosmosString(string.Empty);
+
             public EagerCosmosString(string value)
             {
                 if (value == null)

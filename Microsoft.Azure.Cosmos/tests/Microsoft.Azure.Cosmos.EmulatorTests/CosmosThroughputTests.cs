@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             throughputResponse = await containerCore.ReadThroughputIfExistsAsync(
                 requestOptions: null,
-                default(CancellationToken));
+                default);
             Assert.IsNotNull(throughputResponse);
             Assert.AreEqual(HttpStatusCode.NotFound, throughputResponse.StatusCode);
             Assert.IsNull(throughputResponse.Resource);
@@ -144,7 +144,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task ContainerAutoscaleIfExistsTest()
         {
             DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
@@ -180,6 +179,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(throughputResponse);
             Assert.IsTrue(throughputResponse.Resource.Throughput > 400);
             Assert.AreEqual(6000, throughputResponse.Resource.AutoscaleMaxThroughput);
+
+            await database.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task ContainerBuilderAutoscaleTest()
+        {
+            DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
+                nameof(CreateDropAutoscaleDatabase) + Guid.NewGuid().ToString());
+
+            {
+                Container container = await database.DefineContainer("Test", "/id")
+                    .CreateAsync(throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(5000));
+
+                ThroughputProperties throughputProperties = await container.ReadThroughputAsync(requestOptions: null);
+                Assert.IsNotNull(throughputProperties);
+                Assert.IsTrue(throughputProperties.Throughput > 400);
+                Assert.AreEqual(5000, throughputProperties.AutoscaleMaxThroughput);
+            }
+
+            {
+                Container container2 = await database.DefineContainer("Test2", "/id")
+                    .CreateIfNotExistsAsync(throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(5000));
+
+                ThroughputProperties throughputProperties = await container2.ReadThroughputAsync(requestOptions: null);
+                Assert.IsNotNull(throughputProperties);
+                Assert.IsTrue(throughputProperties.Throughput > 400);
+                Assert.AreEqual(5000, throughputProperties.AutoscaleMaxThroughput);
+
+
+                container2 = await database.DefineContainer(container2.Id, "/id")
+                        .CreateIfNotExistsAsync(throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(5000));
+                throughputProperties = await container2.ReadThroughputAsync(requestOptions: null);
+                Assert.IsNotNull(throughputProperties);
+                Assert.IsTrue(throughputProperties.Throughput > 400);
+                Assert.AreEqual(5000, throughputProperties.AutoscaleMaxThroughput);
+            }
+
+            {
+                Container container3 = await database.DefineContainer("Test3", "/id")
+                    .CreateAsync(throughputProperties: ThroughputProperties.CreateManualThroughput(500));
+
+                ThroughputProperties throughputProperties = await container3.ReadThroughputAsync(requestOptions: null);
+                Assert.IsNotNull(throughputProperties);
+                Assert.IsNull(throughputProperties.AutoscaleMaxThroughput);
+                Assert.AreEqual(500, throughputProperties.Throughput);
+
+                container3 = await database.DefineContainer(container3.Id, "/id")
+                       .CreateIfNotExistsAsync(throughputProperties: ThroughputProperties.CreateManualThroughput(500));
+                throughputProperties = await container3.ReadThroughputAsync(requestOptions: null);
+                Assert.IsNotNull(throughputProperties);
+                Assert.IsNull(throughputProperties.AutoscaleMaxThroughput);
+                Assert.AreEqual(500, throughputProperties.Throughput);
+            }
+
+            {
+                Container container4 = await database.DefineContainer("Test4", "/id")
+                    .CreateIfNotExistsAsync(throughputProperties: ThroughputProperties.CreateManualThroughput(500));
+
+                ThroughputProperties throughputProperties = await container4.ReadThroughputAsync(requestOptions: null);
+                Assert.IsNotNull(throughputProperties);
+                Assert.IsNull(throughputProperties.AutoscaleMaxThroughput);
+                Assert.AreEqual(500, throughputProperties.Throughput);
+            }
 
             await database.DeleteAsync();
         }
@@ -271,7 +334,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task CreateDropAutoscaleContainerStreamApi()
         {
             DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
@@ -299,7 +361,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task CreateDropAutoscaleContainer()
         {
             DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(
@@ -326,7 +387,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine")] // Not currently working with emulator
         public async Task ReadFixedWithAutoscaleTests()
         {
             DatabaseInternal database = (DatabaseInlineCore)await this.cosmosClient.CreateDatabaseAsync(

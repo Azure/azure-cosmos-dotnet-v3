@@ -62,10 +62,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnostics.GetOverallScope())
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
-                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                return await this.ReadNextInternalAsync(diagnosticsContext, cancellationToken);
             }
         }
 
@@ -106,7 +106,10 @@ namespace Microsoft.Azure.Cosmos
             this.ContinuationToken = responseMessage.Headers.ContinuationToken;
             this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
 
-            await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
+            if (responseMessage.Content != null)
+            {
+                await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
+            }
             
             return responseMessage;
         }
@@ -152,6 +155,12 @@ namespace Microsoft.Azure.Cosmos
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            this.feedIterator.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+                nameof(ValidateDiagnosticsContext),
+                "cosmos-netstandard-sdk");
             cosmosDiagnostics.GetOverallScope().Dispose();
             string diagnostics = cosmosDiagnostics.ToString();
 
@@ -30,7 +32,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             JToken summary = jObject["Summary"];
             Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"), "Diagnostics should have user agent string");
 
-            cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+                nameof(ValidateDiagnosticsContext),
+                "MyCustomUserAgentString");
             using (cosmosDiagnostics.GetOverallScope())
             {
                 // Test all the different operations on diagnostics context
@@ -67,8 +71,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
-
             string result = cosmosDiagnostics.ToString();
 
             string regex = @"\{""DiagnosticVersion"":""2"",""Summary"":\{""StartUtc"":"".+Z"",""TotalElapsedTimeInMs"":.+,""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
@@ -87,7 +89,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsAppendContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+                nameof(ValidateDiagnosticsAppendContext),
+                "MyCustomUserAgentString");
             CosmosDiagnosticsContext cosmosDiagnostics2;
 
             using (cosmosDiagnostics.GetOverallScope())
@@ -98,9 +102,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Thread.Sleep(TimeSpan.FromSeconds(2));
                 }
 
-                cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
-
-                cosmosDiagnostics2 = new CosmosDiagnosticsContextCore();
+                cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
+                    nameof(ValidateDiagnosticsAppendContext),
+                    "MyCustomUserAgentString");
                 cosmosDiagnostics2.GetOverallScope().Dispose();
 
                 using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
@@ -121,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ValidateClientSideRequestStatisticsToString()
         {
             // Verify that API using the interface get the older v2 string
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnosticsContext = MockCosmosUtil.CreateDiagnosticsContext();
             diagnosticsContext.GetOverallScope().Dispose();
 
             CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics(diagnosticsContext);
@@ -163,7 +167,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     numberOfReadRegions: 1,
                     itemLSN: 5,
                     sessionToken: null,
-                    usingLocalLSN: true));
+                    usingLocalLSN: true,
+                    activityId: Guid.NewGuid().ToString()));
 
             string statistics = clientSideRequestStatistics.ToString();
             Assert.AreEqual("Please see CosmosDiagnostics", statistics);
@@ -173,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestUpdatesWhileVisiting()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext cosmosDiagnostics = MockCosmosUtil.CreateDiagnosticsContext();
             cosmosDiagnostics.CreateScope("FirstScope");
 
             bool isFirst = true;
@@ -184,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cosmosDiagnostics.CreateScope("SecondScope");
                     isFirst = false;
                 }
-               
+
                 diagnostic.ToString();
             }
         }
