@@ -1,26 +1,23 @@
 ﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 {
     using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
 
-    internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
     {
-        private sealed class ClientAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
+        private sealed class ClientAggregateQueryPipelineStage : AggregateQueryPipelineStage
         {
-            private ClientAggregateDocumentQueryExecutionComponent(
-                IDocumentQueryExecutionComponent source,
+            private ClientAggregateQueryPipelineStage(
+                IQueryPipelineStage source,
                 SingleGroupAggregator singleGroupAggregator,
                 bool isValueAggregateQuery)
                 : base(source, singleGroupAggregator, isValueAggregateQuery)
@@ -28,13 +25,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 // all the work is done in the base constructor.
             }
 
-            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
                 IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
                 CosmosElement continuationToken,
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
             {
                 if (tryCreateSourceAsync == null)
                 {
@@ -47,25 +44,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     orderedAliases,
                     hasSelectValue,
                     continuationToken: null);
-
-                if (!tryCreateSingleGroupAggregator.Succeeded)
+                if (tryCreateSingleGroupAggregator.Failed)
                 {
-                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateSingleGroupAggregator.Exception);
+                    return TryCatch<IQueryPipelineStage>.FromException(tryCreateSingleGroupAggregator.Exception);
                 }
 
-                return (await tryCreateSourceAsync(continuationToken))
-                    .Try<IDocumentQueryExecutionComponent>((source) =>
-                    {
-                        return new ClientAggregateDocumentQueryExecutionComponent(
-                            source,
-                            tryCreateSingleGroupAggregator.Result,
-                            hasSelectValue);
-                    });
+                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(continuationToken);
+                if (tryCreateSource.Failed)
+                {
+                    return tryCreateSource;
+                }
+
+                ClientAggregateQueryPipelineStage stage = new ClientAggregateQueryPipelineStage(
+                    tryCreateSource.Result,
+                    tryCreateSingleGroupAggregator.Result,
+                    hasSelectValue);
+
+                return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async Task<QueryResponseCore> DrainAsync(
-                int maxElements,
-                CancellationToken cancellationToken)
+            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -75,21 +73,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
-                while (!this.Source.IsDone)
+                while (this.inputStage.HasMoreResults)
                 {
-                    QueryResponseCore sourceResponse = await this.Source.DrainAsync(int.MaxValue, cancellationToken);
-                    if (!sourceResponse.IsSuccess)
+                    await this.inputStage.MoveNextAsync();
+                    TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
+
+                    if (tryGetPageFromSource.Failed)
                     {
-                        return sourceResponse;
+                        return tryGetPageFromSource;
                     }
 
-                    requestCharge += sourceResponse.RequestCharge;
-                    responseLengthBytes += sourceResponse.ResponseLengthBytes;
+                    QueryPage sourcePage = tryGetPageFromSource.Result;
 
-                    foreach (CosmosElement element in sourceResponse.CosmosElements)
+                    requestCharge += sourcePage.RequestCharge;
+                    responseLengthBytes += sourcePage.ResponseLengthInBytes;
+
+                    foreach (CosmosElement element in sourcePage.Documents)
                     {
                         RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
-                            this.isValueAggregateQuery,
+                            this.isValueQuery,
                             element);
                         this.singleGroupAggregator.AddValues(rewrittenAggregateProjections.Payload);
                     }
@@ -102,18 +104,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     finalResult.Add(aggregationResult);
                 }
 
-                return QueryResponseCore.CreateSuccess(
-                    result: finalResult,
-                    continuationToken: null,
-                    activityId: null,
-                    disallowContinuationTokenMessage: null,
+                QueryPage queryPage = new QueryPage(
+                    documents: finalResult,
                     requestCharge: requestCharge,
-                    responseLengthBytes: responseLengthBytes);
-            }
+                    activityId: default,
+                    responseLengthInBytes: responseLengthBytes,
+                    cosmosQueryExecutionInfo: default,
+                    state: default);
 
-            public override CosmosElement GetCosmosElementContinuationToken()
-            {
-                throw new NotImplementedException();
+                return TryCatch<QueryPage>.FromResult(queryPage);
             }
         }
     }

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Partitions
 {
     using System;
     using System.Threading;

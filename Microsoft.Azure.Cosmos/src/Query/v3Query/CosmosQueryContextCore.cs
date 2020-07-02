@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;

@@ -2,29 +2,28 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Partitions
 {
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
 
-    internal sealed class ParallelCrossPartitionQueryPageEnumerator : CrossPartitionRangePageEnumerator<QueryPage, QueryState>
+    internal static class ParallelCrossPartitionQueryPageEnumerator
     {
-        public ParallelCrossPartitionQueryPageEnumerator(
+        public static CrossPartitionRangePageEnumerator<QueryPage, QueryState> Create(
             IFeedRangeProvider feedRangeProvider,
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
             int pageSize,
             CrossPartitionState<QueryState> state = default)
-            : base(
-                  feedRangeProvider: feedRangeProvider,
-                  createPartitionRangeEnumerator: ParallelCrossPartitionQueryPageEnumerator.MakeCreateFunction(queryDataSource, sqlQuerySpec, pageSize),
-                  comparer: Comparer.Singleton,
-                  state: state)
         {
+            return new CrossPartitionRangePageEnumerator<QueryPage, QueryState>(
+                feedRangeProvider,
+                ParallelCrossPartitionQueryPageEnumerator.MakeCreateFunction(queryDataSource, sqlQuerySpec, pageSize),
+                Comparer.Singleton,
+                state: state);
         }
 
-        public static CreatePartitionRangePageEnumerator<QueryPage, QueryState> MakeCreateFunction(
+        private static CreatePartitionRangePageEnumerator<QueryPage, QueryState> MakeCreateFunction(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
             int pageSize) => (FeedRange range, QueryState state) => new QueryPartitionRangePageEnumerator(

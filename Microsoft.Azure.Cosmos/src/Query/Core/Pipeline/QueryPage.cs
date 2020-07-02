@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
     using System.Collections.Generic;

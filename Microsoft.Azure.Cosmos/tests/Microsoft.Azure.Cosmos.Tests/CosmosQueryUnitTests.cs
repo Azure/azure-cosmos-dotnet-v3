@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;

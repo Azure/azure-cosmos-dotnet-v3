@@ -2,18 +2,19 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
 
     internal sealed class QueryState : State
     {
-        public QueryState(string continuationToken)
+        public QueryState(CosmosElement value)
         {
-            this.ContinuationToken = continuationToken ?? throw new ArgumentNullException(nameof(continuationToken));
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public string ContinuationToken { get; }
+        public CosmosElement Value { get; }
     }
 }

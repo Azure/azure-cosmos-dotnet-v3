@@ -1,10 +1,10 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Interface for all aggregators that are used to aggregate across continuation and partition boundaries.

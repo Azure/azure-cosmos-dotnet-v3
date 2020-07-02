@@ -11,8 +11,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Partitions;
 
     internal sealed class InMemoryCollectionQueryDataSource : IQueryDataSource
     {
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 activityId: Guid.NewGuid().ToString(),
                 responseLengthInBytes: 1337,
                 cosmosQueryExecutionInfo: default,
-                state: tryExecuteQuery.Result.resourceIdentifer.HasValue ? new QueryState(tryExecuteQuery.Result.resourceIdentifer.Value.ToString()) : null);
+                state: tryExecuteQuery.Result.resourceIdentifer.HasValue ? new QueryState(CosmosString.Create(tryExecuteQuery.Result.resourceIdentifer.Value.ToString())) : null);
 
             return Task.FromResult(TryCatch<QueryPage>.FromResult(queryPage));
         }

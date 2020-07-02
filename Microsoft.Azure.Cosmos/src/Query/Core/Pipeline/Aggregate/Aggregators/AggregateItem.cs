@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;

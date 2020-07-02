@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     /// <summary>
     /// Coordinates draining pages from multiple <see cref="PartitionRangePageEnumerator{TPage, TState}"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
     /// </summary>
-    internal abstract class CrossPartitionRangePageEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<CrossPartitionPage<TPage, TState>>>
+    internal sealed class CrossPartitionRangePageEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<CrossPartitionPage<TPage, TState>>>
         where TPage : Page<TState>
         where TState : State
     {

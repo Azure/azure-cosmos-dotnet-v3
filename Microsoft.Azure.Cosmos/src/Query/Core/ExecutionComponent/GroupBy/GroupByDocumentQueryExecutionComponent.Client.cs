@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase

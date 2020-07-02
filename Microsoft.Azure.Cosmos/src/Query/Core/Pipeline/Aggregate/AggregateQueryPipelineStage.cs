@@ -1,7 +1,8 @@
-﻿//------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
+// ------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 {
     using System;
     using System.Collections.Generic;
@@ -9,11 +10,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
 
     /// <summary>
-    /// Execution component that is able to aggregate local aggregates from multiple continuations and partitions.
+    /// Stage that is able to aggregate local aggregates from multiple continuations and partitions.
     /// At a high level aggregates queries only return a "partial" aggregate.
     /// "partial" means that the result is only valid for that one continuation (and one partition).
     /// For example suppose you have the query "SELECT COUNT(1) FROM c" and you have a single partition collection, 
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
     /// The reason why we have multiple continuations is because for a long running query we have to break up the results into multiple continuations.
     /// Fortunately all the aggregates can be aggregated across continuations and partitions.
     /// </summary>
-    internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
     {
         /// <summary>
         /// This class does most of the work, since a query like:
@@ -37,35 +37,59 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
         /// <summary>
         /// We need to keep track of whether the projection has the 'VALUE' keyword.
         /// </summary>
-        private readonly bool isValueAggregateQuery;
+        private readonly bool isValueQuery;
 
         /// <summary>
         /// Initializes a new instance of the AggregateDocumentQueryExecutionComponent class.
         /// </summary>
         /// <param name="source">The source component that will supply the local aggregates from multiple continuations and partitions.</param>
         /// <param name="singleGroupAggregator">The single group aggregator that we will feed results into.</param>
-        /// <param name="isValueAggregateQuery">Whether or not the query has the 'VALUE' keyword.</param>
+        /// <param name="isValueQuery">Whether or not the query has the 'VALUE' keyword.</param>
         /// <remarks>This constructor is private since there is some async initialization that needs to happen in CreateAsync().</remarks>
-        protected AggregateDocumentQueryExecutionComponent(
-            IDocumentQueryExecutionComponent source,
+        public AggregateQueryPipelineStage(
+            IQueryPipelineStage source,
             SingleGroupAggregator singleGroupAggregator,
-            bool isValueAggregateQuery)
+            bool isValueQuery)
             : base(source)
         {
             this.singleGroupAggregator = singleGroupAggregator ?? throw new ArgumentNullException(nameof(singleGroupAggregator));
-            this.isValueAggregateQuery = isValueAggregateQuery;
+            this.isValueQuery = isValueQuery;
         }
 
-        public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             CosmosElement continuationToken,
-            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
         {
-            return default;
+            if (tryCreateSourceAsync == null)
+            {
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+            }
+
+            TryCatch<IQueryPipelineStage> tryCreateAggregate = executionEnvironment switch
+            {
+                ExecutionEnvironment.Client => await ClientAggregateQueryPipelineStage.TryCreateAsync(
+                    aggregates,
+                    aliasToAggregateType,
+                    orderedAliases,
+                    hasSelectValue,
+                    continuationToken,
+                    tryCreateSourceAsync),
+                ExecutionEnvironment.Compute => await ComputeAggregateQueryPipelineStage.TryCreateAsync(
+                    aggregates,
+                    aliasToAggregateType,
+                    orderedAliases,
+                    hasSelectValue,
+                    continuationToken,
+                    tryCreateSourceAsync),
+                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
+            };
+
+            return tryCreateAggregate;
         }
 
         /// <summary>
@@ -106,10 +130,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 }
             }
 
-            public CosmosElement Payload
-            {
-                get;
-            }
+            public CosmosElement Payload { get; }
         }
     }
 }

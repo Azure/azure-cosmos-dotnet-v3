@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
@@ -285,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                         activityId: tryGetQueryPage.Result.ActivityId,
                         responseLengthBytes: tryGetQueryPage.Result.ResponseLengthInBytes,
                         disallowContinuationTokenMessage: default,
-                        continuationToken: tryGetQueryPage.Result.State.ContinuationToken,
+                        continuationToken: ((CosmosString)tryGetQueryPage.Result.State.Value).Value,
                         cosmosQueryExecutionInfo: tryGetQueryPage.Result.CosmosQueryExecutionInfo);
                 }
                 else

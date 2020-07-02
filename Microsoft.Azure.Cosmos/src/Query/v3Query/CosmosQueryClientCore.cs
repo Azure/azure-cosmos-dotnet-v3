@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -342,13 +343,23 @@ namespace Microsoft.Azure.Cosmos
                     cosmosQueryExecutionInfo = default;
                 }
 
+                QueryState queryState;
+                if (cosmosResponseMessage.Headers.ContinuationToken != null)
+                {
+                    queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
+                }
+                else
+                {
+                    queryState = default;
+                }
+
                 QueryPage response = new QueryPage(
                     documents,
                     cosmosResponseMessage.Headers.RequestCharge,
                     cosmosResponseMessage.Headers.ActivityId,
                     responseLengthBytes,
                     cosmosQueryExecutionInfo,
-                    new QueryState(cosmosResponseMessage.Headers.ContinuationToken));
+                    queryState);
 
                 return TryCatch<QueryPage>.FromResult(response);
             }
