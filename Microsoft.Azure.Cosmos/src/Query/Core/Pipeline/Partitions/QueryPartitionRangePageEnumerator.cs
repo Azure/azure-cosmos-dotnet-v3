@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Partitions
 
         public override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.queryDataSource.ExecuteQueryAsync(
             sqlQuerySpec: this.sqlQuerySpec,
-            continuationToken: this.State.Value != null ? ((CosmosString)this.State.Value).Value : null,
+            continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
             partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)this.Range).PartitionKeyRangeId),
             pageSize: this.pageSize,
             cancellationToken);

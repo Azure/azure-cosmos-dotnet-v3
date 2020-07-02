@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     activityId: default,
                     responseLengthInBytes: responseLengthBytes,
                     cosmosQueryExecutionInfo: default,
+                    disallowContinuationTokenMessage: default,
                     state: default);
 
                 return TryCatch<QueryPage>.FromResult(queryPage);

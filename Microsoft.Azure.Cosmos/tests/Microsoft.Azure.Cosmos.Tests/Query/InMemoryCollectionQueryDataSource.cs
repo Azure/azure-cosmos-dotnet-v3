@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 activityId: Guid.NewGuid().ToString(),
                 responseLengthInBytes: 1337,
                 cosmosQueryExecutionInfo: default,
+                disallowContinuationTokenMessage: default,
                 state: tryExecuteQuery.Result.resourceIdentifer.HasValue ? new QueryState(CosmosString.Create(tryExecuteQuery.Result.resourceIdentifer.Value.ToString())) : null);
 
             return Task.FromResult(TryCatch<QueryPage>.FromResult(queryPage));

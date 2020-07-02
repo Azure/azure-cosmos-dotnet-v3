@@ -32,36 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             CosmosElement continuationToken,
             Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
-            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreate;
-            switch (executionEnvironment)
-            {
-                case ExecutionEnvironment.Client:
-                    tryCreate = ClientSkipDocumentQueryExecutionComponent.TryCreateAsync(
-                        offsetCount,
-                        continuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                case ExecutionEnvironment.Compute:
-                    tryCreate = ComputeSkipDocumentQueryExecutionComponent.TryCreateAsync(
-                        offsetCount,
-                        continuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}");
-            }
-
-            return tryCreate;
-        }
-
-        public override bool IsDone
-        {
-            get
-            {
-                return this.Source.IsDone;
-            }
+            return default;
         }
     }
 }

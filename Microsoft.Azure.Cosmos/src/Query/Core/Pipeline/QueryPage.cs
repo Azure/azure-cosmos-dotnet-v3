@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             string activityId,
             long responseLengthInBytes,
             CosmosQueryExecutionInfo cosmosQueryExecutionInfo,
+            string disallowContinuationTokenMessage,
             QueryState state)
             : base(state)
         {
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             this.ActivityId = activityId;
             this.ResponseLengthInBytes = responseLengthInBytes < 0 ? throw new ArgumentOutOfRangeException(nameof(responseLengthInBytes)) : responseLengthInBytes;
             this.CosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
+            this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
         }
 
         public IReadOnlyList<CosmosElement> Documents { get; }
@@ -37,5 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         public long ResponseLengthInBytes { get; }
 
         public CosmosQueryExecutionInfo CosmosQueryExecutionInfo { get; }
+
+        public string DisallowContinuationTokenMessage { get; }
     }
 }

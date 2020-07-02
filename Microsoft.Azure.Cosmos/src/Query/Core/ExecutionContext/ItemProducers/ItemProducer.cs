@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                         activityId: tryGetQueryPage.Result.ActivityId,
                         responseLengthBytes: tryGetQueryPage.Result.ResponseLengthInBytes,
                         disallowContinuationTokenMessage: default,
-                        continuationToken: ((CosmosString)tryGetQueryPage.Result.State.Value).Value,
+                        continuationToken: tryGetQueryPage.Result.State == null ? null : ((CosmosString)tryGetQueryPage.Result.State.Value).Value,
                         cosmosQueryExecutionInfo: tryGetQueryPage.Result.CosmosQueryExecutionInfo);
                 }
                 else

@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 activityId: Guid.NewGuid().ToString(),
                 responseLengthInBytes: default,
                 cosmosQueryExecutionInfo: default,
+                disallowContinuationTokenMessage: default,
                 state: state);
             return Task.FromResult(TryCatch<QueryPage>.FromResult(page));
         }

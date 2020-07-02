@@ -36,13 +36,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 return false;
             }
 
-            this.hasStarted = true;
-
             this.Current = await this.GetNextPageAsync(default);
             if (this.Current.Succeeded)
             {
                 this.State = this.Current.Result.State;
             }
+
+            this.hasStarted = true;
 
             return true;
         }

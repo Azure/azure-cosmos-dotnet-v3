@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         activityId: default,
                         responseLengthInBytes: default,
                         cosmosQueryExecutionInfo: default,
+                        disallowContinuationTokenMessage: default,
                         state: default);
 
                     return TryCatch<QueryPage>.FromResult(finalPage);
@@ -145,6 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     activityId: sourcePage.ActivityId,
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     state: queryState);
 
                 return TryCatch<QueryPage>.FromResult(emptyPage);

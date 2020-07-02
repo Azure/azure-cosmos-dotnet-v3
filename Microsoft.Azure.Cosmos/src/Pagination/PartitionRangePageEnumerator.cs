@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 return false;
             }
 
-            this.hasStarted = true;
-
             this.Current = await this.GetNextPageAsync(default);
             if (this.Current.Succeeded)
             {
                 this.State = this.Current.Result.State;
             }
+
+            this.hasStarted = true;
 
             return true;
         }
