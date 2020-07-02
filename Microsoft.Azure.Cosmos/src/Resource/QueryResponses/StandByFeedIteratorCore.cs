@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            Uri resourceUri = this.container.LinkUri;
+            string resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,

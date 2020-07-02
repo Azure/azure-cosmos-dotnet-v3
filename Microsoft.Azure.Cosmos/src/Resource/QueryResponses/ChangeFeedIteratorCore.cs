@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
                             return cosmosException.ToCosmosResponseMessage(
                                 new RequestMessage(
                                     method: null,
-                                    requestUri: null,
+                                    requestUriString: null,
                                     diagnosticsContext: diagnostics));
                         }
                     }
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
                             .ToCosmosResponseMessage(
                                 new RequestMessage(
                                     method: null,
-                                    requestUri: null,
+                                    requestUriString: null,
                                     diagnosticsContext: diagnostics));
                     }
                 }

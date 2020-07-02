@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class DatabaseInternal : Database
     {
-        internal abstract Uri LinkUri { get; }
+        internal abstract string LinkUri { get; }
 
         internal abstract CosmosClientContext ClientContext { get; }
 
