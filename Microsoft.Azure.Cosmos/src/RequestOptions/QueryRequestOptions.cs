@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// </para>
         /// </remarks>
-        public string SessionToken { get; set; }
+        internal string SessionToken { get; set; }
 
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
