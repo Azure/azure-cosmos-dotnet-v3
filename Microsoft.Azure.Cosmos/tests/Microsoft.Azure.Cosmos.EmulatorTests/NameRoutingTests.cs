@@ -1786,6 +1786,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateCosmosClient(true));
         }
 
+        [Ignore] //Ignoring this test until EnableSubpartitioning is set to true in BE.
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
         {
@@ -1794,7 +1795,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             database = await client.CreateDatabaseAsync("mydb");
             try
             {
-                TestCommon.SetBooleanConfigurationProperty("enableSubPartitioning", true);
                 PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition
                 {
                     Paths = new Collection<string> { "/ZipCode", "/Address" },
@@ -1874,7 +1874,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             finally
             {
                 await database.DeleteAsync();
-                TestCommon.SetBooleanConfigurationProperty("enableSubPartitioning", false);
             }
 
         }

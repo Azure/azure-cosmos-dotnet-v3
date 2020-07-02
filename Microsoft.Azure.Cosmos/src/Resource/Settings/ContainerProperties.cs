@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
-        private IList<string[]> partitionKeyPathTokens;
+        private IReadOnlyList<string[]> partitionKeyPathTokens;
         private string id;
 
         /// <summary>
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.partitionKeyPathTokens != null)
                 {
-                    return (IReadOnlyList<string[]>)this.partitionKeyPathTokens;
+                    return this.partitionKeyPathTokens;
                 }
 
                 if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != PartitionKind.MultiHash) 
@@ -530,12 +530,14 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                this.partitionKeyPathTokens = new List<string[]>();
+                Collection<string[]> partitionKeyPathTokensList = new Collection<string[]>();
                 foreach (string s in this.PartitionKey?.Paths)
                 {
-                    this.partitionKeyPathTokens.Add(s.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries));
+                    partitionKeyPathTokensList.Add(s.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries));
                 }
-                return (IReadOnlyList<string[]>)this.partitionKeyPathTokens;
+
+                this.partitionKeyPathTokens = partitionKeyPathTokensList;
+                return this.partitionKeyPathTokens;
             }
         }
 

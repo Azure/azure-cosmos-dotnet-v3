@@ -631,6 +631,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException(RMResources.MissingPartitionKeyValue);
                 }
+
                 return await this.ProcessItemStreamAsync(
                         partitionKey,
                         itemId,
@@ -748,7 +749,10 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                         {
-                            if (tokenslist.Count == 1) return PartitionKey.None;
+                            if (tokenslist.Count == 1)
+                            {
+                                return PartitionKey.None;
+                            }
                             break;
                         }
                     }
@@ -801,10 +805,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
                     }
-                    else
-                    {
-                        partitionKeyValueList.Add(null); // This is translated to PartitionKey.Undefined
-                    }
+
+                    partitionKeyValueList.AddUndefined();
                     break;
 
                 default:

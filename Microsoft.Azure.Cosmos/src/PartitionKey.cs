@@ -102,8 +102,15 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">An object of Type PartitionKeyValueList which supports multiple partition key paths.</param>
         internal PartitionKey(PartitionKeyValueList value)
         {
-            object[] valueArray = value.partitionKeyObjects.ToArray();
-            this.InternalKey = new Documents.PartitionKey(valueArray).InternalKey;
+            if (value == null)
+            {
+                this.InternalKey = PartitionKey.NullPartitionKeyInternal;
+            }
+            else
+            {
+                object[] valueArray = value.partitionKeyObjects.ToArray();
+                this.InternalKey = new Documents.PartitionKey(valueArray).InternalKey;
+            }
             this.IsNone = false;
         }
 
