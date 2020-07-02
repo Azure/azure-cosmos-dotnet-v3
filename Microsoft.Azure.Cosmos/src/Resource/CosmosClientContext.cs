@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="uriPathSegment">The URI path segment</param>
         /// <param name="id">The id of the resource</param>
         /// <returns>A resource link in the format of {parentLink}/this.UriPathSegment/this.Name with this.Name being a Uri escaped version</returns>
-        internal abstract Uri CreateLink(
+        internal abstract string CreateLink(
             string parentLink,
             string uriPathSegment,
             string id);
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// in a resource can be unit tested.
         /// </summary>
         internal abstract Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// in a resource can be unit tested.
         /// </summary>
         internal abstract Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
         /// in a resource can be unit tested.
         /// </summary>
         internal abstract Task<T> ProcessResourceOperationAsync<T>(
-           Uri resourceUri,
+           string resourceUri,
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,

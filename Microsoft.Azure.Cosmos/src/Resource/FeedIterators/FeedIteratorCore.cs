@@ -21,14 +21,14 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
-        private readonly Uri resourceLink;
+        private readonly string resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
 
         public FeedIteratorCore(
             CosmosClientContext clientContext,
-            Uri resourceLink,
+            string resourceLink,
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
