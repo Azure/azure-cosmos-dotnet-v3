@@ -1,7 +1,8 @@
-﻿//------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
+// ------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 {
     using System;
     using System.Collections.Generic;
@@ -12,22 +13,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Newtonsoft.Json;
 
-    internal abstract partial class TakeDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class TakeQueryPipelineStage : QueryPipelineStageBase
     {
-        private sealed class ComputeTakeDocumentQueryExecutionComponent : TakeDocumentQueryExecutionComponent
+        private sealed class ComputeTakeQueryPipelineStage : TakeQueryPipelineStage
         {
-            private ComputeTakeDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, int takeCount)
+            private ComputeTakeQueryPipelineStage(
+                IQueryPipelineStage source,
+                int takeCount)
                 : base(source, takeCount)
             {
                 // Work is done in the base class.
             }
 
-            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+            public static Task<TryCatch<IQueryPipelineStage>> TryCreateLimitStageAsync(
                 int takeCount,
                 CosmosElement requestContinuationToken,
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync) => ComputeTakeQueryPipelineStage.TryCreateAsync(
+                    takeCount,
+                    requestContinuationToken,
+                    tryCreateSourceAsync);
+
+            public static Task<TryCatch<IQueryPipelineStage>> TryCreateTopStageAsync(
+                int takeCount,
+                CosmosElement requestContinuationToken,
+                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync) => ComputeTakeQueryPipelineStage.TryCreateAsync(
+                    takeCount,
+                    requestContinuationToken,
+                    tryCreateSourceAsync);
+
+            private static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+                int takeCount,
+                CosmosElement requestContinuationToken,
+                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
             {
                 if (takeCount < 0)
                 {
@@ -44,8 +63,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 {
                     if (!TakeContinuationToken.TryParse(requestContinuationToken, out takeContinuationToken))
                     {
-                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException($"Malformed {nameof(TakeContinuationToken)}: {requestContinuationToken}."));
+                        return TryCatch<IQueryPipelineStage>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"Malformed {nameof(TakeContinuationToken)}: {requestContinuationToken}."));
                     }
                 }
                 else
@@ -55,48 +75,63 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
                 if (takeContinuationToken.TakeCount > takeCount)
                 {
-                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                        new MalformedContinuationTokenException($"{nameof(TakeContinuationToken.TakeCount)} in {nameof(TakeContinuationToken)}: {requestContinuationToken}: {takeContinuationToken.TakeCount} can not be greater than the limit count in the query: {takeCount}."));
+                    return TryCatch<IQueryPipelineStage>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"{nameof(TakeContinuationToken.TakeCount)} in {nameof(TakeContinuationToken)}: {requestContinuationToken}: {takeContinuationToken.TakeCount} can not be greater than the limit count in the query: {takeCount}."));
                 }
 
-                return (await tryCreateSourceAsync(takeContinuationToken.SourceToken))
-                    .Try<IDocumentQueryExecutionComponent>((source) => new ComputeTakeDocumentQueryExecutionComponent(
-                    source,
-                    takeContinuationToken.TakeCount));
+                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(takeContinuationToken.SourceToken);
+                if (tryCreateSource.Failed)
+                {
+                    return tryCreateSource;
+                }
+
+                IQueryPipelineStage stage = new ComputeTakeQueryPipelineStage(
+                    tryCreateSource.Result,
+                    takeContinuationToken.TakeCount);
+
+                return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
+            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
             {
-                token.ThrowIfCancellationRequested();
-                QueryResponseCore sourcePage = await base.DrainAsync(maxElements, token);
-                if (!sourcePage.IsSuccess)
+                cancellationToken.ThrowIfCancellationRequested();
+
+                await this.inputStage.MoveNextAsync();
+                TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
+                if (tryGetSourcePage.Failed)
                 {
-                    return sourcePage;
+                    return tryGetSourcePage;
                 }
 
-                List<CosmosElement> takedDocuments = sourcePage.CosmosElements.Take(this.takeCount).ToList();
+                QueryPage sourcePage = tryGetSourcePage.Result;
+
+                List<CosmosElement> takedDocuments = sourcePage.Documents.Take(this.takeCount).ToList();
                 this.takeCount -= takedDocuments.Count;
 
-                return QueryResponseCore.CreateSuccess(
-                    result: takedDocuments,
-                    continuationToken: null,
-                    disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
-                    activityId: sourcePage.ActivityId,
-                    requestCharge: sourcePage.RequestCharge,
-                    responseLengthBytes: sourcePage.ResponseLengthBytes);
-            }
-
-            public override CosmosElement GetCosmosElementContinuationToken()
-            {
-                if (this.IsDone)
+                QueryState queryState;
+                if (sourcePage.State != null)
                 {
-                    return default;
+                    TakeContinuationToken takeContinuationToken = new TakeContinuationToken(
+                        takeCount: this.takeCount,
+                        sourceToken: sourcePage.State.Value);
+                    queryState = new QueryState(TakeContinuationToken.ToCosmosElement(takeContinuationToken));
+                }
+                else
+                {
+                    queryState = default;
                 }
 
-                TakeContinuationToken takeContinuationToken = new TakeContinuationToken(
-                    takeCount: this.takeCount,
-                    sourceToken: this.Source.GetCosmosElementContinuationToken());
-                return TakeContinuationToken.ToCosmosElement(takeContinuationToken);
+                QueryPage queryPage = new QueryPage(
+                    documents: takedDocuments,
+                    requestCharge: sourcePage.RequestCharge,
+                    activityId: sourcePage.ActivityId,
+                    responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                    cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    state: queryState);
+
+                return TryCatch<QueryPage>.FromResult(queryPage);
             }
 
             private readonly struct TakeContinuationToken
