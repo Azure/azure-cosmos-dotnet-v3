@@ -205,6 +205,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 {
                     Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
                     count += response.Count;
+                    string migratedContinuation = firstResponse.ContinuationToken;
+                    Assert.IsTrue(FeedRangeContinuation.TryParse(migratedContinuation, out FeedRangeContinuation feedRangeContinuation));
+                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEPK);
                 }
             }
 
