@@ -123,27 +123,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                                     keyVaultKeyUri,
                                                     cancellationToken);
 
-            if (getKeyResponse != null)
-            {
-                string keyDeletionRecoveryLevel = getKeyResponse?.Attributes?.RecoveryLevel;
-                DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: KeyVaultKey {0} has Deletion Recovery Level {1}.",
-                keyVaultKeyUri,
-                keyDeletionRecoveryLevel);
+            string keyDeletionRecoveryLevel = getKeyResponse?.Attributes?.RecoveryLevel;
+            DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: KeyVaultKey {0} has Deletion Recovery Level {1}.",
+            keyVaultKeyUri,
+            keyDeletionRecoveryLevel);
 
-                return keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.Recoverable)
-                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.RecoverableProtectedSubscription)
-                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverable)
-                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverableProtectedSubscription);
-            }
-            else
-            {
-                DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: caught exception while trying to GetKeyVaultKeyResponseAsync");
-                throw new KeyVaultAccessException(
-                    HttpStatusCode.ServiceUnavailable,
-                    KeyVaultErrorCode.KeyVaultServiceUnavailable,
-                    "GetKeyVaultKeyResponseAsync failed with bad HTTP response");
-            }
-            
+            return keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.Recoverable)
+                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.RecoverableProtectedSubscription)
+                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverable)
+                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverableProtectedSubscription);
+
         }
 
         /// <summary>
@@ -167,22 +156,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             string accessToken = await this.GetAadAccessTokenAsync(keyVaultKeyUri, cancellationToken);
 
-            InternalWrapUnwrapResponse IWUresponse = await this.ExecuteKeyVaultRequestAsync(keyvaultUri, accessToken, bytesInBase64, cancellationToken);
-
-            if (IWUresponse != null)
-            {
-                return IWUresponse;
-            }
-            else
-            {
-                DefaultTrace.TraceInformation("InternalWrapUnwrapAsync: caught exception while trying to ExecuteKeyVaultRequestAsync");
-                throw new KeyVaultAccessException(
-                    HttpStatusCode.ServiceUnavailable,
-                    KeyVaultErrorCode.KeyVaultServiceUnavailable,
-                    "ExecuteKeyVaultRequestAsync failed with bad HTTP response");
-            }
-
+            return await this.ExecuteKeyVaultRequestAsync(keyvaultUri, accessToken, bytesInBase64, cancellationToken);
         }
+
         /// <summary>
         /// Helper Method for ExecuteKeyVaultRequestAsync.
         /// </summary>
@@ -196,12 +172,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             using HttpResponseMessage response = await this.keyvaulthttpclient.ExecuteHttpRequestAsync(HttpMethod.Post,keyvaultUri, accessToken:accessToken, bytesInBase64:bytesInBase64, cancellationToken:cancellationToken);
             {
-                
+                string jsonResponse = string.Empty;
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    /// send it back only if we have a valid response.
+                    jsonResponse = await response.Content.ReadAsStringAsync();
                     jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
-                    return JsonConvert.DeserializeObject<InternalWrapUnwrapResponse>(jsonResponse);
+                    goto ValidResponse;
                 }
                 else if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
@@ -235,11 +212,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         KeyVaultErrorCode.KeyVaultInternalServerError,
                         "ExecuteKeyVaultRequestAsync Failed with Bad HTTP response.");
                 }
-                else
-                {
-                    /// when all else fails unlikely
-                    return null;
-                }                                
+
+                ValidResponse:
+                return JsonConvert.DeserializeObject<InternalWrapUnwrapResponse>(jsonResponse);
             }
         }
 
@@ -253,11 +228,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             using HttpResponseMessage response = await this.InternalGetKeyAsync(keyVaultKeyUri, accessToken, cancellationToken);
             {
+                string jsonResponse = string.Empty;
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    /// send it back only if we have a valid response.
+                    jsonResponse = await response.Content.ReadAsStringAsync();
                     jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
-                    return JsonConvert.DeserializeObject<InternalGetKeyResponse>(jsonResponse);
+                    goto ValidResponse;
                 }
                 else if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
@@ -283,11 +260,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         KeyVaultErrorCode.KeyVaultInternalServerError,
                         "GetKeyVaultKeyResponseAsync Failed with Bad HTTP response.");
                 }
-                else
-                {
-                    /// when all else fails unlikely
-                    return null;
-                }
+
+                ValidResponse:
+                return JsonConvert.DeserializeObject<InternalGetKeyResponse>(jsonResponse);
             }
         }
 
