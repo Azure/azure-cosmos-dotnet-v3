@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating undefined partition Container item.
             string verb = "POST";
             string resourceType = "docs";
-            string resourceId = container.LinkUri.OriginalString;
+            string resourceId = container.LinkUri;
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", container.Database.Id, container.Id);
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
                 verb,
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceType = "docs";
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", container.Database.Id, container.Id);
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
-                verb, container.LinkUri.OriginalString,
+                verb, container.LinkUri,
                 resourceType,
                 accountInfo.authKey,
                 "master",

@@ -46,8 +46,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(conflict));
             }
 
-            Uri conflictLink = this.ClientContext.CreateLink(
-                 parentLink: this.container.LinkUri.OriginalString,
+            string conflictLink = this.ClientContext.CreateLink(
+                 parentLink: this.container.LinkUri,
                  uriPathSegment: Paths.ConflictsPathSegment,
                  id: conflict.Id);
 
@@ -147,18 +147,18 @@ namespace Microsoft.Azure.Cosmos
             string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
             string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
 
-            Uri dbLink = this.ClientContext.CreateLink(
+            string dbLink = this.ClientContext.CreateLink(
                 parentLink: string.Empty,
                 uriPathSegment: Paths.DatabasesPathSegment,
                 id: databaseResourceId);
 
-            Uri containerLink = this.ClientContext.CreateLink(
-                parentLink: dbLink.OriginalString,
+            string containerLink = this.ClientContext.CreateLink(
+                parentLink: dbLink,
                 uriPathSegment: Paths.CollectionsPathSegment,
                 id: containerResourceId);
 
-            Uri itemLink = this.ClientContext.CreateLink(
-                parentLink: containerLink.OriginalString,
+            string itemLink = this.ClientContext.CreateLink(
+                parentLink: containerLink,
                 uriPathSegment: Paths.DocumentsPathSegment,
                 id: cosmosConflict.SourceResourceId);
 

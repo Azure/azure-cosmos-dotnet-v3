@@ -1070,7 +1070,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // There should only be one range since the EPK option is set.
                 List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                     queryClient: new CosmosQueryClientCore(container.ClientContext, container),
-                    resourceLink: container.LinkUri.OriginalString,
+                    resourceLink: container.LinkUri,
                     partitionedQueryExecutionInfo: null,
                     containerQueryProperties: containerQueryProperties,
                     properties: new Dictionary<string, object>()
