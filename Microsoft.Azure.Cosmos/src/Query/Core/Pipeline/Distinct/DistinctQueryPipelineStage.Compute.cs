@@ -1,40 +1,40 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 {
     using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Newtonsoft.Json;
 
-    internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class DistinctQueryPipelineStage : QueryPipelineStageBase
     {
         /// <summary>
         /// Compute implementation of DISTINCT.
         /// Here we never serialize the continuation token, but you can always retrieve it on demand with TryGetContinuationToken.
         /// </summary>
-        private sealed class ComputeDistinctDocumentQueryExecutionComponent : DistinctDocumentQueryExecutionComponent
+        private sealed class ComputeDistinctQueryPipelineStage : DistinctQueryPipelineStage
         {
             private static readonly string UseTryGetContinuationTokenMessage = $"Use TryGetContinuationToken";
 
-            private ComputeDistinctDocumentQueryExecutionComponent(
+            private ComputeDistinctQueryPipelineStage(
                 DistinctQueryType distinctQueryType,
                 DistinctMap distinctMap,
-                IDocumentQueryExecutionComponent source)
+                IQueryPipelineStage source)
                 : base(distinctMap, source)
             {
             }
 
-            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
                 CosmosElement requestContinuation,
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
                 DistinctQueryType distinctQueryType)
             {
                 if (tryCreateSourceAsync == null)
@@ -47,8 +47,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 {
                     if (!DistinctContinuationToken.TryParse(requestContinuation, out distinctContinuationToken))
                     {
-                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException($"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}"));
+                        return TryCatch<IQueryPipelineStage>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}"));
                     }
                 }
                 else
@@ -61,40 +62,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     distinctContinuationToken.DistinctMapToken);
                 if (!tryCreateDistinctMap.Succeeded)
                 {
-                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateDistinctMap.Exception);
+                    return TryCatch<IQueryPipelineStage>.FromException(tryCreateDistinctMap.Exception);
                 }
 
-                TryCatch<IDocumentQueryExecutionComponent> tryCreateSource = await tryCreateSourceAsync(
+                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(
                     distinctContinuationToken.SourceToken);
                 if (!tryCreateSource.Succeeded)
                 {
-                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateSource.Exception);
+                    return TryCatch<IQueryPipelineStage>.FromException(tryCreateSource.Exception);
                 }
 
-                return TryCatch<IDocumentQueryExecutionComponent>.FromResult(
-                    new ComputeDistinctDocumentQueryExecutionComponent(
+                return TryCatch<IQueryPipelineStage>.FromResult(
+                    new ComputeDistinctQueryPipelineStage(
                         distinctQueryType,
                         tryCreateDistinctMap.Result,
                         tryCreateSource.Result));
             }
 
-            /// <summary>
-            /// Drains a page of results returning only distinct elements.
-            /// </summary>
-            /// <param name="maxElements">The maximum number of items to drain.</param>
-            /// <param name="cancellationToken">The cancellation token.</param>
-            /// <returns>A page of distinct results.</returns>
-            public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
+            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
             {
-                List<CosmosElement> distinctResults = new List<CosmosElement>();
-                QueryResponseCore sourceResponse = await base.DrainAsync(maxElements, cancellationToken);
-
-                if (!sourceResponse.IsSuccess)
+                await this.inputStage.MoveNextAsync();
+                TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
+                if (tryGetSourcePage.Failed)
                 {
-                    return sourceResponse;
+                    return tryGetSourcePage;
                 }
 
-                foreach (CosmosElement document in sourceResponse.CosmosElements)
+                QueryPage sourcePage = tryGetSourcePage.Result;
+
+                List<CosmosElement> distinctResults = new List<CosmosElement>();
+                foreach (CosmosElement document in sourcePage.Documents)
                 {
                     if (this.distinctMap.Add(document, out UInt128 hash))
                     {
@@ -102,26 +99,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     }
                 }
 
-                return QueryResponseCore.CreateSuccess(
-                        result: distinctResults,
-                        continuationToken: null,
-                        disallowContinuationTokenMessage: ComputeDistinctDocumentQueryExecutionComponent.UseTryGetContinuationTokenMessage,
-                        activityId: sourceResponse.ActivityId,
-                        requestCharge: sourceResponse.RequestCharge,
-                        responseLengthBytes: sourceResponse.ResponseLengthBytes);
-            }
-
-            public override CosmosElement GetCosmosElementContinuationToken()
-            {
-                if (this.IsDone)
+                QueryState queryState;
+                if (sourcePage.State != null)
                 {
-                    return default;
+                    DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
+                        sourceToken: sourcePage.State.Value,
+                        distinctMapToken: this.distinctMap.GetCosmosElementContinuationToken());
+                    queryState = new QueryState(DistinctContinuationToken.ToCosmosElement(distinctContinuationToken));
+                }
+                else
+                {
+                    queryState = null;
                 }
 
-                DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
-                    sourceToken: this.Source.GetCosmosElementContinuationToken(),
-                    distinctMapToken: this.distinctMap.GetCosmosElementContinuationToken());
-                return DistinctContinuationToken.ToCosmosElement(distinctContinuationToken);
+                QueryPage queryPage = new QueryPage(
+                    documents: distinctResults,
+                    requestCharge: sourcePage.RequestCharge,
+                    activityId: sourcePage.ActivityId,
+                    responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                    cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                    disallowContinuationTokenMessage: ComputeDistinctQueryPipelineStage.UseTryGetContinuationTokenMessage,
+                    state: queryState);
+
+                return TryCatch<QueryPage>.FromResult(queryPage);
             }
 
             private readonly struct DistinctContinuationToken

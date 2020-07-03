@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 

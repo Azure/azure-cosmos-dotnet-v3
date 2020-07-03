@@ -1,36 +1,35 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 {
     using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Newtonsoft.Json;
 
-    internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class DistinctQueryPipelineStage : QueryPipelineStageBase
     {
         /// <summary>
         /// Client implementaiton of Distinct. Here we only serialize the continuation token if there is a matching DISTINCT.
         /// </summary>
-        private sealed class ClientDistinctDocumentQueryExecutionComponent : DistinctDocumentQueryExecutionComponent
+        private sealed class ClientDistinctQueryPipelineStage : DistinctQueryPipelineStage
         {
             private static readonly string DisallowContinuationTokenMessage = "DISTINCT queries only return continuation tokens when there is a matching ORDER BY clause." +
             "For example if your query is 'SELECT DISTINCT VALUE c.name FROM c', then rewrite it as 'SELECT DISTINCT VALUE c.name FROM c ORDER BY c.name'.";
 
             private readonly DistinctQueryType distinctQueryType;
 
-            private ClientDistinctDocumentQueryExecutionComponent(
+            private ClientDistinctQueryPipelineStage(
                 DistinctQueryType distinctQueryType,
                 DistinctMap distinctMap,
-                IDocumentQueryExecutionComponent source)
+                IQueryPipelineStage source)
                 : base(distinctMap, source)
             {
                 if ((distinctQueryType != DistinctQueryType.Unordered) && (distinctQueryType != DistinctQueryType.Ordered))
@@ -41,9 +40,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 this.distinctQueryType = distinctQueryType;
             }
 
-            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
                 CosmosElement requestContinuation,
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
                 DistinctQueryType distinctQueryType)
             {
                 if (tryCreateSourceAsync == null)
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 {
                     if (!DistinctContinuationToken.TryParse(requestContinuation, out distinctContinuationToken))
                     {
-                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                        return TryCatch<IQueryPipelineStage>.FromException(
                             new MalformedContinuationTokenException(
                                 $"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}"));
                     }
@@ -83,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     distinctMapToken);
                 if (!tryCreateDistinctMap.Succeeded)
                 {
-                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateDistinctMap.Exception);
+                    return TryCatch<IQueryPipelineStage>.FromException(tryCreateDistinctMap.Exception);
                 }
 
                 CosmosElement sourceToken;
@@ -92,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(distinctContinuationToken.SourceToken);
                     if (tryParse.Failed)
                     {
-                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                        return TryCatch<IQueryPipelineStage>.FromException(
                             new MalformedContinuationTokenException(
                                 message: $"Invalid Source Token: {distinctContinuationToken.SourceToken}",
                                 innerException: tryParse.Exception));
@@ -105,38 +104,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     sourceToken = null;
                 }
 
-                TryCatch<IDocumentQueryExecutionComponent> tryCreateSource = await tryCreateSourceAsync(sourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(sourceToken);
                 if (!tryCreateSource.Succeeded)
                 {
-                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateSource.Exception);
+                    return TryCatch<IQueryPipelineStage>.FromException(tryCreateSource.Exception);
                 }
 
-                return TryCatch<IDocumentQueryExecutionComponent>.FromResult(
-                    new ClientDistinctDocumentQueryExecutionComponent(
+                return TryCatch<IQueryPipelineStage>.FromResult(
+                    new ClientDistinctQueryPipelineStage(
                         distinctQueryType,
                         tryCreateDistinctMap.Result,
                         tryCreateSource.Result));
             }
 
-            /// <summary>
-            /// Drains a page of results returning only distinct elements.
-            /// </summary>
-            /// <param name="maxElements">The maximum number of items to drain.</param>
-            /// <param name="cancellationToken">The cancellation token.</param>
-            /// <returns>A page of distinct results.</returns>
-            public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
+            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                List<CosmosElement> distinctResults = new List<CosmosElement>();
-                QueryResponseCore sourceResponse = await base.DrainAsync(maxElements, cancellationToken);
-
-                if (!sourceResponse.IsSuccess)
+                await this.inputStage.MoveNextAsync();
+                TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
+                if (tryGetSourcePage.Failed)
                 {
-                    return sourceResponse;
+                    return tryGetSourcePage;
                 }
 
-                foreach (CosmosElement document in sourceResponse.CosmosElements)
+                QueryPage sourcePage = tryGetSourcePage.Result;
+
+                List<CosmosElement> distinctResults = new List<CosmosElement>();
+                foreach (CosmosElement document in sourcePage.Documents)
                 {
                     if (this.distinctMap.Add(document, out UInt128 hash))
                     {
@@ -145,46 +140,44 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 }
 
                 // For clients we write out the continuation token if it's a streaming query.
-                QueryResponseCore queryResponseCore;
+                QueryPage queryPage;
                 if (this.distinctQueryType == DistinctQueryType.Ordered)
                 {
-                    string updatedContinuationToken;
-                    if (this.IsDone)
+                    QueryState state;
+                    if (sourcePage.State != null)
                     {
-                        updatedContinuationToken = null;
+                        string updatedContinuationToken = new DistinctContinuationToken(
+                            sourceToken: ((CosmosString)sourcePage.State.Value).Value,
+                            distinctMapToken: this.distinctMap.GetContinuationToken()).ToString();
+                        state = new QueryState(CosmosString.Create(updatedContinuationToken));
                     }
                     else
                     {
-                        updatedContinuationToken = new DistinctContinuationToken(
-                            sourceToken: sourceResponse.ContinuationToken,
-                            distinctMapToken: this.distinctMap.GetContinuationToken()).ToString();
+                        state = null;
                     }
 
-                    queryResponseCore = QueryResponseCore.CreateSuccess(
-                        result: distinctResults,
-                        continuationToken: updatedContinuationToken,
-                        disallowContinuationTokenMessage: null,
-                        activityId: sourceResponse.ActivityId,
-                        requestCharge: sourceResponse.RequestCharge,
-                        responseLengthBytes: sourceResponse.ResponseLengthBytes);
+                    queryPage = new QueryPage(
+                        documents: distinctResults,
+                        requestCharge: sourcePage.RequestCharge,
+                        activityId: sourcePage.ActivityId,
+                        responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                        cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                        disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                        state: state);
                 }
                 else
                 {
-                    queryResponseCore = QueryResponseCore.CreateSuccess(
-                        result: distinctResults,
-                        continuationToken: null,
-                        disallowContinuationTokenMessage: ClientDistinctDocumentQueryExecutionComponent.DisallowContinuationTokenMessage,
-                        activityId: sourceResponse.ActivityId,
-                        requestCharge: sourceResponse.RequestCharge,
-                        responseLengthBytes: sourceResponse.ResponseLengthBytes);
+                    queryPage = new QueryPage(
+                        documents: distinctResults,
+                        requestCharge: sourcePage.RequestCharge,
+                        activityId: sourcePage.ActivityId,
+                        responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                        cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                        disallowContinuationTokenMessage: ClientDistinctQueryPipelineStage.DisallowContinuationTokenMessage,
+                        state: null);
                 }
 
-                return queryResponseCore;
-            }
-
-            public override CosmosElement GetCosmosElementContinuationToken()
-            {
-                throw new NotImplementedException();
+                return TryCatch<QueryPage>.FromResult(queryPage);
             }
 
             /// <summary>
