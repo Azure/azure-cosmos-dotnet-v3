@@ -56,30 +56,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
             this.isValueQuery = isValueQuery;
         }
 
-        public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+        public static Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             CosmosElement continuationToken,
-            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
-        {
-            if (tryCreateSourceAsync == null)
+            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync) => executionEnvironment switch
             {
-                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
-            }
-
-            TryCatch<IQueryPipelineStage> tryCreateAggregate = executionEnvironment switch
-            {
-                ExecutionEnvironment.Client => await ClientAggregateQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Client => ClientAggregateQueryPipelineStage.TryCreateAsync(
                     aggregates,
                     aliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
                     continuationToken,
                     tryCreateSourceAsync),
-                ExecutionEnvironment.Compute => await ComputeAggregateQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Compute => ComputeAggregateQueryPipelineStage.TryCreateAsync(
                     aggregates,
                     aliasToAggregateType,
                     orderedAliases,
@@ -88,9 +81,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     tryCreateSourceAsync),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };
-
-            return tryCreateAggregate;
-        }
 
         /// <summary>
         /// Struct for getting the payload out of the rewritten projection.

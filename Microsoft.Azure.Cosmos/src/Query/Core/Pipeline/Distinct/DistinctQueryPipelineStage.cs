@@ -36,17 +36,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             this.distinctMap = distinctMap ?? throw new ArgumentNullException(nameof(distinctMap));
         }
 
-        public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+        public static Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosElement requestContinuation,
             Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
             DistinctQueryType distinctQueryType) => executionEnvironment switch
             {
-                ExecutionEnvironment.Client => await ClientDistinctQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Client => ClientDistinctQueryPipelineStage.TryCreateAsync(
                     requestContinuation,
                     tryCreateSourceAsync,
                     distinctQueryType),
-                ExecutionEnvironment.Compute => await ComputeDistinctQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Compute => ComputeDistinctQueryPipelineStage.TryCreateAsync(
                     requestContinuation,
                     tryCreateSourceAsync,
                     distinctQueryType),

@@ -94,7 +94,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Draining aggregates is broken down into two stages
-                if (!this.inputStage.HasMoreResults)
+                QueryPage queryPage;
+                if (await this.inputStage.MoveNextAsync())
+                {
+                    // Stage 1:
+                    // Drain the aggregates fully from all continuations and all partitions
+                    // And return empty pages in the meantime.
+                    TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
+                    if (tryGetSourcePage.Failed)
+                    {
+                        return tryGetSourcePage;
+                    }
+
+                    QueryPage sourcePage = tryGetSourcePage.Result;
+                    foreach (CosmosElement element in sourcePage.Documents)
+                    {
+                        RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
+                            this.isValueQuery,
+                            element);
+                        this.singleGroupAggregator.AddValues(rewrittenAggregateProjections.Payload);
+                    }
+
+                    AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
+                        singleGroupAggregatorContinuationToken: this.singleGroupAggregator.GetCosmosElementContinuationToken(),
+                        sourceContinuationToken: sourcePage.State != null ? sourcePage.State.Value : DoneSourceToken);
+                    QueryState queryState = new QueryState(AggregateContinuationToken.ToCosmosElement(aggregateContinuationToken));
+                    QueryPage emptyPage = new QueryPage(
+                        documents: EmptyResults,
+                        requestCharge: sourcePage.RequestCharge,
+                        activityId: sourcePage.ActivityId,
+                        responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                        cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                        disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                        state: queryState);
+
+                    queryPage = emptyPage;
+                }
+                else
                 {
                     // Stage 2:
                     // Return the final page after draining.
@@ -114,42 +150,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         disallowContinuationTokenMessage: default,
                         state: default);
 
-                    return TryCatch<QueryPage>.FromResult(finalPage);
+                    queryPage = finalPage;
                 }
 
-                // Stage 1:
-                // Drain the aggregates fully from all continuations and all partitions
-                // And return empty pages in the meantime.
-                await this.inputStage.MoveNextAsync();
-                TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
-                if (tryGetSourcePage.Failed)
-                {
-                    return tryGetSourcePage;
-                }
-
-                QueryPage sourcePage = tryGetSourcePage.Result;
-                foreach (CosmosElement element in sourcePage.Documents)
-                {
-                    RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
-                        this.isValueQuery,
-                        element);
-                    this.singleGroupAggregator.AddValues(rewrittenAggregateProjections.Payload);
-                }
-
-                AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
-                    singleGroupAggregatorContinuationToken: this.singleGroupAggregator.GetCosmosElementContinuationToken(),
-                    sourceContinuationToken: sourcePage.State != null ? sourcePage.State.Value : DoneSourceToken);
-                QueryState queryState = new QueryState(AggregateContinuationToken.ToCosmosElement(aggregateContinuationToken));
-                QueryPage emptyPage = new QueryPage(
-                    documents: EmptyResults,
-                    requestCharge: sourcePage.RequestCharge,
-                    activityId: sourcePage.ActivityId,
-                    responseLengthInBytes: sourcePage.ResponseLengthInBytes,
-                    cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
-                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                    state: queryState);
-
-                return TryCatch<QueryPage>.FromResult(emptyPage);
+                return TryCatch<QueryPage>.FromResult(queryPage);
             }
 
             private sealed class AggregateContinuationToken

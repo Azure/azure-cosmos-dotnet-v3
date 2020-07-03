@@ -73,9 +73,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
-                while (this.inputStage.HasMoreResults)
+                while (await this.inputStage.MoveNextAsync())
                 {
-                    await this.inputStage.MoveNextAsync();
                     TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
 
                     if (tryGetPageFromSource.Failed)

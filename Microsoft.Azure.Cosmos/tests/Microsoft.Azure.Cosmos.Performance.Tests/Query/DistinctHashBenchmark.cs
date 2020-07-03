@@ -4,7 +4,7 @@
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
 
     [MemoryDiagnoser]
     public class DistinctHashBenchmark

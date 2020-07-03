@@ -1,7 +1,8 @@
-﻿//------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
+// ------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 {
     using System;
     using System.Collections;
@@ -43,30 +44,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     /// So we know how to aggregate each column. 
     /// At the end the columns are stitched together to make the grouped document.
     /// </summary>
-    internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class GroupByQueryPipelineStage : QueryPipelineStageBase
     {
         private readonly GroupingTable groupingTable;
 
-        protected GroupByDocumentQueryExecutionComponent(
-            IDocumentQueryExecutionComponent source,
+        protected GroupByQueryPipelineStage(
+            IQueryPipelineStage source,
             GroupingTable groupingTable)
             : base(source)
         {
             this.groupingTable = groupingTable ?? throw new ArgumentNullException(nameof(groupingTable));
         }
 
-        public override bool IsDone => this.groupingTable.IsDone;
-
-        public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
-            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
-            bool hasSelectValue)
-        {
-            return default;
-        }
+            bool hasSelectValue) => executionEnvironment switch
+            {
+                ExecutionEnvironment.Client => ClientGroupByQueryPipelineStage.TryCreateAsync(
+                    continuationToken,
+                    tryCreateSourceAsync,
+                    groupByAliasToAggregateType,
+                    orderedAliases,
+                    hasSelectValue),
+                ExecutionEnvironment.Compute => ComputeGroupByQueryPipelineStage.TryCreateAsync(
+                    continuationToken,
+                    tryCreateSourceAsync,
+                    groupByAliasToAggregateType,
+                    orderedAliases,
+                    hasSelectValue),
+                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}"),
+            };
 
         protected void AggregateGroupings(IReadOnlyList<CosmosElement> cosmosElements)
         {
@@ -234,7 +245,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     if (!(continuationToken is CosmosObject groupingTableContinuationToken))
                     {
                         return TryCatch<GroupingTable>.FromException(
-                            new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
+                            new MalformedContinuationTokenException(
+                                $"Invalid GroupingTableContinuationToken"));
                     }
 
                     foreach (KeyValuePair<string, CosmosElement> kvp in groupingTableContinuationToken)
@@ -245,7 +257,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         if (!UInt128.TryParse(key, out UInt128 groupByKey))
                         {
                             return TryCatch<GroupingTable>.FromException(
-                                new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
+                                new MalformedContinuationTokenException(
+                                    $"Invalid GroupingTableContinuationToken"));
                         }
 
                         TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
