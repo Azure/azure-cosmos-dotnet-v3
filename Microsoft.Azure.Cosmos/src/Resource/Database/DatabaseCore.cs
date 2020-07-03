@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -169,7 +170,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.ClientContext.ResponseFactory.CreateContainerResponse(this.GetContainer(containerProperties.Id), response);
         }
-
         public async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             ContainerProperties containerProperties,

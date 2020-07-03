@@ -16,32 +16,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             DateTime? startTime,
             bool startFromBeginning)
         {
-            ChangeFeedRequestOptions.StartFrom startFrom;
-            if (continuationToken != null)
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
+            if (startTime.HasValue)
             {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuationToken);
-            }
-            else if (startTime.HasValue)
-            {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromTime(startTime.Value);
+                requestOptions.StartTime = startTime.Value;
             }
             else if (startFromBeginning)
             {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+                requestOptions.StartTime = ChangeFeedRequestOptions.DateTimeStartFromBeginning;
             }
-            else
-            {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromNow();
-            }
-
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
-            {
-                MaxItemCount = maxItemCount,
-                FeedRange = new FeedRangePartitionKeyRange(partitionKeyRangeId),
-                From = startFrom,
-            };
 
             return new ChangeFeedPartitionKeyResultSetIteratorCore(
+                partitionKeyRangeId: partitionKeyRangeId,
+                continuationToken: continuationToken,
+                maxItemCount: maxItemCount,
                 clientContext: container.ClientContext,
                 container: container,
                 options: requestOptions);
