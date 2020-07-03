@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal string GetResourceAddress()
         {
-            string resourceLink = this.RequestMessage?.RequestUri.OriginalString;
+            string resourceLink = this.RequestMessage?.RequestUriString;
             if (PathsHelper.TryParsePathSegments(
                 resourceLink,
                 out bool isFeed,

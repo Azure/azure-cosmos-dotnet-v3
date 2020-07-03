@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosClient Client => this.ClientContext.Client;
 
-        internal override Uri LinkUri { get; }
+        internal override string LinkUri { get; }
 
         internal override CosmosClientContext ClientContext { get; }
 
@@ -749,7 +749,7 @@ namespace Microsoft.Azure.Cosmos
            CosmosDiagnosticsContext diagnosticsContext,
            Stream streamPayload,
            OperationType operationType,
-           Uri linkUri,
+           string linkUri,
            ResourceType resourceType,
            RequestOptions requestOptions,
            CancellationToken cancellationToken)

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                     requestCharge: 4,
                     errorMessage: null,
                     method: HttpMethod.Post,
-                    requestUri: new Uri("http://localhost.com"),
+                    requestUri: "http://localhost.com",
                     requestSessionToken: nameof(PointOperationStatistics.RequestSessionToken),
                     responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken)))
             };

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -695,7 +696,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
-            Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
+            string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -787,11 +788,11 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
+        private string GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
             if (requestOptions != null && requestOptions.TryGetResourceUri(out Uri resourceUri))
             {
-                return resourceUri;
+                return resourceUri.OriginalString;
             }
 
             switch (operationType)
@@ -812,9 +813,9 @@ namespace Microsoft.Azure.Cosmos
         private string GetResourceSegmentUriWithoutId()
         {
             // StringBuilder is roughly 2x faster than string.Format
-            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.OriginalString.Length +
+            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.Length +
                                                             Paths.DocumentsPathSegment.Length + 2);
-            stringBuilder.Append(this.LinkUri.OriginalString);
+            stringBuilder.Append(this.LinkUri);
             stringBuilder.Append("/");
             stringBuilder.Append(Paths.DocumentsPathSegment);
             stringBuilder.Append("/");
@@ -830,9 +831,10 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <remarks>Would be used when creating an <see cref="Attachment"/>, or when replacing or deleting a item in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
-        private Uri ContcatCachedUriWithId(string resourceId)
+        private string ContcatCachedUriWithId(string resourceId)
         {
-            return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+            Debug.Assert(this.cachedUriSegmentWithoutId.EndsWith("/"));
+            return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
         }
     }
 }

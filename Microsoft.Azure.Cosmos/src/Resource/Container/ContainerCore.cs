@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = containerId;
             this.ClientContext = clientContext;
             this.LinkUri = clientContext.CreateLink(
-                parentLink: database.LinkUri.OriginalString,
+                parentLink: database.LinkUri,
                 uriPathSegment: Paths.CollectionsPathSegment,
                 id: containerId);
 
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Database Database { get; }
 
-        public override Uri LinkUri { get; }
+        public override string LinkUri { get; }
 
         public override CosmosClientContext ClientContext { get; }
 
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             try
             {
-                return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
+                return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri, cancellationToken);
             }
             catch (DocumentClientException ex)
             {
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             OperationType operationType,
-            Uri linkUri,
+            string linkUri,
             ResourceType resourceType,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))

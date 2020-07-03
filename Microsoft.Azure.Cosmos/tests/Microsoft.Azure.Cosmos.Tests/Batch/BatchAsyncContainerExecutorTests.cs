@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
-            Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
+            string link = "/dbs/db/colls/colls";
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
-            Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
+            string link = "/dbs/db/colls/colls";
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
-            Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
+            string link = $"/dbs/db/colls/colls";
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
-            Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
+            string link = "/dbs/db/colls/colls";
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Once);
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
-                requestUri: new Uri("http://localhost"),
+                requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
-                requestUri: new Uri("http://localhost"),
+                requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
-                requestUri: new Uri("http://localhost"),
+                requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
-                requestUri: new Uri("http://localhost"),
+                requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
