@@ -86,24 +86,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
                     {
                         string propertyName = pathToEncrypt.Substring(1);
-                        if (itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                        if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                         {
-                            string value = propertyValue.Value<string>();
-                            byte[] plainText = System.Text.Encoding.UTF8.GetBytes(value);
-
-                            byte[] cipherText = await encryptor.EncryptAsync(
-                                plainText,
-                                encryptionOptions.DataEncryptionKeyId,
-                                encryptionOptions.EncryptionAlgorithm,
-                                cancellationToken);
-
-                            if (cipherText == null)
-                            {
-                                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
-                            }
-
-                            itemJObj[propertyName] = cipherText;
+                            throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
                         }
+
+                        string value = propertyValue.Value<string>();
+                        byte[] plainText = System.Text.Encoding.UTF8.GetBytes(value);
+
+                        byte[] cipherText = await encryptor.EncryptAsync(
+                            plainText,
+                            encryptionOptions.DataEncryptionKeyId,
+                            encryptionOptions.EncryptionAlgorithm,
+                            cancellationToken);
+
+                        if (cipherText == null)
+                        {
+                            throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
+                        }
+
+                        itemJObj[propertyName] = cipherText;
                     }
                 }
             }
@@ -208,14 +210,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject document,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
-            IReadOnlyDictionary<List<string>, string> toEncrypt,
+            IReadOnlyDictionary<List<string>, string> pathsToEncrypt,
             CancellationToken cancellationToken)
         {
             Debug.Assert(document != null);
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            foreach (List<string> paths in toEncrypt.Keys)
+            foreach (List<string> paths in pathsToEncrypt.Keys)
             {
                 foreach (string path in paths)
                 {
@@ -224,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         EncryptionProperties encryptionProperties = new EncryptionProperties(
                                     encryptionFormatVersion: 2,
                                     CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
-                                    toEncrypt[paths],
+                                    pathsToEncrypt[paths],
                                     propertyValue.ToObject<byte[]>(),
                                     path);
 

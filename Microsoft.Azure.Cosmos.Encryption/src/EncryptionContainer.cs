@@ -84,6 +84,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (this.pathsToEncrypt != null)
             {
+                if (partitionKey == null)
+                {
+                    throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
+                }
+
                 Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
                 using (ResponseMessage responseMessage = await this.CreateItemStreamAsync(
                     itemStream,
@@ -729,11 +734,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (this.propertyEncryptionOptions != null)
                 {
+                    string modifiedText = queryDefinition.QueryText;
                     foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
                     {
                         foreach (List<string> paths in this.pathsToEncrypt.Keys)
                         {
-                            string modifiedText = queryDefinition.QueryText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
+                            modifiedText = modifiedText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
+                        }
+                    }
+
+                    foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
+                    {
+                        foreach (List<string> paths in this.pathsToEncrypt.Keys)
+                        {
                             if (SqlQuery.TryParse(modifiedText, out SqlQuery sqlQuery)
                                 && (sqlQuery.WhereClause != null)
                                 && (sqlQuery.WhereClause.FilterExpression != null)
@@ -841,7 +854,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.container.GetFeedRangesAsync(cancellationToken);
         }
-
+        
         public override FeedIterator GetChangeFeedStreamIterator(
                  string continuationToken = null,
                  ChangeFeedRequestOptions changeFeedRequestOptions = null)
@@ -932,6 +945,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     changeFeedRequestOptions),
                 this.ResponseFactory);
         }
+        
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
@@ -1035,6 +1049,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 input.Position = 0;
                 return input;
             }
-        }
+       }
     }
 }

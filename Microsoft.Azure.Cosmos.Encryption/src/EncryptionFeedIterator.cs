@@ -30,12 +30,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
-            IReadOnlyDictionary<List<string>, string> toEncrypt,
+            IReadOnlyDictionary<List<string>, string> pathsToEncrypt,
             Action<DecryptionResult> decryptionResultHandler = null)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
-            this.pathsToEncrypt = toEncrypt;
+            this.pathsToEncrypt = pathsToEncrypt;
             this.decryptionResultHandler = decryptionResultHandler;
         }
 
@@ -178,13 +178,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             QueryDefinition queryWithEncryptedParameters = new QueryDefinition(newqueryDefinition.QueryText);
+            string modifiedText = newqueryDefinition.QueryText;
+
+            foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in newqueryDefinition.Parameters)
+            {
+                modifiedText = modifiedText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
+            }
 
             foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in newqueryDefinition.Parameters)
             {
                 foreach (List<string> paths in this.pathsToEncrypt.Keys)
                 {
-                    string modifiedText = newqueryDefinition.QueryText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
-
                     if (SqlQuery.TryParse(modifiedText, out SqlQuery sqlQuery)
                         && (sqlQuery.WhereClause != null)
                         && (sqlQuery.WhereClause.FilterExpression != null)
@@ -193,8 +197,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     {
                         foreach (string path in paths)
                         {
-                            string rightExpression = expression.RightExpression.ToString();
-                            if (rightExpression.Contains(path.Substring(1)))
+                            string leftExpression = expression.LeftExpression.ToString();
+                            if (leftExpression.Contains(path.Substring(1)))
                             {
                                 byte[] plaintext = System.Text.Encoding.UTF8.GetBytes((string)parameters.Value.Value);
                                 byte[] ciphertext = await this.encryptor.EncryptAsync(
@@ -229,9 +233,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     foreach (string path in paths)
                     {
                         string rightExpression = expression.RightExpression.ToString();
-                        string newExpression = queryText.Replace(rightExpression, "@" + path.Substring(1));
-                        queryDefinition = new QueryDefinition(newExpression);
-                        queryDefinition.WithParameter("@" + path.Substring(1), rightExpression);
+                        string leftExpression = expression.LeftExpression.ToString();
+                        if (leftExpression.Contains(path.Substring(1)))
+                        {
+                            string newExpression = queryText.Replace(rightExpression, "@" + path.Substring(1));
+                            queryDefinition = new QueryDefinition(newExpression);
+                            queryDefinition.WithParameter("@" + path.Substring(1), rightExpression);
+                        }
                     }
                 }
             }

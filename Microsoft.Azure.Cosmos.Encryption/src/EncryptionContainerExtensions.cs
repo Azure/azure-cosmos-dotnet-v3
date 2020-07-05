@@ -42,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor,
             Dictionary<List<string>, string> pathsToEncrypt)
         {
-            List<EncryptionOptions> propertyEncryptionOptions = new List<EncryptionOptions>();
             return new EncryptionContainer(
                 container,
                 encryptor,
@@ -127,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
-                toEncrypt: null,
+                pathsToEncrypt: null,
                 decryptionResultHandler);
         }
     }
