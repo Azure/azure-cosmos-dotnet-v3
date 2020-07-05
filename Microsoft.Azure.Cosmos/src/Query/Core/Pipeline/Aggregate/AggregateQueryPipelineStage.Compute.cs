@@ -30,13 +30,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 // all the work is done in the base constructor.
             }
 
-            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+            public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
                 CosmosElement continuationToken,
-                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
+                MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 AggregateContinuationToken aggregateContinuationToken;
                 if (continuationToken != null)
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 }
                 else
                 {
-                    tryCreateSource = await tryCreateSourceAsync(aggregateContinuationToken.SourceContinuationToken);
+                    tryCreateSource = monadicCreatePipelineStage(aggregateContinuationToken.SourceContinuationToken);
                 }
 
                 if (tryCreateSource.Failed)

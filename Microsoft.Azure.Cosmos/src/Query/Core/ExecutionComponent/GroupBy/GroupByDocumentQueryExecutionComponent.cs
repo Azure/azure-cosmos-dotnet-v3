@@ -57,10 +57,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
         public override bool IsDone => this.groupingTable.IsDone;
 
-        public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static Task<TryCatch<IDocumentQueryExecutionComponent>> MonadicCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
-            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue)

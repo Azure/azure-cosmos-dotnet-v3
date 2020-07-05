@@ -45,11 +45,11 @@
         {
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
-            TryCatch<IQueryPipelineStage> tryCreateSkipQueryPipelineStage = await TakeQueryPipelineStage.TryCreateLimitStageAsync(
+            TryCatch<IQueryPipelineStage> tryCreateSkipQueryPipelineStage = TakeQueryPipelineStage.MonadicCreateLimitStage(
                 executionEnvironment: executionEnvironment,
                 limitCount: takeCount,
                 requestContinuationToken: continuationToken,
-                tryCreateSourceAsync: (CosmosElement continuationToken) => Task.FromResult(TryCatch<IQueryPipelineStage>.FromResult(source)));
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateSkipQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage takeQueryPipelineStage = tryCreateSkipQueryPipelineStage.Result;

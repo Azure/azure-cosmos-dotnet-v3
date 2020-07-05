@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -29,22 +30,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
             this.skipCount = (int)skipCount;
         }
 
-        public static Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+        public static TryCatch<IQueryPipelineStage> MonadicCreate(
             ExecutionEnvironment executionEnvironment,
             int offsetCount,
             CosmosElement continuationToken,
-            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
+            MonadicCreatePipelineStage monadicCreatePipelineStage)
         {
-            Task<TryCatch<IQueryPipelineStage>> tryCreate = executionEnvironment switch
+            TryCatch<IQueryPipelineStage> tryCreate = executionEnvironment switch
             {
-                ExecutionEnvironment.Client => ClientSkipQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Client => ClientSkipQueryPipelineStage.MonadicCreate(
                     offsetCount,
                     continuationToken,
-                    tryCreateSourceAsync),
-                ExecutionEnvironment.Compute => ComputeSkipQueryPipelineStage.TryCreateAsync(
+                    monadicCreatePipelineStage),
+                ExecutionEnvironment.Compute => ComputeSkipQueryPipelineStage.MonadicCreate(
                     offsetCount,
                     continuationToken,
-                    tryCreateSourceAsync),
+                    monadicCreatePipelineStage),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}"),
             };
 

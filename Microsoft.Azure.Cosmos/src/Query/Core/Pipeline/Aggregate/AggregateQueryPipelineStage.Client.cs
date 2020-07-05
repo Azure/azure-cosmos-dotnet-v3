@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
+    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.PipelineFactory;
 
     internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
     {
@@ -25,17 +26,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 // all the work is done in the base constructor.
             }
 
-            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+            public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
                 CosmosElement continuationToken,
-                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
+                MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
-                if (tryCreateSourceAsync == null)
+                if (monadicCreatePipelineStage == null)
                 {
-                    throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+                    throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
                 }
 
                 TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateSingleGroupAggregator.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(continuationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;

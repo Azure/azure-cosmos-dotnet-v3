@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Partitions;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
 
     internal sealed class InMemoryCollectionQueryDataSource : IQueryDataSource
     {

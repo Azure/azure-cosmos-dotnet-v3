@@ -32,14 +32,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             {
             }
 
-            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+            public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
-                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
+                MonadicCreatePipelineStage monadicCreatePipelineStage,
                 DistinctQueryType distinctQueryType)
             {
-                if (tryCreateSourceAsync == null)
+                if (monadicCreatePipelineStage == null)
                 {
-                    throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+                    throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
                 }
 
                 DistinctContinuationToken distinctContinuationToken;
@@ -65,8 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateDistinctMap.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(
-                    distinctContinuationToken.SourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(distinctContinuationToken.SourceToken);
                 if (!tryCreateSource.Succeeded)
                 {
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateSource.Exception);

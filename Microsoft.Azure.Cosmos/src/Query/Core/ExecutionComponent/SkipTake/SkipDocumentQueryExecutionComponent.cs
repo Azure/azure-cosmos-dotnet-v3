@@ -26,11 +26,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             this.skipCount = (int)skipCount;
         }
 
-        public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static Task<TryCatch<IDocumentQueryExecutionComponent>> MonadicCreateAsync(
             ExecutionEnvironment executionEnvironment,
             int offsetCount,
             CosmosElement continuationToken,
-            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage)
         {
             return default;
         }

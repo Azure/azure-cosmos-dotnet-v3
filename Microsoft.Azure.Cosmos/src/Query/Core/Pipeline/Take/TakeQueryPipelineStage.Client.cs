@@ -29,19 +29,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 this.takeEnum = takeEnum;
             }
 
-            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateLimitStageAsync(
+            public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
                 int limitCount,
                 CosmosElement requestContinuationToken,
-                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
+                MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (limitCount < 0)
                 {
                     throw new ArgumentException($"{nameof(limitCount)}: {limitCount} must be a non negative number.");
                 }
 
-                if (tryCreateSourceAsync == null)
+                if (monadicCreatePipelineStage == null)
                 {
-                    throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+                    throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
                 }
 
                 LimitContinuationToken limitContinuationToken;
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(sourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -99,19 +99,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateTopStageAsync(
+            public static TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
                 int topCount,
                 CosmosElement requestContinuationToken,
-                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
+                MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (topCount < 0)
                 {
                     throw new ArgumentException($"{nameof(topCount)}: {topCount} must be a non negative number.");
                 }
 
-                if (tryCreateSourceAsync == null)
+                if (monadicCreatePipelineStage == null)
                 {
-                    throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+                    throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
                 }
 
                 TopContinuationToken topContinuationToken;
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(sourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;

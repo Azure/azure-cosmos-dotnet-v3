@@ -25,10 +25,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             this.distinctMap = distinctMap ?? throw new ArgumentNullException(nameof(distinctMap));
         }
 
-        public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static Task<TryCatch<IDocumentQueryExecutionComponent>> MonadicCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosElement requestContinuation,
-            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage,
             DistinctQueryType distinctQueryType)
         {
             return default;

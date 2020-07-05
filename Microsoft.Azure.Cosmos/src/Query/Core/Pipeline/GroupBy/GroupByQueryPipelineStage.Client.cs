@@ -27,9 +27,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             {
             }
 
-            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+            public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
-                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
+                MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateGroupingTable.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(requestContinuation);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;

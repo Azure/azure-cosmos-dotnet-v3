@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -22,37 +23,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             this.takeCount = takeCount;
         }
 
-        public static Task<TryCatch<IQueryPipelineStage>> TryCreateLimitStageAsync(
+        public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
             ExecutionEnvironment executionEnvironment,
             int limitCount,
             CosmosElement requestContinuationToken,
-            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync) => executionEnvironment switch
+            MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
             {
-                ExecutionEnvironment.Client => ClientTakeQueryPipelineStage.TryCreateLimitStageAsync(
+                ExecutionEnvironment.Client => ClientTakeQueryPipelineStage.MonadicCreateLimitStage(
                     limitCount,
                     requestContinuationToken,
-                    tryCreateSourceAsync),
-                ExecutionEnvironment.Compute => ComputeTakeQueryPipelineStage.TryCreateLimitStageAsync(
+                    monadicCreatePipelineStage),
+                ExecutionEnvironment.Compute => ComputeTakeQueryPipelineStage.MonadicCreateLimitStage(
                     limitCount,
                     requestContinuationToken,
-                    tryCreateSourceAsync),
+                    monadicCreatePipelineStage),
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };
 
-        public static Task<TryCatch<IQueryPipelineStage>> TryCreateTopStageAsync(
+        public static TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
             ExecutionEnvironment executionEnvironment,
             int limitCount,
             CosmosElement requestContinuationToken,
-            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync) => executionEnvironment switch
+            MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
             {
-                ExecutionEnvironment.Client => ClientTakeQueryPipelineStage.TryCreateTopStageAsync(
+                ExecutionEnvironment.Client => ClientTakeQueryPipelineStage.MonadicCreateTopStage(
                     limitCount,
                     requestContinuationToken,
-                    tryCreateSourceAsync),
-                ExecutionEnvironment.Compute => ComputeTakeQueryPipelineStage.TryCreateTopStageAsync(
+                    monadicCreatePipelineStage),
+                ExecutionEnvironment.Compute => ComputeTakeQueryPipelineStage.MonadicCreateTopStage(
                     limitCount,
                     requestContinuationToken,
-                    tryCreateSourceAsync),
+                    monadicCreatePipelineStage),
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };
     }

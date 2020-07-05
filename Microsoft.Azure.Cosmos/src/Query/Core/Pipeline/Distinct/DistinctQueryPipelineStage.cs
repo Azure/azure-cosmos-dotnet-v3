@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 {
     using System;
-    using System.Threading.Tasks;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -36,19 +36,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             this.distinctMap = distinctMap ?? throw new ArgumentNullException(nameof(distinctMap));
         }
 
-        public static Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+        public static TryCatch<IQueryPipelineStage> MonadicCreate(
             ExecutionEnvironment executionEnvironment,
             CosmosElement requestContinuation,
-            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
+            MonadicCreatePipelineStage monadicCreatePipelineStage,
             DistinctQueryType distinctQueryType) => executionEnvironment switch
             {
-                ExecutionEnvironment.Client => ClientDistinctQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Client => ClientDistinctQueryPipelineStage.MonadicCreate(
                     requestContinuation,
-                    tryCreateSourceAsync,
+                    monadicCreatePipelineStage,
                     distinctQueryType),
-                ExecutionEnvironment.Compute => ComputeDistinctQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Compute => ComputeDistinctQueryPipelineStage.MonadicCreate(
                     requestContinuation,
-                    tryCreateSourceAsync,
+                    monadicCreatePipelineStage,
                     distinctQueryType),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };

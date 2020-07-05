@@ -42,11 +42,11 @@
         {
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
-            TryCatch<IQueryPipelineStage> tryCreateDistinctQueryPipelineStage = await DistinctQueryPipelineStage.TryCreateAsync(
+            TryCatch<IQueryPipelineStage> tryCreateDistinctQueryPipelineStage = DistinctQueryPipelineStage.MonadicCreate(
                 executionEnvironment: executionEnvironment,
                 requestContinuation: continuationToken,
                 distinctQueryType: distinctQueryType,
-                tryCreateSourceAsync: (CosmosElement continuationToken) => Task.FromResult(TryCatch<IQueryPipelineStage>.FromResult(source)));
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateDistinctQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage distinctQueryPipelineStage = tryCreateDistinctQueryPipelineStage.Result;

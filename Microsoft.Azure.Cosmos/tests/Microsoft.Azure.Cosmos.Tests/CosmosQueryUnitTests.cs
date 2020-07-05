@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 AggregateOperator.Sum
             };
 
-            components.Add((await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+            components.Add((await AggregateDocumentQueryExecutionComponent.MonadicCreateAsync(
                 ExecutionEnvironment.Client,
                 operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
@@ -320,25 +320,25 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 func)).Result);
 
-            components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+            components.Add((await DistinctDocumentQueryExecutionComponent.MonadicCreateAsync(
                 ExecutionEnvironment.Client,
                 null,
                 func,
                 DistinctQueryType.Ordered)).Result);
 
-            components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
+            components.Add((await SkipDocumentQueryExecutionComponent.MonadicCreateAsync(
                 ExecutionEnvironment.Client,
                 5,
                 null,
                 func)).Result);
 
-            components.Add((await TakeDocumentQueryExecutionComponent.TryCreateAsync(
+            components.Add((await TakeDocumentQueryExecutionComponent.MonadicCreateAsync(
                 ExecutionEnvironment.Client,
                 5,
                 null,
                 func)).Result);
 
-            components.Add((await TakeDocumentQueryExecutionComponent.TryCreateAsync(
+            components.Add((await TakeDocumentQueryExecutionComponent.MonadicCreateAsync(
                 ExecutionEnvironment.Client,
                 5,
                 null,

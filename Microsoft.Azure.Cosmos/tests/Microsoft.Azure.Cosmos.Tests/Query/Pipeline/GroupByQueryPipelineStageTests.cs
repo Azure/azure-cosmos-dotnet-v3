@@ -52,10 +52,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
-            TryCatch<IQueryPipelineStage> tryCreateGroupByStage = await GroupByQueryPipelineStage.TryCreateAsync(
+            TryCatch<IQueryPipelineStage> tryCreateGroupByStage = GroupByQueryPipelineStage.MonadicCreate(
                 executionEnvironment: executionEnvironment,
                 continuationToken: continuationToken,
-                tryCreateSourceAsync: (CosmosElement continuationToken) => Task.FromResult(TryCatch<IQueryPipelineStage>.FromResult(source)),
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source),
                 groupByAliasToAggregateType: groupByAliasToAggregateType,
                 orderedAliases: orderedAliases,
                 hasSelectValue: hasSelectValue);

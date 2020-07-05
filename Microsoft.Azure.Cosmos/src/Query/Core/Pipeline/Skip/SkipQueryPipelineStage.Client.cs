@@ -25,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 // Work is done in base constructor.
             }
 
-            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+            public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 int offsetCount,
                 CosmosElement continuationToken,
-                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync)
+                MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
-                if (tryCreateSourceAsync == null)
+                if (monadicCreatePipelineStage == null)
                 {
-                    throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+                    throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
                 }
 
                 OffsetContinuationToken offsetContinuationToken;
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = await tryCreateSourceAsync(sourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;

@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
+    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.PipelineFactory;
 
     /// <summary>
     /// Stage that is able to aggregate local aggregates from multiple continuations and partitions.
@@ -56,29 +58,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
             this.isValueQuery = isValueQuery;
         }
 
-        public static Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+        public static TryCatch<IQueryPipelineStage> MonadicCreate(
             ExecutionEnvironment executionEnvironment,
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             CosmosElement continuationToken,
-            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync) => executionEnvironment switch
+            MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
             {
-                ExecutionEnvironment.Client => ClientAggregateQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Client => ClientAggregateQueryPipelineStage.MonadicCreate(
                     aggregates,
                     aliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
                     continuationToken,
-                    tryCreateSourceAsync),
-                ExecutionEnvironment.Compute => ComputeAggregateQueryPipelineStage.TryCreateAsync(
+                    monadicCreatePipelineStage),
+                ExecutionEnvironment.Compute => ComputeAggregateQueryPipelineStage.MonadicCreate(
                     aggregates,
                     aliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
                     continuationToken,
-                    tryCreateSourceAsync),
+                    monadicCreatePipelineStage),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };
 

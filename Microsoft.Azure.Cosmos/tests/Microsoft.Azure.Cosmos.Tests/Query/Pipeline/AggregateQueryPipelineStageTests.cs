@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -101,14 +102,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
-            TryCatch<IQueryPipelineStage> tryCreateAggregateQueryPipelineStage = await AggregateQueryPipelineStage.TryCreateAsync(
+            TryCatch<IQueryPipelineStage> tryCreateAggregateQueryPipelineStage = AggregateQueryPipelineStage.MonadicCreate(
                 executionEnvironment: executionEnvironment,
                 aggregates: aggregates,
                 aliasToAggregateType: aliasToAggregateType,
                 orderedAliases: orderedAliases,
                 hasSelectValue: hasSelectValue,
                 continuationToken: continuationToken,
-                tryCreateSourceAsync: (CosmosElement continuationToken) => Task.FromResult(TryCatch<IQueryPipelineStage>.FromResult(source)));
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateAggregateQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage aggregateQueryPipelineStage = tryCreateAggregateQueryPipelineStage.Result;

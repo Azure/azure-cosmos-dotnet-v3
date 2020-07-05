@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateAsync(
+        public static async Task<TryCatch<CosmosQueryExecutionContext>> MonadicCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateOrderByComponentAsync(CosmosElement continuationToken)
             {
-                return CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
+                return CosmosOrderByItemQueryExecutionContext.MonadicCreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateParallelComponentAsync(CosmosElement continuationToken)
             {
-                return CosmosParallelItemQueryExecutionContext.TryCreateAsync(
+                return CosmosParallelItemQueryExecutionContext.MonadicCreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
@@ -184,42 +184,42 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (queryInfo.HasAggregates && !queryInfo.HasGroupBy)
             {
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await AggregateDocumentQueryExecutionComponent.MonadicCreateAsync(
                         executionEnvironment,
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
                         queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue,
                         continuationToken,
-                        tryCreateSourceAsync);
+                        monadicCreatePipelineStage);
                 };
             }
 
             if (queryInfo.HasDistinct)
             {
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await DistinctDocumentQueryExecutionComponent.MonadicCreateAsync(
                         executionEnvironment,
                         continuationToken,
-                        tryCreateSourceAsync,
+                        monadicCreatePipelineStage,
                         queryInfo.DistinctType);
                 };
             }
 
             if (queryInfo.HasGroupBy)
             {
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await GroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await GroupByDocumentQueryExecutionComponent.MonadicCreateAsync(
                         executionEnvironment,
                         continuationToken,
-                        tryCreateSourceAsync,
+                        monadicCreatePipelineStage,
                         queryInfo.GroupByAliasToAggregateType,
                         queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue);
@@ -228,40 +228,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (queryInfo.Offset.HasValue)
             {
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await SkipDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await SkipDocumentQueryExecutionComponent.MonadicCreateAsync(
                         executionEnvironment,
                         queryInfo.Offset.Value,
                         continuationToken,
-                        tryCreateSourceAsync);
+                        monadicCreatePipelineStage);
                 };
             }
 
             if (queryInfo.Limit.HasValue)
             {
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await TakeDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await TakeDocumentQueryExecutionComponent.MonadicCreateAsync(
                         executionEnvironment,
                         queryInfo.Limit.Value,
                         continuationToken,
-                        tryCreateSourceAsync);
+                        monadicCreatePipelineStage);
                 };
             }
 
             if (queryInfo.Top.HasValue)
             {
-                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> monadicCreatePipelineStage = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await TakeDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await TakeDocumentQueryExecutionComponent.MonadicCreateAsync(
                         executionEnvironment,
                         queryInfo.Top.Value,
                         continuationToken,
-                        tryCreateSourceAsync);
+                        monadicCreatePipelineStage);
                 };
             }
 
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 testSettings: initParams.TestSettings);
 
             // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.
-            return (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
+            return (await CosmosParallelItemQueryExecutionContext.MonadicCreateAsync(
                 queryContext,
                 initParams,
                 requestContinuationToken,

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
 
     internal sealed partial class CosmosParallelItemQueryExecutionContext : CosmosCrossPartitionQueryExecutionContext
     {
-        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> MonadicCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             CosmosElement requestContinuationToken,

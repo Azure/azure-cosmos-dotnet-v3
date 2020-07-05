@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
                 testSettings: inputParameters.TestInjections);
 
-            return await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
+            return await PipelinedDocumentQueryExecutionContext.MonadicCreateAsync(
                 inputParameters.ExecutionEnvironment,
                 cosmosQueryContext,
                 initParams,

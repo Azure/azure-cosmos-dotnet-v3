@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -56,23 +57,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             this.groupingTable = groupingTable ?? throw new ArgumentNullException(nameof(groupingTable));
         }
 
-        public static Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+        public static TryCatch<IQueryPipelineStage> MonadicCreate(
             ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
-            Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
+            MonadicCreatePipelineStage monadicCreatePipelineStage,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue) => executionEnvironment switch
             {
-                ExecutionEnvironment.Client => ClientGroupByQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Client => ClientGroupByQueryPipelineStage.MonadicCreate(
                     continuationToken,
-                    tryCreateSourceAsync,
+                    monadicCreatePipelineStage,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue),
-                ExecutionEnvironment.Compute => ComputeGroupByQueryPipelineStage.TryCreateAsync(
+                ExecutionEnvironment.Compute => ComputeGroupByQueryPipelineStage.MonadicCreate(
                     continuationToken,
-                    tryCreateSourceAsync,
+                    monadicCreatePipelineStage,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue),

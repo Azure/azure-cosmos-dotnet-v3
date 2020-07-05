@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             {
             }
 
-            public static async Task<TryCatch<IQueryPipelineStage>> TryCreateAsync(
+            public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
-                Func<CosmosElement, Task<TryCatch<IQueryPipelineStage>>> tryCreateSourceAsync,
+                MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 }
                 else
                 {
-                    tryCreateSource = await tryCreateSourceAsync(groupByContinuationToken.SourceContinuationToken);
+                    tryCreateSource = monadicCreatePipelineStage(groupByContinuationToken.SourceContinuationToken);
                 }
 
                 if (!tryCreateSource.Succeeded)
