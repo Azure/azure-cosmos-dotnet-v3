@@ -115,7 +115,7 @@
                 .GetChangeFeedStreamIterator(
                     changeFeedRequestOptions: new ChangeFeedRequestOptions()
                     {
-                        From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                        StartTime = DateTime.MinValue.ToUniversalTime()
                     }) as ChangeFeedIteratorCore;
 
             while (feedIterator.HasMoreResults)
