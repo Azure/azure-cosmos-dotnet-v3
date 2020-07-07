@@ -82,31 +82,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         /// <summary>
-        /// This test checks that when the ContinuationToken is null,
-        /// we send the StartFromBeginning flag,
-        /// but since there is no documents,
-        /// it returns 0
+        /// This test checks that when the ContinuationToken is null, we send the StartFromBeginning flag, but since there is no documents, it returns 0
         /// </summary>
         /// <returns></returns>
         [TestMethod]
         public async Task CountPendingDocuments()
         {
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder(
-                    processorName: "test",
-                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                    {
-                        return Task.CompletedTask;
-                    })
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                {
+                    return Task.CompletedTask;
+                })
                 .WithInstanceName("random")
-                .WithLeaseContainer(this.LeaseContainer)
-                .Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
-
             // Letting processor initialize
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-
             // Inserting documents
             foreach (int id in Enumerable.Range(0, 10))
             {
@@ -119,16 +111,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .GetChangeFeedEstimatorBuilder(
-                    processorName: "test",
-                    estimationDelegate: (long estimation, CancellationToken token) =>
-                    {
-                        receivedEstimation = estimation;
-                        return Task.CompletedTask;
-                    }, TimeSpan.FromSeconds(1))
-                .WithLeaseContainer(this.LeaseContainer)
-                .Build();
+                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                {
+                    receivedEstimation = estimation;
+                    return Task.CompletedTask;
+                }, TimeSpan.FromSeconds(1))
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
+            
             // Inserting more documents
             foreach (int id in Enumerable.Range(11, 10))
             {

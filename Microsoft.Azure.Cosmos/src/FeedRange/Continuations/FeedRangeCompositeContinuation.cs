@@ -35,6 +35,13 @@ namespace Microsoft.Azure.Cosmos
             this.CompositeContinuationTokens = new Queue<CompositeContinuationToken>();
         }
 
+        public override void Accept(
+            FeedRangeVisitor visitor,
+            Action<RequestMessage, string> fillContinuation)
+        {
+            visitor.Visit(this, fillContinuation);
+        }
+
         public FeedRangeCompositeContinuation(
             string containerRid,
             FeedRangeInternal feedRange,
@@ -92,21 +99,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override string GetContinuation() => this.CurrentToken?.Token;
-
-        public override FeedRange GetFeedRange()
-        {
-            if (this.FeedRange is FeedRangePartitionKeyRange)
-            {
-                return this.FeedRange;
-            }
-
-            if (this.CurrentToken != null)
-            {
-                return new FeedRangeEPK(this.CurrentToken.Range);
-            }
-
-            return null;
-        }
 
         public override string ToString()
         {
@@ -236,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return false;
             }
-        }
+        }    
 
         private static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
             string minInclusive,
@@ -260,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
                 // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
                 this.CompositeContinuationTokens.Enqueue(recentToken);
             }
-
+            
             this.CurrentToken = this.CompositeContinuationTokens.Count > 0 ? this.CompositeContinuationTokens.Peek() : null;
         }
 
@@ -324,7 +316,5 @@ namespace Microsoft.Azure.Cosmos
 
             return keyRanges;
         }
-
-        public override void Accept(IFeedRangeContinuationVisitor visitor) => visitor.Visit(this);
     }
 }
