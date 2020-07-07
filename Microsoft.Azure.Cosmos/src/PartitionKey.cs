@@ -104,11 +104,11 @@ namespace Microsoft.Azure.Cosmos
         {
             if (value == null)
             {
-                this.InternalKey = PartitionKey.NullPartitionKeyInternal;
+                this.InternalKey = PartitionKey.None.InternalKey;
             }
             else
             {
-                object[] valueArray = value.partitionKeyObjects.ToArray();
+                object[] valueArray = value.partitionKeyValues.ToArray();
                 this.InternalKey = new Documents.PartitionKey(valueArray).InternalKey;
             }
             this.IsNone = false;

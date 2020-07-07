@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
                         throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
                     }
 
-                    partitionKeyValueList.AddUndefined();
+                    partitionKeyValueList.AddNullValue();
                     break;
 
                 default:

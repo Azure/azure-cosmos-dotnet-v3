@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public sealed class PartitionKeyValueList
     {
-        private readonly IList<object> partitionKeyValues;
+        internal readonly ICollection<object> partitionKeyValues;
 
         /// <summary>
         /// Creates a new partition key value list object.
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (val == null)
             {
-                this.AddUndefined();
+                this.AddNullValue();
             }
             else
             {
@@ -59,13 +59,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Adds an Undefined partition key to the list.
+        /// Adds a partition key value which is null
         /// </summary>
-        public void AddUndefined()
+        public void AddNullValue()
+        {
+            this.partitionKeyValues.Add(null);
+        }
+
+        internal void AddUndefinedValue()
         {
             this.partitionKeyValues.Add(Undefined.Value);
         }
 
-        internal IReadOnlyCollection<object> partitionKeyObjects => (IReadOnlyCollection<object>)this.partitionKeyValues;
     }
 }
