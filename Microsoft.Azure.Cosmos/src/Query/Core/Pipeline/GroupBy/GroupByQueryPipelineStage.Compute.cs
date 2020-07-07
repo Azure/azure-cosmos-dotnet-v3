@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 if ((groupByContinuationToken.SourceContinuationToken is CosmosString sourceContinuationToken)
                     && (sourceContinuationToken.Value == ComputeGroupByQueryPipelineStage.DoneReadingGroupingsContinuationToken))
                 {
-                    tryCreateSource = TryCatch<IQueryPipelineStage>.FromResult(FinishedQueryPipelineStage.Value);
+                    tryCreateSource = TryCatch<IQueryPipelineStage>.FromResult(EmptyQueryPipelineStage.Value);
                 }
                 else
                 {

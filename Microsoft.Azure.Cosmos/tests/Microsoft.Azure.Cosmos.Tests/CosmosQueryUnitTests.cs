@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -285,13 +286,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 diagnosticsContext: new CosmosDiagnosticsContextCore(),
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
-            CosmosQueryExecutionContext context = CosmosQueryExecutionContextFactory.Create(
+            IQueryPipelineStage pipelineStage = CosmosQueryExecutionContextFactory.Create(
                 cosmosQueryContext,
                 inputParameters);
 
-            QueryResponseCore queryResponse = await context.ExecuteNextAsync(cancellationtoken);
-            Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsTrue(queryResponse.CosmosException.ToString().Contains(exceptionMessage), "response error message did not contain the proper substring.");
+            Assert.IsTrue(await pipelineStage.MoveNextAsync());
+            TryCatch<QueryPage> tryGetPage = pipelineStage.Current;
+            Assert.IsTrue(tryGetPage.Failed);
+            Assert.AreEqual(HttpStatusCode.BadRequest, (tryGetPage.Exception as CosmosException).StatusCode);
+            Assert.IsTrue(
+                (tryGetPage.Exception as CosmosException).ToString().Contains(exceptionMessage),
+                "response error message did not contain the proper substring.");
         }
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()

@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 TryCatch<IQueryPipelineStage> tryCreateSource;
                 if (aggregateContinuationToken.SourceContinuationToken is CosmosString stringToken && (stringToken.Value == DoneSourceToken.Value))
                 {
-                    tryCreateSource = TryCatch<IQueryPipelineStage>.FromResult(FinishedQueryPipelineStage.Value);
+                    tryCreateSource = TryCatch<IQueryPipelineStage>.FromResult(EmptyQueryPipelineStage.Value);
                 }
                 else
                 {
