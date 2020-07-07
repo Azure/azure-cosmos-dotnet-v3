@@ -3,8 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AssemblyName>Cosmos.Samples.ChangeFeedPull</AssemblyName>
-    <RootNamespace>Cosmos.Samples.ChangeFeedPull</RootNamespace>
+    <AssemblyName>Cosmos.Samples.WriteWorkload</AssemblyName>
+    <RootNamespace>Cosmos.Samples.WriteWorkload</RootNamespace>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
