@@ -94,13 +94,15 @@
             await container.ReplaceItemAsync<Item>(item, item.Id, new PartitionKey(item.Id));
 
             // Querying
-            FeedIterator<Item> query = container.GetItemQueryIterator<Item>(new QueryDefinition("SELECT * FROM c"), requestOptions: new QueryRequestOptions() { MaxConcurrency = 1});
             List<Item> results = new List<Item>();
-            while (query.HasMoreResults)
+            using (FeedIterator<Item> query = container.GetItemQueryIterator<Item>(new QueryDefinition("SELECT * FROM c"), requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 }))
             {
-                FeedResponse<Item> response = await query.ReadNextAsync();
+                while (query.HasMoreResults)
+                {
+                    FeedResponse<Item> response = await query.ReadNextAsync();
 
-                results.AddRange(response.ToList());
+                    results.AddRange(response.ToList());
+                }
             }
 
             // Read Item

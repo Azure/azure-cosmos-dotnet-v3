@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for the conflict.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <seealso cref="ConflictProperties"/>
         public abstract Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
@@ -32,17 +33,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The current state of the item associated with the conflict.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <seealso cref="ConflictProperties"/>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
-        /// while (conflictIterator.HasMoreResults)
+        /// using (FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator())
         /// {
-        ///     foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
+        ///     while (conflictIterator.HasMoreResults)
         ///     {
-        ///         MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
-        ///         ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///         foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
+        ///         {
+        ///             MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
+        ///             ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -58,17 +62,20 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="conflict">The conflict for which we want to read the content of.</param>
         /// <returns>The content of the conflict.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <seealso cref="ConflictProperties"/>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
-        /// while (conflictIterator.HasMoreResults)
+        /// using (FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator())
         /// {
-        ///     foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
+        ///     while (conflictIterator.HasMoreResults)
         ///     {
-        ///         MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
-        ///         ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///         foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
+        ///         {
+        ///             MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
+        ///             ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -83,16 +90,19 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the conflicts.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> feedIterator = conflicts.GetConflictQueryIterator();
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<ConflictProperties> feedIterator = conflicts.GetConflictQueryIterator())
         /// {
-        ///     FeedResponse<ConflictProperties> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var conflict in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(conflict);
+        ///         FeedResponse<ConflictProperties> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var conflict in response)
+        ///         {
+        ///             Console.WriteLine(conflict);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -110,23 +120,26 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the conflicts.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// Example on how to fully drain the query results.
         /// <code language="c#">
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select * From c where c._rid = @rid")
         ///               .WithParameter("@rid", "TheRidValue");
-        /// FeedIterator feedIterator = this.CosmosClient.GetConflictQueryStreamIterator(
-        ///     queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.CosmosClient.GetConflictQueryStreamIterator(
+        ///     queryDefinition))
         /// {
-        ///     // Stream iterator returns a response with status for errors
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario. 
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///         }
         ///     }
         /// }
@@ -145,16 +158,19 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the conflicts.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator())
         /// {
-        ///     FeedResponse<ConflictProperties> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var conflict in response)
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(conflict);
+        ///         FeedResponse<ConflictProperties> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var conflict in response)
+        ///         {
+        ///             Console.WriteLine(conflict);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -172,21 +188,24 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the conflicts.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// Example on how to fully drain the query results.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator feedIterator = this.CosmosClient.GetConflictQueryStreamIterator(
-        ///     "select * From c where c._rid = \"TheRidValue\"");
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.CosmosClient.GetConflictQueryStreamIterator(
+        ///     "select * From c where c._rid = \"TheRidValue\""))
         /// {
-        ///     // Stream iterator returns a response with status for errors
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario. 
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///         }
         ///     }
         /// }

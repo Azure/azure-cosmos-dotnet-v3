@@ -208,22 +208,24 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 if (binaryId != null || effectivePartitionKey != null || ttlInSeconds.HasValue)
                 {
-                    requestOptions.Properties = new Dictionary<string, object>();
+                    Dictionary<string, object> properties = new Dictionary<string, object>();
 
                     if (binaryId != null)
                     {
-                        requestOptions.Properties.Add(WFConstants.BackendHeaders.BinaryId, binaryId);
+                        properties.Add(WFConstants.BackendHeaders.BinaryId, binaryId);
                     }
 
                     if (effectivePartitionKey != null)
                     {
-                        requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, effectivePartitionKey);
+                        properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, effectivePartitionKey);
                     }
 
                     if (ttlInSeconds.HasValue)
                     {
-                        requestOptions.Properties.Add(WFConstants.BackendHeaders.TimeToLiveInSeconds, ttlInSeconds.ToString());
+                        properties.Add(WFConstants.BackendHeaders.TimeToLiveInSeconds, ttlInSeconds.ToString());
                     }
+
+                    requestOptions.Properties = properties;
                 }
             }
 

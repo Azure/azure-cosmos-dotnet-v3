@@ -835,7 +835,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        private static void PerformRoundTrip(SerializationFormat sourceFormat, SerializationFormat destinationFormat, string json)
+        private static void PerformRoundTrip(
+            SerializationFormat sourceFormat,
+            SerializationFormat destinationFormat,
+            string json)
         {
             IJsonReader reader;
             switch (sourceFormat)
@@ -888,18 +891,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         writer = JsonWriter.Create(JsonSerializationFormat.Text);
                         jsonStringDictionary = null;
                         break;
+
                     case SerializationFormat.Binary:
                         writer = JsonWriter.Create(JsonSerializationFormat.Binary);
                         jsonStringDictionary = null;
                         break;
+
                     case SerializationFormat.NewtonsoftText:
                         writer = NewtonsoftToCosmosDBWriter.CreateTextWriter();
                         jsonStringDictionary = null;
                         break;
+
                     case SerializationFormat.BinaryWithDictionaryEncoding:
                         jsonStringDictionary = new JsonStringDictionary(capacity: 128);
                         writer = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
                         break;
+
                     default:
                         throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}");
                 }
@@ -911,7 +918,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         break;
 
                     case IJsonNavigator sourceNavigator:
-                        writer.WriteJsonNode(sourceNavigator, sourceNavigator.GetRootNode());
+                        sourceNavigator.WriteTo(sourceNavigator.GetRootNode(), writer);
                         break;
 
                     default:
@@ -925,9 +932,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     case JsonSerializationFormat.Text:
                         result = Utf8String.UnsafeFromUtf8BytesNoValidation(writer.GetResult()).ToString();
                         break;
+
                     case JsonSerializationFormat.Binary:
                         result = JsonTestUtils.ConvertBinaryToText(writer.GetResult(), jsonStringDictionary);
                         break;
+
                     default:
                         throw new ArgumentException();
                 }

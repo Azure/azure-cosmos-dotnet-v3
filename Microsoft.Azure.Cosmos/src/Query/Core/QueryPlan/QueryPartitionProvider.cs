@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;

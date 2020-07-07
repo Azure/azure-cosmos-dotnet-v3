@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 
-            writer.WriteJsonNode(navigator, navigator.GetRootNode());
+            navigator.WriteTo(navigator.GetRootNode(), writer);
         }
 
         public enum SerializationFormat
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                 ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 1024);
                 ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
 
                 return new CurratedDocsPayload(

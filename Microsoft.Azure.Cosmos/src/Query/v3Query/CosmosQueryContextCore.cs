@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
-            Uri resourceLink,
+            string resourceLink,
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -77,22 +77,22 @@ namespace Microsoft.Azure.Cosmos.Query
             }    
 
             return this.QueryClient.ExecuteItemQueryAsync(
-                           resourceUri: this.ResourceLink,
-                           resourceType: this.ResourceTypeEnum,
-                           operationType: this.OperationTypeEnum,
-                           clientQueryCorrelationId: this.CorrelatedActivityId,
-                           requestOptions: requestOptions,
-                           sqlQuerySpec: querySpecForInit,
-                           continuationToken: continuationToken,
-                           partitionKeyRange: partitionKeyRange,
-                           isContinuationExpected: isContinuationExpected,
-                           pageSize: pageSize,
-                           queryPageDiagnostics: this.AddQueryPageDiagnostic,
-                           cancellationToken: cancellationToken);
+                resourceUri: this.ResourceLink,
+                resourceType: this.ResourceTypeEnum,
+                operationType: this.OperationTypeEnum,
+                clientQueryCorrelationId: this.CorrelatedActivityId,
+                requestOptions: requestOptions,
+                sqlQuerySpec: querySpecForInit,
+                continuationToken: continuationToken,
+                partitionKeyRange: partitionKeyRange,
+                isContinuationExpected: isContinuationExpected,
+                pageSize: pageSize,
+                queryPageDiagnostics: this.AddQueryPageDiagnostic,
+                cancellationToken: cancellationToken);
         }
 
         internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,

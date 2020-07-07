@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.Performance.Tests
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -111,57 +115,6 @@
                         throw new ArgumentException("$Unknown token type.");
                 }
             }
-        }
-
-        public static void DrainNavigator(IJsonNavigator jsonNavigator)
-        {
-            if (jsonNavigator == null)
-            {
-                throw new ArgumentNullException(nameof(jsonNavigator));
-            }
-
-            static void Navigate(IJsonNavigator navigator, IJsonNavigatorNode node)
-            {
-                switch (navigator.GetNodeType(node))
-                {
-                    case JsonNodeType.Null:
-                    case JsonNodeType.False:
-                    case JsonNodeType.True:
-                    case JsonNodeType.Number64:
-                    case JsonNodeType.Int8:
-                    case JsonNodeType.Int16:
-                    case JsonNodeType.Int32:
-                    case JsonNodeType.Int64:
-                    case JsonNodeType.UInt32:
-                    case JsonNodeType.Float32:
-                    case JsonNodeType.Float64:
-                    case JsonNodeType.String:
-                    case JsonNodeType.Binary:
-                    case JsonNodeType.Guid:
-                        break;
-
-                    case JsonNodeType.Array:
-                        foreach (IJsonNavigatorNode arrayItem in navigator.GetArrayItems(node))
-                        {
-                            Navigate(navigator, arrayItem);
-                        }
-                        break;
-
-                    case JsonNodeType.Object:
-                        foreach (ObjectProperty objectProperty in navigator.GetObjectProperties(node))
-                        {
-                            IJsonNavigatorNode nameNode = objectProperty.NameNode;
-                            IJsonNavigatorNode valueNode = objectProperty.ValueNode;
-                            Navigate(navigator, valueNode);
-                        }
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonNodeType)}: '{navigator.GetNodeType(node)}.'");
-                }
-            }
-
-            Navigate(jsonNavigator, jsonNavigator.GetRootNode());
         }
 
         public static void FlushToWriter(IJsonWriter jsonWriter, IReadOnlyList<JsonToken> tokensToWrite)

@@ -12,10 +12,10 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
     using System.Text.RegularExpressions;
     using System.Xml;
     using BaselineTest;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using Sql;
 
     /// <summary>
     /// Baseline Tests for SqlObjectToString.
