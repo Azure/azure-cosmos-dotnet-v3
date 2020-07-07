@@ -5,6 +5,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## <a name="3.11.0"/> [3.11.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.11.0) - 2020-07-07
+
+## Added 
+
+- [#1587](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1587) & [1643](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1643) & [1667](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1667)  Diagnostics: Add synchronization context tracing to all request
+- [#1617](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1617) Performance: Fix OM hierarchy to use strings for relative paths instead of URI
+- [#1639](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1639) CosmosClient: Add argument check for empty key to prevent ambiguous 401 not authorized exception
+- [#1640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1640) Bulk: Add TimerWheel to Bulk to improve latency
+- [#1678](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1678) Autoscale: Add to container builder
+
+## Fixed
+
+- [#1638](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1638) Documentation : Fix all examples to add using statement to FeedIterator
+- [#1666](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1666) CosmosOperationCanceledException: Fix handler to catch all operation cancelled exceptions
+- [#1682](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1682) Performance: Fix high CPU consumption caused by EnableTcpConnectionEndpointRediscovery
+
+
 ## <a name="3.10.1"/> [3.10.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.10.1) - 2020-06-18
 
 - [#1637](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1637) TransportHandler : Removed stack trace print. Introduced in 3.10.0 PR 1587 
