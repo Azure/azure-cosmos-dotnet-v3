@@ -1806,9 +1806,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
+        [TestMethod]
         public async Task PartitionKeyPropertyNameWithSpecialCharactersTest()
         {
-            const string PartitionKeyPath = "/\"/my !@#$%&*()_+|?.,><~`/ pk\"";
+            const string PartitionKeyPath = "/\"mypk\"";
             const string ItemJsonPayload = "{\"label\":\"blah\",\"id\":\"08d39221-15f5-4312-ad9a-bd40923469e8\",\"\\\"mypk\\\"\":\"blah2\"}";
             const string ItemPartitionKey = "blah2";
 
