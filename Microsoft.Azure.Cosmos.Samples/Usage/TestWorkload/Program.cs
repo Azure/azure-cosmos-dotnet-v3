@@ -23,7 +23,7 @@
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
     // ----------------------------------------------------------------------------------------------------------
-    // Sample - demonstrates the basic usage of the CosmosClient bulk mode by performing a high volume of operations
+    // Sample - demonstrates the basic usage of the CosmosClient by performing a high volume of operations
     // ----------------------------------------------------------------------------------------------------------
 
     public class Program
@@ -33,10 +33,9 @@
         private static Database database = null;
         private static int itemsToCreate;
         private static int itemSize;
-        private static int runtimeInSeconds;
+        private static int maxRuntimeInSeconds;
         private static bool shouldCleanupOnFinish;
         private static int numWorkers;
-        private static int itemsToCreatePerSec;
 
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
@@ -65,26 +64,34 @@
                 {
                     await Program.CleanupAsync();
                 }
+
                 client.Dispose();
 
                 Console.WriteLine("End of demo, press any key to exit.");
-                Console.ReadKey();
+                //Console.ReadKey();
             }
         }
         // </Main>
 
         private static async Task CreateItemsConcurrentlyAsync(Container container)
         {
-            Console.WriteLine($"Starting creation of {itemsToCreate} items of about {itemSize} bytes each with {itemsToCreatePerSec} creations per sec in a limit of {runtimeInSeconds} seconds using {numWorkers} workers.");
+            Console.WriteLine($"Starting creation of {Program.itemsToCreate} items of about {Program.itemSize} bytes"
+            + $" in a limit of {maxRuntimeInSeconds} seconds using {numWorkers} workers.");
 
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
             ConcurrentBag<TimeSpan> latencies = new ConcurrentBag<TimeSpan>();
+            long totalRequestCharge = 0;
 
             int taskCompleteCounter = 0;
-            int globalDocCounter = 0;
+            int taskTriggeredCounter = 0;
 
+            DataSource dataSource = new DataSource(itemsToCreate, itemSize);
+            Console.WriteLine("Datasource initialized.");
+
+            Console.Read();
+            
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
+            cancellationTokenSource.CancelAfter(maxRuntimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -92,15 +99,16 @@
 
             try
             {
+                int itemsToCreatePerWorker = itemsToCreate / numWorkers + 1;
+
                 List<Task> workerTasks = new List<Task>();
                 for (int i = 0; i < numWorkers; i++)
                 {
                     workerTasks.Add(Task.Run(() =>
                     {
-                        DataSource dataSource = new DataSource(itemsToCreate, itemSize, numWorkers, itemsToCreatePerSec);
                         int docCounter = 0;
 
-                        while (!cancellationToken.IsCancellationRequested && docCounter < itemsToCreate)
+                        while (!cancellationToken.IsCancellationRequested && docCounter < itemsToCreatePerWorker)
                         {
                             docCounter++;
 
@@ -108,46 +116,45 @@
                             _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
                                 .ContinueWith((Task<ResponseMessage> task) =>
                                 {
-                                    Interlocked.Increment(ref taskCompleteCounter);
-                                    Console.Write(".");
-
                                     if (task.IsCompletedSuccessfully)
                                     {
                                         if (stream != null) { stream.Dispose(); }
 
                                         ResponseMessage responseMessage = task.Result;
                                         countsByStatus.AddOrUpdate(responseMessage.StatusCode, 1, (_, old) => old + 1);
+                                        Interlocked.Add(ref totalRequestCharge, (int)(responseMessage.Headers.RequestCharge * 100));
                                         latencies.Add(responseMessage.Diagnostics.GetClientElapsedTime());
                                         responseMessage.Dispose();
                                     }
 
                                     task.Dispose();
+                                    Interlocked.Increment(ref taskCompleteCounter);
                                 });
-                        }
 
-                        Interlocked.Add(ref globalDocCounter, docCounter);
+                            Interlocked.Increment(ref taskTriggeredCounter);
+                        }
                     }));
                 }
 
-                await Task.WhenAll(workerTasks);
+                // await Task.WhenAll(workerTasks);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Could not insert {itemsToCreate * numWorkers} items in {runtimeInSeconds} seconds.");
+                Console.WriteLine($"Could not insert {itemsToCreate * numWorkers} items in {maxRuntimeInSeconds} seconds.");
                 Console.WriteLine(ex);
             }
             finally
             {
-                while (globalDocCounter > taskCompleteCounter)
+                while (itemsToCreate > taskCompleteCounter)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        Console.WriteLine($"Could not insert {itemsToCreate * numWorkers} items in {runtimeInSeconds} seconds.");
+                        Console.WriteLine($"Could not insert {itemsToCreate} items in {maxRuntimeInSeconds} seconds.");
                         break;
                     }
 
-                    Console.WriteLine($"In progress. Processed: {taskCompleteCounter}, Pending: {globalDocCounter - taskCompleteCounter}");
-                    Thread.Sleep(2000);
+                    Console.WriteLine($"In progress. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {itemsToCreate - taskCompleteCounter}");
+                    await Task.Delay(1000);
                 }
 
                 foreach (var countForStatus in countsByStatus)
@@ -157,22 +164,48 @@
             }
 
             int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
-            Console.WriteLine($"Inserted {created} items in {(stopwatch.ElapsedMilliseconds - startMilliseconds) /1000} seconds");
+            long elapsed = (stopwatch.ElapsedMilliseconds - startMilliseconds) /1000;
+            Console.WriteLine($"Inserted {created} items in {elapsed} seconds at {created/elapsed} items/sec.");
 
             List<TimeSpan> latenciesList = latencies.ToList();
             latenciesList.Sort();
             int requestCount = latenciesList.Count;
-            Console.WriteLine($"Latencies: P99:{latenciesList[(int)(requestCount * 0.99)]} Max:{latenciesList[requestCount - 1]}");
+            Console.WriteLine("Latencies:"
+            + $" P90:{latenciesList[(int)(requestCount * 0.90)].TotalMilliseconds}"
+            + $" P99:{latenciesList[(int)(requestCount * 0.99)].TotalMilliseconds}"
+            + $" P99.9:{latenciesList[(int)(requestCount * 0.999)].TotalMilliseconds}"
+            + $" Max:{latenciesList[requestCount - 1].TotalMilliseconds}");
+
+            Console.WriteLine("Average RUs:" + totalRequestCharge / (100 * taskCompleteCounter));
         }
 
         // <Model>
         private class MyDocument
-        {
+        {  
+            private static Inner inner = new Inner();
+
             public string id { get; set; }
 
             public string pk { get; set; }
 
             public string other { get; set; }
+
+            public Inner i0 { get { return inner; } }
+            public Inner i1 { get { return inner; } }
+        }
+
+        private class Inner
+        {
+            public string p0 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p1 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p2 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p3 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p4 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p5 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p6 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p7 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p8 { get { return "abcdefghijklmnopqrstuvwxy"; } }
+            public string p9 { get { return "abcdefghijklmnopqrstuvwxy"; } }
         }
         // </Model>
 
@@ -211,10 +244,9 @@
 
             // Important: Needed to regulate the main execution/ingestion job.
             Program.itemsToCreate = int.Parse(string.IsNullOrEmpty(configuration["ItemsToCreate"]) ? "1000" : configuration["ItemsToCreate"]);
-            Program.itemsToCreatePerSec = int.Parse(string.IsNullOrEmpty(configuration["ItemsToCreatePerSec"]) ? "1000" : configuration["ItemsToCreatePerSec"]);
             Program.itemSize = int.Parse(string.IsNullOrEmpty(configuration["ItemSize"]) ? "1024" : configuration["ItemSize"]);
-            Program.runtimeInSeconds = int.Parse(string.IsNullOrEmpty(configuration["RuntimeInSeconds"]) ? "30" : configuration["RuntimeInSeconds"]);
-            Program.numWorkers = int.Parse(string.IsNullOrEmpty(configuration["numWorkers"]) ? "1" : configuration["numWorkers"]);
+            Program.maxRuntimeInSeconds = int.Parse(string.IsNullOrEmpty(configuration["MaxRuntimeInSeconds"]) ? "30" : configuration["MaxRuntimeInSeconds"]);
+            Program.numWorkers = int.Parse(string.IsNullOrEmpty(configuration["NumWorkers"]) ? "1" : configuration["numWorkers"]);
 
             Program.shouldCleanupOnFinish = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnFinish"]) ? "false" : configuration["ShouldCleanupOnFinish"]);
             bool shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
@@ -238,7 +270,7 @@
                 throw ex;
             }
 
-            Console.WriteLine("Running demo for container {0} with a Bulk enabled CosmosClient.", containerName);
+            Console.WriteLine("Running demo for container {0} with a CosmosClient.", containerName);
 
             return container;
         }
@@ -247,7 +279,11 @@
             string endpoint,
             string authKey) =>
         // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = false});
+            new CosmosClient(endpoint, authKey, new CosmosClientOptions() 
+            {
+                AllowBulkExecution = false,
+                MaxRetryAttemptsOnRateLimitedRequests = 0
+            });
         // </Initialization>
 
         private static async Task CleanupAsync()
@@ -274,18 +310,18 @@
             // We create a partitioned collection here which needs a partition key. Partitioned collections
             // can be created with very high values of provisioned throughput and used to store 100's of GBs of data. 
             Console.WriteLine($"The demo will create a {throughput} RU/s container, press any key to continue.");
-            Console.ReadKey();
+            //Console.ReadKey();
 
             // Indexing Policy to exclude all attributes to maximize RU/s usage
             Container container = await database.DefineContainer(containerName, "/pk")
-                    .WithIndexingPolicy()
-                        .WithIndexingMode(IndexingMode.Consistent)
-                        .WithIncludedPaths()
-                            .Attach()
-                        .WithExcludedPaths()
-                            .Path("/*")
-                            .Attach()
-                    .Attach()
+                    // .WithIndexingPolicy()
+                    //     .WithIndexingMode(IndexingMode.Consistent)
+                    //     .WithIncludedPaths()
+                    //         .Attach()
+                    //     .WithExcludedPaths()
+                    //         .Path("/*")
+                    //         .Attach()
+                    // .Attach()
                 .CreateAsync(throughput);
 
             return container;
@@ -293,30 +329,23 @@
 
         private class DataSource
         {
-            private const long maxStoredSizeInBytes = 100 * 1024 * 1024;
+            private const long maxStoredSizeInBytes = 50 * 1024 * 1024;
             private readonly int itemSize;
-            private readonly Stopwatch stopwatch = new Stopwatch();
-            private Queue<KeyValuePair<PartitionKey, MemoryStream>> documentsToImportInBatch;
+            private ConcurrentQueue<KeyValuePair<PartitionKey, MemoryStream>> items;
             private string padding = string.Empty;
-            private double maxCountPerMSec;
 
-            private int countSoFar = 0;
-
-            public DataSource(int itemCount, int itemSize, int numWorkers, int countPerSec)
+            public DataSource(int itemCount, int itemSize)
             {
                 this.itemSize = itemSize;
-                long maxStoredItemsPossible = (maxStoredSizeInBytes / (long)numWorkers) / (long)itemSize;
-                documentsToImportInBatch = new Queue<KeyValuePair<PartitionKey, MemoryStream>>();
+                long maxStoredItemsPossible = maxStoredSizeInBytes / itemSize;
+                items = new ConcurrentQueue<KeyValuePair<PartitionKey, MemoryStream>>();
                 this.padding = this.itemSize > 300 ? new string('x', this.itemSize - 300) : string.Empty;
 
                 for (long j = 0; j < Math.Min((long)itemCount, maxStoredItemsPossible); j++)
                 {
                     MemoryStream value = this.CreateNextDocItem(out PartitionKey partitionKeyValue);
-                    documentsToImportInBatch.Enqueue(new KeyValuePair<PartitionKey, MemoryStream>(partitionKeyValue, value));
+                    items.Enqueue(new KeyValuePair<PartitionKey, MemoryStream>(partitionKeyValue, value));
                 }
-
-                this.maxCountPerMSec = countPerSec / 1000.0;
-                this.stopwatch.Start();
             }
 
             private MemoryStream CreateNextDocItem(out PartitionKey partitionKeyValue)
@@ -324,7 +353,10 @@
                 string partitionKey = Guid.NewGuid().ToString();
                 string id = Guid.NewGuid().ToString();
 
-                MyDocument myDocument = new MyDocument() { id = id, pk = partitionKey, other = this.padding };
+                MyDocument myDocument = new MyDocument() { 
+                    id = id, 
+                    pk = partitionKey, 
+                    other = this.padding };
                 string value = JsonConvert.SerializeObject(myDocument);
                 partitionKeyValue = new PartitionKey(partitionKey);
 
@@ -333,19 +365,8 @@
 
             public MemoryStream GetNextDocItem(out PartitionKey partitionKeyValue)
             {
-                double extraMsec = (this.countSoFar - (this.maxCountPerMSec * this.stopwatch.ElapsedMilliseconds)) 
-                    / this.maxCountPerMSec;
-
-                if (extraMsec > 30)
+                if(this.items.TryDequeue(out KeyValuePair<PartitionKey, MemoryStream> pair))
                 {
-                    Thread.Sleep((int)extraMsec);
-                }
-
-                this.countSoFar++;
-
-                if (this.documentsToImportInBatch.Count > 0)
-                {
-                    KeyValuePair<PartitionKey, MemoryStream> pair = this.documentsToImportInBatch.Dequeue();
                     partitionKeyValue = pair.Key;
                     return pair.Value;
                 }
