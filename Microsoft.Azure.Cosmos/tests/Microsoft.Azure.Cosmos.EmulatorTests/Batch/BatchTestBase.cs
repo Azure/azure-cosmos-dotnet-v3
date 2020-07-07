@@ -292,8 +292,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        protected static ItemRequestOptions GetUpdatedBatchRequestOptions(
-            ItemRequestOptions batchOptions = null,
+        protected static TransactionalBatchRequestOption GetUpdatedBatchRequestOptions(
+            TransactionalBatchRequestOption batchOptions = null,
             bool isSchematized = false,
             bool useEpk = false,
             object partitionKey = null)
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (batchOptions == null)
                 {
-                    batchOptions = new ItemRequestOptions();
+                    batchOptions = new TransactionalBatchRequestOption();
                 }
 
                 Dictionary<string, object> properties = new Dictionary<string, object>()
@@ -410,6 +410,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             return bytes;
+        }
+
+        internal static ISessionToken GetSessionToken(string sessionToken)
+        {
+            string[] tokenParts = sessionToken.Split(':');
+            return SessionTokenHelper.Parse(tokenParts[1]);
         }
 
         private static bool PopulateRequestOptions(RequestOptions requestOptions, TestDoc doc, bool isSchematized, bool useEpk, int? ttlInSeconds)

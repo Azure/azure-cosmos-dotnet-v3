@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Executes the transactional batch at the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">Options that apply to the batch.</param>
+        /// <param name="requestOptions">Options that apply specifically to batch request.</param>
         /// <param name="cancellationToken">(Optional) Cancellation token representing request cancellation.</param>
         /// <returns>An awaitable response which contains details of execution of the transactional batch.
         /// <para>
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
         /// Use <see cref="TransactionalBatchResponse.IsSuccessStatusCode"/> on the response returned to ensure that the transactional batch succeeded.
         /// </remarks>
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(
-           ItemRequestOptions requestOptions,
+           TransactionalBatchRequestOption requestOptions,
            CancellationToken cancellationToken = default(CancellationToken));
     }
 }
