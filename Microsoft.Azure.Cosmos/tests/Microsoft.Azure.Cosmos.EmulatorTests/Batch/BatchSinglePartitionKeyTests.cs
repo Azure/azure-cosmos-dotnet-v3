@@ -318,6 +318,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(this.TestDocPk1ExistingC, batchResponse.GetOperationResultAtIndex<TestDoc>(2).Resource);
         }
 
+        [TestMethod]
+        [Owner("antoshni")]
+        [Description("Verify patch operation can follow create operation.")]
+        public async Task BatchCreateAndPatchAsync()
+        {
+            TestDoc testDoc = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+            PatchSpecification patchSpecification = new PatchSpecification().Replace("/Cost", testDoc.Cost + 1);
+
+            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInlineCore)BatchTestBase.JsonContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                .CreateItem(testDoc)
+                .PatchItem(testDoc.Id, patchSpecification)
+                .ExecuteAsync();
+
+            BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 2);
+
+            Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
+            testDoc.Cost = testDoc.Cost + 1;
+            await BatchTestBase.VerifyByReadAsync(BatchTestBase.JsonContainer, testDoc, isStream: false, isSchematized: false, useEpk:false);
+        }
+
         private async Task<TransactionalBatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, Container container)
         {
             RequestOptions batchOptions = null;
@@ -358,8 +379,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .DeleteItem(this.TestDocPk1ExistingD.Id)
                     .PatchItem(testDocToPatch.Id, patchSpecification)
                     .ExecuteAsync();
-
-                BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 7);
             }
             else
             {

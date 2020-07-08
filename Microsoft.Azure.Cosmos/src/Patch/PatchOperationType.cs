@@ -5,7 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Runtime.Serialization;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
+    [JsonConverter(typeof(StringEnumConverter))]
     internal enum PatchOperationType
     {
         [EnumMember(Value = "add")]

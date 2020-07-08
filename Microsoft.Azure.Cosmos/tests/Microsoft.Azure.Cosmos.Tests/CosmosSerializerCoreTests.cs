@@ -90,6 +90,40 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidatePatchSpecificationSerialization()
+        {
+            int toCount = 0;
+            int fromCount = 0;
+
+            CosmosSerializerHelper serializerHelper = new CosmosSerializerHelper(
+                null,
+                (input) => fromCount++,
+                (input) => toCount++);
+
+            CosmosSerializerCore serializerCore = new CosmosSerializerCore(serializerHelper);
+            PatchSpecification patchSpec = new PatchSpecification()
+                .Remove("/removePath");
+
+            // use properties serializer for PatchSpecification (internal type)
+            serializerCore.ToStream<PatchSpecification>(patchSpec);
+            Assert.AreEqual(0, toCount);
+
+            serializerCore.FromStream<PatchSpecification>(new MemoryStream());
+            Assert.AreEqual(0, fromCount);
+
+            // custom serializer is not used since operation type is Remove, which doesnt have "value" param to serialize
+            using (Stream stream = serializerCore.ToPatchSpecificationStream(patchSpec)) { }
+            Assert.AreEqual(0, toCount);
+
+            patchSpec.Add("/addPath", "addValue");
+            // custom serializer is used since there is Add operation type also
+            using (Stream stream = serializerCore.ToPatchSpecificationStream(patchSpec)) { }
+            Assert.AreEqual(1, toCount);
+
+            Assert.AreEqual(0, fromCount);
+        }
+
+        [TestMethod]
         public void ValidateCustomSerializerNotUsedForInternalTypes()
         {
             CosmosSerializerHelper serializerHelper = new CosmosSerializerHelper(

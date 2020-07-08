@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.IO;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -25,6 +26,26 @@ namespace Microsoft.Azure.Cosmos
             this.Path = string.IsNullOrWhiteSpace(path)
                 ? throw new ArgumentNullException(nameof(path))
                 : path;
+        }
+
+        public virtual string SerializeValueParameter(
+            CosmosSerializer cosmosSerializer)
+        {
+            return null;
+        }
+
+        public string SerializeValue<T>(
+            CosmosSerializer serializer,
+            T value)
+        {
+            // Use the user serializer so custom conversions are correctly handled
+            using (Stream str = serializer.ToStream(value))
+            {
+                using (StreamReader streamReader = new StreamReader(str))
+                {
+                    return streamReader.ReadToEnd();
+                }
+            }
         }
     }
 }

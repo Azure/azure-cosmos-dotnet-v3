@@ -169,6 +169,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     request.Headers.IsUpsert = bool.TrueString;
                 }
+                else if (operationType == OperationType.Patch)
+                {
+                    request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
+                }
 
                 requestEnricher?.Invoke(request);
                 return await this.SendAsync(request, cancellationToken);

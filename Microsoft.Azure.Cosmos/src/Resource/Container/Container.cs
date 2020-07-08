@@ -639,6 +639,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The item's partition key value is immutable. 
         /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// The patch operations are atomic and are executed sequentially.
         /// </remarks>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the PatchSpecification payload.</param>
         /// <param name="id">The Cosmos item id</param>
@@ -678,8 +679,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
+#if INTERNAL
+        public 
 #else
         internal
 #endif
@@ -696,6 +697,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The item's partition key value is immutable. 
         /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// The patch operations are atomic and are executed sequentially.
         /// </remarks>
         /// <param name="id">The Cosmos item id of the item to be patched.</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
@@ -725,8 +727,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
+#if INTERNAL
+        public 
 #else
         internal
 #endif

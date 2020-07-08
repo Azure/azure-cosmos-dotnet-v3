@@ -4,12 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Newtonsoft.Json;
 
-#if PREVIEW
+#if INTERNAL
     public
 #else
     internal

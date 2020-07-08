@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
+        private readonly CosmosSerializer patchSpecificationSerializer;
 
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
@@ -29,11 +30,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.customSerializer = null;
                 this.sqlQuerySpecSerializer = null;
+                this.patchSpecificationSerializer = null;
             }
             else
             {
                 this.customSerializer = new CosmosJsonSerializerWrapper(customSerializer);
                 this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                    cosmosSerializer: this.customSerializer,
+                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+                this.patchSpecificationSerializer = PatchSpecificationJsonConverter.CreatePatchSpecificationSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
             }
@@ -72,6 +77,13 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosSerializer serializer = this.GetSerializer<T>();
             return serializer.ToStream<T>(input);
+        }
+
+        internal Stream ToPatchSpecificationStream(PatchSpecification input)
+        {
+            return this.patchSpecificationSerializer != null
+                ? this.patchSpecificationSerializer.ToStream(input)
+                : CosmosSerializerCore.propertiesSerializer.ToStream<PatchSpecification>(input);
         }
 
         internal Stream ToStreamSqlQuerySpec(SqlQuerySpec input, ResourceType resourceType)

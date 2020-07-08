@@ -4,9 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using Newtonsoft.Json;
-
     internal sealed class RemovePatchOperation : PatchOperation
     {
         public RemovePatchOperation(

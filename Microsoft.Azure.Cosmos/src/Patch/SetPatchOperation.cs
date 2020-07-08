@@ -19,5 +19,13 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
+
+        public override string SerializeValueParameter(
+            CosmosSerializer cosmosSerializer)
+        {
+            return this.SerializeValue(
+                cosmosSerializer,
+                this.Value);
+        }
     }
 }

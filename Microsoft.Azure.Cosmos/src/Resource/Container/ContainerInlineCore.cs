@@ -266,8 +266,8 @@ namespace Microsoft.Azure.Cosmos
                 (diagnostics) => base.DeleteItemAsync<T>(diagnostics, id, partitionKey, requestOptions, cancellationToken));
         }
 
-#if PREVIEW
-        public
+#if INTERNAL
+        public 
 #else
         internal
 #endif
@@ -278,11 +278,14 @@ namespace Microsoft.Azure.Cosmos
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.PatchItemStreamAsync(streamPayload, id, partitionKey, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(PatchItemStreamAsync),
+                requestOptions,
+                (diagnostics) => base.PatchItemStreamAsync(diagnostics, streamPayload, id, partitionKey, requestOptions, cancellationToken));
         }
 
-#if PREVIEW
-        public
+#if INTERNAL
+        public 
 #else
         internal
 #endif
@@ -293,7 +296,10 @@ namespace Microsoft.Azure.Cosmos
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.PatchItemAsync<T>(id, partitionKey, patchSpecification, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(PatchItemAsync),
+                requestOptions,
+                (diagnostics) => base.PatchItemAsync<T>(diagnostics, id, partitionKey, patchSpecification, requestOptions, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

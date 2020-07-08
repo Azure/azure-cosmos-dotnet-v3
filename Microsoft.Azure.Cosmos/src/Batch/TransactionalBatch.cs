@@ -47,14 +47,27 @@ namespace Microsoft.Azure.Cosmos
     ///     status = "ToBeDone"
     /// };
     ///
+    /// ToDoActivity test4 = new ToDoActivity()
+    /// {
+    ///     type = activityType,
+    ///     id = "running",
+    ///     status = "ToBeDone"
+    /// };
+    ///
+    /// PatchSpecification patchSpecification = new PatchSpecification()
+    ///                                             .Replace("/status", "InProgress")
+    ///                                             .Add("/progress", 50);
+    /// 
     /// using (TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(new Cosmos.PartitionKey(activityType))
     ///     .CreateItem<ToDoActivity>(test1)
     ///     .ReplaceItem<ToDoActivity>(test2.id, test2)
     ///     .UpsertItem<ToDoActivity>(test3)
+    ///     .PatchItem(test4.id, patchSpecification)
     ///     .DeleteItem("reading")
     ///     .CreateItemStream(streamPayload1)
     ///     .ReplaceItemStream("eating", streamPayload2)
     ///     .UpsertItemStream(streamPayload3)
+    ///     .PatchItemStream(test4.id, streamPayload4)
     ///     .ExecuteAsync())
     /// {
     ///    if (!batchResponse.IsSuccessStatusCode)
@@ -204,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
         /// </param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <returns>The transactional batch instance with the operation added.</returns>
-#if PREVIEW
+#if INTERNAL
         public
 #else
         internal
@@ -221,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="patchSpecification">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <returns>The transactional batch instance with the operation added.</returns>
-#if PREVIEW
+#if INTERNAL
         public
 #else
         internal
