@@ -18,13 +18,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private bool hasStarted;
 
-        protected PartitionRangePageEnumerator(FeedRange range, TState state = null)
+        protected PartitionRangePageEnumerator(FeedRangeInternal range, TState state = null)
         {
             this.Range = range;
             this.State = state;
         }
 
-        public FeedRange Range { get; }
+        public FeedRangeInternal Range { get; }
 
         public TryCatch<TPage> Current { get; private set; }
 

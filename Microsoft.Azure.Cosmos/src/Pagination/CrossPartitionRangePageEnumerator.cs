@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             this.lazyEnumerators = new AsyncLazy<PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>>(async (CancellationToken token) =>
             {
-                IReadOnlyList<(FeedRange, TState)> rangeAndStates;
+                IReadOnlyList<(FeedRangeInternal, TState)> rangeAndStates;
                 if (state != default)
                 {
                     rangeAndStates = state.Value;
@@ -48,10 +48,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 else
                 {
                     // Fan out to all partitions with default state
-                    IEnumerable<FeedRange> ranges = await feedRangeProvider.GetFeedRangesAsync(token);
+                    IEnumerable<FeedRangeInternal> ranges = await feedRangeProvider.GetFeedRangesAsync(token);
 
-                    List<(FeedRange, TState)> rangesAndStatesBuilder = new List<(FeedRange, TState)>();
-                    foreach (FeedRange range in ranges)
+                    List<(FeedRangeInternal, TState)> rangesAndStatesBuilder = new List<(FeedRangeInternal, TState)>();
+                    foreach (FeedRangeInternal range in ranges)
                     {
                         rangesAndStatesBuilder.Add((range, default));
                     }
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 }
 
                 PriorityQueue<PartitionRangePageEnumerator<TPage, TState>> enumerators = new PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>(comparer);
-                foreach ((FeedRange range, TState rangeState) in rangeAndStates)
+                foreach ((FeedRangeInternal range, TState rangeState) in rangeAndStates)
                 {
                     PartitionRangePageEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(range, rangeState);
                     enumerators.Enqueue(enumerator);
@@ -94,10 +94,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 if (IsSplitException(exception))
                 {
                     // Handle split
-                    IEnumerable<FeedRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(currentPaginator.Range);
-                    foreach (FeedRange childRange in childRanges)
+                    IEnumerable<FeedRangeInternal> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
+                        currentPaginator.Range,
+                        cancellationToken: default);
+                    foreach (FeedRangeInternal childRange in childRanges)
                     {
-                        PartitionRangePageEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(childRange, currentPaginator.State);
+                        PartitionRangePageEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
+                            childRange,
+                            currentPaginator.State);
                         enumerators.Enqueue(childPaginator);
                     }
 
@@ -120,10 +124,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 return true;
             }
 
-            List<(FeedRange, TState)> feedRangeAndStates = new List<(FeedRange, TState)>(enumerators.Count);
+            List<(FeedRangeInternal, TState)> feedRangeAndStates = new List<(FeedRangeInternal, TState)>(enumerators.Count);
             foreach (PartitionRangePageEnumerator<TPage, TState> enumerator in enumerators)
             {
-                feedRangeAndStates.Add((enumerator.Range, enumerator.State));
+                // Converting to epk range just because some implementations prefer that.
+                // Eventually we should be range type agnostics,
+                // but we can't change the continution token format,
+                // since there are old SDKs that don't know how to resume from it.
+                FeedRangeEpk feedRangeEpk = await this.feedRangeProvider.ToEffectivePartitionKeyRangeAsync(
+                    enumerator.Range,
+                    cancellationToken: default);
+                feedRangeAndStates.Add((feedRangeEpk, enumerator.State));
             }
 
             CrossPartitionState<TState> crossPartitionState = new CrossPartitionState<TState>(feedRangeAndStates);

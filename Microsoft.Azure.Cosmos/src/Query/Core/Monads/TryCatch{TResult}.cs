@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             get
             {
                 Exception exception = this.Exception;
-                while (exception != null)
+                while (exception.InnerException != null)
                 {
                     exception = exception.InnerException;
                 }

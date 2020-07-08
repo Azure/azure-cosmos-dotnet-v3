@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.collectionRid = collectionRid ?? throw new ArgumentNullException(nameof(collectionRid));
         }
 
-        public async Task<IEnumerable<FeedRange>> GetChildRangeAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<FeedRangeInternal>> GetChildRangeAsync(
+            FeedRangeInternal feedRange,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 new Documents.Routing.Range<string>(feedRangeEpk.Range.Min, feedRangeEpk.Range.Max, isMaxInclusive: true, isMinInclusive: false),
                 forceRefresh: true);
 
-            List<FeedRange> childFeedRanges = new List<FeedRange>(replacementRanges.Count);
+            List<FeedRangeInternal> childFeedRanges = new List<FeedRangeInternal>(replacementRanges.Count);
 
             foreach (Documents.PartitionKeyRange replacementRange in replacementRanges)
             {
@@ -52,9 +52,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return childFeedRanges;
         }
 
-        public Task<IEnumerable<FeedRange>> GetFeedRangesAsync(
-            CancellationToken cancellationToken = default) => this.GetChildRangeAsync(
+        public Task<IEnumerable<FeedRangeInternal>> GetFeedRangesAsync(
+            CancellationToken cancellationToken) => this.GetChildRangeAsync(
                 FeedRangeEpk.FullRange,
                 cancellationToken);
+
+        public Task<FeedRangeEpk> ToEffectivePartitionKeyRangeAsync(FeedRangeInternal feedRange, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<FeedRangePartitionKeyRange> ToPhysicalPartitionKeyRangeAsync(FeedRangeInternal feedRange, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

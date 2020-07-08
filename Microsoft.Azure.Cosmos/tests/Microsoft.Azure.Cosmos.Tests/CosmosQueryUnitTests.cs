@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 System.Net.HttpStatusCode.Unauthorized,
                 SubStatusCodes.PartitionKeyMismatch,
                 new CosmosException(
-                    statusCodes: HttpStatusCode.Unauthorized,
+                    statusCode: HttpStatusCode.Unauthorized,
                     message: "Random error message",
                     subStatusCode: default,
                     stackTrace: default,

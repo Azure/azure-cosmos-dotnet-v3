@@ -31,9 +31,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
             catch (Exception ex)
             {
-                QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(ex);
-                CosmosException exception = queryResponse.CosmosException;
-                return TryCatch<QueryPage>.FromException(exception);
+                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(ex);
+                return TryCatch<QueryPage>.FromException(cosmosException);
             }
         }
     }

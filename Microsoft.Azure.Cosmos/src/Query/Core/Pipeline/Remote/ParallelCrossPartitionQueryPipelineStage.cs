@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 {
+#nullable enable
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 CrossPartitionState<QueryState> crossPartitionState = crossPartitionPageResult.State;
 
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>(crossPartitionState.Value.Count);
-                foreach ((FeedRange range, QueryState state) in crossPartitionState.Value)
+                foreach ((FeedRangeInternal range, QueryState state) in crossPartitionState.Value)
                 {
                     if (!(range is FeedRangeEpk epkRange))
                     {
@@ -49,13 +50,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
                     {
                         Range = epkRange.Range,
-                        Token = ((CosmosString)state.Value).Value,
+                        Token = state != null ? ((CosmosString)state.Value).Value : null,
                     };
 
                     compositeContinuationTokens.Add(compositeContinuationToken);
                 }
 
-                List<CosmosElement> cosmosElementContinuationTokens = compositeContinuationTokens.Select(token => CompositeContinuationToken.ToCosmosElement(token)).ToList();
+                List<CosmosElement> cosmosElementContinuationTokens = compositeContinuationTokens
+                    .Select(token => CompositeContinuationToken.ToCosmosElement(token))
+                    .ToList();
                 CosmosArray cosmosElementCompositeContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
 
                 QueryPage crossPartitionQueryPage = new QueryPage(
@@ -80,9 +83,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
             int pageSize,
-            CosmosElement continuationToken)
+            CosmosElement? continuationToken)
         {
-            CrossPartitionState<QueryState> state;
+            if (pageSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(pageSize));
+            }
+
+            CrossPartitionState<QueryState>? state;
             if (continuationToken == null)
             {
                 state = default;
@@ -90,6 +98,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             else
             {
                 if (!(continuationToken is CosmosArray compositeContinuationTokenListRaw))
+                {
+                    return TryCatch<IQueryPipelineStage>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
+                }
+
+                if (compositeContinuationTokenListRaw.Count == 0)
                 {
                     return TryCatch<IQueryPipelineStage>.FromException(
                         new MalformedContinuationTokenException(
@@ -109,8 +124,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     compositeContinuationTokens.Add(tryCreateCompositeContinuationToken.Result);
                 }
 
-                List<(FeedRange, QueryState)> rangesAndStates = compositeContinuationTokens
-                    .Select(token => ((FeedRange)new FeedRangeEpk(token.Range), new QueryState(CosmosString.Create(token.Token))))
+                List<(FeedRangeInternal, QueryState)> rangesAndStates = compositeContinuationTokens
+                    .Select(token => ((FeedRangeInternal)new FeedRangeEpk(token.Range), new QueryState(CosmosString.Create(token.Token))))
                     .ToList();
 
                 state = new CrossPartitionState<QueryState>(rangesAndStates);
@@ -129,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         private static CreatePartitionRangePageEnumerator<QueryPage, QueryState> MakeCreateFunction(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            int pageSize) => (FeedRange range, QueryState state) => new QueryPartitionRangePageEnumerator(
+            int pageSize) => (FeedRangeInternal range, QueryState state) => new QueryPartitionRangePageEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 range,

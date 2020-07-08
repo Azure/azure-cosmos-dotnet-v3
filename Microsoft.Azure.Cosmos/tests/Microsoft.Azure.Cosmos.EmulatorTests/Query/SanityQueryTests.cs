@@ -20,6 +20,33 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     [TestClass]
     public sealed class SanityQueryTests : QueryTestsBase
     {
+
+        [TestMethod]
+        public async Task Sanity()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                    container,
+                    "SELECT * FROM c");
+
+                Assert.AreEqual(
+                    documents.Count(),
+                    queryResults.Count);
+            }
+        }
+
         [TestMethod]
         public async Task TestBasicCrossPartitionQueryAsync()
         {
@@ -86,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
 
-                foreach(WeakReference weakReference in weakReferences)
+                foreach (WeakReference weakReference in weakReferences)
                 {
                     Assert.IsFalse(weakReference.IsAlive);
                 }

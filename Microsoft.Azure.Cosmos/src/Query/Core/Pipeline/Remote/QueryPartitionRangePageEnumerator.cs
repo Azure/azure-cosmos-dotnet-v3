@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         public QueryPartitionRangePageEnumerator(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            FeedRange feedRange,
+            FeedRangeInternal feedRange,
             int pageSize,
             QueryState state = default)
             : base(feedRange, state)
@@ -28,17 +28,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
             this.pageSize = pageSize;
-
-            if (!(feedRange is FeedRangePartitionKeyRange))
-            {
-                throw new ArgumentOutOfRangeException(nameof(feedRange));
-            }
         }
 
         public override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.queryDataSource.ExecuteQueryAsync(
             sqlQuerySpec: this.sqlQuerySpec,
             continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-            partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)this.Range).PartitionKeyRangeId),
+            feedRange: this.Range,
             pageSize: this.pageSize,
             cancellationToken);
 

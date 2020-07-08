@@ -10,11 +10,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
     internal sealed class CrossPartitionState<TState> : State
         where TState : State
     {
-        public CrossPartitionState(IReadOnlyList<(FeedRange, TState)> value)
+        public CrossPartitionState(IReadOnlyList<(FeedRangeInternal, TState)> value)
         {
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public IReadOnlyList<(FeedRange, TState)> Value { get; }
+        public IReadOnlyList<(FeedRangeInternal, TState)> Value { get; }
     }
 }

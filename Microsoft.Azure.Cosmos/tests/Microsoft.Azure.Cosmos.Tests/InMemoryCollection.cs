@@ -133,7 +133,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             return TryCatch<(List<Record>, long?)>.FromResult((page, page.Last().ResourceIdentifier));
         }
 
-        public TryCatch<(List<Record>, long?)> Query(SqlQuerySpec sqlQuerySpec, int partitionKeyRangeId, long resourceIdentifier, int pageSize)
+        public TryCatch<(List<Record>, long?)> Query(
+            SqlQuerySpec sqlQuerySpec,
+            int partitionKeyRangeId,
+            long resourceIdentifier,
+            int pageSize)
         {
             if (sqlQuerySpec == null)
             {
@@ -221,9 +225,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public (int, int) GetChildRanges(int partitionKeyRangeId) => this.parentToChildMapping[partitionKeyRangeId];
 
-        public bool Return429() => (this.failureConfigs != null) && this.failureConfigs.Inject429s && ((this.random.Next() % 2) == 0);
+        public PartitionKeyHashRange GetHashRange(int partitionKeyRangeId) => this.partitionKeyRangeIdToHashRange[partitionKeyRangeId];
 
-        public bool ReturnEmptyPage() => (this.failureConfigs != null) && this.failureConfigs.InjectEmptyPages && ((this.random.Next() % 2) == 0);
+        public int GetPartitionKeyRangeId(PartitionKeyHashRange hashRange) => this.partitionKeyRangeIdToHashRange.Where(kvp => kvp.Value.Equals(hashRange)).First().Key;
+
+        private bool Return429() => (this.failureConfigs != null) && this.failureConfigs.Inject429s && ((this.random.Next() % 2) == 0);
+
+        private bool ReturnEmptyPage() => (this.failureConfigs != null) && this.failureConfigs.InjectEmptyPages && ((this.random.Next() % 2) == 0);
 
         private static PartitionKeyHash GetHashFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
         {

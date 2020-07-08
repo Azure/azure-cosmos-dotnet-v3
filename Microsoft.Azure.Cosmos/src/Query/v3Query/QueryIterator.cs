@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         });
                 }
 
-                CosmosException cosmosException = (CosmosException)tryGetQueryPage.InnerMostException;
+                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(tryGetQueryPage.Exception);
                 SubStatusCodes subStatusCode;
                 if (Enum.IsDefined(typeof(SubStatusCodes), cosmosException.SubStatusCode))
                 {

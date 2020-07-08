@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Text;
+    using Microsoft.Azure.Documents;
 
     internal readonly struct PartitionKeyHashRange : IComparable<PartitionKeyHashRange>, IEquatable<PartitionKeyHashRange>
     {

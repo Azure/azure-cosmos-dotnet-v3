@@ -27,13 +27,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         public Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             int pageSize,
             CancellationToken cancellationToken)
         {
             TryCatch<(List<InMemoryCollection.Record> records, long? resourceIdentifer)> tryExecuteQuery = this.inMemoryCollection.Query(
                 sqlQuerySpec,
-                partitionKeyRangeId,
+                int.Parse(((FeedRangePartitionKeyRange)feedRange).PartitionKeyRangeId),
                 continuationToken != null ? long.Parse(continuationToken) : 0,
                 pageSize);
             if (tryExecuteQuery.Failed)

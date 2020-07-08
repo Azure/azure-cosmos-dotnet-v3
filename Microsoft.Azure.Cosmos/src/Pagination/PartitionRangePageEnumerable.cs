@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
         where TPage : Page<TState>
         where TState : State
     {
-        private readonly FeedRange range;
+        private readonly FeedRangeInternal range;
         private readonly TState state;
         private readonly CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator;
 
         public PartitionRangePageEnumerable(
-            FeedRange range,
+            FeedRangeInternal range,
             TState state,
             CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator)
         {

@@ -50,6 +50,11 @@ namespace Microsoft.Azure.Cosmos
             IFeedRangeAsyncVisitor<TResult> visitor,
             CancellationToken cancellationToken = default) => visitor.VisitAsync(this, cancellationToken);
 
+        public override Task<TResult> AcceptAsync<TResult, TArg>(
+            IFeedRangeAsyncVisitor<TResult, TArg> visitor,
+            TArg argument,
+            CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
+
         public override string ToString() => this.Range.ToString();
     }
 }

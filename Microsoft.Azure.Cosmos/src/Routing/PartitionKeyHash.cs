@@ -61,14 +61,22 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.Equals(effectivePartitionKey);
         }
 
-        public bool Equals(PartitionKeyHash other)
-        {
-            return this.Value.Equals(other.Value);
-        }
+        public bool Equals(PartitionKeyHash other) => this.Value.Equals(other.Value);
 
-        public override int GetHashCode()
+        public override int GetHashCode() => this.Value.GetHashCode();
+
+        public override string ToString() => this.Value.ToString();
+
+        public static bool TryParse(string value, out PartitionKeyHash parsedValue)
         {
-            return this.Value.GetHashCode();
+            if (!UInt128.TryParse(value, out UInt128 uInt128))
+            {
+                parsedValue = default;
+                return false;
+            }
+
+            parsedValue = new PartitionKeyHash(uInt128);
+            return true;
         }
 
         public static class V1

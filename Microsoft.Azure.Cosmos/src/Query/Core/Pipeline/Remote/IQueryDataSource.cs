@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         public Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             int pageSize,
             CancellationToken cancellationToken);
     }
