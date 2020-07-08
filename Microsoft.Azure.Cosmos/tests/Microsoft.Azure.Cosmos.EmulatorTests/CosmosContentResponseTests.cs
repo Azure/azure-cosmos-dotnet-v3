@@ -245,52 +245,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TransactionalBatchNoResponseTest()
-        {
-            TransactionalBatchRequestOption requestOptions = new TransactionalBatchRequestOption()
-            {
-                EnableContentResponseOnOperations = false
-            };
-
-            string pkId = "TestTransactionalBatchId";
-            TransactionalBatch batch = this.container.CreateTransactionalBatch(new PartitionKey(pkId));
-
-            int noResponseItemCount = 100;
-            for (int i = 0; i < noResponseItemCount; i++)
-            {
-                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
-                batch.CreateItem<ToDoActivity>(item);
-            }
-
-            TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
-            Assert.AreEqual(100, response.Count);
-            this.ValidateResponse(response, noResponseItemCount);
-
-            pkId = "TestTransactionalBatchId2";
-            batch = this.container.CreateTransactionalBatch(new PartitionKey(pkId));
-
-            noResponseItemCount = 0;
-            for (int i = 0; i < 10; i++)
-            {
-                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
-                batch.CreateItem<ToDoActivity>(item);
-                noResponseItemCount++;
-                ToDoActivity item2 = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
-                item2.id = item.id;
-                batch.ReplaceItem<ToDoActivity>(item2.id, item2);
-                noResponseItemCount++;
-
-                // Even Read won't return response
-                batch.ReadItem(item2.id);
-                noResponseItemCount++;
-            }
-
-            response = await batch.ExecuteAsync(requestOptions);
-            Assert.AreEqual(noResponseItemCount, response.Count);
-            this.ValidateResponse(response, noResponseItemCount);
-        }
-
-        [TestMethod]
         public async Task ItemBulkNoResponseTest()
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()

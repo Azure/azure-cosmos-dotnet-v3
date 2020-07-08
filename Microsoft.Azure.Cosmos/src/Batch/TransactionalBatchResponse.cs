@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
+        /// Gets the current HTTP headers.
         /// </summary>
-        public virtual Headers Headers { get; set; }
+        public virtual Headers Headers { get; internal set; }
 
         /// <summary>
         /// Gets the ActivityId that identifies the server request made to execute the batch.

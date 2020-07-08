@@ -4,12 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Documents;
-
     /// <summary>
-    /// Cosmos batch request options
+    /// Cosmos batch request options.
     /// </summary>
-    public class TransactionalBatchRequestOption : RequestOptions
+    public class TransactionalBatchRequestOptions : RequestOptions
     {
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
@@ -31,28 +29,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the boolean to only return the headers and status code in
-        /// the Cosmos DB response for operations in the transactional batch request.
-        /// This removes the resource from the response. This reduces networking and CPU load by not sending
-        /// the resource back over the network and serializing it on the client.
-        /// </summary>
-        /// <remarks>
-        /// This is optimal for workloads where the returned resource is not used.
-        /// </remarks>
-        public bool? EnableContentResponseOnOperations { get; set; }
-
-        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
         internal override void PopulateRequestOptions(RequestMessage request)
         {
-            if (this.EnableContentResponseOnOperations.HasValue &&
-                !this.EnableContentResponseOnOperations.Value)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
-            }
-
             base.PopulateRequestOptions(request);
         }
     }

@@ -31,19 +31,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task BatchInvalidOptionsAsync()
         {
             Container container = BatchUnitTests.GetContainer();
-            List<TransactionalBatchRequestOption> badBatchOptionsList = new List<TransactionalBatchRequestOption>()
+            List<TransactionalBatchRequestOptions> badBatchOptionsList = new List<TransactionalBatchRequestOptions>()
             {
-                new TransactionalBatchRequestOption()
+                new TransactionalBatchRequestOptions()
                 {
                     IfMatchEtag = "cond",
                 },
-                new TransactionalBatchRequestOption()
+                new TransactionalBatchRequestOptions()
                 {
                     IfNoneMatchEtag = "cond2",
                 }
             };
 
-            foreach (TransactionalBatchRequestOption batchOptions in badBatchOptionsList)
+            foreach (TransactionalBatchRequestOptions batchOptions in badBatchOptionsList)
             {
                 BatchCore batch = (BatchCore)
                         new BatchCore((ContainerInternal)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatch batch,
             Type expectedTypeOfException,
             string expectedExceptionMessage = null,
-            TransactionalBatchRequestOption requestOptions = null)
+            TransactionalBatchRequestOptions requestOptions = null)
         {
             bool wasExceptionThrown = false;
             try

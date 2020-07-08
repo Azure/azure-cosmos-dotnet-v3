@@ -292,8 +292,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        protected static TransactionalBatchRequestOption GetUpdatedBatchRequestOptions(
-            TransactionalBatchRequestOption batchOptions = null,
+        protected static TransactionalBatchRequestOptions GetUpdatedBatchRequestOptions(
+            TransactionalBatchRequestOptions batchOptions = null,
             bool isSchematized = false,
             bool useEpk = false,
             object partitionKey = null)
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (batchOptions == null)
                 {
-                    batchOptions = new TransactionalBatchRequestOption();
+                    batchOptions = new TransactionalBatchRequestOptions();
                 }
 
                 Dictionary<string, object> properties = new Dictionary<string, object>()
