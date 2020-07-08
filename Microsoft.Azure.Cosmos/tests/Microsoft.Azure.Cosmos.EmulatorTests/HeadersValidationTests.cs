@@ -40,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
         {
+            // Create a CosmosClient to ensure the correct HttpConstants.Versions is being used
+            TestCommon.CreateCosmosClient();
             DocumentClientSwitchLinkExtension.Reset("HeadersValidationTests");
         }
 
@@ -620,7 +622,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DocumentClient client = TestCommon.CreateClient(true);
                 var db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result.Resource;
                 var doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
                 client = TestCommon.CreateClient(true);
                 doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
@@ -651,22 +654,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidateCurrentWriteQuorumAndReplicaSetHeader()
+        public async Task ValidateCurrentWriteQuorumAndReplicaSetHeader()
         {
-            DocumentClient client = TestCommon.CreateClient(false);
-            Database db = null;
+            CosmosClient client = TestCommon.CreateCosmosClient(false);
+            Cosmos.Database db = null;
             try
             {
-                var dbResource = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result;
-                db = dbResource.Resource;
-                var coll = client.CreateDocumentCollectionAsync(db, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-                var docResult = client.CreateDocumentAsync(coll, new Document() { Id = Guid.NewGuid().ToString() }).Result;
-                Assert.IsTrue(int.Parse(docResult.ResponseHeaders[WFConstants.BackendHeaders.CurrentWriteQuorum], CultureInfo.InvariantCulture) > 0);
-                Assert.IsTrue(int.Parse(docResult.ResponseHeaders[WFConstants.BackendHeaders.CurrentReplicaSetSize], CultureInfo.InvariantCulture) > 0);
+                db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+                ContainerProperties containerSetting = new ContainerProperties()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PartitionKey = partitionKeyDefinition
+                };
+                Container coll = await db.CreateContainerAsync(containerSetting);
+                Document documentDefinition = new Document { Id = Guid.NewGuid().ToString() };
+                ItemResponse<Document> docResult = await coll.CreateItemAsync<Document>(documentDefinition);
+                Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentWriteQuorum], CultureInfo.InvariantCulture) > 0);
+                Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentReplicaSetSize], CultureInfo.InvariantCulture) > 0);
             }
             finally
             {
-                client.DeleteDatabaseAsync(db).Wait();
+                await db.DeleteAsync();
             }
         }
 
@@ -707,19 +716,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             using (var client = TestCommon.CreateClient(true))
             {
-                await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: false);
                 await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
             }
 
             using (var client = TestCommon.CreateClient(false, Protocol.Https))
             {
-                await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: false);
                 await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
             }
 
             using (var client = TestCommon.CreateClient(false, Protocol.Tcp))
             {
-                await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: false);
                 await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
             }
         }
@@ -734,8 +740,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateExcludeSystemProperties(DocumentClient client)
         {
             var db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-            var coll = client.CreateDocumentCollectionAsync(
-                db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+            var coll = (await client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Resource;
 
             //CASE 1. insert document with system properties excluded
             Document doc1 = await client.CreateDocumentAsync(
@@ -751,7 +757,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document and ask system properties to be included
             Document readDoc1WithProps = await client.ReadDocumentAsync(
                 coll.AltLink + "/docs/doc1",
-                new RequestOptions { ExcludeSystemProperties = false });
+                new RequestOptions { ExcludeSystemProperties = false, PartitionKey = new PartitionKey("doc1") });
 
             bHasAttachments = readDoc1WithProps.ToString().Contains("attachments");
             Assert.IsTrue(bHasAttachments);
@@ -761,7 +767,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document and explicitly exclude system properties
             Document readDoc1WoutProps = await client.ReadDocumentAsync(
                 coll.AltLink + "/docs/doc1",
-                new RequestOptions { ExcludeSystemProperties = true });
+                new RequestOptions { ExcludeSystemProperties = true, PartitionKey = new PartitionKey("doc1") });
 
             bHasAttachments = readDoc1WoutProps.ToString().Contains("attachments");
             Assert.IsFalse(bHasAttachments);
@@ -769,7 +775,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(bHasSelfLink);
 
             //read document with default settings (system properties should be included)
-            Document readDoc1Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc1");
+            Document readDoc1Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc1", new RequestOptions() { PartitionKey = new PartitionKey("doc1") });
             Assert.AreEqual(readDoc1WithProps.ToString(), readDoc1Default.ToString());
 
 
@@ -787,7 +793,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document and ask system properties to be included
             Document readDoc2WithProps = await client.ReadDocumentAsync(
                coll.AltLink + "/docs/doc2",
-               new RequestOptions { ExcludeSystemProperties = false });
+               new RequestOptions { ExcludeSystemProperties = false, PartitionKey = new PartitionKey("doc2") });
 
             bHasAttachments = readDoc2WithProps.ToString().Contains("attachments");
             Assert.IsTrue(bHasAttachments);
@@ -797,7 +803,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document and explicitly exclude system properties, they should be still present in this case.
             Document readDoc2WoutProps = await client.ReadDocumentAsync(
                 coll.AltLink + "/docs/doc2",
-                new RequestOptions { ExcludeSystemProperties = true });
+                new RequestOptions { ExcludeSystemProperties = true, PartitionKey = new PartitionKey("doc2") });
 
             bHasAttachments = readDoc2WoutProps.ToString().Contains("attachments");
             Assert.IsTrue(bHasAttachments);
@@ -805,7 +811,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(bHasSelfLink);
 
             //read document with default settings (system properties should be included)
-            Document readDoc2Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc2");
+            Document readDoc2Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc2", new RequestOptions() { PartitionKey = new PartitionKey("doc2") });
             Assert.AreEqual(readDoc2WithProps.ToString(), readDoc2Default.ToString());
 
 
@@ -822,7 +828,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document and ask system properties to be included
             Document readDoc3WithProps = await client.ReadDocumentAsync(
                coll.AltLink + "/docs/doc3",
-               new RequestOptions { ExcludeSystemProperties = false });
+               new RequestOptions { ExcludeSystemProperties = false, PartitionKey = new PartitionKey("doc3") });
 
             bHasAttachments = readDoc3WithProps.ToString().Contains("attachments");
             Assert.IsTrue(bHasAttachments);
@@ -832,7 +838,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document and explicitly exclude system properties, they should be still present in this case.
             Document readDoc3WoutProps = await client.ReadDocumentAsync(
                 coll.AltLink + "/docs/doc3",
-                new RequestOptions { ExcludeSystemProperties = true });
+                new RequestOptions { ExcludeSystemProperties = true, PartitionKey = new PartitionKey("doc3") });
 
             bHasAttachments = readDoc3WoutProps.ToString().Contains("attachments");
             Assert.IsTrue(bHasAttachments);
@@ -840,7 +846,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(bHasSelfLink);
 
             //read document with default settings (system properties should be included)
-            Document readDoc3Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc3");
+            Document readDoc3Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc3", new RequestOptions() { PartitionKey = new PartitionKey("doc3") });
             Assert.AreEqual(readDoc3WithProps.ToString(), readDoc3Default.ToString());
         }
 
