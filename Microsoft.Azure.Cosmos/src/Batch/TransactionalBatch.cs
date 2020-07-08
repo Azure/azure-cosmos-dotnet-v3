@@ -207,6 +207,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             TransactionalBatchItemRequestOptions requestOptions = null);
 
+#if INTERNAL
         /// <summary>
         /// Adds an operation to patch an item into the batch.
         /// </summary>
@@ -217,12 +218,7 @@ namespace Microsoft.Azure.Cosmos
         /// </param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <returns>The transactional batch instance with the operation added.</returns>
-#if INTERNAL
-        public
-#else
-        internal
-#endif
-            abstract TransactionalBatch PatchItemStream(
+        public abstract TransactionalBatch PatchItemStream(
                 string id,
                 Stream streamPayload,
                 TransactionalBatchItemRequestOptions requestOptions = null);
@@ -234,15 +230,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="patchSpecification">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <returns>The transactional batch instance with the operation added.</returns>
-#if INTERNAL
-        public
-#else
-        internal
-#endif
-            abstract TransactionalBatch PatchItem(
+        public abstract TransactionalBatch PatchItem(
                 string id,
                 PatchSpecification patchSpecification,
                 TransactionalBatchItemRequestOptions requestOptions = null);
+#endif
 
         /// <summary>
         /// Executes the transactional batch at the Azure Cosmos service as an asynchronous operation.

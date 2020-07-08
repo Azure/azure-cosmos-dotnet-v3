@@ -1332,6 +1332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             // Create an item
             ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
 
             PatchSpecification patchSpecification = new PatchSpecification()
                 .Add("/nonExistentParent/Child", "bar")
@@ -1340,7 +1341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // item does not exist - 404 Resource Not Found error
             try
             {
-                await this.Container.PatchItemAsync<ToDoActivity>(
+                await containerInternal.PatchItemAsync<ToDoActivity>(
                     id: Guid.NewGuid().ToString(),
                     partitionKey: new Cosmos.PartitionKey(testItem.status),
                     patchSpecification: patchSpecification);
@@ -1356,7 +1357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // adding a child when parent / ancestor does not exist - 400 BadRequest response
             try
             {
-                await this.Container.PatchItemAsync<ToDoActivity>(
+                await containerInternal.PatchItemAsync<ToDoActivity>(
                     id: testItem.id,
                     partitionKey: new Cosmos.PartitionKey(testItem.status),
                     patchSpecification: patchSpecification);
@@ -1377,7 +1378,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                await this.Container.PatchItemAsync<ToDoActivity>(
+                await containerInternal.PatchItemAsync<ToDoActivity>(
                     id: testItem.id,
                     partitionKey: new Cosmos.PartitionKey(testItem.status),
                     patchSpecification: patchSpecification,
@@ -1397,6 +1398,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             // Create an item
             ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
 
             int originalTaskNum = testItem.taskNum;
             int newTaskNum = originalTaskNum + 1;
@@ -1414,7 +1416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EnableContentResponseOnWrite = false
             };
 
-            ItemResponse<ToDoActivity> response = await this.Container.PatchItemAsync<ToDoActivity>(
+            ItemResponse<ToDoActivity> response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 patchSpecification: patchSpecification,
@@ -1424,7 +1426,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(response.Resource);
 
             // read resource to validate the patch operation
-            response = await this.Container.ReadItemAsync<ToDoActivity>(
+            response = await containerInternal.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status));
 
@@ -1438,7 +1440,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .Set("/children/0/cost", 1);
 
             // with content response
-            response = await this.Container.PatchItemAsync<ToDoActivity>(
+            response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 patchSpecification: patchSpecification);
@@ -1452,6 +1454,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task PatchItemStreamTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
 
             PatchSpecification patchSpecification = new PatchSpecification()
                 .Add("/children/1/status", "patched")
@@ -1461,7 +1464,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (Stream stream = TestCommon.SerializerCore.ToStream<PatchSpecification>(patchSpecification))
             {
                 // Patch a non-existing item. It should fail, and not throw an exception.
-                using (ResponseMessage response = await this.Container.PatchItemStreamAsync(
+                using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(
                     partitionKey: new Cosmos.PartitionKey(testItem.status),
                     id: testItem.id,
                     streamPayload: stream))
@@ -1485,7 +1488,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (Stream stream = TestCommon.SerializerCore.ToStream<PatchSpecification>(patchSpecification))
             {
                 // Patch
-                using (ResponseMessage response = await this.Container.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id, streamPayload: stream))
+                using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id, streamPayload: stream))
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -1513,6 +1516,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient gatewayClient = TestCommon.CreateCosmosClient(useGateway: true);
             Container gatewayContainer = gatewayClient.GetContainer(this.database.Id, this.Container.Id);
+            ContainerInternal containerInternal = (ContainerInternal)gatewayContainer;
 
             // Create an item
             ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(gatewayContainer, 1, randomPartitionKey: true)).First();
@@ -1527,7 +1531,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .Remove("/description")
                 .Replace("/taskNum", newTaskNum);
 
-            ItemResponse<ToDoActivity> response = await gatewayContainer.PatchItemAsync<ToDoActivity>(
+            ItemResponse<ToDoActivity> response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 patchSpecification: patchSpecification);
@@ -1553,6 +1557,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosClient customSerializationClient = TestCommon.CreateCosmosClient(clientOptions);
             Container customSerializationContainer = customSerializationClient.GetContainer(this.database.Id, this.Container.Id);
+            ContainerInternal containerInternal = (ContainerInternal)customSerializationContainer;
 
             ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(customSerializationContainer, 1, randomPartitionKey: true)).First();
 
@@ -1565,7 +1570,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             PatchSpecification patchSpecification = new PatchSpecification()
                 .Add("/date", patchDate);
 
-            ItemResponse<dynamic> response = await customSerializationContainer.PatchItemAsync<dynamic>(
+            ItemResponse<dynamic> response = await containerInternal.PatchItemAsync<dynamic>(
                 id: testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 patchSpecification: patchSpecification,

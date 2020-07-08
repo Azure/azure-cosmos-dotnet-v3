@@ -241,12 +241,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="patchStream">A <see cref="Stream"/> containing the <see cref="PatchSpecification"/>.</param>
         /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
-#if PREVIEW
-        public
+#if INTERNAL
+        public override
 #else
         internal
 #endif
-            override TransactionalBatch PatchItemStream(
+            TransactionalBatch PatchItemStream(
                 string id,
                 Stream patchStream,
                 TransactionalBatchItemRequestOptions requestOptions = null)
@@ -279,12 +279,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="patchSpecification">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
         /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
-#if PREVIEW
-        public
+#if INTERNAL
+        public override
 #else
         internal
 #endif
-            override TransactionalBatch PatchItem(
+            TransactionalBatch PatchItem(
                 string id,
                 PatchSpecification patchSpecification,
                 TransactionalBatchItemRequestOptions requestOptions = null)

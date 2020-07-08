@@ -633,6 +633,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
+#if INTERNAL
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -640,6 +641,7 @@ namespace Microsoft.Azure.Cosmos
         /// The item's partition key value is immutable. 
         /// To change an item's partition key value you must delete the original item and insert a new item.
         /// The patch operations are atomic and are executed sequentially.
+        /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
         /// </remarks>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the PatchSpecification payload.</param>
         /// <param name="id">The Cosmos item id</param>
@@ -650,6 +652,8 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the replace resource record.
         /// </returns>
         /// <remarks>
+        /// The Stream should be well formed consisting of an array of objects – where each object represents a single operation to be applied to the target JSON document.
+        /// Each operator has its own specific grammer.
         /// The Stream operation only throws on client side exceptions. 
         /// This is to increase performance and prevent the overhead of throwing exceptions. 
         /// Check the HTTP status code on the response to check if the operation failed.
@@ -679,12 +683,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if INTERNAL
-        public 
-#else
-        internal
-#endif
-            abstract Task<ResponseMessage> PatchItemStreamAsync(
+        public abstract Task<ResponseMessage> PatchItemStreamAsync(
                 Stream streamPayload,
                 string id,
                 PartitionKey partitionKey,
@@ -698,6 +697,7 @@ namespace Microsoft.Azure.Cosmos
         /// The item's partition key value is immutable. 
         /// To change an item's partition key value you must delete the original item and insert a new item.
         /// The patch operations are atomic and are executed sequentially.
+        /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
         /// </remarks>
         /// <param name="id">The Cosmos item id of the item to be patched.</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
@@ -727,17 +727,13 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if INTERNAL
-        public 
-#else
-        internal
-#endif
-            abstract Task<ItemResponse<T>> PatchItemAsync<T>(
+        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
                 string id,
                 PartitionKey partitionKey,
                 PatchSpecification patchSpecification,
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken));
+#endif
 
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.

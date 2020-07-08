@@ -94,6 +94,20 @@ namespace Microsoft.Azure.Cosmos
 
 #if !PREVIEW
 
+        public abstract Task<ResponseMessage> PatchItemStreamAsync(
+                Stream streamPayload,
+                string id,
+                PartitionKey partitionKey,
+                ItemRequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
+                string id,
+                PartitionKey partitionKey,
+                PatchSpecification patchSpecification,
+                ItemRequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default(CancellationToken));
+
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract FeedIterator GetChangeFeedStreamIterator(

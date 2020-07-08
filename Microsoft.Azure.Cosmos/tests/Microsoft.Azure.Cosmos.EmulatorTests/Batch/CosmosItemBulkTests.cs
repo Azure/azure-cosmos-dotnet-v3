@@ -364,7 +364,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Patch the items
             foreach (MyDocument createdDocument in createdDocuments)
             {
-                PatchTasks.Add(ExecutePatchStreamAsync(this.container, createdDocument, patch));
+                PatchTasks.Add(ExecutePatchStreamAsync((ContainerInternal)this.container, createdDocument, patch));
             }
 
             await Task.WhenAll(PatchTasks);
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Patch the items
             foreach (MyDocument createdDocument in createdDocuments)
             {
-                patchTasks.Add(ExecutePatchAsync(this.container, createdDocument, patch));
+                patchTasks.Add(ExecutePatchAsync((ContainerInternal)this.container, createdDocument, patch));
             }
 
             await Task.WhenAll(patchTasks);
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container.ReplaceItemAsync<MyDocument>(item, item.id, new PartitionKey(item.Status));
         }
 
-        private static Task<ItemResponse<MyDocument>> ExecutePatchAsync(Container container, MyDocument item, PatchSpecification patch)
+        private static Task<ItemResponse<MyDocument>> ExecutePatchAsync(ContainerInternal container, MyDocument item, PatchSpecification patch)
         {
             return container.PatchItemAsync<MyDocument>(item.id, new PartitionKey(item.Status), patch);
         }
@@ -508,7 +508,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(item), item.id, new PartitionKey(item.Status));
         }
 
-        private static Task<ResponseMessage> ExecutePatchStreamAsync(Container container, MyDocument item, PatchSpecification patch)
+        private static Task<ResponseMessage> ExecutePatchStreamAsync(ContainerInternal container, MyDocument item, PatchSpecification patch)
         {
             return container.PatchItemStreamAsync(TestCommon.SerializerCore.ToStream(patch), item.id, new PartitionKey(item.Status));
         }

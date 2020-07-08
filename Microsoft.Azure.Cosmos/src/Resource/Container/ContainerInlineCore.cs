@@ -266,12 +266,7 @@ namespace Microsoft.Azure.Cosmos
                 (diagnostics) => base.DeleteItemAsync<T>(diagnostics, id, partitionKey, requestOptions, cancellationToken));
         }
 
-#if INTERNAL
-        public 
-#else
-        internal
-#endif
-            override Task<ResponseMessage> PatchItemStreamAsync(
+        public override Task<ResponseMessage> PatchItemStreamAsync(
                 Stream streamPayload,
                 string id,
                 PartitionKey partitionKey,
@@ -284,12 +279,7 @@ namespace Microsoft.Azure.Cosmos
                 (diagnostics) => base.PatchItemStreamAsync(diagnostics, streamPayload, id, partitionKey, requestOptions, cancellationToken));
         }
 
-#if INTERNAL
-        public 
-#else
-        internal
-#endif
-            override Task<ItemResponse<T>> PatchItemAsync<T>(
+        public override Task<ItemResponse<T>> PatchItemAsync<T>(
                 string id,
                 PartitionKey partitionKey,
                 PatchSpecification patchSpecification,

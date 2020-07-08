@@ -326,10 +326,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
             PatchSpecification patchSpecification = new PatchSpecification().Replace("/Cost", testDoc.Cost + 1);
 
-            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInlineCore)BatchTestBase.JsonContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
-                .CreateItem(testDoc)
-                .PatchItem(testDoc.Id, patchSpecification)
-                .ExecuteAsync();
+            BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)BatchTestBase.JsonContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                .CreateItem(testDoc);
+
+            batch = (BatchCore)batch.PatchItem(testDoc.Id, patchSpecification);
+
+            TransactionalBatchResponse batchResponse = await batch.ExecuteAsync();
 
             BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 2);
 
@@ -368,21 +370,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // We run CRUD operations where all are expected to return HTTP 2xx.
             TransactionalBatchResponse batchResponse;
+            BatchCore batch;
             if (!isStream)
             {
-                batchResponse = await new BatchCore((ContainerInlineCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                batch = (BatchCore)new BatchCore((ContainerInlineCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .CreateItem(testDocToCreate)
                     .ReadItem(this.TestDocPk1ExistingC.Id)
                     .ReplaceItem(testDocToReplace.Id, testDocToReplace)
                     .UpsertItem(testDocToUpsert)
                     .UpsertItem(anotherTestDocToUpsert)
-                    .DeleteItem(this.TestDocPk1ExistingD.Id)
-                    .PatchItem(testDocToPatch.Id, patchSpecification)
-                    .ExecuteAsync();
+                    .DeleteItem(this.TestDocPk1ExistingD.Id);
+
+                batch = (BatchCore)batch.PatchItem(testDocToPatch.Id, patchSpecification);
             }
             else
             {
-                BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                batch = (BatchCore)new BatchCore((ContainerInlineCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .CreateItemStream(
                         BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
                         BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized))
@@ -410,10 +413,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         TestCommon.SerializerCore.ToStream<PatchSpecification>(patchSpecification),
                         BatchTestBase.GetBatchItemRequestOptions(testDocToPatch, isSchematized: false));
                 }
-
-                batchResponse = await batch.ExecuteAsync(batchOptions);
             }
 
+            batchResponse = await batch.ExecuteAsync(batchOptions);
             BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: isSchematized ? 6 :7);
 
             Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
