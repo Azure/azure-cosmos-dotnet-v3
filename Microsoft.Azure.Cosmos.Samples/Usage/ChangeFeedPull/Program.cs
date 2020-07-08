@@ -1,6 +1,7 @@
 ﻿namespace Cosmos.Samples.ChangeFeedPull
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -39,8 +40,16 @@
                             StartTime = DateTime.MinValue.ToUniversalTime()
                         });
 
-                    Container target = client.GetContainer("samples", "target");
+                    Database samples = client.GetDatabase("samples");
+                    Container target = await samples.CreateContainerIfNotExistsAsync("target", "/pk", 24000);
+                    await Task.Delay(5000);
 
+                    await target.ReplaceThroughputAsync(40000);
+                    await Task.Delay(5000);
+
+                    Console.WriteLine("Starting...");
+
+                    ConcurrentDictionary<Task, bool> allTasks = new ConcurrentDictionary<Task, bool>();
                     while (true)
                     {
                         FeedResponse<MyDocument> response;
@@ -58,13 +67,21 @@
                             }
                             else
                             {
-                                List<Task> tasks = new List<Task>();
+                                List<Task> currentTasks = new List<Task>();
                                 foreach (MyDocument doc in response.Resource)
                                 {
-                                    tasks.Add(target.CreateItemAsync(doc, new PartitionKey(doc.pk)));
+                                    Task t = target.CreateItemAsync(doc, new PartitionKey(doc.pk));
+                                    currentTasks.Add(t);
+                                    allTasks.TryAdd(t, true);
                                 }
 
-                                await Task.WhenAll(tasks);
+                                Task _ = Task.WhenAll(currentTasks).ContinueWith(_ =>
+                                 {
+                                     foreach (Task task in currentTasks)
+                                     {
+                                         allTasks.TryRemove(task, out bool _);
+                                     }
+                                 });
                             }
                         }
                         catch (CosmosException ex)
