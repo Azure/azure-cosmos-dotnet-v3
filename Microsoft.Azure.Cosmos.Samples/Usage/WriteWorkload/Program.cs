@@ -5,6 +5,7 @@
     using System.Diagnostics;
     using System.IO;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -33,28 +34,26 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                int itemsPerSec = int.Parse(configuration["ItemsPerSec"]);
-
                 using (CosmosClient client = new CosmosClientBuilder(endpoint, authKey).Build())
                 {
-                    Container container = client.GetContainer("samples", "source");
-                    Stopwatch s = Stopwatch.StartNew();
-                    while (true)
+                    Container container = client.GetContainer("samples", "temp");
+                    // 10 tasks on Standard F16s_v2 just saturates 40K RU (4 partitions)
+                    for (int i = 0; i < 10; i++)
                     {
-                        long startMs = s.ElapsedMilliseconds;
-                        List<Task> tasks = new List<Task>();
-                        for (int i = 0; i < itemsPerSec; i++)
+                        Task _ = Task.Run(() =>
                         {
-                            MemoryStream docStream = GetNextDocItem(out PartitionKey pk);
-                            tasks.Add(container.CreateItemStreamAsync(docStream, pk));
-                        }
-                        await Task.WhenAll(tasks);
-                        long endMs = s.ElapsedMilliseconds;
-                        if (endMs - startMs > 30)
-                        {
-                            await Task.Delay((int)(endMs - startMs - 30));
-                        }
+                            while (true)
+                            {
+                                MemoryStream docStream = GetNextDocItem(out PartitionKey pk);
+                                Task _ = container.CreateItemStreamAsync(docStream, pk);
+                            }
+                        });
+
+                        // RNTBD startup is not optimal (at least in debug mode).
+                        await Task.Delay(5000);
                     }
+
+                    await Task.Delay(1000000);
                 }
             }
             finally
