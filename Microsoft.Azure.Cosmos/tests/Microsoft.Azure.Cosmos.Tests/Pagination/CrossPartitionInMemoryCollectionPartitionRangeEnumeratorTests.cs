@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
                 PartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState> createEnumerator(Cosmos.FeedRange range, InMemoryCollectionState state) => new InMemoryCollectionPartitionRangeEnumerator(
                     inMemoryCollection,
-                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                    partitionKeyRangeId: int.Parse(feedRangeProvider.ToPhysicalPartitionKeyRangeAsync((FeedRangeInternal)range, cancellationToken: default).Result.PartitionKeyRangeId),
                     pageSize: 10,
                     state: state);
 
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
                 PartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState> createEnumerator(Cosmos.FeedRange range, InMemoryCollectionState state) => new InMemoryCollectionPartitionRangeEnumerator(
                     inMemoryCollection,
-                    partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                    partitionKeyRangeId: int.Parse(feedRangeProvider.ToPhysicalPartitionKeyRangeAsync((FeedRangeInternal)range, cancellationToken: default).Result.PartitionKeyRangeId),
                     pageSize: 10,
                     state: state);
 
@@ -210,16 +210,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     if (object.ReferenceEquals(partitionRangePageEnumerator1, partitionRangePageEnumerator2))
                     {
                         return 0;
-                    }
-
-                    if (partitionRangePageEnumerator1.HasMoreResults && !partitionRangePageEnumerator2.HasMoreResults)
-                    {
-                        return -1;
-                    }
-
-                    if (!partitionRangePageEnumerator1.HasMoreResults && partitionRangePageEnumerator2.HasMoreResults)
-                    {
-                        return 1;
                     }
 
                     // Either both don't have results or both do.

@@ -75,11 +75,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public async ValueTask<bool> MoveNextAsync()
         {
             PriorityQueue<PartitionRangePageEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: default);
-            PartitionRangePageEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
-            bool movedNext = await currentPaginator.MoveNextAsync();
-            if (!movedNext)
+            if (enumerators.Count == 0)
             {
                 return false;
+            }
+
+            PartitionRangePageEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
+            if (!await currentPaginator.MoveNextAsync())
+            {
+                // Current enumerator is empty,
+                // so recursively retry on the next enumerator.
+                return await this.MoveNextAsync();
             }
 
             if (currentPaginator.Current.Failed)
@@ -127,14 +133,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             List<(FeedRangeInternal, TState)> feedRangeAndStates = new List<(FeedRangeInternal, TState)>(enumerators.Count);
             foreach (PartitionRangePageEnumerator<TPage, TState> enumerator in enumerators)
             {
-                // Converting to epk range just because some implementations prefer that.
-                // Eventually we should be range type agnostics,
-                // but we can't change the continution token format,
-                // since there are old SDKs that don't know how to resume from it.
-                FeedRangeEpk feedRangeEpk = await this.feedRangeProvider.ToEffectivePartitionKeyRangeAsync(
-                    enumerator.Range,
-                    cancellationToken: default);
-                feedRangeAndStates.Add((feedRangeEpk, enumerator.State));
+                feedRangeAndStates.Add((enumerator.Range, enumerator.State));
             }
 
             CrossPartitionState<TState> crossPartitionState = new CrossPartitionState<TState>(feedRangeAndStates);
