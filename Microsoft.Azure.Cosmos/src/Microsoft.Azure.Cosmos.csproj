@@ -117,9 +117,6 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="OSS\Antlr\" />
-  </ItemGroup>
 
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
     <SignAssembly>true</SignAssembly>
