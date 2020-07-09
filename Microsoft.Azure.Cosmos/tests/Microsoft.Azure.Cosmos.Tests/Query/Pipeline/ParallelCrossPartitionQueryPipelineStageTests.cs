@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
-    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -154,6 +153,43 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
                 QueryPage queryPage = tryGetQueryPage.Result;
                 documents.AddRange(queryPage.Documents);
+            }
+
+            Assert.AreEqual(numItems, documents.Count);
+        }
+
+        [TestMethod]
+        public async Task TestDrainFully_WithStateResume()
+        {
+            int numItems = 1000;
+            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
+            IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
+            IQueryDataSource queryDataSource = new InMemoryCollectionQueryDataSource(inMemoryCollection);
+
+            TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                feedRangeProvider: feedRangeProvider,
+                queryDataSource: queryDataSource,
+                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                pageSize: 10,
+                continuationToken: default);
+            Assert.IsTrue(monadicCreate.Succeeded);
+            IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
+
+            List<CosmosElement> documents = new List<CosmosElement>();
+            while (await queryPipelineStage.MoveNextAsync())
+            {
+                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
+                Assert.IsTrue(tryGetQueryPage.Succeeded);
+
+                QueryPage queryPage = tryGetQueryPage.Result;
+                documents.AddRange(queryPage.Documents);
+
+                queryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                    feedRangeProvider: feedRangeProvider,
+                    queryDataSource: queryDataSource,
+                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                    pageSize: 10,
+                    continuationToken: queryPage.State.Value).Result;
             }
 
             Assert.AreEqual(numItems, documents.Count);

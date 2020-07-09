@@ -23,15 +23,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly IFeedRangeProvider feedRangeProvider;
         private readonly CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator;
         private readonly AsyncLazy<PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>> lazyEnumerators;
+        private readonly bool forceEpkRange;
 
         public CrossPartitionRangePageEnumerator(
             IFeedRangeProvider feedRangeProvider,
             CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator,
             IComparer<PartitionRangePageEnumerator<TPage, TState>> comparer,
+            bool forceEpkRange = false,
             CrossPartitionState<TState> state = default)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
             this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
+            this.forceEpkRange = forceEpkRange;
 
             if (comparer == null)
             {
@@ -133,7 +136,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
             List<(FeedRangeInternal, TState)> feedRangeAndStates = new List<(FeedRangeInternal, TState)>(enumerators.Count);
             foreach (PartitionRangePageEnumerator<TPage, TState> enumerator in enumerators)
             {
-                feedRangeAndStates.Add((enumerator.Range, enumerator.State));
+                FeedRangeInternal feedRangeInternal;
+                if (this.forceEpkRange)
+                {
+                    feedRangeInternal = await this.feedRangeProvider.ToEffectivePartitionKeyRangeAsync(enumerator.Range, cancellationToken: default);
+                }
+                else
+                {
+                    feedRangeInternal = enumerator.Range;
+                }
+
+                feedRangeAndStates.Add((feedRangeInternal, enumerator.State));
             }
 
             CrossPartitionState<TState> crossPartitionState = new CrossPartitionState<TState>(feedRangeAndStates);
