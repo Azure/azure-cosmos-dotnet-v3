@@ -1,8 +1,8 @@
-## CosmosClientRequestTimeout
+## CosmosDotNetRequestTimeout
 
 | Http Status Code | Name | Category |
 |---|---|---|
-|408|CosmosRequestTimeout|Service|
+|408|CosmosDotNetRequestTimeout|Service|
 
 ## Issue
 
