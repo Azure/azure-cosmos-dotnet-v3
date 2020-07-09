@@ -163,6 +163,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private EndpointCache GetOrAddEndpoint(Uri endpoint)
         {
+            // The GetorAdd is followed by a call to .Count which in a ConcurrentDictionary
+            // will acquire all locks for all buckets. This is really expensive. Since the check
+            // there is only to see if we've exceeded the count of endpoints, we can simply
+            // avoid that check altogether if we are not adding any more endpoints.
+            if (this.addressCacheByEndpoint.TryGetValue(endpoint, out EndpointCache existingCache))
+            {
+                return existingCache;
+            }
+
             EndpointCache endpointCache = this.addressCacheByEndpoint.GetOrAdd(
                 endpoint,
                 (Uri resolvedEndpoint) =>
