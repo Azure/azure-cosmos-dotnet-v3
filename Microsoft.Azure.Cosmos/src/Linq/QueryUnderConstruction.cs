@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using static FromParameterBindings;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
 

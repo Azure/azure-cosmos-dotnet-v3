@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
@@ -92,6 +93,17 @@ namespace Microsoft.Azure.Cosmos
         internal SqlQuerySpec ToSqlQuerySpec()
         {
             return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.SqlParameters.Values));
+        }
+
+        /// <summary>
+        /// Gets the sql parameters for the class
+        /// </summary>
+        internal IReadOnlyDictionary<string, SqlParameter> Parameters
+        {
+            get
+            {
+                return this.SqlParameters;
+            }
         }
     }
 }

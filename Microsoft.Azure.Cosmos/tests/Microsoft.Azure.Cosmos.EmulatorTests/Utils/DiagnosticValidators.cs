@@ -51,10 +51,10 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
             Assert.IsTrue((cosmosDiagnosticsContext.StartUtc - DateTime.UtcNow) < TimeSpan.FromHours(12), $"Start Time is not valid {cosmosDiagnosticsContext.StartUtc}");
-            Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent.ToString(), new UserAgentContainer().UserAgent.ToString(), "User agent not set");
-            Assert.IsTrue(cosmosDiagnosticsContext.TotalRequestCount > 0, "No request found");
+            Assert.IsTrue(cosmosDiagnosticsContext.UserAgent.ToString().Contains("cosmos-netstandard-sdk"));
+            Assert.IsTrue(cosmosDiagnosticsContext.GetTotalRequestCount() > 0, "No request found");
             Assert.IsTrue(cosmosDiagnosticsContext.IsComplete(), "OverallClientRequestTime should be stopped");
-            Assert.IsTrue(cosmosDiagnosticsContext.GetClientElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
+            Assert.IsTrue(cosmosDiagnosticsContext.GetRunningElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
 
             string info = cosmosDiagnosticsContext.ToString();
             Assert.IsNotNull(info);
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["DiagnosticVersion"].ToString()); 
             JToken summary = jObject["Summary"];
             Assert.IsNotNull(summary["UserAgent"].ToString());
-            Assert.AreNotEqual(summary["UserAgent"].ToString(), new UserAgentContainer().UserAgent);
+            Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"));
             Assert.IsNotNull(summary["StartUtc"].ToString());
             Assert.IsNotNull(summary["TotalElapsedTimeInMs"].ToString());
         }
@@ -86,6 +86,18 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(elapsedTimeFromJson);
             double elapsedInMs = double.Parse(elapsedTimeFromJson);
             Assert.IsTrue(elapsedInMs > 0);
+        }
+
+        private static void ValidateProcessInfo(CosmosSystemInfo processInfo)
+        {
+            Assert.IsNotNull(processInfo.CpuLoadHistory);
+            Assert.IsNotNull(processInfo.CpuLoadHistory.ToString());
+
+            string info = processInfo.ToString();
+            Assert.IsNotNull(info);
+            JObject jObject = JObject.Parse(info);
+            Assert.AreEqual("SystemInfo", jObject["Id"].ToString());
+            Assert.IsNotNull(jObject["CpuHistory"].ToString());
         }
 
         private static void ValidateRequestHandlerScope(RequestHandlerScope scope, TimeSpan? totalElapsedTime)
@@ -142,15 +154,26 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["ClientCorrelationId"].ToString());
         }
 
-        private static void ValidateClientSideRequestStatistics(CosmosClientSideRequestStatistics stats)
+        private static void ValidateClientSideRequestStatistics(CosmosClientSideRequestStatistics stats, HttpStatusCode? statusCode)
         {
             Assert.IsNotNull(stats.ContactedReplicas);
             Assert.IsNotNull(stats.DiagnosticsContext);
             Assert.IsNotNull(stats.RegionsContacted);
             Assert.IsNotNull(stats.FailedReplicas);
 
+            if (stats.DiagnosticsContext.GetFailedRequestCount() == 0)
+            {
+                Assert.AreEqual(stats.EstimatedClientDelayFromAllCauses, TimeSpan.Zero);
+                Assert.AreEqual(stats.EstimatedClientDelayFromRateLimiting, TimeSpan.Zero);
+            }
+            else if (statusCode != null && (int)statusCode == 429)
+            {
+                Assert.AreNotEqual(stats.EstimatedClientDelayFromAllCauses, TimeSpan.Zero);
+                Assert.AreNotEqual(stats.EstimatedClientDelayFromRateLimiting, TimeSpan.Zero);
+            }
+
             // If all the request failed it's possible to not contact a region or replica.
-            if (stats.DiagnosticsContext.TotalRequestCount < stats.DiagnosticsContext.FailedRequestCount)
+            if (stats.DiagnosticsContext.GetTotalRequestCount() < stats.DiagnosticsContext.GetFailedRequestCount())
             {
                 Assert.IsTrue(stats.RegionsContacted.Count > 0);
                 Assert.IsTrue(stats.ContactedReplicas.Count > 0);
@@ -183,7 +206,8 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(stats.RequestUri);
             Assert.IsNotNull(stats.RequestCharge);
-            if (stats.StatusCode != HttpStatusCode.RequestEntityTooLarge)
+            if (stats.StatusCode != HttpStatusCode.RequestEntityTooLarge &&
+                stats.StatusCode != HttpStatusCode.RequestTimeout)
             {
                 Assert.IsTrue(stats.RequestCharge > 0);
             }
@@ -253,10 +277,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
-                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
                 // Buffered pages are normal and have 0 request. This causes most validation to fail.
-                if(cosmosDiagnosticsContext.TotalRequestCount > 0)
+                if(cosmosDiagnosticsContext.GetTotalRequestCount() > 0)
                 {
                     DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
                 }
@@ -277,6 +301,11 @@ namespace Microsoft.Azure.Cosmos
             public override void Visit(RequestHandlerScope requestHandlerScope)
             {
                // This will be visited if it is gateway query plan
+            }
+
+            public override void Visit(CosmosSystemInfo cpuLoadHistory)
+            {
+                // This will be visited if it is gateway query plan
             }
 
             public override void Visit(QueryPageDiagnostics queryPageDiagnostics)
@@ -324,6 +353,7 @@ namespace Microsoft.Azure.Cosmos
         {
             private DateTime? StartTimeUtc = null;
             private TimeSpan? TotalElapsedTime = null;
+            private HttpStatusCode? StatusCode = null;
             private bool containsFailures = false;
             private bool isContextVisited = false;
             private bool isRequestHandlerScopeVisited = false;
@@ -340,6 +370,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.containsFailures = true;
                 }
+
+                this.StatusCode = pointOperationStatistics.StatusCode;
             }
 
             public override void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
@@ -347,7 +379,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsFalse(this.isContextVisited, "Point operations should only have a single context");
                 this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
-                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
 
@@ -362,6 +394,12 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsTrue(this.isContextVisited);
                 this.isRequestHandlerScopeVisited = true;
                 DiagnosticValidator.ValidateRequestHandlerScope(requestHandlerScope, this.TotalElapsedTime);
+            }
+
+            public override void Visit(CosmosSystemInfo cpuLoadHistory)
+            {
+                Assert.IsTrue(this.isContextVisited);
+                DiagnosticValidator.ValidateProcessInfo(cpuLoadHistory);
             }
 
             public override void Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
@@ -391,7 +429,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Assert.IsTrue(this.isContextVisited);
                 this.isCosmosClientSideRequestStatisticsVisited = true;
-                DiagnosticValidator.ValidateClientSideRequestStatistics(clientSideRequestStatistics);
+                DiagnosticValidator.ValidateClientSideRequestStatistics(clientSideRequestStatistics, this.StatusCode);
             }
 
             public override void Visit(FeedRangeStatistics feedRangeStatistics)
@@ -439,7 +477,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsFalse(this.isContextVisited, "Point operations should only have a single context");
                 this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
-                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
 
@@ -454,6 +492,10 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsTrue(this.isContextVisited);
                 this.isRequestHandlerVisited = true;
                 DiagnosticValidator.ValidateRequestHandlerScope(requestHandlerScope, this.TotalElapsedTime);
+            }
+
+            public override void Visit(CosmosSystemInfo cpuLoadHistory)
+            {
             }
 
             public override void Visit(CosmosDiagnosticScope cosmosDiagnosticScope)

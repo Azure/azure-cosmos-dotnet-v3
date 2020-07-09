@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public Documents.Routing.Range<string> Range { get; }
 
-        public static FeedRangeEPK ForCompleteRange()
+        public static FeedRangeEPK ForFullRange()
         {
             return new FeedRangeEPK(new Documents.Routing.Range<string>(
                     Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,

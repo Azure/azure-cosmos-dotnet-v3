@@ -1,7 +1,8 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+
+namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
     using System;
     using System.Globalization;

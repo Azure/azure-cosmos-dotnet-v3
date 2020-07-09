@@ -349,6 +349,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             }
         }
 
+        public CosmosQueryExecutionInfo CosmosQueryExecutionInfo
+        {
+            get
+            {
+                if (this.CurrentItemProducerTree == this)
+                {
+                    return this.Root.CosmosQueryExecutionInfo;
+                }
+                else
+                {
+                    return this.CurrentItemProducerTree.CosmosQueryExecutionInfo;
+                }
+            }
+        }
+
         /// <summary>
         /// Gets the current item from the document producer tree.
         /// </summary>

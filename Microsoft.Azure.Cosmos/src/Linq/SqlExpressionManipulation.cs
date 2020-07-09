@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Immutable;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
 
     internal static class SqlExpressionManipulation
     {

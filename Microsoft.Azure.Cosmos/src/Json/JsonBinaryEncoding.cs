@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -150,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// - Negative Value: The length is encoded as an integer of size equals to abs(value) following the TypeMarker byte
         /// - Zero Value: The length is unknown (for instance an unassigned type marker)
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetValueLength(ReadOnlySpan<byte> buffer)
         {
             long valueLength = JsonBinaryEncoding.ValueLengths.GetValueLength(buffer);
@@ -169,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// - Non-Negative Value: The TypeMarker encodes the string length
         /// - Negative Value: System or user dictionary encoded string, or encoded string length that follows the TypeMarker
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetStringLengths(byte typeMarker)
         {
             return JsonBinaryEncoding.StringLengths.Lengths[typeMarker];
@@ -179,11 +182,13 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="typeMarker">The typemarker as input.</param>
         /// <returns>The offset of the first item in an array or object</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetFirstValueOffset(byte typeMarker)
         {
             return JsonBinaryEncoding.FirstValueOffsets.Offsets[typeMarker];
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryGetValueLength(ReadOnlySpan<byte> buffer, out int length)
         {
             // Too lazy to convert this right now.

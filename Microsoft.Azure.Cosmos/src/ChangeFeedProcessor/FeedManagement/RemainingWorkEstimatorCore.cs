@@ -175,16 +175,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return new Collection<JObject>();
             }
 
-            return CosmosContainerExtensions.DefaultJsonSerializer.FromFeedResponseStream<JObject>(
-                response.Content,
-                ResourceType.Document);
+            return CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(
+                CosmosContainerExtensions.DefaultJsonSerializer,
+                response.Content);
         }
 
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
         {
             // Current lease schema maps Token to PKRangeId
             string partitionKeyRangeId = existingLease.CurrentLeaseToken;
-            FeedIterator iterator = this.feedCreator(
+            using FeedIterator iterator = this.feedCreator(
                 partitionKeyRangeId,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));

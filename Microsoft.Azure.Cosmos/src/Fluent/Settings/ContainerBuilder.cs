@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Defined the conflict resoltuion for Azure Cosmos container
+        /// Defined the conflict resolution for Azure Cosmos container
         /// </summary>
         /// <returns>An instance of <see cref="ConflictResolutionDefinition"/>.</returns>
         public ConflictResolutionDefinition WithConflictResolution()
@@ -62,27 +63,79 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates a container with the current fluent definition.
         /// </summary>
-        /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
+        /// <param name="throughputProperties">Desired throughput for the container expressed in Request Units per second.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateAsync(int? throughput = null)
+        public async Task<ContainerResponse> CreateAsync(
+            ThroughputProperties throughputProperties,
+            CancellationToken cancellationToken = default)
         {
             ContainerProperties containerProperties = this.Build();
 
-            return await this.database.CreateContainerAsync(containerProperties, throughput);
+            return await this.database.CreateContainerAsync(
+                containerProperties: containerProperties,
+                throughputProperties: throughputProperties,
+                cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates a container if it does not exist with the current fluent definition.
+        /// </summary>
+        /// <param name="throughputProperties">Desired throughput for the container expressed in Request Units per second.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        public async Task<ContainerResponse> CreateIfNotExistsAsync(
+            ThroughputProperties throughputProperties,
+            CancellationToken cancellationToken = default)
+        {
+            ContainerProperties containerProperties = this.Build();
+
+            return await this.database.CreateContainerIfNotExistsAsync(
+                containerProperties: containerProperties,
+                throughputProperties: throughputProperties,
+                cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates a container with the current fluent definition.
+        /// </summary>
+        /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        public async Task<ContainerResponse> CreateAsync(
+            int? throughput = null,
+            CancellationToken cancellationToken = default)
+        {
+            ContainerProperties containerProperties = this.Build();
+
+            return await this.database.CreateContainerAsync(
+                containerProperties: containerProperties,
+                throughput: throughput,
+                requestOptions: null,
+                cancellationToken: cancellationToken);
         }
 
         /// <summary>
         /// Creates a container if it does not exist with the current fluent definition.
         /// </summary>
         /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateIfNotExistsAsync(int? throughput = null)
+        public async Task<ContainerResponse> CreateIfNotExistsAsync(
+            int? throughput = null,
+            CancellationToken cancellationToken = default)
         {
             ContainerProperties containerProperties = this.Build();
 
-            return await this.database.CreateContainerIfNotExistsAsync(containerProperties, throughput);
+            return await this.database.CreateContainerIfNotExistsAsync(
+                containerProperties: containerProperties,
+                throughput: throughput,
+                requestOptions: null,
+                cancellationToken: cancellationToken);
         }
 
         /// <summary>

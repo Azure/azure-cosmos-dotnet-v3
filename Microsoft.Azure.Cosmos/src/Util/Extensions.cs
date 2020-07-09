@@ -31,8 +31,7 @@ namespace Microsoft.Azure.Cosmos
             Headers headers = documentServiceResponse.Headers.ToCosmosHeaders();
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
-            CosmosClientSideRequestStatistics clientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
-            if (clientSideRequestStatistics == null ||
+            if (!(documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics clientSideRequestStatistics) ||
                 (clientSideRequestStatistics.ContactedReplicas.Count == 0 && clientSideRequestStatistics.FailedReplicas.Count == 0))
             {
                 requestMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
@@ -43,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge: headers.RequestCharge,
                     errorMessage: null,
                     method: requestMessage?.Method,
-                    requestUri: requestMessage?.RequestUri,
+                    requestUri: requestMessage?.RequestUriString,
                     requestSessionToken: requestMessage?.Headers?.Session,
                     responseSessionToken: headers.Session));
             }
@@ -101,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: cosmosException.Headers.RequestCharge,
                 errorMessage: documentClientException.ToString(),
                 method: requestMessage?.Method,
-                requestUri: requestMessage?.RequestUri,
+                requestUri: requestMessage?.RequestUriString,
                 requestSessionToken: requestMessage?.Headers?.Session,
                 responseSessionToken: cosmosException.Headers.Session);
 
@@ -138,8 +137,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static void TraceException(Exception exception)
         {
-            AggregateException aggregateException = exception as AggregateException;
-            if (aggregateException != null)
+            if (exception is AggregateException aggregateException)
             {
                 foreach (Exception tempException in aggregateException.InnerExceptions)
                 {
@@ -170,8 +168,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Uri requestUri = null;
 
-                SocketException socketException = exception as SocketException;
-                if (socketException != null)
+                if (exception is SocketException socketException)
                 {
                     DefaultTrace.TraceWarning(
                         "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}, {4}",

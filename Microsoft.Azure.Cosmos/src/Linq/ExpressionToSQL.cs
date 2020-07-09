@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -154,8 +154,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // ExpressionToSql is the query input value: a IDocumentQuery
-            IDocumentQuery input = inputExpression.Value as IDocumentQuery;
-            if (input == null)
+            if (!(inputExpression.Value is IDocumentQuery input))
             {
                 throw new DocumentQueryException(ClientResources.InputIsNotIDocumentQuery);
             }
@@ -184,8 +183,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string parameterName = null;
             if (peekMethod.Arguments.Count > 1)
             {
-                LambdaExpression lambda = peekMethod.Arguments[1] as LambdaExpression;
-                if (lambda != null && lambda.Parameters.Count > 0)
+                if (peekMethod.Arguments[1] is LambdaExpression lambda && lambda.Parameters.Count > 0)
                 {
                     parameterName = lambda.Parameters[0].Name;
                 }
@@ -293,9 +291,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // We have two cases here, if the udf was expecting only one parameter and this parameter is an array
                     // then the second argument will be an expression of this array.
                     // else we will have a NewArrayExpression of the udf arguments
-                    if (methodCallExpression.Arguments[1] is NewArrayExpression)
+                    if (methodCallExpression.Arguments[1] is NewArrayExpression newArrayExpression)
                     {
-                        ReadOnlyCollection<Expression> argumentsExpressions = ((NewArrayExpression)methodCallExpression.Arguments[1]).Expressions;
+                        ReadOnlyCollection<Expression> argumentsExpressions = newArrayExpression.Expressions;
                         foreach (Expression argument in argumentsExpressions)
                         {
                             arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
@@ -360,9 +358,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression operand = ExpressionToSql.VisitScalarExpression(inputExpression.Operand, context);
 
             // handle NOT IN
-            if (operand is SqlInScalarExpression && inputExpression.NodeType == ExpressionType.Not)
+            if (operand is SqlInScalarExpression sqlInScalarExpression && inputExpression.NodeType == ExpressionType.Not)
             {
-                SqlInScalarExpression inExpression = (SqlInScalarExpression)operand;
+                SqlInScalarExpression inExpression = sqlInScalarExpression;
                 return SqlInScalarExpression.Create(inExpression.Needle, true, inExpression.Haystack);
             }
 
@@ -484,9 +482,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
         {
             MemberExpression memberExpression;
-            if (left is UnaryExpression)
+            if (left is UnaryExpression unaryExpression)
             {
-                memberExpression = ((UnaryExpression)left).Operand as MemberExpression;
+                memberExpression = unaryExpression.Operand as MemberExpression;
             }
             else
             {
@@ -699,11 +697,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return GeometrySqlExpressionFactory.Construct(inputExpression);
             }
 
-            if (inputExpression.Value is IEnumerable)
+            if (inputExpression.Value is IEnumerable enumerable)
             {
                 List<SqlScalarExpression> arrayItems = new List<SqlScalarExpression>();
 
-                foreach (object item in (IEnumerable)inputExpression.Value)
+                foreach (object item in enumerable)
                 {
                     arrayItems.Add(ExpressionToSql.VisitConstant(Expression.Constant(item), context));
                 }
@@ -1239,8 +1237,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>True if subquery is needed, otherwise false</returns>
         private static bool IsSubqueryScalarExpression(Expression expression, out SubqueryKind? expressionObjKind, out bool isMinMaxAvgMethod)
         {
-            MethodCallExpression methodCallExpression = expression as MethodCallExpression;
-            if (methodCallExpression == null)
+            if (!(expression is MethodCallExpression methodCallExpression))
             {
                 expressionObjKind = null;
                 isMinMaxAvgMethod = false;
@@ -1905,9 +1902,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
                 }
 
-                if (parent is SqlPropertyRefScalarExpression)
+                if (parent is SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
                 {
-                    literals.Add(SqlStringLiteral.Create(((SqlPropertyRefScalarExpression)parent).Identifer.Value));
+                    literals.Add(SqlStringLiteral.Create(sqlPropertyRefScalarExpression.Identifer.Value));
                     break;
                 }
 

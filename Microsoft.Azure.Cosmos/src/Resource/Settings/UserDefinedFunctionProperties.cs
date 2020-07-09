@@ -31,15 +31,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
     ///     .WithParameter("@expensive", 9000)
     ///     .WithParameter("@status", "Done");
     ///
-    /// FeedIterator<double> feedIterator = this.container.Items.GetItemsQueryIterator<double>(
+    /// using (FeedIterator<double> feedIterator = this.container.Items.GetItemsQueryIterator<double>(
     ///     sqlQueryDefinition: sqlQuery,
-    ///     partitionKey: "Done");
-    ///
-    /// while (feedIterator.HasMoreResults)
+    ///     partitionKey: "Done"))
     /// {
-    ///     foreach (var tax in await feedIterator.ReadNextAsync())
+    ///     while (feedIterator.HasMoreResults)
     ///     {
-    ///         Console.WriteLine(tax);
+    ///         foreach (var tax in await feedIterator.ReadNextAsync())
+    ///         {
+    ///             Console.WriteLine(tax);
+    ///         }
     ///     }
     /// }
     /// ]]>

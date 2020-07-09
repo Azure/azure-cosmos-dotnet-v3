@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq.Expressions;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
 
     internal static class StringBuiltinFunctions
     {
@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
                 if (methodCallExpression.Arguments.Count == 1
-                    && methodCallExpression.Arguments[0] is NewArrayExpression)
+                    && methodCallExpression.Arguments[0] is NewArrayExpression newArrayExpression)
                 {
-                    ReadOnlyCollection<Expression> argumentsExpressions = ((NewArrayExpression)methodCallExpression.Arguments[0]).Expressions;
+                    ReadOnlyCollection<Expression> argumentsExpressions = newArrayExpression.Expressions;
                     List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
                     foreach (Expression argument in argumentsExpressions)
                     {

@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             double requestCharge = 42.42;
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage, diagnosticsContext: diagnostics);
-            
+
             diagnostics.GetOverallScope().Dispose();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             string exceptionMessage = "Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query";
             client
-                .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<Uri>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken))
+                .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken))
                 .ReturnsAsync(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition));
             client
                 .Setup(x => x.ByPassQueryParsing())
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
-                resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
+                resourceLink: "dbs/mockdb/colls/mockColl",
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 diagnosticsContext: new CosmosDiagnosticsContextCore(),
@@ -356,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestCharge: 4,
                     errorMessage: null,
                     method: HttpMethod.Post,
-                    requestUri: new Uri("http://localhost.com"),
+                    requestUri: "http://localhost.com",
                     requestSessionToken: null,
                     responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()

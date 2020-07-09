@@ -89,7 +89,7 @@
             Assert.IsNotNull(readResponse.Resource.multiPolygon);
 
             IOrderedQueryable<SpatialItem> multipolygonQuery =
-              this.documentClient.CreateDocumentQuery<SpatialItem>(this.Container.LinkUri.OriginalString, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
+              this.documentClient.CreateDocumentQuery<SpatialItem>(this.Container.LinkUri, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
             SpatialItem[] withinQuery = multipolygonQuery
               .Where(f => f.multiPolygon.Within(this.GetMultiPoygon()) && f.multiPolygon.IsValid())
               .ToArray();
