@@ -43,8 +43,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static TestEncryptor encryptor;
         private static string decryptionFailedDocId;
         private static Dictionary<List<string>, string> PathsToEncrypt = new Dictionary<List<string>, string> { { TestDoc.PropertyPathsToEncrypt, pdekId } };
-        private static Dictionary<List<string>, string> PathsToEncrypt2 = new Dictionary<List<string>, string> { { TestDoc.PropertyPathsToEncrypt, pdekId }, { TestDoc.PropertyPathsToEncrypt2, pdekId2 } };
-        private static Dictionary<List<string>, string> PathsToEncrypt3 = new Dictionary<List<string>, string> { { TestDoc.Property2PathsToEncrypt, pdekId } };
+        private static Dictionary<List<string>, string> PathsToEncrypt3 = new Dictionary<List<string>, string> { { TestDoc.PropertyPathsToEncrypt, pdekId }, { TestDoc.PropertyPathsToEncrypt2, pdekId2 } };
+        private static Dictionary<List<string>, string> PathsToEncrypt4 = new Dictionary<List<string>, string> { { TestDoc.Property2PathsToEncrypt, pdekId } };
 
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context)
@@ -66,8 +66,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             EncryptionTests.pdekProperties = await EncryptionTests.CreatePropertyDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId);
             EncryptionTests.pdek2Properties = await EncryptionTests.CreatePropertyDekAsync(EncryptionTests.dekProvider, EncryptionTests.pdekId2);
 
-            EncryptionTests.twoPropertyEncryptionContainer = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionTests.PathsToEncrypt2);
-            EncryptionTests.twoPropertyOneDekEncryptionContainer = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionTests.PathsToEncrypt3);
+            EncryptionTests.twoPropertyEncryptionContainer = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionTests.PathsToEncrypt3);
+            EncryptionTests.twoPropertyOneDekEncryptionContainer = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionTests.PathsToEncrypt4);
 
         }
 
@@ -243,6 +243,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.IsTrue(ex.InnerException is CosmosException);
             }
         }
+
         [TestMethod]
         public async Task CreateItemWithPropertyEncr()
         {
@@ -256,7 +257,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.VerifyItemByReadStreamAsync(EncryptionTests.propertyEncryptionContainer, testDoc);
 
             TestDoc expectedDoc = new TestDoc(testDoc);
-
 
             // Read feed (null query)
             await EncryptionTests.ValidateQueryResultsAsync(
@@ -415,14 +415,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                      "SELECT * FROM c where c.City = {0}",
                      expectedDoc.City),
                      expectedDoc);
-            /*                       
-                        await EncryptionTests.ValidateQueryResultsAsync(
-                             EncryptionTests.twoPropertyEncryptionContainer,
-                             string.Format(
-                                 "SELECT * FROM c where c.Name = {0} and c.City = {1}",
-                                 expectedDoc.Name ,expectedDoc.City),
-                                 expectedDoc);
-            */
+/*
+            await EncryptionTests.ValidateQueryResultsAsync(
+                 EncryptionTests.twoPropertyEncryptionContainer,
+                 string.Format(
+                      "SELECT * FROM c where c.Name = {0} and c.City = {1}",
+                       expectedDoc.Name, expectedDoc.City),
+                       expectedDoc);
+*/
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.twoPropertyEncryptionContainer,
                 string.Format(
@@ -492,30 +492,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                  EncryptionTests.twoPropertyOneDekEncryptionContainer,
                  "SELECT * FROM c",
                  expectedDoc);
-
+/*
             await EncryptionTests.ValidateQueryResultsAsync(
-                           EncryptionTests.twoPropertyOneDekEncryptionContainer,
-                           string.Format(
-                               "SELECT * FROM c where c.SSN = {0} and c.Name={1}",
-                               expectedDoc.SSN, expectedDoc.Name),
-                               expectedDoc);
-
-            await EncryptionTests.ValidateQueryResultsAsync(
-                EncryptionTests.twoPropertyOneDekEncryptionContainer,
-                string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}'",
-                    expectedDoc.PK,
-                    expectedDoc.Id),
-                expectedDoc);
-
-            await EncryptionTests.ValidateQueryResultsAsync(
-                           EncryptionTests.twoPropertyOneDekEncryptionContainer,
-                           string.Format(
-                               "SELECT * FROM c where c.Name = {0} and c.id = '{1}'",
-                               expectedDoc.Name,
-                               expectedDoc.Id),
-                           expectedDoc);
-
+                  EncryptionTests.twoPropertyOneDekEncryptionContainer,
+                  string.Format(
+                     "SELECT * FROM c where c.SSN = {0} and c.Name={1}",
+                      expectedDoc.SSN, expectedDoc.Name),
+                      expectedDoc);
+*/
+             
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.twoPropertyOneDekEncryptionContainer,
                 queryDefinition: new QueryDefinition(
@@ -673,6 +658,57 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task PropertyEncryptionDistinctQueryValueResponse()
+        {
+            TestDoc testDoc = TestDoc.Create();
+
+            ItemResponse<TestDoc> createResponse = await EncryptionTests.propertyEncryptionContainer.CreateItemAsync(
+                testDoc, new PartitionKey(testDoc.PK));
+
+            string query = "SELECT DISTINCT * FROM c";
+
+            await EncryptionTests.ValidatePropertyEncryptedQueryResponseAsync(EncryptionTests.propertyEncryptionContainer, query);
+        }
+
+        [TestMethod]
+        public async Task PropertyEncryptionCountQueryValueResponse()
+        {
+            TestDoc testDoc = TestDoc.Create();
+
+            ItemResponse<TestDoc> createResponse = await EncryptionTests.propertyEncryptionContainer.CreateItemAsync(
+                testDoc, new PartitionKey(testDoc.PK));
+            
+            string query = "SELECT VALUE COUNT(c.Name) FROM c";
+
+            await EncryptionTests.ValidatePropertyEncryptedQueryResponseAsync(EncryptionTests.propertyEncryptionContainer, query);
+        }
+
+        [TestMethod]
+        public async Task PropertyEncryptionDecryptGroupByQueryResultTest()
+        {
+            TestDoc testDoc = TestDoc.Create();
+            ItemResponse<TestDoc> createResponse = await EncryptionTests.propertyEncryptionContainer.CreateItemAsync(
+                testDoc, new PartitionKey(testDoc.PK));
+
+            TestDoc testDocb = TestDoc.Create();
+            ItemResponse<TestDoc> createResponseb = await EncryptionTests.propertyEncryptionContainer.CreateItemAsync(
+                testDocb, new PartitionKey(testDocb.PK));
+
+            string query = $"SELECT COUNT(c.Name), c.City " +
+                           $"FROM c WHERE c.City = '{"myCity"}' " +
+                           $"GROUP BY c.City ";
+
+            await EncryptionTests.ValidatePropertyEncryptedQueryResponseAsync(EncryptionTests.propertyEncryptionContainer, query);
+
+            string queryb = $"SELECT COUNT(c.Id), c.Name " +
+                           $"FROM c WHERE c.Name = '{"myName"}' " +
+                           $"GROUP BY c.Name ";
+
+            await EncryptionTests.ValidatePropertyEncryptedQueryResponseAsync(EncryptionTests.propertyEncryptionContainer, query);
+
+        }
+
+        [TestMethod]
         public async Task EncryptionCreateItem()
         {
             TestDoc testDoc = await EncryptionTests.CreateItemAsync(EncryptionTests.encryptionContainer, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
@@ -745,7 +781,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.encryptionContainer, dek2, TestDoc.PathsToEncrypt);
 
             // change feed iterator
-            //await this.ValidateChangeFeedIteratorResponse(EncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await this.ValidateChangeFeedIteratorResponse(EncryptionTests.encryptionContainer, testDoc1, testDoc2);
 
             // change feed processor
             // await this.ValidateChangeFeedProcessorResponse(EncryptionTests.encryptionContainer, testDoc1, testDoc2);
@@ -1236,6 +1272,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.AreEqual(readDocs.ElementAt(index), testDoc2);
                 }
             }
+        }
+        private static async Task ValidatePropertyEncryptedQueryResponseAsync(Container container,
+            string query = null)
+        {
+            FeedIterator feedIterator;
+            if (query == null)
+            {
+                IOrderedQueryable<TestDoc> linqQueryable = container.GetItemLinqQueryable<TestDoc>();
+                feedIterator = container.ToEncryptionStreamIterator(linqQueryable);
+            }
+            else
+            {
+                feedIterator = container.GetItemQueryStreamIterator(query);
+            }
+
+            ResponseMessage response = await feedIterator.ReadNextAsync();
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.IsNull(response.ErrorMessage);
         }
 
         private static async Task ValidateQueryResponseAsync(Container container,
