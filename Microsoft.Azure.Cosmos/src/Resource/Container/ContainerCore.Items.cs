@@ -865,10 +865,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 patchSpecificationStream = this.ClientContext.SerializerCore.ToPatchSpecificationStream(patchSpecification);
             }
-
-            //StreamReader reader = new StreamReader(patchSpecificationStream);
-            //string text = reader.ReadToEnd();
-
+                        
             ResponseMessage responseMessage = await this.PatchItemStreamAsync(
                 diagnosticsContext,
                 patchSpecificationStream,

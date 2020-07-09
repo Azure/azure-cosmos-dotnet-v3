@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// A custom serializer converter for <see cref="PatchSpecification"/>
@@ -44,7 +42,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 PatchSpecification patchSpecification = (PatchSpecification)value;
 
-                // operations reqd?
                 writer.WriteStartObject();
                 writer.WritePropertyName("operations");
                 writer.WriteStartArray();
@@ -58,6 +55,7 @@ namespace Microsoft.Azure.Cosmos
                     writer.WriteValue(operation.Path);
 
                     string valueParam = operation.SerializeValueParameter(this.userSerializer);
+
                     if (valueParam != null)
                     {
                         writer.WritePropertyName(PatchConstants.PropertyNames.Value);

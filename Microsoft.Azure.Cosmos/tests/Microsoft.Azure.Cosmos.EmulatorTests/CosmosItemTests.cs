@@ -181,8 +181,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             { }
 
             // Both items have null description
-            dynamic testItem = new { id = id1, status = pk, description = (string)null, testDate = DateTime.UtcNow};
-            dynamic testItem2 = new { id = id2, status = pk, description = (string)null, testDate = DateTime.UtcNow };
+            dynamic testItem = new { id = id1, status = pk, description = (string)null};
+            dynamic testItem2 = new { id = id2, status = pk, description = (string)null };
 
             // Create a client that ignore null
             CosmosClientOptions clientOptions = new CosmosClientOptions()
@@ -190,8 +190,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Serializer = new CosmosJsonDotNetSerializer(
                     new JsonSerializerSettings()
                     {
-                        NullValueHandling = NullValueHandling.Ignore,
-                        DateFormatString = "dd / MM / yy hh : mm "
+                        NullValueHandling = NullValueHandling.Ignore
                     })
             };
 

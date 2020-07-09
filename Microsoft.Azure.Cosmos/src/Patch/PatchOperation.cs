@@ -39,9 +39,9 @@ namespace Microsoft.Azure.Cosmos
             T value)
         {
             // Use the user serializer so custom conversions are correctly handled
-            using (Stream str = serializer.ToStream(value))
+            using (Stream stream = serializer.ToStream(value))
             {
-                using (StreamReader streamReader = new StreamReader(str))
+                using (StreamReader streamReader = new StreamReader(stream))
                 {
                     return streamReader.ReadToEnd();
                 }

@@ -684,11 +684,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
-                Stream streamPayload,
-                string id,
-                PartitionKey partitionKey,
-                ItemRequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken));
+            Stream streamPayload,
+            string id,
+            PartitionKey partitionKey,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
@@ -728,11 +728,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
-                string id,
-                PartitionKey partitionKey,
-                PatchSpecification patchSpecification,
-                ItemRequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken));
+            string id,
+            PartitionKey partitionKey,
+            PatchSpecification patchSpecification,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
 #endif
 
         /// <summary>

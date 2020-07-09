@@ -92,21 +92,24 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentNullException(nameof(partitionKey));
         }
 
-#if !PREVIEW
+#if !INTERNAL
 
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
-                Stream streamPayload,
-                string id,
-                PartitionKey partitionKey,
-                ItemRequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken));
+            Stream streamPayload,
+            string id,
+            PartitionKey partitionKey,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
-                string id,
-                PartitionKey partitionKey,
-                PatchSpecification patchSpecification,
-                ItemRequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken));
+            string id,
+            PartitionKey partitionKey,
+            PatchSpecification patchSpecification,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
+#if !PREVIEW
 
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
