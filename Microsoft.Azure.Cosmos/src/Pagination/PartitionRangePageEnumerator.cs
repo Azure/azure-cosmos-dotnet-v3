@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Has the ability to page through a partition range.
@@ -18,13 +19,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private bool hasStarted;
 
-        protected PartitionRangePageEnumerator(FeedRange range, TState state = null)
+        protected PartitionRangePageEnumerator(PartitionKeyRange range, TState state = null)
         {
             this.Range = range;
             this.State = state;
         }
 
-        public FeedRange Range { get; }
+        public PartitionKeyRange Range { get; }
 
         public TryCatch<TPage> Current { get; private set; }
 

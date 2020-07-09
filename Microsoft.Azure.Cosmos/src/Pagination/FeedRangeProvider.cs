@@ -9,9 +9,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Documents;
 
     internal sealed class FeedRangeProvider : IFeedRangeProvider
     {
+        private static readonly PartitionKeyRange FullRange = new PartitionKeyRange()
+        {
+            MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+            MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+        };
+
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly string collectionRid;
 
@@ -21,40 +28,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.collectionRid = collectionRid ?? throw new ArgumentNullException(nameof(collectionRid));
         }
 
-        public async Task<IEnumerable<FeedRange>> GetChildRangeAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (feedRange == null)
-            {
-                throw new ArgumentNullException(nameof(feedRange));
-            }
-
-            if (!(feedRange is FeedRangeEpk feedRangeEpk))
-            {
-                throw new ArgumentOutOfRangeException(nameof(feedRange));
-            }
-
-            IReadOnlyList<Documents.PartitionKeyRange> replacementRanges = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
+        public Task<IEnumerable<PartitionKeyRange>> GetChildRangeAsync(
+            PartitionKeyRange partitionKeyRange,
+            CancellationToken cancellationToken) => this.cosmosQueryClient.TryGetOverlappingRangesAsync(
                 this.collectionRid,
-                new Documents.Routing.Range<string>(feedRangeEpk.Range.Min, feedRangeEpk.Range.Max, isMaxInclusive: true, isMinInclusive: false),
-                forceRefresh: true);
+                partitionKeyRange.ToRange(),
+                forceRefresh: true)
+                .ContinueWith((task) => (IEnumerable<PartitionKeyRange>)task.Result);
 
-            List<FeedRange> childFeedRanges = new List<FeedRange>(replacementRanges.Count);
-
-            foreach (Documents.PartitionKeyRange replacementRange in replacementRanges)
-            {
-                childFeedRanges.Add(new FeedRangeEpk(replacementRange.ToRange()));
-            }
-
-            return childFeedRanges;
-        }
-
-        public Task<IEnumerable<FeedRange>> GetFeedRangesAsync(
-            CancellationToken cancellationToken = default) => this.GetChildRangeAsync(
-                FeedRangeEpk.FullRange,
+        public Task<IEnumerable<PartitionKeyRange>> GetFeedRangesAsync(
+            CancellationToken cancellationToken) => this.GetChildRangeAsync(
+                FeedRangeProvider.FullRange,
                 cancellationToken);
     }
 }

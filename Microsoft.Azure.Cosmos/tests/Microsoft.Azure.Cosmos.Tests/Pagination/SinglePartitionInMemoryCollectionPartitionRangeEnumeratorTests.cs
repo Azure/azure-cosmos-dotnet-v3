@@ -85,11 +85,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
                     PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState> enumerable = new PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState>(
-                        range: new FeedRangePartitionKeyRange(partitionKeyRangeId.ToString()),
-                            state: state,
-                            (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
+                        range: new PartitionKeyRange() { Id = partitionKeyRangeId.ToString() },
+                        state: state,
+                        (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
                                 inMemoryCollection,
-                                partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                                partitionKeyRangeId: int.Parse(range.Id),
                                 pageSize: 10,
                                 state: state));
                     HashSet<Guid> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
@@ -131,28 +131,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             internal override IAsyncEnumerable<TryCatch<InMemoryCollectionPage>> CreateEnumerable(
                 InMemoryCollection inMemoryCollection,
-                InMemoryCollectionState state = null)
-            {
-                return new PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState>(
-                    range: new FeedRangePartitionKeyRange("0"),
+                InMemoryCollectionState state = null) => new PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState>(
+                    range: new PartitionKeyRange() { Id = "0" },
                     state: state,
                     (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
                         inMemoryCollection,
-                        partitionKeyRangeId: int.Parse(((FeedRangePartitionKeyRange)range).PartitionKeyRangeId),
+                        partitionKeyRangeId: int.Parse(range.Id),
                         pageSize: 10,
                         state: state));
-            }
 
             internal override IAsyncEnumerator<TryCatch<InMemoryCollectionPage>> CreateEnumerator(
                 InMemoryCollection inMemoryCollection,
-                InMemoryCollectionState state = null)
-            {
-                return new InMemoryCollectionPartitionRangeEnumerator(
+                InMemoryCollectionState state = null) => new InMemoryCollectionPartitionRangeEnumerator(
                     inMemoryCollection,
                     partitionKeyRangeId: 0,
                     pageSize: 10,
                     state: state);
-            }
         }
     }
 }
