@@ -9,8 +9,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Immutable;
     using System.Linq;
     using System.Linq.Expressions;
-    using Microsoft.Azure.Cosmos.Sql;
-    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
+    using Microsoft.Azure.Cosmos.SqlObjects;
 
     /// <summary>
     /// Used by the Expression tree visitor.
@@ -177,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="collection">Collection to bind parameter to.</param>
         public void SetFromParameter(ParameterExpression parameter, SqlCollection collection)
         {
-            Binding binding = new Binding(parameter, collection, isInCollection: true);
+            FromParameterBindings.Binding binding = new FromParameterBindings.Binding(parameter, collection, isInCollection: true);
             this.currentQuery.fromParameters.Add(binding);
         }
 
@@ -268,12 +267,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             /// <summary>
             /// Indicates the new bindings that are introduced when visiting the subquery
             /// </summary>
-            public List<Binding> NewBindings { get; private set; }
+            public List<FromParameterBindings.Binding> NewBindings { get; private set; }
 
             public SubqueryBinding(bool shouldBeOnNewQuery)
             {
                 this.ShouldBeOnNewQuery = shouldBeOnNewQuery;
-                this.NewBindings = new List<Binding>();
+                this.NewBindings = new List<FromParameterBindings.Binding>();
             }
 
             /// <summary>
@@ -281,10 +280,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             /// </summary>
             /// <returns>All the current bindings</returns>
             /// <remarks>The binding list is reset after this operation.</remarks>
-            public List<Binding> TakeBindings()
+            public List<FromParameterBindings.Binding> TakeBindings()
             {
-                List<Binding> bindings = this.NewBindings;
-                this.NewBindings = new List<Binding>();
+                List<FromParameterBindings.Binding> bindings = this.NewBindings;
+                this.NewBindings = new List<FromParameterBindings.Binding>();
                 return bindings;
             }
         }

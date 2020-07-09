@@ -442,8 +442,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 Assert.AreEqual(total, count);
                 Assert.IsFalse(forwardOrder.Where(x => string.IsNullOrEmpty(x)).Any());
 
-                requestOptions.Properties = requestOptions.Properties = new Dictionary<string, object>();
-                requestOptions.Properties.Add(Documents.HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse);
+                requestOptions.Properties = requestOptions.Properties = new Dictionary<string, object>()
+                {
+                    { Documents.HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse },
+                };
                 count = 0;
                 List<string> reverseOrder = new List<string>();
 

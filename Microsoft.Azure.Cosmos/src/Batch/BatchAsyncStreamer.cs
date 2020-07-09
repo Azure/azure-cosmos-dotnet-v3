@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Handles operation queueing and dispatching.
@@ -20,26 +19,27 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="BatchAsyncBatcher"/>
     internal class BatchAsyncStreamer : IDisposable
     {
+        private static readonly TimeSpan congestionControllerDelay = TimeSpan.FromMilliseconds(1000);
+        private static readonly TimeSpan batchTimeout = TimeSpan.FromMilliseconds(100);
+
         private readonly object dispatchLimiter = new object();
         private readonly int maxBatchOperationCount;
         private readonly int maxBatchByteSize;
         private readonly BatchAsyncBatcherExecuteDelegate executor;
         private readonly BatchAsyncBatcherRetryDelegate retrier;
-        private readonly int dispatchTimerInSeconds;
         private readonly CosmosSerializerCore serializerCore;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
         private readonly int congestionIncreaseFactor = 1;
-        private readonly int congestionControllerDelayInSeconds = 1;
         private readonly int congestionDecreaseFactor = 5;
         private readonly int maxDegreeOfConcurrency;
+        private readonly TimerWheel timerWheel;
 
         private volatile BatchAsyncBatcher currentBatcher;
-        private TimerPool timerPool;
-        private PooledTimer currentTimer;
+        private TimerWheelTimer currentTimer;
         private Task timerTask;
 
-        private PooledTimer congestionControlTimer;
+        private TimerWheelTimer congestionControlTimer;
         private Task congestionControlTask;
         private SemaphoreSlim limiter;
 
@@ -51,8 +51,7 @@ namespace Microsoft.Azure.Cosmos
         public BatchAsyncStreamer(
             int maxBatchOperationCount,
             int maxBatchByteSize,
-            int dispatchTimerInSeconds,
-            TimerPool timerPool,
+            TimerWheel timerWheel,
             SemaphoreSlim limiter,
             int maxDegreeOfConcurrency,
             CosmosSerializerCore serializerCore,
@@ -67,11 +66,6 @@ namespace Microsoft.Azure.Cosmos
             if (maxBatchByteSize < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxBatchByteSize));
-            }
-
-            if (dispatchTimerInSeconds < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dispatchTimerInSeconds));
             }
 
             if (executor == null)
@@ -103,8 +97,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxBatchByteSize = maxBatchByteSize;
             this.executor = executor;
             this.retrier = retrier;
-            this.dispatchTimerInSeconds = dispatchTimerInSeconds;
-            this.timerPool = timerPool;
+            this.timerWheel = timerWheel;
             this.serializerCore = serializerCore;
             this.currentBatcher = this.CreateBatchAsyncBatcher();
             this.ResetTimer();
@@ -155,16 +148,19 @@ namespace Microsoft.Azure.Cosmos
 
         private void ResetTimer()
         {
-            this.currentTimer = this.timerPool.GetPooledTimer(this.dispatchTimerInSeconds);
+            this.currentTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.batchTimeout);
             this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
             {
-                this.DispatchTimer();
+                if (task.IsCompleted)
+                {
+                    this.DispatchTimer();
+                }
             }, this.cancellationTokenSource.Token);
         }
 
         private void StartCongestionControlTimer()
         {
-            this.congestionControlTimer = this.timerPool.GetPooledTimer(this.congestionControllerDelayInSeconds);
+            this.congestionControlTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.congestionControllerDelay);
             this.congestionControlTask = this.congestionControlTimer.StartTimerAsync().ContinueWith(async (task) =>
             {
                 await this.RunCongestionControlAsync();

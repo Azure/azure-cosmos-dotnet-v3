@@ -98,23 +98,38 @@ namespace Microsoft.Azure.Cosmos.Test
         public async Task TestDelayedQueueTaskAsync()
         {
             ComparableTaskScheduler scheduler = new ComparableTaskScheduler();
+
             Task task = new Task(() =>
             {
                 Assert.AreEqual(1, scheduler.CurrentRunningTaskCount);
             });
+
             Task delayedTask = new Task(() =>
             {
                 Assert.AreEqual(1, scheduler.CurrentRunningTaskCount);
             });
-            Assert.AreEqual(true, scheduler.TryQueueTask(new TestComparableTask(0, delayedTask), TimeSpan.FromMilliseconds(200)));
-            Assert.AreEqual(false, scheduler.TryQueueTask(new TestComparableTask(0, delayedTask), TimeSpan.FromMilliseconds(200)));
-            Assert.AreEqual(false, scheduler.TryQueueTask(new TestComparableTask(0, task)));
-            Assert.AreEqual(true, scheduler.TryQueueTask(new TestComparableTask(1, task)));
+
+            Assert.AreEqual(
+                true,
+                scheduler.TryQueueTask(new TestComparableTask(schedulePriority: 0, delayedTask), TimeSpan.FromMilliseconds(200)));
+            Assert.AreEqual(
+                false,
+                scheduler.TryQueueTask(new TestComparableTask(schedulePriority: 0, delayedTask), TimeSpan.FromMilliseconds(200)));
+            Assert.AreEqual(
+                false,
+                scheduler.TryQueueTask(new TestComparableTask(schedulePriority: 0, task)));
+            Assert.AreEqual(
+                true,
+                scheduler.TryQueueTask(new TestComparableTask(schedulePriority: 1, task)));
+
             await Task.Delay(150);
+
             Assert.AreEqual(true, task.IsCompleted);
             Assert.AreEqual(false, delayedTask.IsCompleted);
             Assert.AreEqual(0, scheduler.CurrentRunningTaskCount);
-            await Task.Delay(60);
+
+            await Task.Delay(400);
+
             Assert.AreEqual(true, delayedTask.IsCompleted);
         }
 

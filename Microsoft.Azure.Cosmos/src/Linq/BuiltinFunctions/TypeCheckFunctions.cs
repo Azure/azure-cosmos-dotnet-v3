@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Immutable;
     using System.Globalization;
     using System.Linq.Expressions;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
 
     internal static class TypeCheckFunctions
     {

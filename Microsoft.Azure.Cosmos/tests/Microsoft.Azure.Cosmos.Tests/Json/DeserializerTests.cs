@@ -31,14 +31,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                 {
                     // positive
-                    TryCatch<IReadOnlyList<object>> tryDeserialize = Serializer.Monadic.Deserialize<IReadOnlyList<object>>(buffer);
+                    TryCatch<IReadOnlyList<object>> tryDeserialize = JsonSerializer.Monadic.Deserialize<IReadOnlyList<object>>(buffer);
                     Assert.IsTrue(tryDeserialize.Succeeded);
                     Assert.IsTrue(tryDeserialize.Result.SequenceEqual(arrayValue));
                 }
 
                 {
                     // negative
-                    TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(buffer);
+                    TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(buffer);
                     Assert.IsFalse(tryDeserialize.Succeeded);
                 }
             }
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 jsonWriter.WriteArrayEnd();
                 ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
 
-                TryCatch<IReadOnlyList<Person>> tryDeserialize = Serializer.Monadic.Deserialize<IReadOnlyList<Person>>(buffer);
+                TryCatch<IReadOnlyList<Person>> tryDeserialize = JsonSerializer.Monadic.Deserialize<IReadOnlyList<Person>>(buffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.IsTrue(tryDeserialize.Result.SequenceEqual(arrayValue));
             }
@@ -73,14 +73,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             {
                 // positive
-                TryCatch<ReadOnlyMemory<byte>> tryDeserialize = Serializer.Monadic.Deserialize<ReadOnlyMemory<byte>>(buffer);
+                TryCatch<ReadOnlyMemory<byte>> tryDeserialize = JsonSerializer.Monadic.Deserialize<ReadOnlyMemory<byte>>(buffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.IsTrue(tryDeserialize.Result.ToArray().SequenceEqual(binaryValue));
             }
 
             {
                 // negative
-                TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(buffer);
+                TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(buffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
         }
@@ -94,14 +94,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             {
                 // positive
-                TryCatch<bool> tryDeserialize = Serializer.Monadic.Deserialize<bool>(buffer);
+                TryCatch<bool> tryDeserialize = JsonSerializer.Monadic.Deserialize<bool>(buffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual(true, tryDeserialize.Result);
             }
 
             {
                 // negative
-                TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(buffer);
+                TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(buffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
         }
@@ -115,14 +115,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             {
                 // positive
-                TryCatch<Guid> tryDeserialize = Serializer.Monadic.Deserialize<Guid>(buffer);
+                TryCatch<Guid> tryDeserialize = JsonSerializer.Monadic.Deserialize<Guid>(buffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual(Guid.Empty, tryDeserialize.Result);
             }
 
             {
                 // negative
-                TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(buffer);
+                TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(buffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
         }
@@ -136,21 +136,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             {
                 // object
-                TryCatch<CosmosClient> tryDeserialize = Serializer.Monadic.Deserialize<CosmosClient>(buffer);
+                TryCatch<CosmosClient> tryDeserialize = JsonSerializer.Monadic.Deserialize<CosmosClient>(buffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual(null, tryDeserialize.Result);
             }
 
             {
                 // nullable
-                TryCatch<int?> tryDeserialize = Serializer.Monadic.Deserialize<int?>(buffer);
+                TryCatch<int?> tryDeserialize = JsonSerializer.Monadic.Deserialize<int?>(buffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual(null, tryDeserialize.Result);
             }
 
             {
                 // struct
-                TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(buffer);
+                TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(buffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
         }
@@ -164,66 +164,66 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             ReadOnlyMemory<byte> integerBuffer = integerWriter.GetResult();
 
             {
-                TryCatch<sbyte> tryDeserialize = Serializer.Monadic.Deserialize<sbyte>(integerBuffer);
+                TryCatch<sbyte> tryDeserialize = JsonSerializer.Monadic.Deserialize<sbyte>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<byte> tryDeserialize = Serializer.Monadic.Deserialize<byte>(integerBuffer);
+                TryCatch<byte> tryDeserialize = JsonSerializer.Monadic.Deserialize<byte>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<short> tryDeserialize = Serializer.Monadic.Deserialize<short>(integerBuffer);
+                TryCatch<short> tryDeserialize = JsonSerializer.Monadic.Deserialize<short>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(integerBuffer);
+                TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<long> tryDeserialize = Serializer.Monadic.Deserialize<long>(integerBuffer);
+                TryCatch<long> tryDeserialize = JsonSerializer.Monadic.Deserialize<long>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<ushort> tryDeserialize = Serializer.Monadic.Deserialize<ushort>(integerBuffer);
+                TryCatch<ushort> tryDeserialize = JsonSerializer.Monadic.Deserialize<ushort>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<uint> tryDeserialize = Serializer.Monadic.Deserialize<uint>(integerBuffer);
+                TryCatch<uint> tryDeserialize = JsonSerializer.Monadic.Deserialize<uint>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<ulong> tryDeserialize = Serializer.Monadic.Deserialize<ulong>(integerBuffer);
+                TryCatch<ulong> tryDeserialize = JsonSerializer.Monadic.Deserialize<ulong>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<decimal> tryDeserialize = Serializer.Monadic.Deserialize<decimal>(integerBuffer);
+                TryCatch<decimal> tryDeserialize = JsonSerializer.Monadic.Deserialize<decimal>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
             }
 
             {
-                TryCatch<float> tryDeserialize = Serializer.Monadic.Deserialize<float>(integerBuffer);
+                TryCatch<float> tryDeserialize = JsonSerializer.Monadic.Deserialize<float>(integerBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<double> tryDeserialize = Serializer.Monadic.Deserialize<double>(integerBuffer);
+                TryCatch<double> tryDeserialize = JsonSerializer.Monadic.Deserialize<double>(integerBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
@@ -233,59 +233,59 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             ReadOnlyMemory<byte> doubleBuffer = doubleWriter.GetResult();
 
             {
-                TryCatch<sbyte> tryDeserialize = Serializer.Monadic.Deserialize<sbyte>(doubleBuffer);
+                TryCatch<sbyte> tryDeserialize = JsonSerializer.Monadic.Deserialize<sbyte>(doubleBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<byte> tryDeserialize = Serializer.Monadic.Deserialize<byte>(doubleBuffer);
+                TryCatch<byte> tryDeserialize = JsonSerializer.Monadic.Deserialize<byte>(doubleBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<short> tryDeserialize = Serializer.Monadic.Deserialize<short>(doubleBuffer);
+                TryCatch<short> tryDeserialize = JsonSerializer.Monadic.Deserialize<short>(doubleBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(doubleBuffer);
+                TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(doubleBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<long> tryDeserialize = Serializer.Monadic.Deserialize<long>(doubleBuffer);
+                TryCatch<long> tryDeserialize = JsonSerializer.Monadic.Deserialize<long>(doubleBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<ushort> tryDeserialize = Serializer.Monadic.Deserialize<ushort>(doubleBuffer);
+                TryCatch<ushort> tryDeserialize = JsonSerializer.Monadic.Deserialize<ushort>(doubleBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<uint> tryDeserialize = Serializer.Monadic.Deserialize<uint>(doubleBuffer);
+                TryCatch<uint> tryDeserialize = JsonSerializer.Monadic.Deserialize<uint>(doubleBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<ulong> tryDeserialize = Serializer.Monadic.Deserialize<ulong>(doubleBuffer);
+                TryCatch<ulong> tryDeserialize = JsonSerializer.Monadic.Deserialize<ulong>(doubleBuffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
 
             {
-                TryCatch<decimal> tryDeserialize = Serializer.Monadic.Deserialize<decimal>(doubleBuffer);
+                TryCatch<decimal> tryDeserialize = JsonSerializer.Monadic.Deserialize<decimal>(doubleBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual((decimal)(double)doubleValue, tryDeserialize.Result);
             }
 
             {
-                TryCatch<float> tryDeserialize = Serializer.Monadic.Deserialize<float>(doubleBuffer);
+                TryCatch<float> tryDeserialize = JsonSerializer.Monadic.Deserialize<float>(doubleBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual(doubleValue, tryDeserialize.Result);
             }
 
             {
-                TryCatch<double> tryDeserialize = Serializer.Monadic.Deserialize<double>(doubleBuffer);
+                TryCatch<double> tryDeserialize = JsonSerializer.Monadic.Deserialize<double>(doubleBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual(doubleValue, tryDeserialize.Result);
             }
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             {
                 // positive
-                TryCatch<Person> tryDeserialize = Serializer.Monadic.Deserialize<Person>(buffer);
+                TryCatch<Person> tryDeserialize = JsonSerializer.Monadic.Deserialize<Person>(buffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual("John", tryDeserialize.Result.Name);
                 Assert.AreEqual(24, tryDeserialize.Result.Age);
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             {
                 // negative
-                TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(buffer);
+                TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(buffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
         }
@@ -330,14 +330,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             {
                 // Positive
-                TryCatch<string> tryDeserialize = Serializer.Monadic.Deserialize<string>(buffer);
+                TryCatch<string> tryDeserialize = JsonSerializer.Monadic.Deserialize<string>(buffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
                 Assert.AreEqual("asdf", tryDeserialize.Result);
             }
 
             {
                 // Negative
-                TryCatch<int> tryDeserialize = Serializer.Monadic.Deserialize<int>(buffer);
+                TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(buffer);
                 Assert.IsFalse(tryDeserialize.Succeeded);
             }
         }

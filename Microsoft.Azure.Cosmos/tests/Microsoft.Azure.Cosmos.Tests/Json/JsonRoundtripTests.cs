@@ -6,8 +6,9 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
-    using System.Diagnostics;
+    using System.Collections.Generic;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Tests;
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Boolean(true)
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Boolean(false)
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Null()
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
         #endregion
         #region Numbers
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(1337)
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(1337.7)
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(-1337.7)
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -122,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(6.02252e23)
             };
 
-            this.PerformRoundTripTest(input2, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input2, token);
         }
 
         [TestMethod]
@@ -136,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(6.02252e+23)
             };
 
-            this.PerformRoundTripTest(input2, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input2, token);
         }
 
         [TestMethod]
@@ -150,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(6.02252e-23)
             };
 
-            this.PerformRoundTripTest(input2, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input2, token);
         }
         #endregion
         #region Strings
@@ -164,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.String(string.Empty)
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -177,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.String("Hello World")
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
         #endregion
         #region Arrays
@@ -193,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -231,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -248,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -266,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -285,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -310,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -329,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
         #endregion
         #region Escaping
@@ -360,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                      JsonToken.String(escapeCharacter.Item2),
                 };
 
-                this.PerformRoundTripTest(input, token);
+                JsonRoundTripsTests.PerformRoundTripTest(input, token);
             }
         }
 
@@ -391,7 +392,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -408,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                  JsonToken.String(expectedString),
             };
 
-            this.PerformRoundTripTest(unicodeString, token);
+            JsonRoundTripsTests.PerformRoundTripTest(unicodeString, token);
         }
 
         [TestMethod]
@@ -425,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                  JsonToken.String(expectedString),
             };
 
-            this.PerformRoundTripTest(unicodeString, token);
+            JsonRoundTripsTests.PerformRoundTripTest(unicodeString, token);
         }
         #endregion
         #region Objects
@@ -441,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                  JsonToken.ObjectEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -460,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ObjectEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
 
         [TestMethod]
@@ -527,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ObjectEnd(),
             };
 
-            this.PerformRoundTripTest(input, token);
+            JsonRoundTripsTests.PerformRoundTripTest(input, token);
         }
         #endregion
         #region Limits
@@ -542,7 +543,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(byte.MinValue)
             };
 
-            this.PerformRoundTripTest(minByteInput, minByteTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(minByteInput, minByteTokens);
 
             // max byte
             string maxByteInput = "255";
@@ -551,7 +552,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(byte.MaxValue)
             };
 
-            this.PerformRoundTripTest(maxByteInput, maxByteTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(maxByteInput, maxByteTokens);
 
             // min short
             string minShortInput = "-32768";
@@ -560,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(short.MinValue)
             };
 
-            this.PerformRoundTripTest(minShortInput, minShortTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(minShortInput, minShortTokens);
 
             // max short
             string maxShortInput = "32767";
@@ -569,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(short.MaxValue)
             };
 
-            this.PerformRoundTripTest(maxShortInput, maxShortTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(maxShortInput, maxShortTokens);
 
             // min int
             string minIntInput = "-2147483648";
@@ -578,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(int.MinValue)
             };
 
-            this.PerformRoundTripTest(minIntInput, minIntTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(minIntInput, minIntTokens);
 
             // max int
             string maxIntInput = "2147483647";
@@ -587,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(int.MaxValue)
             };
 
-            this.PerformRoundTripTest(maxIntInput, maxIntTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(maxIntInput, maxIntTokens);
 
             // min long
             string minLongInput = "-9223372036854775808";
@@ -596,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(long.MinValue)
             };
 
-            this.PerformRoundTripTest(minLongInput, minLongTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(minLongInput, minLongTokens);
 
             // max long
             string maxLongInput = "9223372036854775807";
@@ -605,7 +606,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(long.MaxValue)
             };
 
-            this.PerformRoundTripTest(maxLongInput, maxLongTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(maxLongInput, maxLongTokens);
 
             // min double
             string minDoubleInput = "-1.7976931348623157E+308";
@@ -614,7 +615,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(double.MinValue)
             };
 
-            this.PerformRoundTripTest(minDoubleInput, minDoubleTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(minDoubleInput, minDoubleTokens);
 
             // max double
             string maxDoubleInput = "1.7976931348623157E+308";
@@ -623,7 +624,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(double.MaxValue)
             };
 
-            this.PerformRoundTripTest(maxDoubleInput, maxDoubleTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(maxDoubleInput, maxDoubleTokens);
         }
 
         [TestMethod]
@@ -638,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd()
             };
 
-            this.PerformRoundTripTest(emptyArrayInput, emptyArrayTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(emptyArrayInput, emptyArrayTokens);
 
             // single item array 
             string singleItemArrayInput = @"[""a""]";
@@ -649,7 +650,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd()
             };
 
-            this.PerformRoundTripTest(singleItemArrayInput, singleItemArrayTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(singleItemArrayInput, singleItemArrayTokens);
 
             // max 1 byte length array
             string maxByteLengthPayload = new string('a', byte.MaxValue - 1 - 1);
@@ -661,7 +662,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd()
             };
 
-            this.PerformRoundTripTest(maxByteLengthInput, maxByteLengthTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(maxByteLengthInput, maxByteLengthTokens);
 
             // max 2 byte length array
             string maxUShortLengthPayload = new string('a', ushort.MaxValue - 1 - 2);
@@ -673,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd()
             };
 
-            this.PerformRoundTripTest(maxUShortLengthInput, maxUShortLengthTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(maxUShortLengthInput, maxUShortLengthTokens);
 
             // max 4 byte length array
             string maxUIntLengthPayload = new string('a', ushort.MaxValue);
@@ -686,7 +687,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.ArrayEnd()
             };
 
-            this.PerformRoundTripTest(maxUIntLengthInput, maxUIntLengthTokens);
+            JsonRoundTripsTests.PerformRoundTripTest(maxUIntLengthInput, maxUIntLengthTokens);
         }
         #endregion
         #region CuratedDocuments
@@ -809,11 +810,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             path = string.Format("TestJsons/{0}", path);
             string json = TextFileConcatenation.ReadMultipartFile(path);
 #if true
-            json = JsonTestUtils.RandomSampleJson(json);
+            json = JsonTestUtils.RandomSampleJson(json, maxNumberOfItems: 1);
 #endif
-            this.MultiSerializationRoundTrip(json);
+            JsonRoundTripsTests.MultiSerializationRoundTrip(json);
         }
-#endregion
+        #endregion
 
         private enum SerializationFormat
         {
@@ -823,124 +824,132 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             BinaryWithDictionaryEncoding,
         }
 
-        private void MultiSerializationRoundTrip(string json)
+        private static void MultiSerializationRoundTrip(string json)
         {
-            // Normalize the json to get rid of any formatting issues
-            json = this.NewtonsoftFormat(json);
-
             foreach (SerializationFormat sourceFormat in Enum.GetValues(typeof(SerializationFormat)))
             {
                 foreach (SerializationFormat destinationFormat in Enum.GetValues(typeof(SerializationFormat)))
                 {
-                    IJsonReader reader;
-                    switch (sourceFormat)
-                    {
-                        case SerializationFormat.Text:
-                            reader = JsonReader.Create(Encoding.UTF8.GetBytes(json));
-                            break;
-                        case SerializationFormat.Binary:
-                            reader = JsonReader.Create(JsonTestUtils.ConvertTextToBinary(json));
-                            break;
-                        case SerializationFormat.NewtonsoftText:
-                            reader = NewtonsoftToCosmosDBReader.CreateFromString(json);
-                            break;
-                        case SerializationFormat.BinaryWithDictionaryEncoding:
-                            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
-                            reader = JsonReader.Create(JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary), jsonStringDictionary);
-                            break;
-                        default:
-                            throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
-                    }
-
-                    IJsonNavigator navigator;
-                    switch (sourceFormat)
-                    {
-                        case SerializationFormat.Text:
-                            navigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(json));
-                            break;
-                        case SerializationFormat.Binary:
-                            navigator = JsonNavigator.Create(JsonTestUtils.ConvertTextToBinary(json));
-                            break;
-                        case SerializationFormat.NewtonsoftText:
-                            navigator = new JsonNewtonsoftNavigator(json);
-                            break;
-                        case SerializationFormat.BinaryWithDictionaryEncoding:
-                            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
-                            navigator = JsonNavigator.Create(JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary), jsonStringDictionary);
-                            break;
-                        default:
-                            throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
-                    }
-
-                    object[] sources = new object[] { reader, navigator };
-                    foreach (object source in sources)
-                    {
-                        IJsonWriter writer;
-                        JsonStringDictionary jsonStringDictionary;
-                        switch (destinationFormat)
-                        {
-                            case SerializationFormat.Text:
-                                writer = JsonWriter.Create(JsonSerializationFormat.Text);
-                                jsonStringDictionary = null;
-                                break;
-                            case SerializationFormat.Binary:
-                                writer = JsonWriter.Create(JsonSerializationFormat.Binary);
-                                jsonStringDictionary = null;
-                                break;
-                            case SerializationFormat.NewtonsoftText:
-                                writer = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-                                jsonStringDictionary = null;
-                                break;
-                            case SerializationFormat.BinaryWithDictionaryEncoding:
-                                jsonStringDictionary = new JsonStringDictionary(capacity: 128);
-                                writer = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
-                                break;
-                            default:
-                                throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}");
-                        }
-
-                        Stopwatch stopwatch = Stopwatch.StartNew();
-                        switch (source)
-                        {
-                            case IJsonReader sourceReader:
-                                writer.WriteAll(sourceReader);
-                                break;
-
-                            case IJsonNavigator sourceNavigator:
-                                writer.WriteJsonNode(sourceNavigator, sourceNavigator.GetRootNode());
-                                break;
-
-                            default:
-                                Assert.Fail("Failed to downcast source type.");
-                                break;
-                        }
-                        stopwatch.Stop();
-
-                        string result;
-                        switch (writer.SerializationFormat)
-                        {
-                            case JsonSerializationFormat.Text:
-                                result = Encoding.UTF8.GetString(writer.GetResult().ToArray());
-                                break;
-                            case JsonSerializationFormat.Binary:
-                                result = JsonTestUtils.ConvertBinaryToText(writer.GetResult().ToArray(), jsonStringDictionary);
-                                break;
-                            default:
-                                throw new ArgumentException();
-                        }
-
-                        result = this.NewtonsoftFormat(result);
-
-                        Assert.AreEqual(json, result);
-                        string sourceType = (source is IJsonReader) ? "Reader" : "Navigator";
-                        Console.WriteLine($"{sourceFormat} {sourceType} to {destinationFormat} Writer took {stopwatch.ElapsedMilliseconds}ms");
-                    }
+                    PerformRoundTrip(sourceFormat, destinationFormat, json);
                 }
             }
         }
 
+        private static void PerformRoundTrip(
+            SerializationFormat sourceFormat,
+            SerializationFormat destinationFormat,
+            string json)
+        {
+            IJsonReader reader;
+            switch (sourceFormat)
+            {
+                case SerializationFormat.Text:
+                    reader = JsonReader.Create(Encoding.UTF8.GetBytes(json));
+                    break;
+                case SerializationFormat.Binary:
+                    reader = JsonReader.Create(JsonTestUtils.ConvertTextToBinary(json));
+                    break;
+                case SerializationFormat.NewtonsoftText:
+                    reader = NewtonsoftToCosmosDBReader.CreateFromString(json);
+                    break;
+                case SerializationFormat.BinaryWithDictionaryEncoding:
+                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                    reader = JsonReader.Create(JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary), jsonStringDictionary);
+                    break;
+                default:
+                    throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
+            }
 
-        private string NewtonsoftFormat(string json)
+            IJsonNavigator navigator;
+            switch (sourceFormat)
+            {
+                case SerializationFormat.Text:
+                    navigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(json));
+                    break;
+                case SerializationFormat.Binary:
+                    navigator = JsonNavigator.Create(JsonTestUtils.ConvertTextToBinary(json));
+                    break;
+                case SerializationFormat.NewtonsoftText:
+                    navigator = new JsonNewtonsoftNavigator(json);
+                    break;
+                case SerializationFormat.BinaryWithDictionaryEncoding:
+                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                    navigator = JsonNavigator.Create(JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary), jsonStringDictionary);
+                    break;
+                default:
+                    throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
+            }
+
+            object[] sources = new object[] { reader, navigator };
+            foreach (object source in sources)
+            {
+                IJsonWriter writer;
+                JsonStringDictionary jsonStringDictionary;
+                switch (destinationFormat)
+                {
+                    case SerializationFormat.Text:
+                        writer = JsonWriter.Create(JsonSerializationFormat.Text);
+                        jsonStringDictionary = null;
+                        break;
+
+                    case SerializationFormat.Binary:
+                        writer = JsonWriter.Create(JsonSerializationFormat.Binary);
+                        jsonStringDictionary = null;
+                        break;
+
+                    case SerializationFormat.NewtonsoftText:
+                        writer = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                        jsonStringDictionary = null;
+                        break;
+
+                    case SerializationFormat.BinaryWithDictionaryEncoding:
+                        jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                        writer = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
+                        break;
+
+                    default:
+                        throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}");
+                }
+
+                switch (source)
+                {
+                    case IJsonReader sourceReader:
+                        writer.WriteAll(sourceReader);
+                        break;
+
+                    case IJsonNavigator sourceNavigator:
+                        sourceNavigator.WriteTo(sourceNavigator.GetRootNode(), writer);
+                        break;
+
+                    default:
+                        Assert.Fail("Failed to downcast source type.");
+                        break;
+                }
+
+                string result;
+                switch (writer.SerializationFormat)
+                {
+                    case JsonSerializationFormat.Text:
+                        result = Utf8String.UnsafeFromUtf8BytesNoValidation(writer.GetResult()).ToString();
+                        break;
+
+                    case JsonSerializationFormat.Binary:
+                        result = JsonTestUtils.ConvertBinaryToText(writer.GetResult(), jsonStringDictionary);
+                        break;
+
+                    default:
+                        throw new ArgumentException();
+                }
+
+                string normalizedResult = JsonRoundTripsTests.NewtonsoftFormat(result);
+                string normalizedJson = JsonRoundTripsTests.NewtonsoftFormat(json);
+
+                Assert.AreEqual(normalizedJson, normalizedResult);
+            }
+        }
+
+
+        private static string NewtonsoftFormat(string json)
         {
             NewtonsoftToCosmosDBReader newtonsoftReader = NewtonsoftToCosmosDBReader.CreateFromString(json);
             NewtonsoftToCosmosDBWriter newtonsoftWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
@@ -948,10 +957,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return Encoding.UTF8.GetString(newtonsoftWriter.GetResult().ToArray());
         }
 
-        private void PerformRoundTripTest(string input, JsonToken[] tokens)
+        private static void PerformRoundTripTest(string input, IReadOnlyList<JsonToken> tokens)
         {
             // Do the actual roundtrips
-            this.MultiSerializationRoundTrip(input);
+            JsonRoundTripsTests.MultiSerializationRoundTrip(input);
         }
     }
 }

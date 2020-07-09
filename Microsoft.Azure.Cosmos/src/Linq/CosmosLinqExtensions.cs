@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query;
 
     /// <summary>
     /// This class provides extension methods for cosmos LINQ code.
@@ -159,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator<ToDoActivity> setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator()
+        /// using (FeedIterator<ToDoActivity> setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator()
         /// ]]>
         /// </code>
         /// </example>
@@ -186,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator()
+        /// using (FeedIterator setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator()
         /// ]]>
         /// </code>
         /// </example>
@@ -247,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the average of a sequence of <see cref="Decimal" /> values.
+        /// Computes the average of a sequence of <see cref="decimal" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -291,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the average of a sequence of <see cref="Double" /> values.
+        /// Computes the average of a sequence of <see cref="double" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -335,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the average of a sequence of <see cref="Single" /> values.
+        /// Computes the average of a sequence of <see cref="float" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -379,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the average of a sequence of <see cref="Int32" /> values.
+        /// Computes the average of a sequence of <see cref="int" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -423,7 +421,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the average of a sequence of <see cref="Int64" /> values.
+        /// Computes the average of a sequence of <see cref="long" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -467,7 +465,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the sum of a sequence of <see cref="Decimal" /> values.
+        /// Computes the sum of a sequence of <see cref="decimal" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -511,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the sum of a sequence of <see cref="Double" /> values.
+        /// Computes the sum of a sequence of <see cref="double" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -555,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the sum of a sequence of <see cref="Single" /> values.
+        /// Computes the sum of a sequence of <see cref="float" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -599,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the sum of a sequence of <see cref="Int32" /> values.
+        /// Computes the sum of a sequence of <see cref="int" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -643,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Computes the sum of a sequence of <see cref="Int64" /> values.
+        /// Computes the sum of a sequence of <see cref="long" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>

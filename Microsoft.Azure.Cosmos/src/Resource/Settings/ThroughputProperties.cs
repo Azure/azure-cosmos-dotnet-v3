@@ -118,6 +118,16 @@ namespace Microsoft.Azure.Cosmos
                 autoUpgradeMaxThroughputIncrementPercentage: null));
         }
 
+        internal static ThroughputProperties CreateManualThroughput(int? throughput)
+        {
+            if (!throughput.HasValue)
+            {
+                return null;
+            }
+
+            return CreateManualThroughput(throughput.Value);
+        }
+
         internal static ThroughputProperties CreateAutoscaleThroughput(
             int maxAutoscaleThroughput,
             int? autoUpgradeMaxThroughputIncrementPercentage = null)

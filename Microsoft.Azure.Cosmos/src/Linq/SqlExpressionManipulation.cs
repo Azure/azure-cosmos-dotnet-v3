@@ -6,7 +6,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
     internal static class SqlExpressionManipulation
     {

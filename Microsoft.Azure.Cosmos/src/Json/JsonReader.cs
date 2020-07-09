@@ -23,49 +23,29 @@ namespace Microsoft.Azure.Cosmos.Json
         internal readonly JsonObjectState JsonObjectState;
 
         /// <summary>
-        /// Whether to skip validation.
-        /// </summary>
-        protected readonly bool SkipValidation;
-
-        /// <summary>
         /// Initializes a new instance of the JsonReader class.
         /// </summary>
-        /// <param name="skipValidation">Whether or not to skip validation.</param>
-        protected JsonReader(bool skipValidation)
+        protected JsonReader()
         {
-            this.JsonObjectState = new JsonObjectState(true);
-            this.SkipValidation = skipValidation;
+            this.JsonObjectState = new JsonObjectState(readMode: true);
         }
 
         /// <inheritdoc />
         public abstract JsonSerializationFormat SerializationFormat { get; }
 
         /// <inheritdoc />
-        public int CurrentDepth
-        {
-            get
-            {
-                return this.JsonObjectState.CurrentDepth;
-            }
-        }
+        public int CurrentDepth => this.JsonObjectState.CurrentDepth;
 
         /// <inheritdoc />
-        public JsonTokenType CurrentTokenType
-        {
-            get
-            {
-                return this.JsonObjectState.CurrentTokenType;
-            }
-        }
+        public JsonTokenType CurrentTokenType => this.JsonObjectState.CurrentTokenType;
 
         /// <summary>
-        /// Creates a JsonReader that can read from the supplied byte array (assumes utf-8 encoding).
+        /// Creates a JsonReader that can read from the supplied byte array (assumes utf-8 encoding) with format marker.
         /// </summary>
-        /// <param name="buffer">The byte array to read from.</param>
+        /// <param name="buffer">The byte array (with format marker) to read from.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
-        /// <param name="skipValidation">Whether or not to skip validation.</param>
         /// <returns>A concrete JsonReader that can read the supplied byte array.</returns>
-        public static IJsonReader Create(ReadOnlyMemory<byte> buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
+        public static IJsonReader Create(ReadOnlyMemory<byte> buffer, IReadOnlyJsonStringDictionary jsonStringDictionary = null)
         {
             if (buffer.IsEmpty)
             {
@@ -75,12 +55,44 @@ namespace Microsoft.Azure.Cosmos.Json
             byte firstByte = buffer.Span[0];
 
             // Explicitly pick from the set of supported formats, or otherwise assume text format
-            switch ((JsonSerializationFormat)firstByte)
+            JsonSerializationFormat jsonSerializationFormat = (firstByte == (byte)JsonSerializationFormat.Binary) ? JsonSerializationFormat.Binary : JsonSerializationFormat.Text;
+            if (jsonSerializationFormat == JsonSerializationFormat.Binary)
+            {
+                // offset for the 0x80 (128) binary serialization type marker.
+                buffer = buffer.Slice(1);
+            }
+
+            return JsonReader.Create(jsonSerializationFormat, buffer, jsonStringDictionary);
+        }
+
+        /// <summary>
+        /// Creates a JsonReader with a given serialization format and byte array.
+        /// </summary>
+        /// <param name="jsonSerializationFormat">The serialization format of the payload.</param>
+        /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="jsonStringDictionary">The optional dictionary to decode strings.</param>
+        /// <returns>An <see cref="IJsonReader"/> for the buffer, format, and dictionary.</returns>
+        public static IJsonReader Create(
+            JsonSerializationFormat jsonSerializationFormat,
+            ReadOnlyMemory<byte> buffer,
+            IReadOnlyJsonStringDictionary jsonStringDictionary = null)
+        {
+            if (buffer.IsEmpty)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(buffer)} can not be empty.");
+            }
+
+            // Explicitly pick from the set of supported formats, or otherwise assume text format
+            switch (jsonSerializationFormat)
             {
                 case JsonSerializationFormat.Binary:
-                    return new JsonBinaryReader(buffer, jsonStringDictionary, skipValidation);
+                    return new JsonBinaryReader(buffer, jsonStringDictionary);
+
+                case JsonSerializationFormat.Text:
+                    return new JsonTextReader(buffer);
+
                 default:
-                    return new JsonTextReader(buffer, skipValidation);
+                    throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}.");
             }
         }
 

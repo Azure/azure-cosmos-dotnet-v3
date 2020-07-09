@@ -54,12 +54,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string accountEndpoint,
             string authKeyOrResourceToken)
         {
-            if (accountEndpoint == null)
+            if (string.IsNullOrEmpty(accountEndpoint))
             {
                 throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
             }
 
-            if (authKeyOrResourceToken == null)
+            if (string.IsNullOrEmpty(authKeyOrResourceToken))
             {
                 throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
