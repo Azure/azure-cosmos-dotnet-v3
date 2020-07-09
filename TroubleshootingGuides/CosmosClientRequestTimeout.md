@@ -1,4 +1,4 @@
-## CosmosRequestTimeout
+## CosmosClientRequestTimeout
 
 | Http Status Code | Name | Category |
 |---|---|---|
