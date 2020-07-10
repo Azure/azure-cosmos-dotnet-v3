@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Linq;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
@@ -102,16 +103,31 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">An object of Type PartitionKeyValueList which supports multiple partition key paths.</param>
         internal PartitionKey(PartitionKeyValueList value)
         {
-            if (value == null)
+            if (value == null
+                || value.partitionKeyValues.Count == 0
+                || (value.partitionKeyValues.Count == 1 && object.ReferenceEquals(value.partitionKeyValues[0], PartitionKeyValueList.NoneType)))
             {
                 this.InternalKey = PartitionKey.None.InternalKey;
+                this.IsNone = true;
             }
             else
             {
-                object[] valueArray = value.partitionKeyValues.ToArray();
+                object[] valueArray = new object[value.partitionKeyValues.Count];
+                int i = 0;
+                foreach (object val in value.partitionKeyValues)
+                {
+                    if (object.ReferenceEquals(PartitionKeyValueList.NoneType, val))
+                    {
+                        valueArray[i++] = Undefined.Value;
+                    }
+                    else
+                    {
+                        valueArray[i++] = val;
+                    }
+                }
                 this.InternalKey = new Documents.PartitionKey(valueArray).InternalKey;
+                this.IsNone = false;
             }
-            this.IsNone = false;
         }
 
         /// <summary>

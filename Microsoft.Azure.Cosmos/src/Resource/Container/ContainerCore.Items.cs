@@ -714,7 +714,16 @@ namespace Microsoft.Azure.Cosmos
 
             return responseMessage;
         }
-
+        /*
+         * Use of PartitionKey.None ==> PartitionKey.None is a placeholder used here
+         * to later discern whether to set the value to either Undefined Key or Empty Key.
+         * Refer RequestInvokerHandler.SendAsync() method.
+         *
+         * The empty key is only used for Non-partitioned Collections. Every other case we
+         * set it as a Undefined Key.
+         *
+         * 
+         */
         public override async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
             CancellationToken cancellation = default(CancellationToken))
@@ -740,37 +749,16 @@ namespace Microsoft.Azure.Cosmos
                 CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
                 IReadOnlyList<string[]> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
-                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
-                PartitionKeyValueList partitionKeyValueList = new PartitionKeyValueList();
+                CosmosElement[] cosmosElementArray = new CosmosElement[tokenslist.Count];
+
+                int index = 0;
                 foreach (string[] tokens in tokenslist)
                 {
-                    CosmosElement partitionKeyValue;
-                    for (int i = 0; i < tokens.Length - 1; i++)
-                    {
-                        if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
-                        {
-                            if (tokenslist.Count == 1)
-                            {
-                                return PartitionKey.None;
-                            }
-                            break;
-                        }
-                    }
-
-                    if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out partitionKeyValue))
-                    {
-                        if (tokenslist.Count == 1) return PartitionKey.None;
-                    }
-
-                    if (partitionKeyValue == null)
-                    {
-                        partitionKeyValue = CosmosNull.Create();
-                    }
-
-                    this.CosmosElementToPartitionKeyObject(partitionKeyValue, partitionKeyValueList, partitionKeyDefinition);
+                    CosmosElement partitionKeyValue = this.ParseTokenListForElement(pathTraversal, tokens);
+                    cosmosElementArray[index++] = partitionKeyValue;
                 }
-                 
-                return new PartitionKey(partitionKeyValueList); 
+
+                return this.CosmosElementToPartitionKeyObject(cosmosElementArray);
             }
             finally
             {
@@ -779,40 +767,69 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void CosmosElementToPartitionKeyObject(CosmosElement cosmosElement, PartitionKeyValueList partitionKeyValueList, PartitionKeyDefinition partitionKeyDefinition)
+        private CosmosElement ParseTokenListForElement(CosmosObject pathTraversal, string[] tokens)
         {
-            // TODO: Leverage original serialization and avoid re-serialization (bug)
-            switch (cosmosElement.Type)
+            CosmosElement partitionKeyValue;
+
+            for (int i = 0; i < tokens.Length - 1; i++)
             {
-                case CosmosElementType.String:
-                    CosmosString cosmosString = cosmosElement as CosmosString;
-                    partitionKeyValueList.Add(cosmosString.Value);
-                    break;
-
-                case CosmosElementType.Number:
-                    CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                    double value = Number64.ToDouble(cosmosNumber.Value);
-                    partitionKeyValueList.Add(value);
-                    break;
-
-                case CosmosElementType.Boolean:
-                    CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
-                    partitionKeyValueList.Add(cosmosBool.Value);
-                    break;
-
-                case CosmosElementType.Null:
-                    if (partitionKeyDefinition == null)
-                    {
-                        throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
-                    }
-
-                    partitionKeyValueList.AddUndefinedValue();
-                    break;
-
-                default:
-                    throw new ArgumentException(
-                        string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
+                if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
+                {
+                    return null;
+                }
             }
+
+            if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out partitionKeyValue))
+            {
+                return null;
+            }
+
+            return partitionKeyValue;
+        }
+
+        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement[] cosmosElementArray)
+        {
+            PartitionKeyValueList partitionKeyValueList = new PartitionKeyValueList();
+
+            foreach (CosmosElement cosmosElement in cosmosElementArray)
+            {
+                if (cosmosElement == null)
+                {
+                    partitionKeyValueList.AddNoneType();
+                }
+                else
+                {
+                    // TODO: Leverage original serialization and avoid re-serialization (bug)
+                    switch (cosmosElement.Type)
+                    {
+                        case CosmosElementType.String:
+                            CosmosString cosmosString = cosmosElement as CosmosString;
+                            partitionKeyValueList.Add(cosmosString.Value);
+                            break;
+
+                        case CosmosElementType.Number:
+                            CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
+                            double value = Number64.ToDouble(cosmosNumber.Value);
+                            partitionKeyValueList.Add(value);
+                            break;
+
+                        case CosmosElementType.Boolean:
+                            CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
+                            partitionKeyValueList.Add(cosmosBool.Value);
+                            break;
+
+                        case CosmosElementType.Null:
+                            partitionKeyValueList.AddNullValue();
+                            break;
+
+                        default:
+                            throw new ArgumentException(
+                                string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
+                    }
+                }
+            }
+
+            return new PartitionKey(partitionKeyValueList);
         }
 
         private Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)

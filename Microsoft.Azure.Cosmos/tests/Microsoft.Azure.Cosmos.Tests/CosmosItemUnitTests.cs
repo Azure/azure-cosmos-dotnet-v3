@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualBasic;
@@ -461,6 +462,115 @@ namespace Microsoft.Azure.Cosmos.Tests
                     default(CancellationToken));
                 Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.None, pk) || object.Equals(Cosmos.PartitionKey.None, pk));
             }
+        }
+
+        [Ignore]
+        [TestMethod]
+        public async Task TestMultipleNestedPartitionKeyValueFromStreamAsync()
+        {
+            ContainerInternal mockContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
+
+            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>() { CallBase = true };
+            ContainerInternal container = containerMock.Object;
+
+            containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult((IReadOnlyList<string[]>)new List<string[]> { new string[] { "a", "b", "c" }, new string[] { "a","e","f" } }));
+            containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
+
+            List<dynamic> validNestedItems = new List<dynamic>
+            {
+                (
+                    new // a/b/c (Specify only one partition key)
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            b = new
+                            {
+                                c = 10,
+                            }
+                        }
+                    },
+                    "[10.0,{}]"
+                ),
+                (
+                    new // 
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            b = new
+                            {
+                                c = 10,
+                            },
+                            e = new
+                            {
+                                f = 15,
+                            }
+                        }
+                    },
+                    "[10.0,15.0]"
+                ),
+                (
+                    new
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            b = new
+                            {
+                                c = 10,
+                            },
+                            e = new
+                            {
+                                f = default(string), //null
+                            }
+                        }
+                    },
+                    "[10.0,null]"
+                ),
+                (
+                    new
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            e = new
+                            {
+                                f = 10,
+                            }
+                        }
+                    },
+                    "[{},10.0]"
+                ),
+                (
+                    new
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            e = 10,
+                            b = new
+                            {
+                                k = 10,
+                            }
+                        }
+
+                    },
+                    "[{},{}]"
+                )
+            };
+
+            foreach (dynamic poco in validNestedItems)
+            {
+                Cosmos.PartitionKey pk = await container.GetPartitionKeyValueFromStreamAsync(
+                    MockCosmosUtil.Serializer.ToStream(poco.Item1),
+                    default(CancellationToken));
+                string abc = pk.InternalKey.ToJsonString();
+                Assert.AreEqual(abc,poco.Item2);
+            }
+
         }
 
         private (ContainerInternal, Mock<BatchAsyncContainerExecutor>) CreateMockBulkCosmosClientContext()
