@@ -161,11 +161,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CrossPartitionState<InMemoryCollectionState> state = null)
             {
                 IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
-                PartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState> createEnumerator(Cosmos.FeedRange range, InMemoryCollectionState state) => new InMemoryCollectionPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    partitionKeyRangeId: int.Parse(feedRangeProvider.ToPhysicalPartitionKeyRangeAsync((FeedRangeInternal)range, cancellationToken: default).Result.PartitionKeyRangeId),
-                    pageSize: 10,
-                    state: state);
+                PartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState> createEnumerator(
+                    PartitionKeyRange range,
+                    InMemoryCollectionState state) => new InMemoryCollectionPartitionRangeEnumerator(
+                        inMemoryCollection,
+                        partitionKeyRangeId: int.Parse(range.Id),
+                        pageSize: 10,
+                        state: state);
 
                 return new CrossPartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState>(
                     feedRangeProvider: feedRangeProvider,
@@ -179,11 +181,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CrossPartitionState<InMemoryCollectionState> state = null)
             {
                 IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
-                PartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState> createEnumerator(Cosmos.FeedRange range, InMemoryCollectionState state) => new InMemoryCollectionPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    partitionKeyRangeId: int.Parse(feedRangeProvider.ToPhysicalPartitionKeyRangeAsync((FeedRangeInternal)range, cancellationToken: default).Result.PartitionKeyRangeId),
-                    pageSize: 10,
-                    state: state);
+                PartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState> createEnumerator(
+                    PartitionKeyRange range,
+                    InMemoryCollectionState state) => new InMemoryCollectionPartitionRangeEnumerator(
+                        inMemoryCollection,
+                        partitionKeyRangeId: int.Parse(range.Id),
+                        pageSize: 10,
+                        state: state);
 
                 CrossPartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState> enumerator = new CrossPartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState>(
                     feedRangeProvider: feedRangeProvider,
@@ -214,8 +218,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                     // Either both don't have results or both do.
                     return string.CompareOrdinal(
-                        ((FeedRangePartitionKeyRange)partitionRangePageEnumerator1.Range).PartitionKeyRangeId,
-                        ((FeedRangePartitionKeyRange)partitionRangePageEnumerator2.Range).PartitionKeyRangeId);
+                        partitionRangePageEnumerator1.Range.MinInclusive,
+                        partitionRangePageEnumerator2.Range.MinInclusive);
                 }
             }
         }

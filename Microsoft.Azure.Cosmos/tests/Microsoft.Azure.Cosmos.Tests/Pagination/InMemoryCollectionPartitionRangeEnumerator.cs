@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Documents;
 
     internal sealed class InMemoryCollectionPartitionRangeEnumerator : PartitionRangePageEnumerator<InMemoryCollectionPage, InMemoryCollectionState>
     {
@@ -22,18 +23,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             int partitionKeyRangeId,
             int pageSize,
             InMemoryCollectionState state = null)
-            : base(new FeedRangePartitionKeyRange(partitionKeyRangeId.ToString()), state ?? new InMemoryCollectionState(resourceIdentifier: 0))
+            : base(
+                  new PartitionKeyRange()
+                  {
+                      Id = partitionKeyRangeId.ToString(),
+                      MinInclusive = partitionKeyRangeId.ToString(),
+                      MaxExclusive  = partitionKeyRangeId.ToString()
+                  },
+                  state ?? new InMemoryCollectionState(resourceIdentifier: 0))
         {
             this.inMemoryCollection = inMemoryCollection ?? throw new ArgumentNullException(nameof(inMemoryCollection));
             this.partitionKeyRangeId = partitionKeyRangeId;
             this.pageSize = pageSize;
         }
 
-        public override ValueTask DisposeAsync()
-        {
-            // Do Nothing
-            return default;
-        }
+        public override ValueTask DisposeAsync() => default;
 
         public override Task<TryCatch<InMemoryCollectionPage>> GetNextPageAsync(CancellationToken cancellationToken = default)
         {

@@ -6,15 +6,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Documents;
 
     internal sealed class CrossPartitionState<TState> : State
         where TState : State
     {
-        public CrossPartitionState(IReadOnlyList<(FeedRangeInternal, TState)> value)
+        public CrossPartitionState(IReadOnlyList<(PartitionKeyRange, TState)> value)
         {
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public IReadOnlyList<(FeedRangeInternal, TState)> Value { get; }
+        public IReadOnlyList<(PartitionKeyRange, TState)> Value { get; }
     }
 }

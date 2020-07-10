@@ -8,17 +8,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Documents;
 
     internal sealed class PartitionRangePageEnumerable<TPage, TState> : IAsyncEnumerable<TryCatch<TPage>>
         where TPage : Page<TState>
         where TState : State
     {
-        private readonly FeedRangeInternal range;
+        private readonly PartitionKeyRange range;
         private readonly TState state;
         private readonly CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator;
 
         public PartitionRangePageEnumerable(
-            FeedRangeInternal range,
+            PartitionKeyRange range,
             TState state,
             CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator)
         {

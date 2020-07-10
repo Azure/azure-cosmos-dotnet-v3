@@ -81,7 +81,12 @@
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
                     IAsyncEnumerable<TryCatch<QueryPage>> enumerable = new PartitionRangePageEnumerable<QueryPage, QueryState>(
-                        range: new FeedRangePartitionKeyRange(partitionKeyRangeId.ToString()),
+                        range: new PartitionKeyRange()
+                        {
+                            Id = partitionKeyRangeId.ToString(),
+                            MinInclusive = partitionKeyRangeId.ToString(),
+                            MaxExclusive = partitionKeyRangeId.ToString(),
+                        },
                         state: state,
                         (range, state) => new QueryPartitionRangePageEnumerator(
                             queryDataSource: new InMemoryCollectionQueryDataSource(inMemoryCollection),
@@ -142,7 +147,12 @@
                 QueryState state = null)
             {
                 return new PartitionRangePageEnumerable<QueryPage, QueryState>(
-                    range: new FeedRangePartitionKeyRange("0"),
+                    range: new PartitionKeyRange()
+                    {
+                        Id = "0",
+                        MinInclusive = "0",
+                        MaxExclusive = "0",
+                    },
                     state: state,
                     (range, state) => new QueryPartitionRangePageEnumerator(
                         queryDataSource: new InMemoryCollectionQueryDataSource(inMemoryCollection),
@@ -159,7 +169,12 @@
                 return new QueryPartitionRangePageEnumerator(
                     queryDataSource: new InMemoryCollectionQueryDataSource(inMemoryCollection),
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                    feedRange: new FeedRangePartitionKeyRange("0"),
+                    feedRange: new PartitionKeyRange()
+                    {
+                        Id = "0",
+                        MinInclusive = "0",
+                        MaxExclusive = "0",
+                    },
                     pageSize: 10,
                     state: state);
             }

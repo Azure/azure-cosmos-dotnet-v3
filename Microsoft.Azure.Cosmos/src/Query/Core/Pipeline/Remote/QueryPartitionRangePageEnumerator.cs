@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Documents;
 
     internal sealed class QueryPartitionRangePageEnumerator : PartitionRangePageEnumerator<QueryPage, QueryState>
     {
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         public QueryPartitionRangePageEnumerator(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            FeedRangeInternal feedRange,
+            PartitionKeyRange feedRange,
             int pageSize,
             QueryState state = default)
             : base(feedRange, state)
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         public override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.queryDataSource.ExecuteQueryAsync(
             sqlQuerySpec: this.sqlQuerySpec,
             continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-            feedRange: this.Range,
+            feedRange: new FeedRangeEpk(this.Range.ToRange()),
             pageSize: this.pageSize,
             cancellationToken);
 

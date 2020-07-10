@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ParallelCrossPartitionQueryPipelineStage : IQueryPipelineStage
     {
@@ -39,13 +40,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 CrossPartitionState<QueryState> crossPartitionState = crossPartitionPageResult.State;
 
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>(crossPartitionState.Value.Count);
-                foreach ((FeedRangeInternal range, QueryState state) in crossPartitionState.Value)
+                foreach ((PartitionKeyRange range, QueryState state) in crossPartitionState.Value)
                 {
-                    FeedRangeEpk feedRangeEpk = (FeedRangeEpk)range;
-
                     CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
                     {
-                        Range = feedRangeEpk.Range,
+                        Range = range.ToRange(),
                         Token = state != null ? ((CosmosString)state.Value).Value : null,
                     };
 
@@ -120,9 +119,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     compositeContinuationTokens.Add(tryCreateCompositeContinuationToken.Result);
                 }
 
-                List<(FeedRangeInternal, QueryState)> rangesAndStates = compositeContinuationTokens
+                List<(PartitionKeyRange, QueryState)> rangesAndStates = compositeContinuationTokens
                     .Select(token => (
-                        (FeedRangeInternal)new FeedRangeEpk(token.Range),
+                        new PartitionKeyRange()
+                        {
+                            MinInclusive = token.Range.Min,
+                            MaxExclusive = token.Range.Max,
+                        },
                         token.Token != null ? new QueryState(CosmosString.Create(token.Token)) : null))
                     .ToList();
 
@@ -133,7 +136,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 feedRangeProvider,
                 ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(queryDataSource, sqlQuerySpec, pageSize),
                 Comparer.Singleton,
-                forceEpkRange: true,
                 state: state);
 
             ParallelCrossPartitionQueryPipelineStage stage = new ParallelCrossPartitionQueryPipelineStage(crossPartitionPageEnumerator);
@@ -143,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         private static CreatePartitionRangePageEnumerator<QueryPage, QueryState> MakeCreateFunction(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            int pageSize) => (FeedRangeInternal range, QueryState state) => new QueryPartitionRangePageEnumerator(
+            int pageSize) => (PartitionKeyRange range, QueryState state) => new QueryPartitionRangePageEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 range,
@@ -163,20 +165,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     return 0;
                 }
 
-                if (partitionRangePageEnumerator1.HasMoreResults && !partitionRangePageEnumerator2.HasMoreResults)
-                {
-                    return -1;
-                }
-
-                if (!partitionRangePageEnumerator1.HasMoreResults && partitionRangePageEnumerator2.HasMoreResults)
-                {
-                    return 1;
-                }
-
                 // Either both don't have results or both do.
                 return string.CompareOrdinal(
-                    ((FeedRangeEpk)partitionRangePageEnumerator1.Range).Range.Min,
-                    ((FeedRangeEpk)partitionRangePageEnumerator2.Range).Range.Min);
+                    partitionRangePageEnumerator1.Range.MinInclusive,
+                    partitionRangePageEnumerator2.Range.MinInclusive);
             }
         }
     }

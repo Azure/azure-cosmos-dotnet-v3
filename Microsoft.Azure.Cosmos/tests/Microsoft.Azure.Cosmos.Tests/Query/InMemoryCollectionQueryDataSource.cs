@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             TryCatch<(List<InMemoryCollection.Record> records, long? resourceIdentifer)> tryExecuteQuery = this.inMemoryCollection.Query(
                 sqlQuerySpec,
-                int.Parse(((FeedRangePartitionKeyRange)feedRange).PartitionKeyRangeId),
+                feedRange,
                 continuationToken != null ? long.Parse(continuationToken) : 0,
                 pageSize);
             if (tryExecuteQuery.Failed)
@@ -70,5 +70,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             return Task.FromResult(TryCatch<QueryPage>.FromResult(queryPage));
         }
+
+        private readonly struct VisitorArguments
+        {
+
+        }
+
+        private sealed class ExecuteQueryBasedOnFeedRangeVisitor : IFeedRangeAsyncVisitor<TryCatch<QueryPage>, VisitorArguments>
     }
 }

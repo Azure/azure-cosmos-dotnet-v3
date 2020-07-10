@@ -4,9 +4,9 @@
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     internal sealed class InMemoryCollectionFeedRangeProvider : IFeedRangeProvider
     {
@@ -21,36 +21,51 @@
             this.feedRangeToPhysicalPartitionKeyRange = new FeedRangeToPhysicalPartitionKeyRange(this.inMemoryCollection);
         }
 
-        public async Task<IEnumerable<FeedRangeInternal>> GetChildRangeAsync(
-            FeedRangeInternal feedRange,
+        public Task<IEnumerable<PartitionKeyRange>> GetChildRangeAsync(
+            PartitionKeyRange feedRange,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            FeedRangePartitionKeyRange feedRangePartitionKeyRange = await this.ToPhysicalPartitionKeyRangeAsync(feedRange, cancellationToken);
-
-            int partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
+            int partitionKeyRangeId = int.Parse(feedRange.Id);
             (int leftChild, int rightChild) = this.inMemoryCollection.GetChildRanges(partitionKeyRangeId);
 
-            return new List<FeedRangeInternal>()
-            {
-                new FeedRangePartitionKeyRange(leftChild.ToString()),
-                new FeedRangePartitionKeyRange(rightChild.ToString()),
-            };
+            return Task.FromResult(
+                (IEnumerable<PartitionKeyRange>)new List<PartitionKeyRange>()
+                {
+                    new PartitionKeyRange()
+                    {
+                        Id = leftChild.ToString(),
+                        MinInclusive = leftChild.ToString(),
+                        MaxExclusive = leftChild.ToString(),
+                    },
+                    new PartitionKeyRange()
+                    {
+                        Id = rightChild.ToString(),
+                        MinInclusive = rightChild.ToString(),
+                        MaxExclusive = rightChild.ToString(),
+                    }
+                });
         }
 
-        public Task<IEnumerable<FeedRangeInternal>> GetFeedRangesAsync(CancellationToken cancellationToken)
+        public Task<IEnumerable<PartitionKeyRange>> GetFeedRangesAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            List<FeedRangeInternal> ranges = new List<FeedRangeInternal>();
+            List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
             foreach (int partitionKeyRangeId in this.inMemoryCollection.PartitionKeyRangeFeedReed().Keys)
             {
-                FeedRangeInternal range = new FeedRangePartitionKeyRange(partitionKeyRangeId.ToString());
+                PartitionKeyRange range = new PartitionKeyRange()
+                {
+                    Id = partitionKeyRangeId.ToString(),
+                    MinInclusive = partitionKeyRangeId.ToString(),
+                    MaxExclusive = partitionKeyRangeId.ToString(),
+                };
+
                 ranges.Add(range);
             }
 
-            return Task.FromResult((IEnumerable<FeedRangeInternal>)ranges);
+            return Task.FromResult((IEnumerable<PartitionKeyRange>)ranges);
         }
 
         public Task<FeedRangeEpk> ToEffectivePartitionKeyRangeAsync(
