@@ -166,34 +166,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
             IQueryDataSource queryDataSource = new InMemoryCollectionQueryDataSource(inMemoryCollection);
 
-            TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                feedRangeProvider: feedRangeProvider,
-                queryDataSource: queryDataSource,
-                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                pageSize: 10,
-                continuationToken: default);
-            Assert.IsTrue(monadicCreate.Succeeded);
-            IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
-
             List<CosmosElement> documents = new List<CosmosElement>();
-            while (await queryPipelineStage.MoveNextAsync())
+
+            QueryState queryState = null;
+            do
             {
+                TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                    feedRangeProvider: feedRangeProvider,
+                    queryDataSource: queryDataSource,
+                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                    pageSize: 10,
+                    continuationToken: queryState?.Value);
+                Assert.IsTrue(monadicCreate.Succeeded);
+                IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
+
+                Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
                 TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
                 Assert.IsTrue(tryGetQueryPage.Succeeded);
 
                 QueryPage queryPage = tryGetQueryPage.Result;
                 documents.AddRange(queryPage.Documents);
 
-                if (queryPage.State != null)
-                {
-                    queryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                    feedRangeProvider: feedRangeProvider,
-                    queryDataSource: queryDataSource,
-                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                    pageSize: 10,
-                    continuationToken: queryPage.State.Value).Result;
-                }
-            }
+                queryState = queryPage.State;
+            } while (queryState != null);
 
             Assert.AreEqual(numItems, documents.Count);
         }
