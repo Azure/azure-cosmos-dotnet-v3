@@ -104,7 +104,6 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 string baselineVersion = baselineDependencies[projectDependency.Key];
                 Assert.AreEqual(baselineVersion, projectDependency.Value);
             }
-
         }
 
         [TestMethod]
