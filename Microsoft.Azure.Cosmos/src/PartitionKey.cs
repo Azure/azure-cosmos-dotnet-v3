@@ -103,6 +103,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">An object of Type PartitionKeyValueList which supports multiple partition key paths.</param>
         internal PartitionKey(PartitionKeyValueList value)
         {
+            /*
+             * Why these checks?
+             * These changes are being added in the PR for SDK to support multiple paths in a partition key. 
+             *
+             * Currently, when a resource does not specify a value for the PartitionKey,
+             * we assign a temporary value `PartitionKey.None` and later discern whether 
+             * it is a PartitionKey.Undefined or PartitionKey.Empty based on the Collection Type.
+             *
+             * For collections with multiple path keys, absence of a partition key values is
+             * always treated as a PartitionKey.Undefined.
+             */
             if (value == null
                 || value.partitionKeyValues.Count == 0
                 || (value.partitionKeyValues.Count == 1 && object.ReferenceEquals(value.partitionKeyValues[0], PartitionKeyValueList.NoneType)))

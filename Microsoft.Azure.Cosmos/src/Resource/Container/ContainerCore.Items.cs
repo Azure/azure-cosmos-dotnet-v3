@@ -714,16 +714,7 @@ namespace Microsoft.Azure.Cosmos
 
             return responseMessage;
         }
-        /*
-         * Use of PartitionKey.None ==> PartitionKey.None is a placeholder used here
-         * to later discern whether to set the value to either Undefined Key or Empty Key.
-         * Refer RequestInvokerHandler.SendAsync() method.
-         *
-         * The empty key is only used for Non-partitioned Collections. Every other case we
-         * set it as a Undefined Key.
-         *
-         * 
-         */
+     
         public override async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
             CancellationToken cancellation = default(CancellationToken))
