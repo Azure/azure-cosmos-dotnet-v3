@@ -122,7 +122,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 }
             }
 
-            enumerators.Enqueue(currentPaginator);
+            if (currentPaginator.State != null)
+            {
+                enumerators.Enqueue(currentPaginator);
+            }
 
             TryCatch<TPage> backendPage = currentPaginator.Current;
             if (backendPage.Failed)
@@ -131,13 +134,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 return true;
             }
 
-            List<(PartitionKeyRange, TState)> feedRangeAndStates = new List<(PartitionKeyRange, TState)>(enumerators.Count);
-            foreach (PartitionRangePageEnumerator<TPage, TState> enumerator in enumerators)
+            CrossPartitionState<TState> crossPartitionState;
+            if (enumerators.Count == 0)
             {
-                feedRangeAndStates.Add((enumerator.Range, enumerator.State));
+                crossPartitionState = null;
+            }
+            else
+            {
+                List<(PartitionKeyRange, TState)> feedRangeAndStates = new List<(PartitionKeyRange, TState)>(enumerators.Count);
+                foreach (PartitionRangePageEnumerator<TPage, TState> enumerator in enumerators)
+                {
+                    feedRangeAndStates.Add((enumerator.Range, enumerator.State));
+                }
+
+                crossPartitionState = new CrossPartitionState<TState>(feedRangeAndStates);
             }
 
-            CrossPartitionState<TState> crossPartitionState = new CrossPartitionState<TState>(feedRangeAndStates);
             this.Current = TryCatch<CrossPartitionPage<TPage, TState>>.FromResult(
                 new CrossPartitionPage<TPage, TState>(backendPage.Result, crossPartitionState));
             return true;

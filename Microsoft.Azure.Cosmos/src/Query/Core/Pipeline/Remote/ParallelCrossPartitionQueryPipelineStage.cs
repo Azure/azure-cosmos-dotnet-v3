@@ -39,22 +39,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 QueryPage backendQueryPage = crossPartitionPageResult.Page;
                 CrossPartitionState<QueryState> crossPartitionState = crossPartitionPageResult.State;
 
-                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>(crossPartitionState.Value.Count);
-                foreach ((PartitionKeyRange range, QueryState state) in crossPartitionState.Value)
+                QueryState queryState;
+                if (crossPartitionState == null)
                 {
-                    CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-                    {
-                        Range = range.ToRange(),
-                        Token = state != null ? ((CosmosString)state.Value).Value : null,
-                    };
-
-                    compositeContinuationTokens.Add(compositeContinuationToken);
+                    queryState = null;
                 }
+                else
+                {
+                    List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>(crossPartitionState.Value.Count);
+                    foreach ((PartitionKeyRange range, QueryState state) in crossPartitionState.Value)
+                    {
+                        CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
+                        {
+                            Range = range.ToRange(),
+                            Token = state != null ? ((CosmosString)state.Value).Value : null,
+                        };
 
-                List<CosmosElement> cosmosElementContinuationTokens = compositeContinuationTokens
-                    .Select(token => CompositeContinuationToken.ToCosmosElement(token))
-                    .ToList();
-                CosmosArray cosmosElementCompositeContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
+                        compositeContinuationTokens.Add(compositeContinuationToken);
+                    }
+
+                    List<CosmosElement> cosmosElementContinuationTokens = compositeContinuationTokens
+                        .Select(token => CompositeContinuationToken.ToCosmosElement(token))
+                        .ToList();
+                    CosmosArray cosmosElementCompositeContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
+
+                    queryState = new QueryState(cosmosElementCompositeContinuationTokens);
+                }
 
                 QueryPage crossPartitionQueryPage = new QueryPage(
                     backendQueryPage.Documents,
@@ -63,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     backendQueryPage.ResponseLengthInBytes,
                     backendQueryPage.CosmosQueryExecutionInfo,
                     backendQueryPage.DisallowContinuationTokenMessage,
-                    new QueryState(cosmosElementCompositeContinuationTokens));
+                    queryState);
 
                 return TryCatch<QueryPage>.FromResult(crossPartitionQueryPage);
             }

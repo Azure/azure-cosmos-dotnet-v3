@@ -184,12 +184,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 QueryPage queryPage = tryGetQueryPage.Result;
                 documents.AddRange(queryPage.Documents);
 
-                queryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                if (queryPage.State != null)
+                {
+                    queryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     feedRangeProvider: feedRangeProvider,
                     queryDataSource: queryDataSource,
                     sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                     pageSize: 10,
                     continuationToken: queryPage.State.Value).Result;
+                }
             }
 
             Assert.AreEqual(numItems, documents.Count);
