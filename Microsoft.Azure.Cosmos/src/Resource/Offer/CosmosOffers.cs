@@ -17,12 +17,11 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosOffers
     {
         private readonly CosmosClientContext ClientContext;
-        private readonly Uri OfferRootUri;
+        private readonly string OfferRootUri = Paths.Offers_Root;
 
         public CosmosOffers(CosmosClientContext clientContext)
         {
             this.ClientContext = clientContext;
-            this.OfferRootUri = new Uri(Paths.Offers_Root, UriKind.Relative);
         }
 
         internal async Task<ThroughputResponse> ReadThroughputAsync(
@@ -254,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken = default(CancellationToken))
         {
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
-              resourceUri: linkUri,
+              resourceUri: linkUri.OriginalString,
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,

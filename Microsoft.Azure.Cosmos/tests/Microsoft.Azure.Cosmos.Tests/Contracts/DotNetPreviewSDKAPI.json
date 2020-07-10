@@ -3,38 +3,23 @@
     "ChangeFeedRequestOptions": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions+StartFrom": {
-          "Type": "NestedType",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Microsoft.Azure.Cosmos.FeedRange FeedRange": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Microsoft.Azure.Cosmos.FeedRange get_FeedRange()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.DateTime] get_StartTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange get_FeedRange()"
+          "MethodInfo": "System.Nullable`1[System.DateTime] get_StartTime()"
         },
-        "StartFrom From": {
+        "System.Nullable`1[System.DateTime] StartTime": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "StartFrom get_From()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.Int32] get_MaxItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "StartFrom get_From()"
-        },
-        "System.Nullable`1[System.Int32] get_MaxItemCount()": {
-          "Type": "Method",
-          "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Int32] get_MaxItemCount()"
         },
         "System.Nullable`1[System.Int32] MaxItemCount": {
@@ -42,118 +27,24 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.String get_IfMatchEtag()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String get_IfMatchEtag()"
-        },
-        "System.String get_IfNoneMatchEtag()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String get_IfNoneMatchEtag()"
-        },
-        "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
-          "Type": "Property",
-          "Attributes": [
-            "EditorBrowsableAttribute",
-            "ObsoleteAttribute"
-          ],
-          "MethodInfo": null
-        },
-        "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
-          "Type": "Property",
-          "Attributes": [
-            "EditorBrowsableAttribute",
-            "ObsoleteAttribute"
-          ],
-          "MethodInfo": null
-        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
         },
-        "Void set_FeedRange(Microsoft.Azure.Cosmos.FeedRange)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_MaxItemCount(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_FeedRange(Microsoft.Azure.Cosmos.FeedRange)"
-        },
-        "Void set_From(StartFrom)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_From(StartFrom)"
-        },
-        "Void set_IfMatchEtag(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_IfMatchEtag(System.String)"
-        },
-        "Void set_IfNoneMatchEtag(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
-        },
-        "Void set_MaxItemCount(System.Nullable`1[System.Int32])": {
-          "Type": "Method",
-          "Attributes": [],
           "MethodInfo": "Void set_MaxItemCount(System.Nullable`1[System.Int32])"
-        }
-      },
-      "NestedTypes": {
-        "StartFrom": {
-          "Subclasses": {},
-          "Members": {
-            "StartFrom CreateFromBeginning()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "StartFrom CreateFromBeginning()"
-            },
-            "StartFrom CreateFromContinuation(System.String)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "StartFrom CreateFromContinuation(System.String)"
-            },
-            "StartFrom CreateFromNow()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "StartFrom CreateFromNow()"
-            },
-            "StartFrom CreateFromTime(System.DateTime)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "StartFrom CreateFromTime(System.DateTime)"
-            }
-          },
-          "NestedTypes": {}
-        }
-      }
-    },
-    "StartFrom": {
-      "Subclasses": {},
-      "Members": {
-        "StartFrom CreateFromBeginning()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "StartFrom CreateFromBeginning()"
         },
-        "StartFrom CreateFromContinuation(System.String)": {
+        "Void set_StartTime(System.Nullable`1[System.DateTime])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "StartFrom CreateFromContinuation(System.String)"
-        },
-        "StartFrom CreateFromNow()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "StartFrom CreateFromNow()"
-        },
-        "StartFrom CreateFromTime(System.DateTime)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "StartFrom CreateFromTime(System.DateTime)"
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_StartTime(System.Nullable`1[System.DateTime])"
         }
       },
       "NestedTypes": {}
@@ -161,30 +52,40 @@
     "Container": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+        "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
         },
         "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
         },
+        "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(System.String, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(System.String, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
         "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
         },
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](System.String, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](System.String, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
         },
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
@@ -275,38 +176,23 @@
         "ChangeFeedRequestOptions": {
           "Subclasses": {},
           "Members": {
-            "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions+StartFrom": {
-              "Type": "NestedType",
-              "Attributes": [],
-              "MethodInfo": null
-            },
-            "Microsoft.Azure.Cosmos.FeedRange FeedRange": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": null
-            },
-            "Microsoft.Azure.Cosmos.FeedRange get_FeedRange()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+            "System.Nullable`1[System.DateTime] get_StartTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
               ],
-              "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange get_FeedRange()"
+              "MethodInfo": "System.Nullable`1[System.DateTime] get_StartTime()"
             },
-            "StartFrom From": {
+            "System.Nullable`1[System.DateTime] StartTime": {
               "Type": "Property",
               "Attributes": [],
               "MethodInfo": null
             },
-            "StartFrom get_From()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+            "System.Nullable`1[System.Int32] get_MaxItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
               ],
-              "MethodInfo": "StartFrom get_From()"
-            },
-            "System.Nullable`1[System.Int32] get_MaxItemCount()": {
-              "Type": "Method",
-              "Attributes": [],
               "MethodInfo": "System.Nullable`1[System.Int32] get_MaxItemCount()"
             },
             "System.Nullable`1[System.Int32] MaxItemCount": {
@@ -314,95 +200,27 @@
               "Attributes": [],
               "MethodInfo": null
             },
-            "System.String get_IfMatchEtag()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.String get_IfMatchEtag()"
-            },
-            "System.String get_IfNoneMatchEtag()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.String get_IfNoneMatchEtag()"
-            },
-            "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
-              "Type": "Property",
-              "Attributes": [
-                "EditorBrowsableAttribute",
-                "ObsoleteAttribute"
-              ],
-              "MethodInfo": null
-            },
-            "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
-              "Type": "Property",
-              "Attributes": [
-                "EditorBrowsableAttribute",
-                "ObsoleteAttribute"
-              ],
-              "MethodInfo": null
-            },
             "Void .ctor()": {
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "Void .ctor()"
             },
-            "Void set_FeedRange(Microsoft.Azure.Cosmos.FeedRange)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+            "Void set_MaxItemCount(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
               ],
-              "MethodInfo": "Void set_FeedRange(Microsoft.Azure.Cosmos.FeedRange)"
-            },
-            "Void set_From(StartFrom)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "Void set_From(StartFrom)"
-            },
-            "Void set_IfMatchEtag(System.String)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "Void set_IfMatchEtag(System.String)"
-            },
-            "Void set_IfNoneMatchEtag(System.String)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
-            },
-            "Void set_MaxItemCount(System.Nullable`1[System.Int32])": {
-              "Type": "Method",
-              "Attributes": [],
               "MethodInfo": "Void set_MaxItemCount(System.Nullable`1[System.Int32])"
+            },
+            "Void set_StartTime(System.Nullable`1[System.DateTime])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_StartTime(System.Nullable`1[System.DateTime])"
             }
           },
-          "NestedTypes": {
-            "StartFrom": {
-              "Subclasses": {},
-              "Members": {
-                "StartFrom CreateFromBeginning()": {
-                  "Type": "Method",
-                  "Attributes": [],
-                  "MethodInfo": "StartFrom CreateFromBeginning()"
-                },
-                "StartFrom CreateFromContinuation(System.String)": {
-                  "Type": "Method",
-                  "Attributes": [],
-                  "MethodInfo": "StartFrom CreateFromContinuation(System.String)"
-                },
-                "StartFrom CreateFromNow()": {
-                  "Type": "Method",
-                  "Attributes": [],
-                  "MethodInfo": "StartFrom CreateFromNow()"
-                },
-                "StartFrom CreateFromTime(System.DateTime)": {
-                  "Type": "Method",
-                  "Attributes": [],
-                  "MethodInfo": "StartFrom CreateFromTime(System.DateTime)"
-                }
-              },
-              "NestedTypes": {}
-            }
-          }
+          "NestedTypes": {}
         }
       },
       "Members": {

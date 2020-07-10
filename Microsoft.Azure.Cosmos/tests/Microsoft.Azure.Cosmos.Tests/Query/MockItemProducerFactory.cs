@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 mockQueryContext.Setup(x =>
                     x.ExecuteItemQueryAsync(
-                        It.IsAny<Uri>(),
+                        It.IsAny<string>(),
                         ResourceType.Document,
                         OperationType.Query,
                         It.IsAny<Guid>(),

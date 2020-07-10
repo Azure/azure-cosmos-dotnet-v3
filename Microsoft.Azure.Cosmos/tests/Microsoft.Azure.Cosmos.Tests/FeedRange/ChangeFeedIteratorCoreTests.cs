@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [ExpectedException(typeof(ArgumentNullException))]
         public void ChangeFeedIteratorCore_Null_Container()
         {
-            new ChangeFeedIteratorCore(container: null, new ChangeFeedRequestOptions());
+            ChangeFeedIteratorCore.Create(null, null, null, new ChangeFeedRequestOptions());
         }
 
         [DataTestMethod]
@@ -30,19 +30,22 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [DataRow(0)]
         public void ChangeFeedIteratorCore_ValidateOptions(int maxItemCount)
         {
-            new ChangeFeedIteratorCore(
-                Mock.Of<ContainerInternal>(),
-                new ChangeFeedRequestOptions()
-                {
-                    MaxItemCount = maxItemCount
-                });
+            ChangeFeedIteratorCore.Create(Mock.Of<ContainerInternal>(), null, null, new ChangeFeedRequestOptions() { MaxItemCount = maxItemCount });
         }
 
         [TestMethod]
         public void ChangeFeedIteratorCore_HasMoreResultsDefault()
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<ContainerInternal>(), null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(Mock.Of<ContainerInternal>(), null, null, null);
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+        }
+
+        [TestMethod]
+        public void ChangeFeedIteratorCore_FeedRange()
+        {
+            FeedRangeInternal feedToken = Mock.Of<FeedRangeInternal>();
+            ChangeFeedIteratorCore changeFeedIteratorCore = ChangeFeedIteratorCore.Create(Mock.Of<ContainerInternal>(), feedToken, null, null);
+            Assert.AreEqual(feedToken, changeFeedIteratorCore.FeedRangeInternal);
         }
 
         [TestMethod]
@@ -57,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -76,8 +79,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
+            Mock.Get(feedToken)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
                 .Returns(range);
@@ -88,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -112,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -130,8 +135,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext.Object);
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
+            Mock.Get(feedToken)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
                 .Returns(range);
@@ -142,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
 
             bool creatorCalled = false;
             Func<ResponseMessage, FeedResponse<dynamic>> creator = (ResponseMessage r) =>
@@ -176,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -194,8 +201,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext.Object);
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
+            Mock.Get(feedToken)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
                 .Returns(range);
@@ -206,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -229,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -247,8 +256,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext.Object);
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
+            Mock.Get(feedToken)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
                 .Returns(range);
@@ -259,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
             Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
@@ -285,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -303,8 +314,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext.Object);
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
+            Mock.Get(feedToken)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
                 .Returns(range);
@@ -319,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(Documents.ShouldRetryResult.NoRetry())
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -332,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             Mock.Get(cosmosClientContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.IsAny<Documents.ResourceType>(),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -366,14 +379,18 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext);
             Mock.Get(containerCore)
                 .Setup(c => c.LinkUri)
-                .Returns(new Uri("https://dummy.documents.azure.com:443/dbs"));
+                .Returns("/dbs");
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
+            Mock.Get(feedToken)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
                 .Returns(range);
+            Mock.Get(feedToken)
+                .Setup(f => f.Accept(It.IsAny<FeedRangeVisitor>(), It.IsAny<Action<RequestMessage, string>>()));
             Mock.Get(feedToken)
                 .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
@@ -381,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
                 .Returns(Documents.ShouldRetryResult.NoRetry());
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
 
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
@@ -432,19 +449,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             }
 
             return clientContext;
-        }
-
-        private static ChangeFeedIteratorCore CreateWithCustomFeedToken(ContainerInternal containerInternal, FeedRangeContinuation feedToken)
-        {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerInternal, changeFeedRequestOptions: default);
-            System.Reflection.FieldInfo prop = changeFeedIteratorCore
-                .GetType()
-                .GetField(
-                    "FeedRangeContinuation",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            prop.SetValue(changeFeedIteratorCore, feedToken);
-
-            return changeFeedIteratorCore;
         }
     }
 }

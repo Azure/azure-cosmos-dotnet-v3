@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Post,
-                requestUri: new Uri("http://localhost.com"),
+                requestUri: "http://localhost.com",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 10.2,
                 errorMessage: "Error message",
                 method: HttpMethod.Post,
-                requestUri: new Uri("http://localhost.com"),
+                requestUri: "http://localhost.com",
                 requestSessionToken: null,
                 responseSessionToken: null));
 

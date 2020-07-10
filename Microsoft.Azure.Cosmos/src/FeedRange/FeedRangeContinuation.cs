@@ -33,9 +33,11 @@ namespace Microsoft.Azure.Cosmos
             this.ContainerRid = containerRid;
         }
 
-        public abstract string GetContinuation();
+        public abstract void Accept(
+            FeedRangeVisitor visitor,
+            Action<RequestMessage, string> fillContinuation);
 
-        public abstract FeedRange GetFeedRange();
+        public abstract string GetContinuation();
 
         public abstract void ReplaceContinuation(string continuationToken);
 
@@ -62,7 +64,5 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken);
-
-        public abstract void Accept(IFeedRangeContinuationVisitor visitor);
     }
 }

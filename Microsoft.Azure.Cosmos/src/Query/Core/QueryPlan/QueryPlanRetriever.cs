@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
             CosmosQueryContext queryContext,
             SqlQuerySpec sqlQuerySpec,
-            Uri resourceLink,
+            string resourceLink,
             PartitionKey? partitionKey,
             CancellationToken cancellationToken = default)
         {

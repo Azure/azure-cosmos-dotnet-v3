@@ -4895,11 +4895,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Uri get_RequestUri()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Uri get_RequestUri()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Uri get_RequestUri()"
         },
         "System.Uri RequestUri": {
