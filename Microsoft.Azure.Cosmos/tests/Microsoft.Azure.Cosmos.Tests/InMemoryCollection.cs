@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -135,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public TryCatch<(List<Record>, long?)> Query(
             SqlQuerySpec sqlQuerySpec,
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             long resourceIdentifier,
             int pageSize)
         {
@@ -149,7 +152,41 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new NotSupportedException("InMemoryCollection only supports SELECT * FROM c queries");
             }
 
-            // for now just always do a "SELECT * FROM c" query
+            int partitionKeyRangeId;
+            if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+            {
+                partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
+            }
+            else if (feedRange is FeedRangeEpk feedRangeEpk)
+            {
+                PartitionKeyHash? startInclusive = (feedRangeEpk.Range.Min != string.Empty) ? PartitionKeyHash.Parse(feedRangeEpk.Range.Min) : (PartitionKeyHash?)null;
+                PartitionKeyHash? endExclusive = (feedRangeEpk.Range.Max != string.Empty) ? PartitionKeyHash.Parse(feedRangeEpk.Range.Max) : (PartitionKeyHash?)null;
+
+                PartitionKeyHashRange partitionKeyHashRange = new PartitionKeyHashRange(startInclusive, endExclusive);
+                IEnumerable<int> pkrangeId = this.partitionKeyRangeIdToHashRange
+                    .Where(kvp => kvp.Value.Equals(partitionKeyHashRange))
+                    .Select(kvp => kvp.Key);
+                if (pkrangeId.Count() != 1)
+                {
+                    // Epk range no longer maps to a physical partition
+                    // so return a gone exception
+                    return TryCatch<(List<Record>, long?)>.FromException(
+                        new CosmosException(
+                            message: $"Epk Range {feedRangeEpk.Range} is gone",
+                            statusCode: System.Net.HttpStatusCode.Gone,
+                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: default));
+                }
+
+                partitionKeyRangeId = pkrangeId.First();
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            // For now just do a read feed
             return this.ReadFeed(partitionKeyRangeId, resourceIdentifier, pageSize);
         }
 
@@ -227,8 +264,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public PartitionKeyHashRange GetHashRange(int partitionKeyRangeId) => this.partitionKeyRangeIdToHashRange[partitionKeyRangeId];
 
-        public int GetPartitionKeyRangeId(PartitionKeyHashRange hashRange) => this.partitionKeyRangeIdToHashRange.Where(kvp => kvp.Value.Equals(hashRange)).First().Key;
-
         private bool Return429() => (this.failureConfigs != null) && this.failureConfigs.Inject429s && ((this.random.Next() % 2) == 0);
 
         private bool ReturnEmptyPage() => (this.failureConfigs != null) && this.failureConfigs.InjectEmptyPages && ((this.random.Next() % 2) == 0);
@@ -247,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new ArgumentOutOfRangeException("Can only support hash partitioning");
             }
 
-            if (partitionKeyDefinition.Version != PartitionKeyDefinitionVersion.V2)
+            if (partitionKeyDefinition.Version != Documents.PartitionKeyDefinitionVersion.V2)
             {
                 throw new ArgumentOutOfRangeException("Can only support hash v2");
             }
@@ -282,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 throw new ArgumentOutOfRangeException("Can only support hash partitioning");
             }
 
-            if (partitionKeyDefinition.Version != PartitionKeyDefinitionVersion.V2)
+            if (partitionKeyDefinition.Version != Documents.PartitionKeyDefinitionVersion.V2)
             {
                 throw new ArgumentOutOfRangeException("Can only support hash v2");
             }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -75,7 +76,5 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
 
         }
-
-        private sealed class ExecuteQueryBasedOnFeedRangeVisitor : IFeedRangeAsyncVisitor<TryCatch<QueryPage>, VisitorArguments>
     }
 }

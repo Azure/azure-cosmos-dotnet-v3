@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Documents.Routing;
@@ -77,6 +78,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             parsedValue = new PartitionKeyHash(uInt128);
             return true;
+        }
+
+        public static PartitionKeyHash Parse(string value)
+        {
+            if (!PartitionKeyHash.TryParse(value, out PartitionKeyHash parsedValue))
+            {
+                throw new FormatException();
+            }
+
+            return parsedValue;
         }
 
         public static class V1
