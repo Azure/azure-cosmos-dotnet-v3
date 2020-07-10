@@ -13,8 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    //using TestDoc = TestCommon.TestDoc;
-
+    
     [TestClass]
     public class PropertyEncryptionProcessorTests
     {
