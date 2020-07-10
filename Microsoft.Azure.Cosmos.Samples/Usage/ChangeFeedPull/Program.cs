@@ -18,7 +18,7 @@
 
         ItemRequestOptions targetItemRequestOptions = new ItemRequestOptions()
         {
-            EnableContentResponseOnWrite = false
+            EnableContentResponseOnWrite = false            
         };
 
         private async Task RunAsync(Container source, Container target)
@@ -28,15 +28,14 @@
                 changeFeedRequestOptions: new ChangeFeedRequestOptions()
                 {
                     StartTime = DateTime.MinValue.ToUniversalTime(),
-                    MaxItemCount = 1000
+                    // MaxItemCount = 1000
                 });
 
             while (true)
             {
-                FeedResponse<MyDocument> response;
                 try
                 {
-                    response = await iterator.ReadNextAsync();
+                    FeedResponse<MyDocument> response = await iterator.ReadNextAsync();
                     if ((int)response.StatusCode == 304)
                     {
                         Console.WriteLine("304");
@@ -58,13 +57,16 @@
                         this.continuationTokenQueue.Enqueue(continuationToken);
                         this.pendingCountByContinuationToken.TryAdd(continuationToken, response.Count);
 
-                        foreach (MyDocument doc in response.Resource)
+                        Task _ = Task.Run(() =>
                         {
-                            MyDocument transformedDoc = Transform(doc);
+                            foreach (MyDocument doc in response.Resource)
+                            {
+                                MyDocument transformedDoc = Transform(doc);
 
-                            Task _ = target.CreateItemAsync(transformedDoc, new PartitionKey(transformedDoc.pk), this.targetItemRequestOptions)
-                                .ContinueWith(_ => this.UpdateProgressAsync(target, continuationToken));
-                        }
+                                Task _ = target.CreateItemAsync(transformedDoc, new PartitionKey(transformedDoc.pk), this.targetItemRequestOptions)
+                                    .ContinueWith(_ => this.UpdateProgressAsync(target, continuationToken));
+                            }
+                        });
                     }
                 }
                 catch (CosmosException ex)
