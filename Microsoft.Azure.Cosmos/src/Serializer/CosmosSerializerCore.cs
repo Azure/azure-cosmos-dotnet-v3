@@ -79,11 +79,11 @@ namespace Microsoft.Azure.Cosmos
             return serializer.ToStream<T>(input);
         }
 
-        internal Stream ToPatchSpecificationStream(PatchSpecification input)
+        internal Stream ToPatchSpecificationStream<T>(T input)
         {
             return this.patchSpecificationSerializer != null
-                ? this.patchSpecificationSerializer.ToStream(input)
-                : CosmosSerializerCore.propertiesSerializer.ToStream<PatchSpecification>(input);
+                ? this.patchSpecificationSerializer.ToStream<T>(input)
+                : CosmosSerializerCore.propertiesSerializer.ToStream<T>(input);
         }
 
         internal Stream ToStreamSqlQuerySpec(SqlQuerySpec input, ResourceType resourceType)

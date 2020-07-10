@@ -845,6 +845,25 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                diagnosticsContext,
+                id,
+                partitionKey,
+                patchSpecification,
+                requestOptions,
+                cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+        }
+
+        public async Task<ResponseMessage> PatchItemStreamAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            PatchSpecification patchSpecification,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentNullException(nameof(id));
@@ -865,35 +884,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 patchSpecificationStream = this.ClientContext.SerializerCore.ToPatchSpecificationStream(patchSpecification);
             }
-                        
-            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
-                diagnosticsContext,
-                patchSpecificationStream,
-                id,
-                partitionKey,
-                requestOptions,
-                cancellationToken);
-
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
-        }
-
-        public async Task<ResponseMessage> PatchItemStreamAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
-            Stream streamPayload,
-            string id,
-            PartitionKey partitionKey,
-            ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
 
             using (diagnosticsContext.GetOverallScope())
             {
@@ -908,7 +898,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosContainerCore: this,
                     partitionKey: partitionKey,
                     itemId: id,
-                    streamPayload: streamPayload,
+                    streamPayload: patchSpecificationStream,
                     requestEnricher: null,
                     diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);

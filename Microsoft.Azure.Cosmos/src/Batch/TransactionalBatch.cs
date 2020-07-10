@@ -67,7 +67,6 @@ namespace Microsoft.Azure.Cosmos
     ///     .CreateItemStream(streamPayload1)
     ///     .ReplaceItemStream("eating", streamPayload2)
     ///     .UpsertItemStream(streamPayload3)
-    ///     .PatchItemStream(test4.id, streamPayload4)
     ///     .ExecuteAsync())
     /// {
     ///    if (!batchResponse.IsSuccessStatusCode)
@@ -208,21 +207,6 @@ namespace Microsoft.Azure.Cosmos
             TransactionalBatchItemRequestOptions requestOptions = null);
 
 #if INTERNAL
-        /// <summary>
-        /// Adds an operation to patch an item into the batch.
-        /// </summary>
-        /// <param name="id">The unique id of the item.</param>
-        /// <param name="streamPayload">
-        /// A Stream containing the <see cref="PatchSpecification"/> payload for the item.
-        /// The stream must have a UTF-8 encoded JSON object which contains an id property.
-        /// </param>
-        /// <param name="requestOptions">(Optional) The options for the item request.</param>
-        /// <returns>The transactional batch instance with the operation added.</returns>
-        public abstract TransactionalBatch PatchItemStream(
-                string id,
-                Stream streamPayload,
-                TransactionalBatchItemRequestOptions requestOptions = null);
-
         /// <summary>
         /// Adds an operation to patch an item into the batch.
         /// </summary>

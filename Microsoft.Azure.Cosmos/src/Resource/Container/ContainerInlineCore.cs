@@ -267,16 +267,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ResponseMessage> PatchItemStreamAsync(
-                Stream streamPayload,
                 string id,
                 PartitionKey partitionKey,
+                PatchSpecification patchSpecification,
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
                 nameof(PatchItemStreamAsync),
                 requestOptions,
-                (diagnostics) => base.PatchItemStreamAsync(diagnostics, streamPayload, id, partitionKey, requestOptions, cancellationToken));
+                (diagnostics) => base.PatchItemStreamAsync(diagnostics, id, partitionKey, patchSpecification, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> PatchItemAsync<T>(

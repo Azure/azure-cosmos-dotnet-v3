@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Represents a list of operations to be sequentially applied to the referred Cosmos item.
+    /// </summary>
 #if INTERNAL
     public
 #else
@@ -14,9 +17,15 @@ namespace Microsoft.Azure.Cosmos
 #endif
         sealed class PatchSpecification
     {
+        /// <summary>
+        /// List of operations to be applied to the item.
+        /// </summary>
         [JsonProperty(PropertyName = "operations")]
         internal List<PatchOperation> Operations { get; }
 
+        /// <summary>
+        /// Constructor initialization.
+        /// </summary>
         public PatchSpecification()
         {
             this.Operations = new List<PatchOperation>();

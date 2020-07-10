@@ -402,7 +402,15 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
-                this.ResourceStream = serializerCore.ToStream(this.Resource);
+                if (this.Resource.GetType() == typeof(PatchSpecification))
+                {
+                    this.ResourceStream = serializerCore.ToPatchSpecificationStream(this.Resource);
+                }
+                else
+                {
+                    this.ResourceStream = serializerCore.ToStream(this.Resource);
+                }
+
                 return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 

@@ -1460,18 +1460,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .Remove("/description")
                 .Replace("/taskNum", testItem.taskNum+1);
 
-            using (Stream stream = TestCommon.SerializerCore.ToStream<PatchSpecification>(patchSpecification))
+            // Patch a non-existing item. It should fail, and not throw an exception.
+            using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(testItem.status),
+                id: testItem.id,
+                patchSpecification: patchSpecification))
             {
-                // Patch a non-existing item. It should fail, and not throw an exception.
-                using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(
-                    partitionKey: new Cosmos.PartitionKey(testItem.status),
-                    id: testItem.id,
-                    streamPayload: stream))
-                {
-                    Assert.IsFalse(response.IsSuccessStatusCode);
-                    Assert.IsNotNull(response);
-                    Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode, response.ErrorMessage);
-                }
+                Assert.IsFalse(response.IsSuccessStatusCode);
+                Assert.IsNotNull(response);
+                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode, response.ErrorMessage);
             }
 
             using (Stream stream = TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem))
@@ -1484,32 +1481,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            using (Stream stream = TestCommon.SerializerCore.ToStream<PatchSpecification>(patchSpecification))
+            // Patch
+            using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id, patchSpecification: patchSpecification))
             {
-                // Patch
-                using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id, streamPayload: stream))
-                {
-                    Assert.IsNotNull(response);
-                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-                }
+                Assert.IsNotNull(response);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
 
-                // Read and validate
-                ItemResponse<ToDoActivity> itemResponse = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, partitionKey: new Cosmos.PartitionKey(testItem.status));
-                Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
-                Assert.IsNotNull(itemResponse.Resource);
-                Assert.AreEqual("patched", itemResponse.Resource.children[1].status);
-                Assert.IsNull(itemResponse.Resource.description);
-                Assert.AreEqual(testItem.taskNum+1, itemResponse.Resource.taskNum);
+            // Read and validate
+            ItemResponse<ToDoActivity> itemResponse = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, partitionKey: new Cosmos.PartitionKey(testItem.status));
+            Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
+            Assert.IsNotNull(itemResponse.Resource);
+            Assert.AreEqual("patched", itemResponse.Resource.children[1].status);
+            Assert.IsNull(itemResponse.Resource.description);
+            Assert.AreEqual(testItem.taskNum+1, itemResponse.Resource.taskNum);
 
-                // Delete
-                using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
-                {
-                    Assert.IsNotNull(deleteResponse);
-                    Assert.AreEqual(deleteResponse.StatusCode, HttpStatusCode.NoContent);
-                }
+            // Delete
+            using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
+            {
+                Assert.IsNotNull(deleteResponse);
+                Assert.AreEqual(deleteResponse.StatusCode, HttpStatusCode.NoContent);
             }
         }
 
+        [Ignore]
         [TestMethod]
         public async Task ItemPatchViaGatewayTest()
         {

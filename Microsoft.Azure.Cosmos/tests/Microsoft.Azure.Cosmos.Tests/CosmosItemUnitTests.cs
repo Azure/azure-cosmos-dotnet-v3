@@ -306,17 +306,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             PatchSpecification patch = new PatchSpecification().Add("/new", "patched");
 
-            using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            using (ResponseMessage streamResponse = await container.PatchItemStreamAsync(
+                partitionKey: partitionKey,
+                id: testItem.id,
+                patchSpecification: patch))
             {
-                ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
-                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
-                using (ResponseMessage streamResponse = await container.PatchItemStreamAsync(
-                    partitionKey: partitionKey,
-                    id: testItem.id,
-                    streamPayload: itemStream))
-                {
-                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
-                }
+                mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
             }
         }
 

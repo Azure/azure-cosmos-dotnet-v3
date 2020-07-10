@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class BatchSinglePartitionKeyTests : BatchTestBase
@@ -341,6 +342,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await BatchTestBase.VerifyByReadAsync(BatchTestBase.JsonContainer, testDoc, isStream: false, isSchematized: false, useEpk:false);
         }
 
+        [TestMethod]
+        [Owner("antoshni")]
+        [Description("Verify custom serializer is used for patch operation.")]
+        public async Task BatchCustomSerializerUsedForPatchAsync()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                Serializer = new CosmosJsonDotNetSerializer(
+                    new JsonSerializerSettings()
+                    {
+                        DateFormatString = "yyyy/MM/dd hh:mm"
+                    })
+            };
+
+            CosmosClient customSerializationClient = TestCommon.CreateCosmosClient(clientOptions);
+            Container customSerializationContainer = customSerializationClient.GetContainer(BatchTestBase.Database.Id, BatchTestBase.JsonContainer.Id);
+
+            TestDoc testDoc = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+
+            DateTime patchDate = new DateTime(2020, 07, 01, 01, 02, 03);
+            PatchSpecification patchSpecification = new PatchSpecification().Add("/date", patchDate);
+
+            BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)customSerializationContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                .CreateItem(testDoc);
+
+            batch = (BatchCore)batch.PatchItem(testDoc.Id, patchSpecification);
+
+            TransactionalBatchResponse batchResponse = await batch.ExecuteAsync();
+
+            BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 2);
+
+            Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
+
+            JsonSerializerSettings jsonSettings = new JsonSerializerSettings();
+            jsonSettings.DateFormatString = "yyyy/MM/dd hh:mm";
+            string dateJson = JsonConvert.SerializeObject(patchDate, jsonSettings);
+
+            // regular container
+            ItemResponse<dynamic> response = await BatchTestBase.JsonContainer.ReadItemAsync<dynamic>(
+                testDoc.Id,
+                BatchTestBase.GetPartitionKey(this.PartitionKey1));
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+            Assert.IsTrue(dateJson.Contains(response.Resource["date"].ToString()));
+        }
+
         private async Task<TransactionalBatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, Container container)
         {
             RequestOptions batchOptions = null;
@@ -404,19 +453,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         BatchTestBase.GetBatchItemRequestOptions(anotherTestDocToUpsert, isSchematized))
                     .DeleteItem(
                         BatchTestBase.GetId(this.TestDocPk1ExistingD, isSchematized),
-                        BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized));
-
-                if (!isSchematized)
-                {
-                    batch = (BatchCore) batch.PatchItemStream(
-                        BatchTestBase.GetId(testDocToPatch, isSchematized),
-                        TestCommon.SerializerCore.ToStream<PatchSpecification>(patchSpecification),
-                        BatchTestBase.GetBatchItemRequestOptions(testDocToPatch, isSchematized: false));
-                }
+                        BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized));                
             }
 
             batchResponse = await batch.ExecuteAsync(batchOptions);
-            BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: isSchematized ? 6 :7);
+            BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: isStream ? 6 :7);
 
             Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
             Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
@@ -428,17 +469,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (!isStream)
             {
                 Assert.AreEqual(this.TestDocPk1ExistingC, batchResponse.GetOperationResultAtIndex<TestDoc>(1).Resource);
+                Assert.AreEqual(HttpStatusCode.OK, batchResponse[6].StatusCode);
+                testDocToPatch.Cost = testDocToPatch.Cost + 1;
+                await BatchTestBase.VerifyByReadAsync(container, testDocToPatch, isStream, isSchematized, useEpk);
             }
             else
             {
                 Assert.AreEqual(this.TestDocPk1ExistingC, BatchTestBase.StreamToTestDoc(batchResponse[1].ResourceStream, isSchematized));
-            }
-
-            if (!isSchematized)
-            {
-                Assert.AreEqual(HttpStatusCode.OK, batchResponse[6].StatusCode);
-                testDocToPatch.Cost = testDocToPatch.Cost + 1;
-                await BatchTestBase.VerifyByReadAsync(container, testDocToPatch, isStream, isSchematized, useEpk);
             }
 
             await BatchTestBase.VerifyByReadAsync(container, testDocToCreate, isStream, isSchematized, useEpk);

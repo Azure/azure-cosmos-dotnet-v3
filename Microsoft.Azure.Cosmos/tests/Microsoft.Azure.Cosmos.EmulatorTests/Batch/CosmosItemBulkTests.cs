@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static Task<ResponseMessage> ExecutePatchStreamAsync(ContainerInternal container, MyDocument item, PatchSpecification patch)
         {
-            return container.PatchItemStreamAsync(TestCommon.SerializerCore.ToStream(patch), item.id, new PartitionKey(item.Status));
+            return container.PatchItemStreamAsync(item.id, new PartitionKey(item.Status), patch);
         }
 
         private static Task<ResponseMessage> ExecuteDeleteStreamAsync(Container container, MyDocument item)

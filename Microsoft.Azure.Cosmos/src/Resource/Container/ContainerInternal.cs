@@ -93,11 +93,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if !INTERNAL
-
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
-            Stream streamPayload,
             string id,
             PartitionKey partitionKey,
+            PatchSpecification patchSpecification,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
