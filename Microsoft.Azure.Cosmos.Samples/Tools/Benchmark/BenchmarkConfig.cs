@@ -120,7 +120,7 @@ namespace CosmosBenchmark
                 if (string.IsNullOrEmpty(options.ResultsContainer)
                     || string.IsNullOrWhiteSpace(options.ResultsPartitionKeyValue))
                 {
-                    throw new ArgumentException($"Missing {nameof(options.ResultsContainer)} and {nameof(options.RunId)}");
+                    throw new ArgumentException($"Missing {nameof(options.ResultsContainer)} and {nameof(options.ResultsPartitionKeyValue)}");
                 }
             }
 
