@@ -14,12 +14,13 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
+    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
 
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly TimeSpan requestTimeout;
         private readonly ApiType apiType;
+        private readonly bool enableTcpConnectionEndpointRediscovery;
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
@@ -62,6 +64,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             int maxBackupReadEndpoints =
                 !connectionPolicy.EnableReadRequestsFallback.HasValue || connectionPolicy.EnableReadRequestsFallback.Value
                 ? GlobalAddressResolver.MaxBackupReadRegions : 0;
+
+            this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
 
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
@@ -131,6 +135,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             await Task.WhenAll(tasks);
         }
 
+        public async Task UpdateAsync(
+            ServerKey serverKey,
+            CancellationToken cancellationToken)
+        {
+            List<Task> tasks = new List<Task>();
+
+            foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
+            {
+                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryUpdate on all AddressCaches of all regions
+                tasks.Add(addressCache.Value.AddressCache.TryUpdateAddressAsync(serverKey, cancellationToken));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
         /// <summary>
         /// ReplicatedResourceClient will use this API to get the direct connectivity AddressCache for given request.
         /// </summary>
@@ -152,6 +171,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private EndpointCache GetOrAddEndpoint(Uri endpoint)
         {
+            // The GetorAdd is followed by a call to .Count which in a ConcurrentDictionary
+            // will acquire all locks for all buckets. This is really expensive. Since the check
+            // there is only to see if we've exceeded the count of endpoints, we can simply
+            // avoid that check altogether if we are not adding any more endpoints.
+            if (this.addressCacheByEndpoint.TryGetValue(endpoint, out EndpointCache existingCache))
+            {
+                return existingCache;
+            }
+
             EndpointCache endpointCache = this.addressCacheByEndpoint.GetOrAdd(
                 endpoint,
                 (Uri resolvedEndpoint) =>
@@ -164,7 +192,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serviceConfigReader,
                         this.requestTimeout,
                         messageHandler: this.messageHandler,
-                        apiType: this.apiType);
+                        apiType: this.apiType,
+                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

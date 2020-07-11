@@ -101,14 +101,16 @@
             List<Family> families = new List<Family>();
 
             // SQL
-            FeedIterator<Family> setIterator = container.GetItemQueryIterator<Family>(requestOptions: new QueryRequestOptions { MaxItemCount =  1});
-            while (setIterator.HasMoreResults)
+            using (FeedIterator<Family> setIterator = container.GetItemQueryIterator<Family>(requestOptions: new QueryRequestOptions { MaxItemCount = 1 }))
             {
-                int count = 0;
-                foreach (Family item in await setIterator.ReadNextAsync())
+                while (setIterator.HasMoreResults)
                 {
-                    Assert("Should only return 1 result at a time.", count <= 1);
-                    families.Add(item);
+                    int count = 0;
+                    foreach (Family item in await setIterator.ReadNextAsync())
+                    {
+                        Assert("Should only return 1 result at a time.", count <= 1);
+                        families.Add(item);
+                    }
                 }
             }
 
@@ -122,28 +124,30 @@
             int totalCount = 0;
 
             // SQL
-            FeedIterator setIterator = container.GetItemQueryStreamIterator();
-            while (setIterator.HasMoreResults)
+            using (FeedIterator setIterator = container.GetItemQueryStreamIterator())
             {
-                int count = 0;
-                using (ResponseMessage response = await setIterator.ReadNextAsync())
+                while (setIterator.HasMoreResults)
                 {
-                    if (response.Diagnostics != null)
+                    int count = 0;
+                    using (ResponseMessage response = await setIterator.ReadNextAsync())
                     {
-                        Console.WriteLine($"ItemStreamFeed Diagnostics: {response.Diagnostics.ToString()}");
+                        if (response.Diagnostics != null)
+                        {
+                            Console.WriteLine($"ItemStreamFeed Diagnostics: {response.Diagnostics.ToString()}");
+                        }
+
+                        response.EnsureSuccessStatusCode();
+                        count++;
+                        using (StreamReader sr = new StreamReader(response.Content))
+                        using (JsonTextReader jtr = new JsonTextReader(sr))
+                        {
+                            JsonSerializer jsonSerializer = new JsonSerializer();
+                            dynamic array = jsonSerializer.Deserialize<dynamic>(jtr);
+                            totalCount += array.Documents.Count;
+                        }
                     }
 
-                    response.EnsureSuccessStatusCode();
-                    count++;
-                    using (StreamReader sr = new StreamReader(response.Content))
-                    using (JsonTextReader jtr = new JsonTextReader(sr))
-                    {
-                        JsonSerializer jsonSerializer = new JsonSerializer();
-                        dynamic array = jsonSerializer.Deserialize<dynamic>(jtr);
-                        totalCount += array.Documents.Count;
-                    }
                 }
-
             }
 
             Assert("Expected two families", totalCount == 2);
@@ -154,34 +158,36 @@
         private static async Task QueryItemsInPartitionAsStreams(Container container)
         {
             // SQL
-            FeedIterator setIterator = container.GetItemQueryStreamIterator(
+            using (FeedIterator setIterator = container.GetItemQueryStreamIterator(
                 "SELECT F.id, F.LastName, F.IsRegistered FROM Families F",
-                requestOptions: new QueryRequestOptions() {
+                requestOptions: new QueryRequestOptions()
+                {
                     PartitionKey = new PartitionKey("Anderson"),
                     MaxConcurrency = 1,
                     MaxItemCount = 1
-                });
-
-            int count = 0;
-            while (setIterator.HasMoreResults)
+                }))
             {
-                using (ResponseMessage response = await setIterator.ReadNextAsync())
+                int count = 0;
+                while (setIterator.HasMoreResults)
                 {
-                    Assert("Response failed", response.IsSuccessStatusCode);
-                    count++;
-                    using (StreamReader sr = new StreamReader(response.Content))
-                    using (JsonTextReader jtr = new JsonTextReader(sr))
+                    using (ResponseMessage response = await setIterator.ReadNextAsync())
                     {
-                        JsonSerializer jsonSerializer = new JsonSerializer();
-                        dynamic items = jsonSerializer.Deserialize<dynamic>(jtr).Documents;
-                        Assert("Expected one family", items.Count == 1);
-                        dynamic item = items[0];
-                        Assert($"Expected LastName: Anderson Actual: {item.LastName}", string.Equals("Anderson", item.LastName.ToString(), StringComparison.InvariantCulture));
+                        Assert("Response failed", response.IsSuccessStatusCode);
+                        count++;
+                        using (StreamReader sr = new StreamReader(response.Content))
+                        using (JsonTextReader jtr = new JsonTextReader(sr))
+                        {
+                            JsonSerializer jsonSerializer = new JsonSerializer();
+                            dynamic items = jsonSerializer.Deserialize<dynamic>(jtr).Documents;
+                            Assert("Expected one family", items.Count == 1);
+                            dynamic item = items[0];
+                            Assert($"Expected LastName: Anderson Actual: {item.LastName}", string.Equals("Anderson", item.LastName.ToString(), StringComparison.InvariantCulture));
+                        }
                     }
                 }
-            }
 
-            Assert("Expected 1 family", count == 1);
+                Assert("Expected 1 family", count == 1);
+            }
         }
         // </QueryItemsInPartitionAsStreams>
 
@@ -196,18 +202,25 @@
                 .WithParameter("@city", "Seattle");
 
             List<Family> results = new List<Family>();
-            FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(query, requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey("Anderson")});
-            while (resultSetIterator.HasMoreResults)
-            {
-                FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
-                results.AddRange(response);
-                if (response.Diagnostics != null)
+            using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
+                query,
+                requestOptions: new QueryRequestOptions()
                 {
-                    Console.WriteLine($"\nQueryWithSqlParameters Diagnostics: {response.Diagnostics.ToString()}");
+                    PartitionKey = new PartitionKey("Anderson")
+                }))
+            {
+                while (resultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
+                    results.AddRange(response);
+                    if (response.Diagnostics != null)
+                    {
+                        Console.WriteLine($"\nQueryWithSqlParameters Diagnostics: {response.Diagnostics.ToString()}");
+                    }
                 }
-            }
 
-            Assert("Expected only 1 family", results.Count == 1);
+                Assert("Expected only 1 family", results.Count == 1);
+            }
         }
         // </QueryWithSqlParameters>
 
@@ -220,14 +233,16 @@
             // 0 maximum parallel tasks, effectively serial execution
             QueryRequestOptions options = new QueryRequestOptions() { MaxBufferedItemCount = 100 };
             options.MaxConcurrency = 0;
-            FeedIterator<Family> query = container.GetItemQueryIterator<Family>(
+            using (FeedIterator<Family> query = container.GetItemQueryIterator<Family>(
                 queryText,
-                requestOptions: options);
-            while (query.HasMoreResults)
+                requestOptions: options))
             {
-                foreach (Family family in await query.ReadNextAsync())
+                while (query.HasMoreResults)
                 {
-                    familiesSerial.Add(family);
+                    foreach (Family family in await query.ReadNextAsync())
+                    {
+                        familiesSerial.Add(family);
+                    }
                 }
             }
 
@@ -237,15 +252,16 @@
             List<Family> familiesParallel1 = new List<Family>();
 
             options.MaxConcurrency = 1;
-            query = container.GetItemQueryIterator<Family>(
+            using (FeedIterator<Family> query = container.GetItemQueryIterator<Family>(
                 queryText,
-                requestOptions: options);
-
-            while (query.HasMoreResults)
+                requestOptions: options))
             {
-                foreach (Family family in await query.ReadNextAsync())
+                while (query.HasMoreResults)
                 {
-                    familiesParallel1.Add(family);
+                    foreach (Family family in await query.ReadNextAsync())
+                    {
+                        familiesParallel1.Add(family);
+                    }
                 }
             }
 
@@ -257,15 +273,16 @@
             List<Family> familiesParallel10 = new List<Family>();
 
             options.MaxConcurrency = 10;
-            query = container.GetItemQueryIterator<Family>(
+            using (FeedIterator<Family> query = container.GetItemQueryIterator<Family>(
                 queryText,
-                requestOptions: options);
-
-            while (query.HasMoreResults)
+                requestOptions: options))
             {
-                foreach (Family family in await query.ReadNextAsync())
+                while (query.HasMoreResults)
                 {
-                    familiesParallel10.Add(family);
+                    foreach (Family family in await query.ReadNextAsync())
+                    {
+                        familiesParallel10.Add(family);
+                    }
                 }
             }
 

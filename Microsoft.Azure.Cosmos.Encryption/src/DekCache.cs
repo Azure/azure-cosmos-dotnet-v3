@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
-        { 
+        {
             CachedDekProperties cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                     dekId,
                     null,

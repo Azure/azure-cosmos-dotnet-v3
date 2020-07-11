@@ -64,6 +64,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CreateDropItemWithInvalidIdCharactersTest()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            testItem.id = "Invalid#/\\?Id";
+            await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.status));
+
+            try
+            {
+                await this.Container.ReadItemAsync<JObject>(testItem.id, new Cosmos.PartitionKey(testItem.status));
+                Assert.Fail("Read item should fail because id has invalid characters");
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+            {
+                string message = ce.ToString();
+                Assert.IsNotNull(message);
+            }
+
+            // Get a container reference that use RID values
+            ContainerProperties containerProperties = await this.Container.ReadContainerAsync();
+            string[] selfLinkSegments = containerProperties.SelfLink.Split('/');
+            string databaseRid = selfLinkSegments[1];
+            string containerRid = selfLinkSegments[3];
+            Container containerByRid = this.cosmosClient.GetContainer(databaseRid, containerRid);
+
+            // List of invalid characters are listed here.
+            //https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.resource.id?view=azure-dotnet#remarks
+            FeedIterator<JObject> invalidItemsIterator = this.Container.GetItemQueryIterator<JObject>(
+                @"select * from t where CONTAINS(t.id, ""/"") or CONTAINS(t.id, ""#"") or CONTAINS(t.id, ""?"") or CONTAINS(t.id, ""\\"") ");
+            while (invalidItemsIterator.HasMoreResults)
+            {
+                foreach (JObject itemWithInvalidId in await invalidItemsIterator.ReadNextAsync())
+                {
+                    // It recommend to chose a new id that does not contain special characters, but
+                    // if that is not possible then it can be Base64 encoded to escape the special characters
+                    byte[] plainTextBytes = Encoding.UTF8.GetBytes(itemWithInvalidId["id"].ToString());
+                    itemWithInvalidId["id"] = Convert.ToBase64String(plainTextBytes);
+
+                    // Update the item with the new id value using the rid based container reference
+                    JObject item = await containerByRid.ReplaceItemAsync<JObject>(
+                        item: itemWithInvalidId,
+                        id: itemWithInvalidId["_rid"].ToString(),
+                        partitionKey: new Cosmos.PartitionKey(itemWithInvalidId["status"].ToString()));
+
+                    // Validate the new id can be read using the original name based contianer reference
+                    await this.Container.ReadItemAsync<ToDoActivity>(
+                       item["id"].ToString(),
+                       new Cosmos.PartitionKey(item["status"].ToString())); ;
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task CreateDropItemTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -683,100 +735,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
 
-        [TestMethod]
-        public async Task ItemStreamContractVerifier()
-        {
-            int totalCount = 4;
-            Dictionary<string, ToDoActivity> toDoActivities = new Dictionary<string, ToDoActivity>();
-            // Create 3 constant items;
-            for (int i = 0; i < totalCount; i++)
-            {
-                ToDoActivity toDoActivity = new ToDoActivity()
-                {
-                    id = "toDoActivity" + i,
-                    status = "InProgress",
-                    cost = 9000 + i,
-                    description = "Constant to do activity",
-                    taskNum = i
-                };
-
-                toDoActivities.Add(toDoActivity.id, toDoActivity);
-
-                await this.Container.CreateItemAsync<ToDoActivity>(toDoActivity);
-            }
-
-            List<FeedIterator> FeedIterators = new List<FeedIterator>();
-
-            // The stream contract should return the same contract as read feed.
-            // {
-            //    "_rid": "containerRid",
-            //    "Documents": [{
-            //        "id": "03230",
-            //        "_rid": "qHVdAImeKAQBAAAAAAAAAA==",
-            //        "_self": "dbs\/qHVdAA==\/colls\/qHVdAImeKAQ=\/docs\/qHVdAImeKAQBAAAAAAAAAA==\/",
-            //        "_etag": "\"410000b0-0000-0000-0000-597916b00000\"",
-            //        "_attachments": "attachments\/",
-            //        "_ts": 1501107886
-            //    }],
-            //    "_count": 1
-            // }
-
-            FeedIterator setIterator =
-                this.Container.GetItemQueryStreamIterator();
-            FeedIterators.Add(setIterator);
-
-            QueryRequestOptions options = new QueryRequestOptions()
-            {
-                MaxItemCount = 4,
-                MaxConcurrency = 1,
-            };
-
-            FeedIterator queryIterator = this.Container.GetItemQueryStreamIterator(
-                    queryText: @"select * from t where t.id != """" ",
-                    requestOptions: options);
-
-            FeedIterators.Add(queryIterator);
-            foreach (FeedIterator iterator in FeedIterators)
-            {
-                int count = 0;
-                while (iterator.HasMoreResults)
-                {
-                    ResponseMessage response = await iterator.ReadNextAsync(this.cancellationToken);
-                    response.EnsureSuccessStatusCode();
-
-                    using (StreamReader sr = new StreamReader(response.Content))
-                    {
-                        string jsonString = await sr.ReadToEndAsync();
-                        Assert.IsNotNull(jsonString);
-                        JObject jObject = JsonConvert.DeserializeObject<JObject>(jsonString);
-                        Assert.IsNotNull(jObject["Documents"]);
-                        Assert.IsNotNull(jObject["_rid"]);
-                        Assert.IsNotNull(jObject["_count"]);
-                        Assert.IsTrue(jObject["_count"].ToObject<int>() >= 0);
-                        foreach (JObject item in jObject["Documents"])
-                        {
-                            count++;
-                            Assert.IsNotNull(item["id"]);
-                            ToDoActivity createdItem = toDoActivities[item["id"].ToString()];
-
-                            Assert.AreEqual(createdItem.taskNum, item["taskNum"].ToObject<int>());
-                            Assert.AreEqual(createdItem.cost, item["cost"].ToObject<double>());
-                            Assert.AreEqual(createdItem.description, item["description"].ToString());
-                            Assert.AreEqual(createdItem.status, item["status"].ToString());
-                            Assert.IsNotNull(item["_rid"]);
-                            Assert.IsNotNull(item["_self"]);
-                            Assert.IsNotNull(item["_etag"]);
-                            Assert.IsNotNull(item["_attachments"]);
-                            Assert.IsNotNull(item["_ts"]);
-                        }
-                    }
-                }
-
-                Assert.AreEqual(totalCount, count);
-            }
-        }
-
-
         [DataRow(1, 1)]
         [DataRow(5, 5)]
         [DataRow(6, 2)]
@@ -1112,7 +1070,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // There should only be one range since the EPK option is set.
                 List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                     queryClient: new CosmosQueryClientCore(container.ClientContext, container),
-                    resourceLink: container.LinkUri.OriginalString,
+                    resourceLink: container.LinkUri,
                     partitionedQueryExecutionInfo: null,
                     containerQueryProperties: containerQueryProperties,
                     properties: new Dictionary<string, object>()

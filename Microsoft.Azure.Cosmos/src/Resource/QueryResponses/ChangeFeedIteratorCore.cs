@@ -110,8 +110,16 @@ namespace Microsoft.Azure.Cosmos
                         TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
                         if (!tryInitializeContainerRId.Succeeded)
                         {
-                            CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
-                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                            if (!(tryInitializeContainerRId.Exception.InnerException is CosmosException cosmosException))
+                            {
+                                throw new InvalidOperationException("Failed to convert to CosmosException.");
+                            }
+
+                            return cosmosException.ToCosmosResponseMessage(
+                                new RequestMessage(
+                                    method: null,
+                                    requestUriString: null,
+                                    diagnosticsContext: diagnostics));
                         }
                     }
 
@@ -125,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
                                 return CosmosExceptionFactory.CreateBadRequestException(
                                     message: validateContainer.Exception.InnerException.Message,
                                     innerException: validateContainer.Exception.InnerException,
-                                    diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                                    diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUriString: null, diagnosticsContext: diagnostics));
                             }
                         }
 

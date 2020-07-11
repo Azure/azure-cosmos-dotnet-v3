@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns("/dbs/test/colls/test");
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 diagnostics: new CosmosDiagnosticsContextCore());
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.NotFound, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns("/dbs/test/colls/test");
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             secondResponse.Headers.ETag = "SecondContinuation";
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.OK, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns("/dbs/test/colls/test");
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             thirdResponse.Headers.ETag = "ThirdContinuation";
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -211,13 +211,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns("/dbs/test/colls/test");
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test").OriginalString);
 
             DatabaseInternal db = new DatabaseInlineCore(mockContext.Object, "test");
             ContainerInternal container = new ContainerInlineCore(mockContext.Object, db, "test");

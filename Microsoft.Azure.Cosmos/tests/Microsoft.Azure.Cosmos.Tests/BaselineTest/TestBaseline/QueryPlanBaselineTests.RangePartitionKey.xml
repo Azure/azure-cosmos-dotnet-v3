@@ -1,0 +1,440 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>SELECT *</Description>
+      <Query>SELECT * FROM Root r</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Range Partition Keys</Description>
+      <Query>SELECT * FROM Root r</Query>
+      <PartitionKeys>
+        <Key>/a/b/c</Key>
+        <Key>/a</Key>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Equality On Partition Key</Description>
+      <Query>SELECT * FROM Root r WHERE r.a = 5</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>BETWEEN</Description>
+      <Query>SELECT * FROM Root r WHERE (r.a.c BETWEEN 2 AND 3)</Query>
+      <PartitionKeys>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>BETWEEN and point</Description>
+      <Query>SELECT * FROM Root r WHERE (r.a.b.c BETWEEN 2 AND 3) AND r.a.c = 4</Query>
+      <PartitionKeys>
+        <Key>/a/b/c</Key>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[2.0,4.0],[3.0,4.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Complex filter</Description>
+      <Query>SELECT * FROM Root r WHERE ((r.a.b.c BETWEEN 2 AND 3) AND r.b = 4 AND r.a.c = 5) OR ((r.a.b.c BETWEEN 9 AND 10) AND r.b = 2 AND r.a.c != 7)</Query>
+      <PartitionKeys>
+        <Key>/a/b/c</Key>
+        <Key>/b</Key>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[9.0,2.0],[10.0,2.0]]</Range>
+            <Range>[[2.0,4.0,5.0],[3.0,4.0,5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Number Range On Partition Key (MaxNumber)</Description>
+      <Query>SELECT * FROM Root r WHERE r.a.c &gt; 10</Query>
+      <PartitionKeys>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>([10.0],[{"type":"MaxNumber"}])</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Number Range On Partition Key (MinNumber)</Description>
+      <Query>SELECT * FROM Root r WHERE r.a.c &lt;= -3</Query>
+      <PartitionKeys>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>([{"type":"MinNumber"}],[-3.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>String Range On Partition Key (MaxString)</Description>
+      <Query>SELECT * FROM Root r WHERE r.a.c &gt; "10"</Query>
+      <PartitionKeys>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>(["10"],[{"type":"MaxString"}])</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>String Range On Partition Key (MinString)</Description>
+      <Query>SELECT * FROM Root r WHERE r.a.c &lt;= "-3"</Query>
+      <PartitionKeys>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[""],["-3"]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Equality with null</Description>
+      <Query>SELECT * FROM Root r WHERE r.a.b.c = null</Query>
+      <PartitionKeys>
+        <Key>/a/b/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[null],[null]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multipe Keys and one Equality with null</Description>
+      <Query>SELECT * FROM Root r WHERE r.a.b.c = null</Query>
+      <PartitionKeys>
+        <Key>/a/b/c</Key>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Mixed Range On Partition Key</Description>
+      <Query>SELECT * FROM Root r WHERE (r.a.b.c = 2 AND r.a.c = 4) OR (r.a.b.c = "2" AND r.a.c = "4")</Query>
+      <PartitionKeys>
+        <Key>/a/b/c</Key>
+        <Key>/a/c</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Range</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[["2","4"],["2","4"]]</Range>
+            <Range>[[2.0,4.0],[2.0,4.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+</Results>

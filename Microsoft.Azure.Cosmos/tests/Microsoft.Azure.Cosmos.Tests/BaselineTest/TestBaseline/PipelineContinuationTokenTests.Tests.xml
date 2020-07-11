@@ -5,8 +5,8 @@
       <ContinuationToken><![CDATA[[{"asdf": "asdf"}]]]></ContinuationToken>
     </Input>
     <Output>
-      <ParsedToken><![CDATA[[{"asdf":"asdf"}]]]></ParsedToken>
-      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":[{"asdf":"asdf"}]}]]></LatestToken>
+      <ParsedToken><![CDATA[[{"asdf": "asdf"}]]]></ParsedToken>
+      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":[{"asdf": "asdf"}]}]]></LatestToken>
     </Output>
   </Result>
   <Result>
