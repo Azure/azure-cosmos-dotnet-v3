@@ -14,6 +14,9 @@ namespace CosmosBenchmark
 
         public string id { get; set; }
         public string Commit { get; set; }
+        public string CommitDate { get; set; }
+        public string CommitTime { get; set; }
+
         public string Remarks { get; set; }
         public string Date { get; set; }
         public string Time { get; set; }

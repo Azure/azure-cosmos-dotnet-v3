@@ -73,6 +73,12 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Commit ID, only for publish")]
         public string CommitId { get; set; }
 
+        [Option(Required = false, HelpText = "Commit date, only for publish")]
+        public string CommitDate { get; set; }
+
+        [Option(Required = false, HelpText = "Commit time, only for publish")]
+        public string CommitTime { get; set; }
+
         [Option(Required = false, HelpText = "Branch name, only for publish")]
         public string BranchName { get; set; }
 
@@ -118,9 +124,12 @@ namespace CosmosBenchmark
             if (options.PublicResults)
             {
                 if (string.IsNullOrEmpty(options.ResultsContainer)
-                    || string.IsNullOrWhiteSpace(options.ResultsPartitionKeyValue))
+                    || string.IsNullOrWhiteSpace(options.ResultsPartitionKeyValue)
+                    || string.IsNullOrWhiteSpace(options.CommitId)
+                    || string.IsNullOrWhiteSpace(options.CommitDate)
+                    || string.IsNullOrWhiteSpace(options.CommitTime))
                 {
-                    throw new ArgumentException($"Missing {nameof(options.ResultsContainer)} and {nameof(options.ResultsPartitionKeyValue)}");
+                    throw new ArgumentException($"Missing either {nameof(options.ResultsContainer)} {nameof(options.ResultsPartitionKeyValue)} {nameof(options.CommitId)} {nameof(options.CommitDate)} {nameof(options.CommitTime)}");
                 }
             }
 
