@@ -10,21 +10,35 @@ namespace CosmosBenchmark
 
     class RunSummary
     {
-        public string Pk { get; set; } = "RunSummary";
+        public string pk { get; set; } = "RunSummary";
 
         public string id { get; set; }
         public string Commit { get; set; }
         public string Remarks { get; set; }
-        public double Top10PercentAverage { get; set; }
-        public double Top20PercentAverage { get; set; }
-        public double Top30PercentAverage { get; set; }
-        public double Top40PercentAverage { get; set; }
-        public double Top50PercentAverage { get; set; }
-        public double Top60PercentAverage { get; set; }
-        public double Top70PercentAverage { get; set; }
-        public double Top80PercentAverage { get; set; }
-        public double Top90PercentAverage { get; set; }
-        public double Top95PercentAverage { get; set; }
-        public double Average { get; set; }
+        public DateTime Time { get; set; }
+
+        public string WorkloadType { get; set; }
+        public string BranchName { get; set; }
+
+        public int Concurrency { get; set; }
+        public int TotalOps { get; set; }
+
+        public string MachineName { get; set; } = Environment.MachineName;
+        public string OS { get; set; } = Environment.OSVersion.Platform.ToString();
+        public string OSVersion { get; set; } = Environment.OSVersion.VersionString;
+        public string RuntimeVersion { get; set; } = Environment.Version.ToString();
+        public int Cores { get; set; } = Environment.ProcessorCount;
+
+        public double Top10PercentAverageRps { get; set; }
+        public double Top20PercentAverageRps { get; set; }
+        public double Top30PercentAverageRps { get; set; }
+        public double Top40PercentAverageRps { get; set; }
+        public double Top50PercentAverageRps { get; set; }
+        public double Top60PercentAverageRps { get; set; }
+        public double Top70PercentAverageRps { get; set; }
+        public double Top80PercentAverageRps { get; set; }
+        public double Top90PercentAverageRps { get; set; }
+        public double Top95PercentAverageRps { get; set; }
+        public double AverageRps { get; set; }
     }
 }

@@ -88,7 +88,7 @@ namespace CosmosBenchmark
                 Console.WriteLine();
 
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
-                int numberOfItemsToInsert = config.ItemCount / taskCount;
+                int opsPerTask = config.ItemCount / taskCount;
 
                 // TBD: 2 clients SxS some overhead
                 RunSummary runSummary;
@@ -101,7 +101,7 @@ namespace CosmosBenchmark
                         documentClient);
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, config.TraceFailures, 0.01);
+                    runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
                 }
 
                 if (config.CleanupOnFinish)
@@ -111,13 +111,18 @@ namespace CosmosBenchmark
                     await database.DeleteStreamAsync();
                 }
 
-                runSummary.id = config.RunId;
+                runSummary.WorkloadType = config.WorkloadType;
+                runSummary.id = $"{DateTime.UtcNow.ToString("yyyy-MM-dd:hh-mm")}-{config.CommitId}";
                 runSummary.Commit = config.CommitId;
+                runSummary.Time = DateTime.UtcNow;
+                runSummary.BranchName = config.BranchName;
+                runSummary.TotalOps = config.ItemCount;
+                runSummary.Concurrency = taskCount;
 
                 if (config.PublicResults)
                 {
                     Container resultsContainer = cosmosClient.GetContainer(config.Database, config.ResultsContainer);
-                    await resultsContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.Pk));
+                    await resultsContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
                 }
 
                 return runSummary;

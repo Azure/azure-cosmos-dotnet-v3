@@ -68,10 +68,13 @@ namespace CosmosBenchmark
         public bool PublicResults  { get; set; }
 
         [Option(Required = false, HelpText = "Run ID, only for publish")]
-        public string RunId { get; set; }
+        internal string RunId { get; set; }
 
         [Option(Required = false, HelpText = "Commit ID, only for publish")]
         public string CommitId { get; set; }
+
+        [Option(Required = false, HelpText = "Branch name, only for publish")]
+        public string BranchName { get; set; }
 
         [Option(Required = false, HelpText = "Container to publish results to")]
         internal string ResultsContainer { get; set; } = "runsummary";
@@ -111,8 +114,7 @@ namespace CosmosBenchmark
 
             if (options.PublicResults)
             {
-                if (string.IsNullOrEmpty(options.ResultsContainer) ||
-                    string.IsNullOrEmpty(options.RunId))
+                if (string.IsNullOrEmpty(options.ResultsContainer))
                 {
                     throw new ArgumentException($"Missing {nameof(options.ResultsContainer)} and {nameof(options.RunId)}");
                 }
