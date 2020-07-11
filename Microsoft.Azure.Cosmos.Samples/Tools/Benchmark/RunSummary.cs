@@ -22,6 +22,7 @@ namespace CosmosBenchmark
         public string AccountName { get; set; }
         public string Database { get; set; }
         public string Container { get; set; }
+        public string ConsistencyLevel { get; set; }
 
         public int Concurrency { get; set; }
         public int TotalOps { get; set; }
