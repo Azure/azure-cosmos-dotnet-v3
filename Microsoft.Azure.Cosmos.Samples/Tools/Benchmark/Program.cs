@@ -118,6 +118,9 @@ namespace CosmosBenchmark
                 runSummary.BranchName = config.BranchName;
                 runSummary.TotalOps = config.ItemCount;
                 runSummary.Concurrency = taskCount;
+                runSummary.Database = config.Database;
+                runSummary.Container = config.Container;
+                runSummary.AccountName = config.EndPoint;
 
                 if (config.PublicResults)
                 {

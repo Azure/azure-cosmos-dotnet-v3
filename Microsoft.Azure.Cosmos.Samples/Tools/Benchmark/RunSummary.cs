@@ -19,6 +19,9 @@ namespace CosmosBenchmark
 
         public string WorkloadType { get; set; }
         public string BranchName { get; set; }
+        public string AccountName { get; set; }
+        public string Database { get; set; }
+        public string Container { get; set; }
 
         public int Concurrency { get; set; }
         public int TotalOps { get; set; }
