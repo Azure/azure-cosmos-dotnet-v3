@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
 
         public int Count()
         {
-            return this.CountHeaders();
+            return this.headers.Count;
         }
 
         public INameValueCollection Clone()
@@ -187,11 +187,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return (T)(object)value;
-        }
-
-        private int CountHeaders()
-        {
-            return this.headers.Count;
         }
     }
 }
