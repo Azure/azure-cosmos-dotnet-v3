@@ -114,6 +114,9 @@ namespace CosmosBenchmark
                 runSummary.WorkloadType = config.WorkloadType;
                 runSummary.id = $"{DateTime.UtcNow.ToString("yyyy-MM-dd:hh-mm")}-{config.CommitId}";
                 runSummary.Commit = config.CommitId;
+                runSummary.CommitDate = config.CommitDate;
+                runSummary.CommitTime = config.CommitTime;
+
                 runSummary.Date = DateTime.UtcNow.ToString("yyyy-MM-dd");
                 runSummary.Time = DateTime.UtcNow.ToString("hh-mm");
                 runSummary.BranchName = config.BranchName;
