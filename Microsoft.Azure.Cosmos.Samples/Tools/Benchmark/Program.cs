@@ -122,6 +122,15 @@ namespace CosmosBenchmark
                 runSummary.Container = config.Container;
                 runSummary.AccountName = config.EndPoint;
 
+                string consistencyLevel = config.ConsistencyLevel;
+                if (! string.IsNullOrWhiteSpace(consistencyLevel))
+                {
+                    AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
+                    consistencyLevel = accountProperties.Consistency.DefaultConsistencyLevel.ToString();
+                }
+                runSummary.ConsistencyLevel = consistencyLevel;
+
+
                 if (config.PublicResults)
                 {
                     Container resultsContainer = cosmosClient.GetContainer(config.Database, config.ResultsContainer);
