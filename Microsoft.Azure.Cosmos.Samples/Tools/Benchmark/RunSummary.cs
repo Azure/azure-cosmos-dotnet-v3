@@ -10,7 +10,7 @@ namespace CosmosBenchmark
 
     class RunSummary
     {
-        public string pk { get; set; } = "RunSummary";
+        public string pk { get; set; } 
 
         public string id { get; set; }
         public string Commit { get; set; }

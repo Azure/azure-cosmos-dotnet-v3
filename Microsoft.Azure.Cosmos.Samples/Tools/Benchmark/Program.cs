@@ -121,6 +121,7 @@ namespace CosmosBenchmark
                 runSummary.Database = config.Database;
                 runSummary.Container = config.Container;
                 runSummary.AccountName = config.EndPoint;
+                runSummary.pk = config.ResultsPartitionKeyValue;
 
                 string consistencyLevel = config.ConsistencyLevel;
                 if (string.IsNullOrWhiteSpace(consistencyLevel))
