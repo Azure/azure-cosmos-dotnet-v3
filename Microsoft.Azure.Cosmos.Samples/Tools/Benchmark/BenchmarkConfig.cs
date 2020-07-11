@@ -62,7 +62,19 @@ namespace CosmosBenchmark
         public int MinThreadPoolSize { get; set; } = 100;
 
         [Option(Required = false, HelpText = "Write the task execution failure to console. Useful for debugging failures")]
-        public bool TraceFailures { get; set; } 
+        public bool TraceFailures { get; set; }
+
+        [Option(Required = false, HelpText = "Publish run results")]
+        public bool PublicResults  { get; set; }
+
+        [Option(Required = false, HelpText = "Run ID, only for publish")]
+        public string RunId { get; set; }
+
+        [Option(Required = false, HelpText = "Commit ID, only for publish")]
+        public string CommitId { get; set; }
+
+        [Option(Required = false, HelpText = "Container to publish results to")]
+        internal string ResultsContainer { get; set; } = "runsummary";
 
         internal int GetTaskCount(int containerThroughput)
         {
@@ -96,6 +108,15 @@ namespace CosmosBenchmark
             Parser.Default.ParseArguments<BenchmarkConfig>(args)
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
+
+            if (options.PublicResults)
+            {
+                if (string.IsNullOrEmpty(options.ResultsContainer) ||
+                    string.IsNullOrEmpty(options.RunId))
+                {
+                    throw new ArgumentException($"Missing {nameof(options.ResultsContainer)} and {nameof(options.RunId)}");
+                }
+            }
 
             return options;
         }

@@ -39,7 +39,8 @@ namespace CosmosBenchmark
                 config.Print();
 
                 Program program = new Program();
-                await program.ExecuteAsync(config, accountKey);
+
+                RunSummary runSummary = await program.ExecuteAsync(config, accountKey);
 
                 if (TelemetrySpan.IncludePercentile)
                 {
@@ -65,7 +66,7 @@ namespace CosmosBenchmark
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task ExecuteAsync(BenchmarkConfig config, string accountKey)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, string accountKey)
         {
             using (CosmosClient cosmosClient = config.CreateCosmosClient(accountKey))
             {
@@ -90,6 +91,7 @@ namespace CosmosBenchmark
                 int numberOfItemsToInsert = config.ItemCount / taskCount;
 
                 // TBD: 2 clients SxS some overhead
+                RunSummary runSummary;
                 using (DocumentClient documentClient = config.CreateDocumentClient(accountKey))
                 {
                     Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(
@@ -99,7 +101,7 @@ namespace CosmosBenchmark
                         documentClient);
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
-                    await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, config.TraceFailures, 0.01);
+                    runSummary = await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, config.TraceFailures, 0.01);
                 }
 
                 if (config.CleanupOnFinish)
@@ -108,6 +110,17 @@ namespace CosmosBenchmark
                     Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                     await database.DeleteStreamAsync();
                 }
+
+                runSummary.id = config.RunId;
+                runSummary.Commit = config.CommitId;
+
+                if (config.PublicResults)
+                {
+                    Container resultsContainer = cosmosClient.GetContainer(config.Database, config.ResultsContainer);
+                    await resultsContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.Pk));
+                }
+
+                return runSummary;
             }
         }
 

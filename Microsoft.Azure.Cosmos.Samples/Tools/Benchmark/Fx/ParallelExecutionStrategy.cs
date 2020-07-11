@@ -23,7 +23,7 @@ namespace CosmosBenchmark
             this.benchmarkOperation = benchmarkOperation;
         }
 
-        public async Task ExecuteAsync(
+        public async Task<RunSummary> ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             bool traceFailures,
@@ -56,10 +56,10 @@ namespace CosmosBenchmark
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
             }
 
-            await this.LogOutputStats(executors);
+            return await this.LogOutputStats(executors);
         }
 
-        private async Task LogOutputStats(IExecutor[] executors)
+        private async Task<RunSummary> LogOutputStats(IExecutor[] executors)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();
@@ -111,18 +111,32 @@ namespace CosmosBenchmark
                 IEnumerable<int> exceptFirst5 = perLoopCounters.Skip(5);
                 int[] summaryCounters = exceptFirst5.Take(exceptFirst5.Count() - 5).OrderByDescending(e => e).ToArray();
 
+                RunSummary runSummary = new RunSummary();
+
                 if (summaryCounters.Length > 0)
                 {
+
                     Console.WriteLine();
                     Console.WriteLine("After Excluding outliers");
-                    double[] percentiles = new double[] { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95 };
-                    foreach (double e in percentiles)
-                    {
-                        Console.WriteLine($"\tTOP  {e * 100}% AVG RPS : { Math.Round(summaryCounters.Take((int)(e * summaryCounters.Length)).Average(), 0) }");
-                    }
+
+                    runSummary.Top10PercentAverage = Math.Round(summaryCounters.Take((int)(0.1 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top20PercentAverage = Math.Round(summaryCounters.Take((int)(0.2 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top30PercentAverage = Math.Round(summaryCounters.Take((int)(0.3 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top40PercentAverage = Math.Round(summaryCounters.Take((int)(0.4 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top50PercentAverage = Math.Round(summaryCounters.Take((int)(0.5 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top60PercentAverage = Math.Round(summaryCounters.Take((int)(0.6 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top70PercentAverage = Math.Round(summaryCounters.Take((int)(0.7 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top80PercentAverage = Math.Round(summaryCounters.Take((int)(0.8 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top90PercentAverage = Math.Round(summaryCounters.Take((int)(0.9 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top95PercentAverage = Math.Round(summaryCounters.Take((int)(0.95 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Average = Math.Round(summaryCounters.Average(), 0);
+
+                    Console.WriteLine(JsonHelper.ToString(runSummary));
                 }
 
                 Console.WriteLine("--------------------------------------------------------------------- ");
+
+                return runSummary;
             }
         }
 
