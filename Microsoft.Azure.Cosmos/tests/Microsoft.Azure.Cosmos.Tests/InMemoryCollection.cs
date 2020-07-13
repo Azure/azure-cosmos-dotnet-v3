@@ -8,34 +8,29 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
-    internal sealed class InMemoryCollection
+    internal sealed class InMemoryCollection : DocumentContainer
     {
-        private static readonly CosmosException RequestRateTooLargeException = new CosmosException(
-            message: "Request Rate Too Large",
-            statusCode: (System.Net.HttpStatusCode)429,
-            subStatusCode: default,
-            activityId: Guid.NewGuid().ToString(),
-            requestCharge: default);
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
-        private readonly FailureConfigs failureConfigs;
-        private readonly Random random;
 
         private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private Dictionary<int, PartitionKeyHashRange> partitionKeyRangeIdToHashRange;
 
-        public InMemoryCollection(PartitionKeyDefinition partitionKeyDefinition, FailureConfigs failureConfigs = default)
+        public InMemoryCollection(
+            PartitionKeyDefinition partitionKeyDefinition,
+            FailureConfigs failureConfigs = default)
+            : base(failureConfigs)
         {
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
-            this.failureConfigs = failureConfigs;
-            this.random = new Random();
-
             PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: null);
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
@@ -47,8 +42,77 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.parentToChildMapping = new Dictionary<int, (int, int)>();
         }
 
-        public Record CreateItem(CosmosObject payload)
+        protected override Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeImplementationAsync(
+            PartitionKeyRange partitionKeyRange,
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            PartitionKeyRange CreateRangeFromId(int id)
+            {
+                PartitionKeyHashRange hashRange = this.partitionKeyRangeIdToHashRange[id];
+                return new PartitionKeyRange()
+                {
+                    Id = id.ToString(),
+                    MinInclusive = hashRange.StartInclusive.HasValue ? hashRange.StartInclusive.Value.ToString() : string.Empty,
+                    MaxExclusive = hashRange.EndExclusive.HasValue ? hashRange.EndExclusive.Value.ToString() : string.Empty,
+                };
+            }
+
+            bool isFullRange = (partitionKeyRange.MinInclusive == Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey) &&
+                (partitionKeyRange.MaxExclusive == Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey);
+            if (isFullRange)
+            {
+                List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
+                foreach (int id in this.partitionKeyRangeIdToHashRange.Keys)
+                {
+                    ranges.Add(CreateRangeFromId(id));
+                }
+
+                return Task.FromResult(TryCatch<List<PartitionKeyRange>>.FromResult(ranges));
+            }
+
+            if (!int.TryParse(partitionKeyRange.Id, out int partitionKeyRangeId))
+            {
+                return Task.FromResult(
+                    TryCatch<List<PartitionKeyRange>>.FromException(
+                        new FormatException(
+                            $"PartitionKeyRangeId: {partitionKeyRange.Id} is not an integer.")));
+            }
+
+            if (!this.parentToChildMapping.TryGetValue(partitionKeyRangeId, out (int left, int right) children))
+            {
+                return Task.FromResult(
+                    TryCatch<List<PartitionKeyRange>>.FromException(
+                        new KeyNotFoundException(
+                            $"PartitionKeyRangeId: {partitionKeyRangeId} does not exist.")));
+            }
+
+            List<PartitionKeyRange> childRanges = new List<PartitionKeyRange>()
+            {
+                new PartitionKeyRange()
+                {
+                    Id = children.left.ToString(),
+                    MinInclusive = children.left.ToString(),
+                    MaxExclusive = children.left.ToString(),
+                },
+                new PartitionKeyRange()
+                {
+                    Id = children.right.ToString(),
+                    MinInclusive = children.right.ToString(),
+                    MaxExclusive = children.right.ToString(),
+                }
+            };
+
+            return Task.FromResult(TryCatch<List<PartitionKeyRange>>.FromResult(childRanges));
+        }
+
+        protected override Task<TryCatch<Record>> MonadicCreateItemImplementationAsync(
+            CosmosObject payload,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (payload == null)
             {
                 throw new ArgumentNullException(nameof(payload));
@@ -61,57 +125,79 @@ namespace Microsoft.Azure.Cosmos.Tests
                 this.partitionedRecords[partitionKeyHash] = records;
             }
 
-            return records.Add(payload);
+            Record recordAdded = records.Add(payload);
+
+            return Task.FromResult(TryCatch<Record>.FromResult(recordAdded));
         }
 
-        public bool TryReadItem(CosmosElement partitionKey, Guid identifier, out Record record)
+        protected override Task<TryCatch<Record>> MonadicReadItemImplementationAsync(
+            CosmosElement partitionKey,
+            Guid identifier,
+            CancellationToken cancellationToken)
         {
-            PartitionKeyHash partitionKeyHash = GetHashFromPartitionKey(partitionKey, this.partitionKeyDefinition);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            static Task<TryCatch<Record>> CreateNotFoundException(CosmosElement partitionKey, Guid identifer)
+            {
+                return Task.FromResult(
+                    TryCatch<Record>.FromException(
+                        new CosmosException(
+                            message: $"Document with partitionKey: {partitionKey?.ToString() ?? "UNDEFINED"} not found.",
+                            statusCode: System.Net.HttpStatusCode.NotFound,
+                            subStatusCode: default,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: 42)));
+            }
+
+            PartitionKeyHash partitionKeyHash = GetHashFromPartitionKey(
+                partitionKey,
+                this.partitionKeyDefinition);
+
             if (!this.partitionedRecords.TryGetValue(partitionKeyHash, out Records records))
             {
-                record = default;
-                return false;
+                return CreateNotFoundException(partitionKey, identifier);
             }
 
             foreach (Record candidate in records)
             {
                 bool identifierMatches = candidate.Identifier == identifier;
 
-                CosmosElement candidatePartitionKey = GetPartitionKeyFromPayload(candidate.Payload, this.partitionKeyDefinition);
-                bool partitionKeyMatches = CosmosElementEqualityComparer.Value.Equals(candidatePartitionKey, partitionKey);
+                CosmosElement candidatePartitionKey = GetPartitionKeyFromPayload(
+                    candidate.Payload,
+                    this.partitionKeyDefinition);
+                bool partitionKeyMatches = CosmosElementEqualityComparer.Value.Equals(
+                    candidatePartitionKey,
+                    partitionKey);
 
                 if (identifierMatches && partitionKeyMatches)
                 {
-                    record = candidate;
-                    return true;
+                    return Task.FromResult(TryCatch<Record>.FromResult(candidate));
                 }
             }
 
-            record = default;
-            return false;
+            return CreateNotFoundException(partitionKey, identifier);
         }
 
-        public TryCatch<(List<Record>, long?)> ReadFeed(int partitionKeyRangeId, long resourceIndentifer, int pageSize)
+        protected override Task<TryCatch<DocumentContainerPage>> MonadicReadFeedImplementationAsync(
+            int partitionKeyRangeId,
+            long resourceIdentifer,
+            int pageSize,
+            CancellationToken cancellationToken)
         {
-            if (this.Return429())
-            {
-                return TryCatch<(List<Record>, long?)>.FromException(RequestRateTooLargeException);
-            }
+            cancellationToken.ThrowIfCancellationRequested();
 
-            if (this.ReturnEmptyPage())
+            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
+                partitionKeyRangeId,
+                out PartitionKeyHashRange range))
             {
-                return TryCatch<(List<Record>, long?)>.FromResult((new List<Record>(), resourceIndentifer));
-            }
-
-            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange range))
-            {
-                return TryCatch<(List<Record>, long?)>.FromException(
-                    new CosmosException(
+                return Task.FromResult(
+                    TryCatch<DocumentContainerPage>.FromException(
+                        new CosmosException(
                         message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
                         statusCode: System.Net.HttpStatusCode.Gone,
                         subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                         activityId: Guid.NewGuid().ToString(),
-                        requestCharge: default));
+                        requestCharge: 42)));
             }
 
             if (!this.partitionedRecords.TryGetValue(range, out Records records))
@@ -120,26 +206,45 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             List<Record> page = records
-                .Where(record => record.ResourceIdentifier > resourceIndentifer)
+                .Where(record => record.ResourceIdentifier > resourceIdentifer)
                 .Take(pageSize)
                 .ToList();
 
             if (page.Count == 0)
             {
-                return TryCatch<(List<Record>, long?)>.FromResult((page, null));
+                return Task.FromResult(
+                    TryCatch<DocumentContainerPage>.FromResult(
+                        new DocumentContainerPage(
+                            records: page,
+                            state: default)));
             }
 
-            return TryCatch<(List<Record>, long?)>.FromResult((page, page.Last().ResourceIdentifier));
+            return Task.FromResult(
+                TryCatch<DocumentContainerPage>.FromResult(
+                    new DocumentContainerPage(
+                        records: page,
+                        state: new DocumentContainerState(page.Last().ResourceIdentifier))));
         }
 
-        public IReadOnlyDictionary<int, PartitionKeyHashRange> PartitionKeyRangeFeedReed() => this.partitionKeyRangeIdToHashRange;
-
-        public void Split(int partitionKeyRangeId)
+        public override Task<TryCatch> MonadicSplitAsync(
+            int partitionKeyRangeId,
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // Get the current range and records
-            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange parentRange))
+            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
+                partitionKeyRangeId,
+                out PartitionKeyHashRange parentRange))
             {
-                throw new InvalidOperationException("Failed to find the range.");
+                return Task.FromResult(
+                    TryCatch.FromException(
+                        new CosmosException(
+                        message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: 42)));
             }
 
             if (!this.partitionedRecords.TryGetValue(parentRange, out Records parentRecords))
@@ -150,7 +255,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxPartitionKeyRangeId = this.partitionKeyRangeIdToHashRange.Keys.Max();
 
             // Split the range space
-            PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(parentRange, 2);
+            PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(
+                parentRange,
+                rangeCount: 2);
 
             // Update the partition routing map
             this.parentToChildMapping[partitionKeyRangeId] = (maxPartitionKeyRangeId + 1, maxPartitionKeyRangeId + 2);
@@ -200,15 +307,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 records.Add(record);
             }
+
+            return Task.FromResult(TryCatch.FromResult());
         }
 
-        public (int, int) GetChildRanges(int partitionKeyRangeId) => this.parentToChildMapping[partitionKeyRangeId];
+        public IEnumerable<int> PartitionKeyRangeIds => this.partitionKeyRangeIdToHashRange.Keys;
 
-        public bool Return429() => (this.failureConfigs != null) && this.failureConfigs.Inject429s && ((this.random.Next() % 2) == 0);
-
-        public bool ReturnEmptyPage() => (this.failureConfigs != null) && this.failureConfigs.InjectEmptyPages && ((this.random.Next() % 2) == 0);
-
-        private static PartitionKeyHash GetHashFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
+        private static PartitionKeyHash GetHashFromPayload(
+            CosmosObject payload,
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             CosmosElement partitionKey = GetPartitionKeyFromPayload(payload, partitionKeyDefinition);
             return GetHashFromPartitionKey(partitionKey, partitionKeyDefinition);
@@ -277,43 +384,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 _ => throw new ArgumentOutOfRangeException(),
             };
             return partitionKeyHash;
-        }
-
-        public sealed class Record
-        {
-            private Record(long resourceIdentifier, long timestamp, Guid identifier, CosmosObject payload)
-            {
-                this.ResourceIdentifier = resourceIdentifier < 0 ? throw new ArgumentOutOfRangeException(nameof(resourceIdentifier)) : resourceIdentifier;
-                this.Timestamp = timestamp < 0 ? throw new ArgumentOutOfRangeException(nameof(timestamp)) : timestamp;
-                this.Identifier = identifier;
-                this.Payload = payload ?? throw new ArgumentNullException(nameof(payload));
-            }
-
-            public long ResourceIdentifier { get; }
-
-            public long Timestamp { get; }
-
-            public Guid Identifier { get; }
-
-            public CosmosObject Payload { get; }
-
-            public static Record Create(long previousResourceIdentifier, CosmosObject payload)
-            {
-                return new Record(previousResourceIdentifier + 1, DateTime.UtcNow.Ticks, Guid.NewGuid(), payload);
-            }
-        }
-
-        public sealed class FailureConfigs
-        {
-            public FailureConfigs(bool inject429s, bool injectEmptyPages)
-            {
-                this.Inject429s = inject429s;
-                this.InjectEmptyPages = injectEmptyPages;
-            }
-
-            public bool Inject429s { get; }
-
-            public bool InjectEmptyPages { get; }
         }
 
         private sealed class Records : IReadOnlyList<Record>

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     [TestClass]
-    public sealed class SinglePartitionInMemoryCollectionPartitionRangeEnumeratorTests
+    public sealed class SinglePartitionPartitionRangeEnumeratorTests
     {
         [TestMethod]
         public async Task Test429sAsync()
@@ -59,22 +59,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestClass]
-        private sealed class Implementation : InMemoryCollectionPartitionRangeEnumeratorTests<InMemoryCollectionPage, InMemoryCollectionState>
+        private sealed class Implementation : PartitionRangeEnumeratorTests<DocumentContainerPage, DocumentContainerState>
         {
+            public Implementation()
+                : base(singlePartition: true)
+            {
+            }
+
             [TestMethod]
             public async Task TestSplitAsync()
             {
                 int numItems = 100;
-                InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems);
-                InMemoryCollectionPartitionRangeEnumerator enumerator = new InMemoryCollectionPartitionRangeEnumerator(
+                DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+                DocumentContainerPartitionRangeEnumerator enumerator = new DocumentContainerPartitionRangeEnumerator(
                     inMemoryCollection,
                     partitionKeyRangeId: 0,
                     pageSize: 10);
 
-                (HashSet<Guid> parentIdentifiers, InMemoryCollectionState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+                (HashSet<Guid> parentIdentifiers, DocumentContainerState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
-                inMemoryCollection.Split(partitionKeyRangeId: 0);
+                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
 
                 // Try To read from the partition that is gone.
                 await enumerator.MoveNextAsync();
@@ -84,10 +89,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 HashSet<Guid> childIdentifiers = new HashSet<Guid>();
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
-                    PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState> enumerable = new PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState>(
+                    PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState> enumerable = new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
                         range: new PartitionKeyRange() { Id = partitionKeyRangeId.ToString() },
                         state: state,
-                        (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
+                        (range, state) => new DocumentContainerPartitionRangeEnumerator(
                                 inMemoryCollection,
                                 partitionKeyRangeId: int.Parse(range.Id),
                                 pageSize: 10,
@@ -100,49 +105,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(numItems, parentIdentifiers.Count + childIdentifiers.Count);
             }
 
-            internal override List<InMemoryCollection.Record> GetRecordsFromPage(InMemoryCollectionPage page)
+            public override IReadOnlyList<Record> GetRecordsFromPage(DocumentContainerPage page)
             {
                 return page.Records;
             }
 
-            internal override InMemoryCollection CreateInMemoryCollection(int numItems, InMemoryCollection.FailureConfigs failureConfigs = null)
-            {
-                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
-                {
-                    Paths = new System.Collections.ObjectModel.Collection<string>()
-                {
-                    "/pk"
-                },
-                    Kind = PartitionKind.Hash,
-                    Version = PartitionKeyDefinitionVersion.V2,
-                };
-
-                InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition, failureConfigs);
-
-                for (int i = 0; i < numItems; i++)
-                {
-                    // Insert an item
-                    CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                    inMemoryCollection.CreateItem(item);
-                }
-
-                return inMemoryCollection;
-            }
-
-            internal override IAsyncEnumerable<TryCatch<InMemoryCollectionPage>> CreateEnumerable(
-                InMemoryCollection inMemoryCollection,
-                InMemoryCollectionState state = null) => new PartitionRangePageEnumerable<InMemoryCollectionPage, InMemoryCollectionState>(
+            public override IAsyncEnumerable<TryCatch<DocumentContainerPage>> CreateEnumerable(
+                DocumentContainer documentContainer,
+                DocumentContainerState state = null) => new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
                     range: new PartitionKeyRange() { Id = "0" },
                     state: state,
-                    (range, state) => new InMemoryCollectionPartitionRangeEnumerator(
-                        inMemoryCollection,
+                    (range, state) => new DocumentContainerPartitionRangeEnumerator(
+                        documentContainer,
                         partitionKeyRangeId: int.Parse(range.Id),
                         pageSize: 10,
                         state: state));
 
-            internal override IAsyncEnumerator<TryCatch<InMemoryCollectionPage>> CreateEnumerator(
-                InMemoryCollection inMemoryCollection,
-                InMemoryCollectionState state = null) => new InMemoryCollectionPartitionRangeEnumerator(
+            public override IAsyncEnumerator<TryCatch<DocumentContainerPage>> CreateEnumerator(
+                DocumentContainer inMemoryCollection,
+                DocumentContainerState state = null) => new DocumentContainerPartitionRangeEnumerator(
                     inMemoryCollection,
                     partitionKeyRangeId: 0,
                     pageSize: 10,

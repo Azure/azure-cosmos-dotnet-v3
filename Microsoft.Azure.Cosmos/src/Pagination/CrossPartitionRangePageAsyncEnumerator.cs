@@ -15,20 +15,20 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Coordinates draining pages from multiple <see cref="PartitionRangePageEnumerator{TPage, TState}"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
+    /// Coordinates draining pages from multiple <see cref="PartitionRangePageAsyncEnumerator{TPage, TState}"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
     /// </summary>
-    internal sealed class CrossPartitionRangePageEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<CrossPartitionPage<TPage, TState>>>
+    internal sealed class CrossPartitionRangePageAsyncEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<CrossPartitionPage<TPage, TState>>>
         where TPage : Page<TState>
         where TState : State
     {
         private readonly IFeedRangeProvider feedRangeProvider;
-        private readonly CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator;
-        private readonly AsyncLazy<PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>> lazyEnumerators;
+        private readonly CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator;
+        private readonly AsyncLazy<PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>> lazyEnumerators;
 
-        public CrossPartitionRangePageEnumerator(
+        public CrossPartitionRangePageAsyncEnumerator(
             IFeedRangeProvider feedRangeProvider,
-            CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator,
-            IComparer<PartitionRangePageEnumerator<TPage, TState>> comparer,
+            CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator,
+            IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
             CrossPartitionState<TState> state = default)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(comparer));
             }
 
-            this.lazyEnumerators = new AsyncLazy<PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>>(async (CancellationToken token) =>
+            this.lazyEnumerators = new AsyncLazy<PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>(async (CancellationToken token) =>
             {
                 IReadOnlyList<(PartitionKeyRange, TState)> rangeAndStates;
                 if (state != default)
@@ -60,10 +60,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     rangeAndStates = rangesAndStatesBuilder;
                 }
 
-                PriorityQueue<PartitionRangePageEnumerator<TPage, TState>> enumerators = new PriorityQueue<PartitionRangePageEnumerator<TPage, TState>>(comparer);
+                PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = new PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>(comparer);
                 foreach ((PartitionKeyRange range, TState rangeState) in rangeAndStates)
                 {
-                    PartitionRangePageEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(range, rangeState);
+                    PartitionRangePageAsyncEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(range, rangeState);
                     enumerators.Enqueue(enumerator);
                 }
 
@@ -75,8 +75,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            PriorityQueue<PartitionRangePageEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: default);
-            PartitionRangePageEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
+            PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: default);
+            PartitionRangePageAsyncEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
             bool movedNext = await currentPaginator.MoveNextAsync();
             if (!movedNext)
             {
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         cancellationToken: default);
                     foreach (PartitionKeyRange childRange in childRanges)
                     {
-                        PartitionRangePageEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
+                        PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
                             childRange,
                             currentPaginator.State);
                         enumerators.Enqueue(childPaginator);
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             List<(PartitionKeyRange, TState)> feedRangeAndStates = new List<(PartitionKeyRange, TState)>(enumerators.Count);
-            foreach (PartitionRangePageEnumerator<TPage, TState> enumerator in enumerators)
+            foreach (PartitionRangePageAsyncEnumerator<TPage, TState> enumerator in enumerators)
             {
                 feedRangeAndStates.Add((enumerator.Range, enumerator.State));
             }
@@ -146,8 +146,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private static bool IsSplitException(Exception exeception)
         {
             return exeception is CosmosException cosmosException
-                && cosmosException.StatusCode == HttpStatusCode.Gone
-                && cosmosException.SubStatusCode == (int)Documents.SubStatusCodes.PartitionKeyRangeGone;
+                && (cosmosException.StatusCode == HttpStatusCode.Gone)
+                && (cosmosException.SubStatusCode == (int)Documents.SubStatusCodes.PartitionKeyRangeGone);
         }
 
         private static bool IsMergeException(Exception exception)

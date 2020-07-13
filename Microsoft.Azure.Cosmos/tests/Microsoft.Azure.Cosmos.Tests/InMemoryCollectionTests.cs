@@ -7,10 +7,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class InMemoryCollectionTests
     {
         [TestMethod]
-        public void TestCrud()
+        public async Task TestCrudAsync()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -34,23 +35,22 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Insert an item
             CosmosObject item = CosmosObject.Parse("{\"pk\" : 42 }");
-            InMemoryCollection.Record record = inMemoryCollection.CreateItem(item);
+            Record record = await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
             Assert.IsNotNull(record);
             Assert.AreNotEqual(Guid.Empty, record.Identifier);
             Assert.AreEqual(1, record.ResourceIdentifier);
 
             // Try to read it back
-            Assert.IsTrue(
-                inMemoryCollection.TryReadItem(
-                    partitionKey: CosmosNumber64.Create(42),
-                    record.Identifier,
-                    out InMemoryCollection.Record readRecord));
+            Record readRecord = await inMemoryCollection.ReadItemAsync(
+                partitionKey: CosmosNumber64.Create(42),
+                record.Identifier,
+                cancellationToken: default);
 
             Assert.AreEqual(item.ToString(), readRecord.Payload.ToString());
         }
 
         [TestMethod]
-        public void TestPartitionKey()
+        public async Task TestPartitionKeyAsync()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -66,22 +66,22 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Insert an item
             CosmosObject item1 = CosmosObject.Parse("{\"pk\" : 42 }");
-            InMemoryCollection.Record record1 = inMemoryCollection.CreateItem(item1);
+            Record record1 = await inMemoryCollection.CreateItemAsync(item1, cancellationToken: default);
 
             // Insert into another partition key
             CosmosObject item2 = CosmosObject.Parse("{\"pk\" : 1337 }");
-            InMemoryCollection.Record record2 = inMemoryCollection.CreateItem(item2);
+            Record record2 = await inMemoryCollection.CreateItemAsync(item2, cancellationToken: default);
 
             // Try to read back an id with wrong pk
-            Assert.IsFalse(
-                inMemoryCollection.TryReadItem(
-                    partitionKey: item1["pk"],
-                    record2.Identifier,
-                    out InMemoryCollection.Record _));
+            TryCatch<Record> monadicReadItem = await inMemoryCollection.MonadicReadItemAsync(
+                partitionKey: item1["pk"],
+                record2.Identifier,
+                cancellationToken: default);
+            Assert.IsFalse(monadicReadItem.Succeeded);
         }
 
         [TestMethod]
-        public void UndefinedPartitionKey()
+        public async Task TestUndefinedPartitionKeyAsync()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -97,18 +97,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Insert an item
             CosmosObject item = CosmosObject.Parse("{}");
-            InMemoryCollection.Record record = inMemoryCollection.CreateItem(item);
+            Record record = await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
 
             // Try to read back an id with wrong pk
-            Assert.IsTrue(
-                inMemoryCollection.TryReadItem(
-                    partitionKey: null,
-                    record.Identifier,
-                    out InMemoryCollection.Record _));
+            TryCatch<Record> monadicReadItem = await inMemoryCollection.MonadicReadItemAsync(
+                partitionKey: null,
+                record.Identifier,
+                cancellationToken: default);
+            Assert.IsFalse(monadicReadItem.Succeeded);
         }
 
         [TestMethod]
-        public void Split()
+        public async Task TestSplitAsync()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -122,33 +122,39 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition);
 
-            Assert.AreEqual(1, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
+            Assert.AreEqual(1, (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default)).Count);
 
             int numItemsToInsert = 10;
             for (int i = 0; i < numItemsToInsert; i++)
             {
                 // Insert an item
                 CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                inMemoryCollection.CreateItem(item);
+                await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
             }
 
-            inMemoryCollection.Split(partitionKeyRangeId: 0);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
 
-            Assert.AreEqual(2, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
-            (int leftChild, int rightChild) = inMemoryCollection.GetChildRanges(partitionKeyRangeId: 0);
-            Assert.AreEqual(1, leftChild);
-            Assert.AreEqual(2, rightChild);
+            Assert.AreEqual(2, (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default)).Count);
+            List<PartitionKeyRange> ranges = await inMemoryCollection.GetChildRangeAsync(
+                new PartitionKeyRange()
+                {
+                    Id = "0"
+                },
+                cancellationToken: default);
+            Assert.AreEqual(2, ranges.Count);
+            Assert.AreEqual(1, int.Parse(ranges[0].Id));
+            Assert.AreEqual(2, int.Parse(ranges[1].Id));
 
-            int AssertChildPartition(int partitionKeyRangeId)
+            async Task<int> AssertChildPartitionAsync(int partitionKeyRangeId)
             {
-                TryCatch<(List<InMemoryCollection.Record> records, long? continuation)> tryGetPartitionRecords = inMemoryCollection.ReadFeed(
+                DocumentContainerPage readFeedPage = await inMemoryCollection.ReadFeedAsync(
                     partitionKeyRangeId: partitionKeyRangeId,
-                    resourceIndentifer: 0,
-                    pageSize: 100);
-                tryGetPartitionRecords.ThrowIfFailed();
+                    resourceIdentifier: 0,
+                    pageSize: 100,
+                    cancellationToken: default);
 
                 List<long> values = new List<long>();
-                foreach (InMemoryCollection.Record record in tryGetPartitionRecords.Result.records)
+                foreach (Record record in readFeedPage.Records)
                 {
                     values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
                 }
@@ -159,12 +165,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return values.Count;
             }
 
-            int count = AssertChildPartition(partitionKeyRangeId: 1) + AssertChildPartition(partitionKeyRangeId: 2);
+            int count = await AssertChildPartitionAsync(partitionKeyRangeId: 1) + await AssertChildPartitionAsync(partitionKeyRangeId: 2);
             Assert.AreEqual(numItemsToInsert, count);
         }
 
         [TestMethod]
-        public void MultiSplit()
+        public async Task TestMultiSplitAsync()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -183,41 +189,59 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 // Insert an item
                 CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                inMemoryCollection.CreateItem(item);
+                await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
             }
 
-            Assert.AreEqual(1, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
+            Assert.AreEqual(1, (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default)).Count);
 
-            inMemoryCollection.Split(partitionKeyRangeId: 0);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
 
-            Assert.AreEqual(2, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
-            (int leftChild, int rightChild) = inMemoryCollection.GetChildRanges(partitionKeyRangeId: 0);
-            Assert.AreEqual(1, leftChild);
-            Assert.AreEqual(2, rightChild);
+            Assert.AreEqual(2, (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default)).Count);
+            List<PartitionKeyRange> ranges = await inMemoryCollection.GetChildRangeAsync(
+                 new PartitionKeyRange()
+                 {
+                     Id = "0"
+                 },
+                 cancellationToken: default);
+            Assert.AreEqual(2, ranges.Count);
+            Assert.AreEqual(1, int.Parse(ranges[0].Id));
+            Assert.AreEqual(2, int.Parse(ranges[1].Id));
 
-            inMemoryCollection.Split(partitionKeyRangeId: 1);
-            inMemoryCollection.Split(partitionKeyRangeId: 2);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
 
 
-            Assert.AreEqual(4, inMemoryCollection.PartitionKeyRangeFeedReed().Count);
-            (int leftChild1, int rightChild1) = inMemoryCollection.GetChildRanges(partitionKeyRangeId: 1);
-            Assert.AreEqual(3, leftChild1);
-            Assert.AreEqual(4, rightChild1);
+            Assert.AreEqual(4, (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default)).Count);
+            List<PartitionKeyRange> ranges1 = await inMemoryCollection.GetChildRangeAsync(
+                 new PartitionKeyRange()
+                 {
+                     Id = "1"
+                 },
+                 cancellationToken: default);
+            Assert.AreEqual(2, ranges.Count);
+            Assert.AreEqual(3, int.Parse(ranges[0].Id));
+            Assert.AreEqual(4, int.Parse(ranges[1].Id));
 
-            (int leftChild2, int rightChild2) = inMemoryCollection.GetChildRanges(partitionKeyRangeId: 2);
-            Assert.AreEqual(5, leftChild2);
-            Assert.AreEqual(6, rightChild2);
+            List<PartitionKeyRange> ranges2 = await inMemoryCollection.GetChildRangeAsync(
+                 new PartitionKeyRange()
+                 {
+                     Id = "2"
+                 },
+                 cancellationToken: default);
+            Assert.AreEqual(2, ranges.Count);
+            Assert.AreEqual(5, int.Parse(ranges[0].Id));
+            Assert.AreEqual(6, int.Parse(ranges[1].Id));
 
-            int AssertChildPartition(int partitionKeyRangeId)
+            async Task<int> AssertChildPartitionAsync(int partitionKeyRangeId)
             {
-                TryCatch<(List<InMemoryCollection.Record> records, long? continuation)> tryGetPartitionRecords = inMemoryCollection.ReadFeed(
+                DocumentContainerPage page = await inMemoryCollection.ReadFeedAsync(
                     partitionKeyRangeId: partitionKeyRangeId,
-                    resourceIndentifer: 0,
-                    pageSize: 100);
-                tryGetPartitionRecords.ThrowIfFailed();
+                    resourceIdentifier: 0,
+                    pageSize: 100,
+                    cancellationToken: default);
 
                 List<long> values = new List<long>();
-                foreach (InMemoryCollection.Record record in tryGetPartitionRecords.Result.records)
+                foreach (Record record in page.Records)
                 {
                     values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
                 }
@@ -228,10 +252,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return values.Count;
             }
 
-            int count = AssertChildPartition(partitionKeyRangeId: 3)
-                + AssertChildPartition(partitionKeyRangeId: 4)
-                + AssertChildPartition(partitionKeyRangeId: 5)
-                + AssertChildPartition(partitionKeyRangeId: 6);
+            int count = await AssertChildPartitionAsync(partitionKeyRangeId: 3)
+                + await AssertChildPartitionAsync(partitionKeyRangeId: 4)
+                + await AssertChildPartitionAsync(partitionKeyRangeId: 5)
+                + await AssertChildPartitionAsync(partitionKeyRangeId: 6);
             Assert.AreEqual(numItemsToInsert, count);
         }
     }
