@@ -136,7 +136,7 @@ namespace CosmosBenchmark
                 runSummary.ConsistencyLevel = consistencyLevel;
 
 
-                if (config.PublicResults)
+                if (config.PublishResults)
                 {
                     Container resultsContainer = cosmosClient.GetContainer(config.Database, config.ResultsContainer);
                     await resultsContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));

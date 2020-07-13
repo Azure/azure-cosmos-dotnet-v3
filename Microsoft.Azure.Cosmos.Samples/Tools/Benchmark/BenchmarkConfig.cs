@@ -65,7 +65,7 @@ namespace CosmosBenchmark
         public bool TraceFailures { get; set; }
 
         [Option(Required = false, HelpText = "Publish run results")]
-        public bool PublicResults  { get; set; }
+        public bool PublishResults  { get; set; }
 
         [Option(Required = false, HelpText = "Run ID, only for publish")]
         internal string RunId { get; set; }
@@ -121,7 +121,7 @@ namespace CosmosBenchmark
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
 
-            if (options.PublicResults)
+            if (options.PublishResults)
             {
                 if (string.IsNullOrEmpty(options.ResultsContainer)
                     || string.IsNullOrWhiteSpace(options.ResultsPartitionKeyValue)
