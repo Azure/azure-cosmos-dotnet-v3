@@ -32,29 +32,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public async Task<HttpResponseMessage> ExecuteHttpRequestAsync(
             HttpMethod methodtype,
             string KeyVaultRequestUri,
-            string accessToken = null,
-            string bytesInBase64 = null,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             using HttpRequestMessage request = new HttpRequestMessage(methodtype, KeyVaultRequestUri + "?" + KeyVaultConstants.ApiVersionQueryParameters);
             {
-                request.Headers.Add(HttpConstantsHttpHeadersAccept, RuntimeConstantsMediaTypesJson);
-
-                if (!String.IsNullOrEmpty(accessToken))
-                    request.Headers.Authorization = new AuthenticationHeaderValue(KeyVaultConstants.Bearer, accessToken);
-
-                if (!String.IsNullOrEmpty(bytesInBase64))
-                {
-                    String Alg = KeyVaultConstants.RsaOaep256;
-                    String Value = bytesInBase64.TrimEnd('=').Replace('+', '-').Replace('/', '_'); // Format base 64 encoded string for http transfer
-                    InternalWrapUnwrapRequest keyVaultRequest = new InternalWrapUnwrapRequest(Alg, Value);
-
-                    request.Content = new StringContent(
-                        JsonConvert.SerializeObject(keyVaultRequest),
-                        Encoding.UTF8,
-                        RuntimeConstantsMediaTypesJson);
-                }
+                request.Headers.Add(HttpConstantsHttpHeadersAccept, RuntimeConstantsMediaTypesJson);                
 
                 string correlationId = Guid.NewGuid().ToString();
                 DefaultTrace.TraceInformation("ExecuteHttpRequestAsync: request correlationId {0}.", correlationId);

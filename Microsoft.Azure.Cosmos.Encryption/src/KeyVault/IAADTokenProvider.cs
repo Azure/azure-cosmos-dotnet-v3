@@ -11,6 +11,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal abstract class IAADTokenProvider
     {
-        public abstract Task<string> GetAccessTokenAsync(CancellationToken cancellationToken);
+        public abstract ValueTask<string> GetAccessTokenAsync(CancellationToken cancellationToken);
     }
 }

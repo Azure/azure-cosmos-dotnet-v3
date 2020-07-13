@@ -8,13 +8,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Security.Cryptography.X509Certificates;
-    using System.Text;
+    using System.Security.Cryptography.X509Certificates;    
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.IdentityModel.Clients.ActiveDirectory;
-    using Newtonsoft.Json;
+    using global::Azure;
+    using global::Azure.Security.KeyVault.Keys.Cryptography;
+    using global::Azure.Identity;
+    using global::Azure.Security.KeyVault.Keys;
 
     /// <summary>
     /// Implementation of <see cref="IKeyVaultAccessClient"/> that uses the
@@ -22,19 +23,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class KeyVaultAccessClient : IKeyVaultAccessClient
     {
-        private const string HttpConstantsHttpHeadersAccept = "Accept";
-        private const string RuntimeConstantsMediaTypesJson = "application/json";
-
         private string aadLoginUrl;
         private string keyVaultResourceEndpoint;
-
+        private readonly string clientId;
+        private readonly X509Certificate2 certificate;
         private readonly TimeSpan aadRetryInterval;
         private readonly int aadRetryCount;
-
-        private readonly ClientAssertionCertificate clientAssertionCertificate;
+        private  ClientCertificateCredential clientCertificateCredential;
         // cache the toke provider and Token based on KeyVault URI and Directory/Tenant ID
         private readonly AsyncCache<string, IAADTokenProvider> aadTokenProvider;
         private readonly AsyncCache<IAADTokenProvider, string> aadTokenCache;
+        private readonly AsyncCache<string, KeyClient> akvClientCache;
+        private readonly AsyncCache<Uri, CryptographyClient> akvCrytpoClientCache;
         private readonly AsyncCache<Uri, string> EndPointCache;
         private readonly KeyVaultHttpClient  keyvaulthttpclient;
 
@@ -50,9 +50,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TimeSpan aadRetryInterval,
             int aadRetryCount)
         {
-            this.clientAssertionCertificate = new ClientAssertionCertificate(clientId, certificate);
+            this.certificate = certificate;
+            this.clientId = clientId;
             this.aadTokenProvider = new AsyncCache<string, IAADTokenProvider>();
             this.aadTokenCache = new AsyncCache<IAADTokenProvider, string>();
+            this.akvClientCache = new AsyncCache<string, KeyClient>();
+            this.akvCrytpoClientCache = new AsyncCache<Uri, CryptographyClient>();
             this.EndPointCache = new AsyncCache<Uri, string>();
             this.keyvaulthttpclient = new KeyVaultHttpClient(httpClient);
             this.aadRetryInterval = aadRetryInterval;
@@ -123,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                                     keyVaultKeyUri,
                                                     cancellationToken);
 
-            string keyDeletionRecoveryLevel = getKeyResponse?.Attributes?.RecoveryLevel;
+            string keyDeletionRecoveryLevel = getKeyResponse?.Properties?.RecoveryLevel;
             DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: KeyVaultKey {0} has Deletion Recovery Level {1}.",
             keyVaultKeyUri,
             keyDeletionRecoveryLevel);
@@ -144,6 +147,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string bytesInBase64,
             CancellationToken cancellationToken)
         {
+            CryptographyClient cryptoClient;
+
             if (!KeyVaultAccessClient.ValidateKeyVaultKeyUrl(keyVaultKeyUri))
             {
                 throw new KeyVaultAccessException(HttpStatusCode.BadRequest, KeyVaultErrorCode.InvalidKeyVaultKeyURI, "Invalid KeyVaultKeyURI");
@@ -154,9 +159,28 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new KeyVaultAccessException(HttpStatusCode.BadRequest, KeyVaultErrorCode.InvalidInputBytes, "The Input is not a valid base 64 string");
             }
 
-            string accessToken = await this.GetAadAccessTokenAsync(keyVaultKeyUri, cancellationToken);
+            ///Get a Crypto Client for Wrap and UnWrap,this gets init per Key ID
+            ///Cache it against the Unit KeyUri
+            try
+            {
+                cryptoClient = await this.akvCrytpoClientCache.GetAsync(
+                key: keyVaultKeyUri,
+                obsoleteValue: null,
+                singleValueInitFunc: async () =>
+                {
+                    await Task.FromResult(true);
+                    cryptoClient = new CryptographyClient(keyVaultKeyUri, this.clientCertificateCredential);
+                    return cryptoClient;
+                },
+                cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("InternalWrapUnwrapAsync: caught exception while trying to acquire token: {0}.", ex.ToString());
+                throw new KeyVaultAccessException(HttpStatusCode.ServiceUnavailable, KeyVaultErrorCode.AadServiceUnavailable, ex.ToString());
+            }
 
-            return await this.ExecuteKeyVaultRequestAsync(keyvaultUri, accessToken, bytesInBase64, cancellationToken);
+            return await this.ExecuteKeyVaultRequestAsync(keyvaultUri, cryptoClient, bytesInBase64, cancellationToken);
         }
 
         /// <summary>
@@ -164,120 +188,108 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         private async Task<InternalWrapUnwrapResponse> ExecuteKeyVaultRequestAsync(
             string keyvaultUri,
-            string accessToken,
+            CryptographyClient cryptoClient,
             string bytesInBase64,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using HttpResponseMessage response = await this.keyvaulthttpclient.ExecuteHttpRequestAsync(HttpMethod.Post,keyvaultUri, accessToken:accessToken, bytesInBase64:bytesInBase64, cancellationToken:cancellationToken);
-            {
-                string jsonResponse = string.Empty;
-                if (response.StatusCode == HttpStatusCode.OK)
-                {
-                    /// send it back only if we have a valid response.
-                    jsonResponse = await response.Content.ReadAsStringAsync();
-                    jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
-                    goto ValidResponse;
-                }
-                else if (response.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    DefaultTrace.TraceWarning($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultAuthenticationFailure}.");
-                    throw new KeyVaultAccessException(
-                        response.StatusCode,
-                        KeyVaultErrorCode.KeyVaultAuthenticationFailure,
-                        "ExecuteKeyVaultRequestAsync Failed with HTTP status Forbidden 403");
-                }
-                else if (response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    DefaultTrace.TraceWarning($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultKeyNotFound}.");
-                    throw new KeyVaultAccessException(
-                        response.StatusCode,
-                        KeyVaultErrorCode.KeyVaultKeyNotFound,
-                        "ExecuteKeyVaultRequestAsync Failed with HTTP status NotFound 404");
-                }
-                else if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    DefaultTrace.TraceWarning($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultWrapUnwrapFailure}.");
-                    throw new KeyVaultAccessException(
-                        response.StatusCode,
-                        KeyVaultErrorCode.KeyVaultWrapUnwrapFailure,
-                        "ExecuteKeyVaultRequestAsync Failed with HTTP status BadRequest 400");
-                }
-                else if (response.StatusCode != HttpStatusCode.OK)
-                {
-                    DefaultTrace.TraceWarning($"ExecuteKeyVaultRequestAsync: Receive HttpStatusCode { response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultInternalServerError}");
-                    throw new KeyVaultAccessException(
-                        response.StatusCode,
-                        KeyVaultErrorCode.KeyVaultInternalServerError,
-                        "ExecuteKeyVaultRequestAsync Failed with Bad HTTP response.");
-                }
+            string operationtype = keyvaultUri.Substring(keyvaultUri.LastIndexOf('/') + 1);
+            Byte[] key = Convert.FromBase64String(bytesInBase64);
 
-                ValidResponse:
-                return JsonConvert.DeserializeObject<InternalWrapUnwrapResponse>(jsonResponse);
+            if(cryptoClient == null)
+            {
+                DefaultTrace.TraceWarning("ExecuteKeyVaultRequestAsync: CryptoClient not initialized");
+                throw new KeyVaultAccessException(
+                            HttpStatusCode.BadRequest,
+                            KeyVaultErrorCode.KeyVaultWrapUnwrapFailure,
+                            "ExecuteKeyVaultRequestAsync Failed with HTTP status BadRequest 400");
             }
-        }
+            /// gets called from InternalKeyWrapUnwrap requests for either wrapkey or unwrap key
+            try
+            {
+                if (string.Equals(operationtype, "wrapkey"))
+                {
+                    WrapResult keyOpResult;
+                    keyOpResult = await cryptoClient.WrapKeyAsync(KeyVaultConstants.RsaOaep256, key, cancellationToken);
+                    return new InternalWrapUnwrapResponse(keyOpResult.KeyId, Convert.ToBase64String(keyOpResult.EncryptedKey));
+                }
+                else
+                {
+                    UnwrapResult keyOpResult;
+                    keyOpResult = await cryptoClient.UnwrapKeyAsync(KeyVaultConstants.RsaOaep256, key, cancellationToken);
+                    return new InternalWrapUnwrapResponse(keyOpResult.KeyId, Convert.ToBase64String(keyOpResult.Key));
+                }               
+            }
+            catch (Exception ex)
+            {
+                if (ex is ArgumentException || ex is ArgumentNullException || ex is RequestFailedException)
+                {
+                    throw new KeyVaultAccessException(
+                            HttpStatusCode.BadRequest,
+                            KeyVaultErrorCode.KeyVaultWrapUnwrapFailure,
+                            "ExecuteKeyVaultRequestAsync Failed with HTTP status BadRequest 400");
+                }
+                throw;
+            }
+        }        
 
         private async Task<InternalGetKeyResponse> GetKeyVaultKeyResponseAsync(
             Uri keyVaultKeyUri,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            string accessToken = await this.GetAadAccessTokenAsync(keyVaultKeyUri, cancellationToken);
-
-            using HttpResponseMessage response = await this.InternalGetKeyAsync(keyVaultKeyUri, accessToken, cancellationToken);
-            {
-                string jsonResponse = string.Empty;
-                if (response.StatusCode == HttpStatusCode.OK)
-                {
-                    /// send it back only if we have a valid response.
-                    jsonResponse = await response.Content.ReadAsStringAsync();
-                    jsonResponse = string.IsNullOrEmpty(jsonResponse) ? string.Empty : jsonResponse;
-                    goto ValidResponse;
-                }
-                else if (response.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    DefaultTrace.TraceWarning($"GetKeyResponseAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultAuthenticationFailure}.");
-                    throw new KeyVaultAccessException(
-                        response.StatusCode,
-                        KeyVaultErrorCode.KeyVaultAuthenticationFailure,
-                        "GetKeyVaultKeyResponseAsync Failed with HTTP status Forbidden 403");
-                }
-                else if (response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    DefaultTrace.TraceWarning($"GetKeyResponseAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultKeyNotFound}.");
-                    throw new KeyVaultAccessException(
-                        response.StatusCode,
-                        KeyVaultErrorCode.KeyVaultKeyNotFound,
-                        "GetKeyVaultKeyResponseAsync Failed with HTTP status NotFound 404");
-                }
-                else if (response.StatusCode != HttpStatusCode.OK)
-                {
-                    DefaultTrace.TraceWarning($"GetKeyResponseAsync: Receive HttpStatusCode {response.StatusCode}, KeyVaultErrorCode {KeyVaultErrorCode.KeyVaultInternalServerError}.");
-                    throw new KeyVaultAccessException(
-                        response.StatusCode,
-                        KeyVaultErrorCode.KeyVaultInternalServerError,
-                        "GetKeyVaultKeyResponseAsync Failed with Bad HTTP response.");
-                }
-
-                ValidResponse:
-                return JsonConvert.DeserializeObject<InternalGetKeyResponse>(jsonResponse);
-            }
+            return await this.InternalGetKeyAsync(keyVaultKeyUri, cancellationToken);
+            
         }
 
         /// <summary>
         /// Get The Key Information like public key and recovery level.
         /// </summary>
-        private async Task<HttpResponseMessage> InternalGetKeyAsync(
+        private async Task<InternalGetKeyResponse> InternalGetKeyAsync(
             Uri keyVaultKeyUri,
-            string accessToken,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            string[] source = keyVaultKeyUri.ToString().Split('/');
+            string keyname = source.ElementAt(4);
 
-            return await this.keyvaulthttpclient.ExecuteHttpRequestAsync(HttpMethod.Get,keyVaultKeyUri.ToString(), accessToken:accessToken, cancellationToken:cancellationToken);
+            KeyClient akvClient = null;
+            KeyVaultKey kvk = null;
 
+            try
+            {
+                akvClient = await this.GetAkvClient(keyVaultKeyUri, cancellationToken);
+                /// we would probably have caught it by now.
+                if (akvClient != null)
+                {
+                    kvk = await akvClient.GetKeyAsync(keyname, cancellationToken: cancellationToken);
+                    goto Success;
+                }
+                else
+                {
+                    DefaultTrace.TraceWarning("InternalGetKeyAsync: Key Vault Client not initialized");
+                    throw new KeyVaultAccessException(
+                            HttpStatusCode.BadRequest,
+                            KeyVaultErrorCode.KeyVaultServiceUnavailable,
+                            "InternalGetKeyAsync Failed with HTTP status BadRequest 400");
+
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ex is ArgumentException || ex is ArgumentNullException || ex is RequestFailedException)
+                {
+                    throw new KeyVaultAccessException(
+                            HttpStatusCode.NotFound,
+                            KeyVaultErrorCode.KeyVaultKeyNotFound,
+                            "InternalGetKeyAsync Failed with HTTP status BadRequest 404");
+                }
+                throw;
+            }
+
+            Success:
+            return new InternalGetKeyResponse(kvk.Key, kvk.Properties);
         }
 
         /// <summary>
@@ -299,7 +311,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return this.aadLoginUrl.Substring(this.aadLoginUrl.LastIndexOf('/') + 1);
                 },
                 cancellationToken: cancellationToken);
-
             
             IAADTokenProvider aadTokenProvider = await this.aadTokenProvider.GetAsync(
                 key: tenantid,
@@ -308,14 +319,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     await Task.FromResult(true);
                     return new AADTokenProvider(
-                        this.aadLoginUrl,
                         this.keyVaultResourceEndpoint,
-                        this.clientAssertionCertificate,
+                        this.clientCertificateCredential,
                         this.aadRetryInterval,
                         this.aadRetryCount);
                 },
                 cancellationToken: cancellationToken);
-
 
             try
             {
@@ -330,9 +339,67 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 return cacheToken;
             }
-            catch (AdalException ex)
+            catch (AuthenticationFailedException ex)
             {
-                DefaultTrace.TraceInformation("GetAadAccessTokenAsync: caught exception while trying to acquire token: {0}.", ex.ToString());
+                DefaultTrace.TraceInformation("GetAadAccessTokenAsync: Caught exception while trying to acquire token: {0}.", ex.ToString());
+                throw new KeyVaultAccessException(HttpStatusCode.ServiceUnavailable, KeyVaultErrorCode.AadServiceUnavailable, ex.ToString());
+            }            
+        }
+
+        /// <summary>
+        /// Obtains the AAD Token to be used to get a KeyVault Client,caches the Client for each Tenant.
+        /// </summary>
+        /// <returns>AAD Bearer Token. </returns>
+        private async Task<KeyClient> GetAkvClient(Uri keyVaultKeyUri,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string[] source = keyVaultKeyUri.ToString().Split('/');
+            string KeyVaultName = source.ElementAt(2);
+            Uri keyvaulturi = new Uri($"https://{KeyVaultName}/");
+
+            string tenantid = await this.EndPointCache.GetAsync(
+                key: keyVaultKeyUri,
+                obsoleteValue: null,
+                singleValueInitFunc: async () =>
+                {
+                    await this.InitializeLoginUrlAndResourceEndpointAsync(keyVaultKeyUri, cancellationToken);
+                    return this.aadLoginUrl.Substring(this.aadLoginUrl.LastIndexOf('/') + 1);
+                },
+                cancellationToken: cancellationToken);
+
+            IAADTokenProvider aadTokenProvider = await this.aadTokenProvider.GetAsync(
+                key: tenantid,
+                obsoleteValue: null,
+                singleValueInitFunc: async () =>
+                {
+                    await Task.FromResult(true);
+                    return new AADTokenProvider(
+                        this.keyVaultResourceEndpoint,
+                        this.clientCertificateCredential,
+                        this.aadRetryInterval,
+                        this.aadRetryCount);
+                },
+                cancellationToken: cancellationToken);
+
+            try
+            {
+                KeyClient akvClient = await this.akvClientCache.GetAsync(
+                key: KeyVaultName,
+                obsoleteValue: null,
+                singleValueInitFunc: async () =>
+                {
+                    await Task.FromResult(true);
+                    return new KeyClient(keyvaulturi, this.clientCertificateCredential);
+                },
+                cancellationToken: cancellationToken);
+
+                return akvClient;
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceInformation("GetAkvClient: Caught exception while trying to acquire token: {0}.", ex.ToString());
                 throw new KeyVaultAccessException(HttpStatusCode.ServiceUnavailable, KeyVaultErrorCode.AadServiceUnavailable, ex.ToString());
             }
         }
@@ -357,6 +424,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     // Sample aadLoginUrl: https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47
                     this.aadLoginUrl = source.ElementAt(1).Trim('"');
+
+                    this.clientCertificateCredential = new ClientCertificateCredential(this.aadLoginUrl.Substring(this.aadLoginUrl.LastIndexOf('/') + 1), this.clientId,this.certificate);
 
                     // Sample keyVaultResourceEndpoint: https://vault.azure.net
                     this.keyVaultResourceEndpoint = source.ElementAt(3).Trim('"');

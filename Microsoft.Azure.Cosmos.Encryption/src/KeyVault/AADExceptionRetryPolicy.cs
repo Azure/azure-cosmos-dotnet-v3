@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.IdentityModel.Clients.ActiveDirectory;
+    using global::Azure.Identity;
 
     internal sealed class AADExceptionRetryPolicy : IRetryPolicy
     {
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
             // TODO/FIXME the "System.NullReferenceException" here is a bug in ADAL library,will move it out once we move to Fixed Version of ADAL  lib.
-            if ((exception is AdalException || WebExceptionUtility.IsWebExceptionRetriable(exception) || exception is System.NullReferenceException) &&
+            if (( exception is AuthenticationFailedException || WebExceptionUtility.IsWebExceptionRetriable(exception) || exception is System.NullReferenceException) &&
                 this.retriesAttempted < this.maxRetries && !cancellationToken.IsCancellationRequested)
             {
                 this.retriesAttempted++;
