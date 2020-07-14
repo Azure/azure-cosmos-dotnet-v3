@@ -23,20 +23,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class KeyVaultAccessClient : IKeyVaultAccessClient
     {
-        private string aadLoginUrl;
-        private string keyVaultResourceEndpoint;
+        private string tenantId;
         private readonly string clientId;
         private readonly X509Certificate2 certificate;
-        private readonly TimeSpan aadRetryInterval;
-        private readonly int aadRetryCount;
-        private  ClientCertificateCredential clientCertificateCredential;
-        // cache the toke provider and Token based on KeyVault URI and Directory/Tenant ID
-        private readonly AsyncCache<string, IAADTokenProvider> aadTokenProvider;
-        private readonly AsyncCache<IAADTokenProvider, string> aadTokenCache;
+        private ClientCertificateCredential clientCertificateCredential;
         private readonly AsyncCache<string, KeyClient> akvClientCache;
         private readonly AsyncCache<Uri, CryptographyClient> akvCrytpoClientCache;
         private readonly AsyncCache<Uri, string> EndPointCache;
-        private readonly KeyVaultHttpClient  keyvaulthttpclient;
+        private readonly KeyVaultHttpClient keyvaulthttpclient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="KeyVaultAccessClient"/> class.
@@ -46,20 +40,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal KeyVaultAccessClient(
             string clientId,
             X509Certificate2 certificate,
-            HttpClient httpClient,
-            TimeSpan aadRetryInterval,
-            int aadRetryCount)
+            HttpClient httpClient)
         {
             this.certificate = certificate;
             this.clientId = clientId;
-            this.aadTokenProvider = new AsyncCache<string, IAADTokenProvider>();
-            this.aadTokenCache = new AsyncCache<IAADTokenProvider, string>();
             this.akvClientCache = new AsyncCache<string, KeyClient>();
             this.akvCrytpoClientCache = new AsyncCache<Uri, CryptographyClient>();
             this.EndPointCache = new AsyncCache<Uri, string>();
             this.keyvaulthttpclient = new KeyVaultHttpClient(httpClient);
-            this.aadRetryInterval = aadRetryInterval;
-            this.aadRetryCount = aadRetryCount;
         }
 
         /// <summary>
@@ -77,14 +65,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             string keyvaultUri = keyVaultKeyUri + KeyVaultConstants.UnwrapKeySegment;
             InternalWrapUnwrapResponse internalWrapUnwrapResponse = await this.InternalWrapUnwrapAsync(keyVaultKeyUri, keyvaultUri, bytesInBase64, cancellationToken);
-            
+
             string responseBytesInBase64 = KeyVaultAccessClient.ConvertBase64UrlToBase64String(internalWrapUnwrapResponse.Value);
             Uri responseKeyVaultKeyUri = new Uri(internalWrapUnwrapResponse.Kid);
 
             return new KeyVaultUnwrapResult(
                 unwrappedKeyBytesInBase64: responseBytesInBase64,
                 keyVaultKeyUri: responseKeyVaultKeyUri);
-            
         }
 
         /// <summary>
@@ -109,7 +96,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return new KeyVaultWrapResult(
                 wrappedKeyBytesInBase64: responseBytesInBase64,
                 keyVaultKeyUri: responseKeyVaultKeyUri);
-                       
         }
 
         /// <summary>
@@ -121,10 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Uri keyVaultKeyUri,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            
-           InternalGetKeyResponse getKeyResponse = await this.GetKeyVaultKeyResponseAsync(
-                                                    keyVaultKeyUri,
-                                                    cancellationToken);
+            InternalGetKeyResponse getKeyResponse =  await this.InternalGetKeyAsync(keyVaultKeyUri, cancellationToken);
 
             string keyDeletionRecoveryLevel = getKeyResponse?.Properties?.RecoveryLevel;
             DefaultTrace.TraceInformation("ValidatePurgeProtectionAndSoftDeleteSettingsAsync: KeyVaultKey {0} has Deletion Recovery Level {1}.",
@@ -139,7 +122,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Internal Processing of Wrap/UnWrap requests.
+        /// Internal Processing of Wrap/UnWrap requests
+        /// This function does most of the house keeping work.Verifies validity of the KeyVaulUri.
+        /// Gets the Crypto Client for the Activity requested(Wrapping or UnWrapping the DEK)
         /// </summary>
         private async Task<InternalWrapUnwrapResponse> InternalWrapUnwrapAsync(
             Uri keyVaultKeyUri,
@@ -147,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string bytesInBase64,
             CancellationToken cancellationToken)
         {
-            CryptographyClient cryptoClient;
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (!KeyVaultAccessClient.ValidateKeyVaultKeyUrl(keyVaultKeyUri))
             {
@@ -158,46 +143,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 throw new KeyVaultAccessException(HttpStatusCode.BadRequest, KeyVaultErrorCode.InvalidInputBytes, "The Input is not a valid base 64 string");
             }
-
             ///Get a Crypto Client for Wrap and UnWrap,this gets init per Key ID
-            ///Cache it against the Unit KeyUri
-            try
-            {
-                cryptoClient = await this.akvCrytpoClientCache.GetAsync(
-                key: keyVaultKeyUri,
-                obsoleteValue: null,
-                singleValueInitFunc: async () =>
-                {
-                    await Task.FromResult(true);
-                    cryptoClient = new CryptographyClient(keyVaultKeyUri, this.clientCertificateCredential);
-                    return cryptoClient;
-                },
-                cancellationToken: cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceWarning("InternalWrapUnwrapAsync: caught exception while trying to acquire token: {0}.", ex.ToString());
-                throw new KeyVaultAccessException(HttpStatusCode.ServiceUnavailable, KeyVaultErrorCode.AadServiceUnavailable, ex.ToString());
-            }
+            CryptographyClient cryptoClient = await this.GetCryptoClient(keyVaultKeyUri, cancellationToken);
 
-            return await this.ExecuteKeyVaultRequestAsync(keyvaultUri, cryptoClient, bytesInBase64, cancellationToken);
-        }
-
-        /// <summary>
-        /// Helper Method for ExecuteKeyVaultRequestAsync.
-        /// </summary>
-        private async Task<InternalWrapUnwrapResponse> ExecuteKeyVaultRequestAsync(
-            string keyvaultUri,
-            CryptographyClient cryptoClient,
-            string bytesInBase64,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            string operationtype = keyvaultUri.Substring(keyvaultUri.LastIndexOf('/') + 1);
-            Byte[] key = Convert.FromBase64String(bytesInBase64);
-
-            if(cryptoClient == null)
+            if (cryptoClient == null)
             {
                 DefaultTrace.TraceWarning("ExecuteKeyVaultRequestAsync: CryptoClient not initialized");
                 throw new KeyVaultAccessException(
@@ -205,7 +154,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             KeyVaultErrorCode.KeyVaultWrapUnwrapFailure,
                             "ExecuteKeyVaultRequestAsync Failed with HTTP status BadRequest 400");
             }
-            /// gets called from InternalKeyWrapUnwrap requests for either wrapkey or unwrap key
+
+            string operationtype = keyvaultUri.Substring(keyvaultUri.LastIndexOf('/') + 1);
+            Byte[] key = Convert.FromBase64String(bytesInBase64);
+           
             try
             {
                 if (string.Equals(operationtype, "wrapkey"))
@@ -219,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     UnwrapResult keyOpResult;
                     keyOpResult = await cryptoClient.UnwrapKeyAsync(KeyVaultConstants.RsaOaep256, key, cancellationToken);
                     return new InternalWrapUnwrapResponse(keyOpResult.KeyId, Convert.ToBase64String(keyOpResult.Key));
-                }               
+                }
             }
             catch (Exception ex)
             {
@@ -232,15 +184,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 throw;
             }
-        }        
-
-        private async Task<InternalGetKeyResponse> GetKeyVaultKeyResponseAsync(
-            Uri keyVaultKeyUri,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            return await this.InternalGetKeyAsync(keyVaultKeyUri, cancellationToken);
-            
         }
 
         /// <summary>
@@ -273,7 +216,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             HttpStatusCode.BadRequest,
                             KeyVaultErrorCode.KeyVaultServiceUnavailable,
                             "InternalGetKeyAsync Failed with HTTP status BadRequest 400");
-
                 }
             }
             catch (Exception ex)
@@ -287,69 +229,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 throw;
             }
-
-            Success:
+Success:
             return new InternalGetKeyResponse(kvk.Key, kvk.Properties);
         }
 
         /// <summary>
-        /// Obtain the AAD Token to be later used to access KeyVault.
+        /// Obtains the KeyClient to retrieve keys from Keyvault.
         /// </summary>
-        /// <returns>AAD Bearer Token. </returns>
-        private async Task<string> GetAadAccessTokenAsync(
-            Uri keyVaultKeyUri,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            string tenantid = await this.EndPointCache.GetAsync(
-                key: keyVaultKeyUri,
-                obsoleteValue: null,
-                singleValueInitFunc: async () =>
-                {
-                    await this.InitializeLoginUrlAndResourceEndpointAsync(keyVaultKeyUri, cancellationToken);
-                    return this.aadLoginUrl.Substring(this.aadLoginUrl.LastIndexOf('/') + 1);
-                },
-                cancellationToken: cancellationToken);
-            
-            IAADTokenProvider aadTokenProvider = await this.aadTokenProvider.GetAsync(
-                key: tenantid,
-                obsoleteValue: null,
-                singleValueInitFunc: async () =>
-                {
-                    await Task.FromResult(true);
-                    return new AADTokenProvider(
-                        this.keyVaultResourceEndpoint,
-                        this.clientCertificateCredential,
-                        this.aadRetryInterval,
-                        this.aadRetryCount);
-                },
-                cancellationToken: cancellationToken);
-
-            try
-            {
-                string cacheToken = await this.aadTokenCache.GetAsync(
-                key: aadTokenProvider,
-                obsoleteValue: null,
-                singleValueInitFunc: async () =>
-                {
-                    return await aadTokenProvider.GetAccessTokenAsync(cancellationToken);
-                },
-                cancellationToken: cancellationToken);
-
-                return cacheToken;
-            }
-            catch (AuthenticationFailedException ex)
-            {
-                DefaultTrace.TraceInformation("GetAadAccessTokenAsync: Caught exception while trying to acquire token: {0}.", ex.ToString());
-                throw new KeyVaultAccessException(HttpStatusCode.ServiceUnavailable, KeyVaultErrorCode.AadServiceUnavailable, ex.ToString());
-            }            
-        }
-
-        /// <summary>
-        /// Obtains the AAD Token to be used to get a KeyVault Client,caches the Client for each Tenant.
-        /// </summary>
-        /// <returns>AAD Bearer Token. </returns>
+        /// <returns>KeyClient.</returns>
         private async Task<KeyClient> GetAkvClient(Uri keyVaultKeyUri,
             CancellationToken cancellationToken)
         {
@@ -358,31 +245,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string[] source = keyVaultKeyUri.ToString().Split('/');
             string KeyVaultName = source.ElementAt(2);
             Uri keyvaulturi = new Uri($"https://{KeyVaultName}/");
-
+            /// The idea to get the Client Credentials,and also retrieve the tenant ID for this KeyVault,and store them.
             string tenantid = await this.EndPointCache.GetAsync(
                 key: keyVaultKeyUri,
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
                 {
                     await this.InitializeLoginUrlAndResourceEndpointAsync(keyVaultKeyUri, cancellationToken);
-                    return this.aadLoginUrl.Substring(this.aadLoginUrl.LastIndexOf('/') + 1);
+                    return this.tenantId;
                 },
                 cancellationToken: cancellationToken);
-
-            IAADTokenProvider aadTokenProvider = await this.aadTokenProvider.GetAsync(
-                key: tenantid,
-                obsoleteValue: null,
-                singleValueInitFunc: async () =>
-                {
-                    await Task.FromResult(true);
-                    return new AADTokenProvider(
-                        this.keyVaultResourceEndpoint,
-                        this.clientCertificateCredential,
-                        this.aadRetryInterval,
-                        this.aadRetryCount);
-                },
-                cancellationToken: cancellationToken);
-
+            ///Called once per KEYVALTNAME
+            /// Eg:https://KEYVALTNAME.vault.azure.net/
             try
             {
                 KeyClient akvClient = await this.akvClientCache.GetAsync(
@@ -394,7 +268,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return new KeyClient(keyvaulturi, this.clientCertificateCredential);
                 },
                 cancellationToken: cancellationToken);
-
                 return akvClient;
             }
             catch (Exception ex)
@@ -405,9 +278,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
+        /// Obtains the Crypto Client for Wrap/UnWrap.
+        /// </summary>
+        /// <returns>CryptographyClient client. </returns>
+        private async Task<CryptographyClient> GetCryptoClient(Uri keyVaultKeyUri,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ///Get a Crypto Client for Wrap and UnWrap,this gets init per KEYID
+            ///Cache it against the KEYID
+            ///Eg: :https://KEYVAULTNAME.vault.azure.net/keys/keyname/KEYID
+            try
+            {
+                CryptographyClient cryptoClient = await this.akvCrytpoClientCache.GetAsync(
+                key: keyVaultKeyUri,
+                obsoleteValue: null,
+                singleValueInitFunc: async () =>
+                {
+                    await Task.FromResult(true);
+                    return new CryptographyClient(keyVaultKeyUri, this.clientCertificateCredential);
+                },
+                cancellationToken: cancellationToken);
+                return cryptoClient;
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("InternalWrapUnwrapAsync: caught exception while trying to acquire token: {0}.", ex.ToString());
+                throw new KeyVaultAccessException(HttpStatusCode.ServiceUnavailable, KeyVaultErrorCode.AadServiceUnavailable, ex.ToString());
+            }
+        }
+
+        /// <summary>
         /// Initialize the LoginUrl and ResourceEndpoint.
         /// The SDK will send GET request to the key vault url in order to retrieve the AAD authority and resource.
-        /// </summary>
+        /// </summary>        
         private async Task InitializeLoginUrlAndResourceEndpointAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -417,24 +321,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // authenticationHeaderValue Sample:
                 // Bearer authorization="https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47", resource="https://vault.azure.net"
                 AuthenticationHeaderValue authenticationHeaderValue = response.Headers.WwwAuthenticate.Single();
-
                 string[] source = authenticationHeaderValue.Parameter.Split('=', ',');
                                
                 try
                 {
                     // Sample aadLoginUrl: https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47
-                    this.aadLoginUrl = source.ElementAt(1).Trim('"');
-
-                    this.clientCertificateCredential = new ClientCertificateCredential(this.aadLoginUrl.Substring(this.aadLoginUrl.LastIndexOf('/') + 1), this.clientId,this.certificate);
-
-                    // Sample keyVaultResourceEndpoint: https://vault.azure.net
-                    this.keyVaultResourceEndpoint = source.ElementAt(3).Trim('"');
+                    String aadLoginUrl = source.ElementAt(1).Trim('"');
+                    this.tenantId = aadLoginUrl.Substring(aadLoginUrl.LastIndexOf('/') + 1);
+                    /// Retrieve the Client Creds against the TenantID/ClientID for the saved certificate.
+                    this.clientCertificateCredential = new ClientCertificateCredential(this.tenantId, this.clientId, this.certificate);
                 }
                 catch(ArgumentOutOfRangeException ex)
                 {
                     DefaultTrace.TraceWarning("InitializeLoginUrlAndResourceEndpointAsync: Caught Out of Range ex {0}", ex.ToString());
-                }
-                                
+                }                                
             }
         }
 
@@ -478,22 +378,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 return false;
             }
-        }
-
-        internal static Uri GetKeyVaultKeyUrlWithNoKeyVersion(Uri keyVaultKeyUri)
-        {
-            string[] segments = keyVaultKeyUri.Segments;
-            if (segments.Length == 3)
-            {
-                return keyVaultKeyUri;
-            }
-
-            string[] newSegments = keyVaultKeyUri.Segments.Take(keyVaultKeyUri.Segments.Length - 1).ToArray();
-            newSegments[newSegments.Length - 1] = newSegments[newSegments.Length - 1].TrimEnd('/');
-
-            UriBuilder uriBuilder = new UriBuilder(keyVaultKeyUri);
-            uriBuilder.Path = string.Concat(newSegments);
-            return uriBuilder.Uri;
-        }
+        }       
     }
 }

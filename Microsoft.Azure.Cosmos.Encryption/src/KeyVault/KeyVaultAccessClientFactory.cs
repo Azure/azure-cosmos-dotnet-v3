@@ -26,9 +26,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return new KeyVaultAccessClient(
                 clientId: clientId,
                 certificate: certificate,
-                httpClient: this.httpClient,
-                aadRetryInterval: TimeSpan.FromSeconds(aadRetryIntervalInSeconds),
-                aadRetryCount: aadRetryCount);
+                httpClient: this.httpClient);
         }
 
         public override void Dispose()
