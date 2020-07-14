@@ -185,15 +185,23 @@
 
             for (int i = 0; i < numItems; i++)
             {
-                // Insert an item
-                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                while (true)
+                try
                 {
-                    TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(item, cancellationToken: default);
-                    if (monadicCreateRecord.Succeeded)
+                    // Insert an item
+                    CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                    //await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
+                    while (true)
                     {
-                        break;
+                        TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(item, cancellationToken: default);
+                        if (monadicCreateRecord.Succeeded)
+                        {
+                            break;
+                        }
                     }
+                }
+                catch(Exception ex)
+                {
+                    throw ex;
                 }
             }
 

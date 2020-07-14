@@ -21,10 +21,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             activityId: Guid.NewGuid().ToString(),
             requestCharge: default);
 
-        private static readonly Task<TryCatch<List<PartitionKeyRange>>> ThrottleForGetRanges = Task.FromResult(
-            TryCatch<List<PartitionKeyRange>>.FromException(
-                RequestRateTooLargeException));
-
         private static readonly Task<TryCatch<Record>> ThrottleForCreateItem = Task.FromResult(
             TryCatch<Record>.FromException(
                 RequestRateTooLargeException));
@@ -54,17 +50,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
-            CancellationToken cancellationToken)
-        {
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForGetRanges;
-            }
-
-            return this.MonadicGetChildRangeImplementationAsync(
+            CancellationToken cancellationToken) => this.MonadicGetChildRangeImplementationAsync(
                 partitionKeyRange,
                 cancellationToken);
-        }
 
         public Task<List<PartitionKeyRange>> GetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
