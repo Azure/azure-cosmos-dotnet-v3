@@ -3,21 +3,29 @@
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    internal abstract class InMemoryCollectionPartitionRangeEnumeratorTests<TPage, TState>
+    internal abstract class PartitionRangeEnumeratorTests<TPage, TState>
         where TPage : Page<TState>
         where TState : State
     {
+        private readonly bool singlePartition;
+        protected PartitionRangeEnumeratorTests(bool singlePartition)
+        {
+            this.singlePartition = singlePartition;
+        }
+
         [TestMethod]
         public async Task TestDrainFullyAsync()
         {
             int numItems = 1000;
-            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems);
+            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
-            HashSet<Guid> identifiers = await this.DrainFullyAsync(enumerable);
+            HashSet<string> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
@@ -25,13 +33,13 @@
         public async Task TestResumingFromStateAsync()
         {
             int numItems = 1000;
-            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(numItems);
+            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
 
             IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
-            (HashSet<Guid> firstDrainResults, TState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+            (HashSet<string> firstDrainResults, TState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
-            HashSet<Guid> secondDrainResults = await this.DrainFullyAsync(enumerable);
+            HashSet<string> secondDrainResults = await this.DrainFullyAsync(enumerable);
 
             Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
         }
@@ -40,15 +48,15 @@
         public async Task Test429sAsync()
         {
             int numItems = 100;
-            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(
+            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
-                new InMemoryCollection.FailureConfigs(
+                new DocumentContainer.FailureConfigs(
                     inject429s: true,
                     injectEmptyPages: false));
 
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
 
-            HashSet<Guid> identifiers = new HashSet<Guid>();
+            HashSet<string> identifiers = new HashSet<string>();
             await foreach (TryCatch<TPage> tryGetPage in enumerable)
             {
                 if (tryGetPage.Failed)
@@ -66,8 +74,8 @@
                 }
                 else
                 {
-                    List<InMemoryCollection.Record> records = this.GetRecordsFromPage(tryGetPage.Result);
-                    foreach (InMemoryCollection.Record record in records)
+                    IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
+                    foreach (Record record in records)
                     {
                         identifiers.Add(record.Identifier);
                     }
@@ -81,15 +89,15 @@
         public async Task Test429sWithContinuationsAsync()
         {
             int numItems = 100;
-            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(
+            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
-                new InMemoryCollection.FailureConfigs(
+                new DocumentContainer.FailureConfigs(
                     inject429s: true,
                     injectEmptyPages: false));
 
             IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
-            HashSet<Guid> identifiers = new HashSet<Guid>();
+            HashSet<string> identifiers = new HashSet<string>();
             TState state = default;
 
             while (await enumerator.MoveNextAsync())
@@ -113,8 +121,8 @@
                 }
                 else
                 {
-                    List<InMemoryCollection.Record> records = this.GetRecordsFromPage(tryGetPage.Result);
-                    foreach (InMemoryCollection.Record record in records)
+                    IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
+                    foreach (Record record in records)
                     {
                         identifiers.Add(record.Identifier);
                     }
@@ -130,34 +138,78 @@
         public async Task TestEmptyPages()
         {
             int numItems = 100;
-            InMemoryCollection inMemoryCollection = this.CreateInMemoryCollection(
+            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
-                new InMemoryCollection.FailureConfigs(
+                new DocumentContainer.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: true));
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
-            HashSet<Guid> identifiers = await this.DrainFullyAsync(enumerable);
+            HashSet<string> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
-        internal abstract List<InMemoryCollection.Record> GetRecordsFromPage(TPage page);
+        public abstract IReadOnlyList<Record> GetRecordsFromPage(TPage page);
 
-        internal abstract InMemoryCollection CreateInMemoryCollection(int numItems, InMemoryCollection.FailureConfigs failureConfigs = default);
+        public abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(DocumentContainer documentContainer, TState state = null);
 
-        internal abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(InMemoryCollection inMemoryCollection, TState state = null);
+        public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(DocumentContainer documentContainer, TState state = null);
 
-        internal abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(InMemoryCollection inMemoryCollection, TState state = null);
-
-        internal async Task<HashSet<Guid>> DrainFullyAsync(IAsyncEnumerable<TryCatch<TPage>> enumerable)
+        public async Task<DocumentContainer> CreateDocumentContainerAsync(
+            int numItems,
+            DocumentContainer.FailureConfigs failureConfigs = default)
         {
-            HashSet<Guid> identifiers = new HashSet<Guid>();
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+            {
+                Paths = new System.Collections.ObjectModel.Collection<string>()
+                    {
+                        "/pk"
+                    },
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2,
+            };
+
+            InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition, failureConfigs);
+
+            if (!this.singlePartition)
+            {
+                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+
+                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
+                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
+
+                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
+                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
+                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
+                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
+            }
+
+            for (int i = 0; i < numItems; i++)
+            {
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                while (true)
+                {
+                    TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(item, cancellationToken: default);
+                    if (monadicCreateRecord.Succeeded)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return inMemoryCollection;
+        }
+
+        public async Task<HashSet<string>> DrainFullyAsync(IAsyncEnumerable<TryCatch<TPage>> enumerable)
+        {
+            HashSet<string> identifiers = new HashSet<string>();
             await foreach (TryCatch<TPage> tryGetPage in enumerable)
             {
                 tryGetPage.ThrowIfFailed();
 
-                List<InMemoryCollection.Record> records = this.GetRecordsFromPage(tryGetPage.Result);
+                IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
 
-                foreach (InMemoryCollection.Record record in records)
+                foreach (Record record in records)
                 {
                     identifiers.Add(record.Identifier);
                 }
@@ -166,11 +218,11 @@
             return identifiers;
         }
 
-        internal async Task<(HashSet<Guid>, TState)> PartialDrainAsync(
+        public async Task<(HashSet<string>, TState)> PartialDrainAsync(
             IAsyncEnumerator<TryCatch<TPage>> enumerator,
             int numIterations)
         {
-            HashSet<Guid> identifiers = new HashSet<Guid>();
+            HashSet<string> identifiers = new HashSet<string>();
             TState state = default;
 
             // Drain a couple of iterations
@@ -181,9 +233,9 @@
                 TryCatch<TPage> tryGetPage = enumerator.Current;
                 tryGetPage.ThrowIfFailed();
 
-                List<InMemoryCollection.Record> records = this.GetRecordsFromPage(tryGetPage.Result);
+                IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
 
-                foreach (InMemoryCollection.Record record in records)
+                foreach (Record record in records)
                 {
                     identifiers.Add(record.Identifier);
                 }

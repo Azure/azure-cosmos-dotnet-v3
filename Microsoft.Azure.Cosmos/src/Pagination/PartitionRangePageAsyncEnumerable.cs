@@ -10,18 +10,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
-    internal sealed class PartitionRangePageEnumerable<TPage, TState> : IAsyncEnumerable<TryCatch<TPage>>
+    internal sealed class PartitionRangePageAsyncEnumerable<TPage, TState> : IAsyncEnumerable<TryCatch<TPage>>
         where TPage : Page<TState>
         where TState : State
     {
         private readonly PartitionKeyRange range;
         private readonly TState state;
-        private readonly CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator;
+        private readonly CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator;
 
-        public PartitionRangePageEnumerable(
+        public PartitionRangePageAsyncEnumerable(
             PartitionKeyRange range,
             TState state,
-            CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator)
+            CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator)
         {
             this.range = range ?? throw new ArgumentNullException(nameof(range));
             this.state = state;

@@ -20,13 +20,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void TestCreate()
         {
-            Mock<IFeedRangeProvider> mockFeedRangeProvider = new Mock<IFeedRangeProvider>();
-            Mock<IQueryDataSource> mockQueryDataSource = new Mock<IQueryDataSource>();
+            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
 
             TryCatch<IQueryPipelineStage> monadicCreatePipeline = PipelineFactory.MonadicCreate(
                 ExecutionEnvironment.Compute,
-                feedRangeProvider: mockFeedRangeProvider.Object,
-                queryDataSource: mockQueryDataSource.Object,
+                documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 queryInfo: new QueryInfo() { },
                 pageSize: 10,

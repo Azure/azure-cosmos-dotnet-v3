@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public static QueryIterator Create(
+            ContainerCore containerCore,
             CosmosQueryClient client,
             CosmosClientContext clientContext,
             SqlQuerySpec sqlQuerySpec,
@@ -73,6 +75,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 diagnosticsContext: queryPipelineCreationDiagnostics,
                 correlatedActivityId: Guid.NewGuid());
+
+            DocumentContainer documentContainer = new NetworkAttachedDocumentContainer(containerCore, cosmosQueryContext);
 
             CosmosElement requestContinuationToken;
             switch (queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(ExecutionEnvironment.Client))
@@ -127,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             return new QueryIterator(
                 cosmosQueryContext,
-                CosmosQueryExecutionContextFactory.Create(cosmosQueryContext, inputParameters),
+                CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, inputParameters),
                 queryRequestOptions.CosmosSerializationFormatOptions,
                 queryRequestOptions,
                 clientContext);

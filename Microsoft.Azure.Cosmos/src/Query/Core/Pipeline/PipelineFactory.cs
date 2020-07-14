@@ -23,8 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     {
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             ExecutionEnvironment executionEnvironment,
-            IFeedRangeProvider feedRangeProvider,
-            IQueryDataSource queryDataSource,
+            DocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             QueryInfo queryInfo,
             int pageSize,
@@ -38,8 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             else
             {
                 monadicCreatePipelineStage = (continuationToken) => ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                    feedRangeProvider: feedRangeProvider,
-                    queryDataSource: queryDataSource,
+                    documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
                     pageSize: pageSize,
                     continuationToken: continuationToken);

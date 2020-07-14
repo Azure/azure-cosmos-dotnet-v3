@@ -297,6 +297,7 @@ namespace Microsoft.Azure.Cosmos
                 // The user has scoped down to a physical partition or logical partition.
                 // In either case let the query execute as a passthrough.
                 QueryIterator passthroughQueryIterator = QueryIterator.Create(
+                    containerCore: this,
                     client: this.queryClient,
                     clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
@@ -357,6 +358,7 @@ namespace Microsoft.Azure.Cosmos
             if (supported)
             {
                 QueryIterator queryIterator = QueryIterator.Create(
+                    containerCore: this,
                     client: this.queryClient,
                     clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
@@ -587,6 +589,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return QueryIterator.Create(
+                containerCore: this,
                 client: this.queryClient,
                 clientContext: this.ClientContext,
                 sqlQuerySpec: sqlQuerySpec,

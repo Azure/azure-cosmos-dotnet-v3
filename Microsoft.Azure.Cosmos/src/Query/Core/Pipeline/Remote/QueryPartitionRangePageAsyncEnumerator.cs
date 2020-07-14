@@ -12,13 +12,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
-    internal sealed class QueryPartitionRangePageEnumerator : PartitionRangePageEnumerator<QueryPage, QueryState>
+    internal sealed class QueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<QueryPage, QueryState>
     {
         private readonly IQueryDataSource queryDataSource;
         private readonly SqlQuerySpec sqlQuerySpec;
         private readonly int pageSize;
 
-        public QueryPartitionRangePageEnumerator(
+        public QueryPartitionRangePageAsyncEnumerator(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyRange feedRange,
@@ -31,13 +31,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             this.pageSize = pageSize;
         }
 
-        public override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.queryDataSource.ExecuteQueryAsync(
+        public override ValueTask DisposeAsync() => default;
+
+        protected override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.queryDataSource.MonadicQueryAsync(
             sqlQuerySpec: this.sqlQuerySpec,
             continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-            feedRange: new FeedRangeEpk(this.Range.ToRange()),
+            feedRange: new FeedRangePartitionKeyRange(this.Range.Id),
             pageSize: this.pageSize,
             cancellationToken);
-
-        public override ValueTask DisposeAsync() => default;
     }
 }

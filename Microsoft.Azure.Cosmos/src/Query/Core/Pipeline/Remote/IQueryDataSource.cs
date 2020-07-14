@@ -10,7 +10,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
     internal interface IQueryDataSource
     {
-        public Task<TryCatch<QueryPage>> ExecuteQueryAsync(
+        Task<TryCatch<QueryPage>> MonadicQueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            FeedRangeInternal feedRange,
+            int pageSize,
+            CancellationToken cancellationToken);
+
+        Task<QueryPage> QueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             FeedRangeInternal feedRange,

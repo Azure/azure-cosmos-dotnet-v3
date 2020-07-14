@@ -9,19 +9,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal sealed class CrossPartitionRangePageEnumerable<TPage, TState> : IAsyncEnumerable<TryCatch<CrossPartitionPage<TPage, TState>>>
+    internal sealed class CrossPartitionRangePageAsyncEnumerable<TPage, TState> : IAsyncEnumerable<TryCatch<CrossPartitionPage<TPage, TState>>>
         where TPage : Page<TState>
         where TState : State
     {
         private readonly CrossPartitionState<TState> state;
-        private readonly CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator;
-        private readonly IComparer<PartitionRangePageEnumerator<TPage, TState>> comparer;
+        private readonly CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator;
+        private readonly IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer;
         private readonly IFeedRangeProvider feedRangeProvider;
 
-        public CrossPartitionRangePageEnumerable(
+        public CrossPartitionRangePageAsyncEnumerable(
             IFeedRangeProvider feedRangeProvider,
-            CreatePartitionRangePageEnumerator<TPage, TState> createPartitionRangeEnumerator,
-            IComparer<PartitionRangePageEnumerator<TPage, TState>> comparer,
+            CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator,
+            IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
             CrossPartitionState<TState> state = default)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(comparer));
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return new CrossPartitionRangePageEnumerator<TPage, TState>(
+            return new CrossPartitionRangePageAsyncEnumerator<TPage, TState>(
                 this.feedRangeProvider,
                 this.createPartitionRangeEnumerator,
                 this.comparer,

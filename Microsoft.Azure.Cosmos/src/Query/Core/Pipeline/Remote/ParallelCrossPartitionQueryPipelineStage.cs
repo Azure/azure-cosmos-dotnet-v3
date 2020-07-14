@@ -17,19 +17,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
     internal sealed class ParallelCrossPartitionQueryPipelineStage : IQueryPipelineStage
     {
-        private readonly CrossPartitionRangePageEnumerator<QueryPage, QueryState> crossPartitionRangePageEnumerator;
+        private readonly CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionRangePageAsyncEnumerator;
 
         private ParallelCrossPartitionQueryPipelineStage(
-            CrossPartitionRangePageEnumerator<QueryPage, QueryState> crossPartitionRangePageEnumerator)
+            CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionRangePageAsyncEnumerator)
         {
-            this.crossPartitionRangePageEnumerator = crossPartitionRangePageEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionRangePageEnumerator));
+            this.crossPartitionRangePageAsyncEnumerator = crossPartitionRangePageAsyncEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionRangePageAsyncEnumerator));
         }
 
         public TryCatch<QueryPage> Current
         {
             get
             {
-                TryCatch<CrossPartitionPage<QueryPage, QueryState>> currentCrossPartitionPage = this.crossPartitionRangePageEnumerator.Current;
+                TryCatch<CrossPartitionPage<QueryPage, QueryState>> currentCrossPartitionPage = this.crossPartitionRangePageAsyncEnumerator.Current;
                 if (currentCrossPartitionPage.Failed)
                 {
                     return TryCatch<QueryPage>.FromException(currentCrossPartitionPage.Exception);
@@ -79,13 +79,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             }
         }
 
-        public ValueTask DisposeAsync() => this.crossPartitionRangePageEnumerator.DisposeAsync();
+        public ValueTask DisposeAsync() => this.crossPartitionRangePageAsyncEnumerator.DisposeAsync();
 
-        public ValueTask<bool> MoveNextAsync() => this.crossPartitionRangePageEnumerator.MoveNextAsync();
+        public ValueTask<bool> MoveNextAsync() => this.crossPartitionRangePageAsyncEnumerator.MoveNextAsync();
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            IFeedRangeProvider feedRangeProvider,
-            IQueryDataSource queryDataSource,
+            DocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             int pageSize,
             CosmosElement continuationToken)
@@ -142,9 +141,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 state = new CrossPartitionState<QueryState>(rangesAndStates);
             }
 
-            CrossPartitionRangePageEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageEnumerator<QueryPage, QueryState>(
-                feedRangeProvider,
-                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(queryDataSource, sqlQuerySpec, pageSize),
+            CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
+                documentContainer,
+                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize),
                 Comparer.Singleton,
                 state: state);
 
@@ -152,23 +151,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
 
-        private static CreatePartitionRangePageEnumerator<QueryPage, QueryState> MakeCreateFunction(
+        private static CreatePartitionRangePageAsyncEnumerator<QueryPage, QueryState> MakeCreateFunction(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            int pageSize) => (PartitionKeyRange range, QueryState state) => new QueryPartitionRangePageEnumerator(
+            int pageSize) => (PartitionKeyRange range, QueryState state) => new QueryPartitionRangePageAsyncEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 range,
                 pageSize,
                 state);
 
-        private sealed class Comparer : IComparer<PartitionRangePageEnumerator<QueryPage, QueryState>>
+        private sealed class Comparer : IComparer<PartitionRangePageAsyncEnumerator<QueryPage, QueryState>>
         {
             public static readonly Comparer Singleton = new Comparer();
 
             public int Compare(
-                PartitionRangePageEnumerator<QueryPage, QueryState> partitionRangePageEnumerator1,
-                PartitionRangePageEnumerator<QueryPage, QueryState> partitionRangePageEnumerator2)
+                PartitionRangePageAsyncEnumerator<QueryPage, QueryState> partitionRangePageEnumerator1,
+                PartitionRangePageAsyncEnumerator<QueryPage, QueryState> partitionRangePageEnumerator2)
             {
                 if (object.ReferenceEquals(partitionRangePageEnumerator1, partitionRangePageEnumerator2))
                 {

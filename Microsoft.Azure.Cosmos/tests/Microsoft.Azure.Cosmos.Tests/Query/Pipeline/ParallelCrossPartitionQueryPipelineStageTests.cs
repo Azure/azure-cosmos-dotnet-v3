@@ -25,11 +25,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_NullContinuationToken()
         {
-            Mock<IFeedRangeProvider> mockFeedRangeProvider = new Mock<IFeedRangeProvider>();
-            Mock<IQueryDataSource> mockQueryDataSource = new Mock<IQueryDataSource>();
+            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                feedRangeProvider: mockFeedRangeProvider.Object,
-                queryDataSource: mockQueryDataSource.Object,
+                documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
                 continuationToken: null);
@@ -39,11 +38,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_NonCosmosArrayContinuationToken()
         {
-            Mock<IFeedRangeProvider> mockFeedRangeProvider = new Mock<IFeedRangeProvider>();
-            Mock<IQueryDataSource> mockQueryDataSource = new Mock<IQueryDataSource>();
+            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                feedRangeProvider: mockFeedRangeProvider.Object,
-                queryDataSource: mockQueryDataSource.Object,
+                documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
@@ -54,11 +52,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_EmptyArrayContinuationToken()
         {
-            Mock<IFeedRangeProvider> mockFeedRangeProvider = new Mock<IFeedRangeProvider>();
-            Mock<IQueryDataSource> mockQueryDataSource = new Mock<IQueryDataSource>();
+            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                feedRangeProvider: mockFeedRangeProvider.Object,
-                queryDataSource: mockQueryDataSource.Object,
+                documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
@@ -69,11 +66,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_NonCompositeContinuationToken()
         {
-            Mock<IFeedRangeProvider> mockFeedRangeProvider = new Mock<IFeedRangeProvider>();
-            Mock<IQueryDataSource> mockQueryDataSource = new Mock<IQueryDataSource>();
+            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                feedRangeProvider: mockFeedRangeProvider.Object,
-                queryDataSource: mockQueryDataSource.Object,
+                documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
@@ -84,8 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_SingleCompositeContinuationToken()
         {
-            Mock<IFeedRangeProvider> mockFeedRangeProvider = new Mock<IFeedRangeProvider>();
-            Mock<IQueryDataSource> mockQueryDataSource = new Mock<IQueryDataSource>();
+            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
 
             CompositeContinuationToken token = new CompositeContinuationToken()
             {
@@ -94,8 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             };
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                feedRangeProvider: mockFeedRangeProvider.Object,
-                queryDataSource: mockQueryDataSource.Object,
+                documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CompositeContinuationToken.ToCosmosElement(token) }));
@@ -105,8 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_MultipleCompositeContinuationToken()
         {
-            Mock<IFeedRangeProvider> mockFeedRangeProvider = new Mock<IFeedRangeProvider>();
-            Mock<IQueryDataSource> mockQueryDataSource = new Mock<IQueryDataSource>();
+            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
 
             CompositeContinuationToken token = new CompositeContinuationToken()
             {
@@ -115,8 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             };
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                feedRangeProvider: mockFeedRangeProvider.Object,
-                queryDataSource: mockQueryDataSource.Object,
+                documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
                 continuationToken: CosmosArray.Create(
@@ -132,13 +124,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public async Task TestDrainFully_StartFromBeginingAsync()
         {
             int numItems = 1000;
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
-            IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
-            IQueryDataSource queryDataSource = new InMemoryCollectionQueryDataSource(inMemoryCollection);
+            InMemoryCollection inMemoryCollection = await CreateInMemoryCollectionAsync(numItems);
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                feedRangeProvider: feedRangeProvider,
-                queryDataSource: queryDataSource,
+                documentContainer: inMemoryCollection,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
                 continuationToken: default);
@@ -162,9 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public async Task TestDrainFully_WithStateResume()
         {
             int numItems = 1000;
-            InMemoryCollection inMemoryCollection = CreateInMemoryCollection(numItems);
-            IFeedRangeProvider feedRangeProvider = new InMemoryCollectionFeedRangeProvider(inMemoryCollection);
-            IQueryDataSource queryDataSource = new InMemoryCollectionQueryDataSource(inMemoryCollection);
+            InMemoryCollection inMemoryCollection = await CreateInMemoryCollectionAsync(numItems);
 
             List<CosmosElement> documents = new List<CosmosElement>();
 
@@ -172,8 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             do
             {
                 TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                    feedRangeProvider: feedRangeProvider,
-                    queryDataSource: queryDataSource,
+                    documentContainer: inMemoryCollection,
                     sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                     pageSize: 10,
                     continuationToken: queryState?.Value);
@@ -193,7 +179,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(numItems, documents.Count);
         }
 
-        private static InMemoryCollection CreateInMemoryCollection(int numItems, InMemoryCollection.FailureConfigs failureConfigs = null)
+        private static async Task<InMemoryCollection> CreateInMemoryCollectionAsync(
+            int numItems,
+            InMemoryCollection.FailureConfigs failureConfigs = null)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -207,21 +195,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition, failureConfigs);
 
-            inMemoryCollection.Split(partitionKeyRangeId: 0);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
 
-            inMemoryCollection.Split(partitionKeyRangeId: 1);
-            inMemoryCollection.Split(partitionKeyRangeId: 2);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
 
-            inMemoryCollection.Split(partitionKeyRangeId: 3);
-            inMemoryCollection.Split(partitionKeyRangeId: 4);
-            inMemoryCollection.Split(partitionKeyRangeId: 5);
-            inMemoryCollection.Split(partitionKeyRangeId: 6);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
+            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
 
             for (int i = 0; i < numItems; i++)
             {
                 // Insert an item
                 CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                inMemoryCollection.CreateItem(item);
+                while (true)
+                {
+                    TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(item, cancellationToken: default);
+                    if (monadicCreateRecord.Succeeded)
+                    {
+                        break;
+                    }
+                }
             }
 
             return inMemoryCollection;

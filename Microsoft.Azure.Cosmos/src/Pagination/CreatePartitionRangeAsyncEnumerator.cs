@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using Microsoft.Azure.Documents;
 
-    internal delegate PartitionRangePageEnumerator<TPage, TState> CreatePartitionRangePageEnumerator<TPage, TState>(
+    internal delegate PartitionRangePageAsyncEnumerator<TPage, TState> CreatePartitionRangePageAsyncEnumerator<TPage, TState>(
         PartitionKeyRange feedRange,
         TState state)
         where TPage : Page<TState>
