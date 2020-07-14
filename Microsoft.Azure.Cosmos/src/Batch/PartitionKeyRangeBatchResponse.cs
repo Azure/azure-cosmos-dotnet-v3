@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             itemBatchOperations.AddRange(serverResponse.Operations);
-            this.RequestCharge += serverResponse.RequestCharge;
+            this.Headers = serverResponse.Headers;
 
             if (!string.IsNullOrEmpty(serverResponse.ErrorMessage))
             {
