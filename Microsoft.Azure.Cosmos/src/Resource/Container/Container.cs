@@ -645,7 +645,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="id">The Cosmos item id of the item to be patched.</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
-        /// <param name="patchSpecification">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -670,12 +670,14 @@ namespace Microsoft.Azure.Cosmos
         ///     "frequency" : 7
         /// }*/
         /// 
-        /// PatchSpecification patchSpecification = new PatchSpecification()
-        ///                                             .Add("/daysOfWeek", new string[]{"Monday", "Thursday"})
-        ///                                             .Replace("/frequency", 2)
-        ///                                             .Remove("/description");
+        /// List<PatchOperation> patchOperations = new List<PatchOperation>()
+        ///                                             {
+        ///                                                 PatchOperation.CreateAddOperation("/daysOfWeek", new string[]{"Monday", "Thursday"}),
+        ///                                                 PatchOperation.CreateReplaceOperation("/frequency", 2),
+        ///                                                 PatchOperation.CreateRemoveOperation("/description")
+        ///                                             };
         /// 
-        /// ItemResponse item = await this.container.PatchItemAsync<dynamic>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchSpecification);
+        /// ItemResponse item = await this.container.PatchItemAsync<dynamic>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchOperations);
         /// /* item = {
         ///     "id" : "someId",
         ///     "status" : "someStatusPK",
@@ -689,7 +691,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
-            PatchSpecification patchSpecification,
+            IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -704,7 +706,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="id">The Cosmos item id</param>
         /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="patchSpecification">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -721,7 +723,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
-            PatchSpecification patchSpecification,
+            IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 #endif

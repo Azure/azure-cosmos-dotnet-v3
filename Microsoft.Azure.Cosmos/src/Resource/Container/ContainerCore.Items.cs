@@ -841,7 +841,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             string id,
             PartitionKey partitionKey,
-            PatchSpecification patchSpecification,
+            IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -849,18 +849,18 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext,
                 id,
                 partitionKey,
-                patchSpecification,
+                patchOperations,
                 requestOptions,
                 cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
         }
 
-        public async Task<ResponseMessage> PatchItemStreamAsync(
+        public Task<ResponseMessage> PatchItemStreamAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             string id,
             PartitionKey partitionKey,
-            PatchSpecification patchSpecification,
+            IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -874,20 +874,21 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKey));
             }
 
-            if (patchSpecification == null)
+            if (patchOperations == null ||
+                !patchOperations.Any())
             {
-                throw new ArgumentNullException(nameof(patchSpecification));
+                throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            Stream patchSpecificationStream;
-            using (diagnosticsContext.CreateScope("PatchSpecificationSerialize"))
+            Stream patchOperationsStream;
+            using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
             {
-                patchSpecificationStream = this.ClientContext.SerializerCore.ToPatchSpecificationStream(patchSpecification);
+                patchOperationsStream = this.ClientContext.SerializerCore.ToPatchOperationStream(patchOperations);
             }
 
             using (diagnosticsContext.GetOverallScope())
             {
-                return await this.ClientContext.ProcessResourceOperationStreamAsync(
+                return this.ClientContext.ProcessResourceOperationStreamAsync(
                     resourceUri: this.GetResourceUri(
                         requestOptions,
                         OperationType.Patch,
@@ -898,7 +899,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosContainerCore: this,
                     partitionKey: partitionKey,
                     itemId: id,
-                    streamPayload: patchSpecificationStream,
+                    streamPayload: patchOperationsStream,
                     requestEnricher: null,
                     diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);

@@ -359,7 +359,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await Task.WhenAll(tasks);
 
-            PatchSpecification patch = new PatchSpecification().Add("/description", "patched");
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/description", "patched")
+            };
             List<Task<ResponseMessage>> PatchTasks = new List<Task<ResponseMessage>>();
             // Patch the items
             foreach (MyDocument createdDocument in createdDocuments)
@@ -393,7 +396,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await Task.WhenAll(tasks);
 
-            PatchSpecification patch = new PatchSpecification().Add("/description", "patched");
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/description", "patched")
+            };
             List<Task<ItemResponse<MyDocument>>> patchTasks = new List<Task<ItemResponse<MyDocument>>>();
             // Patch the items
             foreach (MyDocument createdDocument in createdDocuments)
@@ -478,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container.ReplaceItemAsync<MyDocument>(item, item.id, new PartitionKey(item.Status));
         }
 
-        private static Task<ItemResponse<MyDocument>> ExecutePatchAsync(ContainerInternal container, MyDocument item, PatchSpecification patch)
+        private static Task<ItemResponse<MyDocument>> ExecutePatchAsync(ContainerInternal container, MyDocument item, List<PatchOperation> patch)
         {
             return container.PatchItemAsync<MyDocument>(item.id, new PartitionKey(item.Status), patch);
         }
@@ -508,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(item), item.id, new PartitionKey(item.Status));
         }
 
-        private static Task<ResponseMessage> ExecutePatchStreamAsync(ContainerInternal container, MyDocument item, PatchSpecification patch)
+        private static Task<ResponseMessage> ExecutePatchStreamAsync(ContainerInternal container, MyDocument item, List<PatchOperation> patch)
         {
             return container.PatchItemStreamAsync(item.id, new PartitionKey(item.Status), patch);
         }

@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void ValidatePatchSpecificationSerialization()
+        public void ValidatePatchOperationSerialization()
         {
             int toCount = 0;
             int fromCount = 0;
@@ -101,23 +101,25 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (input) => toCount++);
 
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(serializerHelper);
-            PatchSpecification patchSpec = new PatchSpecification()
-                .Remove("/removePath");
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateRemoveOperation("/removePath")
+            };
 
-            // use properties serializer for PatchSpecification (internal type)
-            serializerCore.ToStream<PatchSpecification>(patchSpec);
+            // use properties serializer for PatchOperation (internal type)
+            serializerCore.ToStream(patch);
             Assert.AreEqual(0, toCount);
 
-            serializerCore.FromStream<PatchSpecification>(new MemoryStream());
+            serializerCore.FromStream<List<PatchOperation>>(new MemoryStream());
             Assert.AreEqual(0, fromCount);
 
             // custom serializer is not used since operation type is Remove, which doesnt have "value" param to serialize
-            using (Stream stream = serializerCore.ToPatchSpecificationStream(patchSpec)) { }
+            using (Stream stream = serializerCore.ToPatchOperationStream(patch)) { }
             Assert.AreEqual(0, toCount);
 
-            patchSpec.Add("/addPath", "addValue");
+            patch.Add(PatchOperation.CreateAddOperation("/addPath", "addValue"));
             // custom serializer is used since there is Add operation type also
-            using (Stream stream = serializerCore.ToPatchSpecificationStream(patchSpec)) { }
+            using (Stream stream = serializerCore.ToPatchOperationStream(patch)) { }
             Assert.AreEqual(1, toCount);
 
             Assert.AreEqual(0, fromCount);

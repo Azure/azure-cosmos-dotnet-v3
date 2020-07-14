@@ -1333,9 +1333,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
 
-            PatchSpecification patchSpecification = new PatchSpecification()
-                .Add("/nonExistentParent/Child", "bar")
-                .Remove("/cost");
+            List<PatchOperation> patchOperations = new List<PatchOperation>();
+            patchOperations.Add(PatchOperation.CreateAddOperation("/nonExistentParent/Child", "bar"));
+            patchOperations.Add(PatchOperation.CreateRemoveOperation("/cost"));
 
             // item does not exist - 404 Resource Not Found error
             try
@@ -1343,7 +1343,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await containerInternal.PatchItemAsync<ToDoActivity>(
                     id: Guid.NewGuid().ToString(),
                     partitionKey: new Cosmos.PartitionKey(testItem.status),
-                    patchSpecification: patchSpecification);
+                    patchOperations: patchOperations);
 
                 Assert.Fail("Patch operation should fail if the item doesn't exist.");
             }
@@ -1359,7 +1359,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await containerInternal.PatchItemAsync<ToDoActivity>(
                     id: testItem.id,
                     partitionKey: new Cosmos.PartitionKey(testItem.status),
-                    patchSpecification: patchSpecification);
+                    patchOperations: patchOperations);
 
                 Assert.Fail("Patch operation should fail for malformed PatchSpecification.");
             }
@@ -1380,7 +1380,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await containerInternal.PatchItemAsync<ToDoActivity>(
                     id: testItem.id,
                     partitionKey: new Cosmos.PartitionKey(testItem.status),
-                    patchSpecification: patchSpecification,
+                    patchOperations: patchOperations,
                     requestOptions);
 
                 Assert.Fail("Patch operation should fail in case of pre-condition failure.");
@@ -1404,10 +1404,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsNull(testItem.children[1].status);
 
-            PatchSpecification patchSpecification = new PatchSpecification()
-                .Add("/children/1/status", "patched")
-                .Remove("/description")
-                .Replace("/taskNum", newTaskNum);
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/children/1/status", "patched"),
+                PatchOperation.CreateRemoveOperation("/description"),
+                PatchOperation.CreateReplaceOperation("/taskNum", newTaskNum)
+            };
 
             // without content response
             ItemRequestOptions requestOptions = new ItemRequestOptions()
@@ -1418,7 +1420,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
-                patchSpecification: patchSpecification,
+                patchOperations: patchOperations,
                 requestOptions);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -1435,14 +1437,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(response.Resource.description);
             Assert.AreEqual(newTaskNum, response.Resource.taskNum);
 
-            patchSpecification = new PatchSpecification()
-                .Set("/children/0/cost", 1);
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.CreateAddOperation("/children/0/cost", 1));
 
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
-                patchSpecification: patchSpecification);
+                patchOperations: patchOperations);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
@@ -1455,16 +1457,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
 
-            PatchSpecification patchSpecification = new PatchSpecification()
-                .Add("/children/1/status", "patched")
-                .Remove("/description")
-                .Replace("/taskNum", testItem.taskNum+1);
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/children/1/status", "patched"),
+                PatchOperation.CreateRemoveOperation("/description"),
+                PatchOperation.CreateReplaceOperation("/taskNum", testItem.taskNum+1)
+            };
 
             // Patch a non-existing item. It should fail, and not throw an exception.
             using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 id: testItem.id,
-                patchSpecification: patchSpecification))
+                patchOperations: patchOperations))
             {
                 Assert.IsFalse(response.IsSuccessStatusCode);
                 Assert.IsNotNull(response);
@@ -1482,7 +1486,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Patch
-            using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id, patchSpecification: patchSpecification))
+            using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id, patchOperations: patchOperations))
             {
                 Assert.IsNotNull(response);
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -1520,15 +1524,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsNull(testItem.children[1].status);
 
-            PatchSpecification patchSpecification = new PatchSpecification()
-                .Add("/children/1/status", "patched")
-                .Remove("/description")
-                .Replace("/taskNum", newTaskNum);
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/children/1/status", "patched"),
+                PatchOperation.CreateRemoveOperation("/description"),
+                PatchOperation.CreateReplaceOperation("/taskNum", newTaskNum)
+            };
 
             ItemResponse<ToDoActivity> response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
-                patchSpecification: patchSpecification);
+                patchOperations: patchOperations);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
@@ -1561,13 +1567,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             DateTime patchDate = new DateTime(2020, 07, 01, 01, 02, 03);
-            PatchSpecification patchSpecification = new PatchSpecification()
-                .Add("/date", patchDate);
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/date", patchDate)
+            };
 
             ItemResponse<dynamic> response = await containerInternal.PatchItemAsync<dynamic>(
                 id: testItem.id,
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
-                patchSpecification: patchSpecification,
+                patchOperations: patchOperations,
                 requestOptions);
 
             JsonSerializerSettings jsonSettings = new JsonSerializerSettings();

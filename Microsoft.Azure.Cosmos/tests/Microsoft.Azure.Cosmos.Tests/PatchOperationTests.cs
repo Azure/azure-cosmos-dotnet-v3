@@ -16,11 +16,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ThrowsOnNullArguement()
         {
-            PatchSpecification patchSpecification = new PatchSpecification();
-
             try
             {
-                patchSpecification.Add(null, "1");
+                PatchOperation.CreateAddOperation(null, "1");
                 Assert.Fail();
             }
             catch(ArgumentNullException ex)
@@ -30,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             try
             {
-                patchSpecification.Remove(null);
+                PatchOperation.CreateRemoveOperation(null);
                 Assert.Fail();
             }
             catch (ArgumentNullException ex)
@@ -42,39 +40,33 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ConstructPatchSpecificationTest()
         {
-            int index = 0;
-            PatchSpecification patchSpecification = new PatchSpecification();
-            Assert.IsNotNull(patchSpecification.Operations);
-            Assert.AreEqual(0, patchSpecification.Operations.Count);
-
-            patchSpecification.Add(path, "string");
-            PatchOperationTests.ValidateOperations(patchSpecification, index++, PatchOperationType.Add, "string");
+            PatchOperation operation = PatchOperation.CreateAddOperation(path, "string");
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, "string");
 
             DateTime current = DateTime.UtcNow;
-            patchSpecification.Add(path, current);
-            PatchOperationTests.ValidateOperations(patchSpecification, index++, PatchOperationType.Add, current);
+            operation = PatchOperation.CreateAddOperation(path, current);
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, current);
 
             dynamic complexObject = new { a = "complex", b = 12.34, c = true };
-            patchSpecification.Add(path,  complexObject);
-            PatchOperationTests.ValidateOperations(patchSpecification, index++, PatchOperationType.Add, complexObject);
+            operation = PatchOperation.CreateAddOperation(path,  complexObject);
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, complexObject);
 
-            patchSpecification.Remove(path);
-            PatchOperationTests.ValidateOperations(patchSpecification, index++, PatchOperationType.Remove, "value not required");
+            operation = PatchOperation.CreateRemoveOperation(path);
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Remove, "value not required");
 
             int[] arrayObject = { 1, 2, 3 };
-            patchSpecification.Replace(path, arrayObject);
-            PatchOperationTests.ValidateOperations(patchSpecification, index++, PatchOperationType.Replace, arrayObject);
+            operation = PatchOperation.CreateReplaceOperation(path, arrayObject);
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Replace, arrayObject);
 
             Guid guid = new Guid();
-            patchSpecification.Set(path, guid);
-            PatchOperationTests.ValidateOperations(patchSpecification, index++, PatchOperationType.Set, guid);
+            operation = PatchOperation.CreateSetOperation(path, guid);
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Set, guid);
         }
 
-        private static void ValidateOperations<T>(PatchSpecification patch, int index, PatchOperationType operationType, T value)
+        private static void ValidateOperations<T>(PatchOperation patchOperation, PatchOperationType operationType, T value)
         {
-            Assert.AreEqual(index + 1, patch.Operations.Count);
-            Assert.AreEqual(operationType, patch.Operations[index].OperationType);
-            Assert.AreEqual(path, patch.Operations[index].Path);
+            Assert.AreEqual(operationType, patchOperation.OperationType);
+            Assert.AreEqual(path, patchOperation.Path);
 
             if (!operationType.Equals(PatchOperationType.Remove))
             {
@@ -86,7 +78,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                      expected = streamReader.ReadToEnd();
                 }
 
-                Assert.AreEqual(expected, patch.Operations[index].SerializeValueParameter(new CustomSerializer()));
+                Assert.IsTrue(patchOperation.TrySerializeValueParameter(new CustomSerializer(), out string valueParam));
+                Assert.AreEqual(expected, valueParam);
             }
         }
 

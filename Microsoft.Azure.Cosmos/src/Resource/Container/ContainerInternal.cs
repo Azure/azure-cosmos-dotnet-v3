@@ -96,14 +96,14 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
-            PatchSpecification patchSpecification,
+            IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
-            PatchSpecification patchSpecification,
+            IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 #endif

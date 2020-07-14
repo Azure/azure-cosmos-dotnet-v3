@@ -269,27 +269,27 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> PatchItemStreamAsync(
                 string id,
                 PartitionKey partitionKey,
-                PatchSpecification patchSpecification,
+                IReadOnlyList<PatchOperation> patchOperations,
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
                 nameof(PatchItemStreamAsync),
                 requestOptions,
-                (diagnostics) => base.PatchItemStreamAsync(diagnostics, id, partitionKey, patchSpecification, requestOptions, cancellationToken));
+                (diagnostics) => base.PatchItemStreamAsync(diagnostics, id, partitionKey, patchOperations, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> PatchItemAsync<T>(
                 string id,
                 PartitionKey partitionKey,
-                PatchSpecification patchSpecification,
+                IReadOnlyList<PatchOperation> patchOperations,
                 ItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
                 nameof(PatchItemAsync),
                 requestOptions,
-                (diagnostics) => base.PatchItemAsync<T>(diagnostics, id, partitionKey, patchSpecification, requestOptions, cancellationToken));
+                (diagnostics) => base.PatchItemAsync<T>(diagnostics, id, partitionKey, patchOperations, requestOptions, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

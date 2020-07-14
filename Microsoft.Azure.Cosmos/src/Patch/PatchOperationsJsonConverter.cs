@@ -9,13 +9,13 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// A custom serializer converter for <see cref="PatchSpecification"/>
+    /// A custom serializer converter for list of Patch operations./>
     /// </summary>
-    internal sealed class PatchSpecificationJsonConverter : JsonConverter
+    internal sealed class PatchOperationsJsonConverter : JsonConverter
     {
         private readonly CosmosSerializer userSerializer;
 
-        internal PatchSpecificationJsonConverter(CosmosSerializer userSerializer)
+        public PatchOperationsJsonConverter(CosmosSerializer userSerializer)
         {
             this.userSerializer = userSerializer ?? throw new ArgumentNullException(nameof(userSerializer));
         }
@@ -38,47 +38,38 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            try
+            IReadOnlyList<PatchOperation> patchOperations = (IReadOnlyList<PatchOperation>)value;
+
+            writer.WriteStartObject();
+            writer.WritePropertyName("operations");
+            writer.WriteStartArray();
+
+            foreach (PatchOperation operation in patchOperations)
             {
-                PatchSpecification patchSpecification = (PatchSpecification)value;
-
                 writer.WriteStartObject();
-                writer.WritePropertyName("operations");
-                writer.WriteStartArray();
+                writer.WritePropertyName(PatchConstants.PropertyNames.OperationType);
+                writer.WriteValue(PatchConstants.PatchOperationTypes[operation.OperationType]);
+                writer.WritePropertyName(PatchConstants.PropertyNames.Path);
+                writer.WriteValue(operation.Path);
 
-                foreach (PatchOperation operation in patchSpecification.Operations)
+                if (operation.TrySerializeValueParameter(this.userSerializer, out string valueParam))
                 {
-                    writer.WriteStartObject();
-                    writer.WritePropertyName(PatchConstants.PropertyNames.OperationType);
-                    writer.WriteValue(operation.OperationType.ToString().ToLower());
-                    writer.WritePropertyName(PatchConstants.PropertyNames.Path);
-                    writer.WriteValue(operation.Path);
-
-                    string valueParam = operation.SerializeValueParameter(this.userSerializer);
-
-                    if (valueParam != null)
-                    {
-                        writer.WritePropertyName(PatchConstants.PropertyNames.Value);
-                        writer.WriteRawValue(valueParam);
-                    }
-
-                    writer.WriteEndObject();
+                    writer.WritePropertyName(PatchConstants.PropertyNames.Value);
+                    writer.WriteRawValue(valueParam);
                 }
 
-                writer.WriteEndArray();
                 writer.WriteEndObject();
             }
-            catch (Exception ex)
-            {
-                throw new JsonSerializationException($"Serialization of {nameof(PatchSpecification)} failed.", ex);
-            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
         }
 
         /// <summary>
-        /// Only create a custom PatchSpecification serializer if there is a customer serializer else
+        /// Only create a custom PatchOperations serializer if there is a customer serializer else
         /// use the default properties serializer
         /// </summary>
-        internal static CosmosSerializer CreatePatchSpecificationSerializer(
+        internal static CosmosSerializer CreatePatchOperationsSerializer(
             CosmosSerializer cosmosSerializer,
             CosmosSerializer propertiesSerializer)
         {
@@ -92,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Converters = new List<JsonConverter>()
                 {
-                    new PatchSpecificationJsonConverter(cosmosSerializer)
+                    new PatchOperationsJsonConverter(cosmosSerializer)
                 }
             };
 

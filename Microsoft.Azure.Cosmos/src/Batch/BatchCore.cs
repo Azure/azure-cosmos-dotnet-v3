@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -238,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
         /// Adds an operation to patch an item into the batch.
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
-        /// <param name="patchSpecification">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
         /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
 #if INTERNAL
@@ -248,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
             TransactionalBatch PatchItem(
                 string id,
-                PatchSpecification patchSpecification,
+                IReadOnlyList<PatchOperation> patchOperations,
                 TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -256,16 +257,17 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (patchSpecification == null)
+            if (patchOperations == null ||
+                !patchOperations.Any())
             {
-                throw new ArgumentNullException(nameof(patchSpecification));
+                throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            this.operations.Add(new ItemBatchOperation<PatchSpecification>(
+            this.operations.Add(new ItemBatchOperation<IReadOnlyList<PatchOperation>>(
                 operationType: OperationType.Patch,
                 operationIndex: this.operations.Count,
                 id: id,
-                resource: patchSpecification,
+                resource: patchOperations,
                 requestOptions: requestOptions,
                 containerCore: this.container));
 

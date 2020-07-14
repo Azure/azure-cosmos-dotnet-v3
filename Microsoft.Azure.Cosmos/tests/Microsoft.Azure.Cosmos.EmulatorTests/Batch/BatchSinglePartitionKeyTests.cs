@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
@@ -325,12 +326,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task BatchCreateAndPatchAsync()
         {
             TestDoc testDoc = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
-            PatchSpecification patchSpecification = new PatchSpecification().Replace("/Cost", testDoc.Cost + 1);
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.CreateReplaceOperation("/Cost", testDoc.Cost + 1)
+            };
 
             BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)BatchTestBase.JsonContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                 .CreateItem(testDoc);
 
-            batch = (BatchCore)batch.PatchItem(testDoc.Id, patchSpecification);
+            batch = (BatchCore)batch.PatchItem(testDoc.Id, patchOperations);
 
             TransactionalBatchResponse batchResponse = await batch.ExecuteAsync();
 
@@ -352,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Serializer = new CosmosJsonDotNetSerializer(
                     new JsonSerializerSettings()
                     {
-                        DateFormatString = "yyyy/MM/dd hh:mm"
+                        DateFormatString = "yyyy--MM--dd hh:mm"
                     })
             };
 
@@ -362,12 +366,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
             DateTime patchDate = new DateTime(2020, 07, 01, 01, 02, 03);
-            PatchSpecification patchSpecification = new PatchSpecification().Add("/date", patchDate);
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/date", patchDate)
+            };
 
             BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)customSerializationContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                 .CreateItem(testDoc);
 
-            batch = (BatchCore)batch.PatchItem(testDoc.Id, patchSpecification);
+            batch = (BatchCore)batch.PatchItem(testDoc.Id, patchOperations);
 
             TransactionalBatchResponse batchResponse = await batch.ExecuteAsync();
 
@@ -377,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
 
             JsonSerializerSettings jsonSettings = new JsonSerializerSettings();
-            jsonSettings.DateFormatString = "yyyy/MM/dd hh:mm";
+            jsonSettings.DateFormatString = "yyyy--MM--dd hh:mm";
             string dateJson = JsonConvert.SerializeObject(patchDate, jsonSettings);
 
             // regular container
@@ -415,7 +422,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             testDocToReplace.Cost++;
 
             TestDoc testDocToPatch = this.GetTestDocCopy(this.TestDocPk1ExistingC);
-            PatchSpecification patchSpecification = new PatchSpecification().Replace("/Cost", testDocToPatch.Cost + 1);
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.CreateReplaceOperation("/Cost", testDocToPatch.Cost + 1)
+            };
 
             // We run CRUD operations where all are expected to return HTTP 2xx.
             TransactionalBatchResponse batchResponse;
@@ -430,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .UpsertItem(anotherTestDocToUpsert)
                     .DeleteItem(this.TestDocPk1ExistingD.Id);
 
-                batch = (BatchCore)batch.PatchItem(testDocToPatch.Id, patchSpecification);
+                batch = (BatchCore)batch.PatchItem(testDocToPatch.Id, patchOperations);
             }
             else
             {

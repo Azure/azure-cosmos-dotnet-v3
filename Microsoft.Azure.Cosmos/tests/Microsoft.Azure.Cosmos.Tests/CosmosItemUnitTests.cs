@@ -304,14 +304,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
             };
 
-            PatchSpecification patch = new PatchSpecification().Add("/new", "patched");
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/new", "patched")
+            };
 
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
             using (ResponseMessage streamResponse = await container.PatchItemStreamAsync(
                 partitionKey: partitionKey,
                 id: testItem.id,
-                patchSpecification: patch))
+                patchOperations: patch))
             {
                 mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
             }
@@ -419,7 +422,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
             };
 
-            PatchSpecification patch = new PatchSpecification().Add("/new", "patched");
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/new", "patched")
+            };
 
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
             ItemResponse<dynamic> response = await container.PatchItemAsync<dynamic>(
