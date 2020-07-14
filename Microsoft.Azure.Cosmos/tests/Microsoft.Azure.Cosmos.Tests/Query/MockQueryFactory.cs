@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static readonly string DefaultCollectionRid = ResourceId.NewDocumentCollectionId(DefaultDatabaseRid, 1376573569).ToString();
         public static readonly SqlQuerySpec DefaultQuerySpec = new SqlQuerySpec("SELECT * FROM C ");
         public static readonly CancellationToken DefaultCancellationToken = new CancellationTokenSource().Token;
-        public static readonly Uri DefaultResourceLink = new Uri("dbs/MockDb/colls/MockQueryFactoryDefault", UriKind.Relative);
+        public static readonly string DefaultResourceLink = "dbs/MockDb/colls/MockQueryFactoryDefault";
         public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" };
         public static readonly PartitionKeyRange DefaultPartitionKeyRange1AfterSplit = new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "B", Id = "1" };
         public static readonly PartitionKeyRange DefaultPartitionKeyRange2AfterSplit = new PartitionKeyRange() { MinInclusive = "B", MaxExclusive = "FF", Id = "2" };
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                     mockQueryClient.Setup(x =>
                       x.ExecuteItemQueryAsync(
-                          It.IsAny<Uri>(),
+                          It.IsAny<string>(),
                           ResourceType.Document,
                           OperationType.Query,
                           It.IsAny<Guid>(),
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                     mockQueryClient.Setup(x =>
                      x.ExecuteItemQueryAsync(
-                         It.IsAny<Uri>(),
+                         It.IsAny<string>(),
                          ResourceType.Document,
                          OperationType.Query,
                          It.IsAny<Guid>(),

@@ -164,16 +164,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         //swallow
                     }
-                    
+
                     // read databaseCollection feed.
-                    FeedIterator<dynamic> itemIterator = container.GetItemQueryIterator<dynamic>(queryDefinition: null);
-                    int count = 0;
-                    while (itemIterator.HasMoreResults)
+                    using (FeedIterator<dynamic> itemIterator = container.GetItemQueryIterator<dynamic>(queryDefinition: null))
                     {
-                        FeedResponse<dynamic> items = await itemIterator.ReadNextAsync();
-                        count += items.Count();
+                        int count = 0;
+                        while (itemIterator.HasMoreResults)
+                        {
+                            FeedResponse<dynamic> items = await itemIterator.ReadNextAsync();
+                            count += items.Count();
+                        }
+                        Assert.AreEqual(3, count);
                     }
-                    Assert.AreEqual(3, count);
 
                     // query documents 
                     {

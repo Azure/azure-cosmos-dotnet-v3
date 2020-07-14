@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions queryRequestOptions,
-            Uri resourceLink,
+            string resourceLink,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool forcePassthrough,
@@ -199,6 +199,12 @@ namespace Microsoft.Azure.Cosmos.Query
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            this.cosmosQueryExecutionContext.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

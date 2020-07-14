@@ -39,7 +39,7 @@
         }
 
         public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
@@ -61,7 +61,7 @@
         }
 
         public override Task<QueryResponseCore> ExecuteItemQueryAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,
@@ -74,9 +74,6 @@
             int pageSize,
             CancellationToken cancellationToken)
         {
-            Assert.IsFalse(
-                this.forceQueryPlanGatewayElseServiceInterop && this.QueryPlanCalls == 0,
-                "Query Plan is force gateway mode, but no ExecuteQueryPlanRequestAsync have been called");
             return base.ExecuteItemQueryAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,

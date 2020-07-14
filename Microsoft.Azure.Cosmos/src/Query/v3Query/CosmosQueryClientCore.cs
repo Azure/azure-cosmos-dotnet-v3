@@ -22,10 +22,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
+        private const string QueryExecutionInfoHeader = "x-ms-cosmos-query-execution-info";
+
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal cosmosContainerCore;
         private readonly DocumentClient documentClient;
@@ -45,19 +48,19 @@ namespace Microsoft.Azure.Cosmos
         public override Action<IQueryable> OnExecuteScalarQueryCallback => this.documentClient.OnExecuteScalarQueryCallback;
 
         public override async Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
-            Uri containerLink,
+            string containerLink,
             PartitionKey? partitionKey,
             CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
-                containerLink.OriginalString,
+                containerLink,
                 cancellationToken);
 
             string effectivePartitionKeyString = null;
             if (partitionKey != null)
             {
                 // Dis-ambiguate the NonePK if used 
-                Documents.Routing.PartitionKeyInternal partitionKeyInternal = null;
+                PartitionKeyInternal partitionKeyInternal;
                 if (partitionKey.Value.IsNone)
                 {
                     partitionKeyInternal = containerProperties.GetNoneValue();
@@ -66,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     partitionKeyInternal = partitionKey.Value.InternalKey;
                 }
+
                 effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
             }
 
@@ -113,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<QueryResponseCore> ExecuteItemQueryAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,
@@ -161,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
@@ -317,14 +321,24 @@ namespace Microsoft.Azure.Cosmos
                     resourceType,
                     requestOptions.CosmosSerializationFormatOptions);
 
-                int itemCount = cosmosArray.Count;
+                CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
+                if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+                {
+                    cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
+                }
+                else
+                {
+                    cosmosQueryExecutionInfo = default;
+                }
+
                 return QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
                     requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                     activityId: cosmosResponseMessage.Headers.ActivityId,
                     responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
-                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken);
+                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken,
+                    cosmosQueryExecutionInfo: cosmosQueryExecutionInfo);
             }
         }
 

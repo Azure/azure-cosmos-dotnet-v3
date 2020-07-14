@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// QueryMetrics that with all members having default (but not null) members.
         /// </summary>
-        internal static readonly QueryMetrics Empty = new QueryMetrics(
+        public static readonly QueryMetrics Empty = new QueryMetrics(
             backendMetrics: BackendMetrics.Empty,
             indexUtilizationInfo: IndexUtilizationInfo.Empty,
             clientSideMetrics: ClientSideMetrics.Empty);

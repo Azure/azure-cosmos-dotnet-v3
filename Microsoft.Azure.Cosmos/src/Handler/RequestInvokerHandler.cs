@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public virtual async Task<T> SendAsync<T>(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             ResponseMessage responseMessage = await this.SendAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public virtual async Task<ResponseMessage> SendAsync(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -105,79 +105,79 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (resourceUri == null)
+            if (resourceUriString == null)
             {
-                throw new ArgumentNullException(nameof(resourceUri));
+                throw new ArgumentNullException(nameof(resourceUriString));
             }
 
             // DEVNOTE: Non-Item operations need to be refactored to always pass
             // the diagnostic context in. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1276
-            IDisposable overallScope = null;
+            bool disposeDiagnosticContext = false;
             if (diagnosticsContext == null)
             {
                 diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                overallScope = diagnosticsContext.GetOverallScope();
+                disposeDiagnosticContext = true;
             }
 
             try
             {
-                using (overallScope)
+                HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
+                RequestMessage request = new RequestMessage(
+                        method,
+                        resourceUriString,
+                        diagnosticsContext)
                 {
-                    HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
-                    RequestMessage request = new RequestMessage(
-                            method,
-                            resourceUri,
-                            diagnosticsContext)
-                    {
-                        OperationType = operationType,
-                        ResourceType = resourceType,
-                        RequestOptions = requestOptions,
-                        Content = streamPayload,
-                    };
+                    OperationType = operationType,
+                    ResourceType = resourceType,
+                    RequestOptions = requestOptions,
+                    Content = streamPayload,
+                };
 
-                    if (partitionKey.HasValue)
+                if (partitionKey.HasValue)
+                {
+                    if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                     {
-                        if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
+                        throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                    }
+                    else if (partitionKey.Value.IsNone)
+                    {
+                        using (diagnosticsContext.CreateScope("GetNonePkValue"))
                         {
-                            throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
-                        }
-                        else if (partitionKey.Value.IsNone)
-                        {
-                            using (diagnosticsContext.CreateScope("GetNonePkValue"))
+                            try
                             {
-                                try
-                                {
-                                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
-                                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
-                                }
-                                catch (DocumentClientException dce)
-                                {
-                                    return dce.ToCosmosResponseMessage(request);
-                                }
-                                catch (CosmosException ce)
-                                {
-                                    return ce.ToCosmosResponseMessage(request);
-                                }
+                                PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
+                                request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                            }
+                            catch (DocumentClientException dce)
+                            {
+                                return dce.ToCosmosResponseMessage(request);
+                            }
+                            catch (CosmosException ce)
+                            {
+                                return ce.ToCosmosResponseMessage(request);
                             }
                         }
-                        else
-                        {
-                            request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
-                        }
                     }
-
-                    if (operationType == OperationType.Upsert)
+                    else
                     {
-                        request.Headers.IsUpsert = bool.TrueString;
+                        request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
                     }
-
-                    requestEnricher?.Invoke(request);
-                    return await this.SendAsync(request, cancellationToken);
                 }
+
+                if (operationType == OperationType.Upsert)
+                {
+                    request.Headers.IsUpsert = bool.TrueString;
+                }
+
+                requestEnricher?.Invoke(request);
+                return await this.SendAsync(request, cancellationToken);
             }
-            catch (OperationCanceledException oe)
+            finally
             {
-                throw new CosmosOperationCanceledException(oe, diagnosticsContext);
+                if (disposeDiagnosticContext)
+                {
+                    diagnosticsContext.GetOverallScope().Dispose();
+                }
             }
         }
 

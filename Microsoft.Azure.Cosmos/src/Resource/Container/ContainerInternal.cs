@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class ContainerInternal : Container
     {
-        public abstract Uri LinkUri { get; }
+        public abstract string LinkUri { get; }
 
         public abstract CosmosClientContext ClientContext { get; }
 

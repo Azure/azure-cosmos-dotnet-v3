@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -25,13 +24,16 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteAsync(conflict, partitionKey, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                operationName: nameof(DeleteAsync),
+                requestOptions: null,
+                task: (diagnostics) => base.DeleteAsync(diagnostics, conflict, partitionKey, cancellationToken));
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
-           string queryText = null,
-           string continuationToken = null,
-           QueryRequestOptions requestOptions = null)
+          string queryText = null,
+          string continuationToken = null,
+          QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorInlineCore(base.GetConflictQueryStreamIterator(
                 queryText,
@@ -77,7 +79,10 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadCurrentAsync<T>(cosmosConflict, partitionKey, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                operationName: nameof(ReadCurrentAsync),
+                requestOptions: null,
+                task: (diagnostics) => base.ReadCurrentAsync<T>(diagnostics, cosmosConflict, partitionKey, cancellationToken));
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)
