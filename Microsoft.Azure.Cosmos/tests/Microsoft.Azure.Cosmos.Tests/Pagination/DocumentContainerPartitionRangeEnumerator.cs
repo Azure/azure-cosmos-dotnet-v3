@@ -14,12 +14,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
     internal sealed class DocumentContainerPartitionRangeEnumerator : PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>
     {
-        private readonly DocumentContainer documentContainer;
+        private readonly IDocumentContainer documentContainer;
         private readonly int pageSize;
         private readonly int partitionKeyRangeId;
 
         public DocumentContainerPartitionRangeEnumerator(
-            DocumentContainer documentContainer,
+            IDocumentContainer documentContainer,
             int partitionKeyRangeId,
             int pageSize,
             DocumentContainerState state = null)

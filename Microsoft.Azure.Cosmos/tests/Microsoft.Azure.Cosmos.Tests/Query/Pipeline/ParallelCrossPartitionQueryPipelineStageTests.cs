@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_NullContinuationToken()
         {
-            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_NonCosmosArrayContinuationToken()
         {
-            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_EmptyArrayContinuationToken()
         {
-            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_NonCompositeContinuationToken()
         {
-            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_SingleCompositeContinuationToken()
         {
-            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             CompositeContinuationToken token = new CompositeContinuationToken()
             {
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void MonadicCreate_MultipleCompositeContinuationToken()
         {
-            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             CompositeContinuationToken token = new CompositeContinuationToken()
             {

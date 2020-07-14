@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public void TestCreate()
         {
-            Mock<DocumentContainer> mockDocumentContainer = new Mock<DocumentContainer>();
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             TryCatch<IQueryPipelineStage> monadicCreatePipeline = PipelineFactory.MonadicCreate(
                 ExecutionEnvironment.Compute,

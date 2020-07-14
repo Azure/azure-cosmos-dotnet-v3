@@ -69,7 +69,7 @@
             public async Task TestSplitAsync()
             {
                 int numItems = 100;
-                DocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
+                IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerator<TryCatch<QueryPage>> enumerator = this.CreateEnumerator(documentContainer);
 
                 (HashSet<string> parentIdentifiers, QueryState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
@@ -124,7 +124,7 @@
             }
 
             public override IAsyncEnumerable<TryCatch<QueryPage>> CreateEnumerable(
-                DocumentContainer documentContainer,
+                IDocumentContainer documentContainer,
                 QueryState state = null)
             {
                 return new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
@@ -144,7 +144,7 @@
             }
 
             public override IAsyncEnumerator<TryCatch<QueryPage>> CreateEnumerator(
-                DocumentContainer documentContainer,
+                IDocumentContainer documentContainer,
                 QueryState state = default)
             {
                 return new QueryPartitionRangePageAsyncEnumerator(

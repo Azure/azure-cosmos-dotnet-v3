@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         protected override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.queryDataSource.MonadicQueryAsync(
             sqlQuerySpec: this.sqlQuerySpec,
             continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-            feedRange: new FeedRangePartitionKeyRange(this.Range.Id),
+            feedRange: new FeedRangeEpk(this.Range.ToRange()),
             pageSize: this.pageSize,
             cancellationToken);
     }

@@ -76,11 +76,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return TryCatch<List<PartitionKeyRange>>.FromResult(ranges);
             }
 
-            if (!int.TryParse(partitionKeyRange.Id, out int partitionKeyRangeId))
+            int partitionKeyRangeId;
+            if (partitionKeyRange.Id == null)
             {
-                return TryCatch<List<PartitionKeyRange>>.FromException(
-                    new FormatException(
-                        $"PartitionKeyRangeId: {partitionKeyRange.Id} is not an integer."));
+                PartitionKeyHash? start = partitionKeyRange.MinInclusive == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(partitionKeyRange.MinInclusive);
+                PartitionKeyHash? end = partitionKeyRange.MaxExclusive == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(partitionKeyRange.MaxExclusive);
+                PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
+                IEnumerable<KeyValuePair<int, PartitionKeyHashRange>> kvps = this.partitionKeyRangeIdToHashRange.Where(kvp => kvp.Value.Equals(hashRange));
+                if (!kvps.Any())
+                {
+                    return TryCatch<List<PartitionKeyRange>>.FromException(
+                        new KeyNotFoundException(
+                            $"PartitionKeyRangeId: {hashRange} does not exist."));
+                }
+
+                partitionKeyRangeId = kvps.First().Key;
+            }
+            else
+            {
+                if (!int.TryParse(partitionKeyRange.Id, out partitionKeyRangeId))
+                {
+                    return TryCatch<List<PartitionKeyRange>>.FromException(
+                        new FormatException(
+                            $"PartitionKeyRangeId: {partitionKeyRange.Id} is not an integer."));
+                }
             }
 
             if (!this.parentToChildMapping.TryGetValue(partitionKeyRangeId, out (int left, int right) children))
@@ -113,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             };
 
             TryCatch<List<PartitionKeyRange>> tryGetLeftRanges = await this.MonadicGetChildRangeImplementationAsync(left, cancellationToken);
-            if(tryGetLeftRanges.Failed)
+            if (tryGetLeftRanges.Failed)
             {
                 return tryGetLeftRanges;
             }

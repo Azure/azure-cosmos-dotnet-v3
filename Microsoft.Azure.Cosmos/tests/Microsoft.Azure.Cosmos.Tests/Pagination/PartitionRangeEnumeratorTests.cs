@@ -23,7 +23,7 @@
         public async Task TestDrainFullyAsync()
         {
             int numItems = 1000;
-            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+            IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
             HashSet<string> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
@@ -33,7 +33,7 @@
         public async Task TestResumingFromStateAsync()
         {
             int numItems = 1000;
-            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+            IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
 
             IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
             (HashSet<string> firstDrainResults, TState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
@@ -48,7 +48,7 @@
         public async Task Test429sAsync()
         {
             int numItems = 100;
-            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
+            IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
                 new DocumentContainer.FailureConfigs(
                     inject429s: true,
@@ -89,7 +89,7 @@
         public async Task Test429sWithContinuationsAsync()
         {
             int numItems = 100;
-            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
+            IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
                 new DocumentContainer.FailureConfigs(
                     inject429s: true,
@@ -138,7 +138,7 @@
         public async Task TestEmptyPages()
         {
             int numItems = 100;
-            DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
+            IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
                 new DocumentContainer.FailureConfigs(
                     inject429s: false,
@@ -150,11 +150,11 @@
 
         public abstract IReadOnlyList<Record> GetRecordsFromPage(TPage page);
 
-        public abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(DocumentContainer documentContainer, TState state = null);
+        public abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(IDocumentContainer documentContainer, TState state = null);
 
-        public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(DocumentContainer documentContainer, TState state = null);
+        public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(IDocumentContainer documentContainer, TState state = null);
 
-        public async Task<DocumentContainer> CreateDocumentContainerAsync(
+        public async Task<IDocumentContainer> CreateDocumentContainerAsync(
             int numItems,
             DocumentContainer.FailureConfigs failureConfigs = default)
         {

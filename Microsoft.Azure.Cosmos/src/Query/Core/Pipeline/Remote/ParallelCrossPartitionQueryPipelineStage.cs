@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         public ValueTask<bool> MoveNextAsync() => this.crossPartitionRangePageAsyncEnumerator.MoveNextAsync();
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            DocumentContainer documentContainer,
+            IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             int pageSize,
             CosmosElement continuationToken)

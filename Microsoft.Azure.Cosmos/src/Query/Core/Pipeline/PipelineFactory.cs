@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -23,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     {
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             ExecutionEnvironment executionEnvironment,
-            DocumentContainer documentContainer,
+            IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             QueryInfo queryInfo,
             int pageSize,
