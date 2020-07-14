@@ -172,6 +172,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Owner("rakkuma")]
+        [Description("Verify session token received from batch operations")]
+        public async Task BatchItemSessionTokenAsync()
+        {
+            Container container = BatchTestBase.JsonContainer;
+            await this.CreateJsonTestDocsAsync(container);
+
+            TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+
+            TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingA);
+            testDocToReplace.Cost++;
+
+            ItemResponse<TestDoc> readResponse = await BatchTestBase.JsonContainer.ReadItemAsync<TestDoc>(
+                this.TestDocPk1ExistingA.Id,
+                BatchTestBase.GetPartitionKey(this.PartitionKey1));
+
+            ISessionToken beforeRequestSessionToken = BatchTestBase.GetSessionToken(readResponse.Headers.Session);
+
+            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInlineCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                .CreateItem(testDocToCreate)
+                .ReplaceItem(testDocToReplace.Id, testDocToReplace)
+                .ExecuteAsync();
+
+            BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 2);
+            Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
+
+            ISessionToken afterRequestSessionToken = BatchTestBase.GetSessionToken(batchResponse.Headers.Session);
+            Assert.IsTrue(afterRequestSessionToken.LSN > beforeRequestSessionToken.LSN, "Response session token should be more than request session token");
+        }
+
+        [TestMethod]
         [Owner("abpai")]
         [Description("Verify TTL passed to binary passthrough batch operations flow as expected")]
         public async Task BatchItemTimeToLiveAsync()
@@ -320,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<TransactionalBatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, Container container)
         {
-            RequestOptions batchOptions = null;
+            TransactionalBatchRequestOptions batchOptions = null;
             if (isSchematized)
             {
                 await this.CreateSchematizedTestDocsAsync(container);
