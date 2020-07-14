@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Collections;
@@ -90,18 +90,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             List<PartitionKeyRange> childRanges = new List<PartitionKeyRange>()
             {
-                new PartitionKeyRange()
-                {
-                    Id = children.left.ToString(),
-                    MinInclusive = children.left.ToString(),
-                    MaxExclusive = children.left.ToString(),
-                },
-                new PartitionKeyRange()
-                {
-                    Id = children.right.ToString(),
-                    MinInclusive = children.right.ToString(),
-                    MaxExclusive = children.right.ToString(),
-                }
+                CreateRangeFromId(children.left),
+                CreateRangeFromId(children.right),
             };
 
             return Task.FromResult(TryCatch<List<PartitionKeyRange>>.FromResult(childRanges));
