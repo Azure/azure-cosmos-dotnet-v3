@@ -28,14 +28,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Version = PartitionKeyDefinitionVersion.V2,
         };
 
-        internal abstract DocumentContainer CreateDocumentContainer(
+        internal abstract IDocumentContainer CreateDocumentContainer(
             PartitionKeyDefinition partitionKeyDefinition,
             DocumentContainer.FailureConfigs failureConfigs = default);
 
         [TestMethod]
         public async Task TestGetFeedRanges()
         {
-            DocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
             {
                 List<PartitionKeyRange> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         [TestMethod]
         public async Task TestCrudAsync()
         {
-            DocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
             // Insert an item
             CosmosObject item = CosmosObject.Parse("{\"pk\" : 42 }");
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         [TestMethod]
         public async Task TestPartitionKeyAsync()
         {
-            DocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
             // Insert an item
             CosmosObject item1 = CosmosObject.Parse("{\"pk\" : 42 }");
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         [TestMethod]
         public async Task TestUndefinedPartitionKeyAsync()
         {
-            DocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
             // Insert an item
             CosmosObject item = CosmosObject.Parse("{}");
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         [TestMethod]
         public async Task TestSplitAsync()
         {
-            DocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
             Assert.AreEqual(1, (await documentContainer.GetFeedRangesAsync(cancellationToken: default)).Count);
 
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            DocumentContainer documentContainer = this.CreateDocumentContainer(partitionKeyDefinition);
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(partitionKeyDefinition);
 
             int numItemsToInsert = 10;
             for (int i = 0; i < numItemsToInsert; i++)

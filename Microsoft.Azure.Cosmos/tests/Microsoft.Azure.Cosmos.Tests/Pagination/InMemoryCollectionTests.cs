@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     [TestClass]
     public sealed class InMemoryCollectionTests : DocumentContainerTests
     {
-        internal override DocumentContainer CreateDocumentContainer(
+        internal override IDocumentContainer CreateDocumentContainer(
             PartitionKeyDefinition partitionKeyDefinition,
             DocumentContainer.FailureConfigs failureConfigs = null) => new InMemoryCollection(partitionKeyDefinition, failureConfigs);
     }

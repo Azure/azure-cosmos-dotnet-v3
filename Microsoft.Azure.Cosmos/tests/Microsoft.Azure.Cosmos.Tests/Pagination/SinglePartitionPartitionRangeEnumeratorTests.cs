@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public async Task TestSplitAsync()
             {
                 int numItems = 100;
-                DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+                IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 DocumentContainerPartitionRangeEnumerator enumerator = new DocumentContainerPartitionRangeEnumerator(
                     inMemoryCollection,
                     partitionKeyRangeId: 0,
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             public override IAsyncEnumerable<TryCatch<DocumentContainerPage>> CreateEnumerable(
-                DocumentContainer documentContainer,
+                IDocumentContainer documentContainer,
                 DocumentContainerState state = null) => new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
                     range: new PartitionKeyRange() { Id = "0" },
                     state: state,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         state: state));
 
             public override IAsyncEnumerator<TryCatch<DocumentContainerPage>> CreateEnumerator(
-                DocumentContainer inMemoryCollection,
+                IDocumentContainer inMemoryCollection,
                 DocumentContainerState state = null) => new DocumentContainerPartitionRangeEnumerator(
                     inMemoryCollection,
                     partitionKeyRangeId: 0,

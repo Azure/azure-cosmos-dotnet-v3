@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
-    internal abstract class DocumentContainer : IFeedRangeProvider
+    internal abstract class DocumentContainer : IDocumentContainer
     {
         private static readonly CosmosException RequestRateTooLargeException = new CosmosException(
             message: "Request Rate Too Large",

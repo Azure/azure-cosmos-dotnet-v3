@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public async Task TestSplitWithResumeContinuationAsync()
             {
                 int numItems = 1000;
-                DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+                IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerator<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
                 (HashSet<Guid> firstDrainResults, CrossPartitionState<DocumentContainerState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public async Task TestSplitWithDuringDrainAsync()
             {
                 int numItems = 1000;
-                DocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+                IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerable = this.CreateEnumerable(inMemoryCollection);
 
                 HashSet<Guid> identifiers = new HashSet<Guid>();
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             public override IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> CreateEnumerable(
-                DocumentContainer inMemoryCollection,
+                IDocumentContainer inMemoryCollection,
                 CrossPartitionState<DocumentContainerState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             public override IAsyncEnumerator<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> CreateEnumerator(
-                DocumentContainer inMemoryCollection,
+                IDocumentContainer inMemoryCollection,
                 CrossPartitionState<DocumentContainerState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
