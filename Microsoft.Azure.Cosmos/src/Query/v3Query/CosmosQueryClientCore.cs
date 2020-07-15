@@ -48,12 +48,12 @@ namespace Microsoft.Azure.Cosmos
         public override Action<IQueryable> OnExecuteScalarQueryCallback => this.documentClient.OnExecuteScalarQueryCallback;
 
         public override async Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
-            Uri containerLink,
+            string containerLink,
             PartitionKey? partitionKey,
             CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
-                containerLink.OriginalString,
+                containerLink,
                 cancellationToken);
 
             string effectivePartitionKeyString = null;
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<QueryResponseCore> ExecuteItemQueryAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,

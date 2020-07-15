@@ -26,7 +26,10 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadAsync(requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadAsync),
+                requestOptions,
+                (diagnostics) => base.ReadAsync(diagnostics, requestOptions, cancellationToken));
         }
 
         public override Task<UserResponse> ReplaceAsync(
@@ -34,14 +37,20 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReplaceAsync(userProperties, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceAsync),
+                requestOptions,
+                (diagnostics) => base.ReplaceAsync(diagnostics, userProperties, requestOptions, cancellationToken));
         }
 
         public override Task<UserResponse> DeleteAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteAsync(requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(DeleteAsync),
+                requestOptions,
+                (diagnostics) => base.DeleteAsync(diagnostics, requestOptions, cancellationToken));
         }
 
         public override Permission GetPermission(string id)
@@ -55,7 +64,10 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreatePermissionAsync),
+                requestOptions,
+                (diagnostics) => base.CreatePermissionAsync(diagnostics, permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(
@@ -64,7 +76,10 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                nameof(UpsertPermissionAsync),
+                requestOptions,
+                (diagnostics) => base.UpsertPermissionAsync(diagnostics, permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(

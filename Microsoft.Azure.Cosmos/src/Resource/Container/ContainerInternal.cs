@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class ContainerInternal : Container
     {
-        public abstract Uri LinkUri { get; }
+        public abstract string LinkUri { get; }
 
         public abstract CosmosClientContext ClientContext { get; }
 
@@ -56,7 +56,9 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken = default);
 
-        internal abstract FeedIterator GetStandByFeedIterator(
+        public abstract FeedIterator GetStandByFeedIterator(
+            string continuationToken = default,
+            int? maxItemCount = default,
             ChangeFeedRequestOptions requestOptions = default);
 
         public abstract FeedIteratorInternal GetItemQueryStreamIteratorInternal(
@@ -96,19 +98,29 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
+            string continuationToken = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
+ 
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            string continuationToken = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
+      
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken));
