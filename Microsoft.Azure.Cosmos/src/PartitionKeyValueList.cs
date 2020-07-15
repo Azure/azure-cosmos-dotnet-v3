@@ -14,16 +14,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public sealed class PartitionKeyValueList
     {
-        internal readonly IList<object> partitionKeyValues;
-
-        internal static readonly object NoneType = new object();
+        internal readonly IList<object> PartitionKeyValues;
 
         /// <summary>
         /// Creates a new partition key value list object.
         /// </summary>
         public PartitionKeyValueList()
         {
-            this.partitionKeyValues = new List<object>();
+            this.PartitionKeyValues = new List<object>();
         }
 
         /// <summary>
@@ -38,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.partitionKeyValues.Add(val);
+                this.PartitionKeyValues.Add(val);
             }
         }
 
@@ -48,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="val">The value of type double to be used as partitionKey.</param>
         public void Add(double val)
         {
-            this.partitionKeyValues.Add(val);
+            this.PartitionKeyValues.Add(val);
         }
 
         /// <summary>
@@ -57,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="val">The value of type bool to be used as partitionKey.</param>
         public void Add(bool val)
         {
-            this.partitionKeyValues.Add(val);
+            this.PartitionKeyValues.Add(val);
         }
 
         /// <summary>
@@ -65,17 +63,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public void AddNullValue()
         {
-            this.partitionKeyValues.Add(null);
+            this.PartitionKeyValues.Add(null);
         }
 
-        internal void AddUndefined()
+        /// <summary>
+        /// Adds a None partition key value.
+        /// </summary>
+        public void AddNoneType()
         {
-            this.partitionKeyValues.Add(Undefined.Value);
-        }
-
-        internal void AddNoneType()
-        {
-            this.partitionKeyValues.Add(NoneType);
+            this.PartitionKeyValues.Add(PartitionKey.None);
         }
     }
 }

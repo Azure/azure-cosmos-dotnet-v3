@@ -388,15 +388,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
-            ContainerInternal mockContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
+            ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
 
-            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
-            ContainerInternal container = containerMock.Object;
+            Mock<ContainerCore> mockedContainer = new Mock<ContainerCore>(
+                originalContainer.ClientContext,
+                (DatabaseInternal)originalContainer.Database,
+                originalContainer.Id,
+                null)
+            {
+                CallBase = true
+            };
 
-            containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult((IReadOnlyList<string[]>) new List<string[]>{ new string[] { "a", "b", "c" } }));
-            containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-                .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
+            mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult((IReadOnlyList<string[]>)new List<string[]> { new string[] { "a", "b", "c" }}));
+
+            ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 
             List<dynamic> invalidNestedItems = new List<dynamic>
             {
@@ -457,26 +463,31 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (dynamic poco in invalidNestedItems)
             {
-                object pk = await container.GetPartitionKeyValueFromStreamAsync(
+                object pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco),
                     default(CancellationToken));
-                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.None, pk) || object.Equals(Cosmos.PartitionKey.None, pk));
+                Assert.IsTrue(object.Equals(Cosmos.PartitionKey.None, pk));
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestMultipleNestedPartitionKeyValueFromStreamAsync()
         {
-            ContainerInternal mockContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
+            ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
 
-            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>() { CallBase = true };
-            ContainerInternal container = containerMock.Object;
+            Mock<ContainerCore> mockedContainer = new Mock<ContainerCore>(
+                originalContainer.ClientContext,
+                (DatabaseInternal)originalContainer.Database,
+                originalContainer.Id,
+                null)
+            {
+                CallBase = true
+            };
 
-            containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+            mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((IReadOnlyList<string[]>)new List<string[]> { new string[] { "a", "b", "c" }, new string[] { "a","e","f" } }));
-            containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-                .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
+
+            ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 
             List<dynamic> validNestedItems = new List<dynamic>
             {
@@ -564,7 +575,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (dynamic poco in validNestedItems)
             {
-                Cosmos.PartitionKey pk = await container.GetPartitionKeyValueFromStreamAsync(
+                Cosmos.PartitionKey pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco.Item1),
                     default(CancellationToken));
                 string abc = pk.InternalKey.ToJsonString();
