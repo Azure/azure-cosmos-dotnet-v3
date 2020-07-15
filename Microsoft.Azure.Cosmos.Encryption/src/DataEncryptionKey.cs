@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>New instance of data encryption key.</returns>
         public static byte[] Generate(string encryptionAlgorithm)
         {
-            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            if ((encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) && (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256))
             {
                 throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
             }
@@ -69,13 +69,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(rawKey));
             }
 
-            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            switch(encryptionAlgorithm)
             {
-                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
-            }
+                case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
+                    AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+                    return new AeadAes256CbcHmac256Algorithm(aeKey, EncryptionType.Randomized, algorithmVersion: 1);
 
-            AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
-            return new AeadAes256CbcHmac256Algorithm(aeKey, EncryptionType.Randomized, algorithmVersion: 1);
+                case CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256:
+                    AeadAes256CbcHmac256EncryptionKey aedKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+                    return new AeadAes256CbcHmac256Algorithm(aedKey, EncryptionType.Deterministic, algorithmVersion: 1);
+
+                default:
+                    throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
+            }
         }
     }
 }

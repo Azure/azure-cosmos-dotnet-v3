@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -53,6 +55,51 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return JObject.Load(new JsonTextReader(new StreamReader(stream)));
         }
 
+        private static (string endpoint, string authKey) GetAccountInfo()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            return (endpoint, authKey);
+        }
+
+        internal static CosmosClientBuilder GetClientBuilder(string resourceToken)
+        {
+            (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
+                accountEndpoint: accountInfo.endpoint,
+                authKeyOrResourceToken: resourceToken ?? accountInfo.authKey);
+
+            return clientBuilder;
+        }
+
+        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        {
+            CosmosClientBuilder cosmosClientBuilder = GetClientBuilder(resourceToken: null);
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
+
+            return cosmosClientBuilder.Build();
+        }
+
+        internal static CosmosClient CreateCosmosClient(string resourceToken, Action<CosmosClientBuilder> customizeClientBuilder = null)
+        {
+            CosmosClientBuilder cosmosClientBuilder = GetClientBuilder(resourceToken);
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
+
+            return cosmosClientBuilder.Build();
+        }
+
+        internal static CosmosClient CreateCosmosClient(
+            bool useGateway)
+        {
+            CosmosClientBuilder cosmosClientBuilder = GetClientBuilder(resourceToken: null);
+            if (useGateway)
+            {
+                cosmosClientBuilder.WithConnectionModeGateway();
+            }
+
+            return cosmosClientBuilder.Build();
+        }
         internal class TestDoc
         {
             public static List<string> PathsToEncrypt { get; } = new List<string>() { "/SensitiveStr", "/SensitiveInt" };

@@ -13,7 +13,7 @@
     <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
     <Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
     <Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
-    <FileVersion>$(ClientVersion)</FileVersion>
+    <FileVersion>3.9.3</FileVersion>
     <Authors>Microsoft</Authors>
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -38,6 +38,7 @@
     <IncludeSymbols>false</IncludeSymbols>
     <IncludeSource>false</IncludeSource>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
+    <DefineConstants>$(DefineConstants);INTERNAL;PREVIEW</DefineConstants>
     <NoWarn>NU5125</NoWarn>
   </PropertyGroup>
 
@@ -82,6 +83,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
@@ -128,6 +130,7 @@
     <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
     <LangVersion>8.0</LangVersion>
+    <Version>3.9.3-preview</Version>
   </PropertyGroup>
 
 </Project>

@@ -5,8 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Diagnostics;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class EncryptionFeedIterator<T> : FeedIterator<T>
     {
@@ -30,10 +34,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            using (ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken))
-            {
-                return this.responseFactory.CreateItemFeedResponse<T>(responseMessage);
-            }
+            using ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+            return this.responseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
     }
 }

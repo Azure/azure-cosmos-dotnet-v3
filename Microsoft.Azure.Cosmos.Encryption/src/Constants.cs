@@ -12,5 +12,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string EncryptionAlgorithm = "_ea";
         public const string EncryptionDekId = "_en";
         public const string EncryptionFormatVersion = "_ef";
+        public const string EncryptedPaths = "_ep";
     }
 }
