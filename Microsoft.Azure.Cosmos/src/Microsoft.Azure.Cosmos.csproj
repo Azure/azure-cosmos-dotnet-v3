@@ -116,7 +116,7 @@
       <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
     </None>
   </ItemGroup>
-
+  
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
