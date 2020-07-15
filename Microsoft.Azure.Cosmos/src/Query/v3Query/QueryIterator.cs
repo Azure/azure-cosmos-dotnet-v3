@@ -164,6 +164,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (tryGetQueryPage.Succeeded)
                 {
+                    if (tryGetQueryPage.Result.State == null)
+                    {
+                        this.hasMoreResults = false;
+                    }
+
                     return QueryResponse.CreateSuccess(
                         result: tryGetQueryPage.Result.Documents,
                         count: tryGetQueryPage.Result.Documents.Count,
@@ -171,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         diagnostics: diagnostics,
                         serializationOptions: this.cosmosSerializationFormatOptions,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            (tryGetQueryPage.Result.State?.Value as CosmosString)?.Value,
+                            tryGetQueryPage.Result.State?.Value.ToString(),
                             tryGetQueryPage.Result.DisallowContinuationTokenMessage,
                             this.cosmosQueryContext.ResourceTypeEnum,
                             this.cosmosQueryContext.ContainerResourceId)
@@ -211,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override CosmosElement GetCosmosElementContinuationToken() => this.queryPipelineStage.Current.Result.State.Value;
+        public override CosmosElement GetCosmosElementContinuationToken() => this.queryPipelineStage.Current.Result.State?.Value;
 
         protected override void Dispose(bool disposing)
         {

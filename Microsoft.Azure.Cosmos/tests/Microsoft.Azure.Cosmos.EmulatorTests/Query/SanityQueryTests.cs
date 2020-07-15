@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     [TestClass]
     public sealed class SanityQueryTests : QueryTestsBase
     {
-
         [TestMethod]
         public async Task Sanity()
         {
