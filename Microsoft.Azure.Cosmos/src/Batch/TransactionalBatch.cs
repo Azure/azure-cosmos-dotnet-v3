@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading;

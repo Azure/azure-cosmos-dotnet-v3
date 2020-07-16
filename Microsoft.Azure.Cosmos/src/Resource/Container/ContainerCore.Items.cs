@@ -883,7 +883,7 @@ namespace Microsoft.Azure.Cosmos
             Stream patchOperationsStream;
             using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
             {
-                patchOperationsStream = this.ClientContext.SerializerCore.ToPatchOperationStream(patchOperations);
+                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(patchOperations);
             }
 
             using (diagnosticsContext.GetOverallScope())

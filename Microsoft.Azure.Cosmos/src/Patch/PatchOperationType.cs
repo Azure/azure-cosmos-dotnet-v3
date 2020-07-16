@@ -8,19 +8,34 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
+    /// <summary>
+    /// Type of Patch operation.
+    /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
-    internal enum PatchOperationType
+    public enum PatchOperationType
     {
-        [EnumMember(Value = "add")]
+        /// <summary>
+        /// Operation to add a value.
+        /// </summary>
+        [EnumMember(Value = PatchConstants.OperationTypeNames.Add)]
         Add,
 
-        [EnumMember(Value = "remove")]
+        /// <summary>
+        /// Operation to remove a value.
+        /// </summary>
+        [EnumMember(Value = PatchConstants.OperationTypeNames.Remove)]
         Remove,
 
-        [EnumMember(Value = "replace")]
+        /// <summary>
+        /// Operation to replace a value.
+        /// </summary>
+        [EnumMember(Value = PatchConstants.OperationTypeNames.Replace)]
         Replace,
 
-        [EnumMember(Value = "set")]
+        /// <summary>
+        /// Operation to set a value.
+        /// </summary>
+        [EnumMember(Value = PatchConstants.OperationTypeNames.Set)]
         Set,
     }
 }

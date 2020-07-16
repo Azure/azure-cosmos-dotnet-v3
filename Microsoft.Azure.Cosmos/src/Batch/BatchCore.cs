@@ -239,6 +239,29 @@ namespace Microsoft.Azure.Cosmos
         /// Adds an operation to patch an item into the batch.
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
+        /// <param name="patchStream">A <see cref="Stream"/> containing the patch specification.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
+        /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
+        public virtual TransactionalBatch PatchItemStream(
+            string id,
+            Stream patchStream,
+            TransactionalBatchItemRequestOptions requestOptions = null)
+        {
+            this.operations.Add(new ItemBatchOperation(
+                operationType: OperationType.Patch,
+                operationIndex: this.operations.Count,
+                id: id,
+                resourceStream: patchStream,
+                requestOptions: requestOptions,
+                containerCore: this.container));
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an operation to patch an item into the batch.
+        /// </summary>
+        /// <param name="id">The cosmos item id.</param>
         /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
         /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>

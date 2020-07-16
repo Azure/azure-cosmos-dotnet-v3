@@ -106,23 +106,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 PatchOperation.CreateRemoveOperation("/removePath")
             };
 
-            // use properties serializer for PatchOperation (internal type)
-            serializerCore.ToStream(patch);
             Assert.AreEqual(0, toCount);
 
-            serializerCore.FromStream<List<PatchOperation>>(new MemoryStream());
-            Assert.AreEqual(0, fromCount);
-
             // custom serializer is not used since operation type is Remove, which doesnt have "value" param to serialize
-            using (Stream stream = serializerCore.ToPatchOperationStream(patch)) { }
+            using (Stream stream = serializerCore.ToStream(patch)) { }
             Assert.AreEqual(0, toCount);
 
             patch.Add(PatchOperation.CreateAddOperation("/addPath", "addValue"));
             // custom serializer is used since there is Add operation type also
-            using (Stream stream = serializerCore.ToPatchOperationStream(patch)) { }
+            using (Stream stream = serializerCore.ToStream(patch)) { }
             Assert.AreEqual(1, toCount);
-
-            Assert.AreEqual(0, fromCount);
         }
 
         [TestMethod]

@@ -79,13 +79,6 @@ namespace Microsoft.Azure.Cosmos
             return serializer.ToStream<T>(input);
         }
 
-        internal Stream ToPatchOperationStream<T>(T input)
-        {
-            return this.patchOperationSerializer != null
-                ? this.patchOperationSerializer.ToStream<T>(input)
-                : CosmosSerializerCore.propertiesSerializer.ToStream<T>(input);
-        }
-
         internal Stream ToStreamSqlQuerySpec(SqlQuerySpec input, ResourceType resourceType)
         {
             CosmosSerializer serializer = CosmosSerializerCore.propertiesSerializer;
@@ -138,10 +131,13 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(ConflictProperties) ||
                 inputType == typeof(ThroughputProperties) ||
                 inputType == typeof(OfferV2) ||
-                inputType == typeof(PartitionedQueryExecutionInfo) ||
-                (inputType.IsGenericType && inputType.GetGenericArguments()[0] == typeof(PatchOperation)))
+                inputType == typeof(PartitionedQueryExecutionInfo))
             {
                 return CosmosSerializerCore.propertiesSerializer;
+            }
+            else if (inputType.IsGenericType && inputType.GetGenericArguments()[0] == typeof(PatchOperation))
+            {
+                return this.patchOperationSerializer;
             }
 
             if (inputType == typeof(SqlQuerySpec))

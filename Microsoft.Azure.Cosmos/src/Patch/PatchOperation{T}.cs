@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.IO;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -43,9 +44,14 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer cosmosSerializer,
             out string valueParam)
         {
-            valueParam = this.SerializeValue(
-                cosmosSerializer,
-                this.Value);
+            // Use the user serializer so custom conversions are correctly handled
+            using (Stream stream = cosmosSerializer.ToStream(this.Value))
+            {
+                using (StreamReader streamReader = new StreamReader(stream))
+                {
+                    valueParam = streamReader.ReadToEnd();
+                }
+            }
 
             return true;
         }

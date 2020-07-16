@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
@@ -403,17 +401,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
-                Type type = this.Resource.GetType();
-                if (type.IsGenericType &&
-                    type.GetGenericArguments()[0] == typeof(PatchOperation))
-                {
-                    this.ResourceStream = serializerCore.ToPatchOperationStream(this.Resource);
-                }
-                else
-                {
-                    this.ResourceStream = serializerCore.ToStream(this.Resource);
-                }
-
+                this.ResourceStream = serializerCore.ToStream(this.Resource);
                 return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 
