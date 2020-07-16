@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void ConstructPatchSpecificationTest()
+        public void ConstructPatchOperationTest()
         {
             PatchOperation operation = PatchOperation.CreateAddOperation(path, "string");
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, "string");

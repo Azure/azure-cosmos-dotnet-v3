@@ -4,7 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Collections.Generic;
+    using System;
+
     internal static class PatchConstants
     {
         public static class PropertyNames
@@ -20,6 +21,23 @@ namespace Microsoft.Azure.Cosmos
             public const string Remove = "remove";
             public const string Replace = "replace";
             public const string Set = "set";
+        }
+
+        public static string ToEnumMemberString(this PatchOperationType patchOperationType)
+        {
+            switch (patchOperationType)
+            {
+                case PatchOperationType.Add:
+                    return PatchConstants.OperationTypeNames.Add;
+                case PatchOperationType.Remove:
+                    return PatchConstants.OperationTypeNames.Remove;
+                case PatchOperationType.Replace:
+                    return PatchConstants.OperationTypeNames.Replace;
+                case PatchOperationType.Set:
+                    return PatchConstants.OperationTypeNames.Set;
+                default:
+                    throw new ArgumentException($"Unknown Patch operation type '{patchOperationType}'.");
+            }
         }
     }
 }

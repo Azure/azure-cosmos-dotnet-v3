@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Details of Patch operation that is to be applied to the referred Cosmos item.
@@ -22,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
         /// Patch operation type.
         /// </summary>
         [JsonProperty(PropertyName = PatchConstants.PropertyNames.OperationType)]
-        [JsonConverter(typeof(StringEnumConverter))]
         public PatchOperationType OperationType { get; }
 
         /// <summary>

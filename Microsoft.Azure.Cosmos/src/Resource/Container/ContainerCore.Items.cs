@@ -864,6 +864,11 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            if (diagnosticsContext == null)
+            {
+                throw new ArgumentNullException(nameof(diagnosticsContext));
+            }
+
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentNullException(nameof(id));
@@ -886,24 +891,21 @@ namespace Microsoft.Azure.Cosmos
                 patchOperationsStream = this.ClientContext.SerializerCore.ToStream(patchOperations);
             }
 
-            using (diagnosticsContext.GetOverallScope())
-            {
-                return this.ClientContext.ProcessResourceOperationStreamAsync(
-                    resourceUri: this.GetResourceUri(
-                        requestOptions,
-                        OperationType.Patch,
-                        id),
-                    resourceType: ResourceType.Document,
-                    operationType: OperationType.Patch,
-                    requestOptions: requestOptions,
-                    cosmosContainerCore: this,
-                    partitionKey: partitionKey,
-                    itemId: id,
-                    streamPayload: patchOperationsStream,
-                    requestEnricher: null,
-                    diagnosticsContext: diagnosticsContext,
-                    cancellationToken: cancellationToken);
-            }
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.GetResourceUri(
+                    requestOptions,
+                    OperationType.Patch,
+                    id),
+                resourceType: ResourceType.Document,
+                operationType: OperationType.Patch,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this,
+                partitionKey: partitionKey,
+                itemId: id,
+                streamPayload: patchOperationsStream,
+                requestEnricher: null,
+                diagnosticsContext: diagnosticsContext,
+                cancellationToken: cancellationToken);
         }
     }
 }

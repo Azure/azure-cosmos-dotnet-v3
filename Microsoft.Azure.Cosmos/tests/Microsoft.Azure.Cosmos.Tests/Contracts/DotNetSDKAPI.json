@@ -4009,6 +4009,45 @@
       },
       "NestedTypes": {}
     },
+    "PatchOperationType": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.PatchOperationType Add[System.Runtime.Serialization.EnumMemberAttribute(Value = \"add\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.PatchOperationType Remove[System.Runtime.Serialization.EnumMemberAttribute(Value = \"remove\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.PatchOperationType Replace[System.Runtime.Serialization.EnumMemberAttribute(Value = \"replace\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.PatchOperationType Set[System.Runtime.Serialization.EnumMemberAttribute(Value = \"set\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": null
+        }
+      },
+      "NestedTypes": {}
+    },
     "Permission": {
       "Subclasses": {},
       "Members": {

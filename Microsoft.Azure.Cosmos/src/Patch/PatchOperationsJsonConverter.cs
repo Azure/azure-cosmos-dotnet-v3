@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// A custom serializer converter for list of Patch operations./>
+    /// A custom serializer converter for list of Patch operations.>
     /// </summary>
     internal sealed class PatchOperationsJsonConverter : JsonConverter
     {
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName(PatchConstants.PropertyNames.OperationType);
-                writer.WriteValue(GetPatchOperationTypeString(operation.OperationType));
+                writer.WriteValue(operation.OperationType.ToEnumMemberString());
                 writer.WritePropertyName(PatchConstants.PropertyNames.Path);
                 writer.WriteValue(operation.Path);
 
@@ -88,23 +88,6 @@ namespace Microsoft.Azure.Cosmos
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));
-        }
-
-        public static string GetPatchOperationTypeString(PatchOperationType patchOperationType)
-        {
-            switch (patchOperationType)
-            {
-                case PatchOperationType.Add:
-                    return PatchConstants.OperationTypeNames.Add;
-                case PatchOperationType.Remove:
-                    return PatchConstants.OperationTypeNames.Remove;
-                case PatchOperationType.Replace:
-                    return PatchConstants.OperationTypeNames.Replace;
-                case PatchOperationType.Set:
-                    return PatchConstants.OperationTypeNames.Set;
-                default:
-                    throw new ArgumentException($"Unknown Patch operation type '{patchOperationType}'.");
-            }
         }
     }
 }
