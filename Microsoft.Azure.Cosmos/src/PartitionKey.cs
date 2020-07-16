@@ -190,11 +190,6 @@ namespace Microsoft.Azure.Cosmos
         {
             PartitionKeyInternal partitionKeyInternal = this.InternalKey;
             PartitionKeyInternal otherPartitionKeyInternal = other.InternalKey;
-            if ((partitionKeyInternal == null || otherPartitionKeyInternal == null) && partitionKeyInternal != otherPartitionKeyInternal)
-            {
-                return false;
-            }
-
             if (partitionKeyInternal == null)
             {
                 partitionKeyInternal = PartitionKey.NullPartitionKeyInternal;

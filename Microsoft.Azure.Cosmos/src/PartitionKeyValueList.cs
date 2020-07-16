@@ -30,14 +30,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="val">The value of type string to be used as partitionKey.</param>
         public void Add(string val)
         {
-            if (val == null)
-            {
-                this.AddNullValue();
-            }
-            else
-            {
-                this.PartitionKeyValues.Add(val);
-            }
+           this.PartitionKeyValues.Add(val);
         }
 
         /// <summary>
