@@ -520,6 +520,11 @@ namespace Microsoft.Azure.Cosmos
                     return this.partitionKeyPathTokens;
                 }
 
+                if (this.PartitionKey == null)
+                {
+                    throw new ArgumentNullException(nameof(this.PartitionKey));
+                }
+
                 if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != PartitionKind.MultiHash) 
                 {
                     throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
@@ -530,10 +535,10 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                Collection<string[]> partitionKeyPathTokensList = new Collection<string[]>();
-                foreach (string s in this.PartitionKey?.Paths)
+                List<string[]> partitionKeyPathTokensList = new List<string[]>();
+                foreach (string path in this.PartitionKey?.Paths)
                 {
-                    partitionKeyPathTokensList.Add(s.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries));
+                    partitionKeyPathTokensList.Add(path.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries));
                 }
 
                 this.partitionKeyPathTokens = partitionKeyPathTokensList;

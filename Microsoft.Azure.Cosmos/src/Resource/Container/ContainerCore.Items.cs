@@ -627,7 +627,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionKey.HasValue)
             {
                 PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
-                if (((PartitionKey)partitionKey).InternalKey.Components.Count != pKeyDefinition.Paths.Count)
+                if (partitionKey.HasValue && partitionKey.Value.InternalKey.Components.Count != pKeyDefinition.Paths.Count)
                 {
                     throw new ArgumentException(RMResources.MissingPartitionKeyValue);
                 }
@@ -742,14 +742,12 @@ namespace Microsoft.Azure.Cosmos
                 IReadOnlyList<string[]> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
                 CosmosElement[] cosmosElementArray = new CosmosElement[tokenslist.Count];
 
-                int index = 0;
-                foreach (string[] tokens in tokenslist)
+                for (int index = 0; index < tokenslist.Count; index++)
                 {
-                    CosmosElement partitionKeyValue = this.ParseTokenListForElement(pathTraversal, tokens);
-                    cosmosElementArray[index++] = partitionKeyValue;
+                    cosmosElementArray[index] = ParseTokenListForElement(pathTraversal, tokenslist[index]);
                 }
 
-                return this.CosmosElementToPartitionKeyObject(cosmosElementArray);
+                return CosmosElementToPartitionKeyObject(cosmosElementArray);
             }
             finally
             {
@@ -758,7 +756,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private CosmosElement ParseTokenListForElement(CosmosObject pathTraversal, string[] tokens)
+        private static CosmosElement ParseTokenListForElement(CosmosObject pathTraversal, string[] tokens)
         {
             CosmosElement partitionKeyValue;
 
@@ -778,7 +776,7 @@ namespace Microsoft.Azure.Cosmos
             return partitionKeyValue;
         }
 
-        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement[] cosmosElementArray)
+        private static PartitionKey CosmosElementToPartitionKeyObject(CosmosElement[] cosmosElementArray)
         {
             PartitionKeyValueList partitionKeyValueList = new PartitionKeyValueList();
 

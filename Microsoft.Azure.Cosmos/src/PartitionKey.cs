@@ -103,18 +103,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="valueList">An object of Type PartitionKeyValueList which supports multiple partition key paths.</param>
         public PartitionKey(PartitionKeyValueList valueList)
         {
-            /*
-             * Why these checks?
-             * These changes are being added for SDK to support multiple paths in a partition key. 
-             *
-             * Currently, when a resource does not specify a value for the PartitionKey,
-             * we assign a temporary value `PartitionKey.None` and later discern whether 
-             * it is a PartitionKey.Undefined or PartitionKey.Empty based on the Collection Type.
-             * We retain this behaviour for single path partition keys.
-             *
-             * For collections with multiple path keys, absence of a partition key values is
-             * always treated as a PartitionKey.Undefined.
-             */
+            // Why these checks?
+            // These changes are being added for SDK to support multiple paths in a partition key. 
+            //
+            // Currently, when a resource does not specify a value for the PartitionKey,
+            // we assign a temporary value `PartitionKey.None` and later discern whether 
+            // it is a PartitionKey.Undefined or PartitionKey.Empty based on the Collection Type.
+            // We retain this behaviour for single path partition keys.
+            //
+            // For collections with multiple path keys, absence of a partition key values is
+            // always treated as a PartitionKey.Undefined.
             if (valueList == null
                 || valueList.PartitionKeyValues.Count == 0
                 || (valueList.PartitionKeyValues.Count == 1 && None.Equals(valueList.PartitionKeyValues[0])))
@@ -125,18 +123,19 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 object[] valueArray = new object[valueList.PartitionKeyValues.Count];
-                int i = 0;
-                foreach (object val in valueList.PartitionKeyValues)
+                for (int i = 0; i < valueList.PartitionKeyValues.Count; i++)
                 {
+                    object val = valueList.PartitionKeyValues[i];
                     if (None.Equals(val))
                     {
-                        valueArray[i++] = Undefined.Value;
+                        valueArray[i] = Undefined.Value;
                     }
                     else
                     {
-                        valueArray[i++] = val;
+                        valueArray[i] = val;
                     }
                 }
+
                 this.InternalKey = new Documents.PartitionKey(valueArray).InternalKey;
                 this.IsNone = false;
             }
@@ -191,6 +190,11 @@ namespace Microsoft.Azure.Cosmos
         {
             PartitionKeyInternal partitionKeyInternal = this.InternalKey;
             PartitionKeyInternal otherPartitionKeyInternal = other.InternalKey;
+            if ((partitionKeyInternal == null || otherPartitionKeyInternal == null) && partitionKeyInternal != otherPartitionKeyInternal)
+            {
+                return false;
+            }
+
             if (partitionKeyInternal == null)
             {
                 partitionKeyInternal = PartitionKey.NullPartitionKeyInternal;

@@ -578,8 +578,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Cosmos.PartitionKey pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco.Item1),
                     default(CancellationToken));
-                string abc = pk.InternalKey.ToJsonString();
-                Assert.AreEqual(abc,poco.Item2);
+                string partitionKeyString = pk.InternalKey.ToJsonString();
+                Assert.AreEqual(poco.Item2, partitionKeyString);
             }
 
         }
