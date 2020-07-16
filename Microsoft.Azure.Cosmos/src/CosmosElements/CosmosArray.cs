@@ -90,6 +90,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosArray Create(IEnumerable<CosmosElement> cosmosElements) => new EagerCosmosArray(cosmosElements);
 
+        public static CosmosArray Create(params CosmosElement[] cosmosElements) => new EagerCosmosArray(cosmosElements);
+
+        public static CosmosArray Create() => new EagerCosmosArray(Enumerable.Empty<CosmosElement>());
+
         public abstract IEnumerator<CosmosElement> GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();

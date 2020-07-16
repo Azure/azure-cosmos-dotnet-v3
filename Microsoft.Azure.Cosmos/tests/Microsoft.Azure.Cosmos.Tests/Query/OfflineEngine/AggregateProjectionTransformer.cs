@@ -206,14 +206,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                 double count = 0;
                                 foreach (CosmosElement result in results)
                                 {
-                                    if (!(result is CosmosNumber resultAsNumber))
-                                    {
-                                        sum = Undefined;
-                                    }
-                                    else
+                                    if ((result is CosmosNumber resultAsNumber) && (sum != Undefined))
                                     {
                                         sum = CosmosNumber64.Create(Number64.ToDouble(sum.Value) + Number64.ToDouble(resultAsNumber.Value));
                                         count++;
+                                    }
+                                    else
+                                    {
+                                        sum = Undefined;
                                     }
                                 }
 
@@ -250,7 +250,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                 throw new ArgumentException($"Unknown {nameof(Aggregate)} {aggregate}");
                         }
 
-                        rewrittenExpression = aggregationResult.Accept(CosmosElementToSqlScalarExpression.Singleton);
+                        if(aggregationResult != Undefined)
+                        {
+                            rewrittenExpression = aggregationResult.Accept(CosmosElementToSqlScalarExpression.Singleton);
+                        }
+                        else
+                        {
+                            rewrittenExpression = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+                        }
+                        
                     }
                     else
                     {

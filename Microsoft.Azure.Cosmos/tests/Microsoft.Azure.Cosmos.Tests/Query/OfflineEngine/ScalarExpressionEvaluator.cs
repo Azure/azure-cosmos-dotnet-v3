@@ -388,55 +388,61 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
         private static CosmosElement PerformLogicalAnd(CosmosElement left, CosmosElement right)
         {
-            if (!(left is CosmosBoolean leftAsBoolean))
-            {
-                return Undefined;
-            }
-
-            if (!(right is CosmosBoolean rightAsBoolean))
-            {
-                return Undefined;
-            }
+            bool leftIsBoolean = left is CosmosBoolean;
+            bool rightIsBoolean = right is CosmosBoolean;
 
             // If the expression is false && <anything>, then the result is false
-            if (!leftAsBoolean.Value)
+            if (leftIsBoolean && !(left as CosmosBoolean).Value)
             {
                 return CosmosBoolean.Create(false);
             }
 
-            if (!rightAsBoolean.Value)
+            if (rightIsBoolean && !(right as CosmosBoolean).Value)
             {
                 return CosmosBoolean.Create(false);
             }
 
-            bool result = leftAsBoolean.Value && rightAsBoolean.Value;
+            if (!leftIsBoolean)
+            {
+                return Undefined;
+            }
+
+            if (!rightIsBoolean)
+            {
+                return Undefined;
+            }
+
+            bool result = (left as CosmosBoolean).Value && (right as CosmosBoolean).Value;
             return CosmosBoolean.Create(result);
         }
 
         private static CosmosElement PerformLogicalOr(CosmosElement left, CosmosElement right)
         {
-            if (!(left is CosmosBoolean leftAsBoolean))
-            {
-                return Undefined;
-            }
-
-            if (!(right is CosmosBoolean rightAsBoolean))
-            {
-                return Undefined;
-            }
+            bool leftIsBoolean = left is CosmosBoolean;
+            bool rightIsBoolean = right is CosmosBoolean;
 
             // If the expression is true || <anything>, then the result is true
-            if (leftAsBoolean.Value)
+            if (leftIsBoolean && (left as CosmosBoolean).Value)
             {
                 return CosmosBoolean.Create(true);
             }
 
-            if (rightAsBoolean.Value)
+            if (rightIsBoolean && (right as CosmosBoolean).Value)
             {
                 return CosmosBoolean.Create(true);
             }
 
-            bool result = leftAsBoolean.Value || rightAsBoolean.Value;
+            if (!leftIsBoolean)
+            {
+                return Undefined;
+            }
+
+            if (!rightIsBoolean)
+            {
+                return Undefined;
+            }
+
+            bool result = (left as CosmosBoolean).Value || (right as CosmosBoolean).Value;
             return CosmosBoolean.Create(result);
         }
 

@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 IEnumerable<Tuple<CosmosElement, string>> subDocumentsAndRids = documents
                     .Select((document) => ApplyPath(document, tokens))
                     .Where((subDocumentsAndRid) => subDocumentsAndRid.Item1 != null);
-                return new CollectionEvaluationResult(subDocumentsAndRids, tokens.Last().ToString());
+                return new CollectionEvaluationResult(subDocumentsAndRids, tokens.Last().FromRight(null));
             }
 
             private static Tuple<CosmosElement, string> ApplyPath(CosmosElement document, IEnumerable<Either<long, string>> tokens)

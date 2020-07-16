@@ -1087,7 +1087,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             StringBuilder stringBuilder = new StringBuilder();
             for (long i = 0; i < repeatCountAsLong; i++)
             {
-                stringBuilder.Append(strValue);
+                stringBuilder.Append(strValue.Value);
             }
 
             return CosmosString.Create(stringBuilder.ToString());

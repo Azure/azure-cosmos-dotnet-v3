@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class Projector : SqlSelectSpecVisitor<CosmosElement, CosmosElement>
     {
@@ -26,11 +25,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             if (selectSpec == null)
             {
                 throw new ArgumentNullException(nameof(selectSpec));
-            }
-
-            if (document == null)
-            {
-                throw new ArgumentNullException(nameof(document));
             }
 
             Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
@@ -81,11 +75,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 throw new ArgumentNullException(nameof(selectSpec));
             }
 
-            if (document == null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
-
             CosmosObject documentAsObject = (CosmosObject)document;
 
             Dictionary<string, CosmosElement> properties = new Dictionary<string, CosmosElement>();
@@ -113,11 +102,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             if (selectSpec == null)
             {
                 throw new ArgumentNullException(nameof(selectSpec));
-            }
-
-            if (document == null)
-            {
-                throw new ArgumentNullException(nameof(document));
             }
 
             return selectSpec.Expression.Accept(ScalarExpressionEvaluator.Singleton, document);
