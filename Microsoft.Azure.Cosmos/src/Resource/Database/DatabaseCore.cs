@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosClient Client => this.ClientContext.Client;
 
-        internal override Uri LinkUri { get; }
+        internal override string LinkUri { get; }
 
         internal override CosmosClientContext ClientContext { get; }
 
@@ -169,7 +170,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.ClientContext.ResponseFactory.CreateContainerResponse(this.GetContainer(containerProperties.Id), response);
         }
-
         public async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             ContainerProperties containerProperties,
@@ -749,7 +749,7 @@ namespace Microsoft.Azure.Cosmos
            CosmosDiagnosticsContext diagnosticsContext,
            Stream streamPayload,
            OperationType operationType,
-           Uri linkUri,
+           string linkUri,
            ResourceType resourceType,
            RequestOptions requestOptions,
            CancellationToken cancellationToken)

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             double requestCharge,
             string errorMessage,
             HttpMethod method,
-            Uri requestUri,
+            string requestUri,
             string requestSessionToken,
             string responseSessionToken)
         {
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public double RequestCharge { get; }
         public string ErrorMessage { get; }
         public HttpMethod Method { get; }
-        public Uri RequestUri { get; }
+        public string RequestUri { get; }
         public string RequestSessionToken { get; }
         public string ResponseSessionToken { get; }
 

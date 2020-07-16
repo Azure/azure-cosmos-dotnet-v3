@@ -210,23 +210,28 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Executes the batch at the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">Options that apply to the batch. Used only for EPK routing.</param>
+        /// <param name="requestOptions">Options that apply to the batch.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
-        public virtual Task<TransactionalBatchResponse> ExecuteAsync(
-            RequestOptions requestOptions,
+        public override Task<TransactionalBatchResponse> ExecuteAsync(
+            TransactionalBatchRequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-            BatchExecutor executor = new BatchExecutor(
-                container: this.container,
-                partitionKey: this.partitionKey,
-                operations: this.operations,
-                batchOptions: requestOptions,
-                diagnosticsContext: diagnosticsContext);
+            return this.container.ClientContext.OperationHelperAsync(
+                nameof(ExecuteAsync),
+                requestOptions,
+                (diagnostics) =>
+                {
+                    BatchExecutor executor = new BatchExecutor(
+                                    container: this.container,
+                                    partitionKey: this.partitionKey,
+                                    operations: this.operations,
+                                    batchOptions: requestOptions,
+                                    diagnosticsContext: diagnostics);
 
-            this.operations = new List<ItemBatchOperation>();
-            return executor.ExecuteAsync(cancellationToken);
+                    this.operations = new List<ItemBatchOperation>();
+                    return executor.ExecuteAsync(cancellationToken);
+                });
         }
 
         /// <summary>
