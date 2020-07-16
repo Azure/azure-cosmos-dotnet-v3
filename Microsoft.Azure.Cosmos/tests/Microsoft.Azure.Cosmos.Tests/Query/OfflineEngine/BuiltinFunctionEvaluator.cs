@@ -10,11 +10,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using System.Globalization;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Newtonsoft.Json.Linq;
 
     internal static class BuiltinFunctionEvaluator
     {
-        private static readonly JToken Undefined = null;
+        private static readonly CosmosElement Undefined = null;
 
         private static readonly HashSet<BuiltinFunctionName> NullableFunctions = new HashSet<BuiltinFunctionName>()
         {
@@ -85,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             UPPER
         }
 
-        public static JToken EvaluateFunctionCall(string name, IReadOnlyList<JToken> arguments)
+        public static CosmosElement EvaluateFunctionCall(string name, IReadOnlyList<CosmosElement> arguments)
         {
             if (!Enum.TryParse(value: name, ignoreCase: true, result: out BuiltinFunctionName builtinFunction))
             {
@@ -98,216 +100,371 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 return Undefined;
             }
 
-            int argumentCount = arguments.Count;
-            JToken result;
+            CosmosElement result;
             switch (builtinFunction)
             {
                 case BuiltinFunctionName.ABS:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.ABS, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.ABS,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ACOS:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.ACOS, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.ACOS,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ARRAY_CONCAT:
-                    result = ExecuteAtleastTwoArgumentFunction(BuiltinFunctionEvaluator.ARRAY_CONCAT, builtinFunction, arguments);
+                    result = ExecuteAtleastTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.ARRAY_CONCAT,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ARRAY_CONTAINS:
-                    result = ExecuteTwoOrThreeArgumentFunction(BuiltinFunctionEvaluator.ARRAY_CONTAINS, builtinFunction, arguments);
+                    result = ExecuteTwoOrThreeArgumentFunction(
+                        BuiltinFunctionEvaluator.ARRAY_CONTAINS,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ARRAY_LENGTH:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.ARRAY_LENGTH, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.ARRAY_LENGTH,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ARRAY_SLICE:
-                    result = ExecuteTwoOrThreeArgumentFunction(BuiltinFunctionEvaluator.ARRAY_SLICE, builtinFunction, arguments);
+                    result = ExecuteTwoOrThreeArgumentFunction(
+                        BuiltinFunctionEvaluator.ARRAY_SLICE,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ASIN:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.ASIN, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.ASIN,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ATAN:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.ATAN, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.ATAN,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ATN2:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.ATN2, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.ATN2,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.CEILING:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.CEILING, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.CEILING,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.CONCAT:
-                    result = ExecuteAtleastTwoArgumentFunction(BuiltinFunctionEvaluator.CONCAT, builtinFunction, arguments);
+                    result = ExecuteAtleastTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.CONCAT,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.CONTAINS:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.CONTAINS, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.CONTAINS,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.COS:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.COS, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.COS,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.COT:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.COT, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.COT,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.DEGREES:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.DEGREES, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.DEGREES,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ENDSWITH:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.ENDSWITH, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.ENDSWITH,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.EXP:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.EXP, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.EXP,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.FLOOR:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.FLOOR, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.FLOOR,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.INDEX_OF:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.INDEX_OF, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.INDEX_OF,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.IS_ARRAY:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.IS_ARRAY, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.IS_ARRAY,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.IS_BOOL:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.IS_BOOL, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.IS_BOOL,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.IS_DEFINED:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.IS_DEFINED, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.IS_DEFINED,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.IS_NULL:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.IS_NULL, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.IS_NULL,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.IS_NUMBER:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.IS_NUMBER, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.IS_NUMBER,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.IS_OBJECT:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.IS_OBJECT, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.IS_OBJECT,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.IS_PRIMITIVE:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.IS_PRIMITIVE, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.IS_PRIMITIVE,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.IS_STRING:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.IS_STRING, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.IS_STRING,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.LEFT:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.LEFT, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.LEFT,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.LENGTH:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.LENGTH, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.LENGTH,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.LOG:
-                    result = ExecuteOneOrTwoArgumentFunction(BuiltinFunctionEvaluator.LOG, builtinFunction, arguments);
+                    result = ExecuteOneOrTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.LOG,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.LOG10:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.LOG10, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.LOG10,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.LOWER:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.LOWER, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.LOWER,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.LTRIM:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.LTRIM, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.LTRIM,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.PI:
-                    result = ExecuteZeroArgumentFunction(BuiltinFunctionEvaluator.PI, builtinFunction, arguments);
+                    result = ExecuteZeroArgumentFunction(
+                        BuiltinFunctionEvaluator.PI,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.POWER:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.POWER, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.POWER,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.RADIANS:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.RADIANS, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.RADIANS,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.REPLACE:
-                    result = ExecuteThreeArgumentFunction(BuiltinFunctionEvaluator.REPLACE, builtinFunction, arguments);
+                    result = ExecuteThreeArgumentFunction(
+                        BuiltinFunctionEvaluator.REPLACE,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.REPLICATE:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.REPLICATE, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.REPLICATE,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.REVERSE:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.REVERSE, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.REVERSE,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.RIGHT:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.RIGHT, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.RIGHT,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.ROUND:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.ROUND, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.ROUND,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.RTRIM:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.RTRIM, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.RTRIM,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.SIGN:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.SIGN, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.SIGN,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.SIN:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.SIN, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.SIN,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.SQRT:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.SQRT, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.SQRT,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.SQUARE:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.SQUARE, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.SQUARE,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.STARTSWITH:
-                    result = ExecuteTwoArgumentFunction(BuiltinFunctionEvaluator.STARTSWITH, builtinFunction, arguments);
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.STARTSWITH,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.SUBSTRING:
-                    result = ExecuteThreeArgumentFunction(BuiltinFunctionEvaluator.SUBSTRING, builtinFunction, arguments);
+                    result = ExecuteThreeArgumentFunction(
+                        BuiltinFunctionEvaluator.SUBSTRING,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.TAN:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.TAN, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.TAN,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.TRUNC:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.TRUNC, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.TRUNC,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.TOSTRING:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.TOSTRING, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.TOSTRING,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 case BuiltinFunctionName.UPPER:
-                    result = ExecuteOneArgumentFunction(BuiltinFunctionEvaluator.UPPER, builtinFunction, arguments);
+                    result = ExecuteOneArgumentFunction(
+                        BuiltinFunctionEvaluator.UPPER,
+                        builtinFunction,
+                        arguments);
                     break;
 
                 default:
@@ -322,20 +479,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="number">The numeric expression to take the absolute value of.</param>
         /// <returns>The absolute (positive) value of the specified numeric expression.</returns>
-        private static JToken ABS(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Abs, number);
-        }
+        private static CosmosElement ABS(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Abs, number);
 
         /// <summary>
         /// Returns the angle, in radians, whose cosine is the specified numeric expression; also called arccosine.
         /// </summary>
         /// <param name="number">The numeric expression to take the arccosine of.</param>
         /// <returns>The angle, in radians, whose cosine is the specified numeric expression; also called arccosine.</returns>
-        private static JToken ACOS(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Acos, number);
-        }
+        private static CosmosElement ACOS(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Acos, number);
 
         /// <summary>
         /// Returns an array that is the result of concatenating two or more array values.
@@ -344,45 +495,55 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="second">The second array expression.</param>
         /// <param name="arrays">The remaining (optional) arrays.</param>
         /// <returns>An array that is the result of concatenating two or more array values.</returns>
-        private static JToken ARRAY_CONCAT(JToken first, JToken second, params JToken[] arrays)
+        private static CosmosElement ARRAY_CONCAT(
+            CosmosElement first,
+            CosmosElement second,
+            params CosmosElement[] arrays)
         {
-            bool allArrays = first.Type == JTokenType.Array && second.Type == JTokenType.Array;
-            if (arrays != null)
-            {
-                foreach (JToken array in arrays)
-                {
-                    allArrays &= array.Type == JTokenType.Array;
-                }
-            }
-
-            if (!allArrays)
+            if (!(first is CosmosArray firstArray))
             {
                 return Undefined;
             }
 
-            JArray concatenatedArray = new JArray();
-            foreach (JToken arrayItem in (JArray)first)
+            if (!(second is CosmosArray secondArray))
+            {
+                return Undefined;
+            }
+
+            if (arrays != null)
+            {
+                foreach (CosmosElement array in arrays)
+                {
+                    if (!(array is CosmosArray))
+                    {
+                        return Undefined;
+                    }
+                }
+            }
+
+            List<CosmosElement> concatenatedArray = new List<CosmosElement>();
+            foreach (CosmosElement arrayItem in firstArray)
             {
                 concatenatedArray.Add(arrayItem);
             }
 
-            foreach (JToken arrayItem in (JArray)second)
+            foreach (CosmosElement arrayItem in secondArray)
             {
                 concatenatedArray.Add(arrayItem);
             }
 
             if (arrays != null)
             {
-                foreach (JArray array in arrays)
+                foreach (CosmosArray array in arrays)
                 {
-                    foreach (JToken arrayItem in array)
+                    foreach (CosmosElement arrayItem in array)
                     {
                         concatenatedArray.Add(arrayItem);
                     }
                 }
             }
 
-            return concatenatedArray;
+            return CosmosArray.Create(concatenatedArray);
         }
 
         /// <summary>
@@ -392,45 +553,48 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="needle">The value to look for.</param>
         /// <param name="partialMatchToken">If the match is full or partial.</param>
         /// <returns>A Boolean indicating whether the array contains the specified value.</returns>
-        private static JToken ARRAY_CONTAINS(JToken haystack, JToken needle, JToken partialMatchToken = null)
+        private static CosmosElement ARRAY_CONTAINS(
+            CosmosElement haystack,
+            CosmosElement needle,
+            CosmosElement partialMatchToken = null)
         {
             if (partialMatchToken == Undefined)
             {
-                partialMatchToken = false;
+                partialMatchToken = CosmosBoolean.Create(false);
             }
 
-            if (haystack == Undefined || needle == Undefined || partialMatchToken == Undefined)
+            if (!(partialMatchToken is CosmosBoolean partialMatchAsBoolean))
             {
                 return Undefined;
             }
 
-            bool haystackIsArray = haystack.Type == JTokenType.Array;
-            bool partialMatchValue = false;
-            bool partialMatchIsBool = partialMatchToken == null || Utils.TryConvertToBoolean(partialMatchToken, out partialMatchValue);
+            if (!(haystack is CosmosArray haystackAsArray))
+            {
+                return Undefined;
+            }
 
-            if (!haystackIsArray || !partialMatchIsBool)
+            if (needle == Undefined)
             {
                 return Undefined;
             }
 
             bool contains = false;
-            foreach (JToken hay in (JArray)haystack)
+            foreach (CosmosElement hay in haystackAsArray)
             {
-                if (partialMatchValue)
+                if (partialMatchAsBoolean.Value)
                 {
                     bool partialMatch;
-                    if (needle.Type == JTokenType.Object)
+                    if (needle is CosmosObject needleAsObject)
                     {
-                        JObject needleObject = (JObject)needle;
                         partialMatch = true;
-                        foreach (KeyValuePair<string, JToken> kvp in needleObject)
+                        foreach (KeyValuePair<string, CosmosElement> kvp in needleAsObject)
                         {
                             string name = kvp.Key;
-                            JToken value1 = kvp.Value;
+                            CosmosElement needleValue = kvp.Value;
 
-                            if (hay.Type == JTokenType.Object && ((JObject)hay).TryGetValue(name, out JToken value2))
+                            if ((hay is CosmosObject hayAsObject) && hayAsObject.TryGetValue(name, out CosmosElement hayValue))
                             {
-                                partialMatch &= JsonTokenEqualityComparer.Value.Equals(value1, value2);
+                                partialMatch &= needleValue == hayValue;
                             }
                             else
                             {
@@ -440,38 +604,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     }
                     else
                     {
-                        partialMatch = JsonTokenEqualityComparer.Value.Equals(hay, needle);
+                        partialMatch = hay == needle;
                     }
 
                     contains |= partialMatch;
                 }
                 else
                 {
-                    contains |= JsonTokenEqualityComparer.Value.Equals(hay, needle);
+                    contains |= hay == needle;
                 }
             }
 
-            return contains;
+            return CosmosBoolean.Create(contains);
         }
 
         /// <summary>
         /// Returns the number of elements of the specified array expression.
         /// </summary>
-        /// <param name="array">The array expression to find the length of.</param>
+        /// <param name="value">The array expression to find the length of.</param>
         /// <returns>The number of elements of the specified array expression.</returns>
-        private static JToken ARRAY_LENGTH(JToken array)
+        private static CosmosElement ARRAY_LENGTH(CosmosElement value)
         {
-            JToken result;
-            if (array.Type == JTokenType.Array)
+            if (!(value is CosmosArray cosmosArray))
             {
-                result = ((JArray)array).Count;
-            }
-            else
-            {
-                result = Undefined;
+                return Undefined;
             }
 
-            return result;
+            return CosmosNumber64.Create(cosmosArray.Count);
         }
 
         /// <summary>
@@ -481,65 +640,78 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="startIndex">The start index to slice from.</param>
         /// <param name="count">The end index to slice to.</param>
         /// <returns>Part of an array expression.</returns>
-        private static JToken ARRAY_SLICE(JToken value, JToken startIndex, JToken count = null)
+        private static CosmosElement ARRAY_SLICE(
+            CosmosElement value,
+            CosmosElement startIndex,
+            CosmosElement count = null)
         {
             if (count == null)
             {
-                count = int.MaxValue;
+                count = CosmosNumber64.Create(long.MaxValue);
             }
 
-            JToken result = Undefined;
-
-            bool valueIsArray = value.Type == JTokenType.Array;
-            bool startIndexIsNumber = Utils.TryConvertToNumber(startIndex, out double startIndexAsNumber);
-            bool countIsNumber = Utils.TryConvertToNumber(count, out double countAsNumber);
-
-            if (valueIsArray && startIndexIsNumber && countIsNumber)
+            if (!(value is CosmosArray valueAsArray))
             {
-                JArray array = (JArray)value;
+                return Undefined;
+            }
 
-                if (!Utils.TryConvertToInteger(startIndexAsNumber, out long startIndexAsInteger))
-                {
-                    return Undefined;
-                }
+            if (!(startIndex is CosmosNumber startIndexAsNumber))
+            {
+                return Undefined;
+            }
 
+            if (!(count is CosmosNumber countAsNumber))
+            {
+                return Undefined;
+            }
+
+            if (!startIndexAsNumber.Value.IsInteger)
+            {
+                return Undefined;
+            }
+
+            long startIndexAsInteger = Number64.ToLong(startIndexAsNumber.Value);
+
+            if (startIndexAsInteger < 0)
+            {
+                startIndexAsInteger += valueAsArray.Count;
                 if (startIndexAsInteger < 0)
                 {
-                    startIndexAsInteger += array.Count;
-                    if (startIndexAsInteger < 0)
-                    {
-                        startIndexAsInteger = 0;
-                    }
-                }
-
-                if (!Utils.TryConvertToInteger(countAsNumber, out long countAsInteger))
-                {
-                    return Undefined;
-                }
-
-                countAsInteger = Math.Min(array.Count - startIndexAsInteger, countAsInteger);
-
-                if (array.Count <= 0 || (startIndexAsInteger <= 0 && countAsInteger >= array.Count))
-                {
-                    return array;
-                }
-                else
-                {
-                    if (startIndexAsInteger >= array.Count || countAsInteger <= 0)
-                    {
-                        // Empty Array
-                        return new JArray();
-                    }
-
-                    return new JArray(
-                        array
-                        .Skip((int)Math.Min(startIndexAsInteger, int.MaxValue))
-                        .Take((int)Math.Min(countAsInteger, int.MaxValue))
-                        .ToArray());
+                    startIndexAsInteger = 0;
                 }
             }
 
-            return result;
+            if (!countAsNumber.Value.IsInteger)
+            {
+                return Undefined;
+            }
+
+            long countAsInteger = Number64.ToLong(countAsNumber.Value);
+            countAsInteger = Math.Min(valueAsArray.Count - startIndexAsInteger, countAsInteger);
+
+            if (valueAsArray.Count <= 0)
+            {
+                return valueAsArray;
+            }
+
+            if ((startIndexAsInteger <= 0) && (countAsInteger >= valueAsArray.Count))
+            {
+                return valueAsArray;
+            }
+
+            if (startIndexAsInteger >= valueAsArray.Count)
+            {
+                return CosmosArray.Empty;
+            }
+
+            if (countAsInteger <= 0)
+            {
+                return CosmosArray.Empty;
+            }
+
+            return CosmosArray.Create(valueAsArray
+                .Skip((int)Math.Min(startIndexAsInteger, int.MaxValue))
+                .Take((int)Math.Min(countAsInteger, int.MaxValue)));
         }
 
         /// <summary>
@@ -547,20 +719,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="number">The numeric expression to take the arcsine of.</param>
         /// <returns>The angle, in radians, whose sine is the specified numeric expression. This is also called arcsine.</returns>
-        private static JToken ASIN(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Asin, number);
-        }
+        private static CosmosElement ASIN(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Asin, number);
 
         /// <summary>
         /// Returns the angle, in radians, whose tangent is the specified numeric expression. This is also called arctangent.
         /// </summary>
         /// <param name="number">The numeric expression.</param>
         /// <returns>The angle, in radians, whose tangent is the specified numeric expression. This is also called arctangent.</returns>
-        private static JToken ATAN(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Atan, number);
-        }
+        private static CosmosElement ATAN(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Atan, number);
 
         /// <summary>
         /// Returns the angle, in radians, between the positive x-axis and the ray from the origin to the point (y, x), where x and y are the values of the two specified float expressions.
@@ -568,20 +734,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="x">x coordinate of the point.</param>
         /// <param name="y">y coordinate of the point.</param>
         /// <returns>the angle, in radians, between the positive x-axis and the ray from the origin to the point (y, x), where x and y are the values of the two specified float expressions.</returns>
-        private static JToken ATN2(JToken x, JToken y)
-        {
-            return ExecuteTwoArgumentNumberFunction(Math.Atan2, x, y);
-        }
+        private static CosmosElement ATN2(CosmosElement x, CosmosElement y) => ExecuteTwoArgumentNumberFunction(Math.Atan2, x, y);
 
         /// <summary>
         /// Returns the smallest integer value greater than, or equal to, the specified numeric expression.
         /// </summary>
         /// <param name="number">The numeric expression.</param>
         /// <returns>The smallest integer value greater than, or equal to, the specified numeric expression.</returns>
-        private static JToken CEILING(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Ceiling, number);
-        }
+        private static CosmosElement CEILING(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Ceiling, number);
 
         /// <summary>
         /// Returns a string that is the result of concatenating two or more string values.
@@ -590,36 +750,44 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="string2">The second string expression.</param>
         /// <param name="otherStrings">The remaining (optional) strings.</param>
         /// <returns>A string that is the result of concatenating two or more string values.</returns>
-        private static JToken CONCAT(JToken string1, JToken string2, params JToken[] otherStrings)
+        private static CosmosElement CONCAT(
+            CosmosElement string1,
+            CosmosElement string2,
+            params CosmosElement[] otherStrings)
         {
-            bool allString = JsonTypeUtils.JTokenTypeToJsonType(string1.Type) == JsonType.String
-                && JsonTypeUtils.JTokenTypeToJsonType(string2.Type) == JsonType.String;
-
-            if (otherStrings != null)
-            {
-                foreach (JToken otherString in otherStrings)
-                {
-                    allString &= JsonTypeUtils.JTokenTypeToJsonType(otherString.Type) == JsonType.String;
-                }
-            }
-
-            if (!allString)
+            if (!(string1 is CosmosString cosmosString1))
             {
                 return Undefined;
             }
 
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(string1.Value<string>());
-            stringBuilder.Append(string2.Value<string>());
+            if (!(string2 is CosmosString cosmosString2))
+            {
+                return Undefined;
+            }
+
             if (otherStrings != null)
             {
-                foreach (JToken otherString in otherStrings)
+                foreach (CosmosElement otherString in otherStrings)
                 {
-                    stringBuilder.Append(otherString.Value<string>());
+                    if (!(otherString is CosmosString))
+                    {
+                        return Undefined;
+                    }
                 }
             }
 
-            return stringBuilder.ToString();
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append(cosmosString1.Value);
+            stringBuilder.Append(cosmosString2.Value);
+            if (otherStrings != null)
+            {
+                foreach (CosmosString otherString in otherStrings)
+                {
+                    stringBuilder.Append(otherString.Value);
+                }
+            }
+
+            return CosmosString.Create(stringBuilder.ToString());
         }
 
         /// <summary>
@@ -628,40 +796,39 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="haystack">The string expression to search in.</param>
         /// <param name="needle">The string expression to look search for.</param>
         /// <returns>A Boolean indicating whether the first string expression contains the second.</returns>
-        private static JToken CONTAINS(JToken haystack, JToken needle)
-        {
-            return ExecuteTwoArgumentStringFunction((value1, value2) => value1.Contains(value2), haystack, needle);
-        }
+        private static CosmosElement CONTAINS(
+            CosmosElement haystack,
+            CosmosElement needle) => ExecuteTwoArgumentStringFunction(
+                (value1, value2) => CosmosBoolean.Create(value1.Contains(value2)),
+                haystack,
+                needle);
 
         /// <summary>
         /// Returns the trigonometric cosine of the specified angle, in radians, in the specified expression.
         /// </summary>
         /// <param name="number">The numeric expression to take the cosine of.</param>
         /// <returns>The trigonometric cosine of the specified angle, in radians, in the specified expression.</returns>
-        private static JToken COS(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Cos, number);
-        }
+        private static CosmosElement COS(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            Math.Cos,
+            number);
 
         /// <summary>
         /// Returns the trigonometric cotangent of the specified angle, in radians, in the specified numeric expression.
         /// </summary>
         /// <param name="number">The numeric expression to take the cotangent of.</param>
         /// <returns>The trigonometric cotangent of the specified angle, in radians, in the specified numeric expression.</returns>
-        private static JToken COT(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction((value) => 1.0 / Math.Tan(value), number);
-        }
+        private static CosmosElement COT(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            (value) => 1.0 / Math.Tan(value),
+            number);
 
         /// <summary>
         /// Returns the corresponding angle in degrees for an angle specified in radians.
         /// </summary>
         /// <param name="number">The angle specified in radians to convert to degrees.</param>
         /// <returns>The corresponding angle in degrees for an angle specified in radians.</returns>
-        private static JToken DEGREES(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction((radians) => 180 / Math.PI * radians, number);
-        }
+        private static CosmosElement DEGREES(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            (radians) => 180 / Math.PI * radians,
+            number);
 
         /// <summary>
         /// Returns a Boolean indicating whether the first string expression ends with the second.
@@ -669,30 +836,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="str">The string expression to check.</param>
         /// <param name="suffix">The suffix to look for.</param>
         /// <returns>a Boolean indicating whether the first string expression ends with the second.</returns>
-        private static JToken ENDSWITH(JToken str, JToken suffix)
-        {
-            return ExecuteTwoArgumentStringFunction((value1, value2) => value1.EndsWith(value2, StringComparison.Ordinal), str, suffix);
-        }
+        private static CosmosElement ENDSWITH(CosmosElement str, CosmosElement suffix) => ExecuteTwoArgumentStringFunction(
+            (value1, value2) => CosmosBoolean.Create(value1.EndsWith(value2, StringComparison.Ordinal)),
+            str,
+            suffix);
 
         /// <summary>
         /// Returns the exponent of the specified numeric expression.
         /// </summary>
         /// <param name="number">The numeric expression to take the exponent of.</param>
         /// <returns>The exponent of the specified numeric expression.</returns>
-        private static JToken EXP(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Exp, number);
-        }
+        private static CosmosElement EXP(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Exp, number);
 
         /// <summary>
         /// Returns the largest integer less than or equal to the specified numeric expression.
         /// </summary>
         /// <param name="number">The number to take the floor of.</param>
         /// <returns>The largest integer less than or equal to the specified numeric expression.</returns>
-        private static JToken FLOOR(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Floor, number);
-        }
+        private static CosmosElement FLOOR(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Floor, number);
 
         /// <summary>
         /// Returns the starting position of the first occurrence of the second string expression within the first specified string expression, or -1 if the string is not found.
@@ -700,120 +861,66 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="str">The string expression to look in.</param>
         /// <param name="substring">The string expression to look for.</param>
         /// <returns>The starting position of the first occurrence of the second string expression within the first specified string expression, or -1 if the string is not found.</returns>
-        private static JToken INDEX_OF(JToken str, JToken substring)
-        {
-            return ExecuteTwoArgumentStringFunction((value1, value2) => value1.IndexOf(value2, StringComparison.Ordinal), str, substring);
-        }
+        private static CosmosElement INDEX_OF(CosmosElement str, CosmosElement substring) => ExecuteTwoArgumentStringFunction(
+            (value1, value2) => CosmosNumber64.Create(value1.IndexOf(value2, StringComparison.Ordinal)),
+            str,
+            substring);
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is an array.
         /// </summary>
         /// <param name="value">The expression to check if it's an array.</param>
         /// <returns>A Boolean indicating if the type of the value is an array.</returns>
-        private static JToken IS_ARRAY(JToken value)
-        {
-            if (value == Undefined)
-            {
-                return false;
-            }
-
-            return JsonTypeUtils.JTokenTypeToJsonType(value.Type) == JsonType.Array;
-        }
+        private static CosmosElement IS_ARRAY(CosmosElement value) => CosmosBoolean.Create(value is CosmosArray);
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a Boolean.
         /// </summary>
         /// <param name="value">The expression to check if it is a boolean.</param>
         /// <returns>A Boolean indicating if the type of the value is a Boolean.</returns>
-        private static JToken IS_BOOL(JToken value)
-        {
-            if (value == Undefined)
-            {
-                return false;
-            }
-
-            return JsonTypeUtils.JTokenTypeToJsonType(value.Type) == JsonType.Boolean;
-        }
+        private static CosmosElement IS_BOOL(CosmosElement value) => CosmosBoolean.Create(value is CosmosBoolean);
 
         /// <summary>
         /// Returns a Boolean indicating if the property has been assigned a value.
         /// </summary>
         /// <param name="value">The expression to check if it is defined.</param>
         /// <returns>A Boolean indicating if the property has been assigned a value.</returns>
-        private static JToken IS_DEFINED(JToken value)
-        {
-            return value != Undefined;
-        }
+        private static CosmosElement IS_DEFINED(CosmosElement value) => CosmosBoolean.Create(value != Undefined);
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is null.
         /// </summary>
         /// <param name="value">The expression to check if it is null.</param>
         /// <returns>A Boolean indicating if the type of the value is null.</returns>
-        private static JToken IS_NULL(JToken value)
-        {
-            if (value == Undefined)
-            {
-                return false;
-            }
-
-            return JsonTypeUtils.JTokenTypeToJsonType(value.Type) == JsonType.Null;
-        }
+        private static CosmosElement IS_NULL(CosmosElement value) => CosmosBoolean.Create(value is CosmosNull);
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a number.
         /// </summary>
         /// <param name="value">The expression to check if it is a number.</param>
         /// <returns>A Boolean indicating if the type of the value is a number.</returns>
-        private static JToken IS_NUMBER(JToken value)
-        {
-            if (value == Undefined)
-            {
-                return false;
-            }
-
-            return JsonTypeUtils.JTokenTypeToJsonType(value.Type) == JsonType.Number;
-        }
+        private static CosmosElement IS_NUMBER(CosmosElement value) => CosmosBoolean.Create(value is CosmosNumber);
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a JSON object.
         /// </summary>
         /// <param name="value">The expression to check if it is an object.</param>
         /// <returns>A Boolean indicating if the type of the value is a JSON object.</returns>
-        private static JToken IS_OBJECT(JToken value)
-        {
-            if (value == Undefined)
-            {
-                return false;
-            }
-
-            return JsonTypeUtils.JTokenTypeToJsonType(value.Type) == JsonType.Object;
-        }
+        private static CosmosElement IS_OBJECT(CosmosElement value) => CosmosBoolean.Create(value is CosmosObject);
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a string, number, Boolean or null.
         /// </summary>
         /// <param name="value">The expression to check if it is a primitive.</param>
         /// <returns>A Boolean indicating if the type of the value is a string, number, Boolean or null.</returns>
-        private static JToken IS_PRIMITIVE(JToken value)
-        {
-            return Utils.IsPrimitive(value);
-        }
+        private static CosmosElement IS_PRIMITIVE(CosmosElement value) => CosmosBoolean.Create(Utils.IsPrimitive(value));
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a string.
         /// </summary>
         /// <param name="value">The expression to check if it is a string.</param>
         /// <returns>A Boolean indicating if the type of the value is a string.</returns>
-        private static JToken IS_STRING(JToken value)
-        {
-            if (value == Undefined)
-            {
-                return false;
-            }
-
-            return JsonTypeUtils.JTokenTypeToJsonType(value.Type) == JsonType.String;
-        }
+        private static CosmosElement IS_STRING(CosmosElement value) => CosmosBoolean.Create(value is CosmosString);
 
         /// <summary>
         /// Returns the left part of a string with the specified number of characters.
@@ -821,20 +928,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="str">The string to take the left part of.</param>
         /// <param name="length">The number of characters to take.</param>
         /// <returns>The left part of a string with the specified number of characters.</returns>
-        private static JToken LEFT(JToken str, JToken length)
-        {
-            return ExecuteSubstring(str, 0, length);
-        }
+        private static CosmosElement LEFT(CosmosElement str, CosmosElement length) => ExecuteSubstring(
+            str,
+            CosmosNumber64.Create(0),
+            length);
 
         /// <summary>
         /// Returns the number of characters of the specified string expression.
         /// </summary>
         /// <param name="str">The string expression to take the length of.</param>
         /// <returns>The number of characters of the specified string expression.</returns>
-        private static JToken LENGTH(JToken str)
-        {
-            return ExecuteOneArgumentStringFunction((value) => value.Length, str);
-        }
+        private static CosmosElement LENGTH(CosmosElement str) => ExecuteOneArgumentStringFunction(
+            (value) => CosmosNumber64.Create(value.Length),
+            str);
 
         /// <summary>
         /// Returns the natural logarithm of the specified numeric expression, or the logarithm using the specified base.
@@ -842,49 +948,42 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="number">The number to take the log of.</param>
         /// <param name="numberBase">The (optional) base.</param>
         /// <returns>The natural logarithm of the specified numeric expression, or the logarithm using the specified base.</returns>
-        private static JToken LOG(JToken number, JToken numberBase = null)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Log, number);
-        }
+        private static CosmosElement LOG(CosmosElement number, CosmosElement numberBase = null) => ExecuteOneArgumentNumberFunction(
+            Math.Log,
+            number);
 
         /// <summary>
         /// Returns the base-10 logarithmic value of the specified numeric expression.
         /// </summary>
         /// <param name="number">The number to take the base-10 log of.</param>
         /// <returns>The base-10 logarithmic value of the specified numeric expression.</returns>
-        private static JToken LOG10(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Log10, number);
-        }
+        private static CosmosElement LOG10(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            Math.Log10,
+            number);
 
         /// <summary>
         /// Returns a string expression after converting uppercase character data to lowercase.
         /// </summary>
         /// <param name="str">The string to lowercase.</param>
         /// <returns>A string expression after converting uppercase character data to lowercase.</returns>
-        private static JToken LOWER(JToken str)
-        {
-            return ExecuteOneArgumentStringFunction((value) => value.ToLower(CultureInfo.InvariantCulture), str);
-        }
+        private static CosmosElement LOWER(CosmosElement str) => ExecuteOneArgumentStringFunction(
+            (value) => CosmosString.Create(value.ToLower(CultureInfo.InvariantCulture)),
+            str);
 
         /// <summary>
         /// Returns a string expression after it removes leading blanks.
         /// </summary>
         /// <param name="str">The string to remove leading blanks from.</param>
         /// <returns>A string expression after it removes leading blanks.</returns>
-        private static JToken LTRIM(JToken str)
-        {
-            return ExecuteOneArgumentStringFunction((value) => value.TrimStart(), str);
-        }
+        private static CosmosElement LTRIM(CosmosElement str) => ExecuteOneArgumentStringFunction(
+            (value) => CosmosString.Create(value.TrimStart()),
+            str);
 
         /// <summary>
         /// Returns the constant value of PI.
         /// </summary>
         /// <returns>The constant value of PI.</returns>
-        private static JToken PI()
-        {
-            return Math.PI;
-        }
+        private static CosmosElement PI() => CosmosNumber64.Create(Math.PI);
 
         /// <summary>
         /// Returns the power of the specified numeric expression to the value specified.
@@ -892,20 +991,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="baseNumber">The base number to take the power of.</param>
         /// <param name="exponentNumber">The exponent value.</param>
         /// <returns>The power of the specified numeric expression to the value specified.</returns>
-        private static JToken POWER(JToken baseNumber, JToken exponentNumber)
-        {
-            return ExecuteTwoArgumentNumberFunction(Math.Pow, baseNumber, exponentNumber);
-        }
+        private static CosmosElement POWER(
+            CosmosElement baseNumber,
+            CosmosElement exponentNumber) => ExecuteTwoArgumentNumberFunction(
+                Math.Pow,
+                baseNumber,
+                exponentNumber);
 
         /// <summary>
         /// Returns radians when a numeric expression, in degrees, is entered.
         /// </summary>
         /// <param name="number">The number expression, in degrees, to take the power of.</param>
         /// <returns>Radians when a numeric expression, in degrees, is entered.</returns>
-        private static JToken RADIANS(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction((degrees) => Math.PI * degrees / 180.0, number);
-        }
+        private static CosmosElement RADIANS(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            (degrees) => Math.PI * degrees / 180.0,
+            number);
 
         /// <summary>
         /// Replaces all occurrences of a specified string value with another string value.
@@ -914,29 +1014,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="subString">The string to look for.</param>
         /// <param name="replacement">The string to replace with.</param>
         /// <returns>A string with all occurrences of a specified string value with another string value.</returns>
-        private static JToken REPLACE(JToken stringValue, JToken subString, JToken replacement)
+        private static CosmosElement REPLACE(
+            CosmosElement stringValue,
+            CosmosElement subString,
+            CosmosElement replacement)
         {
-            if (!Utils.TryConvertToString(stringValue, out string stringValueValue))
+            if (!(stringValue is CosmosString stringValueValue))
             {
                 return Undefined;
             }
 
-            if (!Utils.TryConvertToString(subString, out string subStringValue))
+            if (!(subString is CosmosString subStringValue))
             {
                 return Undefined;
             }
 
-            if (subStringValue.Length == 0)
+            if (subStringValue.Value.Length == 0)
             {
                 return Undefined;
             }
 
-            if (!Utils.TryConvertToString(replacement, out string replacementValue))
+            if (!(replacement is CosmosString replacementValue))
             {
                 return Undefined;
             }
 
-            return stringValueValue.Replace(subStringValue, replacementValue);
+            return CosmosString.Create(stringValueValue.Value.Replace(subStringValue.Value, replacementValue.Value));
         }
 
         /// <summary>
@@ -945,28 +1048,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="str">The string to replicate.</param>
         /// <param name="repeatCount">The number of times to replicate the value.</param>
         /// <returns>The string value repeated a specified number of times.</returns>
-        private static JToken REPLICATE(JToken str, JToken repeatCount)
+        private static CosmosElement REPLICATE(
+            CosmosElement str,
+            CosmosElement repeatCount)
         {
-            if (!Utils.TryConvertToString(str, out string strValue))
+            if (!(str is CosmosString strValue))
             {
                 return Undefined;
             }
 
-            if (!Utils.TryConvertToNumber(repeatCount, out double repeatCountValue))
+            if (!(repeatCount is CosmosNumber repeatCountValue))
             {
                 return Undefined;
             }
 
-            if (repeatCountValue < 0)
+            if (repeatCountValue.Value < 0)
             {
                 return Undefined;
             }
+
+            long repeatCountAsLong = Number64.ToLong(repeatCountValue.Value);
 
             try
             {
                 checked
                 {
-                    if (strValue.Length * (long)repeatCountValue > 10000)
+                    if ((strValue.Value.Length * repeatCountAsLong) > 10000)
                     {
                         return Undefined;
                     }
@@ -978,12 +1085,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
 
             StringBuilder stringBuilder = new StringBuilder();
-            for (int i = 0; i < (long)repeatCountValue; i++)
+            for (long i = 0; i < repeatCountAsLong; i++)
             {
                 stringBuilder.Append(strValue);
             }
 
-            return stringBuilder.ToString();
+            return CosmosString.Create(stringBuilder.ToString());
         }
 
         /// <summary>
@@ -991,10 +1098,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="str">The string value to reverse.</param>
         /// <returns>The reverse order of a string value.</returns>
-        private static JToken REVERSE(JToken str)
-        {
-            return ExecuteOneArgumentStringFunction((value) => new string(value.Reverse().ToArray()), str);
-        }
+        private static CosmosElement REVERSE(CosmosElement str) => ExecuteOneArgumentStringFunction(
+            (value) => CosmosString.Create(new string(value.Reverse().ToArray())),
+            str);
 
         /// <summary>
         /// Returns the right part of a string with the specified number of characters.
@@ -1002,25 +1108,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="value">The string to take the right part of.</param>
         /// <param name="length">The number of characters to take.</param>
         /// <returns>The right part of a string with the specified number of characters.</returns>
-        private static JToken RIGHT(JToken value, JToken length)
+        private static CosmosElement RIGHT(
+            CosmosElement value,
+            CosmosElement length)
         {
-            if (!Utils.TryConvertToNumber(length, out double lengthValue))
+            if (!(value is CosmosString stringValue))
             {
                 return Undefined;
             }
 
-            if (!Utils.TryConvertToInteger(lengthValue, out long lengthAsInteger))
+            if (!(length is CosmosNumber lengthValue))
             {
                 return Undefined;
             }
 
-            if (!Utils.TryConvertToString(value, out string stringValue))
+            if (!lengthValue.Value.IsInteger)
             {
                 return Undefined;
             }
 
-            JToken offset = Math.Max(stringValue.Length - lengthAsInteger, 0);
-            return ExecuteSubstring(value, offset, stringValue.Length);
+            CosmosElement offset = CosmosNumber64.Create(Math.Max(stringValue.Value.Length - Number64.ToLong(lengthValue.Value), 0));
+            return ExecuteSubstring(value, offset, CosmosNumber64.Create(stringValue.Value.Length));
         }
 
         /// <summary>
@@ -1028,60 +1136,54 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="number">The numeric value to round.</param>
         /// <returns>A numeric value, rounded to the closest integer value.</returns>
-        private static JToken ROUND(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction((value) => { return Math.Round(value, MidpointRounding.AwayFromZero); }, number);
-        }
+        private static CosmosElement ROUND(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            (value) => Math.Round(value, MidpointRounding.AwayFromZero),
+            number);
 
         /// <summary>
         /// Returns a string expression after truncating all trailing blanks.
         /// </summary>
         /// <param name="str">The string to remove trailing blanks from.</param>
         /// <returns>A string expression after truncating all trailing blanks.</returns>
-        private static JToken RTRIM(JToken str)
-        {
-            return ExecuteOneArgumentStringFunction((value) => value.TrimEnd(), str);
-        }
+        private static CosmosElement RTRIM(CosmosElement str) => ExecuteOneArgumentStringFunction(
+            (value) => CosmosString.Create(value.TrimEnd()),
+            str);
 
         /// <summary>
         /// Returns the sign value (-1, 0, 1) of the specified numeric expression.
         /// </summary>
         /// <param name="number">The value to take the sign of.</param>
         /// <returns>The sign value (-1, 0, 1) of the specified numeric expression.</returns>
-        private static JToken SIGN(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction((value) => (double)Math.Sign(value), number);
-        }
+        private static CosmosElement SIGN(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            (value) => Math.Sign(value),
+            number);
 
         /// <summary>
         /// Returns the trigonometric sine of the specified angle, in radians, in the specified expression.
         /// </summary>
         /// <param name="number">The number to take the sine of.</param>
         /// <returns>The trigonometric sine of the specified angle, in radians, in the specified expression.</returns>
-        private static JToken SIN(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Sin, number);
-        }
+        private static CosmosElement SIN(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            Math.Sin,
+            number);
 
         /// <summary>
         /// Returns the square root of the specified numeric expression.
         /// </summary>
         /// <param name="number">The number to take the square root of.</param>
         /// <returns>The square root of the specified numeric expression.</returns>
-        private static JToken SQRT(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction(Math.Sqrt, number);
-        }
+        private static CosmosElement SQRT(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            Math.Sqrt,
+            number);
 
         /// <summary>
         /// Returns the square of the specified numeric expression.
         /// </summary>
         /// <param name="number">The number to square.</param>
         /// <returns>The square of the specified numeric expression.</returns>
-        private static JToken SQUARE(JToken number)
-        {
-            return ExecuteOneArgumentNumberFunction((value) => value * value, number);
-        }
+        private static CosmosElement SQUARE(CosmosElement number) => ExecuteOneArgumentNumberFunction(
+            (value) => value * value,
+            number);
 
         /// <summary>
         /// Returns a Boolean indicating whether the first string expression starts with the second.
@@ -1089,10 +1191,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="str">The string to search.</param>
         /// <param name="prefix">The string to search for.</param>
         /// <returns>A Boolean indicating whether the first string expression starts with the second.</returns>
-        private static JToken STARTSWITH(JToken str, JToken prefix)
-        {
-            return ExecuteTwoArgumentStringFunction((value1, value2) => value1.StartsWith(value2, StringComparison.Ordinal), str, prefix);
-        }
+        private static CosmosElement STARTSWITH(
+            CosmosElement str,
+            CosmosElement prefix) => ExecuteTwoArgumentStringFunction(
+                (value1, value2) => CosmosBoolean.Create(value1.StartsWith(value2, StringComparison.Ordinal)),
+                str,
+                prefix);
 
         /// <summary>
         /// Returns part of a string expression.
@@ -1101,7 +1205,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="startIndex">The start index of the string.</param>
         /// <param name="length">The length of the string.</param>
         /// <returns>Part of a string expression.</returns>
-        private static JToken SUBSTRING(JToken value, JToken startIndex, JToken length)
+        private static CosmosElement SUBSTRING(CosmosElement value, CosmosElement startIndex, CosmosElement length)
         {
             return ExecuteSubstring(value, startIndex, length);
         }
@@ -1111,7 +1215,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="number">The number to take the tangent of.</param>
         /// <returns>The tangent of the input expression, in the specified expression.</returns>
-        private static JToken TAN(JToken number)
+        private static CosmosElement TAN(CosmosElement number)
         {
             return ExecuteOneArgumentNumberFunction(Math.Tan, number);
         }
@@ -1121,7 +1225,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="number">The number to truncate.</param>
         /// <returns>A numeric value, truncated to the closest integer value.</returns>
-        private static JToken TRUNC(JToken number)
+        private static CosmosElement TRUNC(CosmosElement number)
         {
             return ExecuteOneArgumentNumberFunction(Math.Truncate, number);
         }
@@ -1131,7 +1235,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="value">The value to get the string version of.</param>
         /// <returns>The string version of the JSON value.</returns>
-        private static JToken TOSTRING(JToken value)
+        private static CosmosElement TOSTRING(CosmosElement value)
         {
             // Backend: TOSTRING(2049537175849502700) = "2.0495371758495027e+018"
             // Newtonsoft: TOSTRING(2049537175849502700) = 2.0495371758495027E+18
@@ -1143,12 +1247,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="str">The string to take the upper case of.</param>
         /// <returns>A string expression after converting lowercase character data to uppercase.</returns>
-        private static JToken UPPER(JToken str)
-        {
-            return ExecuteOneArgumentStringFunction((value) => value.ToUpper(CultureInfo.InvariantCulture), str);
-        }
+        private static CosmosElement UPPER(CosmosElement str) => ExecuteOneArgumentStringFunction(
+            (value) => CosmosString.Create(value.ToUpper(CultureInfo.InvariantCulture)),
+            str);
 
-        private static JToken ExecuteZeroArgumentFunction(Func<JToken> function, BuiltinFunctionName builtin, IReadOnlyList<JToken> arguments)
+        private static CosmosElement ExecuteZeroArgumentFunction(
+            Func<CosmosElement> function,
+            BuiltinFunctionName builtin,
+            IReadOnlyList<CosmosElement> arguments)
         {
             if (arguments.Count != 0)
             {
@@ -1158,7 +1264,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return function();
         }
 
-        private static JToken ExecuteOneArgumentFunction(Func<JToken, JToken> function, BuiltinFunctionName builtin, IReadOnlyList<JToken> arguments)
+        private static CosmosElement ExecuteOneArgumentFunction(
+            Func<CosmosElement, CosmosElement> function,
+            BuiltinFunctionName builtin,
+            IReadOnlyList<CosmosElement> arguments)
         {
             if (arguments.Count != 1)
             {
@@ -1168,7 +1277,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return function(arguments[0]);
         }
 
-        private static JToken ExecuteTwoArgumentFunction(Func<JToken, JToken, JToken> function, BuiltinFunctionName builtin, IReadOnlyList<JToken> arguments)
+        private static CosmosElement ExecuteTwoArgumentFunction(
+            Func<CosmosElement, CosmosElement, CosmosElement> function,
+            BuiltinFunctionName builtin,
+            IReadOnlyList<CosmosElement> arguments)
         {
             if (arguments.Count != 2)
             {
@@ -1178,7 +1290,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return function(arguments[0], arguments[1]);
         }
 
-        private static JToken ExecuteThreeArgumentFunction(Func<JToken, JToken, JToken, JToken> function, BuiltinFunctionName builtin, IReadOnlyList<JToken> arguments)
+        private static CosmosElement ExecuteThreeArgumentFunction(
+            Func<CosmosElement, CosmosElement, CosmosElement, CosmosElement> function,
+            BuiltinFunctionName builtin,
+            IReadOnlyList<CosmosElement> arguments)
         {
             if (arguments.Count != 3)
             {
@@ -1188,14 +1303,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return function(arguments[0], arguments[1], arguments[2]);
         }
 
-        private static JToken ExecuteOneOrTwoArgumentFunction(Func<JToken, JToken, JToken> function, BuiltinFunctionName builtin, IReadOnlyList<JToken> arguments)
+        private static CosmosElement ExecuteOneOrTwoArgumentFunction(
+            Func<CosmosElement, CosmosElement, CosmosElement> function,
+            BuiltinFunctionName builtin,
+            IReadOnlyList<CosmosElement> arguments)
         {
             if (arguments.Count != 1 && arguments.Count != 2)
             {
                 throw new ArgumentException($"{builtin} takes exactly one or two arguments.");
             }
 
-            JToken result;
+            CosmosElement result;
             if (arguments.Count == 1)
             {
                 result = function(arguments[0], null);
@@ -1208,14 +1326,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return result;
         }
 
-        private static JToken ExecuteTwoOrThreeArgumentFunction(Func<JToken, JToken, JToken, JToken> function, BuiltinFunctionName builtin, IReadOnlyList<JToken> arguments)
+        private static CosmosElement ExecuteTwoOrThreeArgumentFunction(
+            Func<CosmosElement, CosmosElement, CosmosElement, CosmosElement> function,
+            BuiltinFunctionName builtin,
+            IReadOnlyList<CosmosElement> arguments)
         {
             if (arguments.Count != 2 && arguments.Count != 3)
             {
                 throw new ArgumentException($"{builtin} takes exactly one or two arguments.");
             }
 
-            JToken result;
+            CosmosElement result;
             if (arguments.Count == 2)
             {
                 result = function(arguments[0], arguments[1], null);
@@ -1228,14 +1349,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return result;
         }
 
-        private static JToken ExecuteAtleastTwoArgumentFunction(Func<JToken, JToken, JToken[], JToken> function, BuiltinFunctionName builtin, IReadOnlyList<JToken> arguments)
+        private static CosmosElement ExecuteAtleastTwoArgumentFunction(
+            Func<CosmosElement, CosmosElement, CosmosElement[], CosmosElement> function,
+            BuiltinFunctionName builtin,
+            IReadOnlyList<CosmosElement> arguments)
         {
             if (arguments.Count < 2)
             {
                 throw new ArgumentException($"{builtin} takes atleast two arguments.");
             }
 
-            JToken result;
+            CosmosElement result;
             if (arguments.Count == 2)
             {
                 result = function(arguments[0], arguments[1], null);
@@ -1248,115 +1372,121 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return result;
         }
 
-        private static JToken ExecuteOneArgumentNumberFunction(Func<double, double> numberFunction, JToken argument)
+        private static CosmosElement ExecuteOneArgumentNumberFunction(
+            Func<double, double> numberFunction,
+            CosmosElement argument)
         {
-            JToken result;
-            if (Utils.TryConvertToNumber(argument, out double number))
+            if (!(argument is CosmosNumber argumentAsNumber))
             {
-                result = numberFunction(number);
-            }
-            else
-            {
-                result = Undefined;
+                return Undefined;
             }
 
-            return result;
+            return CosmosNumber64.Create(numberFunction(Number64.ToDouble(argumentAsNumber.Value)));
         }
 
-        private static JToken ExecuteTwoArgumentNumberFunction(Func<double, double, double> numberFunction, JToken argument1, JToken argument2)
+        private static CosmosElement ExecuteTwoArgumentNumberFunction(
+            Func<double, double, double> numberFunction,
+            CosmosElement argument1,
+            CosmosElement argument2)
         {
-            JToken result;
-            bool argumentIsNumber1 = Utils.TryConvertToNumber(argument1, out double number1);
-            bool argumentIsNumber2 = Utils.TryConvertToNumber(argument2, out double number2);
-
-            if (argumentIsNumber1 && argumentIsNumber2)
+            if (!(argument1 is CosmosNumber argumentAsNumber1))
             {
-                result = numberFunction(number1, number2);
-            }
-            else
-            {
-                result = Undefined;
+                return Undefined;
             }
 
-            return result;
+            if (!(argument2 is CosmosNumber argumentAsNumber2))
+            {
+                return Undefined;
+            }
+
+            return CosmosNumber64.Create(numberFunction(
+                Number64.ToDouble(argumentAsNumber1.Value),
+                Number64.ToDouble(argumentAsNumber2.Value)));
         }
 
-        private static JToken ExecuteOneArgumentStringFunction(Func<string, JToken> stringFunction, JToken argument)
+        private static CosmosElement ExecuteOneArgumentStringFunction(
+            Func<string, CosmosElement> stringFunction,
+            CosmosElement argument)
         {
-            JToken result;
-            if (Utils.TryConvertToString(argument, out string value))
+            if (!(argument is CosmosString argumentAsString))
             {
-                result = stringFunction(value);
-            }
-            else
-            {
-                result = Undefined;
+                return Undefined;
             }
 
-            return result;
+            return stringFunction(argumentAsString.Value);
         }
 
-        private static JToken ExecuteTwoArgumentStringFunction(Func<string, string, JToken> stringFunction, JToken argument1, JToken argument2)
+        private static CosmosElement ExecuteTwoArgumentStringFunction(
+            Func<string, string, CosmosElement> stringFunction,
+            CosmosElement argument1,
+            CosmosElement argument2)
         {
-            JToken result;
-            bool argumentIsString1 = Utils.TryConvertToString(argument1, out string string1);
-            bool argumentIsString2 = Utils.TryConvertToString(argument2, out string string2);
-
-            if (argumentIsString1 && argumentIsString2)
+            if (!(argument1 is CosmosString argumentAsString1))
             {
-                result = stringFunction(string1, string2);
-            }
-            else
-            {
-                result = Undefined;
+                return Undefined;
             }
 
-            return result;
+            if (!(argument2 is CosmosString argumentAsString2))
+            {
+                return Undefined;
+            }
+
+            return stringFunction(argumentAsString1.Value, argumentAsString2.Value);
         }
 
-        private static JToken ExecuteSubstring(JToken stringArgument, JToken startIndex, JToken length)
+        private static CosmosElement ExecuteSubstring(
+            CosmosElement stringArgument,
+            CosmosElement startIndex,
+            CosmosElement length)
         {
-            JToken result = Undefined;
-
-            bool argumentIsString = Utils.TryConvertToString(stringArgument, out string stringValue);
-            bool startIndexIsNumber = Utils.TryConvertToNumber(startIndex, out double startIndexValue);
-            bool lengthIsNumber = Utils.TryConvertToNumber(length, out double lengthValue);
-
-            if (argumentIsString && startIndexIsNumber && lengthIsNumber)
+            if (!(stringArgument is CosmosString stringArgumentValue))
             {
-                if (stringValue.Length == 0)
-                {
-                    return string.Empty;
-                }
-
-                if (!Utils.TryConvertToInteger(startIndexValue, out long startIndexAsInteger))
-                {
-                    return Undefined;
-                }
-
-                int safeStartIndexAsInteger = (int)Math.Min(startIndexAsInteger, int.MaxValue);
-
-                if (!Utils.TryConvertToInteger(lengthValue, out long lengthAsInteger))
-                {
-                    return Undefined;
-                }
-
-                if (startIndexAsInteger == 0 && stringValue.Length <= lengthAsInteger)
-                {
-                    return stringValue;
-                }
-
-                if (startIndexAsInteger >= stringValue.Length || startIndexAsInteger < 0 || lengthAsInteger <= 0)
-                {
-                    return string.Empty;
-                }
-
-                long maxLength = stringValue.Length - startIndexAsInteger;
-                int safeMaxLength = (int)Math.Min(Math.Min(maxLength, lengthAsInteger), int.MaxValue);
-                return stringValue.Substring(safeStartIndexAsInteger, safeMaxLength);
+                return Undefined;
             }
 
-            return result;
+            if (!(startIndex is CosmosNumber startIndexAsNumber))
+            {
+                return Undefined;
+            }
+
+            if (!(length is CosmosNumber lengthAsNumber))
+            {
+                return Undefined;
+            }
+
+            if (stringArgumentValue.Value.Length == 0)
+            {
+                return CosmosString.Empty;
+            }
+
+            if (!startIndexAsNumber.Value.IsInteger)
+            {
+                return Undefined;
+            }
+
+            if (!lengthAsNumber.Value.IsInteger)
+            {
+                return Undefined;
+            }
+
+            long startIndexAsInteger = Number64.ToLong(startIndexAsNumber.Value);
+            long lengthAsInteger = Number64.ToLong(lengthAsNumber.Value);
+
+            int safeStartIndexAsInteger = (int)Math.Min(startIndexAsInteger, int.MaxValue);
+
+            if ((startIndexAsInteger == 0) && (stringArgumentValue.Value.Length <= lengthAsInteger))
+            {
+                return stringArgumentValue;
+            }
+
+            if ((startIndexAsInteger >= stringArgumentValue.Value.Length) || (startIndexAsInteger < 0) || (lengthAsInteger <= 0))
+            {
+                return CosmosString.Empty;
+            }
+
+            long maxLength = stringArgumentValue.Value.Length - startIndexAsInteger;
+            int safeMaxLength = (int)Math.Min(Math.Min(maxLength, lengthAsInteger), int.MaxValue);
+            return CosmosString.Create(stringArgumentValue.Value.Substring(safeStartIndexAsInteger, safeMaxLength));
         }
     }
 }

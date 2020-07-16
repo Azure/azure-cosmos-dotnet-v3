@@ -6,33 +6,39 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Newtonsoft.Json.Linq;
 
-    internal sealed class Projector : SqlSelectSpecVisitor<JToken, JToken>
+    internal sealed class Projector : SqlSelectSpecVisitor<CosmosElement, CosmosElement>
     {
-        private readonly ScalarExpressionEvaluator scalarExpressionEvaluator;
+        public static readonly Projector Singleton = new Projector();
 
-        private Projector(ScalarExpressionEvaluator scalarExpressionEvaluator)
+        private Projector()
         {
-            if (scalarExpressionEvaluator == null)
-            {
-                throw new ArgumentNullException(nameof(scalarExpressionEvaluator));
-            }
-
-            this.scalarExpressionEvaluator = scalarExpressionEvaluator;
         }
 
-        public override JToken Visit(SqlSelectListSpec selectSpec, JToken document)
+        public override CosmosElement Visit(SqlSelectListSpec selectSpec, CosmosElement document)
         {
-            JObject jObject = new JObject();
+            if (selectSpec == null)
+            {
+                throw new ArgumentNullException(nameof(selectSpec));
+            }
+
+            if (document == null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
+            Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
 
             int aliasCounter = 1;
             foreach (SqlSelectItem sqlSelectItem in selectSpec.Items)
             {
-                JToken value = sqlSelectItem.Expression.Accept(this.scalarExpressionEvaluator, document);
+                CosmosElement value = sqlSelectItem.Expression.Accept(ScalarExpressionEvaluator.Singleton, document);
                 if (value != null)
                 {
                     string key = default;
@@ -61,38 +67,60 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         key = $"${aliasCounter++}";
                     }
 
-                    jObject[key] = value;
+                    dictionary[key] = value;
                 }
             }
 
-            return jObject;
+            return CosmosObject.Create(dictionary);
         }
 
-        public override JToken Visit(SqlSelectStarSpec selectSpec, JToken input)
+        public override CosmosElement Visit(SqlSelectStarSpec selectSpec, CosmosElement document)
         {
-            JToken result;
-            JObject document = (JObject)input;
+            if (selectSpec == null)
+            {
+                throw new ArgumentNullException(nameof(selectSpec));
+            }
 
-            // remove the _rid since it's not needed at this point.
-            document.Remove("_rid");
+            if (document == null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
+            CosmosObject documentAsObject = (CosmosObject)document;
+
+            Dictionary<string, CosmosElement> properties = new Dictionary<string, CosmosElement>();
+            foreach (KeyValuePair<string, CosmosElement> kvp in documentAsObject)
+            {
+                // remove the _rid since it's not needed at this point.
+                if (kvp.Key != "_rid")
+                {
+                    properties[kvp.Key] = kvp.Value;
+                }
+            }
 
             // if the document only has one property then it means
             // that the object was wrapped for binding and needs to be unwrapped.
-            if (document.Properties().Count() == 1)
-            {
-                result = document.Properties().First().Value;
-            }
-            else
+            if (properties.Count != 1)
             {
                 throw new ArgumentException("Tried to run SELECT * on a JOIN query");
             }
 
-            return result;
+            return properties.First().Value;
         }
 
-        public override JToken Visit(SqlSelectValueSpec selectSpec, JToken document)
+        public override CosmosElement Visit(SqlSelectValueSpec selectSpec, CosmosElement document)
         {
-            return selectSpec.Expression.Accept(this.scalarExpressionEvaluator, document);
+            if (selectSpec == null)
+            {
+                throw new ArgumentNullException(nameof(selectSpec));
+            }
+
+            if (document == null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
+            return selectSpec.Expression.Accept(ScalarExpressionEvaluator.Singleton, document);
         }
 
         private SqlScalarExpression GetLastMemberIndexerToken(SqlMemberIndexerScalarExpression memberIndexer)
@@ -108,11 +136,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
 
             return last;
-        }
-
-        public static Projector Create(CollectionConfigurations collectionConfigurations)
-        {
-            return new Projector(ScalarExpressionEvaluator.Create(collectionConfigurations));
         }
     }
 }

@@ -9,25 +9,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
     internal static class SqlInterpreter
     {
-        private static readonly JToken Undefined = null;
+        private static readonly CosmosElement Undefined = null;
 
-        private static readonly JToken[] NoFromClauseDataSource = new JToken[]
+        private static readonly CosmosElement[] NoFromClauseDataSource = new CosmosElement[]
         {
             // Single object with a dummy rid 
-            new JObject
-            {
-                ["_rid"] = "AYIMAMmFOw8YAAAAAAAAAA=="
-            }
+            CosmosObject.Create(
+                new Dictionary<string, CosmosElement>()
+                {
+                    { "_rid", CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==") }
+                })
         };
 
-        public static IEnumerable<JToken> ExecuteQuery(
-            IEnumerable<JToken> dataSource,
+        public static IEnumerable<CosmosElement> ExecuteQuery(
+            IEnumerable<CosmosElement> dataSource,
             SqlQuery sqlQuery,
             IReadOnlyDictionary<string, PartitionKeyRange> ridToPartitionKeyRange = null)
         {
@@ -53,8 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 dataSource = ExecuteFromClause(
                     dataSource,
-                    sqlQuery.FromClause,
-                    collectionConfigurations);
+                    sqlQuery.FromClause);
             }
             else
             {
@@ -66,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 dataSource = ExecuteWhereClause(
                     dataSource,
-                    sqlQuery.WhereClause,
-                    collectionConfigurations);
+                    sqlQuery.WhereClause);
             }
 
             // We sort before the projection,
@@ -77,8 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 dataSource = ExecuteOrderByClause(
                     dataSource,
                     sqlQuery.OrderbyClause,
-                    ridToPartitionKeyRange,
-                    collectionConfigurations);
+                    ridToPartitionKeyRange);
             }
             else
             {
@@ -88,15 +88,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     ridToPartitionKeyRange);
             }
 
-            IEnumerable<IGrouping<GroupByKey, JToken>> groupings;
+            IEnumerable<IGrouping<GroupByKey, CosmosElement>> groupings;
 
             // We need to create the groupings at this point for the rest of the pipeline
             if (sqlQuery.GroupByClause != null)
             {
                 groupings = ExecuteGroupByClause(
                     dataSource,
-                    sqlQuery.GroupByClause,
-                    collectionConfigurations);
+                    sqlQuery.GroupByClause);
             }
             else
             {
@@ -113,8 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             // We finally project out the needed columns and remove all binding artifacts
             dataSource = ExecuteSelectClause(
                 groupings,
-                sqlQuery.SelectClause,
-                collectionConfigurations);
+                sqlQuery.SelectClause);
 
             // Offset limit just performs skip take
             if (sqlQuery.OffsetLimitClause != null)
@@ -134,65 +132,63 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
         }
 
-        private static IEnumerable<JToken> ExecuteSelectClause(
-            IEnumerable<IGrouping<GroupByKey, JToken>> groupings,
-            SqlSelectClause sqlSelectClause,
-            CollectionConfigurations collectionConfigurations)
+        private static IEnumerable<CosmosElement> ExecuteSelectClause(
+            IEnumerable<IGrouping<GroupByKey, CosmosElement>> groupings,
+            SqlSelectClause sqlSelectClause)
         {
 
-            IEnumerable<JToken> dataSource = ProjectOnGroupings(
+            IEnumerable<CosmosElement> dataSource = ProjectOnGroupings(
                 groupings,
-                sqlSelectClause,
-                collectionConfigurations);
+                sqlSelectClause);
 
             if (sqlSelectClause.HasDistinct)
             {
-                dataSource = dataSource
-                    .Distinct(JsonTokenEqualityComparer.Value);
+                dataSource = dataSource.Distinct();
             }
 
             if (sqlSelectClause.TopSpec != null)
             {
-                dataSource = dataSource
-                    .Take((int)sqlSelectClause.TopSpec.Count);
+                CosmosNumber cosmosTopValue = (CosmosNumber)sqlSelectClause.TopSpec.TopExpresion.Accept(
+                    ScalarExpressionEvaluator.Singleton,
+                    input: null);
+                long topCount = Number64.ToLong(cosmosTopValue.Value);
+                dataSource = dataSource.Take((int)topCount);
             }
 
             return dataSource;
         }
 
-        private static IEnumerable<JToken> ProjectOnGroupings(
-            IEnumerable<IGrouping<GroupByKey, JToken>> groupings,
-            SqlSelectClause sqlSelectClause,
-            CollectionConfigurations collectionConfigurations)
+        private static IEnumerable<CosmosElement> ProjectOnGroupings(
+            IEnumerable<IGrouping<GroupByKey, CosmosElement>> groupings,
+            SqlSelectClause sqlSelectClause)
         {
-            foreach (IGrouping<GroupByKey, JToken> grouping in groupings)
+            foreach (IGrouping<GroupByKey, CosmosElement> grouping in groupings)
             {
-                IEnumerable<JToken> dataSource = grouping;
+                IEnumerable<CosmosElement> dataSource = grouping;
                 if (AggregateProjectionDector.HasAggregate(sqlSelectClause.SelectSpec))
                 {
                     // If there is an aggregate then we need to just project out the one document
                     // But we need to transform the query to first evaluate the aggregate on all the documents
-                    AggregateProjectionTransformer aggregateProjectionTransformer = new AggregateProjectionTransformer(
-                        dataSource,
-                        collectionConfigurations);
-                    SqlSelectSpec transformedSpec = aggregateProjectionTransformer.TransformAggregatesInProjection(sqlSelectClause.SelectSpec);
-                    JToken aggregationResult = transformedSpec.Accept(
-                        Projector.Create(collectionConfigurations),
+                    AggregateProjectionTransformer aggregateProjectionTransformer = new AggregateProjectionTransformer(dataSource);
+                    SqlSelectSpec transformedSpec = aggregateProjectionTransformer
+                        .TransformAggregatesInProjection(sqlSelectClause.SelectSpec);
+                    CosmosElement aggregationResult = transformedSpec.Accept(
+                        Projector.Singleton,
                         dataSource.FirstOrDefault());
                     if (aggregationResult != null)
                     {
-                        dataSource = new JToken[] { aggregationResult };
+                        dataSource = new CosmosElement[] { aggregationResult };
                     }
                     else
                     {
-                        dataSource = Array.Empty<JToken>();
+                        dataSource = Array.Empty<CosmosElement>();
                     }
                 }
                 else
                 {
                     dataSource = dataSource
                         .Select(element => sqlSelectClause.SelectSpec.Accept(
-                            Projector.Create(collectionConfigurations),
+                            Projector.Singleton,
                             element))
                         .Where(projection => projection != Undefined);
                 }
@@ -204,70 +200,65 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
         }
 
-        private static IEnumerable<JToken> ExecuteFromClause(
-            IEnumerable<JToken> dataSource,
-            SqlFromClause sqlFromClause,
-            CollectionConfigurations collectionConfigurations)
+        private static IEnumerable<CosmosElement> ExecuteFromClause(
+            IEnumerable<CosmosElement> dataSource,
+            SqlFromClause sqlFromClause)
         {
             dataSource = sqlFromClause.Expression.Accept(
-                DataSourceEvaluator.Create(collectionConfigurations),
+                DataSourceEvaluator.Singleton,
                 dataSource);
             return dataSource;
         }
 
-        private static IEnumerable<JToken> ExecuteWhereClause(
-            IEnumerable<JToken> dataSource,
-            SqlWhereClause sqlWhereClause,
-            CollectionConfigurations collectionConfigurations)
+        private static IEnumerable<CosmosElement> ExecuteWhereClause(
+            IEnumerable<CosmosElement> dataSource,
+            SqlWhereClause sqlWhereClause)
         {
             return dataSource
                 .Where(element =>
                 {
-                    JToken evaluation = sqlWhereClause.FilterExpression.Accept(
-                        ScalarExpressionEvaluator.Create(collectionConfigurations),
+                    CosmosElement evaluation = sqlWhereClause.FilterExpression.Accept(
+                        ScalarExpressionEvaluator.Singleton,
                         element);
-                    return Utils.IsTrue(evaluation);
+                    return evaluation is CosmosBoolean cosmosBoolean && cosmosBoolean.Value;
                 });
         }
 
-        private static IEnumerable<IGrouping<GroupByKey, JToken>> ExecuteGroupByClause(
-            IEnumerable<JToken> dataSource,
-            SqlGroupByClause sqlGroupByClause,
-            CollectionConfigurations collectionConfigurations)
+        private static IEnumerable<IGrouping<GroupByKey, CosmosElement>> ExecuteGroupByClause(
+            IEnumerable<CosmosElement> dataSource,
+            SqlGroupByClause sqlGroupByClause)
         {
             return dataSource.GroupBy(
                 keySelector: (document) =>
                 {
                     return GetGroupByKey(
                         document,
-                        sqlGroupByClause.Expressions,
-                        collectionConfigurations);
+                        sqlGroupByClause.Expressions);
                 },
                 comparer: GroupByKeyEqualityComparer.Singleton);
         }
 
-        private static IEnumerable<IGrouping<GroupByKey, JToken>> CreateOneGroupingForEachDocument(
-            IEnumerable<JToken> dataSource)
+        private static IEnumerable<IGrouping<GroupByKey, CosmosElement>> CreateOneGroupingForEachDocument(
+            IEnumerable<CosmosElement> dataSource)
         {
             return dataSource.Select(document => new SingleDocumentGrouping(document));
         }
 
-        private static IEnumerable<IGrouping<GroupByKey, JToken>> CreateOneGroupingForWholeCollection(
-            IEnumerable<JToken> dataSource)
+        private static IEnumerable<IGrouping<GroupByKey, CosmosElement>> CreateOneGroupingForWholeCollection(
+            IEnumerable<CosmosElement> dataSource)
         {
             yield return new WholeCollectionGrouping(dataSource);
         }
 
         private static GroupByKey GetGroupByKey(
-            JToken element,
-            IReadOnlyList<SqlScalarExpression> groupByExpressions,
-            CollectionConfigurations collectionConfigurations)
+            CosmosElement element,
+            IReadOnlyList<SqlScalarExpression> groupByExpressions)
         {
-            List<JToken> groupByValues = new List<JToken>();
+            List<CosmosElement> groupByValues = new List<CosmosElement>();
             foreach (SqlScalarExpression groupByExpression in groupByExpressions)
             {
-                JToken groupByValue = groupByExpression.Accept(
-                    ScalarExpressionEvaluator.Create(collectionConfigurations),
+                CosmosElement groupByValue = groupByExpression.Accept(
+                    ScalarExpressionEvaluator.Singleton,
                     element);
                 groupByValues.Add(groupByValue);
             }
@@ -275,15 +266,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return new GroupByKey(groupByValues);
         }
 
-        private static IEnumerable<JToken> ExecuteCrossPartitionOrdering(
-            IEnumerable<JToken> dataSource,
+        private static IEnumerable<CosmosElement> ExecuteCrossPartitionOrdering(
+            IEnumerable<CosmosElement> dataSource,
             IReadOnlyDictionary<string, PartitionKeyRange> ridToPartitionKeyRange)
         {
             // Grab from the left most partition first
-            IOrderedEnumerable<JToken> orderedDataSource = dataSource
+            IOrderedEnumerable<CosmosElement> orderedDataSource = dataSource
             .OrderBy((element) =>
             {
-                string rid = (string)element["_rid"];
+                string rid = ((CosmosString)((CosmosObject)element)["_rid"]).Value;
                 PartitionKeyRange partitionKeyRange = ridToPartitionKeyRange[rid];
                 return partitionKeyRange.MinInclusive;
             },
@@ -291,16 +282,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             // Break all final ties within partition by document id
             orderedDataSource = orderedDataSource
-                .ThenBy(element => ResourceId.Parse((string)element["_rid"]).Document);
+                .ThenBy(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Document);
 
             return orderedDataSource;
         }
 
-        private static IEnumerable<JToken> ExecuteOrderByClause(
-            IEnumerable<JToken> dataSource,
+        private static IEnumerable<CosmosElement> ExecuteOrderByClause(
+            IEnumerable<CosmosElement> dataSource,
             SqlOrderbyClause sqlOrderByClause,
-            IReadOnlyDictionary<string, PartitionKeyRange> ridToPartitionKeyRange,
-            CollectionConfigurations collectionConfigurations)
+            IReadOnlyDictionary<string, PartitionKeyRange> ridToPartitionKeyRange)
         {
             // Sort by the columns left to right
             SqlOrderByItem firstItem = sqlOrderByClause.OrderbyItems[0];
@@ -309,26 +299,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             if (sqlOrderByClause.OrderbyItems.Count == 1)
             {
                 dataSource = dataSource.Where(element => firstItem.Expression.Accept(
-                    ScalarExpressionEvaluator.Create(collectionConfigurations),
+                    ScalarExpressionEvaluator.Singleton,
                     element) != Undefined);
             }
 
-            IOrderedEnumerable<JToken> orderedDataSource;
+            IOrderedEnumerable<CosmosElement> orderedDataSource;
             if (firstItem.IsDescending)
             {
                 orderedDataSource = dataSource.OrderByDescending(
                     element => firstItem.Expression.Accept(
-                        ScalarExpressionEvaluator.Create(collectionConfigurations),
-                        element),
-                    JTokenComparer.Singleton);
+                        ScalarExpressionEvaluator.Singleton,
+                        element));
             }
             else
             {
                 orderedDataSource = dataSource.OrderBy(
                     element => firstItem.Expression.Accept(
-                        ScalarExpressionEvaluator.Create(collectionConfigurations),
-                        element),
-                    JTokenComparer.Singleton);
+                        ScalarExpressionEvaluator.Singleton,
+                        element));
             }
 
             foreach (SqlOrderByItem sqlOrderByItem in sqlOrderByClause.OrderbyItems.Skip(1))
@@ -337,17 +325,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     orderedDataSource = orderedDataSource.ThenByDescending(
                         element => sqlOrderByItem.Expression.Accept(
-                            ScalarExpressionEvaluator.Create(collectionConfigurations),
-                            element),
-                        JTokenComparer.Singleton);
+                            ScalarExpressionEvaluator.Singleton,
+                            element));
                 }
                 else
                 {
                     orderedDataSource = orderedDataSource.ThenBy(
                         element => sqlOrderByItem.Expression.Accept(
-                            ScalarExpressionEvaluator.Create(collectionConfigurations),
-                            element),
-                        JTokenComparer.Singleton);
+                            ScalarExpressionEvaluator.Singleton,
+                            element));
                 }
             }
 
@@ -355,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             orderedDataSource = orderedDataSource
                 .ThenBy((element) =>
                 {
-                    string rid = (string)element["_rid"];
+                    string rid = ((CosmosString)((CosmosObject)element)["_rid"]).Value;
                     PartitionKeyRange partitionKeyRange = ridToPartitionKeyRange[rid];
                     return partitionKeyRange.MinInclusive;
                 },
@@ -365,31 +351,39 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             if (firstItem.IsDescending)
             {
                 orderedDataSource = orderedDataSource
-                    .ThenByDescending(element => ResourceId.Parse((string)element["_rid"]).Document);
+                    .ThenByDescending(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Document);
             }
             else
             {
                 orderedDataSource = orderedDataSource
-                    .ThenBy(element => ResourceId.Parse((string)element["_rid"]).Document);
+                    .ThenBy(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Document);
             }
 
             return orderedDataSource;
         }
 
-        private static IEnumerable<JToken> ExecuteOffsetLimitClause(
-            IEnumerable<JToken> dataSource,
+        private static IEnumerable<CosmosElement> ExecuteOffsetLimitClause(
+            IEnumerable<CosmosElement> dataSource,
             SqlOffsetLimitClause sqlOffsetLimitClause)
         {
             SqlOffsetSpec sqlOffsetSpec = sqlOffsetLimitClause.OffsetSpec;
             if (sqlOffsetSpec != null)
             {
-                dataSource = dataSource.Skip((int)sqlOffsetSpec.Offset);
+                CosmosNumber cosmosOffsetValue = (CosmosNumber)sqlOffsetSpec.OffsetExpression.Accept(
+                    ScalarExpressionEvaluator.Singleton,
+                    input: null);
+                long offsetCount = Number64.ToLong(cosmosOffsetValue.Value);
+                dataSource = dataSource.Skip((int)offsetCount);
             }
 
             SqlLimitSpec sqlLimitSpec = sqlOffsetLimitClause.LimitSpec;
             if (sqlLimitSpec != null)
             {
-                dataSource = dataSource.Take((int)sqlLimitSpec.Limit);
+                CosmosNumber cosmosLimitValue = (CosmosNumber)sqlLimitSpec.LimitExpression.Accept(
+                    ScalarExpressionEvaluator.Singleton,
+                    input: null);
+                long limitCount = Number64.ToLong(cosmosLimitValue.Value);
+                dataSource = dataSource.Take((int)limitCount);
             }
 
             return dataSource;
@@ -397,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
         private sealed class GroupByKey
         {
-            public GroupByKey(IReadOnlyList<JToken> groupByColums)
+            public GroupByKey(IReadOnlyList<CosmosElement> groupByColums)
             {
                 if (groupByColums == null)
                 {
@@ -412,17 +406,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 this.GroupByColums = groupByColums;
             }
 
-            public IReadOnlyList<JToken> GroupByColums
+            public IReadOnlyList<CosmosElement> GroupByColums
             {
                 get;
             }
         }
 
-        private sealed class SingleDocumentGrouping : IGrouping<GroupByKey, JToken>
+        private sealed class SingleDocumentGrouping : IGrouping<GroupByKey, CosmosElement>
         {
-            private readonly JToken document;
+            private readonly CosmosElement document;
 
-            public SingleDocumentGrouping(JToken document)
+            public SingleDocumentGrouping(CosmosElement document)
             {
                 this.document = document;
                 this.Key = null;
@@ -433,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 get;
             }
 
-            public IEnumerator<JToken> GetEnumerator()
+            public IEnumerator<CosmosElement> GetEnumerator()
             {
                 yield return this.document;
             }
@@ -444,11 +438,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
         }
 
-        private sealed class WholeCollectionGrouping : IGrouping<GroupByKey, JToken>
+        private sealed class WholeCollectionGrouping : IGrouping<GroupByKey, CosmosElement>
         {
-            private readonly IEnumerable<JToken> collection;
+            private readonly IEnumerable<CosmosElement> collection;
 
-            public WholeCollectionGrouping(IEnumerable<JToken> collection)
+            public WholeCollectionGrouping(IEnumerable<CosmosElement> collection)
             {
                 if (collection == null)
                 {
@@ -464,7 +458,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 get;
             }
 
-            public IEnumerator<JToken> GetEnumerator()
+            public IEnumerator<CosmosElement> GetEnumerator()
             {
                 return this.collection.GetEnumerator();
             }
@@ -501,16 +495,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 }
 
                 bool equals = true;
-                IEnumerable<Tuple<JToken, JToken>> pairwiseGroupByColumns = groupByKey1.GroupByColums
+                IEnumerable<Tuple<CosmosElement, CosmosElement>> pairwiseGroupByColumns = groupByKey1.GroupByColums
                     .Zip(
                         groupByKey2.GroupByColums,
-                        (first, second) => new Tuple<JToken, JToken>(first, second));
-                foreach (Tuple<JToken, JToken> pairwiseGroupByColumn in pairwiseGroupByColumns)
+                        (first, second) => new Tuple<CosmosElement, CosmosElement>(first, second));
+                foreach (Tuple<CosmosElement, CosmosElement> pairwiseGroupByColumn in pairwiseGroupByColumns)
                 {
-                    JToken columnFromKey1 = pairwiseGroupByColumn.Item1;
-                    JToken columnFromKey2 = pairwiseGroupByColumn.Item2;
+                    CosmosElement columnFromKey1 = pairwiseGroupByColumn.Item1;
+                    CosmosElement columnFromKey2 = pairwiseGroupByColumn.Item2;
 
-                    equals &= JsonTokenEqualityComparer.Value.Equals(columnFromKey1, columnFromKey2);
+                    equals &= columnFromKey1 == columnFromKey2;
                 }
 
                 return equals;
@@ -667,12 +661,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         return false;
                     }
 
-                    if (!scalarExpression.Left.Accept(this))
+                    if (!scalarExpression.StartInclusive.Accept(this))
                     {
                         return false;
                     }
 
-                    if (!scalarExpression.Right.Accept(this))
+                    if (!scalarExpression.EndInclusive.Accept(this))
                     {
                         return false;
                     }
@@ -687,12 +681,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         return true;
                     }
 
-                    if (!scalarExpression.Left.Accept(this))
+                    if (!scalarExpression.LeftExpression.Accept(this))
                     {
                         return false;
                     }
 
-                    if (!scalarExpression.Right.Accept(this))
+                    if (!scalarExpression.RightExpression.Accept(this))
                     {
                         return false;
                     }
@@ -732,22 +726,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         return false;
                     }
 
-                    if (!scalarExpression.FirstExpression.Accept(this))
+                    if (!scalarExpression.Consequent.Accept(this))
                     {
                         return false;
                     }
 
-                    if (!scalarExpression.SecondExpression.Accept(this))
+                    if (!scalarExpression.Alternative.Accept(this))
                     {
                         return false;
                     }
 
                     return true;
-                }
-
-                public override bool Visit(SqlConversionScalarExpression scalarExpression)
-                {
-                    throw new NotImplementedException();
                 }
 
                 public override bool Visit(SqlExistsScalarExpression scalarExpression)
@@ -782,11 +771,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return true;
                 }
 
-                public override bool Visit(SqlGeoNearCallScalarExpression scalarExpression)
-                {
-                    throw new NotImplementedException();
-                }
-
                 public override bool Visit(SqlInScalarExpression scalarExpression)
                 {
                     if (this.MatchesGroupByExpression(scalarExpression))
@@ -794,12 +778,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         return true;
                     }
 
-                    if (!scalarExpression.Expression.Accept(this))
+                    if (!scalarExpression.Needle.Accept(this))
                     {
                         return false;
                     }
 
-                    foreach (SqlScalarExpression item in scalarExpression.Items)
+                    foreach (SqlScalarExpression item in scalarExpression.Haystack)
                     {
                         if (!item.Accept(this))
                         {
@@ -835,13 +819,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                     foreach (SqlObjectProperty sqlObjectProperty in scalarExpression.Properties)
                     {
-                        if (!sqlObjectProperty.Expression.Accept(this))
+                        if (!sqlObjectProperty.Value.Accept(this))
                         {
                             return false;
                         }
                     }
 
                     return true;
+                }
+
+                public override bool Visit(SqlParameterRefScalarExpression scalarExpression)
+                {
+                    return false;
                 }
 
                 public override bool Visit(SqlPropertyRefScalarExpression scalarExpression)

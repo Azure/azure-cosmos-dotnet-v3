@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Newtonsoft.Json.Linq;
@@ -20,15 +22,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     /// </summary>
     internal sealed class AggregateProjectionTransformer
     {
-        private static readonly JToken Undefined = null;
+        private static readonly CosmosNumber Undefined = null;
 
         private readonly AggregateProjectionTransformerVisitor visitor;
 
         public AggregateProjectionTransformer(
-            IEnumerable<JToken> dataSource,
-            CollectionConfigurations collectionConfigurations)
+            IEnumerable<CosmosElement> dataSource)
         {
-            this.visitor = new AggregateProjectionTransformerVisitor(dataSource, collectionConfigurations);
+            this.visitor = new AggregateProjectionTransformerVisitor(dataSource);
         }
 
         public SqlSelectSpec TransformAggregatesInProjection(SqlSelectSpec selectSpec)
@@ -40,9 +41,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             private readonly AggregateScalarExpressionTransformer scalarExpressionTransformer;
 
-            public AggregateProjectionTransformerVisitor(IEnumerable<JToken> dataSource, CollectionConfigurations collectionConfigurations)
+            public AggregateProjectionTransformerVisitor(IEnumerable<CosmosElement> dataSource)
             {
-                this.scalarExpressionTransformer = new AggregateScalarExpressionTransformer(dataSource, collectionConfigurations);
+                this.scalarExpressionTransformer = new AggregateScalarExpressionTransformer(dataSource);
             }
 
             public override SqlSelectSpec Visit(SqlSelectListSpec selectSpec)
@@ -70,13 +71,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             private sealed class AggregateScalarExpressionTransformer : SqlScalarExpressionVisitor<SqlScalarExpression>
             {
-                private readonly IEnumerable<JToken> dataSource;
-                private readonly CollectionConfigurations collectionConfigurations;
+                private readonly IEnumerable<CosmosElement> dataSource;
 
-                public AggregateScalarExpressionTransformer(IEnumerable<JToken> dataSource, CollectionConfigurations collectionConfigurations)
+                public AggregateScalarExpressionTransformer(IEnumerable<CosmosElement> dataSource)
                 {
                     this.dataSource = dataSource;
-                    this.collectionConfigurations = collectionConfigurations;
                 }
 
                 public override SqlScalarExpression Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
@@ -109,8 +108,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     return SqlBinaryScalarExpression.Create(
                         sqlBinaryScalarExpression.OperatorKind,
-                        sqlBinaryScalarExpression.Left.Accept(this),
-                        sqlBinaryScalarExpression.Right.Accept(this));
+                        sqlBinaryScalarExpression.LeftExpression.Accept(this),
+                        sqlBinaryScalarExpression.RightExpression.Accept(this));
                 }
 
                 public override SqlScalarExpression Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
@@ -139,10 +138,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     SqlScalarExpression rewrittenExpression;
 
                     // If the function call is an aggregate just evaluate the aggregate first and return that
-                    Aggregate aggregate;
                     if (
                         !sqlFunctionCallScalarExpression.IsUdf &&
-                        Enum.TryParse(value: sqlFunctionCallScalarExpression.Name.Value, ignoreCase: true, result: out aggregate))
+                        Enum.TryParse(value: sqlFunctionCallScalarExpression.Name.Value, ignoreCase: true, result: out Aggregate aggregate))
                     {
                         IReadOnlyList<SqlScalarExpression> arguments = sqlFunctionCallScalarExpression.Arguments;
                         if (arguments.Count != 1)
@@ -150,15 +148,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                             throw new ArgumentException("Aggregates only accept one argument.");
                         }
 
-                        IEnumerable<JToken> results = this.dataSource
+                        IEnumerable<CosmosElement> results = this.dataSource
                             .Select((element) => arguments[0].Accept(
-                                ScalarExpressionEvaluator.Create(this.collectionConfigurations),
+                                ScalarExpressionEvaluator.Singleton,
                                 element));
 
                         // If aggregates are pushed to the index, then we only get back defined results
                         results = results.Where((result) => result != Undefined);
 
-                        JToken aggregationResult;
+                        CosmosElement aggregationResult;
                         switch (aggregate)
                         {
                             case Aggregate.Min:
@@ -174,10 +172,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                 else
                                 {
                                     aggregationResult = results.First();
-                                    foreach (JToken result in results)
+                                    foreach (CosmosElement result in results)
                                     {
                                         // First compare the types
-                                        int comparison = Utils.CompareAcrossTypes(result, aggregationResult);
+                                        int comparison = result.CompareTo(aggregationResult);
 
                                         if (aggregate == Aggregate.Min)
                                         {
@@ -204,18 +202,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                             case Aggregate.Avg:
                             case Aggregate.Sum:
-                                JToken sum = 0;
+                                CosmosNumber sum = CosmosNumber64.Create(0);
                                 double count = 0;
-                                foreach (JToken result in results)
+                                foreach (CosmosElement result in results)
                                 {
-                                    if (Utils.TryAddNumbers(sum, result, out JToken newSum))
+                                    if (!(result is CosmosNumber resultAsNumber))
                                     {
-                                        sum = newSum;
-                                        count++;
+                                        sum = Undefined;
                                     }
                                     else
                                     {
-                                        sum = Undefined;
+                                        sum = CosmosNumber64.Create(Number64.ToDouble(sum.Value) + Number64.ToDouble(resultAsNumber.Value));
+                                        count++;
                                     }
                                 }
 
@@ -229,12 +227,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                         }
                                         else
                                         {
-                                            aggregationResult = sum.ToObject<double>() / count;
+                                            aggregationResult = CosmosNumber64.Create(Number64.ToDouble(sum.Value) / count);
                                         }
                                     }
                                     else
                                     {
-                                        aggregationResult = sum.ToObject<double>();
+                                        aggregationResult = CosmosNumber64.Create(Number64.ToDouble(sum.Value));
                                     }
                                 }
                                 else
@@ -245,15 +243,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                 break;
 
                             case Aggregate.Count:
-                                aggregationResult = results
-                                    .Count();
+                                aggregationResult = CosmosNumber64.Create(results.Count());
                                 break;
 
                             default:
                                 throw new ArgumentException($"Unknown {nameof(Aggregate)} {aggregate}");
                         }
 
-                        rewrittenExpression = JTokenToSqlScalarExpression.Convert(aggregationResult);
+                        rewrittenExpression = aggregationResult.Accept(CosmosElementToSqlScalarExpression.Singleton);
                     }
                     else
                     {
@@ -304,6 +301,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return SqlObjectCreateScalarExpression.Create(properties);
                 }
 
+                public override SqlScalarExpression Visit(SqlParameterRefScalarExpression scalarExpression)
+                {
+                    return scalarExpression;
+                }
+
                 public override SqlScalarExpression Visit(SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
                 {
                     return SqlPropertyRefScalarExpression.Create(
@@ -323,6 +325,76 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         sqlUnaryScalarExpression.OperatorKind,
                         sqlUnaryScalarExpression.Expression.Accept(this));
                 }
+            }
+        }
+
+        private sealed class CosmosElementToSqlScalarExpression : ICosmosElementVisitor<SqlScalarExpression>
+        {
+            public static readonly CosmosElementToSqlScalarExpression Singleton = new CosmosElementToSqlScalarExpression();
+
+            private CosmosElementToSqlScalarExpression()
+            {
+            }
+
+            public SqlScalarExpression Visit(CosmosArray cosmosArray)
+            {
+                List<SqlScalarExpression> items = new List<SqlScalarExpression>();
+                foreach (CosmosElement arrayItem in cosmosArray)
+                {
+                    items.Add(arrayItem.Accept(this));
+                }
+
+                return SqlArrayCreateScalarExpression.Create(items);
+            }
+
+            public SqlScalarExpression Visit(CosmosBinary cosmosBinary)
+            {
+                throw new NotImplementedException();
+            }
+
+            public SqlScalarExpression Visit(CosmosBoolean cosmosBoolean)
+            {
+                SqlBooleanLiteral literal = SqlBooleanLiteral.Create(cosmosBoolean.Value);
+                return SqlLiteralScalarExpression.Create(literal);
+            }
+
+            public SqlScalarExpression Visit(CosmosGuid cosmosGuid)
+            {
+                throw new NotImplementedException();
+            }
+
+            public SqlScalarExpression Visit(CosmosNull cosmosNull)
+            {
+                SqlNullLiteral literal = SqlNullLiteral.Singleton;
+                return SqlLiteralScalarExpression.Create(literal);
+            }
+
+            public SqlScalarExpression Visit(CosmosNumber cosmosNumber)
+            {
+                SqlNumberLiteral literal = SqlNumberLiteral.Create(cosmosNumber.Value);
+                return SqlLiteralScalarExpression.Create(literal);
+            }
+
+            public SqlScalarExpression Visit(CosmosObject cosmosObject)
+            {
+                List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
+
+                foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
+                {
+                    SqlPropertyName name = SqlPropertyName.Create(kvp.Key);
+                    CosmosElement value = kvp.Value;
+                    SqlScalarExpression expression = value.Accept(this);
+                    SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
+                    properties.Add(property);
+                }
+
+                return SqlObjectCreateScalarExpression.Create(properties);
+            }
+
+            public SqlScalarExpression Visit(CosmosString cosmosString)
+            {
+                SqlStringLiteral literal = SqlStringLiteral.Create(cosmosString.Value);
+                return SqlLiteralScalarExpression.Create(literal);
             }
         }
     }

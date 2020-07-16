@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>, IComparable<CosmosArray>
     {
+        public static readonly CosmosArray Empty = new EagerCosmosArray(new List<CosmosElement>());
+
         private const uint HashSeed = 2533142560;
 
         protected CosmosArray()

@@ -8,26 +8,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// This class takes a stream of documents and wraps them with the appropriate identifiers 
     /// so that the query execution downstream does not need a binder.
     /// </summary>
-    internal sealed class DataSourceEvaluator : SqlCollectionExpressionVisitor<IEnumerable<JToken>, IEnumerable<JToken>>
+    internal sealed class DataSourceEvaluator : SqlCollectionExpressionVisitor<IEnumerable<CosmosElement>, IEnumerable<CosmosElement>>
     {
-        private readonly CollectionConfigurations collectionConfigurations;
+        public static readonly DataSourceEvaluator Singleton = new DataSourceEvaluator();
 
-        private DataSourceEvaluator(CollectionConfigurations collectionConfigurations)
+        private DataSourceEvaluator()
         {
-            if (collectionConfigurations == null)
-            {
-                throw new ArgumentNullException(nameof(collectionConfigurations));
-            }
-
-            this.collectionConfigurations = collectionConfigurations;
         }
 
         /// <summary>
@@ -36,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="collectionExpression">The collection expression to visit.</param>
         /// <param name="documents">The documents to transform.</param>
         /// <returns>The transformed documents according to the collection expression.</returns>
-        public override IEnumerable<JToken> Visit(SqlAliasedCollectionExpression collectionExpression, IEnumerable<JToken> documents)
+        public override IEnumerable<CosmosElement> Visit(SqlAliasedCollectionExpression collectionExpression, IEnumerable<CosmosElement> documents)
         {
             //If the query was:
 
@@ -57,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             // Get the sub collection
             CollectionEvaluationResult collectionEvaluationResult = collectionExpression.Collection.Accept(
-                SqlInterpreterCollectionVisitor.Create(this.collectionConfigurations),
+                SqlInterpreterCollectionVisitor.Singleton,
                 documents);
             string identifer = collectionEvaluationResult.Identifer;
 
@@ -78,14 +73,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
 
             // Wrap the collection in the alias so it's easier to bind later
-            foreach (Tuple<JToken, string> subDocumentAndRid in collectionEvaluationResult.SubDocumentsAndRids)
+            foreach (Tuple<CosmosElement, string> subDocumentAndRid in collectionEvaluationResult.SubDocumentsAndRids)
             {
-                JToken wrappedDocument = new JObject();
-                wrappedDocument[alias] = subDocumentAndRid.Item1;
+                Dictionary<string, CosmosElement> wrappedDocument = new Dictionary<string, CosmosElement>
+                {
+                    [alias] = subDocumentAndRid.Item1,
 
-                //// Add the _rid so that we can break ties for sort later
-                wrappedDocument["_rid"] = subDocumentAndRid.Item2;
-                yield return wrappedDocument;
+                    //// Add the _rid so that we can break ties for sort later
+                    ["_rid"] = CosmosString.Create(subDocumentAndRid.Item2)
+                };
+
+                yield return CosmosObject.Create(wrappedDocument);
             }
         }
 
@@ -95,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="collectionExpression">The collection expression to visit.</param>
         /// <param name="documents">The documents to transform.</param>
         /// <returns>The transformed documents according to the collection expression.</returns>
-        public override IEnumerable<JToken> Visit(SqlArrayIteratorCollectionExpression collectionExpression, IEnumerable<JToken> documents)
+        public override IEnumerable<CosmosElement> Visit(SqlArrayIteratorCollectionExpression collectionExpression, IEnumerable<CosmosElement> documents)
         {
             //If the query was:
 
@@ -121,27 +119,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             // throw away the identifer since we always have an alias
             CollectionEvaluationResult collectionEvaluationResult = collectionExpression.Collection.Accept(
-                SqlInterpreterCollectionVisitor.Create(this.collectionConfigurations),
+                SqlInterpreterCollectionVisitor.Singleton,
                 documents);
 
             // Wrap the collection in the alias so it's easier to bind later
-            foreach (Tuple<JToken, string> subDocumentAndRid in collectionEvaluationResult.SubDocumentsAndRids)
+            foreach (Tuple<CosmosElement, string> subDocumentAndRid in collectionEvaluationResult.SubDocumentsAndRids)
             {
-                JToken document = subDocumentAndRid.Item1;
+                CosmosElement document = subDocumentAndRid.Item1;
                 string rid = subDocumentAndRid.Item2;
-                if (document.Type == JTokenType.Array)
+                if (document is CosmosArray array)
                 {
-                    JArray array = (JArray)document;
-                    foreach (JToken item in array)
+                    foreach (CosmosElement item in array)
                     {
-                        JToken wrappedDocument = new JObject
+                        Dictionary<string, CosmosElement> wrappedDocument = new Dictionary<string, CosmosElement>
                         {
-                            [collectionExpression.Alias.Value] = item,
+                            [collectionExpression.Identifier.Value] = item,
 
                             //// Add the _rid so that we can break ties for sort later
-                            ["_rid"] = rid
+                            ["_rid"] = CosmosString.Create(rid),
                         };
-                        yield return wrappedDocument;
+                        yield return CosmosObject.Create(wrappedDocument);
                     }
                 }
             }
@@ -153,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="collectionExpression">The collection expression to visit.</param>
         /// <param name="documents">The documents to transform.</param>
         /// <returns>The transformed documents according to the collection expression.</returns>
-        public override IEnumerable<JToken> Visit(SqlJoinCollectionExpression collectionExpression, IEnumerable<JToken> documents)
+        public override IEnumerable<CosmosElement> Visit(SqlJoinCollectionExpression collectionExpression, IEnumerable<CosmosElement> documents)
         {
             //If the query was:
 
@@ -184,95 +181,83 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             //This is because we emitted one document for each child in the original document
             //wrapped it with the provided alias 
             //and merged the results from the source expression.
-            IEnumerable<JToken> collection1 = collectionExpression.Left.Accept(this, documents);
+            IEnumerable<CosmosElement> collection1 = collectionExpression.Left.Accept(this, documents);
 
             // Perform the select many and merge the documents
-            foreach (JToken document1 in collection1)
+            foreach (CosmosObject document1 in collection1)
             {
-                IEnumerable<JToken> collection2 = collectionExpression.Right.Accept(this, new JToken[] { document1 });
-                foreach (JToken document2 in collection2)
+                IEnumerable<CosmosElement> collection2 = collectionExpression.Right.Accept(this, new CosmosElement[] { document1 });
+                foreach (CosmosObject document2 in collection2)
                 {
-                    JObject mergedDocument = new JObject();
-                    foreach (JProperty property in document1)
+                    Dictionary<string, CosmosElement> mergedDocument = new Dictionary<string, CosmosElement>();
+                    foreach (KeyValuePair<string, CosmosElement> property in document1)
                     {
-                        if (property.Name != "_rid")
+                        if (property.Key != "_rid")
                         {
-                            mergedDocument.Add(property);
+                            mergedDocument[property.Key] = property.Value;
                         }
                     }
 
-                    foreach (JProperty property in document2)
+                    foreach (KeyValuePair<string, CosmosElement> property in document2)
                     {
-                        if (property.Name != "_rid")
+                        if (property.Key != "_rid")
                         {
-                            mergedDocument.Add(property);
+                            mergedDocument[property.Key] = property.Value;
                         }
                     }
 
                     // Add the _rid at the end so we can break ties in the sort later.
                     mergedDocument["_rid"] = document1["_rid"];
 
-                    yield return mergedDocument;
+                    yield return CosmosObject.Create(mergedDocument);
                 }
             }
-        }
-
-        public static DataSourceEvaluator Create(CollectionConfigurations collectionConfigurations)
-        {
-            return new DataSourceEvaluator(collectionConfigurations);
         }
 
         private struct CollectionEvaluationResult
         {
             public CollectionEvaluationResult(
-                IEnumerable<Tuple<JToken, string>> subDocumentsAndRids,
+                IEnumerable<Tuple<CosmosElement, string>> subDocumentsAndRids,
                 string identifer)
             {
                 this.SubDocumentsAndRids = subDocumentsAndRids;
                 this.Identifer = identifer;
             }
 
-            public IEnumerable<Tuple<JToken, string>> SubDocumentsAndRids { get; }
+            public IEnumerable<Tuple<CosmosElement, string>> SubDocumentsAndRids { get; }
 
             public string Identifer { get; }
         }
 
-        private sealed class SqlInterpreterCollectionVisitor : SqlCollectionVisitor<IEnumerable<JToken>, CollectionEvaluationResult>
+        private sealed class SqlInterpreterCollectionVisitor : SqlCollectionVisitor<IEnumerable<CosmosElement>, CollectionEvaluationResult>
         {
-            private readonly CollectionConfigurations collectionConfigurations;
+            public static readonly SqlInterpreterCollectionVisitor Singleton = new SqlInterpreterCollectionVisitor();
 
-            public SqlInterpreterCollectionVisitor(CollectionConfigurations collectionConfigurations)
+            public SqlInterpreterCollectionVisitor()
             {
-                if (collectionConfigurations == null)
-                {
-                    throw new ArgumentNullException(nameof(collectionConfigurations));
-                }
-
-                this.collectionConfigurations = collectionConfigurations;
             }
 
-            public override CollectionEvaluationResult Visit(SqlSubqueryCollection collection, IEnumerable<JToken> input)
+            public override CollectionEvaluationResult Visit(SqlSubqueryCollection collection, IEnumerable<CosmosElement> input)
             {
-                List<Tuple<JToken, string>> subDocumentsAndRids = new List<Tuple<JToken, string>>();
-                foreach (JToken document in input)
+                List<Tuple<CosmosElement, string>> subDocumentsAndRids = new List<Tuple<CosmosElement, string>>();
+                foreach (CosmosObject document in input)
                 {
-                    string rid = document["_rid"].Value<string>();
-                    IEnumerable<JToken> subqueryResults = SqlInterpreter.ExecuteQuery(
-                        new JToken[] { document },
-                        collection.Query,
-                        this.collectionConfigurations);
-                    foreach (JToken subqueryResult in subqueryResults)
+                    string rid = ((CosmosString)document["_rid"]).Value;
+                    IEnumerable<CosmosElement> subqueryResults = SqlInterpreter.ExecuteQuery(
+                        new CosmosElement[] { document },
+                        collection.Query);
+                    foreach (CosmosElement subqueryResult in subqueryResults)
                     {
-                        subDocumentsAndRids.Add(new Tuple<JToken, string>(subqueryResult, rid));
+                        subDocumentsAndRids.Add(new Tuple<CosmosElement, string>(subqueryResult, rid));
                     }
                 }
 
                 return new CollectionEvaluationResult(subDocumentsAndRids, null);
             }
 
-            public override CollectionEvaluationResult Visit(SqlInputPathCollection collection, IEnumerable<JToken> documents)
+            public override CollectionEvaluationResult Visit(SqlInputPathCollection collection, IEnumerable<CosmosElement> documents)
             {
-                List<object> tokens = new List<object>();
+                List<Either<long, string>> tokens = new List<Either<long, string>>();
                 if (collection.RelativePath != null)
                 {
                     SqlInterpreterPathExpressionVisitor pathExpressionVisitor = new SqlInterpreterPathExpressionVisitor(tokens);
@@ -284,96 +269,99 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 // Need to reverse the tokens, since the path is evaluated from the tail to the head.
                 tokens.Reverse();
 
-                IEnumerable<Tuple<JToken, string>> subDocumentsAndRids = documents
+                IEnumerable<Tuple<CosmosElement, string>> subDocumentsAndRids = documents
                     .Select((document) => ApplyPath(document, tokens))
                     .Where((subDocumentsAndRid) => subDocumentsAndRid.Item1 != null);
                 return new CollectionEvaluationResult(subDocumentsAndRids, tokens.Last().ToString());
             }
 
-            private static Tuple<JToken, string> ApplyPath(JToken document, IEnumerable<object> tokens)
+            private static Tuple<CosmosElement, string> ApplyPath(CosmosElement document, IEnumerable<Either<long, string>> tokens)
             {
-                JToken ridToken = document["_rid"];
-                if (ridToken == null)
+                CosmosObject documentAsObject = (CosmosObject)document;
+                if (!documentAsObject.TryGetValue<CosmosString>("_rid", out CosmosString ridToken))
                 {
                     throw new ArgumentException("Document did not have a '_rid' field.");
                 }
 
-                string rid = ridToken.Value<string>();
+                string rid = ridToken.Value;
 
                 // First token in optional
-                object firstToken = tokens.First();
-                if (document[firstToken] != null)
-                {
-                    document = document[firstToken];
-                }
+                Either<long, string> firstToken = tokens.First();
+                firstToken.Match(
+                    (long longToken) =>
+                    {
+                        throw new InvalidOperationException();
+                    },
+                    (string stringToken) =>
+                    {
+                        if (documentAsObject.TryGetValue(stringToken, out CosmosElement value))
+                        {
+                            document = value;
+                        }
+                    });
 
-                foreach (object token in tokens.Skip(1))
+                foreach (Either<long, string> token in tokens.Skip(1))
                 {
                     if (document == null)
                     {
                         break;
                     }
 
-                    if (token is string propertyName)
-                    {
-                        JObject objectSubDocument = (JObject)document;
-                        document = objectSubDocument[propertyName];
-                    }
-                    else if (token is long arrayIndex)
-                    {
-                        JArray arraySubDocument = (JArray)document;
-                        if (arrayIndex >= arraySubDocument.Count())
+                    token.Match(
+                        (long arrayIndex) =>
                         {
-                            document = null;
-                        }
-                        else
+                            CosmosArray arraySubDocument = (CosmosArray)document;
+                            if (arrayIndex >= arraySubDocument.Count)
+                            {
+                                document = null;
+                            }
+                            else
+                            {
+                                document = arraySubDocument[(int)arrayIndex];
+                            }
+                        },
+                        (string propertyName) =>
                         {
-                            document = arraySubDocument[(int)arrayIndex];
-                        }
-                    }
-                    else
-                    {
-                        throw new ArgumentException($"Unknown token type: {token.GetType()}");
-                    }
+                            CosmosObject objectSubDocument = (CosmosObject)document;
+                            if (!objectSubDocument.TryGetValue(propertyName, out document))
+                            {
+                                document = null;
+                            }
+                        });
                 }
 
-                return new Tuple<JToken, string>(document, rid);
+                return new Tuple<CosmosElement, string>(document, rid);
             }
 
-            private sealed class SqlInterpreterPathExpressionVisitor : SqlPathExpressionVisitor<IEnumerable<object>>
+            private sealed class SqlInterpreterPathExpressionVisitor : SqlPathExpressionVisitor<IEnumerable<Either<long, string>>>
             {
-                private readonly List<object> tokens;
+                private readonly List<Either<long, string>> tokens;
 
-                public SqlInterpreterPathExpressionVisitor(List<object> tokens)
+                public SqlInterpreterPathExpressionVisitor(List<Either<long, string>> tokens)
                 {
                     this.tokens = tokens;
                 }
 
-                public override IEnumerable<object> Visit(SqlIdentifierPathExpression sqlObject)
+                public override IEnumerable<Either<long, string>> Visit(SqlIdentifierPathExpression sqlObject)
                 {
                     this.tokens.Add(sqlObject.Value.Value);
                     sqlObject.ParentPath?.Accept(this);
                     return this.tokens;
                 }
 
-                public override IEnumerable<object> Visit(SqlNumberPathExpression sqlObject)
+                public override IEnumerable<Either<long, string>> Visit(SqlNumberPathExpression sqlObject)
                 {
                     this.tokens.Add(Number64.ToLong(sqlObject.Value.Value));
                     sqlObject.ParentPath?.Accept(this);
                     return this.tokens;
                 }
 
-                public override IEnumerable<object> Visit(SqlStringPathExpression sqlObject)
+                public override IEnumerable<Either<long, string>> Visit(SqlStringPathExpression sqlObject)
                 {
                     this.tokens.Add(sqlObject.Value.Value);
                     sqlObject.ParentPath?.Accept(this);
                     return this.tokens;
                 }
-            }
-
-            public static SqlInterpreterCollectionVisitor Create(CollectionConfigurations collectionConfigurations)
-            {
-                return new SqlInterpreterCollectionVisitor(collectionConfigurations);
             }
         }
     }

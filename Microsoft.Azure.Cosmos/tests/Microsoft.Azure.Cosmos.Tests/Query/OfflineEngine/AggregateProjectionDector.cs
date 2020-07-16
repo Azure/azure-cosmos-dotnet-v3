@@ -82,8 +82,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                 public override bool Visit(SqlBinaryScalarExpression sqlBinaryScalarExpression)
                 {
-                    return sqlBinaryScalarExpression.Left.Accept(this) ||
-                        sqlBinaryScalarExpression.Right.Accept(this);
+                    return sqlBinaryScalarExpression.LeftExpression.Accept(this) ||
+                        sqlBinaryScalarExpression.RightExpression.Accept(this);
                 }
 
                 public override bool Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)

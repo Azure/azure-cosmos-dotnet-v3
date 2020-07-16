@@ -8,74 +8,79 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Given a scalar expression and document this class evaluates the result of that scalar expression.
     /// </summary>
-    internal sealed class ScalarExpressionEvaluator : SqlScalarExpressionVisitor<JToken, JToken>
+    internal sealed class ScalarExpressionEvaluator : SqlScalarExpressionVisitor<CosmosElement, CosmosElement>
     {
-        private static readonly JToken Undefined = null;
+        public static readonly ScalarExpressionEvaluator Singleton = new ScalarExpressionEvaluator();
 
-        private readonly CollectionConfigurations collectionConfigurations;
+        private static readonly CosmosElement Undefined = null;
 
-        private ScalarExpressionEvaluator(CollectionConfigurations collectionConfigurations)
+        private ScalarExpressionEvaluator()
         {
-            this.collectionConfigurations = collectionConfigurations;
         }
 
-        public override JToken Visit(SqlArrayCreateScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(
+            SqlArrayCreateScalarExpression scalarExpression,
+            CosmosElement document)
         {
-            JArray result = new JArray();
+            List<CosmosElement> arrayItems = new List<CosmosElement>();
             foreach (SqlScalarExpression item in scalarExpression.Items)
             {
-                JToken value = item.Accept(this, document);
+                CosmosElement value = item.Accept(this, document);
                 if (value != Undefined)
                 {
-                    result.Add(value);
+                    arrayItems.Add(value);
                 }
             }
 
-            return result;
+            return CosmosArray.Create(arrayItems);
         }
 
-        public override JToken Visit(SqlArrayScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(
+            SqlArrayScalarExpression scalarExpression,
+            CosmosElement document)
         {
             // Only run on the current document since the subquery is always correlated.
-            IEnumerable<JToken> subqueryResults = SqlInterpreter.ExecuteQuery(
-                new JToken[] { document },
-                scalarExpression.SqlQuery,
-                this.collectionConfigurations);
-            JArray arrayScalarResult = new JArray();
-            foreach (JToken subQueryResult in subqueryResults)
+            IEnumerable<CosmosElement> subqueryResults = SqlInterpreter.ExecuteQuery(
+                new CosmosElement[] { document },
+                scalarExpression.SqlQuery);
+            List<CosmosElement> arrayScalarResult = new List<CosmosElement>();
+            foreach (CosmosElement subQueryResult in subqueryResults)
             {
-                arrayScalarResult.Add(subqueryResults);
+                arrayScalarResult.Add(subQueryResult);
             }
 
-            return arrayScalarResult;
+            return CosmosArray.Create(subqueryResults);
         }
 
-        public override JToken Visit(SqlBetweenScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(
+            SqlBetweenScalarExpression scalarExpression,
+            CosmosElement document)
         {
             // expression <not> BETWEEN left AND right === <not>(expression >= left && expression <= right);
             SqlBinaryScalarExpression expressionGTELeft = SqlBinaryScalarExpression.Create(
                 SqlBinaryScalarOperatorKind.GreaterThanOrEqual,
                 scalarExpression.Expression,
-                scalarExpression.Left);
+                scalarExpression.StartInclusive);
 
             SqlBinaryScalarExpression expressionLTERight = SqlBinaryScalarExpression.Create(
                 SqlBinaryScalarOperatorKind.LessThanOrEqual,
                 scalarExpression.Expression,
-                scalarExpression.Right);
+                scalarExpression.EndInclusive);
 
             SqlScalarExpression logicalBetween = SqlBinaryScalarExpression.Create(
                 SqlBinaryScalarOperatorKind.And,
                 expressionGTELeft,
                 expressionLTERight);
 
-            if (scalarExpression.IsNot)
+            if (scalarExpression.Not)
             {
                 logicalBetween = SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, logicalBetween);
             }
@@ -83,12 +88,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return logicalBetween.Accept(this, document);
         }
 
-        public override JToken Visit(SqlBinaryScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(
+            SqlBinaryScalarExpression scalarExpression,
+            CosmosElement document)
         {
-            JToken left = scalarExpression.Left.Accept(this, document);
-            JToken right = scalarExpression.Right.Accept(this, document);
+            CosmosElement left = scalarExpression.LeftExpression.Accept(this, document);
+            CosmosElement right = scalarExpression.RightExpression.Accept(this, document);
 
-            JToken result;
+            CosmosElement result;
             switch (scalarExpression.OperatorKind)
             {
                 case SqlBinaryScalarOperatorKind.Add:
@@ -178,39 +185,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return result;
         }
 
-        public override JToken Visit(SqlCoalesceScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlCoalesceScalarExpression scalarExpression, CosmosElement document)
         {
-            JToken left = scalarExpression.Left.Accept(this, document);
-            JToken right = scalarExpression.Right.Accept(this, document);
+            CosmosElement left = scalarExpression.Left.Accept(this, document);
+            CosmosElement right = scalarExpression.Right.Accept(this, document);
 
             return left != Undefined ? left : right;
         }
 
-        public override JToken Visit(SqlConditionalScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlConditionalScalarExpression scalarExpression, CosmosElement document)
         {
-            JToken condition = scalarExpression.Condition.Accept(this, document);
-            JToken first = scalarExpression.Consequent.Accept(this, document);
-            JToken second = scalarExpression.Alternative.Accept(this, document);
+            CosmosElement condition = scalarExpression.Condition.Accept(this, document);
+            CosmosElement first = scalarExpression.Consequent.Accept(this, document);
+            CosmosElement second = scalarExpression.Alternative.Accept(this, document);
 
-            return Utils.IsTrue(condition) ? first : second;
+            return (condition is CosmosBoolean cosmosBoolean && cosmosBoolean.Value) ? first : second;
         }
 
-        public override JToken Visit(SqlExistsScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlExistsScalarExpression scalarExpression, CosmosElement document)
         {
             // Only run on the current document since the subquery is always correlated.
-            IEnumerable<JToken> subqueryResults = SqlInterpreter.ExecuteQuery(
-                new JToken[] { document },
-                scalarExpression.Subquery,
-                this.collectionConfigurations);
-            return subqueryResults.Any();
+            IEnumerable<CosmosElement> subqueryResults = SqlInterpreter.ExecuteQuery(
+                new CosmosElement[] { document },
+                scalarExpression.Subquery);
+            return CosmosBoolean.Create(subqueryResults.Any());
         }
 
-        public override JToken Visit(SqlFunctionCallScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlFunctionCallScalarExpression scalarExpression, CosmosElement document)
         {
-            List<JToken> arguments = new List<JToken>();
+            List<CosmosElement> arguments = new List<CosmosElement>();
             foreach (SqlScalarExpression argument in scalarExpression.Arguments)
             {
-                JToken evaluatedArgument = argument.Accept(this, document);
+                CosmosElement evaluatedArgument = argument.Accept(this, document);
                 arguments.Add(evaluatedArgument);
             }
 
@@ -229,15 +235,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 arguments);
         }
 
-        public override JToken Visit(SqlInScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlInScalarExpression scalarExpression, CosmosElement document)
         {
-            JToken expression = scalarExpression.Needle.Accept(this, document);
+            CosmosElement expression = scalarExpression.Needle.Accept(this, document);
             if (expression == Undefined)
             {
                 return Undefined;
             }
 
-            HashSet<JToken> items = new HashSet<JToken>(JToken.EqualityComparer);
+            HashSet<CosmosElement> items = new HashSet<CosmosElement>();
             foreach (SqlScalarExpression item in scalarExpression.Haystack)
             {
                 items.Add(item.Accept(this, document));
@@ -249,65 +255,70 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 contains = !contains;
             }
 
-            return contains;
+            return CosmosBoolean.Create(contains);
         }
 
-        public override JToken Visit(SqlLiteralScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlLiteralScalarExpression scalarExpression, CosmosElement document)
         {
             SqlLiteral sqlLiteral = scalarExpression.Literal;
-            return sqlLiteral.Accept(SqlLiteralToJToken.Singleton);
+            return sqlLiteral.Accept(SqlLiteralToCosmosElement.Singleton);
         }
 
-        public override JToken Visit(SqlMemberIndexerScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlMemberIndexerScalarExpression scalarExpression, CosmosElement document)
         {
-            JToken member = scalarExpression.Member.Accept(this, document);
-            JToken index = scalarExpression.Indexer.Accept(this, document);
+            CosmosElement member = scalarExpression.Member.Accept(this, document);
+            CosmosElement index = scalarExpression.Indexer.Accept(this, document);
             return IndexIntoMember(member, index);
         }
 
-        public override JToken Visit(SqlObjectCreateScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlObjectCreateScalarExpression scalarExpression, CosmosElement document)
         {
-            JObject result = new JObject();
+            Dictionary<string, CosmosElement> properties = new Dictionary<string, CosmosElement>();
             foreach (SqlObjectProperty sqlObjectProperty in scalarExpression.Properties)
             {
                 string key = sqlObjectProperty.Name.Value;
-                JToken value = sqlObjectProperty.Value.Accept(this, document);
+                CosmosElement value = sqlObjectProperty.Value.Accept(this, document);
                 if (value != Undefined)
                 {
-                    result[key] = value;
+                    properties[key] = value;
                 }
             }
 
-            return result;
+            return CosmosObject.Create(properties);
         }
 
-        public override JToken Visit(SqlPropertyRefScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlParameterRefScalarExpression scalarExpression, CosmosElement document)
         {
-            JToken result;
+            return CosmosString.Create(scalarExpression.Parameter.Name);
+        }
+
+        public override CosmosElement Visit(SqlPropertyRefScalarExpression scalarExpression, CosmosElement document)
+        {
+            CosmosObject documentAsObject = (CosmosObject)document;
+            CosmosElement result;
             if (scalarExpression.Member == null)
             {
                 // just an identifier
-                result = document[scalarExpression.Identifier.Value];
+                result = documentAsObject[scalarExpression.Identifier.Value];
             }
             else
             {
-                JToken member = scalarExpression.Member.Accept(this, document);
-                JToken index = scalarExpression.Identifier.Value;
+                CosmosElement member = scalarExpression.Member.Accept(this, document);
+                CosmosElement index = CosmosString.Create(scalarExpression.Identifier.Value);
                 result = IndexIntoMember(member, index);
             }
 
             return result;
         }
 
-        public override JToken Visit(SqlSubqueryScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlSubqueryScalarExpression scalarExpression, CosmosElement document)
         {
             // Only run on the current document since the subquery is always correlated.
-            IEnumerable<JToken> subqueryResults = SqlInterpreter.ExecuteQuery(
-                new JToken[] { document },
-                scalarExpression.Query,
-                this.collectionConfigurations);
+            IEnumerable<CosmosElement> subqueryResults = SqlInterpreter.ExecuteQuery(
+                new CosmosElement[] { document },
+                scalarExpression.Query);
 
-            JToken result;
+            CosmosElement result;
             int cardinality = subqueryResults.Count();
             if (cardinality > 1)
             {
@@ -326,11 +337,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return result;
         }
 
-        public override JToken Visit(SqlUnaryScalarExpression scalarExpression, JToken document)
+        public override CosmosElement Visit(SqlUnaryScalarExpression scalarExpression, CosmosElement document)
         {
-            JToken expression = scalarExpression.Expression.Accept(this, document);
+            CosmosElement expression = scalarExpression.Expression.Accept(this, document);
 
-            JToken result;
+            CosmosElement result;
             switch (scalarExpression.OperatorKind)
             {
                 case SqlUnaryScalarOperatorKind.BitwiseNot:
@@ -356,161 +367,149 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return result;
         }
 
-        public static ScalarExpressionEvaluator Create(CollectionConfigurations collectionConfigurations)
+        private static CosmosElement PerformBinaryNumberOperation(
+            Func<double, double, double> operation,
+            CosmosElement left,
+            CosmosElement right)
         {
-            return new ScalarExpressionEvaluator(collectionConfigurations);
-        }
-
-        private static JToken PerformBinaryNumberOperation(Func<double, double, JToken> operation, JToken left, JToken right)
-        {
-            bool leftIsNumber = Utils.TryConvertToNumber(left, out double leftNumber);
-            bool rightIsNumber = Utils.TryConvertToNumber(right, out double rightNumber);
-
-            JToken result;
-            if (leftIsNumber && rightIsNumber)
-            {
-                result = operation(leftNumber, rightNumber);
-            }
-            else
-            {
-                result = Undefined;
-            }
-
-            return result;
-        }
-
-        private static JToken PerformLogicalAnd(JToken left, JToken right)
-        {
-            bool leftIsBoolean = Utils.TryConvertToBoolean(left, out bool leftBoolean);
-            bool rightIsBoolean = Utils.TryConvertToBoolean(right, out bool rightBoolean);
-
-            // If the expression is false && <anything>, then the result is false
-            if (leftIsBoolean && !leftBoolean)
-            {
-                return false;
-            }
-
-            if (rightIsBoolean && !rightBoolean)
-            {
-                return false;
-            }
-
-            JToken result;
-            if (leftIsBoolean && rightIsBoolean)
-            {
-                result = leftBoolean && rightBoolean;
-            }
-            else
-            {
-                // If either argument is not a boolean then the result is undefined
-                result = Undefined;
-            }
-
-            return result;
-        }
-
-        private static JToken PerformLogicalOr(JToken left, JToken right)
-        {
-            bool leftIsBoolean = Utils.TryConvertToBoolean(left, out bool leftBoolean);
-            bool rightIsBoolean = Utils.TryConvertToBoolean(right, out bool rightBoolean);
-
-            // If the expression is true || <anything>, then the result is true
-            if (leftIsBoolean && leftBoolean)
-            {
-                return true;
-            }
-
-            if (rightIsBoolean && rightBoolean)
-            {
-                return true;
-            }
-
-            JToken result;
-            if (leftIsBoolean && rightIsBoolean)
-            {
-                result = leftBoolean || rightBoolean;
-            }
-            else
-            {
-                // If either argument is not a boolean then the result is undefined
-                result = Undefined;
-            }
-
-            return result;
-        }
-
-        private static JToken PerformBinaryStringOperation(Func<string, string, JToken> operation, JToken left, JToken right)
-        {
-            bool leftIsString = Utils.TryConvertToString(left, out string leftString);
-            bool rightIsString = Utils.TryConvertToString(right, out string rightString);
-
-            JToken result;
-            if (leftIsString && rightIsString)
-            {
-                result = operation(leftString, rightString);
-            }
-            else
-            {
-                result = Undefined;
-            }
-
-            return result;
-        }
-
-        private static JToken PerformBinaryInequality(Func<int, JToken> inequalityFunction, JToken left, JToken right)
-        {
-            JToken result;
-            if (Utils.TryCompare(left, right, out int comparison))
-            {
-                result = inequalityFunction(comparison);
-            }
-            else
-            {
-                result = Undefined;
-            }
-
-            return result;
-        }
-
-        private static JToken PerformBinaryEquality(Func<bool, JToken> equalityFunction, JToken left, JToken right)
-        {
-            if (left == Undefined || right == Undefined)
+            if (!(left is CosmosNumber leftAsNumber))
             {
                 return Undefined;
             }
 
-            return equalityFunction(JsonTokenEqualityComparer.Value.Equals(left, right));
+            if (!(right is CosmosNumber rightAsNumber))
+            {
+                return Undefined;
+            }
+
+            double result = operation(Number64.ToDouble(leftAsNumber.Value), Number64.ToDouble(rightAsNumber.Value));
+            return CosmosNumber64.Create(result);
         }
 
-        private static JToken PerformUnaryNumberOperation(Func<double, JToken> unaryOperation, JToken operand)
+        private static CosmosElement PerformLogicalAnd(CosmosElement left, CosmosElement right)
         {
-            JToken result;
-            if (Utils.TryConvertToNumber(operand, out double number))
+            if (!(left is CosmosBoolean leftAsBoolean))
             {
-                result = unaryOperation(number);
-            }
-            else
-            {
-                result = Undefined;
+                return Undefined;
             }
 
-            return result;
+            if (!(right is CosmosBoolean rightAsBoolean))
+            {
+                return Undefined;
+            }
+
+            // If the expression is false && <anything>, then the result is false
+            if (!leftAsBoolean.Value)
+            {
+                return CosmosBoolean.Create(false);
+            }
+
+            if (!rightAsBoolean.Value)
+            {
+                return CosmosBoolean.Create(false);
+            }
+
+            bool result = leftAsBoolean.Value && rightAsBoolean.Value;
+            return CosmosBoolean.Create(result);
         }
 
-        private static JToken PerformUnaryBooleanOperation(Func<bool, JToken> unaryOperation, JToken operand)
+        private static CosmosElement PerformLogicalOr(CosmosElement left, CosmosElement right)
         {
-            JToken result;
-            bool boolean;
-            if (Utils.TryConvertToBoolean(operand, out boolean))
+            if (!(left is CosmosBoolean leftAsBoolean))
             {
-                result = unaryOperation(boolean);
-            }
-            else
-            {
-                result = Undefined;
+                return Undefined;
             }
 
-            return result;
+            if (!(right is CosmosBoolean rightAsBoolean))
+            {
+                return Undefined;
+            }
+
+            // If the expression is true || <anything>, then the result is true
+            if (leftAsBoolean.Value)
+            {
+                return CosmosBoolean.Create(true);
+            }
+
+            if (rightAsBoolean.Value)
+            {
+                return CosmosBoolean.Create(true);
+            }
+
+            bool result = leftAsBoolean.Value || rightAsBoolean.Value;
+            return CosmosBoolean.Create(result);
+        }
+
+        private static CosmosElement PerformBinaryStringOperation(
+            Func<string, string, string> operation,
+            CosmosElement left,
+            CosmosElement right)
+        {
+            if (!(left is CosmosString leftAsString))
+            {
+                return Undefined;
+            }
+
+            if (!(right is CosmosString rightAsString))
+            {
+                return Undefined;
+            }
+
+            string result = operation(leftAsString.Value, rightAsString.Value);
+            return CosmosString.Create(result);
+        }
+
+        private static CosmosElement PerformBinaryInequality(
+            Func<int, bool> inequalityFunction,
+            CosmosElement left,
+            CosmosElement right)
+        {
+            if (!Utils.TryCompare(left, right, out int comparison))
+            {
+                return Undefined;
+            }
+
+            bool result = inequalityFunction(comparison);
+            return CosmosBoolean.Create(result);
+        }
+
+        private static CosmosElement PerformBinaryEquality(
+            Func<bool, bool> equalityFunction,
+            CosmosElement left,
+            CosmosElement right)
+        {
+            if ((left == Undefined) || (right == Undefined))
+            {
+                return Undefined;
+            }
+
+            return CosmosBoolean.Create(equalityFunction(left == right));
+        }
+
+        private static CosmosElement PerformUnaryNumberOperation(
+            Func<double, double> unaryOperation,
+            CosmosElement operand)
+        {
+            if (!(operand is CosmosNumber operandAsNumber))
+            {
+                return Undefined;
+            }
+
+            double result = unaryOperation(Number64.ToDouble(operandAsNumber.Value));
+            return CosmosNumber64.Create(result);
+        }
+
+        private static CosmosElement PerformUnaryBooleanOperation(
+            Func<bool, bool> unaryOperation,
+            CosmosElement operand)
+        {
+            if (!(operand is CosmosBoolean operandAsBoolean))
+            {
+                return Undefined;
+            }
+
+            bool result = unaryOperation(operandAsBoolean.Value);
+            return CosmosBoolean.Create(result);
         }
 
         /// <summary>
@@ -532,7 +531,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </example>
         private static int DoubleToInt32Bitwise(double doubleValue)
         {
-
             // Optimistic cast to INT32
             if (doubleValue <= int.MaxValue)
             {
@@ -566,102 +564,92 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
         }
 
-        private static JToken IndexIntoMember(JToken member, JToken index)
+        private static CosmosElement IndexIntoMember(CosmosElement member, CosmosElement indexer)
         {
-            if (member == Undefined || index == Undefined)
+            if ((member == Undefined) || (indexer == Undefined))
             {
                 return Undefined;
             }
 
-            JToken result;
-            JsonType jsonType = JsonTypeUtils.JTokenTypeToJsonType(index.Type);
-            switch (jsonType)
-            {
-                case JsonType.Number:
-                    if (JsonTypeUtils.JTokenTypeToJsonType(member.Type) != JsonType.Array)
-                    {
-                        result = Undefined;
-                        break;
-                    }
-
-                    double numberIndex = index.Value<double>();
-                    if ((int)numberIndex != numberIndex || numberIndex < 0)
-                    {
-                        throw new ArgumentException("Number index must be a non negative integer.");
-                    }
-
-                    JArray arrayMember = (JArray)member;
-                    if (numberIndex >= arrayMember.Count)
-                    {
-                        result = Undefined;
-                    }
-                    else
-                    {
-                        result = arrayMember[(int)numberIndex];
-                    }
-
-                    break;
-
-                case JsonType.String:
-                    if (JsonTypeUtils.JTokenTypeToJsonType(member.Type) != JsonType.Object)
-                    {
-                        result = Undefined;
-                        break;
-                    }
-
-                    string stringIndex = index.Value<string>();
-                    JObject objectMember = (JObject)member;
-
-                    result = objectMember[stringIndex];
-                    break;
-
-                case JsonType.Array:
-                    throw new ArgumentException("Can not index using an array.");
-                case JsonType.Boolean:
-                    throw new ArgumentException("Can not index using a boolean.");
-                case JsonType.Null:
-                    throw new ArgumentException("Can not index using a null.");
-                case JsonType.Object:
-                    throw new ArgumentException("Can not index using an object.");
-                default:
-                    throw new ArgumentException($"Unknown {nameof(JsonType)}: {jsonType}");
-            }
-
-            return result;
+            return member.Accept(MemberIndexerVisitor.Singleton, indexer);
         }
 
-        private sealed class SqlLiteralToJToken : SqlLiteralVisitor<JToken>
+        private sealed class SqlLiteralToCosmosElement : SqlLiteralVisitor<CosmosElement>
         {
-            public static readonly SqlLiteralToJToken Singleton = new SqlLiteralToJToken();
+            public static readonly SqlLiteralToCosmosElement Singleton = new SqlLiteralToCosmosElement();
 
-            private static readonly JToken NullJToken = JValue.CreateNull();
-            private static readonly JToken TrueJToken = true;
-            private static readonly JToken FalseJToken = false;
+            public override CosmosElement Visit(SqlNumberLiteral literal) => CosmosNumber64.Create(literal.Value);
 
-            public override JToken Visit(SqlNumberLiteral literal)
+            public override CosmosElement Visit(SqlStringLiteral literal) => CosmosString.Create(literal.Value);
+
+            public override CosmosElement Visit(SqlUndefinedLiteral literal) => null;
+
+            public override CosmosElement Visit(SqlNullLiteral literal) => CosmosNull.Create();
+
+            public override CosmosElement Visit(SqlBooleanLiteral literal) => CosmosBoolean.Create(literal.Value);
+        }
+
+        private sealed class MemberIndexerVisitor : ICosmosElementVisitor<CosmosElement, CosmosElement>
+        {
+            public static readonly MemberIndexerVisitor Singleton = new MemberIndexerVisitor();
+
+            private MemberIndexerVisitor()
             {
-                return Number64.ToDouble(literal.Value);
             }
 
-            public override JToken Visit(SqlStringLiteral literal)
+            public CosmosElement Visit(CosmosArray cosmosArray, CosmosElement indexer)
             {
-                return literal.Value;
+                if (!(indexer is CosmosNumber indexerAsNumber))
+                {
+                    return Undefined;
+                }
+
+                if (!indexerAsNumber.Value.IsInteger)
+                {
+                    throw new ArgumentException("Number index must be a non negative integer.");
+                }
+
+                long numberIndexValue = Number64.ToLong(indexerAsNumber.Value);
+                if (numberIndexValue < 0)
+                {
+                    throw new ArgumentException("Number index must be a non negative integer.");
+                }
+
+                if (numberIndexValue >= cosmosArray.Count)
+                {
+                    return Undefined;
+                }
+
+                return cosmosArray[(int)numberIndexValue];
             }
 
-            public override JToken Visit(SqlUndefinedLiteral literal)
+            public CosmosElement Visit(CosmosObject cosmosObject, CosmosElement indexer)
             {
-                return null;
+                if (!(indexer is CosmosString indexerAsString))
+                {
+                    return Undefined;
+                }
+
+                string stringIndexValue = indexerAsString.Value;
+                if (!cosmosObject.TryGetValue(stringIndexValue, out CosmosElement propertyValue))
+                {
+                    return Undefined;
+                }
+
+                return propertyValue;
             }
 
-            public override JToken Visit(SqlNullLiteral literal)
-            {
-                return NullJToken;
-            }
+            public CosmosElement Visit(CosmosBinary cosmosBinary, CosmosElement indexer) => Undefined;
 
-            public override JToken Visit(SqlBooleanLiteral literal)
-            {
-                return literal.Value ? TrueJToken : FalseJToken;
-            }
+            public CosmosElement Visit(CosmosBoolean cosmosBoolean, CosmosElement indexer) => Undefined;
+
+            public CosmosElement Visit(CosmosGuid cosmosGuid, CosmosElement indexer) => Undefined;
+
+            public CosmosElement Visit(CosmosNull cosmosNull, CosmosElement indexer) => Undefined;
+
+            public CosmosElement Visit(CosmosNumber cosmosNumber, CosmosElement indexer) => Undefined;
+
+            public CosmosElement Visit(CosmosString cosmosString, CosmosElement indexer) => Undefined;
         }
     }
 }
