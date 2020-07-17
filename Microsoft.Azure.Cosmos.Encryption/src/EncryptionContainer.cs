@@ -20,6 +20,10 @@
 
         internal CosmosResponseFactory ResponseFactory { get; }
 
+        // A dictionary of the property paths to encrypt with their corresponding key
+        // 1 or more paths can be stored in the List to encrypt with the corresponding key
+        private IReadOnlyDictionary<List<string>, string> pathsToEncrypt = new Dictionary<List<string>, string>();
+
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
         /// </summary>
@@ -62,10 +66,6 @@
         public override Scripts.Scripts Scripts => this.container.Scripts;
 
         public override Database Database => this.container.Database;
-
-        // A dictionary of the property paths to encrypt with their corresponding key
-        // 1 or more paths can be stored in the List to encrypt with the corresponding key
-        private IReadOnlyDictionary<List<string>, string> pathsToEncrypt = new Dictionary<List<string>, string>();
 
         public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
@@ -1028,7 +1028,7 @@
                 if (decryptionResultHandler == null)
                 {
                     throw;
-                }
+                } 
 
                 using (MemoryStream memoryStream = new MemoryStream((int)input.Length))
                 {

@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(rawKey));
             }
 
-            switch(encryptionAlgorithm)
+            switch (encryptionAlgorithm)
             {
                 case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
                     AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);

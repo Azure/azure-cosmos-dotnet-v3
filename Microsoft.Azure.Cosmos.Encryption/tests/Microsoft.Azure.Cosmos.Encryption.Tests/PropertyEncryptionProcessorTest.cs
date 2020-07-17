@@ -173,13 +173,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             [JsonProperty("id")]
             public string Id { get; set; }
-
             public string PK { get; set; }
-
             public string Name { get; set; }
-
             public int SSN { get; set; }
-
             public string Sensitive { get; set; }
 
             public TestDoc()

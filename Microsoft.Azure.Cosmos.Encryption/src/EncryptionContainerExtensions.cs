@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Linq;
 

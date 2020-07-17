@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Authenticated Encryption algorithm based on https://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05
         /// </summary>
         public const string AEAes256CbcHmacSha256Randomized = "AEAes256CbcHmacSha256Randomized";
+
         /// <summary>
         /// Authenticated Deterministic Encryption algorithm based on https://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05
         /// </summary>

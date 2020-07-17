@@ -23,22 +23,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     {
         private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
         private const string metadataUpdateSuffix = "updated";
-        private const string pdekId = "mypdek";
+        private const string pdekId1 = "mypdek1";
         private const string pdekId2 = "mypdek2";
         private static CosmosClient client;
         private static Database database;
         private static DataEncryptionKeyProperties pdekProperties;
         private static Container propertyEncryptionContainer;
-        private static Container twoPropertyEncryptionContainer;
-        private static Container twoPropertyOneDekEncryptionContainer;
+        private static Container multipropertyMultiDek;
+        private static Container multipropertySingleDek;
         private static Container itemContainer;
         private static Container keyContainer;
         private static CosmosDataEncryptionKeyProvider dekProvider;
         private static TestEncryptor encryptor;
         private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
-        private static Dictionary<List<string>, string> PathsToEncrypt = new Dictionary<List<string>, string> { { TestDoc.PropertyPathsToEncrypt, pdekId } };
-        private static Dictionary<List<string>, string> PathsToEncrypt3 = new Dictionary<List<string>, string> { { TestDoc.PropertyPathsToEncrypt, pdekId }, { TestDoc.PropertyPathsToEncrypt2, pdekId2 } };
-        private static Dictionary<List<string>, string> PathsToEncrypt4 = new Dictionary<List<string>, string> { { TestDoc.Property2PathsToEncrypt, pdekId } };
+        private static Dictionary<List<string>, string> PathsToEncrypt1 = new Dictionary<List<string>, string> { { TestDoc.PropertyPathsToEncrypt1, pdekId1 } };
+        private static Dictionary<List<string>, string> PathsToEncrypt2 = new Dictionary<List<string>, string> { { TestDoc.PropertyPathsToEncrypt1, pdekId1}, { TestDoc.PropertyPathsToEncrypt2, pdekId2 } };
+        private static Dictionary<List<string>, string> PathsToEncrypt3 = new Dictionary<List<string>, string> { { TestDoc.PropertyPathsToEncrypt3, pdekId1 } };
 
         [ClassInitialize]
         public async Task ClassInitialize(TestContext context)
@@ -53,10 +53,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             await EncryptionContainerTests.dekProvider.InitializeAsync(EncryptionContainerTests.database, EncryptionContainerTests.keyContainer.Id);
 
             EncryptionContainerTests.itemContainer = await EncryptionContainerTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
-            EncryptionContainerTests.propertyEncryptionContainer = EncryptionContainerTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionContainerTests.PathsToEncrypt);
-            EncryptionContainerTests.pdekProperties = await EncryptionContainerTests.CreatePropertyDekAsync(EncryptionContainerTests.dekProvider, EncryptionContainerTests.pdekId);
-            EncryptionContainerTests.twoPropertyEncryptionContainer = EncryptionContainerTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionContainerTests.PathsToEncrypt3);
-            EncryptionContainerTests.twoPropertyOneDekEncryptionContainer = EncryptionContainerTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionContainerTests.PathsToEncrypt4);
+            EncryptionContainerTests.propertyEncryptionContainer = EncryptionContainerTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionContainerTests.PathsToEncrypt1);
+            EncryptionContainerTests.pdekProperties = await EncryptionContainerTests.CreatePropertyDekAsync(EncryptionContainerTests.dekProvider, EncryptionContainerTests.pdekId1);
+            EncryptionContainerTests.multipropertyMultiDek = EncryptionContainerTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionContainerTests.PathsToEncrypt2);
+            EncryptionContainerTests.multipropertySingleDek = EncryptionContainerTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionContainerTests.PathsToEncrypt3);
         }
 
         [ClassCleanup]
@@ -107,12 +107,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task CreateItemWith2PropertyEncr()
         {
             TestDoc testDoc = TestDoc.Create();
-            ItemResponse<TestDoc> createResponse = await EncryptionContainerTests.twoPropertyEncryptionContainer.CreateItemAsync(
+            ItemResponse<TestDoc> createResponse = await EncryptionContainerTests.multipropertyMultiDek.CreateItemAsync(
                 testDoc, new PartitionKey(testDoc.PK));
 
-            await EncryptionContainerTests.VerifyItemByReadAsync(EncryptionContainerTests.twoPropertyEncryptionContainer, testDoc);
+            await EncryptionContainerTests.VerifyItemByReadAsync(EncryptionContainerTests.multipropertyMultiDek, testDoc);
 
-            await EncryptionContainerTests.VerifyItemByReadStreamAsync(EncryptionContainerTests.twoPropertyEncryptionContainer, testDoc);
+            await EncryptionContainerTests.VerifyItemByReadStreamAsync(EncryptionContainerTests.multipropertyMultiDek, testDoc);
 
         }
 
@@ -120,12 +120,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task CreateItemWith2Property1DekEncr()
         {
             TestDoc testDoc = TestDoc.Create();
-            ItemResponse<TestDoc> createResponse = await EncryptionContainerTests.twoPropertyOneDekEncryptionContainer.CreateItemAsync(
+            ItemResponse<TestDoc> createResponse = await EncryptionContainerTests.multipropertySingleDek.CreateItemAsync(
                 testDoc, new PartitionKey(testDoc.PK));
 
-            await EncryptionContainerTests.VerifyItemByReadAsync(EncryptionContainerTests.twoPropertyOneDekEncryptionContainer, testDoc);
+            await EncryptionContainerTests.VerifyItemByReadAsync(EncryptionContainerTests.multipropertySingleDek, testDoc);
 
-            await EncryptionContainerTests.VerifyItemByReadStreamAsync(EncryptionContainerTests.twoPropertyOneDekEncryptionContainer, testDoc);
+            await EncryptionContainerTests.VerifyItemByReadStreamAsync(EncryptionContainerTests.multipropertySingleDek, testDoc);
 
         }
 
@@ -342,9 +342,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         internal class TestDoc
         {
-            public static List<string> PropertyPathsToEncrypt { get; } = new List<string> { "/Name" };
+            public static List<string> PropertyPathsToEncrypt1 { get; } = new List<string> { "/Name" };
             public static List<string> PropertyPathsToEncrypt2 { get; } = new List<string> { "/City" };
-            public static List<string> Property2PathsToEncrypt { get; } = new List<string> { "/SSN", "/Name" };
+            public static List<string> PropertyPathsToEncrypt3 { get; } = new List<string> { "/SSN", "/Name" };
 
             [JsonProperty("id")]
             public string Id { get; set; }

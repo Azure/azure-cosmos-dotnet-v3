@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public string EncryptionAlgorithm { get; set; }
 
         /// <summary>
-        /// For the request payload, list of JSON paths to encrypt.
+        /// Gets or sets for the request payload, list of JSON paths to encrypt.
         /// Only top level paths are supported.
         /// Example of a path specification: /sensitive
         /// </summary>
