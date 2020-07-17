@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly X509Certificate2 certificate;
         private readonly AsyncCache<string, KeyClient> akvClientCache;
         private readonly AsyncCache<Uri, CryptographyClient> akvCrytpoClientCache;
-        private readonly AsyncCache<Uri, string> endPointCache;
+        private readonly AsyncCache<string, ClientCertificateCredential> clientCertCredCache;
         private readonly KeyVaultHttpClient keyvaulthttpclient;
         private string tenantId;
         private ClientCertificateCredential clientCertificateCredential;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.clientId = clientId;
             this.akvClientCache = new AsyncCache<string, KeyClient>();
             this.akvCrytpoClientCache = new AsyncCache<Uri, CryptographyClient>();
-            this.endPointCache = new AsyncCache<Uri, string>();
+            this.clientCertCredCache = new AsyncCache<string, ClientCertificateCredential>();
             this.keyvaulthttpclient = new KeyVaultHttpClient(httpClient);
         }
 
@@ -252,17 +252,6 @@ Success:
             string keyVaultName = source.ElementAt(2);
             Uri keyvaulturi = new Uri($"https://{keyVaultName}/");
 
-            // The idea to get the Client Credentials,and also retrieve the tenant ID for this KeyVault,and store them.
-            string tenantid = await this.endPointCache.GetAsync(
-                key: keyVaultKeyUri,
-                obsoleteValue: null,
-                singleValueInitFunc: async () =>
-                {
-                    await this.InitializeLoginUrlAndResourceEndpointAsync(keyVaultKeyUri, cancellationToken);
-                    return this.tenantId;
-                },
-                cancellationToken: cancellationToken);
-
             // Called once per KEYVALTNAME
             // Eg:https://KEYVALTNAME.vault.azure.net/
             try
@@ -272,7 +261,7 @@ Success:
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
                 {
-                    await Task.FromResult(true);
+                    await this.InitializeLoginUrlAndResourceEndpointAsync(keyVaultKeyUri, cancellationToken);
                     return new KeyClient(keyvaulturi, this.clientCertificateCredential);
                 },
                 cancellationToken: cancellationToken);
@@ -305,7 +294,8 @@ Success:
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
                 {
-                    await Task.FromResult(true);
+                    // we need to acquire the Client Cert Creds for cases where we directly access Crypto Services.
+                    await this.InitializeLoginUrlAndResourceEndpointAsync(keyVaultKeyUri, cancellationToken);
                     return new CryptographyClient(keyVaultKeyUri, this.clientCertificateCredential);
                 },
                 cancellationToken: cancellationToken);
@@ -339,8 +329,18 @@ Success:
                     string aadLoginUrl = source.ElementAt(1).Trim('"');
                     this.tenantId = aadLoginUrl.Substring(aadLoginUrl.LastIndexOf('/') + 1);
 
-                    // Retrieve the Client Creds against the TenantID/ClientID for the saved certificate.
-                    this.clientCertificateCredential = new ClientCertificateCredential(this.tenantId, this.clientId, this.certificate);
+                    // The idea is to get the Client Credentials,cache them per Tanant
+                    this.clientCertificateCredential = await this.clientCertCredCache.GetAsync(
+                        key: this.tenantId,
+                        obsoleteValue: null,
+                        singleValueInitFunc: async () =>
+                    {
+                        await Task.FromResult(true);
+
+                        // Retrieve the Client Creds against the TenantID/ClientID for the saved certificate.
+                        return this.clientCertificateCredential = new ClientCertificateCredential(this.tenantId, this.clientId, this.certificate);
+                    },
+                        cancellationToken: cancellationToken);
                 }
                 catch (ArgumentOutOfRangeException ex)
                 {
