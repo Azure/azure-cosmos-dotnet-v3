@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
         public Scanner(ReadOnlySpan<char> corpus)
         {
             this.corpus = corpus;
-            this.TokenValue = ReadOnlySpan<char>.Empty;
+            this.TokenValue = this.corpus;
             this.Token = TokenKind.EOF;
         }
 
@@ -171,6 +171,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
                     case CharCodes.DoubleQuote:
                         return this.Token = this.ScanStringLiteral();
 
+                    case CharCodes.Dot:
+                        if (char.IsDigit(this.corpus[1]))
+                        {
+                            return this.Token = this.ScanNumberLiteral();
+                        }
+
+                        this.corpus = this.corpus.Slice(start: 1);
+                        return this.Token = TokenKind.Dot;
+
                     case CharCodes.Question:
                         this.corpus = this.corpus.Slice(start: 1);
                         if (this.corpus[0] == CharCodes.Question)
@@ -188,15 +197,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
                         }
                         else if (IsIdStart(ch))
                         {
+                            this.TokenValue = this.corpus;
                             this.corpus = this.corpus.Slice(start: 1);
                             while (!this.corpus.IsEmpty && IsIdContinue(this.corpus[0]))
                             {
                                 this.corpus = this.corpus.Slice(start: 1);
                             }
 
+                            this.TokenValue = this.TokenValue.Slice(start: 0, length: this.TokenValue.Length - this.corpus.Length);
+
                             foreach (Keyword keyword in Keyword.Values)
                             {
-                                if (this.corpus.StartsWith(
+                                if (this.TokenValue.Equals(
                                     keyword.Buffer.Span,
                                     keyword.CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase))
                                 {
@@ -244,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
                 this.corpus = this.corpus.Slice(start: 1);
             }
 
-            if ((this.corpus[0] == CharCodes.Dot) && (startChar != CharCodes.Dot))
+            if (!this.corpus.IsEmpty && (this.corpus[0] == CharCodes.Dot) && (startChar != CharCodes.Dot))
             {
                 this.corpus = this.corpus.Slice(start: 1);
                 while (!this.corpus.IsEmpty && char.IsDigit(this.corpus[0]))
@@ -253,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
                 }
             }
 
-            if ((this.corpus[0] == CharCodes.e) || (this.corpus[0] == CharCodes.E))
+            if (!this.corpus.IsEmpty && ((this.corpus[0] == CharCodes.e) || (this.corpus[0] == CharCodes.E)))
             {
                 this.corpus = this.corpus.Slice(start: 1);
                 if ((this.corpus[0] == CharCodes.Plus) || (this.corpus[0] == CharCodes.Minus))
@@ -289,6 +301,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
                         this.corpus = this.corpus.Slice(start: 2);
                     }
                 }
+
+                this.corpus = this.corpus.Slice(start: 1);
             }
 
             // Consume the end string

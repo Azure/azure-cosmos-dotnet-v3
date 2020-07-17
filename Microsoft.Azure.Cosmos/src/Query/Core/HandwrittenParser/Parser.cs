@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
         public static SqlQuery Parse(ReadOnlySpan<char> text)
         {
             Scanner scanner = new Scanner(text);
+            scanner.Scan();
             return ParseQuery(ref scanner);
         }
 
@@ -160,10 +161,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
                 return SqlAliasedCollectionExpression.Create(collection, identifier);
             }
 
-            throw new InvalidOperationException();
+            if (scanner.Token == TokenKind.InKeyword)
+            {
+                throw new NotImplementedException();
+            }
+
+            // TODO FINISH THIS METHOD
+            return SqlAliasedCollectionExpression.Create(collection, alias: null);
         }
 
         private static SqlCollection ParseCollection(ref Scanner scanner)
+        {
+            if (scanner.Token == TokenKind.OpenParen)
+            {
+                return ParseSubqueryCollection(ref scanner);
+            }
+
+            SqlIdentifier identifier = ParseIdentifier(ref scanner);
+
+            // TODO NEED TO ADD PATH EXPRESSION
+            return SqlInputPathCollection.Create(identifier, relativePath: null);
+        }
+
+        private static SqlCollection ParseSubqueryCollection(ref Scanner scanner)
         {
             throw new NotImplementedException();
         }
@@ -315,10 +335,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
             Scanner lookAheadScanner = scanner;
             if (lookAheadScanner.Token == TokenKind.NotKeyword)
             {
-                lookAheadScanner.Scan();
-                isIn = lookAheadScanner.Token == TokenKind.InKeyword;
-                isBetween = lookAheadScanner.Token == TokenKind.BetweenKeyword;
+                lookAheadScanner.Scan();   
             }
+
+            isIn = lookAheadScanner.Token == TokenKind.InKeyword;
+            isBetween = lookAheadScanner.Token == TokenKind.BetweenKeyword;
 
             if (isIn)
             {
@@ -540,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
             return expression;
         }
 
-        private static SqlFunctionCallScalarExpression ParseFunctionCallScalarExpression(ref Scanner scanner)
+        private static SqlScalarExpression ParseFunctionCallScalarExpression(ref Scanner scanner)
         {
             bool isUdf;
             if (scanner.Token == TokenKind.UdfKeyword)
@@ -554,22 +575,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
                 isUdf = false;
             }
 
-            SqlIdentifier identifier = ParseIdentifier(ref scanner);
+            SqlPropertyRefScalarExpression expression = ParsePropertyRefScalarExpression(ref scanner);
 
-            ParseExpected(TokenKind.OpenParen, ref scanner);
-            List<SqlScalarExpression> arguments;
-            if (scanner.Token == TokenKind.CloseParen)
+            if (scanner.Token == TokenKind.OpenParen)
             {
-                arguments = new List<SqlScalarExpression>();
+                scanner.Scan();
+                List<SqlScalarExpression> arguments;
+                if (scanner.Token == TokenKind.CloseParen)
+                {
+                    scanner.Scan();
+                    arguments = new List<SqlScalarExpression>();
+                }
+                else
+                {
+                    arguments = ParseScalarExpressionList(ref scanner);
+                    ParseExpected(TokenKind.CloseParen, ref scanner);
+                }
+
+                return SqlFunctionCallScalarExpression.Create(expression.Identifer, isUdf, arguments);
             }
-            else
+
+            return expression;
+        }
+
+        private static SqlPropertyRefScalarExpression ParsePropertyRefScalarExpression(ref Scanner scanner)
+        {
+            SqlPropertyRefScalarExpression member = SqlPropertyRefScalarExpression.Create(member: null, ParseIdentifier(ref scanner));
+            while (scanner.Token == TokenKind.Dot)
             {
-                arguments = ParseScalarExpressionList(ref scanner);
+                ParseExpected(TokenKind.Dot, ref scanner);
+                member = SqlPropertyRefScalarExpression.Create(member, ParseIdentifier(ref scanner));
             }
 
-            ParseExpected(TokenKind.CloseParen, ref scanner);
-
-            return SqlFunctionCallScalarExpression.Create(identifier, isUdf, arguments);
+            return member;
         }
 
         private static SqlObjectCreateScalarExpression ParseObjectCreateScalarExpression(ref Scanner scanner)
@@ -718,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser
 
         private static SqlIdentifier ParseIdentifier(ref Scanner scanner)
         {
-            if (scanner.Token == TokenKind.Identifier)
+            if (scanner.Token != TokenKind.Identifier)
             {
                 throw new ParseException($"Expected identifier token, but instead got: {scanner.Token}: {scanner.TokenValue.ToString()}.");
             }
