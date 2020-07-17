@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -21,28 +20,13 @@ namespace Microsoft.Azure.Cosmos
         /// Patch operation type.
         /// </summary>
         [JsonProperty(PropertyName = PatchConstants.PropertyNames.OperationType)]
-        public PatchOperationType OperationType { get; }
+        public abstract PatchOperationType OperationType { get; }
 
         /// <summary>
         /// Target location reference. 
         /// </summary>
         [JsonProperty(PropertyName = PatchConstants.PropertyNames.Path)]
-        public string Path { get; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PatchOperation"/> class.
-        /// </summary>
-        /// <param name="operationType">Specifies the type of Patch operation.</param>
-        /// <param name="path">Specifies the path to target location.</param>
-        protected PatchOperation(
-            PatchOperationType operationType,
-            string path)
-        {
-            this.OperationType = operationType;
-            this.Path = string.IsNullOrWhiteSpace(path)
-                ? throw new ArgumentNullException(nameof(path))
-                : path;
-        }
+        public abstract string Path { get; }
 
         internal virtual bool TrySerializeValueParameter(
             CosmosSerializer cosmosSerializer,

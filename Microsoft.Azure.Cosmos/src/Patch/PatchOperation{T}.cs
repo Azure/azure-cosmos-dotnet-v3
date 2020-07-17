@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -22,21 +21,6 @@ namespace Microsoft.Azure.Cosmos
         /// Value parameter.
         /// </summary>
         [JsonProperty(PropertyName = PatchConstants.PropertyNames.Value)]
-        public T Value { get; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PatchOperation{T}"/> class.
-        /// </summary>
-        /// <param name="operationType">Specifies the type of Patch operation.</param>
-        /// <param name="path">Specifies the path to target location.</param>
-        /// <param name="value">Specifies the value to be used.</param>
-        protected PatchOperation(
-            PatchOperationType operationType,
-            string path,
-            T value)
-            : base(operationType, path)
-        {
-            this.Value = value ?? throw new ArgumentNullException(nameof(value));
-        }
+        public abstract T Value { get; }
     }
 }
