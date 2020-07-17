@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
         {
             List<ParserBaselineInput> inputs = new List<ParserBaselineInput>()
             {
+                // new ParserBaselineInput(description: "Simple", "SELECT * FROM c WHERE c.name = 'John' GROUP BY c.age ORDER BY c.height OFFSET 5 LIMIT 10"),
+                new ParserBaselineInput(description: "Simple", "SELECT * FROM c WHERE c.number IN (1, 2, 3)"),
                 // Array Create Scalar Expressions
                 CreateScalarExpressionInput(description: "Empty Array", "[]"),
                 CreateScalarExpressionInput(description: "Single Item Array", "[1]"),

@@ -95,7 +95,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
             Action<SqlQuerySpec> parseMethod = parserType switch
             {
-                ParserType.Managed => ParseUsingMangedParser,
+                ParserType.Antlr => ParseUsingAntlrParser,
+                ParserType.Handwritten => ParseUsingHandwrittenParser,
                 ParserType.Native => ParseUsingNativeParser,
                 _ => throw new ArgumentOutOfRangeException(nameof(parserType)),
             };
@@ -106,12 +107,17 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private static void ParseUsingMangedParser(SqlQuerySpec sqlQuerySpec)
+        private static void ParseUsingAntlrParser(SqlQuerySpec sqlQuerySpec)
         {
             if (!SqlQuery.TryParse(sqlQuerySpec.QueryText, out SqlQuery sqlQuery))
             {
                 throw new InvalidOperationException("FAILED TO PARSE QUERY.");
             }
+        }
+
+        private static void ParseUsingHandwrittenParser(SqlQuerySpec sqlQuerySpec)
+        {
+            Microsoft.Azure.Cosmos.Query.Core.HandwrittenParser.Parser.Parse(sqlQuerySpec.QueryText);
         }
 
         private static void ParseUsingNativeParser(SqlQuerySpec sqlQuerySpec)
@@ -140,7 +146,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public enum ParserType
         {
-            Managed,
+            Antlr,
+            Handwritten,
             Native,
         }
 

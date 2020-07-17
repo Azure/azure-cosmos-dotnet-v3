@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
-#if false
     using System;
     using System.Collections.Generic;
     using Antlr4.Runtime.Tree;
@@ -88,10 +87,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 sqlWhereClause = default;
             }
 
-            SqlOrderbyClause sqlOrderByClause;
+            SqlOrderByClause sqlOrderByClause;
             if (context.order_by_clause() != null)
             {
-                sqlOrderByClause = (SqlOrderbyClause)this.Visit(context.order_by_clause());
+                sqlOrderByClause = (SqlOrderByClause)this.Visit(context.order_by_clause());
             }
             else
             {
@@ -364,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 orderByItems.Add(orderByItem);
             }
 
-            return SqlOrderbyClause.Create(orderByItems);
+            return SqlOrderByClause.Create(orderByItems);
         }
     #endregion
     #region OFFSET LIMIT
@@ -725,5 +724,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return number64;
         }
     }
-#endif
 }
