@@ -28,10 +28,7 @@
         private const string databaseId = "samples";
         private const string containerId = "encryptedData";
         private const string keyContainerId = "keyContainer";
-        private const string dataEncryptionKeyId1 = "theDEK1";
-        private const string dataEncryptionKeyId2 = "theDEK2";
-        private const string dataEncryptionKeyId3 = "theDEK3";
-        private const string dataEncryptionKeyId4 = "theDEK4";
+        private const string dataEncryptionKeyId = "theDataEncryptionKey";
 
         private static readonly JsonSerializer Serializer = new JsonSerializer();
 
@@ -92,7 +89,7 @@
 
         private static X509Certificate2 GetCertificate(string clientCertThumbprint)
         {
-            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
             store.Open(OpenFlags.ReadOnly);
             X509Certificate2Collection certs = store.Certificates.Find(X509FindType.FindByThumbprint, clientCertThumbprint, false);
             store.Close();
@@ -138,9 +135,7 @@
             {
                 throw new ArgumentNullException("Please specify a valid ClientCertThumbprint in the appSettings.json");
             }
-            /* SANTOSH:sealed class not derivation Core Calls to init*/
-            /*provides wrap/unwarp, the DEK and finally the Encrypt and Decrypt*/
-            /*Get the Client Certificate by passing all relevant info like client id*/
+
             AzureKeyVaultCosmosEncryptor encryptor = new AzureKeyVaultCosmosEncryptor(
                 clientId,
                 Program.GetCertificate(clientCertThumbprint));
@@ -151,211 +146,52 @@
 
 
             // Master key identifier: https://{keyvault-name}.vault.azure.net/{object-type}/{object-name}/{object-version}
-            string masterKeyUrlFromConfig = configuration["MasterKeyUrl1"];
+            string masterKeyUrlFromConfig = configuration["MasterKeyUrl"];
             if (string.IsNullOrEmpty(masterKeyUrlFromConfig))
             {
                 throw new ArgumentException("Please specify a valid MasterKeyUrl in the appSettings.json");
             }
 
-            Uri masterKeyUri1 = new Uri(masterKeyUrlFromConfig);            
+            Uri masterKeyUri = new Uri(masterKeyUrlFromConfig);
 
-            /*Another Key Vault2*/
-
-            string masterKeyUrlFromConfig2= configuration["MasterKeyUrl2"];
-            if (string.IsNullOrEmpty(masterKeyUrlFromConfig2))
-            {
-                throw new ArgumentException("Please specify a valid MasterKeyUrl1 in the appSettings.json");
-            }
-
-            Uri masterKeyUri2 = new Uri(masterKeyUrlFromConfig2);
-
-            /*Another Key Vault3*/
-
-            string masterKeyUrlFromConfig3 = configuration["MasterKeyUrl3"];
-            if (string.IsNullOrEmpty(masterKeyUrlFromConfig3))
-            {
-                throw new ArgumentException("Please specify a valid MasterKeyUrl1 in the appSettings.json");
-            }
-
-            Uri masterKeyUri3 = new Uri(masterKeyUrlFromConfig3);
-
-            string masterKeyUrlFromConfig4 = configuration["MasterKeyUrl4"];
-            if (string.IsNullOrEmpty(masterKeyUrlFromConfig4))
-            {
-                throw new ArgumentException("Please specify a valid MasterKeyUrl1 in the appSettings.json");
-            }
-
-            Uri masterKeyUri4 = new Uri(masterKeyUrlFromConfig4);
-
-            AzureKeyVaultKeyWrapMetadata wrapMetadata1 = new AzureKeyVaultKeyWrapMetadata(masterKeyUri1);
-            AzureKeyVaultKeyWrapMetadata wrapMetadata2 = new AzureKeyVaultKeyWrapMetadata(masterKeyUri2);
-            AzureKeyVaultKeyWrapMetadata wrapMetadata3 = new AzureKeyVaultKeyWrapMetadata(masterKeyUri3);
-            AzureKeyVaultKeyWrapMetadata wrapMetadata4 = new AzureKeyVaultKeyWrapMetadata(masterKeyUri4);
+            AzureKeyVaultKeyWrapMetadata wrapMetadata = new AzureKeyVaultKeyWrapMetadata(masterKeyUri);
 
             /// Generates an encryption key, wraps it using the key wrap metadata provided
             /// with the key wrapping provider configured on the client
             /// and saves the wrapped encryption key as an asynchronous operation in the Azure Cosmos service.
             await encryptor.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
-                dataEncryptionKeyId1,
+                dataEncryptionKeyId,
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                wrapMetadata1);
-
-            await encryptor.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
-                dataEncryptionKeyId2,
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                wrapMetadata2);
-
-            await encryptor.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
-                dataEncryptionKeyId3,
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                wrapMetadata3);
-
-            await encryptor.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
-                dataEncryptionKeyId4,
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                wrapMetadata4);
+                wrapMetadata);
         }
 
         private static async Task RunDemoAsync(CosmosClient client)
-        {   /*in items, the id value and / PK path*/
-            string orderId1 = Guid.NewGuid().ToString();
-            string orderId2 = Guid.NewGuid().ToString();
-            string orderId3 = Guid.NewGuid().ToString();
-            string orderId4 = Guid.NewGuid().ToString();
-            string orderId5 = Guid.NewGuid().ToString();
-            string orderId6 = Guid.NewGuid().ToString();
-            string account1 = "Account1";
-            string account2 = "Account2";
-            string account3 = "Account3";
-            string account4 = "Account4";
-            string account5 = "Account5";
-            string account6 = "Account6";
-            SalesOrder order1 = Program.GetSalesOrderSample(account1, orderId1);
-            SalesOrder order2 = Program.GetSalesOrderSample(account2, orderId2);
-            SalesOrder order3 = Program.GetSalesOrderSample(account3, orderId3);
-            SalesOrder order4 = Program.GetSalesOrderSample(account4, orderId4);
-            SalesOrder order5 = Program.GetSalesOrderSample(account5, orderId5);
-            SalesOrder order6 = Program.GetSalesOrderSample(account6, orderId6);
+        {
+            string orderId = Guid.NewGuid().ToString();
+            string account = "Account1";
+            SalesOrder order = Program.GetSalesOrderSample(account, orderId);
 
             // Save the sales order into the container - all properties marked with the Encrypt attribute on the SalesOrder class
             // are encrypted using the encryption key referenced below before sending to the Azure Cosmos DB service.
-
-            Console.WriteLine("-- Staring Timer --");
-            System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
-
             await Program.containerWithEncryption.CreateItemAsync(
-                order1,
-                new PartitionKey(order1.AccountNumber),
+                order,
+                new PartitionKey(order.AccountNumber),
                 new EncryptionItemRequestOptions
                 {
                     EncryptionOptions = new EncryptionOptions
                     {
-                        DataEncryptionKeyId = Program.dataEncryptionKeyId1,
+                        DataEncryptionKeyId = Program.dataEncryptionKeyId,
                         EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
                         PathsToEncrypt = new List<string> { "/TotalDue" }
                     }
                 });
-            
-            await Program.containerWithEncryption.CreateItemAsync(
-                order2,
-                new PartitionKey(order2.AccountNumber),
-                new EncryptionItemRequestOptions
-                {
-                    EncryptionOptions = new EncryptionOptions
-                    {
-                        DataEncryptionKeyId = Program.dataEncryptionKeyId2,
-                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                        PathsToEncrypt = new List<string> { "/OrderDate" }
-                    }
-                });
-
-            await Program.containerWithEncryption.CreateItemAsync(
-            order3,
-            new PartitionKey(order3.AccountNumber),
-            new EncryptionItemRequestOptions
-            {
-                EncryptionOptions = new EncryptionOptions
-                {
-                    DataEncryptionKeyId = Program.dataEncryptionKeyId3,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                    PathsToEncrypt = new List<string> { "/Freight" }
-                }
-            });
-
-            await Program.containerWithEncryption.CreateItemAsync(
-            order4,
-            new PartitionKey(order4.AccountNumber),
-            new EncryptionItemRequestOptions
-            {
-                EncryptionOptions = new EncryptionOptions
-                {
-                    DataEncryptionKeyId = Program.dataEncryptionKeyId1,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                    PathsToEncrypt = new List<string> { "/TaxAmount" }
-                }
-            });
-
-            await Program.containerWithEncryption.CreateItemAsync(
-            order5,
-            new PartitionKey(order5.AccountNumber),
-            new EncryptionItemRequestOptions
-            {
-                EncryptionOptions = new EncryptionOptions
-                {
-                    DataEncryptionKeyId = Program.dataEncryptionKeyId2,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                    PathsToEncrypt = new List<string> { "/ShippedDate" }
-                }
-            });
-
-            await Program.containerWithEncryption.CreateItemAsync(
-            order6,
-            new PartitionKey(order6.AccountNumber),
-            new EncryptionItemRequestOptions
-            {
-                EncryptionOptions = new EncryptionOptions
-                {
-                    DataEncryptionKeyId = Program.dataEncryptionKeyId4,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                    PathsToEncrypt = new List<string> { "/SubTotal" }
-                }
-            });
 
             // Read the item back - decryption happens automatically as the data contains the reference to the wrapped form of the encryption key and
             // metadata in order to unwrap it.
-            ItemResponse<SalesOrder> readResponse1 = await Program.containerWithEncryption.ReadItemAsync<SalesOrder>(orderId1, new PartitionKey(account1));
-            SalesOrder readOrder1 = readResponse1.Resource;
+            ItemResponse<SalesOrder> readResponse = await Program.containerWithEncryption.ReadItemAsync<SalesOrder>(orderId, new PartitionKey(account));
+            SalesOrder readOrder = readResponse.Resource;
 
-            Console.WriteLine("1.Total due: {0} After roundtripping: {1}", order1.TotalDue, readOrder1.TotalDue);
-            
-            ItemResponse<SalesOrder> readResponse2 = await Program.containerWithEncryption.ReadItemAsync<SalesOrder>(orderId2, new PartitionKey(account2));
-            SalesOrder readOrder2 = readResponse2.Resource;
-
-            Console.WriteLine("2.OrderDate: {0} After roundtripping: {1}", order2.OrderDate, readOrder2.OrderDate);
-
-            ItemResponse<SalesOrder> readResponse3 = await Program.containerWithEncryption.ReadItemAsync<SalesOrder>(orderId3, new PartitionKey(account3));
-            SalesOrder readOrder3 = readResponse3.Resource;
-
-            Console.WriteLine("3.Freight: {0} After roundtripping: {1}", order3.Freight, readOrder3.Freight);
-
-            ItemResponse<SalesOrder> readResponse4 = await Program.containerWithEncryption.ReadItemAsync<SalesOrder>(orderId4, new PartitionKey(account4));
-            SalesOrder readOrder4 = readResponse4.Resource;
-
-            Console.WriteLine("4.TaxAmount: {0} After roundtripping: {1}", order4.TaxAmount, readOrder4.TaxAmount);
-
-            ItemResponse<SalesOrder> readResponse5 = await Program.containerWithEncryption.ReadItemAsync<SalesOrder>(orderId5, new PartitionKey(account5));
-            SalesOrder readOrder5 = readResponse5.Resource;
-
-            Console.WriteLine("5.ShippedDate: {0} After roundtripping: {1}", order5.ShippedDate, readOrder5.ShippedDate);
-
-            ItemResponse<SalesOrder> readResponse6 = await Program.containerWithEncryption.ReadItemAsync<SalesOrder>(orderId6, new PartitionKey(account6));
-            SalesOrder readOrder6 = readResponse6.Resource;
-
-            Console.WriteLine("6.SubTotal: {0} After roundtripping: {1}", order6.SubTotal, readOrder6.SubTotal);
-            watch.Stop();
-            long elapsedMs = watch.ElapsedMilliseconds/1000;
-            Console.WriteLine("Total time spent {0} seconds", elapsedMs);
-
+            Console.WriteLine("Total due: {0} After roundtripping: {1}", order.TotalDue, readOrder.TotalDue);
         }
 
         private static SalesOrder GetSalesOrderSample(string account, string orderId)
