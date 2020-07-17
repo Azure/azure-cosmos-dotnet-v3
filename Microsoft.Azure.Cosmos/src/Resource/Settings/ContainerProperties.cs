@@ -95,6 +95,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
+        /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
+        /// <param name="partitionKind">The value of <see cref="PartitionKind"/>Partition Kind to be used.</param>
+        public ContainerProperties(string id, IList<string> partitionKeyPaths, Cosmos.PartitionKind partitionKind)
+        {
+            this.Id = id;
+            this.PartitionKey = new PartitionKeyDefinition
+            {
+                Paths = new Collection<string>(partitionKeyPaths),
+                Kind = (Documents.PartitionKind)partitionKind,
+                Version = Documents.PartitionKeyDefinitionVersion.V2
+            };
+
+            this.ValidateRequiredProperties();
+        }
+
+        /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
         ///
         /// The partition key definition version 1 uses a hash function that computes
@@ -525,7 +544,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentNullException(nameof(this.PartitionKey));
                 }
 
-                if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != PartitionKind.MultiHash) 
+                if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != Documents.PartitionKind.MultiHash) 
                 {
                     throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
                 }

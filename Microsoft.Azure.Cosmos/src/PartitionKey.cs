@@ -80,73 +80,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a new partition key value.
         /// </summary>
-        /// <param name="partitionKeyValue">The value to use as partition key.</param>
-        public PartitionKey(double partitionKeyValue)
-        {
-            this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
-            this.IsNone = false;
-        }
-
-        /// <summary>
-        /// Creates a new partition key value.
-        /// </summary>
-        /// <param name="value">The value to use as partition key.</param>
-        internal PartitionKey(object value)
-        {
-            this.InternalKey = new Documents.PartitionKey(value).InternalKey;
-            this.IsNone = false;
-        }
-
-        /// <summary>
-        /// Creates a new partition key value.
-        /// </summary>
-        /// <param name="valueList">An object of Type PartitionKeyValueList which supports multiple partition key paths.</param>
-        public PartitionKey(PartitionKeyValueList valueList)
-        {
-            // Why these checks?
-            // These changes are being added for SDK to support multiple paths in a partition key. 
-            //
-            // Currently, when a resource does not specify a value for the PartitionKey,
-            // we assign a temporary value `PartitionKey.None` and later discern whether 
-            // it is a PartitionKey.Undefined or PartitionKey.Empty based on the Collection Type.
-            // We retain this behaviour for single path partition keys.
-            //
-            // For collections with multiple path keys, absence of a partition key values is
-            // always treated as a PartitionKey.Undefined.
-            if (valueList == null
-                || valueList.PartitionKeyValues.Count == 0
-                || (valueList.PartitionKeyValues.Count == 1 && None.Equals(valueList.PartitionKeyValues[0])))
-            {
-                this.InternalKey = None.InternalKey;
-                this.IsNone = true;
-            }
-            else
-            {
-                object[] valueArray = new object[valueList.PartitionKeyValues.Count];
-                for (int i = 0; i < valueList.PartitionKeyValues.Count; i++)
-                {
-                    object val = valueList.PartitionKeyValues[i];
-                    if (None.Equals(val))
-                    {
-                        valueArray[i] = Undefined.Value;
-                    }
-                    else
-                    {
-                        valueArray[i] = val;
-                    }
-                }
-
-                this.InternalKey = new Documents.PartitionKey(valueArray).InternalKey;
-                this.IsNone = false;
-            }
-        }
-
-        /// <summary>
-        /// Creates a new partition key value.
-        /// </summary>
         /// <param name="partitionKeyInternal">The value to use as partition key.</param>
         /// <param name="isNone">The value to decide partitionKey is None.</param>
-        private PartitionKey(PartitionKeyInternal partitionKeyInternal, bool isNone = false)
+        internal PartitionKey(PartitionKeyInternal partitionKeyInternal, bool isNone = false)
         {
             this.InternalKey = partitionKeyInternal;
             this.IsNone = isNone;

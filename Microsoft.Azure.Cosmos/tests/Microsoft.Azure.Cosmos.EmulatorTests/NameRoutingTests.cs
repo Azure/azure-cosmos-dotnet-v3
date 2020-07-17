@@ -1827,10 +1827,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     doc1 = new Document { Id = "doc1" };
                     doc1.SetValue("Zipcode", 11790);
 
-                    PartitionKeyValueList pKValueList = new PartitionKeyValueList();
+                    PartitionKeyBuilder pKValueList = new PartitionKeyBuilder();
                     pKValueList.Add(doc1.GetPropertyValue<long>("ZipCode"));
 
-                    Cosmos.PartitionKey pKeyErr = new Cosmos.PartitionKey(pKValueList);
+                    Cosmos.PartitionKey pKeyErr = pKValueList.Build();
                     await container.CreateItemAsync<Document>(doc1, pKeyErr);
                 }
                 catch (ArgumentException ar)
@@ -1841,10 +1841,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Document Read.
                 foreach (Document document in documents)
                 {
-                    PartitionKeyValueList pKValueList = new PartitionKeyValueList();
-                    pKValueList.Add(document.GetPropertyValue<string>("ZipCode"));
-                    pKValueList.Add(document.GetPropertyValue<string>("Address"));
-                    Cosmos.PartitionKey pKey = new Cosmos.PartitionKey(pKValueList);
+                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                        .Add(document.GetPropertyValue<string>("Address"))
+                        .Build();
 
                     Document readDocument = (await container.ReadItemAsync<Document>(document.Id, pKey)).Resource;
                     Assert.AreEqual(document.ToString(), readDocument.ToString());
@@ -1853,10 +1853,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Document Update.
                 foreach (ItemResponse<Document> obj in documents)
                 {
-                    PartitionKeyValueList pKValueList = new PartitionKeyValueList();
-                    pKValueList.Add(obj.Resource.GetValue<string>("ZipCode"));
-                    pKValueList.Add(obj.Resource.GetPropertyValue<string>("Address"));
-                    Cosmos.PartitionKey pKey = new Cosmos.PartitionKey(pKValueList);
+                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
+                        .Add(obj.Resource.GetValue<string>("ZipCode"))
+                        .Add(obj.Resource.GetPropertyValue<string>("Address"))
+                        .Build();
 
                     Document document = (await container.ReadItemAsync<Document>(obj.Resource.Id, pKey)).Resource;
                     document.SetPropertyValue("Name", document.Id);
@@ -1868,10 +1868,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Document Delete.
                 foreach (Document document in documents)
                 {
-                    PartitionKeyValueList pKValueList = new PartitionKeyValueList();
-                    pKValueList.Add(document.GetPropertyValue<string>("ZipCode"));
-                    pKValueList.Add(document.GetPropertyValue<string>("Address"));
-                    Cosmos.PartitionKey pKey = new Cosmos.PartitionKey(pKValueList);
+                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                        .Add(document.GetPropertyValue<string>("Address"))
+                        .Build();
 
                     Document readDocument = (await container.DeleteItemAsync<Document>(document.Id, pKey)).Resource;
                     try

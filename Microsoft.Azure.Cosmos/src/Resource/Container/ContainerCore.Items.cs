@@ -783,13 +783,13 @@ namespace Microsoft.Azure.Cosmos
 
         private static PartitionKey CosmosElementToPartitionKeyObject(CosmosElement[] cosmosElementArray)
         {
-            PartitionKeyValueList partitionKeyValueList = new PartitionKeyValueList();
+            PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
 
             foreach (CosmosElement cosmosElement in cosmosElementArray)
             {
                 if (cosmosElement == null)
                 {
-                    partitionKeyValueList.AddNoneType();
+                    partitionKeyBuilder.AddNoneType();
                 }
                 else
                 {
@@ -798,22 +798,22 @@ namespace Microsoft.Azure.Cosmos
                     {
                         case CosmosElementType.String:
                             CosmosString cosmosString = cosmosElement as CosmosString;
-                            partitionKeyValueList.Add(cosmosString.Value);
+                            partitionKeyBuilder.Add(cosmosString.Value);
                             break;
 
                         case CosmosElementType.Number:
                             CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
                             double value = Number64.ToDouble(cosmosNumber.Value);
-                            partitionKeyValueList.Add(value);
+                            partitionKeyBuilder.Add(value);
                             break;
 
                         case CosmosElementType.Boolean:
                             CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
-                            partitionKeyValueList.Add(cosmosBool.Value);
+                            partitionKeyBuilder.Add(cosmosBool.Value);
                             break;
 
                         case CosmosElementType.Null:
-                            partitionKeyValueList.AddNullValue();
+                            partitionKeyBuilder.AddNullValue();
                             break;
 
                         default:
@@ -823,7 +823,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return new PartitionKey(partitionKeyValueList);
+            return partitionKeyBuilder.Build();
         }
 
         private string GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
