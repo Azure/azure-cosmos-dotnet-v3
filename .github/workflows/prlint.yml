@@ -18,4 +18,3 @@ jobs:
          PartitionKey: Fixes null reference when using default(PartitionKey)<br/> 
          [v4] Client Encryption: Refactors code to external project<br/>
          [Internal] Query: Adds code generator for CosmosNumbers for easy additions in the future.<br/>
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
