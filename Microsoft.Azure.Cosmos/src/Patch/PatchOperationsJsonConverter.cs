@@ -40,8 +40,6 @@ namespace Microsoft.Azure.Cosmos
         {
             IReadOnlyList<PatchOperation> patchOperations = (IReadOnlyList<PatchOperation>)value;
 
-            writer.WriteStartObject();
-            writer.WritePropertyName("operations");
             writer.WriteStartArray();
 
             foreach (PatchOperation operation in patchOperations)
@@ -62,7 +60,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             writer.WriteEndArray();
-            writer.WriteEndObject();
         }
 
         /// <summary>

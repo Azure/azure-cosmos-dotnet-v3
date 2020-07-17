@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-        class PatchOperation
+        abstract class PatchOperation
     {
         /// <summary>
         /// Patch operation type.
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="operationType">Specifies the type of Patch operation.</param>
         /// <param name="path">Specifies the path to target location.</param>
-        internal PatchOperation(
+        protected PatchOperation(
             PatchOperationType operationType,
             string path)
         {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             string path,
             T value)
         {
-            return new PatchOperation<T>(
+            return new PatchOperationCore<T>(
                 PatchOperationType.Add,
                 path,
                 value);
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>PatchOperation instance for specified input.</returns>
         public static PatchOperation CreateRemoveOperation(string path)
         {
-            return new PatchOperation(
+            return new PatchOperationCore(
                 PatchOperationType.Remove,
                 path);
         }
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             string path,
             T value)
         {
-            return new PatchOperation<T>(
+            return new PatchOperationCore<T>(
                 PatchOperationType.Replace,
                 path,
                 value);
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             string path,
             T value)
         {
-            return new PatchOperation<T>(
+            return new PatchOperationCore<T>(
                 PatchOperationType.Set,
                 path,
                 value);
