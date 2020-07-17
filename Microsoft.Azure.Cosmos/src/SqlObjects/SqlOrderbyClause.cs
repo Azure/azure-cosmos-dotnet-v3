@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #else
     internal
 #endif
-    sealed class SqlOrderbyClause : SqlObject
+    sealed class SqlOrderByClause : SqlObject
     {
-        private SqlOrderbyClause(IReadOnlyList<SqlOrderByItem> orderbyItems)
+        private SqlOrderByClause(IReadOnlyList<SqlOrderByItem> orderbyItems)
         {
             if (orderbyItems == null)
             {
@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public IReadOnlyList<SqlOrderByItem> OrderbyItems { get; }
 
-        public static SqlOrderbyClause Create(params SqlOrderByItem[] orderbyItems) => new SqlOrderbyClause(orderbyItems);
+        public static SqlOrderByClause Create(params SqlOrderByItem[] orderbyItems) => new SqlOrderByClause(orderbyItems);
 
-        public static SqlOrderbyClause Create(IReadOnlyList<SqlOrderByItem> orderbyItems) => new SqlOrderbyClause(orderbyItems);
+        public static SqlOrderByClause Create(IReadOnlyList<SqlOrderByItem> orderbyItems) => new SqlOrderByClause(orderbyItems);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

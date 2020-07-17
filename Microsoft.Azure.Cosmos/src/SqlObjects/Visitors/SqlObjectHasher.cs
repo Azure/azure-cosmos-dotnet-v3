@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return hashCode;
         }
 
-        public override int Visit(SqlOrderbyClause sqlOrderByClause)
+        public override int Visit(SqlOrderByClause sqlOrderByClause)
         {
             int hashCode = SqlOrderbyClauseHashCode;
             for (int i = 0; i < sqlOrderByClause.OrderbyItems.Count; i++)

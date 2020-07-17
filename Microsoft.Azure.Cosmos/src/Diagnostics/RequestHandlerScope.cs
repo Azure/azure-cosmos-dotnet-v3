@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             if (!this.isDisposed)
             {
+                elapsedTime = default;
                 return false;
             }
 

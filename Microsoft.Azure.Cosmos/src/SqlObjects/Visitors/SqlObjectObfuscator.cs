@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return SqlOffsetSpec.Create(SqlNumberLiteral.Create(0));
         }
 
-        public override SqlObject Visit(SqlOrderbyClause sqlOrderByClause)
+        public override SqlObject Visit(SqlOrderByClause sqlOrderByClause)
         {
             SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderbyItems.Count];
             for (int i = 0; i < sqlOrderByClause.OrderbyItems.Count; i++)
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 items[i] = sqlOrderByClause.OrderbyItems[i].Accept(this) as SqlOrderByItem;
             }
 
-            return SqlOrderbyClause.Create(items);
+            return SqlOrderByClause.Create(items);
         }
 
         public override SqlObject Visit(SqlOrderByItem sqlOrderByItem)
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlQuery.FromClause?.Accept(this) as SqlFromClause,
                 sqlQuery.WhereClause?.Accept(this) as SqlWhereClause,
                 sqlQuery.GroupByClause?.Accept(this) as SqlGroupByClause,
-                sqlQuery.OrderbyClause?.Accept(this) as SqlOrderbyClause,
+                sqlQuery.OrderbyClause?.Accept(this) as SqlOrderByClause,
                 sqlQuery.OffsetLimitClause?.Accept(this) as SqlOffsetLimitClause);
         }
 

@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override bool TryGetTotalElapsedTime(out TimeSpan timeSpan)
         {
+            timeSpan = default;
             return false;
         }
     }

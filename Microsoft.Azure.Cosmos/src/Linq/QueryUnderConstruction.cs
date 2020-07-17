@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private SqlSelectClause selectClause;
         private SqlWhereClause whereClause;
-        private SqlOrderbyClause orderByClause;
+        private SqlOrderByClause orderByClause;
 
         // The specs could be in clauses to reflect the SqlQuery.
         // However, they are separated to avoid update recreation of the readonly DOMs and lengthy code.
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlIdentifier replacement = SqlIdentifier.Create(paramName);
             SqlSelectClause composedSelect = this.Substitute(inputSelect, inputSelect.TopSpec ?? this.topSpec, replacement, this.selectClause);
             SqlWhereClause composedWhere = this.Substitute(inputSelect.SelectSpec, replacement, this.whereClause);
-            SqlOrderbyClause composedOrderBy = this.Substitute(inputSelect.SelectSpec, replacement, this.orderByClause);
+            SqlOrderByClause composedOrderBy = this.Substitute(inputSelect.SelectSpec, replacement, this.orderByClause);
             SqlWhereClause and = QueryUnderConstruction.CombineWithConjunction(inputwhere, composedWhere);
             FromParameterBindings fromParams = QueryUnderConstruction.CombineInputParameters(flatInput.fromParameters, this.fromParameters);
             SqlOffsetSpec offsetSpec;
@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.GetType());
         }
 
-        private SqlOrderbyClause Substitute(SqlSelectSpec spec, SqlIdentifier inputParam, SqlOrderbyClause orderByClause)
+        private SqlOrderByClause Substitute(SqlSelectSpec spec, SqlIdentifier inputParam, SqlOrderByClause orderByClause)
         {
             if (orderByClause == null)
             {
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, orderByClause.OrderbyItems[i].Expression);
                     substitutedItems[i] = SqlOrderByItem.Create(substituted, orderByClause.OrderbyItems[i].IsDescending);
                 }
-                SqlOrderbyClause result = SqlOrderbyClause.Create(substitutedItems);
+                SqlOrderByClause result = SqlOrderByClause.Create(substitutedItems);
                 return result;
             }
 
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return result;
         }
 
-        public QueryUnderConstruction AddOrderByClause(SqlOrderbyClause orderBy, TranslationContext context)
+        public QueryUnderConstruction AddOrderByClause(SqlOrderByClause orderBy, TranslationContext context)
         {
             QueryUnderConstruction result = context.PackageCurrentQueryIfNeccessary();
 
@@ -580,11 +580,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             return result;
         }
 
-        public QueryUnderConstruction UpdateOrderByClause(SqlOrderbyClause thenBy, TranslationContext context)
+        public QueryUnderConstruction UpdateOrderByClause(SqlOrderByClause thenBy, TranslationContext context)
         {
             List<SqlOrderByItem> items = new List<SqlOrderByItem>(context.currentQuery.orderByClause.OrderbyItems);
             items.AddRange(thenBy.OrderbyItems);
-            context.currentQuery.orderByClause = SqlOrderbyClause.Create(items);
+            context.currentQuery.orderByClause = SqlOrderByClause.Create(items);
 
             foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.currentQuery.AddBinding(binding);
 
