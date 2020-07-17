@@ -1,8 +1,11 @@
-﻿|         Method | queryLength | parserType |        Mean |     Error |    StdDev |       Gen 0 |      Gen 1 | Gen 2 | Allocated |
-|--------------- |------------ |----------- |------------:|----------:|----------:|------------:|-----------:|------:|----------:|
-| ParseBenchmark |       Short |    Managed |    16.45 ms |  0.177 ms |  0.165 ms |   3156.2500 |          - |     - |  12.71 MB |
-| ParseBenchmark |       Short |     Native |    62.54 ms |  1.248 ms |  2.578 ms |   2000.0000 |          - |     - |   8.67 MB |
-| ParseBenchmark |      Medium |    Managed |    54.22 ms |  0.593 ms |  0.554 ms |   8000.0000 |   100.0000 |     - |  32.28 MB |
-| ParseBenchmark |      Medium |     Native |   155.26 ms |  2.932 ms |  2.743 ms |   3000.0000 |          - |     - |  12.26 MB |
-| ParseBenchmark |        Long |    Managed | 1,374.28 ms | 20.313 ms | 16.962 ms | 167000.0000 | 48000.0000 |     - | 802.35 MB |
-| ParseBenchmark |        Long |     Native | 1,506.99 ms |  9.197 ms |  8.603 ms |   7000.0000 |          - |     - |  31.48 MB |
+﻿|         Method | queryLength |  parserType |         Mean |      Error |     StdDev |       Gen 0 |      Gen 1 | Gen 2 |    Allocated |
+|--------------- |------------ |------------ |-------------:|-----------:|-----------:|------------:|-----------:|------:|-------------:|
+| ParseBenchmark |       Short |       Antlr |    23.962 ms |  0.5062 ms |  1.4604 ms |   3156.2500 |          - |     - |  13015.69 KB |
+| ParseBenchmark |       Short | Handwritten |     5.403 ms |  0.1035 ms |  0.0968 ms |     85.9375 |          - |     - |    351.63 KB |
+| ParseBenchmark |       Short |      Native |    77.062 ms |  1.5373 ms |  3.0701 ms |   2000.0000 |          - |     - |   8876.68 KB |
+| ParseBenchmark |      Medium |       Antlr |    75.531 ms |  0.8681 ms |  0.8120 ms |   8000.0000 |          - |     - |  33056.01 KB |
+| ParseBenchmark |      Medium | Handwritten |    29.738 ms |  0.5972 ms |  0.5865 ms |    468.7500 |          - |     - |   1976.63 KB |
+| ParseBenchmark |      Medium |      Native |   197.603 ms |  3.3111 ms |  2.9352 ms |   3000.0000 |          - |     - |  12558.31 KB |
+| ParseBenchmark |        Long |       Antlr | 1,897.869 ms | 36.8636 ms | 32.6786 ms | 165000.0000 | 51000.0000 |     - | 821609.44 KB |
+| ParseBenchmark |        Long | Handwritten |   316.905 ms |  6.0330 ms |  6.9476 ms |  31000.0000 |  1000.0000 |     - | 128970.83 KB |
+| ParseBenchmark |        Long |      Native | 2,241.352 ms | 43.8753 ms | 83.4773 ms |   7000.0000 |          - |     - |  32230.94 KB |
