@@ -12,7 +12,8 @@ dotnet run CosmosBenchmark.csproj -e "https://localhost:8081" -k "C2y6yDjf5/R+ob
 
 To target Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj
 ```
-dotnet run CosmosBenchmark.csproj -p:OSSProjectRef=True -e {ACCOUNT_ENDPOINT} -k {ACCOUNT_KEY}
+export OSSProjectRef=True
+dotnet run CosmosBenchmark.csproj -e {ACCOUNT_ENDPOINT} -k {ACCOUNT_KEY}
 ```
 
 
