@@ -12,45 +12,21 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
-    internal abstract class DocumentContainer : IDocumentContainer
+    /// <summary>
+    /// Composes a <see cref="IMonadicDocumentContainer"/> and creates an <see cref="IDocumentContainer"/>.
+    /// </summary>
+    internal sealed class DocumentContainer : IDocumentContainer
     {
-        private static readonly CosmosException RequestRateTooLargeException = new CosmosException(
-            message: "Request Rate Too Large",
-            statusCode: (System.Net.HttpStatusCode)429,
-            subStatusCode: default,
-            activityId: Guid.NewGuid().ToString(),
-            requestCharge: default);
+        private readonly IMonadicDocumentContainer monadicDocumentContainer;
 
-        private static readonly Task<TryCatch<Record>> ThrottleForCreateItem = Task.FromResult(
-            TryCatch<Record>.FromException(
-                RequestRateTooLargeException));
-
-        private static readonly Task<TryCatch<DocumentContainerPage>> ThrottleForFeedOperation = Task.FromResult(
-            TryCatch<DocumentContainerPage>.FromException(
-                RequestRateTooLargeException));
-
-        private static readonly PartitionKeyRange FullRange = new PartitionKeyRange()
+        public DocumentContainer(IMonadicDocumentContainer monadicDocumentContainer)
         {
-            MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-            MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-        };
-
-        private readonly FailureConfigs failureConfigs;
-        private readonly Random random;
-
-        protected DocumentContainer(FailureConfigs failureConfigs = null)
-        {
-            this.failureConfigs = failureConfigs;
-            this.random = new Random();
+            this.monadicDocumentContainer = monadicDocumentContainer ?? throw new ArgumentNullException(nameof(monadicDocumentContainer));
         }
-
-        protected abstract Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeImplementationAsync(
-            PartitionKeyRange partitionKeyRange,
-            CancellationToken cancellationToken);
 
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeImplementationAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetChildRangeAsync(
                 partitionKeyRange,
                 cancellationToken);
 
@@ -63,8 +39,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 cancellationToken);
 
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(
-                DocumentContainer.FullRange,
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetFeedRangesAsync(
                 cancellationToken);
 
         public Task<List<PartitionKeyRange>> GetFeedRangesAsync(
@@ -73,23 +48,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        protected abstract Task<TryCatch<Record>> MonadicCreateItemImplementationAsync(
-            CosmosObject payload,
-            CancellationToken cancellationToken);
-
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
-            CancellationToken cancellationToken)
-        {
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForCreateItem;
-            }
-
-            return this.MonadicCreateItemImplementationAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicCreateItemAsync(
                 payload,
                 cancellationToken);
-        }
 
         public Task<Record> CreateItemAsync(
             CosmosObject payload,
@@ -99,26 +62,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        protected abstract Task<TryCatch<Record>> MonadicReadItemImplementationAsync(
-            CosmosElement partitionKey,
-            Guid identifer,
-            CancellationToken cancellationToken);
-
         public Task<TryCatch<Record>> MonadicReadItemAsync(
             CosmosElement partitionKey,
             Guid identifer,
-            CancellationToken cancellationToken)
-        {
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForCreateItem;
-            }
-
-            return this.MonadicReadItemImplementationAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadItemAsync(
                 partitionKey,
                 identifer,
                 cancellationToken);
-        }
 
         public Task<Record> ReadItemAsync(
             CosmosElement partitionKey,
@@ -130,38 +80,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        protected abstract Task<TryCatch<DocumentContainerPage>> MonadicReadFeedImplementationAsync(
-            int partitionKeyRangeId,
-            long resourceIdentifer,
-            int pageSize,
-            CancellationToken cancellationToken);
-
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
             long resourceIdentifer,
             int pageSize,
-            CancellationToken cancellationToken)
-        {
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForFeedOperation;
-            }
-
-            if (this.ShouldReturnEmptyPage())
-            {
-                return Task.FromResult(
-                    TryCatch<DocumentContainerPage>.FromResult(
-                        new DocumentContainerPage(
-                            new List<Record>(),
-                            new DocumentContainerState(resourceIdentifer))));
-            }
-
-            return this.MonadicReadFeedImplementationAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadFeedAsync(
                 partitionKeyRangeId,
                 resourceIdentifer,
                 pageSize,
                 cancellationToken);
-        }
 
         public Task<DocumentContainerPage> ReadFeedAsync(
             int partitionKeyRangeId,
@@ -175,9 +102,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        public abstract Task<TryCatch> MonadicSplitAsync(
+        public Task<TryCatch> MonadicSplitAsync(
             int partitionKeyRangeId,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicSplitAsync(
+                partitionKeyRangeId,
+                cancellationToken);
 
         public Task SplitAsync(
             int partitionKeyRangeId,
@@ -186,21 +115,5 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     partitionKeyRangeId,
                     cancellationToken),
                 cancellationToken);
-        private bool ShouldReturn429() => (this.failureConfigs != null) && this.failureConfigs.Inject429s && ((this.random.Next() % 2) == 0);
-
-        private bool ShouldReturnEmptyPage() => (this.failureConfigs != null) && this.failureConfigs.InjectEmptyPages && ((this.random.Next() % 2) == 0);
-
-        public sealed class FailureConfigs
-        {
-            public FailureConfigs(bool inject429s, bool injectEmptyPages)
-            {
-                this.Inject429s = inject429s;
-                this.InjectEmptyPages = injectEmptyPages;
-            }
-
-            public bool Inject429s { get; }
-
-            public bool InjectEmptyPages { get; }
-        }
     }
 }

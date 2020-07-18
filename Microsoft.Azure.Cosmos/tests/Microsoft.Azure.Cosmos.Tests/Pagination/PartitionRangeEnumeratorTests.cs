@@ -50,7 +50,7 @@
             int numItems = 100;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
-                new DocumentContainer.FailureConfigs(
+                new FlakyDocumentContainer.FailureConfigs(
                     inject429s: true,
                     injectEmptyPages: false));
 
@@ -91,7 +91,7 @@
             int numItems = 100;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
-                new DocumentContainer.FailureConfigs(
+                new FlakyDocumentContainer.FailureConfigs(
                     inject429s: true,
                     injectEmptyPages: false));
 
@@ -140,7 +140,7 @@
             int numItems = 100;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
                 numItems,
-                new DocumentContainer.FailureConfigs(
+                new FlakyDocumentContainer.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: true));
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
@@ -156,7 +156,7 @@
 
         public async Task<IDocumentContainer> CreateDocumentContainerAsync(
             int numItems,
-            DocumentContainer.FailureConfigs failureConfigs = default)
+            FlakyDocumentContainer.FailureConfigs failureConfigs = default)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -168,44 +168,39 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition, failureConfigs);
+            InMemoryContainer inMemoryCollection = new InMemoryContainer(partitionKeyDefinition);
+            FlakyDocumentContainer flakyDocumentContainer = new FlakyDocumentContainer(inMemoryCollection, failureConfigs);
+            DocumentContainer documentContainer = new DocumentContainer(flakyDocumentContainer);
 
             if (!this.singlePartition)
             {
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+                await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
 
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
+                await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
+                await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
 
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
+                await documentContainer.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
+                await documentContainer.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
+                await documentContainer.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
+                await documentContainer.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)
             {
-                try
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                //await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
+                while (true)
                 {
-                    // Insert an item
-                    CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                    //await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
-                    while (true)
+                    TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(item, cancellationToken: default);
+                    if (monadicCreateRecord.Succeeded)
                     {
-                        TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(item, cancellationToken: default);
-                        if (monadicCreateRecord.Succeeded)
-                        {
-                            break;
-                        }
+                        break;
                     }
-                }
-                catch(Exception ex)
-                {
-                    throw ex;
                 }
             }
 
-            return inMemoryCollection;
+            return documentContainer;
         }
 
         public async Task<HashSet<Guid>> DrainFullyAsync(IAsyncEnumerable<TryCatch<TPage>> enumerable)

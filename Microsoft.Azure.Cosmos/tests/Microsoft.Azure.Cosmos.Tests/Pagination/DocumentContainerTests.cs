@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         internal abstract IDocumentContainer CreateDocumentContainer(
             PartitionKeyDefinition partitionKeyDefinition,
-            DocumentContainer.FailureConfigs failureConfigs = default);
+            FlakyDocumentContainer.FailureConfigs failureConfigs = default);
 
         [TestMethod]
         public async Task TestGetFeedRanges()

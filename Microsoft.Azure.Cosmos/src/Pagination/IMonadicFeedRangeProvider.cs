@@ -7,15 +7,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
-    internal interface IFeedRangeProvider : IMonadicFeedRangeProvider
+    internal interface IMonadicFeedRangeProvider
     {
-        Task<List<PartitionKeyRange>> GetChildRangeAsync(
+        Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
             CancellationToken cancellationToken);
 
-        Task<List<PartitionKeyRange>> GetFeedRangesAsync(
+        Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken);
     }
 }
