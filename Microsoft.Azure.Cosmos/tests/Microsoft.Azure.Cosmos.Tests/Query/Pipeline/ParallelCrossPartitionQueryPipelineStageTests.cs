@@ -124,10 +124,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public async Task TestDrainFully_StartFromBeginingAsync()
         {
             int numItems = 1000;
-            InMemoryCollection inMemoryCollection = await CreateInMemoryCollectionAsync(numItems);
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                documentContainer: inMemoryCollection,
+                documentContainer: documentContainer,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
                 continuationToken: default);
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public async Task TestDrainFully_WithStateResume()
         {
             int numItems = 1000;
-            InMemoryCollection inMemoryCollection = await CreateInMemoryCollectionAsync(numItems);
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
 
             List<CosmosElement> documents = new List<CosmosElement>();
 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             do
             {
                 TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                    documentContainer: inMemoryCollection,
+                    documentContainer: documentContainer,
                     sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                     pageSize: 10,
                     continuationToken: queryState?.Value);
@@ -179,9 +179,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(numItems, documents.Count);
         }
 
-        private static async Task<InMemoryCollection> CreateInMemoryCollectionAsync(
+        private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
             int numItems,
-            InMemoryCollection.FailureConfigs failureConfigs = null)
+            FlakyDocumentContainer.FailureConfigs failureConfigs = null)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -193,17 +193,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition, failureConfigs);
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
+            if (failureConfigs != null)
+            {
+                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
+            }
 
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
 
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
+
+            await documentContainer.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
 
             for (int i = 0; i < numItems; i++)
             {
@@ -211,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
                 while (true)
                 {
-                    TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(item, cancellationToken: default);
+                    TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
                     if (monadicCreateRecord.Succeeded)
                     {
                         break;
@@ -219,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
             }
 
-            return inMemoryCollection;
+            return documentContainer;
         }
     }
 }

@@ -83,15 +83,12 @@
 
                 // Resume on the children using the parent continuaiton token
                 HashSet<string> childIdentifiers = new HashSet<string>();
-                foreach (int partitionKeyRangeId in new int[] { 1, 2 })
+
+                List<PartitionKeyRange> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                foreach (PartitionKeyRange range in ranges)
                 {
                     IAsyncEnumerable<TryCatch<QueryPage>> enumerable = new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
-                        range: new PartitionKeyRange()
-                        {
-                            Id = partitionKeyRangeId.ToString(),
-                            MinInclusive = partitionKeyRangeId.ToString(),
-                            MaxExclusive = partitionKeyRangeId.ToString(),
-                        },
+                        range: range,
                         state: state,
                         (range, state) => new QueryPartitionRangePageAsyncEnumerator(
                             queryDataSource: documentContainer,
@@ -127,13 +124,10 @@
                 IDocumentContainer documentContainer,
                 QueryState state = null)
             {
+                List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                Assert.AreEqual(1, ranges.Count);
                 return new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
-                    range: new PartitionKeyRange()
-                    {
-                        Id = "0",
-                        MinInclusive = "0",
-                        MaxExclusive = "0",
-                    },
+                    range: ranges[0],
                     state: state,
                     (range, state) => new QueryPartitionRangePageAsyncEnumerator(
                         queryDataSource: documentContainer,
@@ -147,15 +141,12 @@
                 IDocumentContainer documentContainer,
                 QueryState state = default)
             {
+                List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                Assert.AreEqual(1, ranges.Count);
                 return new QueryPartitionRangePageAsyncEnumerator(
                     queryDataSource: documentContainer,
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                    feedRange: new PartitionKeyRange()
-                    {
-                        Id = "0",
-                        MinInclusive = "0",
-                        MaxExclusive = "0",
-                    },
+                    feedRange: ranges[0],
                     pageSize: 10,
                     state: state);
             }

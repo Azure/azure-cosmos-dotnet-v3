@@ -4,28 +4,28 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal interface IQueryDataSource : IMonadicQueryDataSource
+    internal interface IMonadicQueryDataSource
     {
-        Task<QueryPage> QueryAsync(
+        Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             Cosmos.PartitionKey partitionKey,
             int pageSize,
             CancellationToken cancellationToken);
 
-        Task<QueryPage> QueryAsync(
+        Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             int partitionKeyRangeId,
             int pageSize,
             CancellationToken cancellationToken);
 
-        Task<QueryPage> QueryAsync(
+        Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             FeedRangeInternal feedRange,

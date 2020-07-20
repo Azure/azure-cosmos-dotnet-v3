@@ -76,7 +76,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 diagnosticsContext: queryPipelineCreationDiagnostics,
                 correlatedActivityId: Guid.NewGuid());
 
-            DocumentContainer documentContainer = new NetworkAttachedDocumentContainer(containerCore, cosmosQueryContext);
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                containerCore,
+                cosmosQueryContext);
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             CosmosElement requestContinuationToken;
             switch (queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(ExecutionEnvironment.Client))

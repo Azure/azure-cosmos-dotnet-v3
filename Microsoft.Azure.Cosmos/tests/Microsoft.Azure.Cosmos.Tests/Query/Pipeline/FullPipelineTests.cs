@@ -127,25 +127,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
             IReadOnlyList<CosmosObject> documents,
-            DocumentContainer.FailureConfigs failureConfigs = null)
+            FlakyDocumentContainer.FailureConfigs failureConfigs = null)
         {
-            InMemoryCollection inMemoryCollection = new InMemoryCollection(partitionKeyDefinition, failureConfigs);
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
+            if (failureConfigs != null)
+            {
+                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
+            }
 
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
 
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
-            await inMemoryCollection.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
+
+            await documentContainer.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
+            await documentContainer.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
 
             foreach (CosmosObject document in documents)
             {
                 while (true)
                 {
-                    TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(
+                    TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(
                         document,
                         cancellationToken: default);
                     if (monadicCreateRecord.Succeeded)
@@ -155,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
             }
 
-            return inMemoryCollection;
+            return documentContainer;
         }
 
         private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, CosmosElement state = null)

@@ -5,30 +5,34 @@
 namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
+    using Microsoft.Azure.Documents;
 
-    internal interface IDocumentContainer : IMonadicDocumentContainer, IFeedRangeProvider, IQueryDataSource
+    internal interface IMonadicDocumentContainer : IMonadicFeedRangeProvider, IMonadicQueryDataSource
     {
-        Task<Record> CreateItemAsync(
+        Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken);
 
-        Task<Record> ReadItemAsync(
+        Task<TryCatch<Record>> MonadicReadItemAsync(
             CosmosElement partitionKey,
-            string identifier,
+            string identifer,
             CancellationToken cancellationToken);
 
-        Task<DocumentContainerPage> ReadFeedAsync(
+        Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
-            long resourceIdentifier,
+            long resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken);
 
-        Task SplitAsync(
+        Task<TryCatch> MonadicSplitAsync(
             int partitionKeyRangeId,
             CancellationToken cancellationToken);
     }

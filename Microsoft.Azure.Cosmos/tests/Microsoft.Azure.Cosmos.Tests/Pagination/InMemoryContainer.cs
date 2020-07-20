@@ -17,22 +17,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
-    internal sealed class InMemoryCollection : DocumentContainer
+    internal sealed class InMemoryContainer : IMonadicDocumentContainer
     {
+        private static readonly PartitionKeyRange FullRange = new PartitionKeyRange()
+        {
+            MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+            MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+        };
+
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
+        private readonly ExecuteQueryBasedOnFeedRangeVisitor executeQueryBasedOnFeedRangeVisitor;
 
         private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private Dictionary<int, PartitionKeyHashRange> partitionKeyRangeIdToHashRange;
 
-        public InMemoryCollection(
-            PartitionKeyDefinition partitionKeyDefinition,
-            FailureConfigs failureConfigs = default)
-            : base(failureConfigs)
+        public InMemoryContainer(
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
             PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: null);
@@ -44,9 +50,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 { 0, fullRange }
             };
             this.parentToChildMapping = new Dictionary<int, (int, int)>();
+            this.executeQueryBasedOnFeedRangeVisitor = new ExecuteQueryBasedOnFeedRangeVisitor(this);
         }
 
-        protected override async Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeImplementationAsync(
+        public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
+            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(
+                FullRange,
+                cancellationToken);
+
+        public async Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
             CancellationToken cancellationToken)
         {
@@ -131,13 +143,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Id = children.right.ToString(),
             };
 
-            TryCatch<List<PartitionKeyRange>> tryGetLeftRanges = await this.MonadicGetChildRangeImplementationAsync(left, cancellationToken);
+            TryCatch<List<PartitionKeyRange>> tryGetLeftRanges = await this.MonadicGetChildRangeAsync(left, cancellationToken);
             if (tryGetLeftRanges.Failed)
             {
                 return tryGetLeftRanges;
             }
 
-            TryCatch<List<PartitionKeyRange>> tryGetRightRanges = await this.MonadicGetChildRangeImplementationAsync(right, cancellationToken);
+            TryCatch<List<PartitionKeyRange>> tryGetRightRanges = await this.MonadicGetChildRangeAsync(right, cancellationToken);
             if (tryGetRightRanges.Failed)
             {
                 return tryGetRightRanges;
@@ -147,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return TryCatch<List<PartitionKeyRange>>.FromResult(overlappingRanges);
         }
 
-        protected override Task<TryCatch<Record>> MonadicCreateItemImplementationAsync(
+        public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken)
         {
@@ -170,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return Task.FromResult(TryCatch<Record>.FromResult(recordAdded));
         }
 
-        protected override Task<TryCatch<Record>> MonadicReadItemImplementationAsync(
+        public Task<TryCatch<Record>> MonadicReadItemAsync(
             CosmosElement partitionKey,
             string identifier,
             CancellationToken cancellationToken)
@@ -218,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return CreateNotFoundException(partitionKey, identifier);
         }
 
-        protected override Task<TryCatch<DocumentContainerPage>> MonadicReadFeedImplementationAsync(
+        public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
             long resourceIdentifer,
             int pageSize,
@@ -266,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         state: new DocumentContainerState(page.Last().ResourceIdentifier))));
         }
 
-        protected override Task<TryCatch<QueryPage>> MonadicQueryWithLogicalPartitionKeyAsync(
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             Cosmos.PartitionKey partitionKey,
@@ -276,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             throw new NotImplementedException();
         }
 
-        protected override async Task<TryCatch<QueryPage>> MonadicQueryWithRangeIdAsync(
+        public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             int partitionKeyRangeId,
@@ -296,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             long resourceIdentifier = continuationToken != null ? long.Parse(continuationToken) : 0;
 
             // For now just do a read feed
-            TryCatch<DocumentContainerPage> tryGetPage = await this.MonadicReadFeedImplementationAsync(
+            TryCatch<DocumentContainerPage> tryGetPage = await this.MonadicReadFeedAsync(
                 partitionKeyRangeId,
                 resourceIdentifier,
                 pageSize,
@@ -338,7 +350,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return TryCatch<QueryPage>.FromResult(queryPage);
         }
 
-        public override Task<TryCatch> MonadicSplitAsync(
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            FeedRangeInternal feedRange,
+            int pageSize,
+            CancellationToken cancellationToken) => feedRange.AcceptAsync(
+                this.executeQueryBasedOnFeedRangeVisitor,
+                new ExecuteQueryBasedOnFeedRangeVisitor.Arguments(
+                    sqlQuerySpec,
+                    continuationToken,
+                    pageSize),
+                cancellationToken);
+
+        public Task<TryCatch> MonadicSplitAsync(
             int partitionKeyRangeId,
             CancellationToken cancellationToken)
         {

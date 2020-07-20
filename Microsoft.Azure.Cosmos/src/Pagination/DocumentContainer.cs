@@ -12,54 +12,23 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
     using Microsoft.Azure.Documents;
 
-    internal abstract class DocumentContainer : IDocumentContainer
+    /// <summary>
+    /// Composes a <see cref="IMonadicDocumentContainer"/> and creates an <see cref="IDocumentContainer"/>.
+    /// </summary>
+    internal sealed class DocumentContainer : IDocumentContainer
     {
-        private static readonly CosmosException RequestRateTooLargeException = new CosmosException(
-            message: "Request Rate Too Large",
-            statusCode: (System.Net.HttpStatusCode)429,
-            subStatusCode: default,
-            activityId: Guid.NewGuid().ToString(),
-            requestCharge: default);
+        private readonly IMonadicDocumentContainer monadicDocumentContainer;
 
-        private static readonly Task<TryCatch<Record>> ThrottleForCreateItem = Task.FromResult(
-            TryCatch<Record>.FromException(
-                RequestRateTooLargeException));
-
-        private static readonly Task<TryCatch<DocumentContainerPage>> ThrottleForFeedOperation = Task.FromResult(
-            TryCatch<DocumentContainerPage>.FromException(
-                RequestRateTooLargeException));
-
-        private static readonly Task<TryCatch<QueryPage>> ThrottleForQuery = Task.FromResult(
-            TryCatch<QueryPage>.FromException(
-                RequestRateTooLargeException));
-
-        private static readonly PartitionKeyRange FullRange = new PartitionKeyRange()
+        public DocumentContainer(IMonadicDocumentContainer monadicDocumentContainer)
         {
-            MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-            MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-        };
-
-        private readonly FailureConfigs failureConfigs;
-        private readonly Random random;
-        private readonly ExecuteQueryBasedOnFeedRangeVisitor visitor;
-
-        protected DocumentContainer(FailureConfigs failureConfigs = null)
-        {
-            this.failureConfigs = failureConfigs;
-            this.random = new Random();
-            this.visitor = new ExecuteQueryBasedOnFeedRangeVisitor(this);
+            this.monadicDocumentContainer = monadicDocumentContainer ?? throw new ArgumentNullException(nameof(monadicDocumentContainer));
         }
-
-        protected abstract Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeImplementationAsync(
-            PartitionKeyRange partitionKeyRange,
-            CancellationToken cancellationToken);
 
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeImplementationAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetChildRangeAsync(
                 partitionKeyRange,
                 cancellationToken);
 
@@ -72,8 +41,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 cancellationToken);
 
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(
-                DocumentContainer.FullRange,
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetFeedRangesAsync(
                 cancellationToken);
 
         public Task<List<PartitionKeyRange>> GetFeedRangesAsync(
@@ -82,23 +50,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        protected abstract Task<TryCatch<Record>> MonadicCreateItemImplementationAsync(
-            CosmosObject payload,
-            CancellationToken cancellationToken);
-
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
-            CancellationToken cancellationToken)
-        {
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForCreateItem;
-            }
-
-            return this.MonadicCreateItemImplementationAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicCreateItemAsync(
                 payload,
                 cancellationToken);
-        }
 
         public Task<Record> CreateItemAsync(
             CosmosObject payload,
@@ -108,26 +64,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        protected abstract Task<TryCatch<Record>> MonadicReadItemImplementationAsync(
-            CosmosElement partitionKey,
-            string identifer,
-            CancellationToken cancellationToken);
-
         public Task<TryCatch<Record>> MonadicReadItemAsync(
             CosmosElement partitionKey,
             string identifer,
-            CancellationToken cancellationToken)
-        {
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForCreateItem;
-            }
-
-            return this.MonadicReadItemImplementationAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadItemAsync(
                 partitionKey,
                 identifer,
                 cancellationToken);
-        }
 
         public Task<Record> ReadItemAsync(
             CosmosElement partitionKey,
@@ -139,38 +82,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        protected abstract Task<TryCatch<DocumentContainerPage>> MonadicReadFeedImplementationAsync(
-            int partitionKeyRangeId,
-            long resourceIdentifer,
-            int pageSize,
-            CancellationToken cancellationToken);
-
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
             long resourceIdentifer,
             int pageSize,
-            CancellationToken cancellationToken)
-        {
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForFeedOperation;
-            }
-
-            if (this.ShouldReturnEmptyPage())
-            {
-                return Task.FromResult(
-                    TryCatch<DocumentContainerPage>.FromResult(
-                        new DocumentContainerPage(
-                            new List<Record>(),
-                            new DocumentContainerState(resourceIdentifer))));
-            }
-
-            return this.MonadicReadFeedImplementationAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadFeedAsync(
                 partitionKeyRangeId,
                 resourceIdentifer,
                 pageSize,
                 cancellationToken);
-        }
 
         public Task<DocumentContainerPage> ReadFeedAsync(
             int partitionKeyRangeId,
@@ -184,51 +104,69 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        protected abstract Task<TryCatch<QueryPage>> MonadicQueryWithLogicalPartitionKeyAsync(
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             Cosmos.PartitionKey partitionKey,
             int pageSize,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
+                sqlQuerySpec,
+                continuationToken,
+                partitionKey,
+                pageSize,
+                cancellationToken);
 
-        protected abstract Task<TryCatch<QueryPage>> MonadicQueryWithRangeIdAsync(
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             int partitionKeyRangeId,
             int pageSize,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
+                sqlQuerySpec,
+                continuationToken,
+                partitionKeyRangeId,
+                pageSize,
+                cancellationToken);
 
         public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
-            CancellationToken cancellationToken)
-        {
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForQuery;
-            }
-
-            if (this.ShouldReturnEmptyPage())
-            {
-                return Task.FromResult(
-                    TryCatch<QueryPage>.FromResult(
-                        new QueryPage(
-                            documents: new List<CosmosElement>(),
-                            requestCharge: 42,
-                            activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: "[]".Length,
-                            cosmosQueryExecutionInfo: default,
-                            disallowContinuationTokenMessage: default,
-                            state: new QueryState(CosmosString.Create(continuationToken)))));
-            }
-
-            return feedRange.AcceptAsync(
-                this.visitor,
-                new VisitorArguments(sqlQuerySpec, continuationToken, pageSize),
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
+                sqlQuerySpec,
+                continuationToken,
+                feedRange,
+                pageSize,
                 cancellationToken);
-        }
+
+        public Task<QueryPage> QueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            Cosmos.PartitionKey partitionKey,
+            int pageSize,
+            CancellationToken cancellationToken) => TryCatch<QueryPage>.UnsafeGetResultAsync(
+                this.MonadicQueryAsync(
+                    sqlQuerySpec,
+                    continuationToken,
+                    partitionKey,
+                    pageSize,
+                    cancellationToken),
+                cancellationToken);
+
+        public Task<QueryPage> QueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            int partitionKeyRangeId,
+            int pageSize,
+            CancellationToken cancellationToken) => TryCatch<QueryPage>.UnsafeGetResultAsync(
+                this.MonadicQueryAsync(
+                    sqlQuerySpec,
+                    continuationToken,
+                    partitionKeyRangeId,
+                    pageSize,
+                    cancellationToken),
+                cancellationToken);
 
         public Task<QueryPage> QueryAsync(
             SqlQuerySpec sqlQuerySpec,
@@ -244,9 +182,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        public abstract Task<TryCatch> MonadicSplitAsync(
+        public Task<TryCatch> MonadicSplitAsync(
             int partitionKeyRangeId,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicSplitAsync(
+                partitionKeyRangeId,
+                cancellationToken);
 
         public Task SplitAsync(
             int partitionKeyRangeId,
@@ -255,111 +195,5 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     partitionKeyRangeId,
                     cancellationToken),
                 cancellationToken);
-        private bool ShouldReturn429() => (this.failureConfigs != null) && this.failureConfigs.Inject429s && ((this.random.Next() % 2) == 0);
-
-        private bool ShouldReturnEmptyPage() => (this.failureConfigs != null) && this.failureConfigs.InjectEmptyPages && ((this.random.Next() % 2) == 0);
-
-        public sealed class FailureConfigs
-        {
-            public FailureConfigs(bool inject429s, bool injectEmptyPages)
-            {
-                this.Inject429s = inject429s;
-                this.InjectEmptyPages = injectEmptyPages;
-            }
-
-            public bool Inject429s { get; }
-
-            public bool InjectEmptyPages { get; }
-        }
-
-        private readonly struct VisitorArguments
-        {
-            public VisitorArguments(SqlQuerySpec sqlQuerySpec, string continuationToken, int pageSize)
-            {
-                this.SqlQuerySpec = sqlQuerySpec;
-                this.ContinuationToken = continuationToken;
-                this.PageSize = pageSize;
-            }
-
-            public SqlQuerySpec SqlQuerySpec { get; }
-
-            public string ContinuationToken { get; }
-
-            public int PageSize { get; }
-        }
-
-        private sealed class ExecuteQueryBasedOnFeedRangeVisitor : IFeedRangeAsyncVisitor<TryCatch<QueryPage>, VisitorArguments>
-        {
-            private readonly DocumentContainer documentContainer;
-
-            public ExecuteQueryBasedOnFeedRangeVisitor(DocumentContainer documentContainer)
-            {
-                this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
-            }
-
-            public Task<TryCatch<QueryPage>> VisitAsync(
-                FeedRangePartitionKey feedRange,
-                VisitorArguments argument,
-                CancellationToken cancellationToken) => this.documentContainer.MonadicQueryWithLogicalPartitionKeyAsync(
-                    argument.SqlQuerySpec,
-                    argument.ContinuationToken,
-                    feedRange.PartitionKey,
-                    argument.PageSize,
-                    cancellationToken);
-
-            public Task<TryCatch<QueryPage>> VisitAsync(
-                FeedRangePartitionKeyRange feedRange,
-                VisitorArguments argument,
-                CancellationToken cancellationToken) => this.documentContainer.MonadicQueryWithRangeIdAsync(
-                    argument.SqlQuerySpec,
-                    argument.ContinuationToken,
-                    int.Parse(feedRange.PartitionKeyRangeId),
-                    argument.PageSize,
-                    cancellationToken);
-
-            public async Task<TryCatch<QueryPage>> VisitAsync(
-                FeedRangeEpk feedRange,
-                VisitorArguments argument,
-                CancellationToken cancellationToken)
-            {
-                // Check to see if it lines up exactly with one physical partition
-                List<PartitionKeyRange> feedRanges = await this.documentContainer.GetChildRangeAsync(
-                    new PartitionKeyRange()
-                    {
-                        MinInclusive = feedRange.Range.Min,
-                        MaxExclusive = feedRange.Range.Max,
-                    },
-                    cancellationToken);
-
-                if (feedRanges.Count != 1)
-                {
-                    // Simulate a split exception, since we don't have a partition key range id to route to.
-                    CosmosException goneException = new CosmosException(
-                        message: $"Epk Range: {feedRange.Range} is gone.",
-                        statusCode: System.Net.HttpStatusCode.Gone,
-                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: default);
-
-                    return TryCatch<QueryPage>.FromException(goneException);
-                }
-
-                // If the epk range aligns exactly to a physical partition, then continue as if PKRangeId was given
-                PartitionKeyRange singleRange = feedRanges[0];
-                Documents.Routing.Range<string> range = singleRange.ToRange();
-                if (!feedRange.Range.Equals(range))
-                {
-                    // User want's use to query on a sub partition, which is currently not possible.
-                    throw new NotImplementedException("Can not query on a sub partition.");
-                }
-
-                return await this.documentContainer.MonadicQueryWithRangeIdAsync(
-                    argument.SqlQuerySpec,
-                    argument.ContinuationToken,
-                    int.Parse(singleRange.Id),
-                    argument.PageSize,
-                    cancellationToken);
-            }
-        }
     }
 }

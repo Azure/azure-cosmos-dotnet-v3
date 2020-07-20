@@ -14,13 +14,21 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Documents;
 
-    internal sealed class NetworkAttachedDocumentContainer : DocumentContainer
+    internal sealed class NetworkAttachedDocumentContainer : IMonadicDocumentContainer
     {
+        private static readonly PartitionKeyRange FullRange = new PartitionKeyRange()
+        {
+            MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+            MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+        };
+
         private readonly ContainerCore container;
         private readonly CosmosQueryContext cosmosQueryContext;
+        private readonly ExecuteQueryBasedOnFeedRangeVisitor executeQueryBasedOnFeedRangeVisitor;
 
         public NetworkAttachedDocumentContainer(
             ContainerCore container,
@@ -28,17 +36,20 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
+            this.executeQueryBasedOnFeedRangeVisitor = new ExecuteQueryBasedOnFeedRangeVisitor(this);
         }
 
-        public override Task<TryCatch> MonadicSplitAsync(
+        public Task<TryCatch> MonadicSplitAsync(
             int partitionKeyRangeId,
             CancellationToken cancellationToken) => Task.FromResult(TryCatch.FromException(new NotSupportedException()));
 
-        protected override async Task<TryCatch<Record>> MonadicCreateItemImplementationAsync(
+        public async Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken)
         {
-            ItemResponse<CosmosObject> tryInsertDocument = await this.container.CreateItemAsync(payload, cancellationToken: cancellationToken);
+            ItemResponse<CosmosObject> tryInsertDocument = await this.container.CreateItemAsync(
+                payload,
+                cancellationToken: cancellationToken);
             if (tryInsertDocument.StatusCode != HttpStatusCode.Created)
             {
                 return TryCatch<Record>.FromException(
@@ -60,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return TryCatch<Record>.FromResult(record);
         }
 
-        protected override Task<TryCatch<Record>> MonadicReadItemImplementationAsync(
+        public Task<TryCatch<Record>> MonadicReadItemAsync(
             CosmosElement partitionKey,
             string identifer,
             CancellationToken cancellationToken)
@@ -68,7 +79,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
             throw new NotImplementedException();
         }
 
-        protected override Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeImplementationAsync(
+        public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
+            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FullRange, cancellationToken);
+
+        public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
             CancellationToken cancellationToken) => this.cosmosQueryContext.QueryClient.TryGetOverlappingRangesAsync(
                 this.cosmosQueryContext.ContainerResourceId,
@@ -76,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 forceRefresh: true)
                 .ContinueWith(antecedent => TryCatch<List<PartitionKeyRange>>.FromResult(antecedent.Result.ToList()));
 
-        protected override Task<TryCatch<DocumentContainerPage>> MonadicReadFeedImplementationAsync(
+        public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
             long resourceIdentifer,
             int pageSize,
@@ -85,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             throw new NotImplementedException();
         }
 
-        protected override Task<TryCatch<QueryPage>> MonadicQueryWithLogicalPartitionKeyAsync(
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             Cosmos.PartitionKey partitionKey,
@@ -107,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 pageSize,
                 cancellationToken);
 
-        protected override Task<TryCatch<QueryPage>> MonadicQueryWithRangeIdAsync(
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             int partitionKeyRangeId,
@@ -121,5 +135,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 isContinuationExpected: this.cosmosQueryContext.IsContinuationExpected,
                 pageSize: pageSize,
                 cancellationToken: cancellationToken);
+
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            FeedRangeInternal feedRange,
+            int pageSize,
+            CancellationToken cancellationToken) => feedRange.AcceptAsync(
+                this.executeQueryBasedOnFeedRangeVisitor,
+                new ExecuteQueryBasedOnFeedRangeVisitor.Arguments(
+                    sqlQuerySpec,
+                    continuationToken,
+                    pageSize),
+                cancellationToken);
     }
 }
