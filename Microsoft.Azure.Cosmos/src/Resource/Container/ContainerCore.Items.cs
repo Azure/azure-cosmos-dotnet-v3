@@ -822,5 +822,76 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(this.cachedUriSegmentWithoutId.EndsWith("/"));
             return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
         }
+
+        public async Task<ItemResponse<T>> PatchItemAsync<T>(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                diagnosticsContext,
+                id,
+                partitionKey,
+                patchOperations,
+                requestOptions,
+                cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+        }
+
+        public Task<ResponseMessage> PatchItemStreamAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (diagnosticsContext == null)
+            {
+                throw new ArgumentNullException(nameof(diagnosticsContext));
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            Stream patchOperationsStream;
+            using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
+            {
+                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(patchOperations);
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.GetResourceUri(
+                    requestOptions,
+                    OperationType.Patch,
+                    id),
+                resourceType: ResourceType.Document,
+                operationType: OperationType.Patch,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this,
+                partitionKey: partitionKey,
+                itemId: id,
+                streamPayload: patchOperationsStream,
+                requestEnricher: null,
+                diagnosticsContext: diagnosticsContext,
+                cancellationToken: cancellationToken);
+        }
     }
 }

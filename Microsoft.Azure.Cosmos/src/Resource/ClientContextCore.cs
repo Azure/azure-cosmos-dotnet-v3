@@ -458,7 +458,8 @@ namespace Microsoft.Azure.Cosmos
                 || operationType == OperationType.Upsert
                 || operationType == OperationType.Read
                 || operationType == OperationType.Delete
-                || operationType == OperationType.Replace);
+                || operationType == OperationType.Replace
+                || operationType == OperationType.Patch);
         }
 
         private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
