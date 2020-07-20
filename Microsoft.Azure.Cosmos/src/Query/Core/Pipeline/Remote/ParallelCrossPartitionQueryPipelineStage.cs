@@ -94,52 +94,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 throw new ArgumentOutOfRangeException(nameof(pageSize));
             }
 
-            CrossPartitionState<QueryState> state;
-            if (continuationToken == null)
+            TryCatch<CrossPartitionState<QueryState>> monadicExtractState = MonadicExtractState(continuationToken);
+            if (monadicExtractState.Failed)
             {
-                state = default;
+                return TryCatch<IQueryPipelineStage>.FromException(monadicExtractState.Exception);
             }
-            else
-            {
-                if (!(continuationToken is CosmosArray compositeContinuationTokenListRaw))
-                {
-                    return TryCatch<IQueryPipelineStage>.FromException(
-                        new MalformedContinuationTokenException(
-                            $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
-                }
 
-                if (compositeContinuationTokenListRaw.Count == 0)
-                {
-                    return TryCatch<IQueryPipelineStage>.FromException(
-                        new MalformedContinuationTokenException(
-                            $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
-                }
-
-                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-                foreach (CosmosElement compositeContinuationTokenRaw in compositeContinuationTokenListRaw)
-                {
-                    TryCatch<CompositeContinuationToken> tryCreateCompositeContinuationToken = CompositeContinuationToken.TryCreateFromCosmosElement(compositeContinuationTokenRaw);
-                    if (tryCreateCompositeContinuationToken.Failed)
-                    {
-                        return TryCatch<IQueryPipelineStage>.FromException(
-                            tryCreateCompositeContinuationToken.Exception);
-                    }
-
-                    compositeContinuationTokens.Add(tryCreateCompositeContinuationToken.Result);
-                }
-
-                List<(PartitionKeyRange, QueryState)> rangesAndStates = compositeContinuationTokens
-                    .Select(token => (
-                        new PartitionKeyRange()
-                        {
-                            MinInclusive = token.Range.Min,
-                            MaxExclusive = token.Range.Max,
-                        },
-                        token.Token != null ? new QueryState(CosmosString.Create(token.Token)) : null))
-                    .ToList();
-
-                state = new CrossPartitionState<QueryState>(rangesAndStates);
-            }
+            CrossPartitionState<QueryState> state = monadicExtractState.Result;
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 documentContainer,
@@ -149,6 +110,56 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
             ParallelCrossPartitionQueryPipelineStage stage = new ParallelCrossPartitionQueryPipelineStage(crossPartitionPageEnumerator);
             return TryCatch<IQueryPipelineStage>.FromResult(stage);
+        }
+
+        private static TryCatch<CrossPartitionState<QueryState>> MonadicExtractState(
+            CosmosElement continuationToken)
+        {
+            if (continuationToken == null)
+            {
+                return TryCatch<CrossPartitionState<QueryState>>.FromResult(default);
+            }
+
+            if (!(continuationToken is CosmosArray compositeContinuationTokenListRaw))
+            {
+                return TryCatch<CrossPartitionState<QueryState>>.FromException(
+                    new MalformedContinuationTokenException(
+                        $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
+            }
+
+            if (compositeContinuationTokenListRaw.Count == 0)
+            {
+                return TryCatch<CrossPartitionState<QueryState>>.FromException(
+                    new MalformedContinuationTokenException(
+                        $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
+            }
+
+            List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
+            foreach (CosmosElement compositeContinuationTokenRaw in compositeContinuationTokenListRaw)
+            {
+                TryCatch<CompositeContinuationToken> tryCreateCompositeContinuationToken = CompositeContinuationToken.TryCreateFromCosmosElement(compositeContinuationTokenRaw);
+                if (tryCreateCompositeContinuationToken.Failed)
+                {
+                    return TryCatch<CrossPartitionState<QueryState>>.FromException(
+                        tryCreateCompositeContinuationToken.Exception);
+                }
+
+                compositeContinuationTokens.Add(tryCreateCompositeContinuationToken.Result);
+            }
+
+            List<(PartitionKeyRange, QueryState)> rangesAndStates = compositeContinuationTokens
+                .Select(token => (
+                    new PartitionKeyRange()
+                    {
+                        MinInclusive = token.Range.Min,
+                        MaxExclusive = token.Range.Max,
+                    },
+                    token.Token != null ? new QueryState(CosmosString.Create(token.Token)) : null))
+                .ToList();
+
+            CrossPartitionState<QueryState> state = new CrossPartitionState<QueryState>(rangesAndStates);
+
+            return TryCatch<CrossPartitionState<QueryState>>.FromResult(state);
         }
 
         private static CreatePartitionRangePageAsyncEnumerator<QueryPage, QueryState> MakeCreateFunction(
