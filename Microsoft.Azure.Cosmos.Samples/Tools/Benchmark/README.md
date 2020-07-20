@@ -19,7 +19,13 @@ dotnet run CosmosBenchmark.csproj -e {ACCOUNT_ENDPOINT} -k {ACCOUNT_KEY}
 
 For PerfRuns with reports (INTERNAL)
 ```
-dotnet run -c Release  -p:OSSProjectRef=True -- -e {ACCOUNT_ENDPOINT} -k {ACCOUNT_KEY} --publishresults --resultspartitionkeyvalue "runs-summary"  --commitid $(git log -1 | head -n 1 | cut -d ' ' -f 2) --commitdate $(git log -1 --date=format:'%Y-%m-%d %H:%M:%S' | grep Date | cut -f 2- -d ':' | sed 's/^[ \t]*//;s/[ \t]*$//' | cut -f 1 -d ' ') --committime $(git log -1 --date=format:'%Y-%m-%d %H:%M:%S' | grep Date | cut -f 2- -d ':' | sed 's/^[ \t]*//;s/[ \t]*$//' | cut -f 2 -d ' ') --branchname $(git rev-parse --abbrev-ref HEAD)  --database testdb --container testcol --partitionkeypath /pk -n 200000 -w ReadStreamExistsV3 --pl 300 
+export OSSProjectRef=True
+export ACCOUNT_ENDPOINT=<ENDPOINT
+export ACCOUNT_KEY=<KEY>
+export RESULTS_PK="runs-summary" #For test runs use different one
+export PL=300
+
+dotnet run -c Release  -- -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY --publishresults --resultspartitionkeyvalue $RESULTS_PK -commitid $(git log -1 | head -n 1 | cut -d ' ' -f 2) --commitdate $(git log -1 --date=format:'%Y-%m-%d %H:%M:%S' | grep Date | cut -f 2- -d ':' | sed 's/^[ \t]*//;s/[ \t]*$//' | cut -f 1 -d ' ') --committime $(git log -1 --date=format:'%Y-%m-%d %H:%M:%S' | grep Date | cut -f 2- -d ':' | sed 's/^[ \t]*//;s/[ \t]*$//' | cut -f 2 -d ' ') --branchname $(git rev-parse --abbrev-ref HEAD)  --database testdb --container testcol --partitionkeypath /pk -n 500000 -w ReadStreamExistsV3 --pl $PL 
 ```
 
 
