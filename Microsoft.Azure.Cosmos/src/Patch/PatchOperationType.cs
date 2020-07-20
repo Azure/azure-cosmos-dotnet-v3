@@ -12,7 +12,12 @@ namespace Microsoft.Azure.Cosmos
     /// Type of Patch operation.
     /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum PatchOperationType
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+        enum PatchOperationType
     {
         /// <summary>
         /// Operation to add a value.
