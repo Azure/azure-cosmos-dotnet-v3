@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
-        private static readonly ItemRequestOptions RequestOptionDisableDiagnostic = new ItemRequestOptions()
+        private static readonly TransactionalBatchRequestOptions RequestOptionDisableDiagnostic = new TransactionalBatchRequestOptions()
         {
             DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
         };
@@ -321,6 +321,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 replaceResponse.Diagnostics,
                 disableDiagnostics);
 
+            testItem.description = "PatchedDescription";
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateReplaceOperation("/description", testItem.description)
+            };
+            ItemResponse<ToDoActivity> patchResponse = await containerInternal.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new PartitionKey(testItem.status),
+                patchOperations: patch,
+                requestOptions: requestOptions);
+
+            Assert.AreEqual(patchResponse.Resource.description, "PatchedDescription");
+
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                patchResponse.Diagnostics,
+                disableDiagnostics);
+
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 id: testItem.id,
@@ -357,6 +375,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 replaceStreamResponse.Diagnostics,
                 disableDiagnostics);
 
+            ResponseMessage patchStreamResponse = await containerInternal.PatchItemStreamAsync(
+               id: testItem.id,
+               partitionKey: new PartitionKey(testItem.status),
+               patchOperations: patch,
+               requestOptions: requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                patchStreamResponse.Diagnostics,
+                disableDiagnostics);
+
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status),
@@ -384,6 +411,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pkValue = "DiagnosticTestPk";
             TransactionalBatch batch = this.Container.CreateTransactionalBatch(new PartitionKey(pkValue));
+            BatchCore batchCore = (BatchCore)batch;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateRemoveOperation("/cost")
+            };
 
             List<ToDoActivity> createItems = new List<ToDoActivity>();
             for (int i = 0; i < 50; i++)
@@ -396,10 +428,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             for (int i = 0; i < 20; i++)
             {
                 batch.ReadItem(createItems[i].id);
+                batchCore.PatchItem(createItems[i].id, patch);
             }
 
-            RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
-            TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
+            TransactionalBatchRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
+            TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
 
             Assert.IsNotNull(response);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(

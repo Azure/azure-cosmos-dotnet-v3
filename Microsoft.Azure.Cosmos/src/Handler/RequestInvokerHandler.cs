@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public RequestInvokerHandler(
             CosmosClient client,
@@ -168,6 +169,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     request.Headers.IsUpsert = bool.TrueString;
                 }
+                else if (operationType == OperationType.Patch)
+                {
+                    request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
+                }
 
                 requestEnricher?.Invoke(request);
                 return await this.SendAsync(request, cancellationToken);
@@ -207,6 +212,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             else if (operationType == OperationType.Delete)
             {
                 return HttpMethod.Delete;
+            }
+            else if (operationType == OperationType.Patch)
+            {
+                // There isn't support for PATCH method in .NetStandard 2.0
+                return httpPatchMethod;
             }
             else
             {

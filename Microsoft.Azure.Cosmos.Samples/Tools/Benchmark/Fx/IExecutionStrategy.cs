@@ -16,7 +16,7 @@ namespace CosmosBenchmark
             return new ParallelExecutionStrategy(benchmarkOperation);
         }
 
-        public Task ExecuteAsync(
+        public Task<RunSummary> ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             bool traceFalures,
