@@ -94,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
+#if INTERNAL
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -112,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateRequiredProperties();
         }
+#endif
 
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
@@ -307,6 +309,29 @@ namespace Microsoft.Azure.Cosmos
                 };
             }
         }
+
+#if INTERNAL
+        /// <summary>
+        /// JSON path used for containers partitioning
+        /// </summary>
+        [JsonIgnore]
+        public IList<string> PartitionKeyPaths
+        {
+            get => this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths : null;
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(this.PartitionKeyPath));
+                }
+
+                this.PartitionKey = new PartitionKeyDefinition
+                {
+                    Paths = new Collection<string>(value)
+                };
+            }
+        }
+#endif
 
         /// <summary>
         /// Gets or sets the time to live base time stamp property path.

@@ -1,16 +1,16 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
+#if INTERNAL
 namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
-    /// Partitioning version.
+    /// Partition kind.
     /// </summary> 
     public enum PartitionKind
     {
         /// <summary>
-        /// Original version of hash partitioning.
+        /// Original and default Partition Kind. 
         /// </summary>
         Hash = 1,
 
@@ -27,3 +27,4 @@ namespace Microsoft.Azure.Cosmos
         
     }
 }
+#endif
