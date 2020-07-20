@@ -633,6 +633,101 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
+#if INTERNAL
+        /// <summary>
+        /// Patches an item in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <remarks>
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// The patch operations are atomic and are executed sequentially.
+        /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
+        /// </remarks>
+        /// <param name="id">The Cosmos item id of the item to be patched.</param>
+        /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
+        /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ItemResponse{T}"/> which wraps the updated resource record.
+        /// </returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        ///     public string description {get; set;}
+        ///     public int frequency {get; set;}
+        /// }
+        /// 
+        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        /// /* toDoActivity = {
+        ///     "id" : "someId",
+        ///     "status" : "someStatusPK",
+        ///     "description" : "someDescription",
+        ///     "frequency" : 7
+        /// }*/
+        /// 
+        /// List<PatchOperation> patchOperations = new List<PatchOperation>()
+        ///                                             {
+        ///                                                 PatchOperation.CreateAddOperation("/daysOfWeek", new string[]{"Monday", "Thursday"}),
+        ///                                                 PatchOperation.CreateReplaceOperation("/frequency", 2),
+        ///                                                 PatchOperation.CreateRemoveOperation("/description")
+        ///                                             };
+        /// 
+        /// ItemResponse item = await this.container.PatchItemAsync<dynamic>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchOperations);
+        /// /* item = {
+        ///     "id" : "someId",
+        ///     "status" : "someStatusPK",
+        ///     "description" : null,
+        ///     "frequency" : 2,
+        ///     "daysOfWeek" : ["Monday", "Thursday"]
+        /// }*/
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Patches an item in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <remarks>
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// The patch operations are atomic and are executed sequentially.
+        /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
+        /// </remarks>
+        /// <param name="id">The Cosmos item id</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the patched resource record.
+        /// </returns>
+        /// <remarks>
+        /// https://aka.ms/cosmosdb-dot-net-exceptions#stream-api
+        /// This is to increase performance and prevent the overhead of throwing exceptions. 
+        /// Check the HTTP status code on the response to check if the operation failed.
+        /// </remarks>
+        /// <example>
+        /// <see cref="Container.PatchItemAsync"/>
+        /// </example>
+        public abstract Task<ResponseMessage> PatchItemStreamAsync(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -1079,25 +1174,16 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        ///  This method creates an iterator to consume a Change Feed.
+        /// This method creates an iterator to consume the container's Change Feed.
         /// </summary>
+        /// <param name="continuationToken">(Optional) The continuation from a previous Change Feed iterator.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <returns>An iterator to go through the Change Feed.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        ///
-        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
-        /// {
-        ///     FeedRange = feedRanges[0]
-        /// }
-        /// 
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(options);
-        ///
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator())
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
@@ -1114,8 +1200,42 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator GetChangeFeedStreamIterator(
+            string continuationToken = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a FeedRange's Change Feed.
+        /// </summary>
+        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/> or from a previous FeedIterator</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
+        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
+        /// using (FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedRanges[0]))
+        /// {
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         {
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1150,24 +1270,16 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
-        ///  This method creates an iterator to consume a Change Feed.
+        ///  This method creates an iterator to consume the container's Change Feed.
         /// </summary>
+        /// <param name="continuationToken">(Optional) The continuation from a previous Change Feed iterator.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <returns>An iterator to go through the Change Feed.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
-        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        ///
-        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
-        /// {
-        ///     FeedRange = feedRanges[0]
-        /// }
-        /// 
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(options);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>())
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
@@ -1181,8 +1293,39 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            string continuationToken = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a FeedRange's Change Feed.
+        /// </summary>
+        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>.</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
+        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedRanges[0]))
+        /// {
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var item in response)
+        ///         {
+        ///             Console.WriteLine(item);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed for a particular FeedRange.</returns>
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            FeedRange feedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
