@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
-        private static readonly ItemRequestOptions RequestOptionDisableDiagnostic = new ItemRequestOptions()
+        private static readonly TransactionalBatchRequestOptions RequestOptionDisableDiagnostic = new TransactionalBatchRequestOptions()
         {
             DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
         };
@@ -398,8 +398,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 batch.ReadItem(createItems[i].id);
             }
 
-            RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
-            TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
+            TransactionalBatchRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
+            TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
 
             Assert.IsNotNull(response);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
