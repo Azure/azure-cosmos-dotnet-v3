@@ -19,8 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal class AzureKeyVaultKeyWrapProvider : EncryptionKeyWrapProvider
     {
-        private static readonly KeyVaultAccessClientFactory keyVaultAccessClientFactory = new KeyVaultAccessClientFactory();
-        private readonly IKeyVaultAccessClient keyVaultAccessClient;
+        private readonly KeyVaultAccessClient keyVaultAccessClient;
         private readonly TimeSpan rawDekCacheTimeToLive;
 
         /// <summary>
@@ -35,7 +34,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string clientId,
             X509Certificate2 certificate)
         {
-            this.keyVaultAccessClient = AzureKeyVaultKeyWrapProvider.keyVaultAccessClientFactory.CreateKeyVaultAccessClient(clientId, certificate);
+            this.keyVaultAccessClient = new KeyVaultAccessClient(
+                clientId: clientId,
+                certificate: certificate);
             this.rawDekCacheTimeToLive = TimeSpan.FromHours(1);
         }
 

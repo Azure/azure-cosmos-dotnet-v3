@@ -6,12 +6,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
+    using global::Azure.Core;
     using global::Azure.Identity;
     using global::Azure.Security.KeyVault.Keys;
     using global::Azure.Security.KeyVault.Keys.Cryptography;
@@ -28,8 +27,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly AsyncCache<string, KeyClient> akvClientCache;
         private readonly AsyncCache<Uri, CryptographyClient> akvCrytpoClientCache;
         private readonly AsyncCache<string, ClientCertificateCredential> clientCertCredCache;
-        private readonly KeyVaultHttpClient keyvaulthttpclient;
-        private string tenantId;
+        private readonly AsyncCache<string, string> tenantIdMap;
         private ClientCertificateCredential clientCertificateCredential;
 
         /// <summary>
@@ -39,15 +37,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="certificate">Authorization Certificate to authorize with AAD.</param>
         internal KeyVaultAccessClient(
             string clientId,
-            X509Certificate2 certificate,
-            HttpClient httpClient)
+            X509Certificate2 certificate)
         {
             this.certificate = certificate;
             this.clientId = clientId;
             this.akvClientCache = new AsyncCache<string, KeyClient>();
             this.akvCrytpoClientCache = new AsyncCache<Uri, CryptographyClient>();
             this.clientCertCredCache = new AsyncCache<string, ClientCertificateCredential>();
-            this.keyvaulthttpclient = new KeyVaultHttpClient(httpClient);
+            this.tenantIdMap = new AsyncCache<string, string>();
         }
 
         /// <summary>
@@ -315,38 +312,144 @@ Success:
         private async Task InitializeLoginUrlAndResourceEndpointAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            string[] source = keyVaultKeyUri.ToString().Split('/');
+            string keyVaultName = source.ElementAt(2);
+            string tenantId = null;
 
-            using HttpResponseMessage response = await this.keyvaulthttpclient.ExecuteHttpRequestAsync(HttpMethod.Get, keyVaultKeyUri.ToString(), cancellationToken: cancellationToken);
+            // build a keyvaultkey Uri and Tenant ID map
+            tenantId = await this.tenantIdMap.GetAsync(
+                           key: keyVaultName,
+                           obsoleteValue: null,
+                           singleValueInitFunc: async () =>
+                           {
+                               return await this.GetTenantIdAsync(keyVaultKeyUri, cancellationToken);
+                           },
+                           cancellationToken: cancellationToken);
+
+            if (!string.IsNullOrEmpty(tenantId))
             {
-                // authenticationHeaderValue Sample:
-                // Bearer authorization="https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47", resource="https://vault.azure.net"
-                AuthenticationHeaderValue authenticationHeaderValue = response.Headers.WwwAuthenticate.Single();
-                string[] source = authenticationHeaderValue.Parameter.Split('=', ',');
+                // The idea is to get the Client Credentials,cache them per Tanant
+                this.clientCertificateCredential = await this.clientCertCredCache.GetAsync(
+                                                   key: tenantId,
+                                                   obsoleteValue: null,
+                                                   singleValueInitFunc: async () =>
+                                                   {
+                                                       await Task.FromResult(true);
 
-                try
+                                                       // Retrieve the Client Creds against the TenantID/ClientID for the saved certificate.
+                                                       return this.clientCertificateCredential = new ClientCertificateCredential(tenantId, this.clientId, this.certificate);
+                                                   },
+                                                   cancellationToken: cancellationToken);
+            }
+            else
+            {
+                throw new KeyVaultAccessException(
+                            HttpStatusCode.NotFound,
+                            KeyVaultErrorCode.KeyVaultServiceUnavailable,
+                            "InitializeLoginUrlAndResourceEndpointAsync Failed to retreive Tenant ID for the KeyVaultKey Uri");
+            }
+        }
+
+        /// <summary>
+        /// This is basically used to retrieve Tenant ID.KeyVault SDK has not exposed any API to retreive
+        /// Tenant ID for a particular KeyVaultKey URI. This is required to get Azure AD token to access
+        /// KeyVault Services in multi-tenant model.We return an empty token to retreive the required information
+        /// via an exception handling.
+        /// FIXME : Move to SDK call once Azure SDK exposes the required API.
+        /// </summary>
+        private class KeyVaultTokenCredential : TokenCredential
+        {
+            private static readonly AccessToken EmptyToken = new AccessToken(string.Empty, DateTimeOffset.UtcNow + TimeSpan.FromDays(1));
+
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return KeyVaultTokenCredential.EmptyToken;
+            }
+
+            public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return new ValueTask<AccessToken>(KeyVaultTokenCredential.EmptyToken);
+            }
+        }
+
+        /// <summary>
+        /// This fetches the TenantID for a given KeyVaultKey Uri.
+        /// Fixme: Move this out once we have an API for this from SDK
+        /// </summary>
+        /// <param name="keyVaultKeyUri"> Key Vault Key Uri</param>
+        /// <param name="cancellationToken"> Cancellation Token </param>
+        /// <returns> Tenant ID </returns>
+        private async Task<string> GetTenantIdAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
+        {
+            string tenantId = null;
+            string[] keyUriParts = keyVaultKeyUri.PathAndQuery.Split('/', (char)StringSplitOptions.RemoveEmptyEntries);
+
+            Uri vaultUri = new Uri(keyVaultKeyUri.GetLeftPart(UriPartial.Scheme | UriPartial.Authority));
+            if (!(keyUriParts.Length == 4 && keyUriParts[1] == KeyVaultConstants.KeysSegment.Remove(KeyVaultConstants.KeysSegment.Length - 1)))
+            {
+                goto fail;
+            }
+
+            string keyName = keyUriParts[2];
+            string keyVersion = keyUriParts[3];
+
+            KeyClientOptions keyClientOptions = new KeyClientOptions();
+            keyClientOptions.Diagnostics.LoggedHeaderNames.Add(KeyVaultConstants.AuthenticationResponseHeaderName);
+            TokenCredential creds = new KeyVaultTokenCredential();
+            KeyClient keyClient = new KeyClient(vaultUri, creds, keyClientOptions);
+
+            try
+            {
+                await keyClient.GetKeyAsync(keyName, keyVersion);
+                goto fail;
+            }
+            catch (RequestFailedException ex)
+            {
+                string exMessage = ex.Message;
+                if (exMessage == null)
                 {
-                    // Sample aadLoginUrl: https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47
-                    string aadLoginUrl = source.ElementAt(1).Trim('"');
-                    this.tenantId = aadLoginUrl.Substring(aadLoginUrl.LastIndexOf('/') + 1);
-
-                    // The idea is to get the Client Credentials,cache them per Tanant
-                    this.clientCertificateCredential = await this.clientCertCredCache.GetAsync(
-                        key: this.tenantId,
-                        obsoleteValue: null,
-                        singleValueInitFunc: async () =>
-                    {
-                        await Task.FromResult(true);
-
-                        // Retrieve the Client Creds against the TenantID/ClientID for the saved certificate.
-                        return this.clientCertificateCredential = new ClientCertificateCredential(this.tenantId, this.clientId, this.certificate);
-                    },
-                        cancellationToken: cancellationToken);
+                    goto fail;
                 }
-                catch (ArgumentOutOfRangeException ex)
+
+                // As per https://docs.microsoft.com/en-us/azure/key-vault/general/authentication-requests-and-responses#authentication
+                // we assume one WWW-authenticate header with Bearer as the only challenge with an
+                // authentication parameter 'authorization' with value similar to below:
+                // Bearer authorization="https://login.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47", resource="https://vault.azure.net"
+                int headerIndex = exMessage.IndexOf(KeyVaultConstants.AuthenticationResponseHeaderName);
+                if (headerIndex == -1)
                 {
-                    DefaultTrace.TraceWarning("InitializeLoginUrlAndResourceEndpointAsync: Caught Out of Range ex {0}", ex.ToString());
+                    goto fail;
+                }
+
+                // Lines printing the headers end with \r\n in the exception message output, we assume the header value doesn't have this within it.
+                int endIndex = exMessage.IndexOf("\r\n", headerIndex);
+
+                headerIndex += KeyVaultConstants.AuthenticationResponseHeaderName.Length;
+                headerIndex++; // for the : after the header name
+
+                string headerValue = exMessage.Substring(headerIndex, endIndex - headerIndex).Trim();
+                if (!headerValue.StartsWith(KeyVaultConstants.Bearer))
+                {
+                    goto fail;
+                }
+
+                headerValue = headerValue.Substring(KeyVaultConstants.Bearer.Length);
+
+                string[] headerValueParts = headerValue.Split(',');
+                foreach (string headerValuePart in headerValueParts)
+                {
+                    string[] keyAndValue = headerValuePart.Trim().Split('=');
+                    if (keyAndValue.Length == 2 && keyAndValue[0] == KeyVaultConstants.AuthenticationParameter)
+                    {
+                        string aadLoginUrl = keyAndValue[1].Trim('"');
+                        return tenantId = aadLoginUrl.Substring(aadLoginUrl.LastIndexOf('/') + 1);
+                    }
                 }
             }
+
+            // just return an empty ID and let the caller treat it as a general failure to fetch the tenant ID.
+fail:
+            return tenantId;
         }
 
         /// <summary>

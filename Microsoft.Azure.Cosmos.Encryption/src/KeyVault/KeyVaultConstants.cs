@@ -11,12 +11,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal const string UnwrapKeySegment = "/unwrapkey";
         internal const string KeysSegment = "keys/";
         internal const string Bearer = "Bearer";
+        internal const string AuthenticationResponseHeaderName = "WWW-Authenticate";
+        internal const string AuthenticationParameter = "authorization";
 
         internal const string RsaOaep256 = "RSA-OAEP-256";
-
-        internal const int DefaultHttpClientTimeoutInSeconds = 30;
-        internal const int DefaultAadRetryCount = 3;
-        internal const int DefaultAadRetryIntervalInSeconds = 1;
 
         internal static class DeletionRecoveryLevel
         {
