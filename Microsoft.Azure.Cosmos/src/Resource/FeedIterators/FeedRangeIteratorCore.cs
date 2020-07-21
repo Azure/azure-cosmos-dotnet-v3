@@ -183,11 +183,13 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: stream,
                requestEnricher: request =>
                {
+                   FeedRangeContinuationRequestMessagePopulatorVisitor feedRangeContinuationVisitor = new FeedRangeContinuationRequestMessagePopulatorVisitor(
+                       request,
+                       QueryRequestOptions.FillContinuationToken);
+                   this.FeedRangeContinuation.Accept(feedRangeContinuationVisitor);
+
                    FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
                    this.FeedRangeInternal.Accept(feedRangeVisitor);
-
-                   FeedRangeContinuationRequestMessagePopulatorVisitor feedRangeContinuationVisitor = new FeedRangeContinuationRequestMessagePopulatorVisitor(request, QueryRequestOptions.FillContinuationToken);
-                   this.FeedRangeContinuation.Accept(feedRangeContinuationVisitor);
 
                    if (this.querySpec != null)
                    {
