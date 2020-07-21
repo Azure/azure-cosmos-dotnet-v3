@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
 
             // Address request has the URI fragment (dbs/dbid/colls/colId...) as part of
@@ -63,22 +63,22 @@ namespace Microsoft.Azure.Cosmos
         {
             if (string.IsNullOrEmpty(verb))
             {
-                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "verb");
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, nameof(verb));
             }
 
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
 
             if (stringHMACSHA256Helper == null)
             {
-                throw new ArgumentNullException("stringHMACSHA256Helper");
+                throw new ArgumentNullException(nameof(stringHMACSHA256Helper));
             }
 
             if (headers == null)
             {
-                throw new ArgumentNullException("headers");
+                throw new ArgumentNullException(nameof(headers));
             }
 
             string resourceType = string.Empty;
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
 
             resourceType = string.Empty;
@@ -642,22 +642,22 @@ namespace Microsoft.Azure.Cosmos
             // resourceId can be null for feed-read of /dbs
             if (string.IsNullOrEmpty(verb))
             {
-                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "verb");
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, nameof(verb));
             }
 
             if (resourceType == null)
             {
-                throw new ArgumentNullException("resourceType"); // can be empty
+                throw new ArgumentNullException(nameof(resourceType)); // can be empty
             }
 
             if (stringHMACSHA256Helper == null)
             {
-                throw new ArgumentNullException("stringHMACSHA256Helper");
+                throw new ArgumentNullException(nameof(stringHMACSHA256Helper));
             }
 
             if (headers == null)
             {
-                throw new ArgumentNullException("headers");
+                throw new ArgumentNullException(nameof(headers));
             }
 
             // Order of the values included in the message payload is a protocol that clients/BE need to follow exactly.
@@ -709,22 +709,22 @@ namespace Microsoft.Azure.Cosmos
             // resourceId can be null for feed-read of /dbs
             if (string.IsNullOrEmpty(verb))
             {
-                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "verb");
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, nameof(verb));
             }
 
             if (resourceType == null)
             {
-                throw new ArgumentNullException("resourceType"); // can be empty
+                throw new ArgumentNullException(nameof(resourceType)); // can be empty
             }
 
             if (string.IsNullOrEmpty(key))
             {
-                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "key");
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, nameof(key));
             }
 
             if (headers == null)
             {
-                throw new ArgumentNullException("headers");
+                throw new ArgumentNullException(nameof(headers));
             }
 
             byte[] keyBytes = Convert.FromBase64String(key);
