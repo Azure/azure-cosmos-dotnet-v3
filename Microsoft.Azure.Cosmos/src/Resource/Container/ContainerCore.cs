@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
             List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
-                feedTokens.Add(new FeedRangeEPK(partitionKeyRange.ToRange()));
+                feedTokens.Add(new FeedRangeEpk(partitionKeyRange.ToRange()));
             }
 
             return feedTokens;

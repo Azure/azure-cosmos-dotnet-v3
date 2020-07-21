@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             this.request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(feedRange.PartitionKeyRangeId);
         }
 
-        public void Visit(FeedRangeEPK feedRange)
+        public void Visit(FeedRangeEpk feedRange)
         {
             // In case EPK has already been set by compute
             if (!this.request.Properties.ContainsKey(HandlerConstants.StartEpkString))
