@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.IO;
     using System.Security.Cryptography;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -15,11 +16,13 @@ namespace Microsoft.Azure.Cosmos
 
     // This class is used by both client (for generating the auth header with master/system key) and 
     // by the G/W when verifying the auth header. Some additional logic is also used by management service.
-    internal sealed class AuthorizationHelper
+    internal static class AuthorizationHelper
     {
         public const int MaxAuthorizationHeaderSize = 1024;
         public const int DefaultAllowedClockSkewInSeconds = 900;
         public const int DefaultMasterTokenExpiryInSeconds = 900;
+
+        private static readonly Encoding AuthorizationEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         // This API is a helper method to create auth header based on client request.
         // Uri is split into resourceType/resourceId - 
@@ -84,13 +87,12 @@ namespace Microsoft.Azure.Cosmos
 
             AuthorizationHelper.GetResourceTypeAndIdOrFullName(uri, out isNameBased, out resourceType, out resourceIdValue, clientVersion);
 
-            string payload;
             return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
                          resourceIdValue,
                          resourceType,
                          headers,
                          stringHMACSHA256Helper,
-                         out payload);
+                         out MemoryStream _);
         }
 
         // This is a helper for both system and master keys
@@ -102,75 +104,20 @@ namespace Microsoft.Azure.Cosmos
             string key,
             bool bUseUtcNowForMissingXDate = false)
         {
-            string payload;
-            return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
+            string authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationCore(
+                verb,
                 resourceId,
                 resourceType,
                 headers,
                 key,
-                out payload,
+                out _,
                 bUseUtcNowForMissingXDate);
+            return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
+                Constants.Properties.MasterToken,
+                Constants.Properties.TokenVersion,
+                authorizationToken));
         }
 
-        // This is a helper for both system and master keys
-        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "HTTP Headers are ASCII")]
-        public static string GenerateKeyAuthorizationSignature(string verb,
-            string resourceId,
-            string resourceType,
-            INameValueCollection headers,
-            string key,
-            out string payload,
-            bool bUseUtcNowForMissingXDate = false)
-        {
-            // resourceId can be null for feed-read of /dbs
-
-            if (string.IsNullOrEmpty(verb))
-            {
-                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "verb");
-            }
-
-            if (resourceType == null)
-            {
-                throw new ArgumentNullException("resourceType"); // can be empty
-            }
-
-            if (string.IsNullOrEmpty(key))
-            {
-                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "key");
-            }
-
-            if (headers == null)
-            {
-                throw new ArgumentNullException("headers");
-            }
-
-            byte[] keyBytes = Convert.FromBase64String(key);
-            using (HMACSHA256 hmacSha256 = new HMACSHA256(keyBytes))
-            {
-                // Order of the values included in the message payload is a protocol that clients/BE need to follow exactly.
-                // More headers can be added in the future.
-                // If any of the value is optional, it should still have the placeholder value of ""
-                // OperationType -> ResourceType -> ResourceId/OwnerId -> XDate -> Date
-                string verbInput = verb ?? string.Empty;
-                string resourceIdInput = resourceId ?? string.Empty;
-                string resourceTypeInput = resourceType ?? string.Empty;
-
-                string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
-                payload = GenerateMessagePayload(verbInput,
-                     authResourceId,
-                     resourceTypeInput,
-                     headers,
-                     bUseUtcNowForMissingXDate);
-
-                byte[] hashPayLoad = hmacSha256.ComputeHash(Encoding.UTF8.GetBytes(payload));
-                string authorizationToken = Convert.ToBase64String(hashPayLoad);
-
-                return HttpUtility.UrlEncode(String.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                            Constants.Properties.MasterToken,
-                            Constants.Properties.TokenVersion,
-                            authorizationToken));
-            }
-        }
         // This is a helper for both system and master keys
         [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "HTTP Headers are ASCII")]
         public static string GenerateKeyAuthorizationSignature(string verb,
@@ -179,13 +126,17 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             IComputeHash stringHMACSHA256Helper)
         {
-            string payload;
-            return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
+            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+                verb,
                 resourceId,
                 resourceType,
                 headers,
                 stringHMACSHA256Helper,
-                out payload);
+                out MemoryStream payloadStream);
+            return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
+                Constants.Properties.MasterToken,
+                Constants.Properties.TokenVersion,
+                authorizationToken));
         }
 
         // This is a helper for both system and master keys
@@ -197,73 +148,65 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out string payload)
         {
-            // resourceId can be null for feed-read of /dbs
-
-            if (string.IsNullOrEmpty(verb))
-            {
-                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "verb");
-            }
-
-            if (resourceType == null)
-            {
-                throw new ArgumentNullException("resourceType"); // can be empty
-            }
-
-            if (stringHMACSHA256Helper == null)
-            {
-                throw new ArgumentNullException("stringHMACSHA256Helper");
-            }
-
-            if (headers == null)
-            {
-                throw new ArgumentNullException("headers");
-            }
-
-            // Order of the values included in the message payload is a protocol that clients/BE need to follow exactly.
-            // More headers can be added in the future.
-            // If any of the value is optional, it should still have the placeholder value of ""
-            // OperationType -> ResourceType -> ResourceId/OwnerId -> XDate -> Date
-            string verbInput = verb ?? string.Empty;
-            string resourceIdInput = resourceId ?? string.Empty;
-            string resourceTypeInput = resourceType ?? string.Empty;
-
-            string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
-            payload = GenerateMessagePayload(verbInput,
-                 authResourceId,
-                 resourceTypeInput,
-                 headers);
-
-            byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(Encoding.UTF8.GetBytes(payload));
-            string authorizationToken = Convert.ToBase64String(hashPayLoad);
-
-            return HttpUtility.UrlEncode(String.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
+            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+                verb,
+                resourceId,
+                resourceType,
+                headers,
+                stringHMACSHA256Helper,
+                out MemoryStream payloadStream);
+            payload = AuthorizationHelper.AuthorizationEncoding.GetString(payloadStream.GetBuffer(), 0, (int)payloadStream.Length);
+            return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
                         Constants.Properties.MasterToken,
                         Constants.Properties.TokenVersion,
                         authorizationToken));
         }
 
-        public static void ParseAuthorizationToken(
-            string authorizationToken,
-            out string typeOutput,
-            out string versionOutput,
-            out string tokenOutput)
+        // This is a helper for both system and master keys
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "HTTP Headers are ASCII")]
+        public static string GenerateKeyAuthorizationSignature(string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            IComputeHash stringHMACSHA256Helper,
+            out MemoryStream payload)
         {
-            typeOutput = null;
-            versionOutput = null;
-            tokenOutput = null;
+            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+                verb,
+                resourceId,
+                resourceType,
+                headers,
+                stringHMACSHA256Helper,
+                out payload);
+            return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
+                Constants.Properties.MasterToken,
+                Constants.Properties.TokenVersion,
+                authorizationToken));
+        }
 
-            if (string.IsNullOrEmpty(authorizationToken))
+        // used in Compute
+        public static void ParseAuthorizationToken(
+            string authorizationTokenString,
+            out ReadOnlyMemory<char> typeOutput,
+            out ReadOnlyMemory<char> versionOutput,
+            out ReadOnlyMemory<char> tokenOutput)
+        {
+            typeOutput = default;
+            versionOutput = default;
+            tokenOutput = default;
+
+            if (string.IsNullOrEmpty(authorizationTokenString))
             {
                 DefaultTrace.TraceError("Auth token missing");
                 throw new UnauthorizedException(RMResources.MissingAuthHeader);
             }
 
-            if (authorizationToken.Length > AuthorizationHelper.MaxAuthorizationHeaderSize)
+            if (authorizationTokenString.Length > AuthorizationHelper.MaxAuthorizationHeaderSize)
             {
                 throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat);
             }
 
-            authorizationToken = HttpUtility.UrlDecode(authorizationToken);
+            authorizationTokenString = HttpUtility.UrlDecode(authorizationTokenString);
  
             // Format of the token being deciphered is 
             // type=<master/resource/system>&ver=<version>&sig=<base64encodedstring>
@@ -271,58 +214,65 @@ namespace Microsoft.Azure.Cosmos
             // Step 1. split the tokens into type/ver/token.
             // when parsing for the last token, I use , as a separator to skip any redundant authorization headers
 
-            int typeSeparatorPosition = authorizationToken.IndexOf('&');
+            ReadOnlyMemory<char> authorizationToken = authorizationTokenString.AsMemory();
+            int typeSeparatorPosition = authorizationToken.Span.IndexOf('&');
             if (typeSeparatorPosition == -1)
             {
                 throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat);
             }
-            string authType = authorizationToken.Substring(0, typeSeparatorPosition);
+            ReadOnlyMemory<char> authType = authorizationToken.Slice(0, typeSeparatorPosition);
 
-            authorizationToken = authorizationToken.Substring(typeSeparatorPosition + 1, authorizationToken.Length - typeSeparatorPosition - 1);
-            int versionSepartorPosition = authorizationToken.IndexOf('&');
+            authorizationToken = authorizationToken.Slice(typeSeparatorPosition + 1, authorizationToken.Length - typeSeparatorPosition - 1);
+            int versionSepartorPosition = authorizationToken.Span.IndexOf('&');
             if (versionSepartorPosition == -1)
             {
                 throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat);
             }
-            string version = authorizationToken.Substring(0, versionSepartorPosition);
+            ReadOnlyMemory<char> version = authorizationToken.Slice(0, versionSepartorPosition);
 
-            authorizationToken = authorizationToken.Substring(versionSepartorPosition + 1, authorizationToken.Length - versionSepartorPosition - 1);
-            string token = authorizationToken;
-            int tokenSeparatorPosition = authorizationToken.IndexOf(',');
+            authorizationToken = authorizationToken.Slice(versionSepartorPosition + 1, authorizationToken.Length - versionSepartorPosition - 1);
+            ReadOnlyMemory<char> token = authorizationToken;
+            int tokenSeparatorPosition = authorizationToken.Span.IndexOf(',');
             if (tokenSeparatorPosition != -1)
             {
-                token = authorizationToken.Substring(0, tokenSeparatorPosition);
+                token = authorizationToken.Slice(0, tokenSeparatorPosition);
             }
 
             // Step 2. For each token, split to get the right half of '='
             // Additionally check for the left half to be the expected scheme type
-            int typeKeyValueSepartorPosition = authType.IndexOf('=');
-            if (typeKeyValueSepartorPosition == -1 ||
-                !authType.Substring(0, typeKeyValueSepartorPosition).Equals(Constants.Properties.AuthSchemaType, StringComparison.OrdinalIgnoreCase))
+            int typeKeyValueSepartorPosition = authType.Span.IndexOf('=');
+            if (typeKeyValueSepartorPosition == -1
+                || !authType.Span.Slice(0, typeKeyValueSepartorPosition).SequenceEqual(Constants.Properties.AuthSchemaType.AsSpan())
+                || !authType.Span.Slice(0, typeKeyValueSepartorPosition).ToString().Equals(Constants.Properties.AuthSchemaType, StringComparison.OrdinalIgnoreCase))
             {
                 throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat);
             }
-            string authTypeValue = authType.Substring(typeKeyValueSepartorPosition + 1);
 
-            int versionKeyValueSeparatorPosition = version.IndexOf('=');
-            if (versionKeyValueSeparatorPosition == -1 ||
-                !version.Substring(0, versionKeyValueSeparatorPosition).Equals(Constants.Properties.AuthVersion, StringComparison.OrdinalIgnoreCase))
+            ReadOnlyMemory<char> authTypeValue = authType.Slice(typeKeyValueSepartorPosition + 1);
+
+            int versionKeyValueSeparatorPosition = version.Span.IndexOf('=');
+            if (versionKeyValueSeparatorPosition == -1
+                || !version.Span.Slice(0, versionKeyValueSeparatorPosition).SequenceEqual(Constants.Properties.AuthVersion.AsSpan())
+                || !version.Slice(0, versionKeyValueSeparatorPosition).ToString().Equals(Constants.Properties.AuthVersion, StringComparison.OrdinalIgnoreCase))
             {
                 throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat);
             }
-            string versionValue = version.Substring(versionKeyValueSeparatorPosition + 1);
 
-            int tokenKeyValueSeparatorPosition = token.IndexOf('=');
-            if (tokenKeyValueSeparatorPosition == -1 ||
-                !token.Substring(0, tokenKeyValueSeparatorPosition).Equals(Constants.Properties.AuthSignature, StringComparison.OrdinalIgnoreCase))
+            ReadOnlyMemory<char> versionValue = version.Slice(versionKeyValueSeparatorPosition + 1);
+
+            int tokenKeyValueSeparatorPosition = token.Span.IndexOf('=');
+            if (tokenKeyValueSeparatorPosition == -1
+                || !token.Slice(0, tokenKeyValueSeparatorPosition).Span.SequenceEqual(Constants.Properties.AuthSignature.AsSpan())
+                || !token.Slice(0, tokenKeyValueSeparatorPosition).ToString().Equals(Constants.Properties.AuthSignature, StringComparison.OrdinalIgnoreCase))
             {
                 throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat);
             }
-            string tokenValue = token.Substring(tokenKeyValueSeparatorPosition + 1);
 
-            if (string.IsNullOrEmpty(authTypeValue) ||
-                string.IsNullOrEmpty(versionValue) ||
-                string.IsNullOrEmpty(tokenValue))
+            ReadOnlyMemory<char> tokenValue = token.Slice(tokenKeyValueSeparatorPosition + 1);
+
+            if (authTypeValue.IsEmpty ||
+                versionValue.IsEmpty ||
+                tokenValue.IsEmpty)
             {
                 throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat);
             }
@@ -332,15 +282,17 @@ namespace Microsoft.Azure.Cosmos
             tokenOutput = tokenValue;
         }
 
-        public static bool CheckPayloadUsingKey(string inputToken,
+        // used in Compute
+        public static bool CheckPayloadUsingKey(
+               ReadOnlyMemory<char> inputToken,
                string verb,
                string resourceId,
                string resourceType,
                INameValueCollection headers,
                string key)
         {
-            string payload;
-            string requestBasedToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
+            MemoryStream payload;
+            string requestBasedToken = AuthorizationHelper.GenerateKeyAuthorizationCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -348,12 +300,11 @@ namespace Microsoft.Azure.Cosmos
                 key,
                 out payload);
 
-            requestBasedToken = HttpUtility.UrlDecode(requestBasedToken);
-            requestBasedToken = requestBasedToken.Substring(requestBasedToken.IndexOf("sig=", StringComparison.OrdinalIgnoreCase) + 4);
-
-            return inputToken.Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
+            return inputToken.Span.SequenceEqual(requestBasedToken.AsSpan())
+                || inputToken.ToString().Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
         }
 
+        // used by Compute
         public static void ValidateInputRequestTime(
             INameValueCollection requestHeaders,
             int masterTokenExpiryInSeconds,
@@ -388,43 +339,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ValidateInputRequestTime(dateToCompare, masterTokenExpiryInSeconds, allowedClockSkewInSeconds);
-        }
-
-        private static void ValidateInputRequestTime(
-            string dateToCompare,
-            int masterTokenExpiryInSeconds,
-            int allowedClockSkewInSeconds)
-        {
-            if (string.IsNullOrEmpty(dateToCompare))
-            {
-                throw new UnauthorizedException(RMResources.MissingDateForAuthorization);
-            }
-
-            DateTime utcStartTime;
-            if (!DateTime.TryParse(dateToCompare, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces, out utcStartTime))
-            {
-                throw new UnauthorizedException(RMResources.InvalidDateHeader);
-            }
-
-            // Check if time range is beyond DateTime.MaxValue
-            bool outOfRange = utcStartTime >= DateTime.MaxValue.AddSeconds(-masterTokenExpiryInSeconds);
-
-            if (outOfRange)
-            {
-                string message = string.Format(CultureInfo.InvariantCulture,
-                    RMResources.InvalidTokenTimeRange,
-                    utcStartTime.ToString("r", CultureInfo.InvariantCulture),
-                    DateTime.MaxValue.ToString("r", CultureInfo.InvariantCulture),
-                    DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
-
-                DefaultTrace.TraceError(message);
-
-                throw new ForbiddenException(message);
-            }
-
-            DateTime utcEndTime = utcStartTime + TimeSpan.FromSeconds(masterTokenExpiryInSeconds);
-
-            AuthorizationHelper.CheckTimeRangeIsCurrent(allowedClockSkewInSeconds, utcStartTime, utcEndTime);
         }
 
         public static void CheckTimeRangeIsCurrent(
@@ -524,7 +438,9 @@ namespace Microsoft.Azure.Cosmos
 
         }
 
-        public static string GenerateMessagePayload(string verb,
+        public static void SerializeMessagePayload(
+               MemoryStream stream,
+               string verb,
                string resourceId,
                string resourceType,
                INameValueCollection headers,
@@ -552,15 +468,16 @@ namespace Microsoft.Azure.Cosmos
                 resourceId = resourceId.ToLowerInvariant();
             }
 
-            string payLoad = string.Format(CultureInfo.InvariantCulture,
-                "{0}\n{1}\n{2}\n{3}\n{4}\n",
-                verb.ToLowerInvariant(),
-                resourceType.ToLowerInvariant(),
-                resourceId,
-                xDate.ToLowerInvariant(),
-                xDate.Equals(string.Empty, StringComparison.OrdinalIgnoreCase) ? date.ToLowerInvariant() : string.Empty);
-
-            return payLoad;
+            stream.Write(verb.ToLowerInvariant());
+            stream.Write("\n");
+            stream.Write(resourceType.ToLowerInvariant());
+            stream.Write("\n");
+            stream.Write(resourceId);
+            stream.Write("\n");
+            stream.Write(xDate.ToLowerInvariant());
+            stream.Write("\n");
+            stream.Write(xDate.Equals(string.Empty, StringComparison.OrdinalIgnoreCase) ? date.ToLowerInvariant() : string.Empty);
+            stream.Write("\n");
         }
 
         public static bool IsResourceToken(string token)
@@ -675,6 +592,186 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new Uri(uri.Scheme + "://" + uri.Host + "/" + HttpUtility.UrlDecode(addressFeedUri).Trim('/'));
+        }
+
+        private static void ValidateInputRequestTime(
+            string dateToCompare,
+            int masterTokenExpiryInSeconds,
+            int allowedClockSkewInSeconds)
+        {
+            if (string.IsNullOrEmpty(dateToCompare))
+            {
+                throw new UnauthorizedException(RMResources.MissingDateForAuthorization);
+            }
+
+            DateTime utcStartTime;
+            if (!DateTime.TryParse(dateToCompare, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces, out utcStartTime))
+            {
+                throw new UnauthorizedException(RMResources.InvalidDateHeader);
+            }
+
+            // Check if time range is beyond DateTime.MaxValue
+            bool outOfRange = utcStartTime >= DateTime.MaxValue.AddSeconds(-masterTokenExpiryInSeconds);
+
+            if (outOfRange)
+            {
+                string message = string.Format(CultureInfo.InvariantCulture,
+                    RMResources.InvalidTokenTimeRange,
+                    utcStartTime.ToString("r", CultureInfo.InvariantCulture),
+                    DateTime.MaxValue.ToString("r", CultureInfo.InvariantCulture),
+                    DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
+
+                DefaultTrace.TraceError(message);
+
+                throw new ForbiddenException(message);
+            }
+
+            DateTime utcEndTime = utcStartTime + TimeSpan.FromSeconds(masterTokenExpiryInSeconds);
+
+            AuthorizationHelper.CheckTimeRangeIsCurrent(allowedClockSkewInSeconds, utcStartTime, utcEndTime);
+        }
+
+        private static string GenerateAuthorizationTokenWithHashCore(
+            string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            IComputeHash stringHMACSHA256Helper,
+            out MemoryStream payload)
+        {
+            // resourceId can be null for feed-read of /dbs
+            if (string.IsNullOrEmpty(verb))
+            {
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "verb");
+            }
+
+            if (resourceType == null)
+            {
+                throw new ArgumentNullException("resourceType"); // can be empty
+            }
+
+            if (stringHMACSHA256Helper == null)
+            {
+                throw new ArgumentNullException("stringHMACSHA256Helper");
+            }
+
+            if (headers == null)
+            {
+                throw new ArgumentNullException("headers");
+            }
+
+            // Order of the values included in the message payload is a protocol that clients/BE need to follow exactly.
+            // More headers can be added in the future.
+            // If any of the value is optional, it should still have the placeholder value of ""
+            // OperationType -> ResourceType -> ResourceId/OwnerId -> XDate -> Date
+            string verbInput = verb ?? string.Empty;
+            string resourceIdInput = resourceId ?? string.Empty;
+            string resourceTypeInput = resourceType ?? string.Empty;
+
+            string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
+            int capacity = ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
+            payload = new MemoryStream(capacity);
+            AuthorizationHelper.SerializeMessagePayload(
+                payload,
+                verbInput,
+                authResourceId,
+                resourceTypeInput,
+                headers);
+            payload.Position = 0;
+
+            byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload);
+            payload.Position = 0;
+            string authorizationToken = Convert.ToBase64String(hashPayLoad);
+            return authorizationToken;
+        }
+
+        private static int ComputeMemoryCapacity(string verbInput, string authResourceId, string resourceTypeInput)
+        {
+            return
+                verbInput.Length
+                + authResourceId.Length
+                + resourceTypeInput.Length
+                + 5 // new line characters
+                + 30; // date header length;
+        }
+
+        private static string GenerateKeyAuthorizationCore(
+            string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            string key,
+            out MemoryStream payload,
+            bool bUseUtcNowForMissingXDate = false)
+        {
+            string authorizationToken;
+
+            // resourceId can be null for feed-read of /dbs
+            if (string.IsNullOrEmpty(verb))
+            {
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "verb");
+            }
+
+            if (resourceType == null)
+            {
+                throw new ArgumentNullException("resourceType"); // can be empty
+            }
+
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "key");
+            }
+
+            if (headers == null)
+            {
+                throw new ArgumentNullException("headers");
+            }
+
+            byte[] keyBytes = Convert.FromBase64String(key);
+            using (HMACSHA256 hmacSha256 = new HMACSHA256(keyBytes))
+            {
+                // Order of the values included in the message payload is a protocol that clients/BE need to follow exactly.
+                // More headers can be added in the future.
+                // If any of the value is optional, it should still have the placeholder value of ""
+                // OperationType -> ResourceType -> ResourceId/OwnerId -> XDate -> Date
+                string verbInput = verb ?? string.Empty;
+                string resourceIdInput = resourceId ?? string.Empty;
+                string resourceTypeInput = resourceType ?? string.Empty;
+
+                string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
+                int memoryStreamCapacity = ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
+                payload = new MemoryStream(memoryStreamCapacity);
+                AuthorizationHelper.SerializeMessagePayload(
+                    payload,
+                    verbInput,
+                    authResourceId,
+                    resourceTypeInput,
+                    headers,
+                    bUseUtcNowForMissingXDate);
+                payload.Position = 0;
+
+                byte[] hashPayLoad = hmacSha256.ComputeHash(payload);
+                authorizationToken = Convert.ToBase64String(hashPayLoad);
+                payload.Position = 0;
+            }
+
+            return authorizationToken;
+        }
+
+        private static void Write(this MemoryStream stream, string contentToWrite)
+        {
+            int byteCount = AuthorizationHelper.AuthorizationEncoding.GetByteCount(contentToWrite);
+
+            // ensure enough capacity exists.
+            long originalLength = stream.Length;
+            long desiredLength = byteCount + stream.Length;
+            stream.SetLength(desiredLength);
+
+            int actualByteCount = AuthorizationHelper.AuthorizationEncoding.GetBytes(
+                contentToWrite,
+                new Span<byte>(stream.GetBuffer(), (int)stream.Position, (int)(stream.Capacity - stream.Position)));
+            stream.Position += actualByteCount;
+            stream.SetLength(originalLength + actualByteCount);
         }
     }
 }

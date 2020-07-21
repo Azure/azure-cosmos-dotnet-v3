@@ -6392,8 +6392,34 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType,
             out string payload) // unused, use token based upon what is passed in constructor 
         {
-            payload = null;
+            string token = GetUserAuthorizationToken(
+                resourceAddress,
+                resourceType,
+                requestVerb,
+                headers,
+                tokenType,
+                out MemoryStream stream);
+            if (stream != null)
+            {
+                payload = Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
+            }
+            else
+            {
+                payload = null;
+            }
 
+            return token;
+        }
+
+        internal string GetUserAuthorizationToken(
+            string resourceAddress,
+            string resourceType,
+            string requestVerb,
+            INameValueCollection headers,
+            AuthorizationTokenType tokenType,
+            out MemoryStream payload) // unused, use token based upon what is passed in constructor 
+        {
+            payload = null;
             if (this.hasAuthKeyResourceToken && this.resourceTokens == null)
             {
                 // If the input auth token is a resource token, then use it as a bearer-token.

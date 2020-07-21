@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.IO;
     using System.Security;
     using System.Security.Cryptography;
 
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
             this.keyBytes = Convert.FromBase64String(base64EncodedKey);
         }
 
-        public byte[] ComputeHash(byte[] bytesToHash)
+        public byte[] ComputeHash(MemoryStream bytesToHash)
         {
             using (HMACSHA256 hmacSha256 = new HMACSHA256(this.keyBytes))
             {
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             get
             {
                 if (this.secureString != null) return this.secureString;
-                this.secureString = SecureStringUtility.ConvertToSecureString(base64EncodedKey);
+                this.secureString = SecureStringUtility.ConvertToSecureString(this.base64EncodedKey);
                 return this.secureString;
             }
         }
