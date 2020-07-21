@@ -225,13 +225,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 try
                 {
                     authorizationToken =
-                        this.authorizationTokenProvider.GetUserAuthorizationToken(
+                        (await this.authorizationTokenProvider.GetUserAuthorizationAsync(
                     request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
                     HttpConstants.HttpMethods.Get,
                     request.Headers,
-                    AuthorizationTokenType.PrimaryMasterKey,
-                    payload: out _);
+                    AuthorizationTokenType.PrimaryMasterKey)).token;
                 }
                 catch (UnauthorizedException)
                 {

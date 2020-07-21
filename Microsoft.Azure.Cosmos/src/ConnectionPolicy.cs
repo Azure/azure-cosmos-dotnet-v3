@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ConnectionPolicy
     {
         internal UserAgentContainer UserAgentContainer;
+        internal const int defaultTokenCredentialRefreshBuffer = 300;
         private const int defaultRequestTimeout = 10;
         // defaultMediaRequestTimeout is based upon the blob client timeout and the retry policy.
         private const int defaultMediaRequestTimeout = 300;
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.connectionProtocol = Protocol.Https;
             this.RequestTimeout = TimeSpan.FromSeconds(ConnectionPolicy.defaultRequestTimeout);
             this.MediaRequestTimeout = TimeSpan.FromSeconds(ConnectionPolicy.defaultMediaRequestTimeout);
+            this.TokenCredentialRefreshBuffer = null;
             this.ConnectionMode = ConnectionMode.Gateway;
             this.MaxConcurrentFanoutRequests = defaultMaxConcurrentFanoutRequests;
             this.MediaReadMode = MediaReadMode.Buffered;
@@ -114,6 +116,19 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is 300 seconds.
         /// </value>
         public TimeSpan MediaRequestTimeout
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Time before expiry of the existing token at which SDK will try to refresh the token to avoid
+        /// refreshing it on expiry resulting in increased latency.
+        /// </summary>
+        /// <value>
+        /// Default value is 300 seconds.
+        /// </value>
+        public TimeSpan? TokenCredentialRefreshBuffer
         {
             get;
             set;

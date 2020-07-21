@@ -18,13 +18,16 @@ namespace Microsoft.Azure.Cosmos
         private readonly IComputeHash authKeyHashFunction;
         private readonly bool hasAuthKeyResourceToken = false;
         private readonly string authKeyResourceToken = string.Empty;
+        private readonly TokenCredentialCache tokenCredentialCache;
         private readonly HttpClient httpClient;
         private readonly Uri serviceEndpoint;
 
+        // Backlog: Auth abstractions are spilling through. 4 arguments for this CTOR are result of it.
         public GatewayAccountReader(Uri serviceEndpoint,
                 IComputeHash stringHMACSHA256Helper,
                 bool hasResourceToken,
                 string resourceToken,
+                TokenCredentialCache tokenCredentialCache,
                 ConnectionPolicy connectionPolicy,
                 HttpClient httpClient)
         {
@@ -33,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
             this.authKeyHashFunction = stringHMACSHA256Helper;
             this.hasAuthKeyResourceToken = hasResourceToken;
             this.authKeyResourceToken = resourceToken;
+            this.tokenCredentialCache = tokenCredentialCache;
             this.connectionPolicy = connectionPolicy;
         }
 
@@ -43,6 +47,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.hasAuthKeyResourceToken)
             {
                 authorizationToken = HttpUtility.UrlEncode(this.authKeyResourceToken);
+            }
+            else if (this.tokenCredentialCache != null)
+            {
+                authorizationToken = AuthorizationHelper.GenerateAadAuthorizationSignature(
+                    await this.tokenCredentialCache.GetTokenAsync());
             }
             else
             {

@@ -70,7 +70,8 @@ namespace Microsoft.Azure.Cosmos
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: ClientContextCore.CreateHttpClientHandler(clientOptions),
-               sessionContainer: clientOptions.SessionContainer);
+               sessionContainer: clientOptions.SessionContainer,
+               tokenCredential: cosmosClient.TokenCredential);
 
             return ClientContextCore.Create(
                 cosmosClient,

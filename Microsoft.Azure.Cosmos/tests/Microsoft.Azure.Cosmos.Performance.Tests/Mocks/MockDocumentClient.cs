@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
 
-        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
+        ValueTask<(string token, string payload)> ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
             string resourceAddress,
             string resourceType,
             string requestVerb,

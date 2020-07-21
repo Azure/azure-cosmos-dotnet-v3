@@ -203,7 +203,17 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        // used in Compute
+
+        public static string GenerateAadAuthorizationSignature(string aadToken)
+        {
+            return HttpUtility.UrlEncode(String.Format(
+                CultureInfo.InvariantCulture,
+                Constants.Properties.AuthorizationFormat,
+                Constants.Properties.AadToken,
+                Constants.Properties.TokenVersion,
+                aadToken));
+        }
+
         public static void ParseAuthorizationToken(
             string authorizationTokenString,
             out ReadOnlyMemory<char> typeOutput,

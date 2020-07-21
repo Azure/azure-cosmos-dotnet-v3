@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
 
@@ -213,6 +214,40 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
+        /// <param name="tokenCredential"><see cref="TokenCredential"/> to provide AAD token for auth.</param>
+        /// <param name="clientOptions">(Optional) client options</param>
+        internal CosmosClient(
+            string accountEndpoint,
+            TokenCredential tokenCredential,
+            CosmosClientOptions clientOptions = null)
+        {
+            if (accountEndpoint == null)
+            {
+                throw new ArgumentNullException(nameof(accountEndpoint));
+            }
+
+            if (tokenCredential == null)
+            {
+                throw new ArgumentNullException(nameof(tokenCredential));
+            }
+
+            this.Endpoint = new Uri(accountEndpoint);
+
+            this.TokenCredential = tokenCredential;
+
+            this.ClientContext = ClientContextCore.Create(
+                this,
+                clientOptions);
+        }
+
+        /// <summary>
         /// Used for unit testing only.
         /// </summary>
         /// <remarks>This constructor should be removed at some point. The mocking should happen in a derivied class.</remarks>
@@ -287,6 +322,11 @@ namespace Microsoft.Azure.Cosmos
         /// The AuthKey used by the client.
         /// </value>
         internal string AccountKey { get; }
+
+        /// <summary>
+        /// <see cref="global::Azure.Core.TokenCredential"/> to provide AAD token for auth.
+        /// </summary>
+        internal TokenCredential TokenCredential { get; }
 
         internal DocumentClient DocumentClient => this.ClientContext.DocumentClient;
         internal RequestInvokerHandler RequestHandler => this.ClientContext.RequestHandler;

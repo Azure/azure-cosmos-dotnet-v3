@@ -355,10 +355,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  AuthorizationTokenType.PrimaryMasterKey,
                  null))
             {
-                string payload;
-                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(request.ResourceAddress,
+                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out payload);
+                    HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey).Result.Token;
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
                 RouteToTheOnlyPartition(client, request);
@@ -383,10 +382,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  null,
                  null))
             {
-                string payload;
-                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(request.ResourceAddress,
+                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Put, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out payload);
+                    HttpConstants.HttpMethods.Put, request.Headers, AuthorizationTokenType.PrimaryMasterKey).Result.Token;
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
                 RouteToTheOnlyPartition(client, request);
 
@@ -409,10 +407,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                            null,
                            AuthorizationTokenType.PrimaryMasterKey))
             {
-                string payload;
-                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(request.ResourceAddress,
+                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Delete, request.Headers, AuthorizationTokenType.PrimaryMasterKey, out payload);
+                    HttpConstants.HttpMethods.Delete, request.Headers, AuthorizationTokenType.PrimaryMasterKey).Result.Token;
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
                 RouteToTheOnlyPartition(client, request);
 
@@ -511,14 +508,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     RouteToTheOnlyPartition(client, request);
 
-                    string payload;
-                    string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(
+                    string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(
                         request.ResourceAddress,
                         PathsHelper.GetResourcePath(request.ResourceType),
                         HttpConstants.HttpMethods.Get,
                         request.Headers,
-                        AuthorizationTokenType.PrimaryMasterKey,
-                        out payload);
+                        AuthorizationTokenType.PrimaryMasterKey).Result.Token;
                     request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
                     using (new ActivityScope(Guid.NewGuid()))
