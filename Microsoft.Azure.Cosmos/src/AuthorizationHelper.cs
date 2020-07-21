@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos
             string resourceTypeInput = resourceType ?? string.Empty;
 
             string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
-            int capacity = ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
+            int capacity = AuthorizationHelper.ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
             payload = new MemoryStream(capacity);
             AuthorizationHelper.SerializeMessagePayload(
                 payload,
@@ -739,7 +739,7 @@ namespace Microsoft.Azure.Cosmos
                 string resourceTypeInput = resourceType ?? string.Empty;
 
                 string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
-                int memoryStreamCapacity = ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
+                int memoryStreamCapacity = AuthorizationHelper.ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
                 payload = new MemoryStream(memoryStreamCapacity);
                 AuthorizationHelper.SerializeMessagePayload(
                     payload,

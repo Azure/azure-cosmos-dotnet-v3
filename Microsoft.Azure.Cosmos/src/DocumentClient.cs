@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
     /// </para>
     ///
     /// </remarks>
-    internal partial class DocumentClient : IDisposable, IAuthorizationTokenProvider, IDocumentClient, IDocumentClientInternal
+    internal partial class DocumentClient : IDisposable, IAuthorizationTokenProvider, ICosmosAuthorizationTokenProvider, IDocumentClient, IDocumentClientInternal
     {
         private const string AllowOverrideStrongerConsistency = "AllowOverrideStrongerConsistency";
         private const string MaxConcurrentConnectionOpenConfig = "MaxConcurrentConnectionOpenRequests";
@@ -6392,7 +6392,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType,
             out string payload) // unused, use token based upon what is passed in constructor 
         {
-            string token = GetUserAuthorizationToken(
+            string token = ((ICosmosAuthorizationTokenProvider)this).GetUserAuthorizationToken(
                 resourceAddress,
                 resourceType,
                 requestVerb,
@@ -6411,7 +6411,7 @@ namespace Microsoft.Azure.Cosmos
             return token;
         }
 
-        internal string GetUserAuthorizationToken(
+        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
             string resourceAddress,
             string resourceType,
             string requestVerb,
