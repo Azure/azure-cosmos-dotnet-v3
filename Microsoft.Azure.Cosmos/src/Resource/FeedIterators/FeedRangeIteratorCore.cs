@@ -183,6 +183,8 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: stream,
                requestEnricher: request =>
                {
+                   // FeedRangeContinuationRequestMessagePopulatorVisitor needs to run before FeedRangeRequestMessagePopulatorVisitor,
+                   // since they both set EPK range headers and in the case of split we need to run on the child range and not the parent range.
                    FeedRangeContinuationRequestMessagePopulatorVisitor feedRangeContinuationVisitor = new FeedRangeContinuationRequestMessagePopulatorVisitor(
                        request,
                        QueryRequestOptions.FillContinuationToken);
