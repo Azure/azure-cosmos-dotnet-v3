@@ -6,8 +6,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -16,19 +20,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private Container Container = null;
 
-        [TestInitialize]
-        public async Task TestInitialize()
-        {
-            await base.TestInit();
-            string PartitionKey = "/status";
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
-            Assert.IsNotNull(response);
-            Assert.IsNotNull(response.Container);
-            Assert.IsNotNull(response.Resource);
-            this.Container = response;
-        }
+        //[TestInitialize]
+        //public async Task TestInitialize()
+        //{
+        //    //await base.TestInit();
+        //    //string PartitionKey = "/status";
+        //    //ContainerResponse response = await this.database.CreateContainerAsync(
+        //    //    new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+        //    //    cancellationToken: this.cancellationToken);
+        //    //Assert.IsNotNull(response);
+        //    //Assert.IsNotNull(response.Container);
+        //    //Assert.IsNotNull(response.Resource);
+        //    //this.Container = response;
+        //}
 
         [TestCleanup]
         public async Task Cleanup()
@@ -46,18 +50,98 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string propertyKey = "Test";
             testHandler.UpdateRequestMessage = x => x.Properties[propertyKey] = randomGuid;
 
-            CosmosClient customClient = TestCommon.CreateCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
+            HttpThrottleHandler throttleHandler = new HttpThrottleHandler();
+            //CosmosClient customClient = new CosmosClientBuilder("https://localhost:8081", "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==")
 
-            ToDoActivity testItem = CreateRandomToDoActivity();
-            using (ResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemStreamAsync(
-                partitionKey: new Cosmos.PartitionKey(testItem.status),
-                streamPayload: TestCommon.SerializerCore.ToStream(testItem)))
+            CosmosClient customClient = new CosmosClientBuilder("https://jawilleytemp.documents.azure.com:443/", "RyyAkTrwLmgRXCwZOudV755csLGJTx4xFs90vonprrUXIh9shF17byid0Rc6Ablw4PtpzjFTsviqpZBldAn1qQ==")
+                .AddCustomHandlers(testHandler)
+                .AddCustomHandlers(new RequestHandler2())
+                .WithHttpClientFactory(() => new HttpClient(throttleHandler))
+                .Build();
+
+            Container customContainer = customClient.GetContainer("QueryTestDB", "TestNotFound");
+            await this.ReadThroughput(customContainer);
+           // List <Task> readThroughputCalls = new List<Task>();
+           // for(int i = 0; i < 2000; i++)
+           // {
+           //     readThroughputCalls.Add(this.ReadThroughput(customContainer));
+           // }
+
+           // Task.WaitAll(readThroughputCalls.ToArray());
+
+           // foreach(Task<string> task in readThroughputCalls)
+           // {
+           //     string result = await task;
+           //     if(result != null)
+           //     {
+           //         return;
+           //     }
+           // }
+
+           //Assert.Fail("Should have request with 429");
+        }
+
+        private async Task<string> ReadThroughput(Container container)
+        {
+            try
             {
-                Assert.IsNotNull(response);
-                Assert.IsNotNull(response.RequestMessage);
-                Assert.IsNotNull(response.RequestMessage.Properties);
-                Assert.AreEqual(randomGuid, response.RequestMessage.Properties[propertyKey]);
+                ThroughputResponse throughput = await container.ReadThroughputAsync(requestOptions: null);
+                string diagnostic = throughput.Diagnostics.ToString();
+                Assert.IsNotNull(diagnostic);
+                if (diagnostic.Contains("\"StatusCode\": 429"))
+                {
+                    return diagnostic;
+                }
+            }
+            catch (CosmosException ce)
+            {
+                string message = ce.ToString();
+                if (message.Contains("429"))
+                {
+                    return message;
+                }
+            }
+            catch (Exception e)
+            {
+                string message = e.ToString();
+                Assert.IsNotNull(message);
+            }
+
+            return null;
+        }
+
+        private class RequestHandler2 : RequestHandler
+        {
+            public Action<RequestMessage> UpdateRequestMessage = null;
+
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                request.Headers.Add("x-ms-RequestHandler2Injector", "Test42");
+                this.UpdateRequestMessage?.Invoke(request);
+
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
+
+        private class HttpThrottleHandler : HttpClientHandler
+        {
+            public bool Throw429 = true;
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                if (this.Throw429 && request.RequestUri.OriginalString.ToLower().Contains("offers"))
+                {
+                    Assert.AreEqual((string)request.Headers.GetValues("x-ms-RequestHandler2Injector").First(), "Test42");
+                    return new HttpResponseMessage((HttpStatusCode)429)
+                    {
+                        RequestMessage = request,
+                        Content = new StringContent("Throttle")
+                    };
+                }
+                else
+                {
+                    return await base.SendAsync(request, cancellationToken);
+                }
             }
         }
 
