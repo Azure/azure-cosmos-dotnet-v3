@@ -12,11 +12,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal class DataEncryptionKeyContainerCore : DataEncryptionKeyContainer
     {
+        private readonly double dekRefreshFrequencyAsPercentageOfTtl;
+
         internal CosmosDataEncryptionKeyProvider DekProvider { get; }
 
-        public DataEncryptionKeyContainerCore(CosmosDataEncryptionKeyProvider dekProvider)
+        public DataEncryptionKeyContainerCore(
+            CosmosDataEncryptionKeyProvider dekProvider,
+            double? dekRefreshFrequencyAsPercentageOfTtl = null)
         {
             this.DekProvider = dekProvider;
+
+            if (dekRefreshFrequencyAsPercentageOfTtl.HasValue)
+            {
+                if (dekRefreshFrequencyAsPercentageOfTtl.Value <= 0 || dekRefreshFrequencyAsPercentageOfTtl >= 100)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(dekRefreshFrequencyAsPercentageOfTtl));
+                }
+
+                this.dekRefreshFrequencyAsPercentageOfTtl = dekRefreshFrequencyAsPercentageOfTtl.Value;
+            }
+            else
+            {
+                this.dekRefreshFrequencyAsPercentageOfTtl = Constants.DefaultDekRefreshFrequencyAsPercentageOfTtl;
+            }
         }
 
         public override FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
@@ -158,6 +176,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     diagnosticsContext,
                     cancellationToken);
 
+                inMemoryRawDek.UpdateLastUsageTime();
                 return (dekProperties, inMemoryRawDek);
             }
             catch (CosmosException exception)
@@ -202,14 +221,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
             {
                 unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
-                        dekProperties.WrappedDataEncryptionKey,
-                        dekProperties.EncryptionKeyWrapMetadata,
-                        cancellationToken);
+                    dekProperties.WrappedDataEncryptionKey,
+                    dekProperties.EncryptionKeyWrapMetadata,
+                    cancellationToken);
             }
 
             DataEncryptionKey dek = DataEncryptionKey.Create(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithm);
 
-            return new InMemoryRawDek(dek, unwrapResult.ClientCacheTimeToLive);
+            InMemoryRawDek inMemoryRawDek = new InMemoryRawDek(
+                dek,
+                dekProperties,
+                unwrapResult.ClientCacheTimeToLive,
+                this.dekRefreshFrequencyAsPercentageOfTtl);
+
+            this.DekProvider.UnwrappedDekLifecycleManager.Add(inMemoryRawDek);
+            return inMemoryRawDek;
         }
 
         private async Task<DataEncryptionKeyProperties> ReadResourceAsync(

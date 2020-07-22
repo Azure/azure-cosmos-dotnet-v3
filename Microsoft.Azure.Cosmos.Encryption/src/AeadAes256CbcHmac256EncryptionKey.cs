@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Text;
 
     /// <summary>
@@ -15,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class AeadAes256CbcHmac256EncryptionKey : SymmetricKey
     {
+        private bool isDisposed = false;
+
         /// <summary>
         /// Key size in bits.
         /// </summary>
@@ -103,7 +106,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         internal byte[] EncryptionKey
         {
-            get { return this.encryptionKey.RootKey; }
+            get
+            {
+                this.ThrowIfDisposed();
+                return this.encryptionKey.RootKey;
+            }
         }
 
         /// <summary>
@@ -111,7 +118,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         internal byte[] MACKey
         {
-            get { return this.macKey.RootKey; }
+            get
+            {
+                this.ThrowIfDisposed();
+                return this.macKey.RootKey;
+            }
         }
 
         /// <summary>
@@ -119,7 +130,30 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         internal byte[] IVKey
         {
-            get { return this.ivKey.RootKey; }
+            get
+            {
+                this.ThrowIfDisposed();
+                return this.ivKey.RootKey;
+            }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(AeadAes256CbcHmac256EncryptionKey));
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !this.isDisposed)
+            {
+                this.encryptionKey.Dispose();
+                this.macKey.Dispose();
+                this.ivKey.Dispose();
+                this.isDisposed = true;
+            }
         }
     }
 }

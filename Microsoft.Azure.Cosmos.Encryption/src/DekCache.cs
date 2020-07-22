@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                this.dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
+                this.dekPropertiesTimeToLive = Constants.DefaultDekPropertiesTimeToLive;
             }
         }
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             InMemoryRawDek inMemoryRawDek = await this.RawDekCache.GetAsync(
-                   dekProperties.SelfLink,
+                   dekProperties.Id,
                    null,
                    () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken);
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (inMemoryRawDek.RawDekExpiry <= DateTime.UtcNow)
             {
                 inMemoryRawDek = await this.RawDekCache.GetAsync(
-                   dekProperties.SelfLink,
+                   dekProperties.Id,
                    null,
                    () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken,

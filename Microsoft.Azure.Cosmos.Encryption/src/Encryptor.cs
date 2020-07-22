@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Abstraction for performing client-side encryption.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public abstract class Encryptor
+    public abstract class Encryptor : IDisposable
     {
         /// <summary>
         /// Encrypts the plainText using the key and algorithm provided.
@@ -40,5 +41,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Disposes the unmanaged resources.
+        /// </summary>
+        public abstract void Dispose();
     }
 }

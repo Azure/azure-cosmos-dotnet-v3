@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     public sealed class AzureKeyVaultCosmosEncryptor : Encryptor
     {
         private readonly CosmosEncryptor cosmosEncryptor;
-
         private readonly CosmosDataEncryptionKeyProvider cosmosDekProvider;
+        private bool isDisposed = false;
 
         /// <summary>
         /// Gets Container for data encryption keys.
@@ -54,7 +54,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Database dekStorageDatabase,
             string dekStorageContainerId)
         {
-            return this.cosmosDekProvider.InitializeAsync(dekStorageDatabase, dekStorageContainerId);
+            return this.cosmosDekProvider.InitializeAsync(
+                dekStorageDatabase,
+                dekStorageContainerId);
         }
 
         /// <inheritdoc/>
@@ -83,6 +85,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
                 cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        public override void Dispose()
+        {
+            if (!this.isDisposed)
+            {
+                this.cosmosEncryptor.Dispose();
+                this.cosmosDekProvider.Dispose();
+                this.isDisposed = true;
+            }
         }
     }
 }

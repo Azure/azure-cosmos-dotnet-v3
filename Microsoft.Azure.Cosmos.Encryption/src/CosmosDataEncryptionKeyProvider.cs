@@ -15,10 +15,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     public sealed class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider
     {
         private const string ContainerPartitionKeyPath = "/id";
-
         private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
-
+        private bool isDisposed = false;
         private Container container;
+
+        internal UnwrappedDekLifecycleManager UnwrappedDekLifecycleManager { get; }
 
         internal DekCache DekCache { get; }
 
@@ -50,13 +51,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        /// <param name="backgroundRefreshInterval">Time interval between successive runs of background task to refresh DEKs.</param>
+        /// <param name="dekRefreshFrequencyAsPercentageOfTtl">
+        /// Frequency of refreshing raw DEKs in memory expressed as percentage of <see cref="InMemoryRawDek.ClientCacheTimeToLive"/>.
+        /// Example: If ClientCacheTimeToLive is 24 hrs, and this param value is 25, then we'll attempt to refresh the DEK after every 6 hrs (25% of 24 hr).
+        /// If no value is provided, default value defined at <see cref="Constants.DekRefreshFrequencyAsPercentageOfTtl"/> will be used.</param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            TimeSpan? dekPropertiesTimeToLive = null)
+            TimeSpan? dekPropertiesTimeToLive = null,
+            TimeSpan? backgroundRefreshInterval = null,
+            double? dekRefreshFrequencyAsPercentageOfTtl = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
-            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
+            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(
+                dekProvider: this,
+                dekRefreshFrequencyAsPercentageOfTtl);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
+            this.UnwrappedDekLifecycleManager = new UnwrappedDekLifecycleManager(
+                dekProvider: this,
+                backgroundRefreshInterval);
         }
 
         /// <summary>
@@ -71,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string containerId,
             CancellationToken cancellationToken = default)
         {
+            this.ThrowIfDisposed();
             if (this.container != null)
             {
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
@@ -102,12 +116,33 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
+            this.ThrowIfDisposed();
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
                 id,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 
             return inMemoryRawDek.DataEncryptionKey;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(CosmosDataEncryptionKeyProvider));
+            }
+        }
+
+        /// <summary>
+        /// Disposes the unmanaged resources.
+        /// </summary>
+        public override void Dispose()
+        {
+            if (!this.isDisposed)
+            {
+                this.UnwrappedDekLifecycleManager.Dispose();
+                this.isDisposed = true;
+            }
         }
     }
 }

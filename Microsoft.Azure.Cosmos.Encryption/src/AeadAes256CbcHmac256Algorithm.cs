@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal class AeadAes256CbcHmac256Algorithm : DataEncryptionKey
     {
+        private bool isDisposed = false;
+
         internal const string AlgorithmNameConstant = @"AEAD_AES_256_CBC_HMAC_SHA256";
 
         /// <summary>
@@ -134,7 +136,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
         public override byte[] EncryptData(byte[] plainText)
         {
-            return this.EncryptData(plainText, hasAuthenticationTag: true);
+            this.ThrowIfDisposed();
+            return this.EncryptData(
+                plainText,
+                hasAuthenticationTag: true);
         }
 
         /// <summary>
@@ -263,7 +268,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         public override byte[] DecryptData(byte[] cipherText)
         {
-            return this.DecryptData(cipherText, hasAuthenticationTag: true);
+            this.ThrowIfDisposed();
+            return this.DecryptData(
+                cipherText,
+                hasAuthenticationTag: true);
         }
 
         /// <summary>
@@ -423,6 +431,32 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(AeadAes256CbcHmac256Algorithm));
+            }
+        }
+
+        /// <summary>
+        /// Disposes the unmanaged resources.
+        /// </summary>
+        public override void Dispose()
+        {
+            if (!this.isDisposed)
+            {
+                while (this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesCryptoServiceProvider))
+                {
+                    // This disposes the Key and IV values held by the AesCryptoServiceProvider instance
+                    aesCryptoServiceProvider.Dispose();
+                }
+
+                this.dataEncryptionKey.Dispose();
+                this.isDisposed = true;
+            }
         }
     }
 }

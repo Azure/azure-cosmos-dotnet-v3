@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     public sealed class CosmosEncryptor : Encryptor
     {
+        private bool isDisposed = false;
+
         /// <summary>
         /// Gets Container for data encryption keys.
         /// </summary>
@@ -35,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
+            this.ThrowIfDisposed();
+
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
@@ -55,6 +59,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
+            this.ThrowIfDisposed();
+
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
@@ -66,6 +72,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return dek.EncryptData(plainText);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(CosmosEncryptor));
+            }
+        }
+
+        /// <inheritdoc/>
+        public override void Dispose()
+        {
+            if (!this.isDisposed)
+            {
+                this.DataEncryptionKeyProvider.Dispose();
+                this.isDisposed = true;
+            }
         }
     }
 }

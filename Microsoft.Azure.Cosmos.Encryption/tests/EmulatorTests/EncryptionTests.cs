@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
         private static readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
         private const string metadataUpdateSuffix = "updated";
-        private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private const string dekId = "mydek";
         private static CosmosClient client;
         private static Database database;
@@ -167,6 +166,52 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             finally
             {
                 await newKeyContainer.DeleteContainerStreamAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task EncryptionRawDekLifecycle()
+        {
+            TestKeyWrapProvider testKeyWrapProvider = new TestKeyWrapProvider();
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(
+                testKeyWrapProvider,
+                backgroundRefreshInterval: TimeSpan.FromSeconds(0.25),
+                dekRefreshFrequencyAsPercentageOfTtl: 50);
+
+            TestEncryptor encryptor = new TestEncryptor(dekProvider);
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            await dekProvider.InitializeAsync(database, Guid.NewGuid().ToString());
+            Container itemContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            Container encryptionContainer = itemContainer.WithEncryptor(encryptor);
+
+            const string dekId1 = "dekId1", dekId2 = "dekId2";
+            testKeyWrapProvider.cacheTTL = TimeSpan.FromSeconds(0.5);
+
+            Thread.Sleep(50);
+
+            DataEncryptionKeyProperties dekId1Properties = await EncryptionTests.CreateDekAsync(dekProvider, dekId1, EncryptionTests.metadata1); // dekId1 TTL is set to 0.5 sec & raw DEK for dekId1 is added in cache
+            DataEncryptionKeyProperties dekId2Properties = await EncryptionTests.CreateDekAsync(dekProvider, dekId2, EncryptionTests.metadata2); // dekId2 TTL is set to 0.5 sec & raw DEK for dekId2 is added in cache
+
+            TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(encryptionContainer, dekId1, TestDoc.PathsToEncrypt);
+            TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(encryptionContainer, dekId2, TestDoc.PathsToEncrypt);
+
+            Thread.Sleep(250);
+
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc1);
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc2);
+
+            testKeyWrapProvider.FailUnwrapCall[dekId1Properties.EncryptionKeyWrapMetadata.Value] = true; // induce failure when refreshing raw DEK for dekId1
+            Thread.Sleep(500); // Raw DEK for dekId1 should be cleaned up from memory
+
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc2);
+            try
+            {
+                await EncryptionTests.VerifyItemByReadAsync(encryptionContainer, testDoc1);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "UnwrapKeyAsync failed.");
             }
         }
 
@@ -1091,12 +1136,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(testDoc, readResponse.Resource);
         }
 
-        private static async Task<DataEncryptionKeyProperties> CreateDekAsync(CosmosDataEncryptionKeyProvider dekProvider, string dekId)
+        private static async Task<DataEncryptionKeyProperties> CreateDekAsync(
+            CosmosDataEncryptionKeyProvider dekProvider,
+            string dekId,
+            EncryptionKeyWrapMetadata metadata = null)
         {
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
                 dekId,
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                EncryptionTests.metadata1);
+                metadata ?? EncryptionTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
             
@@ -1210,10 +1258,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         private class TestKeyWrapProvider : EncryptionKeyWrapProvider
         {
+            public TimeSpan cacheTTL { get; set; }
+            public Dictionary<string, bool> FailUnwrapCall { get; set; }
+
+            public TestKeyWrapProvider()
+            {
+                this.cacheTTL = TimeSpan.FromDays(1);
+                this.FailUnwrapCall = new Dictionary<string, bool>();
+            }
+
             public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
+                if (!this.FailUnwrapCall.ContainsKey(metadata.Value))
+                {
+                    this.FailUnwrapCall[metadata.Value] = false;
+                }
+
+                if (this.FailUnwrapCall[metadata.Value])
+                {
+                    throw new Exception($"{nameof(UnwrapKeyAsync)} failed.");
+                }
+
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix ? 1 : 2;
-                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), EncryptionTests.cacheTTL));
+                return Task.FromResult(
+                    new EncryptionKeyUnwrapResult(
+                        wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), 
+                        this.cacheTTL));
             }
 
             public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
@@ -1221,6 +1291,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + EncryptionTests.metadataUpdateSuffix);
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value ? 1 : 2;
                 return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
+            }
+        }
+
+        public struct UnwrapCallInformation
+        {
+            public bool InduceFailure { get; private set; }
+
+            public int SuccessCalls { get; private set; }
+
+            public int FailureCalls { get; private set; }
+
+            public UnwrapCallInformation(
+                bool induceFailure,
+                int successCalls,
+                int failureCalls)
+            {
+                this.InduceFailure = induceFailure;
+                this.SuccessCalls = successCalls;
+                this.FailureCalls = failureCalls;
+            }
+
+            public UnwrapCallInformation FlipInduceFailureStatus()
+            {
+                this.InduceFailure = !this.InduceFailure;
+                return this;
+            }
+
+            public UnwrapCallInformation IncrementSuccessCallCount()
+            {
+                this.SuccessCalls++;
+                return this;
+            }
+
+            public UnwrapCallInformation IncrementFailureCallCount()
+            {
+                this.FailureCalls++;
+                return this;
+            }
+
+            public void Validate(
+                bool expectedInduceFailure,
+                int expectedSuccessCalls,
+                int expectedFailureCalls)
+            {
+                Assert.AreEqual(expectedInduceFailure, this.InduceFailure);
+                Assert.AreEqual(expectedSuccessCalls,  this.SuccessCalls);
+                Assert.AreEqual(expectedFailureCalls, this.FailureCalls);
             }
         }
 
@@ -1272,6 +1389,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     cancellationToken);
 
                 return dek.EncryptData(plainText);
+            }
+
+            public override void Dispose()
+            {
+                throw new NotImplementedException();
             }
         }
     }
