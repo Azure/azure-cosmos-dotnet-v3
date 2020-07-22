@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        internal static readonly CosmosJsonDotNetSerializer baseSerializer = new CosmosJsonDotNetSerializer();
+        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer();
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
@@ -75,13 +75,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
+            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
             JObject toEncryptJObj = new JObject();
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
-                string propertyName = pathToEncrypt.Substring(1);                
+                string propertyName = pathToEncrypt.Substring(1);
                 if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 itemJObj.Remove(propertyName);
             }
 
-            MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj);
+            MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream<JObject>(toEncryptJObj);
             Debug.Assert(memoryStream != null);
             Debug.Assert(memoryStream.TryGetBuffer(out _));
             byte[] plainText = memoryStream.ToArray();
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
             input.Dispose();
-            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         /// <remarks>
@@ -136,11 +136,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             JObject itemJObj;
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
             {
-                using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
-                {
-                    itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
-                }
+                itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
             }
 
             JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.EncryptedInfo);
@@ -171,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             itemJObj.Remove(Constants.EncryptedInfo);
             input.Dispose();
-            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         public static async Task<JObject> DecryptAsync(
@@ -198,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
 
             document.Remove(Constants.EncryptedInfo);
-            
+
             foreach (JProperty property in plainTextJObj.Properties())
             {
                 document.Add(property.Name, property.Value);

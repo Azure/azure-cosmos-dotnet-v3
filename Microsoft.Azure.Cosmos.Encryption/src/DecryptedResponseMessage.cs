@@ -22,9 +22,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.decryptedContent = decryptedContent;
         }
 
-        public override Stream Content 
-        { 
-            get => this.decryptedContent; 
+        public override Stream Content
+        {
+            get => this.decryptedContent;
             set => this.decryptedContent = value;
         }
 

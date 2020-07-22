@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     {
         internal static Task<T> ProcessResourceOperationAsync<T>(
             CosmosClient client,
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static Task<T> ProcessResourceOperationAsync<T>(
             CosmosClient client,
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static Task<T> ProcessResourceOperationAsync<T>(
             CosmosClient client,
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static Task<T> ProcessResourceOperationAsync<T>(
             CosmosClient client,
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static async Task<T> ProcessResourceOperationAsync<T>(
             RequestInvokerHandler requestHandler,
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            this.ResourceUri = ((ContainerInlineCore)container).LinkUri.OriginalString;
+            this.ResourceUri = ((ContainerInlineCore)container).LinkUri;
             if (resourcePartitionKey == null)
             {
                 this.InternalResourcePartitionKey = null;
@@ -56,9 +56,9 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.PermissionMode = permissionMode;
             this.ResourceUri = ((ContainerInlineCore)container).ClientContext.CreateLink(
-                    parentLink: ((ContainerInlineCore)container).LinkUri.OriginalString,
+                    parentLink: ((ContainerInlineCore)container).LinkUri,
                     uriPathSegment: Paths.DocumentsPathSegment,
-                    id: itemId).OriginalString;
+                    id: itemId);
             this.InternalResourcePartitionKey = resourcePartitionKey.InternalKey;
         }
 

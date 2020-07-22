@@ -17,7 +17,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
     internal static class CosmosQueryExecutionContextFactory
     {
@@ -174,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 // Only thing that matters is that we target the correct range.
                                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
                                 List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
-                                    cosmosQueryContext.ResourceLink.OriginalString,
+                                    cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
                                     inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
 
@@ -236,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                    cosmosQueryContext.QueryClient,
-                   cosmosQueryContext.ResourceLink.OriginalString,
+                   cosmosQueryContext.ResourceLink,
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
                    inputParameters.Properties,
