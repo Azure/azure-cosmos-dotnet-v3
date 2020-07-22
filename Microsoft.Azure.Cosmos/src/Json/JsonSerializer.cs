@@ -224,16 +224,16 @@ namespace Microsoft.Azure.Cosmos.Json
                     TryCatch<object> tryGetMaterializedArrayItem;
                     if (genericArgumentType == typeof(object))
                     {
-                        Type dotNetType = arrayItem.Type switch
+                        Type dotNetType = arrayItem switch
                         {
-                            CosmosElementType.Array => typeof(IReadOnlyList<object>),
-                            CosmosElementType.Boolean => typeof(bool),
-                            CosmosElementType.Null => typeof(object),
-                            CosmosElementType.Number => typeof(Number64),
-                            CosmosElementType.Object => typeof(object),
-                            CosmosElementType.String => typeof(string),
-                            CosmosElementType.Guid => typeof(Guid),
-                            CosmosElementType.Binary => typeof(ReadOnlyMemory<byte>),
+                            CosmosArray _ => typeof(IReadOnlyList<object>),
+                            CosmosBoolean _ => typeof(bool),
+                            CosmosNull _ => typeof(object),
+                            CosmosNumber _ => typeof(Number64),
+                            CosmosObject _ => typeof(object),
+                            CosmosString _ => typeof(string),
+                            CosmosGuid _ => typeof(Guid),
+                            CosmosBinary _ => typeof(ReadOnlyMemory<byte>),
                             _ => throw new ArgumentOutOfRangeException($"Unknown cosmos element type."),
                         };
 

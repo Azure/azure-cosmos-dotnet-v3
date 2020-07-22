@@ -3,9 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -16,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>, IComparable<CosmosObject>
     {
         private class LazyCosmosObject : CosmosObject
         {
@@ -27,16 +30,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public LazyCosmosObject(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Object)
                 {
@@ -112,25 +105,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     return true;
                 }
 
-                value = default;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                value = default; // Dictionary.TryGetValue does not use nullable references.
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
                 return false;
             }
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
 
-                this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
-            }
-
-            public override IJsonReader CreateReader()
-            {
-                IJsonReader cosmosDBReader = this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
-                return cosmosDBReader;
-            }
+            public override IJsonReader CreateReader() => this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
         }
     }
 #if INTERNAL
