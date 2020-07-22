@@ -94,26 +94,23 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#if INTERNAL
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
-        /// <param name="partitionKind">The value of <see cref="PartitionKind"/>Partition Kind to be used.</param>
-        public ContainerProperties(string id, IList<string> partitionKeyPaths, Cosmos.PartitionKind partitionKind)
+        public ContainerProperties(string id, IList<string> partitionKeyPaths)
         {
             this.Id = id;
             this.PartitionKey = new PartitionKeyDefinition
             {
                 Paths = new Collection<string>(partitionKeyPaths),
-                Kind = (Documents.PartitionKind)partitionKind,
+                Kind = Documents.PartitionKind.MultiHash,
                 Version = Documents.PartitionKeyDefinitionVersion.V2
             };
 
             this.ValidateRequiredProperties();
         }
-#endif
 
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
@@ -310,7 +307,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#if INTERNAL
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
@@ -331,7 +327,6 @@ namespace Microsoft.Azure.Cosmos
                 };
             }
         }
-#endif
 
         /// <summary>
         /// Gets or sets the time to live base time stamp property path.

@@ -23,11 +23,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public PartitionKeyBuilder()
         {
-            if (this.isBuilt)
-            {
-                throw new InvalidOperationException("This builder instance has already been used to build a PartitionKey. Create a new instance to build another.");
-            }
-
             this.partitionKeyValues = new List<object>();
         }
 
@@ -120,17 +115,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException("This builder instance has already been used to build a PartitionKey. Create a new instance to build another.");
             }
 
-            PartitionKeyInternal partitionKeyInternal;
-            bool isNone;
-
             if (this.partitionKeyValues.Count == 0
                 || (this.partitionKeyValues.Count == 1 && PartitionKey.None.Equals(this.partitionKeyValues[0])))
             {
-                partitionKeyInternal = PartitionKey.None.InternalKey;
-                isNone = true;
+                this.isBuilt = true;
+                return PartitionKey.None;
             }
             else
             {
+                PartitionKeyInternal partitionKeyInternal;
+
                 object[] valueArray = new object[this.partitionKeyValues.Count];
                 for (int i = 0; i < this.partitionKeyValues.Count; i++)
                 {
@@ -146,11 +140,9 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 partitionKeyInternal = new Documents.PartitionKey(valueArray).InternalKey;
-                isNone = false;
+                this.isBuilt = true;
+                return new PartitionKey(partitionKeyInternal, false);
             }
-
-            this.isBuilt = true;
-            return new PartitionKey(partitionKeyInternal, isNone);
         }
     }
 }
