@@ -860,8 +860,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
 
-                    string datetime = DateTime.UtcNow.ToString();
-
                     QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum ");
 
                     QueryRequestOptions requestOptions = new QueryRequestOptions()
