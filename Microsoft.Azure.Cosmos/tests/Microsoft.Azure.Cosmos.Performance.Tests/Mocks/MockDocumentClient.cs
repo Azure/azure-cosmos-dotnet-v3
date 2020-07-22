@@ -19,13 +19,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using System.IO;
 
-    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
+    internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
         string[] dummyHeaderNames;
+        private IComputeHash authKeyHashFunction;
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
@@ -61,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
+            this.authKeyHashFunction = new StringHMACSHA256Hash("C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==");
+
             this.Init();
         }
 
@@ -83,16 +87,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
 
-        string IAuthorizationTokenProvider.GetUserAuthorizationToken(
+        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            out string payload) /* unused, use token based upon what is passed in constructor */
+            out MemoryStream payload) // unused, use token based upon what is passed in constructor 
         {
-            payload = null;
-            return null;
+            // this is masterkey authZ
+            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+
+            return AuthorizationHelper.GenerateKeyAuthorizationSignature(
+                    requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out payload);
         }
 
         private void Init()
