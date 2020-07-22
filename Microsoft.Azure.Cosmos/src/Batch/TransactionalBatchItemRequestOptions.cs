@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
-        /// the Cosmos DB response for write item operations like Create, Upsert, and Replace.
+        /// the Cosmos DB response for write item operations like Create, Upsert, Patch and Replace.
         /// This removes the resource from the response. This reduces networking and CPU load by not sending
         /// the resource back over the network and serializing it on the client.
         /// </summary>

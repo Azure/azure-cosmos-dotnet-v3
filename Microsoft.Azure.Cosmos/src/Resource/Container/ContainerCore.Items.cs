@@ -745,14 +745,22 @@ namespace Microsoft.Azure.Cosmos
                 CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
                 IReadOnlyList<string[]> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
-                CosmosElement[] cosmosElementArray = new CosmosElement[tokenslist.Count];
+                List<CosmosElement> cosmosElementList = new List<CosmosElement>(tokenslist.Count);
 
-                for (int index = 0; index < tokenslist.Count; index++)
+                foreach (string[] tokenList in tokenslist)
                 {
-                    cosmosElementArray[index] = ParseTokenListForElement(pathTraversal, tokenslist[index]);
+                    CosmosElement element;
+                    if (TryParseTokenListForElement(pathTraversal, tokenList, out element))
+                    {
+                        cosmosElementList.Add(element);
+                    }
+                    else
+                    {
+                        cosmosElementList.Add(null);
+                    }
                 }
 
-                return CosmosElementToPartitionKeyObject(cosmosElementArray);
+                return CosmosElementToPartitionKeyObject(cosmosElementList);
             }
             finally
             {
@@ -761,31 +769,30 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static CosmosElement ParseTokenListForElement(CosmosObject pathTraversal, string[] tokens)
+        private static bool TryParseTokenListForElement(CosmosObject pathTraversal, string[] tokens, out CosmosElement result)
         {
-            CosmosElement partitionKeyValue;
-
+            result = null;
             for (int i = 0; i < tokens.Length - 1; i++)
             {
                 if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                 {
-                    return null;
+                    return false;
                 }
             }
 
-            if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out partitionKeyValue))
+            if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out result))
             {
-                return null;
+                return false;
             }
 
-            return partitionKeyValue;
+            return true;
         }
 
-        private static PartitionKey CosmosElementToPartitionKeyObject(CosmosElement[] cosmosElementArray)
+        private static PartitionKey CosmosElementToPartitionKeyObject(List<CosmosElement> cosmosElementList) 
         {
             PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
 
-            foreach (CosmosElement cosmosElement in cosmosElementArray)
+            cosmosElementList.ForEach(cosmosElement =>
             {
                 if (cosmosElement == null)
                 {
@@ -793,35 +800,20 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    // TODO: Leverage original serialization and avoid re-serialization (bug)
-                    switch (cosmosElement.Type)
+                    _ = cosmosElement switch
                     {
-                        case CosmosElementType.String:
-                            CosmosString cosmosString = cosmosElement as CosmosString;
-                            partitionKeyBuilder.Add(cosmosString.Value);
-                            break;
-
-                        case CosmosElementType.Number:
-                            CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                            double value = Number64.ToDouble(cosmosNumber.Value);
-                            partitionKeyBuilder.Add(value);
-                            break;
-
-                        case CosmosElementType.Boolean:
-                            CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
-                            partitionKeyBuilder.Add(cosmosBool.Value);
-                            break;
-
-                        case CosmosElementType.Null:
-                            partitionKeyBuilder.AddNullValue();
-                            break;
-
-                        default:
-                            throw new ArgumentException(
-                                string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
-                    }
+                        CosmosString cosmosString => partitionKeyBuilder.Add(cosmosString.Value),
+                        CosmosNumber cosmosNumber => partitionKeyBuilder.Add(Number64.ToDouble(cosmosNumber.Value)),
+                        CosmosBoolean cosmosBoolean => partitionKeyBuilder.Add(cosmosBoolean.Value),
+                        CosmosNull _ => partitionKeyBuilder.AddNullValue(),
+                        _ => throw new ArgumentException(
+                               string.Format(
+                                   CultureInfo.InvariantCulture,
+                                   RMResources.UnsupportedPartitionKeyComponentValue,
+                                   cosmosElement)),
+                    };
                 }
-            }
+            });
 
             return partitionKeyBuilder.Build();
         }
@@ -873,6 +865,77 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(this.cachedUriSegmentWithoutId.EndsWith("/"));
             return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
+        }
+
+        public async Task<ItemResponse<T>> PatchItemAsync<T>(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                diagnosticsContext,
+                id,
+                partitionKey,
+                patchOperations,
+                requestOptions,
+                cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+        }
+
+        public Task<ResponseMessage> PatchItemStreamAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (diagnosticsContext == null)
+            {
+                throw new ArgumentNullException(nameof(diagnosticsContext));
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            Stream patchOperationsStream;
+            using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
+            {
+                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(patchOperations);
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.GetResourceUri(
+                    requestOptions,
+                    OperationType.Patch,
+                    id),
+                resourceType: ResourceType.Document,
+                operationType: OperationType.Patch,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this,
+                partitionKey: partitionKey,
+                itemId: id,
+                streamPayload: patchOperationsStream,
+                requestEnricher: null,
+                diagnosticsContext: diagnosticsContext,
+                cancellationToken: cancellationToken);
         }
     }
 }

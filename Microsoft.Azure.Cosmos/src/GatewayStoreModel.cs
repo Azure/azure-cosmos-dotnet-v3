@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -21,105 +20,25 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModel, IDisposable
     {
-        // Gateway has backoff/retry logic to hide transient errors.
-        private readonly TimeSpan requestTimeout = TimeSpan.FromSeconds(65);
         private readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         private readonly ISessionContainer sessionContainer;
         private readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
-        private CookieContainer cookieJar;
 
-        private GatewayStoreModel(
+        public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
             ISessionContainer sessionContainer,
             ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource)
+            DocumentClientEventSource eventSource,
+            JsonSerializerSettings serializerSettings,
+            HttpClient httpClient)
         {
-            // CookieContainer is not really required, but is helpful in debugging.
-            this.cookieJar = new CookieContainer();
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
-        }
-
-        public GatewayStoreModel(
-            GlobalEndpointManager endpointManager,
-            ISessionContainer sessionContainer,
-            TimeSpan requestTimeout,
-            ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
-            UserAgentContainer userAgent,
-            ApiType apiType,
-            HttpMessageHandler messageHandler)
-            : this(endpointManager,
-                  sessionContainer,
-                  defaultConsistencyLevel,
-                  eventSource)
-        {
-            this.InitializeGatewayStoreClient(
-                requestTimeout,
-                serializerSettings,
-                userAgent,
-                apiType,
-                new HttpClient(messageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar }));
-        }
-
-        public GatewayStoreModel(
-            GlobalEndpointManager endpointManager,
-            ISessionContainer sessionContainer,
-            TimeSpan requestTimeout,
-            ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
-            UserAgentContainer userAgent,
-            ApiType apiType,
-            Func<HttpClient> httpClientFactory)
-            : this(endpointManager,
-                  sessionContainer,
-                  defaultConsistencyLevel,
-                  eventSource)
-        {
-            HttpClient httpClient = httpClientFactory();
-            if (httpClient == null)
-            {
-                throw new InvalidOperationException("HttpClientFactory did not produce an HttpClient");
-            }
-
-            this.InitializeGatewayStoreClient(
-                requestTimeout,
-                serializerSettings,
-                userAgent,
-                apiType,
-                httpClient);
-
-        }
-
-        private void InitializeGatewayStoreClient(
-            TimeSpan requestTimeout,
-            JsonSerializerSettings serializerSettings,
-            UserAgentContainer userAgent,
-            ApiType apiType,
-            HttpClient httpClient)
-        {
-            // Use max of client specified and our own request timeout value when sending
-            // requests to gateway. Otherwise, we will have gateway's transient
-            // error hiding retries are of no use.
-            httpClient.Timeout = (requestTimeout > this.requestTimeout) ? requestTimeout : this.requestTimeout;
-            httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-
-            httpClient.AddUserAgentHeader(userAgent);
-            httpClient.AddApiTypeHeader(apiType);
-
-            // Set requested API version header that can be used for
-            // version enforcement.
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                HttpConstants.Versions.CurrentVersion);
-
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
 
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
