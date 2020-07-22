@@ -51,9 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             testHandler.UpdateRequestMessage = x => x.Properties[propertyKey] = randomGuid;
 
             HttpThrottleHandler throttleHandler = new HttpThrottleHandler();
-            //CosmosClient customClient = new CosmosClientBuilder("https://localhost:8081", "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==")
-
-            CosmosClient customClient = new CosmosClientBuilder("https://jawilleytemp.documents.azure.com:443/", "RyyAkTrwLmgRXCwZOudV755csLGJTx4xFs90vonprrUXIh9shF17byid0Rc6Ablw4PtpzjFTsviqpZBldAn1qQ==")
+            CosmosClient customClient = new CosmosClientBuilder("https://localhost:8081", "")
                 .AddCustomHandlers(testHandler)
                 .AddCustomHandlers(new RequestHandler2())
                 .WithHttpClientFactory(() => new HttpClient(throttleHandler))
@@ -61,24 +59,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Container customContainer = customClient.GetContainer("QueryTestDB", "TestNotFound");
             await this.ReadThroughput(customContainer);
-           // List <Task> readThroughputCalls = new List<Task>();
-           // for(int i = 0; i < 2000; i++)
-           // {
-           //     readThroughputCalls.Add(this.ReadThroughput(customContainer));
-           // }
-
-           // Task.WaitAll(readThroughputCalls.ToArray());
-
-           // foreach(Task<string> task in readThroughputCalls)
-           // {
-           //     string result = await task;
-           //     if(result != null)
-           //     {
-           //         return;
-           //     }
-           // }
-
-           //Assert.Fail("Should have request with 429");
         }
 
         private async Task<string> ReadThroughput(Container container)
