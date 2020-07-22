@@ -62,7 +62,31 @@ namespace CosmosBenchmark
         public int MinThreadPoolSize { get; set; } = 100;
 
         [Option(Required = false, HelpText = "Write the task execution failure to console. Useful for debugging failures")]
-        public bool TraceFailures { get; set; } 
+        public bool TraceFailures { get; set; }
+
+        [Option(Required = false, HelpText = "Publish run results")]
+        public bool PublishResults  { get; set; }
+
+        [Option(Required = false, HelpText = "Run ID, only for publish")]
+        internal string RunId { get; set; }
+
+        [Option(Required = false, HelpText = "Commit ID, only for publish")]
+        public string CommitId { get; set; }
+
+        [Option(Required = false, HelpText = "Commit date, only for publish")]
+        public string CommitDate { get; set; }
+
+        [Option(Required = false, HelpText = "Commit time, only for publish")]
+        public string CommitTime { get; set; }
+
+        [Option(Required = false, HelpText = "Branch name, only for publish")]
+        public string BranchName { get; set; }
+
+        [Option(Required = false, HelpText = "Partitionkey, only for publish")]
+        public string ResultsPartitionKeyValue { get; set; }
+
+        [Option(Required = false, HelpText = "Container to publish results to")]
+        internal string ResultsContainer { get; set; } = "runsummary";
 
         internal int GetTaskCount(int containerThroughput)
         {
@@ -96,6 +120,18 @@ namespace CosmosBenchmark
             Parser.Default.ParseArguments<BenchmarkConfig>(args)
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
+
+            if (options.PublishResults)
+            {
+                if (string.IsNullOrEmpty(options.ResultsContainer)
+                    || string.IsNullOrWhiteSpace(options.ResultsPartitionKeyValue)
+                    || string.IsNullOrWhiteSpace(options.CommitId)
+                    || string.IsNullOrWhiteSpace(options.CommitDate)
+                    || string.IsNullOrWhiteSpace(options.CommitTime))
+                {
+                    throw new ArgumentException($"Missing either {nameof(options.ResultsContainer)} {nameof(options.ResultsPartitionKeyValue)} {nameof(options.CommitId)} {nameof(options.CommitDate)} {nameof(options.CommitTime)}");
+                }
+            }
 
             return options;
         }
