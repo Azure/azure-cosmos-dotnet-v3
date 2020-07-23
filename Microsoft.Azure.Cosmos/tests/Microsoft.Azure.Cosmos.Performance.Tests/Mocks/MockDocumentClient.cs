@@ -92,14 +92,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType,
-            out MemoryStream payload) // unused, use token based upon what is passed in constructor 
+            AuthorizationTokenType tokenType) // unused, use token based upon what is passed in constructor 
         {
             // this is masterkey authZ
             headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
-            return AuthorizationHelper.GenerateKeyAuthorizationSignature(
-                    requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out payload);
+            string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
+                    requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out AuthorizationHelper.ArrayOwner payload);
+            using (payload)
+            {
+                return authorization;
+            }
         }
 
         private void Init()

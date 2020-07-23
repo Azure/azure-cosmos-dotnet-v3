@@ -41,12 +41,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             string resourceId,
             string resourceType)
         {
-            MemoryStream payload;
+            AuthorizationHelper.ArrayOwner payload;
             AuthorizationHelper.GenerateKeyAuthorizationSignature(verb, resourceId, resourceType, this.testHeaders, this.authKeyHashFunction, out payload);
-
-#pragma warning disable CS0642 // Possible mistaken empty statement
-            using (payload) ;
-#pragma warning restore CS0642 // Possible mistaken empty statement
+            payload.Dispose();
         }
 
         public static string GenerateRandomKey()

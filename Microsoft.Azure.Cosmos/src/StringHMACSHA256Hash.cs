@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
             this.hmacPool = new ConcurrentQueue<HMACSHA256>();
         }
 
-        public byte[] ComputeHash(MemoryStream bytesToHash)
+        public byte[] ComputeHash(ArraySegment<byte> bytesToHash)
         {
             if (this.hmacPool.TryDequeue(out HMACSHA256 hmacSha256))
             {
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                return hmacSha256.ComputeHash(bytesToHash.GetBuffer(), 0, (int)bytesToHash.Length);
+                return hmacSha256.ComputeHash(bytesToHash.Array, 0, (int)bytesToHash.Count);
             }
             finally
             {
