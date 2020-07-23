@@ -107,7 +107,8 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
+                    Exception e = await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
+                    throw e;
                 }
             }
         }
@@ -164,7 +165,16 @@ namespace Microsoft.Azure.Cosmos
         {
             // ensure there is no local ActivityId, since in Gateway mode ActivityId
             // should always come from message headers
-            Trace.CorrelationManager.ActivityId = Guid.Empty;
+            if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId, out IEnumerable<string> activityIds) &&
+                activityIds.Count() == 1 &&
+                Guid.TryParse(activityIds.First(), out Guid responseActivityId))
+            {
+                Trace.CorrelationManager.ActivityId = responseActivityId;
+            }
+            else
+            {
+                Debug.Fail("Activity id is not valid");
+            }
 
             bool isNameBased = false;
             bool isFeed = false;
@@ -182,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
                 Error error = Documents.Resource.LoadFrom<Error>(readStream);
-                return new DocumentClientException(
+                DocumentClientException dce = new DocumentClientException(
                     error,
                     responseMessage.Headers,
                     responseMessage.StatusCode)
@@ -191,6 +201,8 @@ namespace Microsoft.Azure.Cosmos
                     ResourceAddress = resourceIdOrFullName,
                     RequestStatistics = requestStatistics
                 };
+
+                return dce;
             }
             else
             {
@@ -213,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 String message = await responseMessage.Content.ReadAsStringAsync();
-                return new DocumentClientException(
+                DocumentClientException dce = new DocumentClientException(
                     message: context.ToString(),
                     innerException: null,
                     responseHeaders: responseMessage.Headers,
@@ -224,6 +236,8 @@ namespace Microsoft.Azure.Cosmos
                     ResourceAddress = resourceIdOrFullName,
                     RequestStatistics = requestStatistics
                 };
+
+                return dce;
             }
         }
 
