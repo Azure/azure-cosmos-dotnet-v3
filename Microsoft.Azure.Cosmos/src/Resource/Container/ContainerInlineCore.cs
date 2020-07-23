@@ -378,24 +378,10 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedStreamIterator(changeFeedRequestOptions);
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return base.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
-        }
-
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return base.GetChangeFeedIterator<T>(changeFeedRequestOptions);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return base.GetChangeFeedIterator<T>(partitionKey, changeFeedRequestOptions);
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

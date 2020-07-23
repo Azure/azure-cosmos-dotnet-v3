@@ -258,33 +258,9 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
-            changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
-            return new ChangeFeedIteratorCore(
-                container: this,
-                changeFeedRequestOptions: changeFeedRequestOptions);
-        }
-
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                container: this,
-                changeFeedRequestOptions: changeFeedRequestOptions);
-
-            return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
-            changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);

@@ -38,5 +38,7 @@ namespace Microsoft.Azure.Cosmos
 
             return parsedRange;
         }
+
+        public static FeedRange CreateFromPartitionKey(PartitionKey partitionKey) => new FeedRangePartitionKey(partitionKey);
     }
 }

@@ -311,16 +311,29 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void ChangeFeedRequestOptions_AddsPartitionKeyRangeId()
+        public void ChangeFeedRequestOptions_AddsFeedRange()
         {
-            RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+            FeedRange feedRange = new FeedRangePartitionKeyRange("randomPK");
+            ChangeFeedRequestOptions.StartFrom[] froms = new ChangeFeedRequestOptions.StartFrom[]
             {
-                FeedRange = new FeedRangePartitionKeyRange("randomPK")
+                ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(feedRange),
+                ChangeFeedRequestOptions.StartFrom.CreateFromNowWithRange(feedRange),
+                ChangeFeedRequestOptions.StartFrom.CreateFromTimeWithRange(DateTime.MinValue.ToUniversalTime(), feedRange)
             };
-            requestOptions.PopulateRequestOptions(request);
 
-            Assert.AreEqual(expected: "randomPK", actual: request.PartitionKeyRangeId.PartitionKeyRangeId);
+            foreach (ChangeFeedRequestOptions.StartFrom from in froms)
+            {
+                RequestMessage request = new RequestMessage();
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    From = from,
+                };
+                requestOptions.PopulateRequestOptions(request);
+
+                Assert.AreEqual(
+                    expected: "randomPK",
+                    actual: request.PartitionKeyRangeId.PartitionKeyRangeId);
+            }
         }
 
         private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
@@ -332,15 +345,15 @@ namespace Microsoft.Azure.Cosmos
                     return Task.FromResult(keyRanges);
                 }
 
-                IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>(keyRanges.Where(range=> range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
+                IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>(keyRanges.Where(range => range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
 
                 return Task.FromResult(filteredRanges);
             };
         }
 
         private static CompositeContinuationToken BuildTokenForRange(
-            string min, 
-            string max, 
+            string min,
+            string max,
             string token)
         {
             return new CompositeContinuationToken()

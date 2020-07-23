@@ -157,8 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    FeedRange = feedRange,
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(feedRange),
                     MaxItemCount = 1
                 };
                 ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;

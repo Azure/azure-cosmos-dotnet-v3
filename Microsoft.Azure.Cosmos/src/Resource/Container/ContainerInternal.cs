@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
@@ -113,15 +112,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

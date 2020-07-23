@@ -174,8 +174,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
                 changeFeedRequestOptions: new ChangeFeedRequestOptions()
                 {
-                    FeedRange = new FeedRangePartitionKey(new PartitionKey(pkToRead)),
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(new FeedRangePartitionKey(new PartitionKey(pkToRead))),
                 }) as ChangeFeedIteratorCore;
             string continuation = null;
             while (feedIterator.HasMoreResults)
@@ -261,8 +260,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(
                 changeFeedRequestOptions: new ChangeFeedRequestOptions()
                 {
-                    FeedRange = new FeedRangePartitionKey(new PartitionKey(pkToRead)),
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(new FeedRangePartitionKey(new PartitionKey(pkToRead))),
                 });
             string continuation = null;
             while (feedIterator.HasMoreResults)
@@ -554,8 +552,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 ChangeFeedIteratorCore iteratorForToken =
                     itemsCore.GetChangeFeedStreamIterator(new ChangeFeedRequestOptions()
                     {
-                        FeedRange = token,
-                        From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                        From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(token),
                     }) as ChangeFeedIteratorCore;
                 while (true)
                 {
@@ -594,8 +591,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             FeedIterator iterator = this.LargerContainer.GetChangeFeedStreamIterator(
                 new ChangeFeedRequestOptions()
                 {
-                    FeedRange = tokens[0],
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(tokens[0]),
                 });
             ResponseMessage responseMessage = await iterator.ReadNextAsync();
             iterator = this.Container.GetChangeFeedStreamIterator(new ChangeFeedRequestOptions()

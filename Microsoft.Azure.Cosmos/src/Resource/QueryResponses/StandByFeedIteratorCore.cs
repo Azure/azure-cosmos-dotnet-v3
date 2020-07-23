@@ -122,12 +122,16 @@ namespace Microsoft.Azure.Cosmos
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+            FeedRange feedRange = new FeedRangePartitionKeyRange(rangeId);
             if (currentRangeToken.Token != null)
             {
-                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(currentRangeToken.Token);
+                this.changeFeedOptions.From = new ChangeFeedRequestOptions.StartFromContinuationAndFeedRange(currentRangeToken.Token, (FeedRangeInternal)feedRange);
+            }
+            else
+            {
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(feedRange);
             }
 
-            this.changeFeedOptions.FeedRange = new FeedRangePartitionKeyRange(rangeId);
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
