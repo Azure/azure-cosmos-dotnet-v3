@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Linq.Dynamic;
+    using System.Linq.Expressions;
     using System.Threading.Tasks;
 
     [TestClass]
@@ -712,6 +713,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
+        [TestMethod]
+        public async Task LinqCaseInsensitiveStringTest()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
+
+            async Task TestSearch(Expression<Func<ToDoActivity, bool>> expression, string expectedMethod, bool shouldBeCaseInsensitive, int expectedResults)
+            {
+                string expectedQueryText = $"SELECT VALUE root FROM root WHERE {expectedMethod}(root[\"description\"], @param1{(shouldBeCaseInsensitive ? ", true" : "")})";
+
+                IArgumentProvider arguments = (IArgumentProvider)expression.Body;
+                int index = arguments.ArgumentCount > 2 ? 1 : 0;
+
+                string searchString = (arguments.GetArgument(index) as ConstantExpression).Value as string;
+
+                IQueryable<ToDoActivity> queryable = linqQueryable.Where(expression);
+
+                Dictionary<object, string> parameters = new Dictionary<object, string>();
+                parameters.Add(searchString, "@param1");
+
+                QueryDefinition queryDefinition = queryable.ToQueryDefinition(parameters);
+
+                string queryText = queryDefinition.ToSqlQuerySpec().QueryText;
+
+                Assert.AreEqual(expectedQueryText, queryText);
+
+                Assert.AreEqual(expectedResults, await queryable.CountAsync());
+            }
+
+            await TestSearch(x => x.description.StartsWith("create"), "STARTSWITH", false, 0);
+            await TestSearch(x => x.description.StartsWith("create", StringComparison.OrdinalIgnoreCase), "STARTSWITH", true, 2);
+
+            await TestSearch(x => x.description.EndsWith("activity"), "ENDSWITH", false, 0);
+            await TestSearch(x => x.description.EndsWith("activity", StringComparison.OrdinalIgnoreCase), "ENDSWITH", true, 2);
+
+            await TestSearch(x => x.description.Equals("createrandomtodoactivity", StringComparison.OrdinalIgnoreCase), "STRINGEQUALS", true, 2);
+
+            await TestSearch(x => x.description.Contains("todo"), "CONTAINS", false, 0);
+            await TestSearch(x => x.description.Contains("todo", StringComparison.OrdinalIgnoreCase), "CONTAINS", true, 2);
+
+        }
+
         private class NumberLinqItem
         {
             public string id;
@@ -762,6 +807,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 diagnostics: response.Diagnostics,
                 isFirstPage: false,
                 disableDiagnostics: disableDiagnostics);
+        }
+    }
+
+    static class StringTestExtensions
+    {
+        public static bool Contains(this string haystack, string needle, StringComparison stringComparison)
+        {
+            throw new NotImplementedException("Method for testing SQL translation only");
         }
     }
 }
