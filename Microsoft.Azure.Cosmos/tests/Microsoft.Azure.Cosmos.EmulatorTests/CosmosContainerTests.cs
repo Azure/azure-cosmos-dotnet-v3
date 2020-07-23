@@ -604,7 +604,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CosmosException))]
         public async Task NegativePartitionedCreateDelete()
         {
             string containerName = Guid.NewGuid().ToString();
@@ -613,10 +612,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             partitionKeyDefinition.Paths.Add("/users");
             partitionKeyDefinition.Paths.Add("/test");
 
-            ContainerProperties settings = new ContainerProperties(containerName, partitionKeyDefinition);
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
+            try
+            {
+                ContainerProperties settings = new ContainerProperties(containerName, partitionKeyDefinition);
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
 
-            Assert.Fail("Multiple partition keys should have caused an exception.");
+                Assert.Fail("Multiple partition keys should have caused an exception.");
+            }
+            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+            {
+                string message = ce.ToString();
+                Assert.IsNotNull(message);
+            }
         }
 
         [TestMethod]

@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
+        private const int MaxServiceUnavailableRetryCount = 1;
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
+        private int serviceUnavailableRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
         private Uri locationEndpoint;
@@ -48,6 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.failoverRetryCount = 0;
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
+            this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
         }
 
@@ -65,8 +68,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.retryContext = null;
             // Received Connection error (HttpRequestException), initiate the endpoint rediscovery
-            HttpRequestException httpException = exception as HttpRequestException;
-            if (httpException != null)
+            if (exception is HttpRequestException)
             {
                 DefaultTrace.TraceWarning("Endpoint not reachable. Refresh cache and retry");
                 return await this.ShouldRetryOnEndpointFailureAsync(this.isReadRequest, false);
@@ -187,6 +189,13 @@ namespace Microsoft.Azure.Cosmos
                 return this.ShouldRetryOnSessionNotAvailable();
             }
 
+            // Received 503.0 due to client connect timeout or Gateway
+            if (statusCode == HttpStatusCode.ServiceUnavailable
+                && subStatusCode == SubStatusCodes.Unknown)
+            {
+                return this.ShouldRetryOnServiceUnavailable();
+            }
+
             return null;
         }
 
@@ -291,6 +300,47 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// For a ServiceUnavailable (503.0) we could be having a timeout from Direct/TCP locally or a request to Gateway request with a similar response due to an endpoint not yet available.
+        /// We try and retry the request only if there are other regions available.
+        /// </summary>
+        private ShouldRetryResult ShouldRetryOnServiceUnavailable()
+        {
+            if (this.serviceUnavailableRetryCount++ >= ClientRetryPolicy.MaxServiceUnavailableRetryCount)
+            {
+                DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Not retrying. Retry count = {this.serviceUnavailableRetryCount}.");
+                return ShouldRetryResult.NoRetry();
+            }
+
+            if (!this.canUseMultipleWriteLocations
+                    && !this.isReadRequest)
+            {
+                // Write requests on single master cannot be retried, no other regions available
+                return ShouldRetryResult.NoRetry();
+            }
+
+            int availablePreferredLocations = this.globalEndpointManager.PreferredLocationCount;
+
+            if (availablePreferredLocations <= 1)
+            {
+                // No other regions to retry on
+                DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Not retrying. No other regions available for the request. AvailablePreferredLocations = {availablePreferredLocations}.");
+                return ShouldRetryResult.NoRetry();
+            }
+
+            DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Retrying. Received on endpoint {this.locationEndpoint}, IsReadRequest = {this.isReadRequest}.");
+
+            // Retrying on second PreferredLocations
+            // RetryCount is used as zero-based index
+            this.retryContext = new RetryContext()
+            {
+                RetryCount = this.serviceUnavailableRetryCount,
+                RetryRequestOnPreferredLocations = true
+            };
+
+            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         }
 
         private sealed class RetryContext
