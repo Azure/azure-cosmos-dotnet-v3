@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         public MasterKeyAuthorizationBenchmark()
         {
-            this.authKeyHashFunction = new StringHMACSHA256Hash("C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==");
+            this.authKeyHashFunction = new StringHMACSHA256Hash(MasterKeyAuthorizationBenchmark.GenerateRandomKey());
             Headers headers = new Headers();
             headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
@@ -47,6 +47,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 #pragma warning disable CS0642 // Possible mistaken empty statement
             using (payload) ;
 #pragma warning restore CS0642 // Possible mistaken empty statement
+        }
+
+        public static string GenerateRandomKey()
+        {
+            int keyLength = 64;
+            byte[] randomEntries = new byte[keyLength];
+
+            Random r = new Random((int)DateTime.Now.Ticks);
+            r.NextBytes(randomEntries);
+
+            return Convert.ToBase64String(randomEntries);
         }
     }
 }

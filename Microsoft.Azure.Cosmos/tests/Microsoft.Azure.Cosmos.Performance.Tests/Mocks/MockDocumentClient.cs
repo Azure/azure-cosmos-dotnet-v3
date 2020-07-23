@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
-            this.authKeyHashFunction = new StringHMACSHA256Hash("C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==");
+            this.authKeyHashFunction = new StringHMACSHA256Hash(MasterKeyAuthorizationBenchmark.GenerateRandomKey());
 
             this.Init();
         }
