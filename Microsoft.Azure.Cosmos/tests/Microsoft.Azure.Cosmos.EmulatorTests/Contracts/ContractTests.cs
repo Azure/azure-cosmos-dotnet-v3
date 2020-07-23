@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         /// Migration test from V2 Continuation model for Change Feed
         /// </summary>
         [TestMethod]
-        //[Timeout(30000)]
+        [Timeout(30000)]
         public async Task ChangeFeed_FeedRange_FromV2SDK()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(

@@ -225,10 +225,9 @@ namespace Microsoft.Azure.Cosmos
                     feedRange: (FeedRangeInternal)this.changeFeedOptions.FeedRange,
                     ranges: ranges);
             }
-
-            // Migration from PKRangeId scenario
-            if (this.FeedRangeContinuation?.FeedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+            else if (this.FeedRangeContinuation?.FeedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
             {
+                // Migration from PKRangeId scenario
                 FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
 
                 IReadOnlyList<Documents.Routing.Range<string>> ranges = await feedRangePartitionKeyRange.AcceptAsync(
