@@ -107,8 +107,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    Exception e = await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
-                    throw e;
+                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
                 }
             }
         }
@@ -192,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
                 Error error = Documents.Resource.LoadFrom<Error>(readStream);
-                DocumentClientException dce = new DocumentClientException(
+                return new DocumentClientException(
                     error,
                     responseMessage.Headers,
                     responseMessage.StatusCode)
@@ -201,8 +200,6 @@ namespace Microsoft.Azure.Cosmos
                     ResourceAddress = resourceIdOrFullName,
                     RequestStatistics = requestStatistics
                 };
-
-                return dce;
             }
             else
             {
@@ -225,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 String message = await responseMessage.Content.ReadAsStringAsync();
-                DocumentClientException dce = new DocumentClientException(
+                return new DocumentClientException(
                     message: context.ToString(),
                     innerException: null,
                     responseHeaders: responseMessage.Headers,
@@ -236,8 +233,6 @@ namespace Microsoft.Azure.Cosmos
                     ResourceAddress = resourceIdOrFullName,
                     RequestStatistics = requestStatistics
                 };
-
-                return dce;
             }
         }
 
