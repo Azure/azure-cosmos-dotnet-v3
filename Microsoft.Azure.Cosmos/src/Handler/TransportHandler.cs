@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             using (payloadStream)
 #pragma warning restore CS0642 // Possible mistaken empty statement
 
-                serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
+            serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
             using (request.DiagnosticsContext.CreateScope(storeProxy.GetType().FullName))
