@@ -5,11 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
-    using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
@@ -81,9 +80,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Method.ToString(),
                 serviceRequest.Headers,
                 AuthorizationTokenType.PrimaryMasterKey,
-                payload: out _);
+                payload: out MemoryStream payloadStream);
 
-            serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
+#pragma warning disable CS0642 // Possible mistaken empty statement
+            using (payloadStream)
+#pragma warning restore CS0642 // Possible mistaken empty statement
+
+                serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
             using (request.DiagnosticsContext.CreateScope(storeProxy.GetType().FullName))

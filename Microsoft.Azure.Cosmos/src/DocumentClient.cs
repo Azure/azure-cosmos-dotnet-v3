@@ -3801,6 +3801,7 @@ namespace Microsoft.Azure.Cosmos
 
         #endregion
 
+        
         #region Read Impl
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Database"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -6399,13 +6400,14 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 tokenType,
                 out MemoryStream stream);
+
+            payload = null;
             if (stream != null)
             {
-                payload = Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
-            }
-            else
-            {
-                payload = null;
+                using (stream)
+                {
+                    payload = Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
+                }
             }
 
             return token;
