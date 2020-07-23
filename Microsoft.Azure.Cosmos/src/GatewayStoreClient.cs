@@ -162,19 +162,6 @@ namespace Microsoft.Azure.Cosmos
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
-            // ensure there is no local ActivityId, since in Gateway mode ActivityId
-            // should always come from message headers
-            if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId, out IEnumerable<string> activityIds) &&
-                activityIds.Count() == 1 &&
-                Guid.TryParse(activityIds.First(), out Guid responseActivityId))
-            {
-                Trace.CorrelationManager.ActivityId = responseActivityId;
-            }
-            else
-            {
-                Debug.Fail("Activity id is not valid");
-            }
-
             bool isNameBased = false;
             bool isFeed = false;
             string resourceTypeString;
