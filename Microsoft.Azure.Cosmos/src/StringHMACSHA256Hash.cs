@@ -62,6 +62,11 @@ namespace Microsoft.Azure.Cosmos
                 this.secureString.Dispose();
                 this.secureString = null;
             }
+
+            while (this.hmacPool.TryDequeue(out HMACSHA256 hmacsha256))
+            {
+                hmacsha256.Dispose();
+            }
         }
     }
 }
