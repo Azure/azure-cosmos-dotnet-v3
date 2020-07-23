@@ -483,34 +483,32 @@ namespace Microsoft.Azure.Cosmos
             int length = stream.Write(verb.ToLowerInvariant());
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write("\n");
+            length = stream.Write("\n");
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write(resourceType.ToLowerInvariant());
+            length = stream.Write(resourceType.ToLowerInvariant());
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write("\n");
+            length = stream.Write("\n");
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write(resourceId);
+            length = stream.Write(resourceId);
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write("\n");
+            length = stream.Write("\n");
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write(xDate.ToLowerInvariant());
+            length = stream.Write(xDate.ToLowerInvariant());
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write("\n");
+            length = stream.Write("\n");
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write(xDate.Equals(string.Empty, StringComparison.OrdinalIgnoreCase) ? date.ToLowerInvariant() : string.Empty);
+            length = stream.Write(xDate.Equals(string.Empty, StringComparison.OrdinalIgnoreCase) ? date.ToLowerInvariant() : string.Empty);
             totalLength += length;
             stream = stream.Slice(length);
-            stream.Write("\n");
+            length = stream.Write("\n");
             totalLength += length;
-            stream = stream.Slice(length);
-
             return totalLength;
         }
 
