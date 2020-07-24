@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class SqlStringWithComparisonVisitor : BuiltinFunctionVisitor
+        private sealed class SqlStringWithComparisonVisitor : BuiltinFunctionVisitor
         {
             private static readonly HashSet<StringComparison> IgnoreCaseComparisons = new HashSet<StringComparison>(new[]
             {
@@ -171,23 +171,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 StringComparison.OrdinalIgnoreCase
             });
 
-            public string SqlName { get; private set; }
+            public string SqlName { get; }
 
             public SqlStringWithComparisonVisitor(string sqlName)
             {
-                this.SqlName = sqlName;
+                this.SqlName = sqlName ?? throw new ArgumentNullException(nameof(sqlName));
             }
 
             public static SqlScalarExpression GetCaseInsensitiveExpression(Expression expression)
             {
-                ConstantExpression inputExpression = expression as ConstantExpression;
-                if (inputExpression?.Value is StringComparison comparisonValue)
+                if (expression is ConstantExpression inputExpression
+                    && inputExpression.Value is StringComparison comparisonValue
+                    && IgnoreCaseComparisons.Contains(comparisonValue))
                 {
-                    if (IgnoreCaseComparisons.Contains(comparisonValue))
-                    {
-                        SqlBooleanLiteral literal = SqlBooleanLiteral.Create(true);
-                        return SqlLiteralScalarExpression.Create(literal);
-                    }
+                    SqlBooleanLiteral literal = SqlBooleanLiteral.Create(true);
+                    return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 return null;
@@ -202,10 +200,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return null;
                 }
 
-                List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
-
-                arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context));
-                arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context));
+                List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                {
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context),
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                };
 
                 if (argumentCount > 1)
                 {

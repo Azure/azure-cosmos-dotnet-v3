@@ -7,7 +7,18 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["StringField"] = "str") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Equals (case-insensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Equals("str", OrdinalIgnoreCase))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE STRINGEQUALS(root["StringField"], "str", true) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +29,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -29,7 +40,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["EnumerableField"][0] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
 </Results>
