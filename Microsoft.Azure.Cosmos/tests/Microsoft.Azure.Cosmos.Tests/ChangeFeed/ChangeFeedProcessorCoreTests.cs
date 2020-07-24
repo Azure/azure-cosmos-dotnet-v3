@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullStore()
         {
-            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
+            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
                 null,
                 null,
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullInstance()
         {
-            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
+            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer()
         {
-            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
+            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidCustomStore()
         {
-            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
+            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidContainerStore()
         {
-            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
+            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
                 null,
                 ChangeFeedProcessorCoreTests.GetMockedContainer("leases"),
