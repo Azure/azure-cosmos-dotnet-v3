@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                     string migratedContinuation = firstResponse.ContinuationToken;
                     Assert.IsTrue(FeedRangeContinuation.TryParse(migratedContinuation, out FeedRangeContinuation feedRangeContinuation));
-                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEPK);
+                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEpk);
                 }
             }
 
