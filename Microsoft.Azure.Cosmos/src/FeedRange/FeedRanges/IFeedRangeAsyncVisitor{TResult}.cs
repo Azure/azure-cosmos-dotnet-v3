@@ -13,6 +13,6 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<TResult> VisitAsync(FeedRangePartitionKeyRange feedRange, CancellationToken cancellationToken = default);
 
-        public abstract Task<TResult> VisitAsync(FeedRangeEPK feedRange, CancellationToken cancellationToken = default);
+        public abstract Task<TResult> VisitAsync(FeedRangeEpk feedRange, CancellationToken cancellationToken = default);
     }
 }

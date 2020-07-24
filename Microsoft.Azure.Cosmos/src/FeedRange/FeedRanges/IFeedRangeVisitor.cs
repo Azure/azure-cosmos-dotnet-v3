@@ -10,6 +10,6 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract void Visit(FeedRangePartitionKeyRange feedRange);
 
-        public abstract void Visit(FeedRangeEPK feedRange);
+        public abstract void Visit(FeedRangeEpk feedRange);
     }
 }
