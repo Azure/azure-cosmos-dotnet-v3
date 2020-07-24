@@ -788,11 +788,11 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private static PartitionKey CosmosElementToPartitionKeyObject(List<CosmosElement> cosmosElementList) 
+        private static PartitionKey CosmosElementToPartitionKeyObject(IReadOnlyList<CosmosElement> cosmosElementList) 
         {
             PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
 
-            cosmosElementList.ForEach(cosmosElement =>
+            foreach (CosmosElement cosmosElement in cosmosElementList)
             {
                 if (cosmosElement == null)
                 {
@@ -813,7 +813,7 @@ namespace Microsoft.Azure.Cosmos
                                    cosmosElement)),
                     };
                 }
-            });
+            }
 
             return partitionKeyBuilder.Build();
         }

@@ -21,8 +21,6 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly IList<object> partitionKeyValues;
 
-        private bool isBuilt = false;
-
         /// <summary>
         /// Creates a new partition key value list object.
         /// </summary>
@@ -38,11 +36,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="PartitionKeyBuilder"/> to use. </returns>
         public PartitionKeyBuilder Add(string val)
         {
-            if (this.isBuilt)
-            {
-                throw new InvalidOperationException("This builder instance has already been used to build a PartitionKey. Create a new instance to build another.");
-            }
-
             this.partitionKeyValues.Add(val);
             return this;
         }
@@ -54,11 +47,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="PartitionKeyBuilder"/> to use. </returns>
         public PartitionKeyBuilder Add(double val)
         {
-            if (this.isBuilt)
-            {
-                throw new InvalidOperationException("This builder instance has already been used to build a PartitionKey. Create a new instance to build another.");
-            }
-
             this.partitionKeyValues.Add(val);
             return this;
         }
@@ -70,11 +58,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="PartitionKeyBuilder"/> to use. </returns>
         public PartitionKeyBuilder Add(bool val)
         {
-            if (this.isBuilt)
-            {
-                throw new InvalidOperationException("This builder instance has already been used to build a PartitionKey. Create a new instance to build another.");
-            }
-
             this.partitionKeyValues.Add(val);
             return this;
         }
@@ -85,11 +68,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="PartitionKeyBuilder"/> to use. </returns>
         public PartitionKeyBuilder AddNullValue()
         {
-            if (this.isBuilt)
-            {
-                throw new InvalidOperationException("This builder instance has already been used to build a PartitionKey. Create a new instance to build another.");
-            }
-
             this.partitionKeyValues.Add(null);
             return this;
         }
@@ -100,11 +78,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="PartitionKeyBuilder"/> to use. </returns>
         public PartitionKeyBuilder AddNoneType()
         {
-            if (this.isBuilt)
-            {
-                throw new InvalidOperationException("This builder instance has already been used to build a PartitionKey. Create a new instance to build another.");
-            }
-
             this.partitionKeyValues.Add(PartitionKey.None);
             return this;
         }
@@ -115,39 +88,29 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="PartitionKey"/> </returns>
         public PartitionKey Build()
         {
-            if (this.isBuilt)
-            {
-                throw new InvalidOperationException("This builder instance has already been used to build a PartitionKey. Create a new instance to build another.");
-            }
-
             if (this.partitionKeyValues.Count == 0
                 || (this.partitionKeyValues.Count == 1 && PartitionKey.None.Equals(this.partitionKeyValues[0])))
             {
-                this.isBuilt = true;
                 return PartitionKey.None;
             }
-            else
+
+            PartitionKeyInternal partitionKeyInternal;
+            object[] valueArray = new object[this.partitionKeyValues.Count];
+            for (int i = 0; i < this.partitionKeyValues.Count; i++)
             {
-                PartitionKeyInternal partitionKeyInternal;
-
-                object[] valueArray = new object[this.partitionKeyValues.Count];
-                for (int i = 0; i < this.partitionKeyValues.Count; i++)
+                object val = this.partitionKeyValues[i];
+                if (PartitionKey.None.Equals(val))
                 {
-                    object val = this.partitionKeyValues[i];
-                    if (PartitionKey.None.Equals(val))
-                    {
-                        valueArray[i] = Undefined.Value;
-                    }
-                    else
-                    {
-                        valueArray[i] = val;
-                    }
+                    valueArray[i] = Undefined.Value;
                 }
-
-                partitionKeyInternal = new Documents.PartitionKey(valueArray).InternalKey;
-                this.isBuilt = true;
-                return new PartitionKey(partitionKeyInternal);
+                else
+                {
+                    valueArray[i] = val;
+                }
             }
+
+            partitionKeyInternal = new Documents.PartitionKey(valueArray).InternalKey;
+            return new PartitionKey(partitionKeyInternal);
         }
     }
 }
