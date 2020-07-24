@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
-    using Microsoft.Azure.Cosmos.Spatial;
+    using global::Azure.Core.GeoJson;
     using Microsoft.Azure.Cosmos.Sql;
     using Newtonsoft.Json.Linq;
 
@@ -21,12 +21,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Constructs <see cref="SqlScalarExpression"/> from a geometry <see cref="Expression"/>.
         /// </summary>
         /// <param name="geometryExpression">
-        /// Expression of type <see cref="Geometry"/>.
+        /// Expression of type <see cref="GeoObject"/>.
         /// </param>
         /// <returns>Instance of <see cref="SqlScalarExpression"/> representing geometry <paramref name="geometryExpression"/>.</returns>.
         public static SqlScalarExpression Construct(Expression geometryExpression)
         {
-            if (!typeof(Geometry).IsAssignableFrom(geometryExpression.Type))
+            if (!typeof(GeoObject).IsAssignableFrom(geometryExpression.Type))
             {
                 throw new ArgumentException("geometryExpression");
             }
@@ -38,12 +38,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return GeometrySqlExpressionFactory.FromJToken(jsonObject);
             }
 
-            Geometry geometry;
+            GeoObject geometry;
 
             try
             {
-                Expression<Func<Geometry>> le = Expression.Lambda<Func<Geometry>>(geometryExpression);
-                Func<Geometry> compiledExpression = le.Compile();
+                Expression<Func<GeoObject>> le = Expression.Lambda<Func<GeoObject>>(geometryExpression);
+                Func<GeoObject> compiledExpression = le.Compile();
                 geometry = compiledExpression();
             }
             catch (Exception ex)

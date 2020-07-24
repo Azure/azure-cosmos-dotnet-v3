@@ -12,12 +12,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using global::Azure.Core.GeoJson;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local
@@ -692,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlLiteralScalarExpression.Create(literal);
             }
 
-            if (typeof(Geometry).IsAssignableFrom(constantType))
+            if (typeof(GeoObject).IsAssignableFrom(constantType))
             {
                 return GeometrySqlExpressionFactory.Construct(inputExpression);
             }
@@ -840,7 +839,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlScalarExpression VisitNew(NewExpression inputExpression, TranslationContext context)
         {
-            if (typeof(Geometry).IsAssignableFrom(inputExpression.Type))
+            if (typeof(GeoObject).IsAssignableFrom(inputExpression.Type))
             {
                 return GeometrySqlExpressionFactory.Construct(inputExpression);
             }

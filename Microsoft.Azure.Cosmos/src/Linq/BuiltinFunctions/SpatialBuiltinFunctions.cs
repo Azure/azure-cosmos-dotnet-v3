@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq.Expressions;
-    using Microsoft.Azure.Cosmos.Spatial;
+    using global::Azure.Core.GeoJson;
     using Microsoft.Azure.Cosmos.Sql;
 
     internal static class SpatialBuiltinFunctions
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(Geometry)},
+                        new Type[]{typeof(GeoObject)},
                     }));
 
             SpatialBuiltinFunctionDefinitions.Add("Within",
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(Geometry)},
+                        new Type[]{typeof(GeoObject) },
                     }));
 
             SpatialBuiltinFunctionDefinitions.Add("IsValidDetailed",
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(Geometry)},
+                        new Type[]{typeof(GeoObject) },
                     }));
         }
 

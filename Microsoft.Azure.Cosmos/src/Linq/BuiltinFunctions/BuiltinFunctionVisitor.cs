@@ -7,8 +7,8 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Globalization;
     using System.Linq.Expressions;
+    using global::Azure.Core.GeoJson;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents;
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // Spatial functions
-            if (typeof(Geometry).IsAssignableFrom(declaringType))
+            if (typeof(GeoObject).IsAssignableFrom(declaringType))
             {
                 return SpatialBuiltinFunctions.Visit(methodCallExpression, context);
             }

@@ -5,12 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Test.Spatial
 {
     using System;
-
-    using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Spatial.Converters;
+    using System.Text;
+    using System.Text.Json;
+    using global::Azure.Core.GeoJson;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Serialization tests applying to all geometry types.
@@ -22,91 +20,110 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests that incorrect JSON throws exception.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonReaderException))]
+        [ExpectedException(typeof(JsonException), AllowDerivedTypes = true)]
         public void TestInvalidJson()
         {
             string json = @"{""type"":""Poi}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            GeoPoint geoPoint = ParseGeoObject<GeoPoint>(json);
         }
 
         /// <summary>
         /// Tests that coordinates cannot be null.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(InvalidOperationException))]
         public void TestNullCoordinates()
         {
             string json = @"{""type"":""Point"",""coordinates"":null}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            GeoPoint geoPoint = ParseGeoObject<GeoPoint>(json);
         }
 
         /// <summary>
         /// Tests that type cannot be null.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(NotSupportedException))]
         public void TestNullType()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            GeoPoint geoPoint = ParseGeoObject<GeoPoint>(json);
         }
 
         /// <summary>
-        /// Tests that type cannot be null and uses <see cref="GeometryJsonConverter"/>.
+        /// Tests that type cannot be null and uses <see cref="GeoJsonConverter"/>.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(NotSupportedException))]
         public void TestNullTypeGeometry()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            var point = JsonConvert.DeserializeObject<Geometry>(json);
-        }
-
-        /// <summary>
-        /// Tests bounding box with not even number of coordinates.
-        /// </summary>
-        [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
-        public void TestBoundingBoxWithNonEvenNumberOfCoordinates()
-        {
-            string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0, 0, 5, 5]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
-        }
-
-        /// <summary>
-        /// Tests bounding box with insufficient number of coordinates.
-        /// </summary>
-        [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
-        public void TestBoundingBoxWithNotEnoughCoordinates()
-        {
-            string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
-        }
-
-        /// <summary>
-        /// Tests bounding box which is null.
-        /// </summary>
-        [TestMethod]
-        public void TestNullBoundingBox()
-        {
-            string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":null}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
-            Assert.IsNull(point.BoundingBox);
+            GeoPoint geoPoint = ParseGeoObject<GeoPoint>(json);
         }
 
         /// <summary>
         /// Tests empty coordinates.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(InvalidOperationException))]
         public void TestEmptyCoordinates()
         {
+            // This throw a JsonException, but it's a valid Json...
             string json = @"{
                     ""type"":""Point"",
-                    ""coordinates"":[],
+                    ""coordinates"":[]
                     }";
-            JsonConvert.DeserializeObject<Point>(json);
+            GeoPoint geoPoint = ParseGeoObject<GeoPoint>(json);
+        }
+
+        /// <summary>
+        /// Tests bounding box with not even number of coordinates.
+        /// </summary>
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void TestBoundingBoxWithNonEvenNumberOfCoordinates()
+        {
+            // This throw a JsonException, but it's a valid Json...
+            string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0, 0, 5, 5]}";
+            GeoPoint geoPoint = ParseGeoObject<GeoPoint>(json);
+        }
+
+        /// <summary>
+        /// Tests bounding box with insufficient number of coordinates.
+        /// </summary>
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void TestBoundingBoxWithNotEnoughCoordinates()
+        {
+            // This throw a JsonException, but it's a valid Json...
+            string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0]}";
+            GeoPoint geoPoint = ParseGeoObject<GeoPoint>(json);
+        }
+
+        /// <summary>
+        /// Tests bounding box which is null.
+        /// </summary>
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void TestNullBoundingBox()
+        {
+            // The value of the bbox member MUST be an array
+            string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":null}";
+            GeoPoint geoPoint = ParseGeoObject<GeoPoint>(json);
+            Assert.IsNull(geoPoint.BoundingBox);
+        }
+
+        private static TGeoObject ParseGeoObject<TGeoObject>(string json)
+            where TGeoObject : GeoObject
+        {
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            GeoJsonConverter geoJsonConverter = new GeoJsonConverter();
+            Utf8JsonReader utf8JsonReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
+            TGeoObject geoObject = (TGeoObject)geoJsonConverter.Read(ref utf8JsonReader, typeof(TGeoObject), new JsonSerializerOptions());
+            return geoObject;
         }
     }
 }
