@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             CosmosClientContext clientContext = ClientContextCore.Create(
-             MockCosmosUtil.CreateMockCosmosClient(),
-             new MockDocumentClient(),
-             new CosmosClientOptions());
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new MockDocumentClient(),
+                new CosmosClientOptions());
 
             try
             {
@@ -72,7 +72,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SynchronizationContext.SetSynchronizationContext(null);
             }
         }
-
 
         private Task<bool> ValidateActivityIdHelper()
         {
