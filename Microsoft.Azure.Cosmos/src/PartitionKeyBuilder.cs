@@ -12,7 +12,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a partition key value list in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class PartitionKeyBuilder
+#if SUBPARTITIONING
+    public
+#else
+    internal
+#endif
+    sealed class PartitionKeyBuilder
     {
         private readonly IList<object> partitionKeyValues;
 
@@ -141,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
 
                 partitionKeyInternal = new Documents.PartitionKey(valueArray).InternalKey;
                 this.isBuilt = true;
-                return new PartitionKey(partitionKeyInternal, false);
+                return new PartitionKey(partitionKeyInternal);
             }
         }
     }

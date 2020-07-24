@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerInternal container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult((IReadOnlyList<string[]>)new List<string[]> { new string[] { "pk" } }));
+                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> { new List<string> { "pk" } }));
             containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
                 .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
 
@@ -537,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult((IReadOnlyList<string[]>)new List<string[]> { new string[] { "a", "b", "c" }, new string[] { "a","e","f" } }));
+                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>) new List<IReadOnlyList<string>> { new List<string> { "a", "b", "c" }, new List<string> { "a","e","f" } }));
 
             ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 

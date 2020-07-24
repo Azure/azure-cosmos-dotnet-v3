@@ -101,8 +101,23 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new partition key value.
         /// </summary>
         /// <param name="partitionKeyInternal">The value to use as partition key.</param>
+    #if INTERNAL || SUBPARTITIONING
+        internal
+    #else
+        private
+    #endif
+        PartitionKey(PartitionKeyInternal partitionKeyInternal)
+        {
+            this.InternalKey = partitionKeyInternal;
+            this.IsNone = false;
+        }
+
+        /// <summary>
+        /// Creates a new partition key value.
+        /// </summary>
+        /// <param name="partitionKeyInternal">The value to use as partition key.</param>
         /// <param name="isNone">The value to decide partitionKey is None.</param>
-        internal PartitionKey(PartitionKeyInternal partitionKeyInternal, bool isNone = false)
+        private PartitionKey(PartitionKeyInternal partitionKeyInternal, bool isNone = false)
         {
             this.InternalKey = partitionKeyInternal;
             this.IsNone = isNone;

@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
-        private IReadOnlyList<string[]> partitionKeyPathTokens;
+        private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
 
         /// <summary>
@@ -94,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
+#if SUBPARTITIONING
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -112,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
+#endif
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
         ///
@@ -307,6 +309,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#if SUBPARTITIONING
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
@@ -328,6 +331,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#endif
         /// <summary>
         /// Gets or sets the time to live base time stamp property path.
         /// </summary>
@@ -550,7 +554,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool HasPartitionKey => this.PartitionKey != null;
 
-        internal IReadOnlyList<string[]> PartitionKeyPathTokens
+        internal IReadOnlyList<IReadOnlyList<string>> PartitionKeyPathTokens
         {
             get
             {
@@ -574,10 +578,11 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                List<string[]> partitionKeyPathTokensList = new List<string[]>();
+                List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
                 foreach (string path in this.PartitionKey?.Paths)
                 {
-                    partitionKeyPathTokensList.Add(path.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries));
+                    string[] splitPaths = path.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+                    partitionKeyPathTokensList.Add(new List<string>(splitPaths));
                 }
 
                 this.partitionKeyPathTokens = partitionKeyPathTokensList;

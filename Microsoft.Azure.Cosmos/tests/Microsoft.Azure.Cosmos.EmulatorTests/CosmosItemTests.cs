@@ -2076,6 +2076,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
+#if SUBPARTITIONING
         [Ignore] //Ignoring this test until EnableSubpartitioning is set to true in BE.
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
@@ -2181,6 +2182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
+#endif
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
         {
             string autoId = Guid.NewGuid().ToString();

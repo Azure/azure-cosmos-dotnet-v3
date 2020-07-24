@@ -744,10 +744,10 @@ namespace Microsoft.Azure.Cosmos
                 IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                 CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
-                IReadOnlyList<string[]> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
+                IReadOnlyList<IReadOnlyList<string>> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
                 List<CosmosElement> cosmosElementList = new List<CosmosElement>(tokenslist.Count);
 
-                foreach (string[] tokenList in tokenslist)
+                foreach (IReadOnlyList<string> tokenList in tokenslist)
                 {
                     CosmosElement element;
                     if (TryParseTokenListForElement(pathTraversal, tokenList, out element))
@@ -769,10 +769,10 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static bool TryParseTokenListForElement(CosmosObject pathTraversal, string[] tokens, out CosmosElement result)
+        private static bool TryParseTokenListForElement(CosmosObject pathTraversal, IReadOnlyList<string> tokens, out CosmosElement result)
         {
             result = null;
-            for (int i = 0; i < tokens.Length - 1; i++)
+            for (int i = 0; i < tokens.Count - 1; i++)
             {
                 if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                 {
@@ -780,7 +780,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out result))
+            if (!pathTraversal.TryGetValue(tokens[tokens.Count - 1], out result))
             {
                 return false;
             }
