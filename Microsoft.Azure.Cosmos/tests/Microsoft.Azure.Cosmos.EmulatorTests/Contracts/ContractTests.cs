@@ -135,6 +135,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         /// </summary>
         [TestMethod]
         [Timeout(30000)]
+        [Ignore]
         public async Task ChangeFeed_FeedRange_FromV2SDK()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
@@ -154,8 +155,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             foreach (FeedRange feedRange in feedRanges)
             {
                 IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime(), MaxItemCount = 1 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(feedRange: feedRange, changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    FeedRange = feedRange,
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    MaxItemCount = 1
+                };
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {
@@ -163,18 +169,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                 }
 
+                FeedRangeEPK feedRangeEpk = feedRange as FeedRangeEPK;
+
                 // Construct the continuation's range, using PKRangeId + ETag
-                List<dynamic> ct = new List<dynamic>() { new { min = string.Empty, max = string.Empty, token = firstResponse.Headers.ETag } };
+                List<dynamic> ct = new List<dynamic>()
+                {
+                    new
+                    {
+                        min = feedRangeEpk.Range.Min,
+                        max = feedRangeEpk.Range.Max,
+                        token = firstResponse.Headers.ETag
+                    }
+                };
+
                 // Extract Etag and manually construct the continuation
-                dynamic oldContinuation = new { V = 0, PKRangeId = pkRangeIds.First(), Continuation = ct };
+                dynamic oldContinuation = new
+                {
+                    V = 0,
+                    PKRangeId = pkRangeIds.First(),
+                    Continuation = ct
+                };
                 continuations.Add(JsonConvert.SerializeObject(oldContinuation));
             }
 
             // Now start the new iterators with the constructed continuations from migration
             foreach (string continuation in continuations)
             {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { MaxItemCount = 100 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(continuationToken: continuation, changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation),
+                    MaxItemCount = 100
+                };
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {
