@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.ComponentModel;
+    using System.IO;
     using System.Runtime.InteropServices;
     using System.Security;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
 
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
         /// SHA256 HMAC of the payload, and destroy the native memory containing the decoded key.
         /// </summary>
         /// <param name="bytesToHash">payload that is hashed</param>
-        public byte[] ComputeHash(byte[] bytesToHash)
+        public byte[] ComputeHash(MemoryStream bytesToHash)
         {
             IntPtr hashHandle = IntPtr.Zero;
 
@@ -94,8 +95,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void AddData(IntPtr hashHandle, byte[] data)
+        private void AddData(IntPtr hashHandle, MemoryStream dataStream)
         {
+            byte[] data = dataStream.GetBuffer();
             GCHandle h = GCHandle.Alloc(data, GCHandleType.Pinned);
             try
             {
