@@ -61,19 +61,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TraceOffersTestAsync()
-        {
-            ContainerInlineCore containerInlineCore = (ContainerInlineCore)this.Container;
-            ThroughputResponse response = await containerInlineCore.ReadThroughputIfExistsAsync(
-                new RequestOptions(),
-                default);
-
-            string diagnostics = response.Diagnostics.ToString();
-            Assert.IsNotNull(diagnostics);
-
-        }
-
-        [TestMethod]
         public async Task CustomHandlersDiagnostic()
         {
             TimeSpan delayTime = TimeSpan.FromSeconds(2);
