@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
               new MockDocumentClient(),
               new CosmosClientOptions());
 
-            bool result = await clientContext.OperationHelperAsync<bool>(
+            Guid result = await clientContext.OperationHelperAsync<Guid>(
                 nameof(ValidateActivityId),
                 new RequestOptions(),
                 (diagnostics) =>
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     return this.ValidateActivityIdHelper();
                 });
 
-            Assert.IsTrue(result);
+            Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
         }
 
         [TestMethod]
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 SynchronizationContext.SetSynchronizationContext(mockSynchronizationContext.Object);
 
-                bool result = await clientContext.OperationHelperAsync<bool>(
+                Guid result = await clientContext.OperationHelperAsync<Guid>(
                     nameof(ValidateActivityIdWithSynchronizationContext),
                     new RequestOptions(),
                     (diagnostics) =>
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return this.ValidateActivityIdHelper();
                     });
 
-                Assert.IsTrue(result);
+                Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
             }
             finally
             {
@@ -73,10 +73,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private Task<bool> ValidateActivityIdHelper()
+        private Task<Guid> ValidateActivityIdHelper()
         {
-            Assert.AreNotEqual(Guid.Empty, Trace.CorrelationManager.ActivityId);
-            return Task.FromResult(true);
+            Guid activityId = Trace.CorrelationManager.ActivityId;
+            Assert.AreNotEqual(Guid.Empty, activityId);
+            return Task.FromResult(activityId);
         }
 
         [TestMethod]
