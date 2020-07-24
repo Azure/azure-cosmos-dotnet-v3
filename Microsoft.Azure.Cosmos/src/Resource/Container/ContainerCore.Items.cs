@@ -746,7 +746,7 @@ namespace Microsoft.Azure.Cosmos
                 foreach (IReadOnlyList<string> tokenList in tokenslist)
                 {
                     CosmosElement element;
-                    if (TryParseTokenListForElement(pathTraversal, tokenList, out element))
+                    if (ContainerCore.TryParseTokenListForElement(pathTraversal, tokenList, out element))
                     {
                         cosmosElementList.Add(element);
                     }
@@ -756,7 +756,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                return CosmosElementToPartitionKeyObject(cosmosElementList);
+                return ContainerCore.CosmosElementToPartitionKeyObject(cosmosElementList);
             }
             finally
             {

@@ -1786,7 +1786,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateCosmosClient(true));
         }
 
-
         internal async Task TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(CosmosClient client)
         {
             await TestCommon.DeleteAllDatabasesAsync();

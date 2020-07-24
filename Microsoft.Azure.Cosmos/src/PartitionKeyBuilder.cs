@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class PartitionKeyBuilder
     {
-        private readonly IList<object> partitionKeyValues;
+        private readonly List<object> partitionKeyValues;
 
         /// <summary>
         /// Creates a new partition key value list object.
