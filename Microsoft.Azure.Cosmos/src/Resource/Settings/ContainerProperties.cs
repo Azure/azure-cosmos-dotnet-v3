@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#if SUBPARTITIONING
+#if INTERNAL || SUBPARTITIONING
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.PartitionKey = new PartitionKeyDefinition
             {
-                Paths = new Collection<string>(partitionKeyPaths),
+                Paths = (Collection<string>)partitionKeyPaths,
                 Kind = Documents.PartitionKind.MultiHash,
                 Version = Documents.PartitionKeyDefinitionVersion.V2
             };
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#if SUBPARTITIONING
+#if INTERNAL || SUBPARTITIONING
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
@@ -326,7 +326,9 @@ namespace Microsoft.Azure.Cosmos
 
                 this.PartitionKey = new PartitionKeyDefinition
                 {
-                    Paths = new Collection<string>(value)
+                    Paths = (Collection<string>)value,
+                    Kind = Documents.PartitionKind.MultiHash,
+                    Version = Documents.PartitionKeyDefinitionVersion.V2
                 };
             }
         }

@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult((IReadOnlyList<string[]>)new List<string[]> { new string[] { "a", "b", "c" }}));
+                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> {new List<string> { "a", "b", "c" }}));
 
             ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 
