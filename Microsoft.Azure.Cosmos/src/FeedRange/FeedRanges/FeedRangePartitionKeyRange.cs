@@ -19,12 +19,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class FeedRangePartitionKeyRange : FeedRangeInternal
     {
-        public string PartitionKeyRangeId { get; }
-
         public FeedRangePartitionKeyRange(string partitionKeyRangeId)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId;
         }
+
+        public string PartitionKeyRangeId { get; }
 
         public override async Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
@@ -74,10 +74,11 @@ namespace Microsoft.Azure.Cosmos
             return Task.FromResult(partitionKeyRanges);
         }
 
-        public override void Accept(FeedRangeVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
+        public override void Accept(IFeedRangeVisitor visitor) => visitor.Visit(this);
+
+        public override Task<TResult> AcceptAsync<TResult>(
+            IFeedRangeAsyncVisitor<TResult> visitor,
+            CancellationToken cancellationToken = default) => visitor.VisitAsync(this, cancellationToken);
 
         public override string ToString() => this.PartitionKeyRangeId;
     }
