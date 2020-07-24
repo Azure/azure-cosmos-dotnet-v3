@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
-        public ContainerProperties(string id, IList<string> partitionKeyPaths)
+        public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
             this.PartitionKey = new PartitionKeyDefinition
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
-        public IList<string> PartitionKeyPaths
+        public IReadOnlyList<string> PartitionKeyPaths
         {
             get => this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths : null;
             set
