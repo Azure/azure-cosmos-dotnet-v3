@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
@@ -120,6 +121,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 disposeDiagnosticContext = true;
             }
 
+            // This is needed for query where a single
+            // user request might span multiple backend requests.
+            // This will still have a single request id for retry scenarios
+            ActivityScope activityScope = null;
+            if (Trace.CorrelationManager.ActivityId == Guid.Empty)
+            {
+                Debug.Assert(operationType != OperationType.Query || operationType != OperationType.QueryPlan, "There should be an activity id already set");
+                activityScope = new ActivityScope(Guid.NewGuid());
+            }
+
             try
             {
                 HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
@@ -182,6 +193,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 if (disposeDiagnosticContext)
                 {
                     diagnosticsContext.GetOverallScope().Dispose();
+                }
+
+                if (activityScope != null)
+                {
+                    activityScope.Dispose();
                 }
             }
         }
