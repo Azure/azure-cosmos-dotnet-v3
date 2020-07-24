@@ -5,19 +5,81 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosDiagnosticsUnitTests
     {
+        [TestMethod]
+        public async Task ValidateActivityId()
+        {
+            CosmosClientContext clientContext = ClientContextCore.Create(
+              MockCosmosUtil.CreateMockCosmosClient(),
+              new MockDocumentClient(),
+              new CosmosClientOptions());
+
+            bool result = await clientContext.OperationHelperAsync<bool>(
+                nameof(ValidateActivityId),
+                new RequestOptions(),
+                (diagnostics) =>
+                {
+                    return this.ValidateActivityIdHelper();
+                });
+
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public async Task ValidateActivityIdWithSynchronizationContext()
+        {
+            Mock<SynchronizationContext> mockSynchronizationContext = new Mock<SynchronizationContext>()
+            {
+                CallBase = true
+            };
+
+            CosmosClientContext clientContext = ClientContextCore.Create(
+             MockCosmosUtil.CreateMockCosmosClient(),
+             new MockDocumentClient(),
+             new CosmosClientOptions());
+
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(mockSynchronizationContext.Object);
+
+                bool result = await clientContext.OperationHelperAsync<bool>(
+                    nameof(ValidateActivityIdWithSynchronizationContext),
+                    new RequestOptions(),
+                    (diagnostics) =>
+                    {
+                        return this.ValidateActivityIdHelper();
+                    });
+
+                Assert.IsTrue(result);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+            }
+        }
+
+
+        private Task<bool> ValidateActivityIdHelper()
+        {
+            Assert.AreNotEqual(Guid.Empty, Trace.CorrelationManager.ActivityId);
+            return Task.FromResult(true);
+        }
+
         [TestMethod]
         public void ValidateDiagnosticsContext()
         {

@@ -195,10 +195,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     diagnosticsContext.GetOverallScope().Dispose();
                 }
 
-                if (activityScope != null)
-                {
-                    activityScope.Dispose();
-                }
+                activityScope?.Dispose();
             }
         }
 
