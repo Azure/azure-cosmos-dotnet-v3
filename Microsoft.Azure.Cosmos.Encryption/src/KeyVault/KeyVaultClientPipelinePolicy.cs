@@ -20,8 +20,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class KeyVaultClientPipelinePolicy : HttpPipelinePolicy
     {
-        private readonly AuthenticationChallenge challenge = null;
-
         public string TenantID { get;  set; }
 
         public override void Process(HttpMessage message, ReadOnlyMemory<HttpPipelinePolicy> pipeline)
@@ -43,16 +41,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             RequestContent originalContent = message.Request.Content;
 
-            // if this policy doesn't have _challenge cached try to get it from the static challenge cache
-            AuthenticationChallenge challenge = this.challenge;
-
-            // if we still don't have the challenge for the endpoint
-            // remove the content from the request and send without authentication to get the challenge
-            if (challenge == null)
-            {
-                message.Request.Content = null;
-            }
-
             if (async)
             {
                 // go through the pipeline.
@@ -65,8 +53,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // set the content to the original content in case it was cleared
                 message.Request.Content = originalContent;
 
-                // update the cached challenge
-                this.TenantID = AuthenticationChallenge.GetChallengeFromResponse(message.Response);
+                // get the tenant ID
+                this.TenantID = AuthenticationChallenge.GetTenantIdFromResponse(message.Response);
 
                 // we are done with this response,signal an 200/OK message back to prevent exception.
                 HttpResponseMessage okresponse = new HttpResponseMessage(HttpStatusCode.OK);
@@ -168,11 +156,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal sealed class AuthenticationChallenge
         {
-            private static readonly Dictionary<string, AuthenticationChallenge> Cache = new Dictionary<string, AuthenticationChallenge>();
-            private static readonly object CacheLock = new object();
             private static readonly string[] ChallengeDelimiters = new string[] { "," };
 
-            public static string GetChallengeFromResponse(Response response)
+            public static string GetTenantIdFromResponse(Response response)
             {
                 string tenantID = null;
 
