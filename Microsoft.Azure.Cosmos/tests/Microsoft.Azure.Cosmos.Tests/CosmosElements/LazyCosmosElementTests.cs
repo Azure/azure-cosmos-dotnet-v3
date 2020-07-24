@@ -384,69 +384,57 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             return jsonWriter.GetResult();
         }
 
-        private static void VisitCosmosElementIndexer(CosmosElement CosmosElement, IJsonWriter jsonWriter)
+        private static void VisitCosmosElementIndexer(CosmosElement cosmosElement, IJsonWriter jsonWriter)
         {
-            switch (CosmosElement.Type)
+            switch (cosmosElement)
             {
-                case CosmosElementType.String:
-                    LazyCosmosElementTests.VisitCosmosString(CosmosElement as CosmosString, jsonWriter);
+                case CosmosString cosmosString:
+                    LazyCosmosElementTests.VisitCosmosString(cosmosString, jsonWriter);
                     break;
-
-                case CosmosElementType.Number:
-                    LazyCosmosElementTests.VisitCosmosNumber(CosmosElement as CosmosNumber, jsonWriter);
+                case CosmosNumber cosmosNumber:
+                    LazyCosmosElementTests.VisitCosmosNumber(cosmosNumber, jsonWriter);
                     break;
-
-                case CosmosElementType.Object:
-                    LazyCosmosElementTests.VisitCosmosObjectIndexer(CosmosElement as CosmosObject, jsonWriter);
+                case CosmosObject cosmosObject:
+                    LazyCosmosElementTests.VisitCosmosObjectIndexer(cosmosObject, jsonWriter);
                     break;
-
-                case CosmosElementType.Array:
-                    LazyCosmosElementTests.VisitCosmosArrayIndexer(CosmosElement as CosmosArray, jsonWriter);
+                case CosmosArray cosmosArray:
+                    LazyCosmosElementTests.VisitCosmosArrayIndexer(cosmosArray, jsonWriter);
                     break;
-
-                case CosmosElementType.Boolean:
-                    LazyCosmosElementTests.VisitCosmosBoolean(CosmosElement as CosmosBoolean, jsonWriter);
+                case CosmosBoolean cosmosBoolean:
+                    LazyCosmosElementTests.VisitCosmosBoolean(cosmosBoolean, jsonWriter);
                     break;
-
-                case CosmosElementType.Null:
-                    LazyCosmosElementTests.VisitCosmosNull(CosmosElement as CosmosNull, jsonWriter);
+                case CosmosNull cosmosNull:
+                    LazyCosmosElementTests.VisitCosmosNull(cosmosNull, jsonWriter);
                     break;
-
                 default:
-                    throw new ArgumentException($"Unknown {nameof(CosmosElementType)}: {CosmosElement.Type}");
+                    throw new NotImplementedException();
             }
         }
 
-        private static void VisitCosmosElementEnumerable(CosmosElement CosmosElement, IJsonWriter jsonWriter)
+        private static void VisitCosmosElementEnumerable(CosmosElement cosmosElement, IJsonWriter jsonWriter)
         {
-            switch (CosmosElement.Type)
+            switch (cosmosElement)
             {
-                case CosmosElementType.String:
-                    LazyCosmosElementTests.VisitCosmosString(CosmosElement as CosmosString, jsonWriter);
+                case CosmosString cosmosString:
+                    LazyCosmosElementTests.VisitCosmosString(cosmosString, jsonWriter);
                     break;
-
-                case CosmosElementType.Number:
-                    LazyCosmosElementTests.VisitCosmosNumber(CosmosElement as CosmosNumber, jsonWriter);
+                case CosmosNumber cosmosNumber:
+                    LazyCosmosElementTests.VisitCosmosNumber(cosmosNumber, jsonWriter);
                     break;
-
-                case CosmosElementType.Object:
-                    LazyCosmosElementTests.VisitCosmosObjectEnumerable(CosmosElement as CosmosObject, jsonWriter);
+                case CosmosObject cosmosObject:
+                    LazyCosmosElementTests.VisitCosmosObjectEnumerable(cosmosObject, jsonWriter);
                     break;
-
-                case CosmosElementType.Array:
-                    LazyCosmosElementTests.VisitCosmosArrayEnumerable(CosmosElement as CosmosArray, jsonWriter);
+                case CosmosArray cosmosArray:
+                    LazyCosmosElementTests.VisitCosmosArrayEnumerable(cosmosArray, jsonWriter);
                     break;
-
-                case CosmosElementType.Boolean:
-                    LazyCosmosElementTests.VisitCosmosBoolean(CosmosElement as CosmosBoolean, jsonWriter);
+                case CosmosBoolean cosmosBoolean:
+                    LazyCosmosElementTests.VisitCosmosBoolean(cosmosBoolean, jsonWriter);
                     break;
-
-                case CosmosElementType.Null:
-                    LazyCosmosElementTests.VisitCosmosNull(CosmosElement as CosmosNull, jsonWriter);
+                case CosmosNull cosmosNull:
+                    LazyCosmosElementTests.VisitCosmosNull(cosmosNull, jsonWriter);
                     break;
-
                 default:
-                    throw new ArgumentException($"Unknown {nameof(CosmosElementType)}: {CosmosElement.Type}");
+                    throw new NotImplementedException();
             }
         }
 

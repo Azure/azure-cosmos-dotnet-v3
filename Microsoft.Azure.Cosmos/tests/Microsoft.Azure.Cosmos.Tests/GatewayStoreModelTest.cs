@@ -121,13 +121,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -167,13 +164,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -232,13 +226,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -271,62 +262,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void GatewayStoreModel_HttpClientFactory()
-        {
-            HttpClient staticHttpClient = new HttpClient();
-
-            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
-            mockFactory.Setup(f => f()).Returns(staticHttpClient);
-
-            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
-            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
-
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
-            SessionContainer sessionContainer = new SessionContainer(string.Empty);
-            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
-            GatewayStoreModel storeModel = new GatewayStoreModel(
-                endpointManager,
-                sessionContainer,
-                TimeSpan.FromSeconds(5),
-                ConsistencyLevel.Eventual,
-                eventSource,
-                null,
-                new UserAgentContainer(),
-                ApiType.None,
-                mockFactory.Object);
-
-            Mock.Get(mockFactory.Object)
-                .Verify(f => f(), Times.Once);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void GatewayStoreModel_HttpClientFactory_IfNull()
-        {
-            HttpClient staticHttpClient = null;
-
-            Mock<Func<HttpClient>> mockFactory = new Mock<Func<HttpClient>>();
-            mockFactory.Setup(f => f()).Returns(staticHttpClient);
-
-            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
-            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
-
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
-            SessionContainer sessionContainer = new SessionContainer(string.Empty);
-            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
-            GatewayStoreModel storeModel = new GatewayStoreModel(
-                endpointManager,
-                sessionContainer,
-                TimeSpan.FromSeconds(5),
-                ConsistencyLevel.Eventual,
-                eventSource,
-                null,
-                new UserAgentContainer(),
-                ApiType.None,
-                mockFactory.Object);
-        }
-
-        [TestMethod]
         // Verify that for 429 exceptions, session token is not updated
         public async Task GatewayStoreModel_Exception_NotUpdateSessionTokenOnKnownExceptions()
         {
@@ -355,13 +290,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -504,13 +436,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -573,13 +502,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -659,14 +585,11 @@ namespace Microsoft.Azure.Cosmos
 
             GatewayStoreModel storeModel = new GatewayStoreModel(
                endpointManager,
-               sessionContainer,
-               TimeSpan.FromSeconds(50),
-               ConsistencyLevel.Session,
-               eventSource,
-               null,
-               new UserAgentContainer(),
-               ApiType.None,
-               httpMessageHandler);
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new HttpClient(httpMessageHandler));
 
             return storeModel;
         }
