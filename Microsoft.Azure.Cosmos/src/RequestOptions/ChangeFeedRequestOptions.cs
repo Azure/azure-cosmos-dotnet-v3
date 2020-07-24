@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             /// <summary>
             /// Initializes an instance of the <see cref="StartFrom"/> class.
             /// </summary>
-            internal StartFrom()
+            internal protected StartFrom()
             {
                 // Internal so people can't derive from this type.
             }

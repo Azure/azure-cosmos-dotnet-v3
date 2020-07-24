@@ -16,14 +16,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             DateTime? startTime,
             bool startFromBeginning)
         {
-            FeedRange feedRange = new FeedRangePartitionKeyRange(partitionKeyRangeId);
+            FeedRangeInternal feedRange = new FeedRangePartitionKeyRange(partitionKeyRangeId);
 
             ChangeFeedRequestOptions.StartFrom startFrom;
             if (continuationToken != null)
             {
                 // For continuation based feed range we need to manufactor a new continuation token that has the partition key range id in it.
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuationToken);
-                throw new NotImplementedException("Need to implement after I see what the continuation token looks like.");
+                startFrom = new ChangeFeedRequestOptions.StartFromContinuationAndFeedRange(continuationToken, feedRange);
             }
             else if (startTime.HasValue)
             {
