@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -30,16 +29,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Initializes a new instance of the <see cref="AzureKeyVaultCosmosEncryptor"/> class.
         /// </summary>
-        /// <param name="clientId">Client id for authentication</param>
-        /// <param name="certificateThumbprint">Certificte thumbprint for authentication</param>
-        public AzureKeyVaultCosmosEncryptor(
-            string clientId, 
-            X509Certificate2 certificate)
+        /// <param name="keyVaultTokenCredential"> Token Credentials </param>
+        public AzureKeyVaultCosmosEncryptor(KeyVaultTokenCredentialFactory keyVaultTokenCredential)
         {
-            EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(
-                clientId,
-                certificate);
-
+            EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(keyVaultTokenCredential);
             this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
