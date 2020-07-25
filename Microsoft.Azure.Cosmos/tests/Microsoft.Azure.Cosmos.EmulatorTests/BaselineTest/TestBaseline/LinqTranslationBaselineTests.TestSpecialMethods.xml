@@ -13,11 +13,11 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Equals (case-insensitive)]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.Equals("str", OrdinalIgnoreCase))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Equals("STR", OrdinalIgnoreCase))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE STRINGEQUALS(root["StringField"], "str", true) 
+SELECT VALUE STRINGEQUALS(root["StringField"], "STR", true) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>

@@ -572,8 +572,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Contains w/ char", b => getQuery(b).Select(doc => doc.StringField.Contains('c'))));
             inputs.Add(new LinqTestInput("Contains in string constant", b => getQuery(b).Select(doc => "str".Contains(doc.StringField))));
             // Contains (case-insensitive)
-            inputs.Add(new LinqTestInput("Contains w/ string (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("str", StringComparison.OrdinalIgnoreCase))));
-            inputs.Add(new LinqTestInput("Contains in string constant (case-insensitive)", b => getQuery(b).Select(doc => "str".Contains(doc.StringField, StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("Contains w/ string (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("Contains in string constant (case-insensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.OrdinalIgnoreCase))));
             // Contains with constants should be IN
             inputs.Add(new LinqTestInput("Contains in constant list", b => getQuery(b).Select(doc => constantList.Contains(doc.StringField))));
             inputs.Add(new LinqTestInput("Contains in constant array", b => getQuery(b).Select(doc => constantArray.Contains(doc.StringField))));
@@ -591,8 +591,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("EndsWith", b => getQuery(b).Select(doc => doc.StringField.EndsWith("str"))));
             inputs.Add(new LinqTestInput("Constant string EndsWith", b => getQuery(b).Select(doc => "str".EndsWith(doc.StringField))));
             // EndsWith (case-insensitive)
-            inputs.Add(new LinqTestInput("EndsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("str", StringComparison.OrdinalIgnoreCase))));
-            inputs.Add(new LinqTestInput("Constant string EndsWith (case-insensitive)", b => getQuery(b).Select(doc => "str".EndsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("EndsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("Constant string EndsWith (case-insensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))));
             // IndexOf
             inputs.Add(new LinqTestInput("IndexOf char", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c'))));
             inputs.Add(new LinqTestInput("IndexOf string", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str"))));
@@ -613,8 +613,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))));
             inputs.Add(new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))));
             //StartsWith (case-insensitive)
-            inputs.Add(new LinqTestInput("StartsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str", StringComparison.OrdinalIgnoreCase))));
-            inputs.Add(new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("StartsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))));
             // Substring
             inputs.Add(new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))));
             // ToUpper
@@ -734,7 +734,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Equals
             inputs.Add(new LinqTestInput("Equals", b => getQuery(b).Select(doc => doc.StringField.Equals("str"))));
             // Equals (case-insensitive)
-            inputs.Add(new LinqTestInput("Equals (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Equals("str", StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("Equals (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Equals("STR", StringComparison.OrdinalIgnoreCase))));
             // ToString
             inputs.Add(new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())));
             // get_item

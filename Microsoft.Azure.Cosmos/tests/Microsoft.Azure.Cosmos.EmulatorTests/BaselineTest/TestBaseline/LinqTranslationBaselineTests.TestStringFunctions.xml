@@ -90,11 +90,11 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Contains w/ string (case-insensitive)]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.Contains("str", OrdinalIgnoreCase))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Contains("Str", OrdinalIgnoreCase))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONTAINS(root["StringField"], "str", true) 
+SELECT VALUE CONTAINS(root["StringField"], "Str", true) 
 FROM root]]></SqlQuery>
       <ErrorMessage><![CDATA[Method for testing SQL translation only]]></ErrorMessage>
     </Output>
@@ -102,11 +102,11 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Contains in string constant (case-insensitive)]]></Description>
-      <Expression><![CDATA[query.Select(doc => "str".Contains(doc.StringField, OrdinalIgnoreCase))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => "sTr".Contains(doc.StringField, OrdinalIgnoreCase))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONTAINS("str", root["StringField"], true) 
+SELECT VALUE CONTAINS("sTr", root["StringField"], true) 
 FROM root]]></SqlQuery>
       <ErrorMessage><![CDATA[Method for testing SQL translation only]]></ErrorMessage>
     </Output>
@@ -250,22 +250,22 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[EndsWith (case-insensitive)]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.EndsWith("str", OrdinalIgnoreCase))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.EndsWith("stR", OrdinalIgnoreCase))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ENDSWITH(root["StringField"], "str", true) 
+SELECT VALUE ENDSWITH(root["StringField"], "stR", true) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Constant string EndsWith (case-insensitive)]]></Description>
-      <Expression><![CDATA[query.Select(doc => "str".EndsWith(doc.StringField, OrdinalIgnoreCase))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => "STR".EndsWith(doc.StringField, OrdinalIgnoreCase))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ENDSWITH("str", root["StringField"], true) 
+SELECT VALUE ENDSWITH("STR", root["StringField"], true) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
@@ -404,22 +404,22 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[StartsWith (case-insensitive)]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.StartsWith("str", OrdinalIgnoreCase))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.StartsWith("Str", OrdinalIgnoreCase))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE STARTSWITH(root["StringField"], "str", true) 
+SELECT VALUE STARTSWITH(root["StringField"], "Str", true) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[String constant StartsWith (case-insensitive)]]></Description>
-      <Expression><![CDATA[query.Select(doc => "str".StartsWith(doc.StringField, OrdinalIgnoreCase))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => "sTr".StartsWith(doc.StringField, OrdinalIgnoreCase))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE STARTSWITH("str", root["StringField"], true) 
+SELECT VALUE STARTSWITH("sTr", root["StringField"], true) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
