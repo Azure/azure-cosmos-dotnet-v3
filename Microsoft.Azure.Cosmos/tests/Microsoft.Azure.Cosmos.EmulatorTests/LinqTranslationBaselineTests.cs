@@ -683,17 +683,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Distance
-            inputs.Add(new LinqTestInput("Point distance", b => getQuery(b).Select(doc => doc.Point.Distance(new Point(20.1, 20)))));
+            inputs.Add(new LinqTestInput("Point distance", b => getQuery(b).Select(doc => doc.Point.Distance(new GeoPoint(20.1, 20)))));
             // Within
             GeoPolygon polygon = new GeoPolygon(
-                new[]
-                    {
-                        new Position(10, 10),
-                        new Position(30, 10),
-                        new Position(30, 30),
-                        new Position(10, 30),
-                        new Position(10, 10),
-                    });
+                new List<GeoLine>()
+                {
+                    new GeoLine(
+                        new List<GeoPosition>()
+                        {
+                            new GeoPosition(10, 10),
+                            new GeoPosition(30, 10),
+                            new GeoPosition(30, 30),
+                            new GeoPosition(10, 30),
+                            new GeoPosition(10, 10)
+                        })
+                });
             inputs.Add(new LinqTestInput("Point within polygon", b => getQuery(b).Select(doc => doc.Point.Within(polygon))));
             // Intersects
             inputs.Add(new LinqTestInput("Point intersects with polygon", b => getQuery(b).Where(doc => doc.Point.Intersects(polygon))));
@@ -877,14 +881,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxCoordinateValue = 200;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.StringField = random.NextDouble() < 0.5 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
-                List<double> coordinates = new List<double>();
-                coordinates.Add(random.NextDouble() < 0.5 ? 10 : random.Next(MaxCoordinateValue));
-                coordinates.Add(random.NextDouble() < 0.5 ? 5 : random.Next(MaxCoordinateValue));
-                coordinates.Add(random.NextDouble() < 0.5 ? 20 : random.Next(MaxCoordinateValue));
-                obj.Point = new Point(new Position(coordinates));
+                DataObject obj = new DataObject
+                {
+                    StringField = random.NextDouble() < 0.5 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue
+                };
+                List<double> coordinates = new List<double>
+                {
+                    random.NextDouble() < 0.5 ? 10 : random.Next(MaxCoordinateValue),
+                    random.NextDouble() < 0.5 ? 5 : random.Next(MaxCoordinateValue),
+                    random.NextDouble() < 0.5 ? 20 : random.Next(MaxCoordinateValue)
+                };
+                obj.Point = new GeoPoint(new GeoPosition(coordinates[0], coordinates[1], coordinates[2]));
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
                 return obj;
@@ -903,14 +911,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .Where(point => point.Position.Latitude == 100)
                 .Where(point => point.Position.Longitude == 50)
                 .Where(point => point.Position.Altitude == 20)
-                .Where(point => point.Position.Coordinates[0] == 100)
-                .Where(point => point.Position.Coordinates[1] == 50)));
+                .Where(point => point.Position.Longitude == 100)
+                .Where(point => point.Position.Latitude == 50)));
             inputs.Add(new LinqTestInput("Multiple Where -> Select",
                 b => getQuery(b).Where(doc => doc.Point.Position.Latitude == 100)
                 .Where(doc => doc.Point.Position.Longitude == 50)
                 .Where(doc => doc.Point.Position.Altitude == 20)
-                .Where(doc => doc.Point.Position.Coordinates[0] == 100)
-                .Where(doc => doc.Point.Position.Coordinates[1] == 50)
+                .Where(doc => doc.Point.Position.Longitude == 100)
+                .Where(doc => doc.Point.Position.Latitude == 50)
                 .Select(doc => doc.Point)));
             this.ExecuteTestSuite(inputs);
         }

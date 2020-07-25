@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
@@ -28,31 +29,76 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (!typeof(GeoObject).IsAssignableFrom(geometryExpression.Type))
             {
-                throw new ArgumentException("geometryExpression");
-            }
-
-            if (geometryExpression.NodeType == ExpressionType.Constant)
-            {
-                // This is just optimization - if got constant, we don't need to compile expression etc.
-                JObject jsonObject = JObject.FromObject(((ConstantExpression)geometryExpression).Value);
-                return GeometrySqlExpressionFactory.FromJToken(jsonObject);
+                throw new ArgumentException(nameof(geometryExpression));
             }
 
             GeoObject geometry;
-
-            try
+            if (geometryExpression.NodeType == ExpressionType.Constant)
             {
-                Expression<Func<GeoObject>> le = Expression.Lambda<Func<GeoObject>>(geometryExpression);
-                Func<GeoObject> compiledExpression = le.Compile();
-                geometry = compiledExpression();
+                // This is just optimization - if got constant, we don't need to compile expression etc.
+                geometry = (GeoObject)((ConstantExpression)geometryExpression).Value;
             }
-            catch (Exception ex)
+            else
             {
-                throw new DocumentQueryException(
-                    string.Format(CultureInfo.CurrentCulture, ClientResources.FailedToEvaluateSpatialExpression), ex);
+                try
+                {
+                    Expression<Func<GeoObject>> le = Expression.Lambda<Func<GeoObject>>(geometryExpression);
+                    Func<GeoObject> compiledExpression = le.Compile();
+                    geometry = compiledExpression();
+                }
+                catch (Exception ex)
+                {
+                    throw new DocumentQueryException(
+                        string.Format(
+                            CultureInfo.CurrentCulture,
+                            ClientResources.FailedToEvaluateSpatialExpression),
+                        ex);
+                }
             }
 
-            return GeometrySqlExpressionFactory.FromJToken(JObject.FromObject(geometry));
+            return CreateScalarExpressionFromGeoObject(geometry);
+        }
+
+        private static SqlScalarExpression CreateScalarExpressionFromGeoObject(GeoObject geoObject)
+        {
+            if (geoObject == null)
+            {
+                throw new ArgumentNullException(nameof(geoObject));
+            }
+
+            switch (geoObject)
+            {
+                case GeoPoint geoPoint:
+                    return CreateScalarExpressionFromGeoPoint(geoPoint);
+                default:
+                    throw new InvalidOperationException($"Unknown geo type: {geoObject.GetType()}.");
+            }
+        }
+
+        private static SqlScalarExpression CreateScalarExpressionFromGeoPoint(GeoPoint geoPoint)
+        {
+            SqlObjectProperty typeProperty = SqlObjectProperty.Create(
+                SqlPropertyName.Create("type"),
+                SqlLiteralScalarExpression.Create(
+                    SqlStringLiteral.Create("Point")));
+
+            List<SqlScalarExpression> coordinateExpressions = new List<SqlScalarExpression>()
+            {
+                SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(geoPoint.Position.Longitude)),
+                SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(geoPoint.Position.Latitude)),
+            };
+            if (geoPoint.Position.Altitude.HasValue)
+            {
+                coordinateExpressions.Add
+            }
+            return SqlObjectCreateScalarExpression.Create(
+                ,
+                SqlObjectProperty.Create(
+                    SqlPropertyName.Create("coordinate"),
+                    SqlArrayCreateScalarExpression.Create(
+                        ,
+                        SqlLiteralScalarExpression.Create(
+                            SqlNumberLiteral.Create(geoPoint.Position.Latitude)))
         }
 
         /// <summary>

@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             private JsonSerializer serializer;
             public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
-                serializer = JsonSerializer.Create(jsonSerializerSettings);
+                this.serializer = JsonSerializer.Create(jsonSerializerSettings);
             }
 
             public override T FromStream<T>(Stream stream)
@@ -223,14 +223,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 {
                     if (typeof(Stream).IsAssignableFrom(typeof(T)))
                     {
-                        return (T)(object)(stream);
+                        return (T)(object)stream;
                     }
 
                     using (StreamReader sr = new StreamReader(stream))
                     {
                         using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
                         {
-                            return serializer.Deserialize<T>(jsonTextReader);
+                            return this.serializer.Deserialize<T>(jsonTextReader);
                         }
                     }
                 }
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                     using (JsonWriter writer = new JsonTextWriter(streamWriter))
                     {
                         writer.Formatting = Newtonsoft.Json.Formatting.None;
-                        serializer.Serialize(writer, input);
+                        this.serializer.Serialize(writer, input);
                         writer.Flush();
                         streamWriter.Flush();
                     }

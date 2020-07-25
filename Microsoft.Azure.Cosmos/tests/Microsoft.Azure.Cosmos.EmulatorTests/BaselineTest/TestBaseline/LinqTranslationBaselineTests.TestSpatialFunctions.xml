@@ -2,11 +2,11 @@
   <Result>
     <Input>
       <Description><![CDATA[Point distance]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.Point.Distance(new Point(20.1, 20)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.Point.Distance(new GeoPoint(20.1, 20)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ST_DISTANCE(root["Point"], {"type": "Point", "coordinates": [20.1, 20]}) 
+SELECT VALUE ST_DISTANCE(root["Point"], {"Position": {"Altitude": null, "Longitude": 20.1, "Latitude": 20}, "BoundingBox": null, "AdditionalProperties": {}}) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -17,7 +17,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ST_WITHIN(root["Point"], {"type": "Polygon", "coordinates": [[[10, 10], [30, 10], [30, 30], [10, 30], [10, 10]]]}) 
+SELECT VALUE ST_WITHIN(root["Point"], {"Rings": [{"Positions": [{"Altitude": null, "Longitude": 10, "Latitude": 10}, {"Altitude": null, "Longitude": 30, "Latitude": 10}, {"Altitude": null, "Longitude": 30, "Latitude": 30}, {"Altitude": null, "Longitude": 10, "Latitude": 30}, {"Altitude": null, "Longitude": 10, "Latitude": 10}], "BoundingBox": null, "AdditionalProperties": {}}], "BoundingBox": null, "AdditionalProperties": {}}) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -30,7 +30,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ST_INTERSECTS(root["Point"], {"type": "Polygon", "coordinates": [[[10, 10], [30, 10], [30, 30], [10, 30], [10, 10]]]}) ]]></SqlQuery>
+WHERE ST_INTERSECTS(root["Point"], {"Rings": [{"Positions": [{"Altitude": null, "Longitude": 10, "Latitude": 10}, {"Altitude": null, "Longitude": 30, "Latitude": 10}, {"Altitude": null, "Longitude": 30, "Latitude": 30}, {"Altitude": null, "Longitude": 10, "Latitude": 30}, {"Altitude": null, "Longitude": 10, "Latitude": 10}], "BoundingBox": null, "AdditionalProperties": {}}], "BoundingBox": null, "AdditionalProperties": {}}) ]]></SqlQuery>
     </Output>
   </Result>
 </Results>

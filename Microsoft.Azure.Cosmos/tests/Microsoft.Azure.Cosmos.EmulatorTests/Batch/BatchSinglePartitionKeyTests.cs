@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TestDoc testDocToUpsert = await BatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1, ttlInSeconds: ttlInSeconds);
                 testDocToUpsert.Cost++;
 
-                BatchCore batch = (BatchCore)(new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchCore batch = (BatchCore)new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                        .CreateItemStream(
                             BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
                             BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized, ttlInSeconds: ttlInSeconds))
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             BatchTestBase.GetBatchItemRequestOptions(testDocToReplace, isSchematized, ttlInSeconds: ttlInSeconds))
                        .UpsertItemStream(
                             BatchTestBase.TestDocToStream(testDocToUpsert, isSchematized),
-                            BatchTestBase.GetBatchItemRequestOptions(testDocToUpsert, isSchematized, ttlInSeconds: infiniteTtl)));
+                            BatchTestBase.GetBatchItemRequestOptions(testDocToUpsert, isSchematized, ttlInSeconds: infiniteTtl));
 
                 TransactionalBatchResponse batchResponse = await batch.ExecuteAsync(BatchTestBase.GetUpdatedBatchRequestOptions(isSchematized: true));
 
@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                BatchCore batch = (BatchCore)(new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchCore batch = (BatchCore)new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .CreateItemStream(
                         BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
                         BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized))
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         BatchTestBase.GetBatchItemRequestOptions(anotherTestDocToUpsert, isSchematized))
                     .DeleteItem(
                         BatchTestBase.GetId(this.TestDocPk1ExistingD, isSchematized),
-                        BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized)));
+                        BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized));
 
                 batchResponse = await batch.ExecuteAsync(batchOptions);
             }

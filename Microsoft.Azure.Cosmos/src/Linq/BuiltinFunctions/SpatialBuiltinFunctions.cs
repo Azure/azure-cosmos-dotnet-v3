@@ -24,7 +24,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(GeoObject)},
+                        new Type[]
+                        {
+                            typeof(GeoObject),
+                            typeof(GeoObject)
+                        },
                     }));
 
             SpatialBuiltinFunctionDefinitions.Add("Within",
@@ -32,25 +36,45 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(GeoObject) },
+                        new Type[]
+                        {
+                            typeof(GeoObject),
+                            typeof(GeoObject)
+                        },
                     }));
 
             SpatialBuiltinFunctionDefinitions.Add("IsValidDetailed",
                 new SqlBuiltinFunctionVisitor("ST_IsValidDetailed",
                     true,
-                    new List<Type[]>()));
+                    new List<Type[]>()
+                    {
+                        new Type[]
+                        {
+                            typeof(GeoObject)
+                        },
+                    }));
 
             SpatialBuiltinFunctionDefinitions.Add("IsValid",
                 new SqlBuiltinFunctionVisitor("ST_IsValid",
                     true,
-                    new List<Type[]>()));
+                    new List<Type[]>()
+                    {
+                        new Type[]
+                        {
+                            typeof(GeoObject)
+                        },
+                    }));
 
             SpatialBuiltinFunctionDefinitions.Add("Intersects",
                 new SqlBuiltinFunctionVisitor("ST_Intersects",
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(GeoObject) },
+                        new Type[]
+                        {
+                            typeof(GeoObject),
+                            typeof(GeoObject)
+                        },
                     }));
         }
 
