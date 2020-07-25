@@ -135,7 +135,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         /// </summary>
         [TestMethod]
         [Timeout(30000)]
-        [Ignore]
         public async Task ChangeFeed_FeedRange_FromV2SDK()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
@@ -168,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                 }
 
-                FeedRangeEPK feedRangeEpk = feedRange as FeedRangeEPK;
+                FeedRangeEpk feedRangeEpk = feedRange as FeedRangeEpk;
 
                 // Construct the continuation's range, using PKRangeId + ETag
                 List<dynamic> ct = new List<dynamic>()
@@ -207,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                     string migratedContinuation = firstResponse.ContinuationToken;
                     Assert.IsTrue(FeedRangeContinuation.TryParse(migratedContinuation, out FeedRangeContinuation feedRangeContinuation));
-                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEPK);
+                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEpk);
                 }
             }
 
