@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             });
             this.hasMoreResults = true;
 
-            if (changeFeedRequestOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+            if (this.changeFeedOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
             {
                 if (!FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
@@ -97,12 +97,9 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    if (this.FeedRangeContinuation == null)
+                    using (diagnostics.CreateScope("InitializeContinuation"))
                     {
-                        using (diagnostics.CreateScope("InitializeContinuation"))
-                        {
-                            await this.InitializeFeedContinuationAsync(cancellationToken);
-                        }
+                        await this.InitializeFeedContinuationAsync(cancellationToken);
                     }
 
                     TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
@@ -136,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
             string continuation = this.FeedRangeContinuation.GetContinuation();
             if (continuation != null)
             {
-                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.FeedRangeContinuation.GetContinuation());
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation);
             }
 
             if ((this.changeFeedOptions.FeedRange == null) || this.changeFeedOptions.FeedRange is FeedRangeEpk)
@@ -227,6 +224,21 @@ namespace Microsoft.Azure.Cosmos
                     containerRid: this.lazyContainerRid.Result.Result,
                     feedRange: (FeedRangeInternal)this.changeFeedOptions.FeedRange,
                     ranges: ranges);
+            }
+            else if (this.FeedRangeContinuation?.FeedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+            {
+                // Migration from PKRangeId scenario
+                FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
+
+                IReadOnlyList<Documents.Routing.Range<string>> ranges = await feedRangePartitionKeyRange.AcceptAsync(
+                    feedRangePartitionKeyRangeExtractor,
+                    cancellationToken);
+
+                this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
+                    containerRid: this.lazyContainerRid.Result.Result,
+                    feedRange: new FeedRangeEpk(ranges[0]),
+                    ranges: ranges,
+                    continuation: this.FeedRangeContinuation.GetContinuation());
             }
         }
     }
