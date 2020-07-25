@@ -96,7 +96,6 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE CONTAINS(root["StringField"], "Str", true) 
 FROM root]]></SqlQuery>
-      <ErrorMessage><![CDATA[Method for testing SQL translation only]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -108,7 +107,6 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE CONTAINS("sTr", root["StringField"], true) 
 FROM root]]></SqlQuery>
-      <ErrorMessage><![CDATA[Method for testing SQL translation only]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

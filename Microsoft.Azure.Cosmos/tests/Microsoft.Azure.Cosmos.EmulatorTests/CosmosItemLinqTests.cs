@@ -717,13 +717,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task LinqCaseInsensitiveStringTest()
         {
             //Creating items for query.
-            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 2, perPKItemCount: 100, randomPartitionKey: true);
 
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
 
-            async Task TestSearch(Expression<Func<ToDoActivity, bool>> expression, string expectedMethod, bool shouldBeCaseInsensitive, int expectedResults)
+            async Task TestSearch(Expression<Func<ToDoActivity, bool>> expression, string expectedMethod, bool caseInsensitive, int expectedResults)
             {
-                string expectedQueryText = $"SELECT VALUE root FROM root WHERE {expectedMethod}(root[\"description\"], @param1{(shouldBeCaseInsensitive ? ", true" : "")})";
+                string expectedQueryText = $"SELECT VALUE root FROM root WHERE {expectedMethod}(root[\"description\"], @param1{(caseInsensitive ? ", true" : "")})";
 
                 IArgumentProvider arguments = (IArgumentProvider)expression.Body;
                 int index = arguments.ArgumentCount > 2 ? 1 : 0;
@@ -745,15 +745,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             await TestSearch(x => x.description.StartsWith("create"), "STARTSWITH", false, 0);
-            await TestSearch(x => x.description.StartsWith("create", StringComparison.OrdinalIgnoreCase), "STARTSWITH", true, 2);
+            await TestSearch(x => x.description.StartsWith("cReAtE", StringComparison.OrdinalIgnoreCase), "STARTSWITH", true, 200);
 
             await TestSearch(x => x.description.EndsWith("activity"), "ENDSWITH", false, 0);
-            await TestSearch(x => x.description.EndsWith("activity", StringComparison.OrdinalIgnoreCase), "ENDSWITH", true, 2);
+            await TestSearch(x => x.description.EndsWith("AcTiViTy", StringComparison.OrdinalIgnoreCase), "ENDSWITH", true, 200);
 
-            await TestSearch(x => x.description.Equals("createrandomtodoactivity", StringComparison.OrdinalIgnoreCase), "STRINGEQUALS", true, 2);
+            await TestSearch(x => x.description.Equals("createrandomtodoactivity", StringComparison.OrdinalIgnoreCase), "STRINGEQUALS", true, 200);
 
             await TestSearch(x => x.description.Contains("todo"), "CONTAINS", false, 0);
-            await TestSearch(x => x.description.Contains("todo", StringComparison.OrdinalIgnoreCase), "CONTAINS", true, 2);
+            await TestSearch(x => x.description.Contains("tOdO", StringComparison.OrdinalIgnoreCase), "CONTAINS", true, 200);
 
         }
 
@@ -810,11 +810,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
     }
 
-    static class StringTestExtensions
+    static class StringExtensions
     {
-        public static bool Contains(this string haystack, string needle, StringComparison stringComparison)
+        // string.Contains overload is only available in netcoreapp2.1+, this adds support for an extension method
+        // for programs targeting netstandard2.0 or netcoreapp2.0
+        public static bool Contains(this string haystack, string needle, StringComparison comparisonType)
         {
-            throw new NotImplementedException("Method for testing SQL translation only");
+            return haystack.IndexOf(needle, comparisonType) >= 0;
         }
     }
 }
