@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                         if (!tryInitializeContainerRId.Succeeded)
                         {
                             CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
-                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUriString: null, diagnosticsContext: diagnostics));
                         }
                     }
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
                                 return CosmosExceptionFactory.CreateBadRequestException(
                                     message: validateContainer.Exception.InnerException.Message,
                                     innerException: validateContainer.Exception.InnerException,
-                                    diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                                    diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUriString: null, diagnosticsContext: diagnostics));
                             }
                         }
                         else
@@ -183,11 +183,15 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: stream,
                requestEnricher: request =>
                {
+                   // FeedRangeContinuationRequestMessagePopulatorVisitor needs to run before FeedRangeRequestMessagePopulatorVisitor,
+                   // since they both set EPK range headers and in the case of split we need to run on the child range and not the parent range.
+                   FeedRangeContinuationRequestMessagePopulatorVisitor feedRangeContinuationVisitor = new FeedRangeContinuationRequestMessagePopulatorVisitor(
+                       request,
+                       QueryRequestOptions.FillContinuationToken);
+                   this.FeedRangeContinuation.Accept(feedRangeContinuationVisitor);
+
                    FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
                    this.FeedRangeInternal.Accept(feedRangeVisitor);
-
-                   FeedRangeContinuationRequestMessagePopulatorVisitor feedRangeContinuationVisitor = new FeedRangeContinuationRequestMessagePopulatorVisitor(request, QueryRequestOptions.FillContinuationToken);
-                   this.FeedRangeContinuation.Accept(feedRangeContinuationVisitor);
 
                    if (this.querySpec != null)
                    {

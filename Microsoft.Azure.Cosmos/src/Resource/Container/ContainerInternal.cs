@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class ContainerInternal : Container
     {
-        public abstract Uri LinkUri { get; }
+        public abstract string LinkUri { get; }
 
         public abstract CosmosClientContext ClientContext { get; }
 
@@ -89,6 +89,22 @@ namespace Microsoft.Azure.Cosmos
 
             throw new ArgumentNullException(nameof(partitionKey));
         }
+
+#if !INTERNAL
+        public abstract Task<ResponseMessage> PatchItemStreamAsync(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+#endif
 
 #if !PREVIEW
 

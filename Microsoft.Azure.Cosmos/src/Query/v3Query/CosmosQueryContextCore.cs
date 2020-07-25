@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
-            Uri resourceLink,
+            string resourceLink,
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,

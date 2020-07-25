@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                         queryClient: new CosmosQueryClientCore(container.ClientContext, container),
-                        resourceLink: container.LinkUri.OriginalString,
+                        resourceLink: container.LinkUri,
                         partitionedQueryExecutionInfo: null,
                         containerQueryProperties: containerQueryProperties,
                         properties: null,

@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 // Only thing that matters is that we target the correct range.
                                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
                                 List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
-                                    cosmosQueryContext.ResourceLink.OriginalString,
+                                    cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
                                     inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
 
@@ -241,12 +241,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             cancellationToken.ThrowIfCancellationRequested();
 
             List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
-                cosmosQueryContext.QueryClient,
-                cosmosQueryContext.ResourceLink.OriginalString,
-                partitionedQueryExecutionInfo,
-                containerQueryProperties,
-                inputParameters.Properties,
-                inputParameters.InitialFeedRange);
+                   cosmosQueryContext.QueryClient,
+                   cosmosQueryContext.ResourceLink,
+                   partitionedQueryExecutionInfo,
+                   containerQueryProperties,
+                   inputParameters.Properties,
+                   inputParameters.InitialFeedRange);
 
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
                 || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)

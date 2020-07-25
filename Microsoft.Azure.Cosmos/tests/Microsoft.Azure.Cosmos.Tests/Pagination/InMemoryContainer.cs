@@ -217,9 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CosmosElement candidatePartitionKey = GetPartitionKeyFromPayload(
                     candidate.Payload,
                     this.partitionKeyDefinition);
-                bool partitionKeyMatches = CosmosElementEqualityComparer.Value.Equals(
-                    candidatePartitionKey,
-                    partitionKey);
+                bool partitionKeyMatches = candidatePartitionKey.Equals(partitionKey);
 
                 if (identifierMatches && partitionKeyMatches)
                 {

@@ -21,8 +21,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangeEPK_Range()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEpk FeedRangeEpk = new FeedRangeEpk(range);
-            Assert.AreEqual(range, FeedRangeEpk.Range);
+            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
+            Assert.AreEqual(range, feedRangeEPK.Range);
         }
 
         [TestMethod]
@@ -201,8 +201,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangeEPK_ToJsonFromJson()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEpk FeedRangeEpk = new FeedRangeEpk(range);
-            string representation = FeedRangeEpk.ToJsonString();
+            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
+            string representation = feedRangeEPK.ToJsonString();
             FeedRangeEpk feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEpk;
             Assert.IsNotNull(feedRangeEPKDeserialized);
             Assert.AreEqual(FeedRangeEpk.Range.Min, feedRangeEPKDeserialized.Range.Min);

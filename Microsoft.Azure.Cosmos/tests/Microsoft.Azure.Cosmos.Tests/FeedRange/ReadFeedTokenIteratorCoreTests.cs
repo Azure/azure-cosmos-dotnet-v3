@@ -40,9 +40,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void ReadFeedIteratorCore_Create_WithRange()
         {
             Documents.Routing.Range<string>  range = new Documents.Routing.Range<string>("A", "B", true, false);
-            FeedRangeEpk FeedRangeEpk = new FeedRangeEpk(range);
-            FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), FeedRangeEpk, null, null);
-            Assert.AreEqual(FeedRangeEpk, feedTokenIterator.FeedRangeInternal);
+            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
+            FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), feedRangeEPK, null, null);
+            Assert.AreEqual(feedRangeEPK, feedTokenIterator.FeedRangeInternal);
             Assert.IsNull(feedTokenIterator.FeedRangeContinuation);
         }
 
@@ -64,8 +64,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
 
             string continuation = Guid.NewGuid().ToString();
-            FeedRangeEpk FeedRangeEpk = FeedRangeEpk.FullRange;
-            FeedRangeCompositeContinuation feedRangeSimpleContinuation = new FeedRangeCompositeContinuation(Guid.NewGuid().ToString(), FeedRangeEpk, new List<Documents.Routing.Range<string>>() { FeedRangeEpk.Range }, continuation);
+            FeedRangeEpk feedRangeEPK = FeedRangeEpk.FullRange;
+            FeedRangeCompositeContinuation feedRangeSimpleContinuation = new FeedRangeCompositeContinuation(Guid.NewGuid().ToString(), feedRangeEPK, new List<Documents.Routing.Range<string>>() { feedRangeEPK.Range }, continuation);
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), null, feedRangeSimpleContinuation.ToString(), null);
             FeedRangeEpk defaultRange = feedTokenIterator.FeedRangeInternal as FeedRangeEpk;
             Assert.AreEqual(FeedRangeEpk.FullRange.Range.Min, defaultRange.Range.Min);
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Conflict),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Conflict),
                     It.Is<Documents.OperationType>(ot => ot == Documents.OperationType.Query),
                     It.IsAny<RequestOptions>(),
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
             cosmosClientContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
                     It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
                     It.IsAny<Documents.OperationType>(),
                     It.IsAny<RequestOptions>(),
@@ -495,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext);
             Mock.Get(containerCore)
                 .Setup(c => c.LinkUri)
-                .Returns(new Uri($"/dbs/db/colls/colls", UriKind.Relative));
+                .Returns("/dbs/db/colls/colls");
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
                 .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));

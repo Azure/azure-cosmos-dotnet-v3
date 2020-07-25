@@ -39,7 +39,7 @@
         }
 
         public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,

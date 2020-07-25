@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions queryRequestOptions,
-            Uri resourceLink,
+            string resourceLink,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool forcePassthrough,

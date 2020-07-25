@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract Action<IQueryable> OnExecuteScalarQueryCallback { get; }
 
         public abstract Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
-            Uri containerLink,
+            string containerLink,
             PartitionKey? partitionKey,
             CancellationToken cancellationToken);
 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             CancellationToken cancellationToken);
 
         public abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
