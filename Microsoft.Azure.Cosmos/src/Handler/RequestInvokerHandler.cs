@@ -124,12 +124,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             // This is needed for query where a single
             // user request might span multiple backend requests.
             // This will still have a single request id for retry scenarios
-            ActivityScope activityScope = null;
-            if (Trace.CorrelationManager.ActivityId == Guid.Empty)
-            {
-                Debug.Assert(operationType != OperationType.Query || operationType != OperationType.QueryPlan, "There should be an activity id already set");
-                activityScope = new ActivityScope(Guid.NewGuid());
-            }
+            ActivityScope activityScope = ActivityScope.CreateIfDefaultActivityId();
+            Debug.Assert(activityScope != null &&
+                (operationType != OperationType.SqlQuery || operationType != OperationType.Query || operationType != OperationType.QueryPlan),
+                "There should be an activity id already set");
 
             try
             {
