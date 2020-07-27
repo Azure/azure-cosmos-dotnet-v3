@@ -189,10 +189,18 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 stringHMACSHA256Helper,
                 out payload);
-            return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                Constants.Properties.MasterToken,
-                Constants.Properties.TokenVersion,
-                authorizationToken));
+            try
+            {
+                return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
+                    Constants.Properties.MasterToken,
+                    Constants.Properties.TokenVersion,
+                    authorizationToken));
+            }
+            catch
+            {
+                payload.Dispose();
+                throw;
+            }
         }
 
         // used in Compute
@@ -703,18 +711,26 @@ namespace Microsoft.Azure.Cosmos
             string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
             int capacity = AuthorizationHelper.ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(capacity);
-            Span<byte> payloadBytes = buffer;
-            int length = AuthorizationHelper.SerializeMessagePayload(
-                payloadBytes,
-                verbInput,
-                authResourceId,
-                resourceTypeInput,
-                headers);
+            try
+            {
+                Span<byte> payloadBytes = buffer;
+                int length = AuthorizationHelper.SerializeMessagePayload(
+                    payloadBytes,
+                    verbInput,
+                    authResourceId,
+                    resourceTypeInput,
+                    headers);
 
-            payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
-            byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-            string authorizationToken = Convert.ToBase64String(hashPayLoad);
-            return authorizationToken;
+                payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
+                byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
+                string authorizationToken = Convert.ToBase64String(hashPayLoad);
+                return authorizationToken;
+            }
+            catch
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+                throw;
+            }
         }
 
         private static int ComputeMemoryCapacity(string verbInput, string authResourceId, string resourceTypeInput)
@@ -773,6 +789,7 @@ namespace Microsoft.Azure.Cosmos
                 string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
                 int memoryStreamCapacity = AuthorizationHelper.ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(memoryStreamCapacity);
+                using ArrayOwner owner = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, buffer.Length));
                 Span<byte> payloadBytes = buffer;
                 int length = AuthorizationHelper.SerializeMessagePayload(
                     payloadBytes,
@@ -783,7 +800,6 @@ namespace Microsoft.Azure.Cosmos
 
                 byte[] hashPayLoad = hmacSha256.ComputeHash(buffer, 0, length);
                 authorizationToken = Convert.ToBase64String(hashPayLoad);
-                ArrayPool<byte>.Shared.Return(buffer);
             }
 
             return authorizationToken;
@@ -807,13 +823,14 @@ namespace Microsoft.Azure.Cosmos
                 this.Buffer = buffer;
             }
 
-            public ArraySegment<byte> Buffer { get; }
+            public ArraySegment<byte> Buffer { get; private set; }
 
             public void Dispose()
             {
                 if (this.Buffer.Array != null)
                 {
                     this.pool?.Return(this.Buffer.Array);
+                    this.Buffer = default;
                 }
             }
         }
