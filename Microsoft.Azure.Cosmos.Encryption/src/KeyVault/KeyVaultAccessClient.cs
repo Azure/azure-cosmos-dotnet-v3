@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.keyVaultTokenCredentialFactory = keyVaultTokenCredentialFactory;
             this.akvClientCache = new AsyncCache<Uri, KeyClient>();
             this.akvCryptoClientCache = new AsyncCache<Uri, CryptographyClient>();
-            this.keyVaultTokenCredentialFactory = keyVaultTokenCredentialFactory;
         }
 
         /// <summary>
