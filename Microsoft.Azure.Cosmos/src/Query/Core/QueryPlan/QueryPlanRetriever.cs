@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using OperationType = Documents.OperationType;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using ResourceType = Documents.ResourceType;
@@ -62,24 +63,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             if (!tryGetQueryPlan.Succeeded)
             {
-                throw new CosmosException(
-                    System.Net.HttpStatusCode.BadRequest,
-                    tryGetQueryPlan.Exception.ToString());
+                if (tryGetQueryPlan.Exception is CosmosException)
+                {
+                    throw tryGetQueryPlan.Exception;
+                }
+
+                throw CosmosExceptionFactory.CreateBadRequestException(
+                    message: tryGetQueryPlan.Exception.ToString(),
+                    stackTrace: tryGetQueryPlan.Exception.StackTrace);
             }
 
             return tryGetQueryPlan.Result;
         }
 
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
-            CosmosQueryClient client,
+            CosmosQueryContext queryContext,
             SqlQuerySpec sqlQuerySpec,
-            Uri resourceLink,
+            string resourceLink,
             PartitionKey? partitionKey,
             CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (queryContext == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(queryContext));
             }
 
             if (sqlQuerySpec == null)
@@ -94,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            return client.ExecuteQueryPlanRequestAsync(
+            return queryContext.ExecuteQueryPlanRequestAsync(
                 resourceLink,
                 ResourceType.Document,
                 OperationType.QueryPlan,

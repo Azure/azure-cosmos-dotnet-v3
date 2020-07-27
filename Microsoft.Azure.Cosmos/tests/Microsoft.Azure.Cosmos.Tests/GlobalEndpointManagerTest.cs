@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.ObjectModel;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="GlobalEndpointManager"/>
         /// </summary>
         [TestMethod]
-        public void EndpointFailureMockTest()
+        public async Task EndpointFailureMockTest()
         {
             // Setup dummpy read locations for the database account
             Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
             GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
 
-            globalEndpointManager.RefreshLocationAsync(databaseAccount).Wait();
+            await globalEndpointManager.RefreshLocationAsync(databaseAccount);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
             //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
@@ -65,12 +66,12 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
 
             globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
-            globalEndpointManager.RefreshLocationAsync(null).Wait();
+            await globalEndpointManager.RefreshLocationAsync(null);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], globalEndpointManager.WriteEndpoints[0]);
 
             //Sleep a second for the unavailable endpoint entry to expire and background refresh timer to kick in
-            Thread.Sleep(1000);
-            globalEndpointManager.RefreshLocationAsync(null).Wait();
+            Thread.Sleep(2000);
+            await globalEndpointManager.RefreshLocationAsync(null);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
         }
 

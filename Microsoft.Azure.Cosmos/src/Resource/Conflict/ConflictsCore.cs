@@ -11,14 +11,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
-    internal class ConflictsCore : Conflicts
+    internal abstract class ConflictsCore : Conflicts
     {
-        private readonly ContainerCore container;
-        private readonly CosmosClientContext clientContext;
+        private readonly ContainerInternal container;
 
         public ConflictsCore(
             CosmosClientContext clientContext,
-            ContainerCore container)
+            ContainerInternal container)
         {
             if (clientContext == null)
             {
@@ -31,10 +30,13 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.container = container;
-            this.clientContext = clientContext;
+            this.ClientContext = clientContext;
         }
 
-        public override Task<ResponseMessage> DeleteAsync(
+        protected CosmosClientContext ClientContext { get; }
+
+        public Task<ResponseMessage> DeleteAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
             ConflictProperties conflict,
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -44,12 +46,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(conflict));
             }
 
-            Uri conflictLink = this.clientContext.CreateLink(
-                 parentLink: this.container.LinkUri.OriginalString,
+            string conflictLink = this.ClientContext.CreateLink(
+                 parentLink: this.container.LinkUri,
                  uriPathSegment: Paths.ConflictsPathSegment,
                  id: conflict.Id);
 
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: conflictLink,
                 resourceType: ResourceType.Conflict,
                 operationType: OperationType.Delete,
@@ -58,14 +60,14 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
-                diagnosticsScope: null,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
-           string queryText = null,
-           string continuationToken = null,
-           QueryRequestOptions requestOptions = null)
+           string queryText,
+           string continuationToken,
+           QueryRequestOptions requestOptions)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -80,9 +82,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
-            string queryText = null,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+            string queryText,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -97,17 +99,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+             QueryDefinition queryDefinition,
+             string continuationToken = null,
+             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.clientContext,
-               this.container.LinkUri,
-               ResourceType.Conflict,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+            return FeedRangeIteratorCore.Create(
+                containerCore: this.container,
+                feedRangeInternal: null,
+                continuation: continuationToken,
+                options: requestOptions,
+                resourceType: ResourceType.Conflict);
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
@@ -125,12 +126,13 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                (response) => this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.Conflict));
         }
 
-        public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
+        public async Task<ItemResponse<T>> ReadCurrentAsync<T>(
+            CosmosDiagnosticsContext diagnosticsContext,
             ConflictProperties cosmosConflict,
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -141,26 +143,26 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
-            DatabaseCore databaseCore = (DatabaseCore)this.container.Database;
+            DatabaseInternal databaseCore = (DatabaseInternal)this.container.Database;
             string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
             string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
 
-            Uri dbLink = this.clientContext.CreateLink(
+            string dbLink = this.ClientContext.CreateLink(
                 parentLink: string.Empty,
                 uriPathSegment: Paths.DatabasesPathSegment,
                 id: databaseResourceId);
 
-            Uri containerLink = this.clientContext.CreateLink(
-                parentLink: dbLink.OriginalString,
+            string containerLink = this.ClientContext.CreateLink(
+                parentLink: dbLink,
                 uriPathSegment: Paths.CollectionsPathSegment,
                 id: containerResourceId);
 
-            Uri itemLink = this.clientContext.CreateLink(
-                parentLink: containerLink.OriginalString,
+            string itemLink = this.ClientContext.CreateLink(
+                parentLink: containerLink,
                 uriPathSegment: Paths.DocumentsPathSegment,
                 id: cosmosConflict.SourceResourceId);
 
-            Task<ResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: itemLink,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.Read,
@@ -169,10 +171,10 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
-                diagnosticsScope: null,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
-            return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)
@@ -192,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
                         writer.Write(cosmosConflict.Content);
                         writer.Flush();
                         stream.Position = 0;
-                        return this.clientContext.SerializerCore.FromStream<T>(stream);
+                        return this.ClientContext.SerializerCore.FromStream<T>(stream);
                     }
                 }
             }

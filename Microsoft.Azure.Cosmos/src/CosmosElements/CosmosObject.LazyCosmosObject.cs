@@ -3,8 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -15,27 +19,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>, IComparable<CosmosObject>
     {
         private class LazyCosmosObject : CosmosObject
         {
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
-            private readonly Dictionary<string, CosmosElement> cachedElements;
+            private readonly ConcurrentDictionary<string, CosmosElement> cachedElements;
             private readonly Lazy<int> lazyCount;
 
             public LazyCosmosObject(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Object)
                 {
@@ -44,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
-                this.cachedElements = new Dictionary<string, CosmosElement>();
+                this.cachedElements = new ConcurrentDictionary<string, CosmosElement>();
                 this.lazyCount = new Lazy<int>(() => this.jsonNavigator.GetObjectPropertyCount(this.jsonNavigatorNode));
             }
 
@@ -78,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public override bool ContainsKey(string key) => this.jsonNavigator.TryGetObjectProperty(
                 this.jsonNavigatorNode,
                 key,
-                out ObjectProperty objectProperty);
+                out _);
 
             public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this
                 .jsonNavigator
@@ -92,42 +86,34 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {
-                value = default;
-                bool gotValue;
                 if (this.cachedElements.TryGetValue(
                     key,
                     out CosmosElement cosmosElemet))
                 {
                     value = cosmosElemet;
-                    gotValue = true;
+                    return true;
                 }
-                else if (this.jsonNavigator.TryGetObjectProperty(
+
+                if (this.jsonNavigator.TryGetObjectProperty(
                     this.jsonNavigatorNode,
                     key,
                     out ObjectProperty objectProperty))
                 {
                     value = CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode);
-                    gotValue = true;
                     this.cachedElements[key] = value;
-                }
-                else
-                {
-                    value = null;
-                    gotValue = false;
+
+                    return true;
                 }
 
-                return gotValue;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                value = default; // Dictionary.TryGetValue does not use nullable references.
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+                return false;
             }
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
 
-                jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);
-            }
+            public override IJsonReader CreateReader() => this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
         }
     }
 #if INTERNAL

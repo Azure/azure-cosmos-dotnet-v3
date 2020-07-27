@@ -12,24 +12,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
-            ContainerCore container,
+            ContainerInternal container,
             DateTime? startTime,
             bool startFromBeginning)
         {
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
-            if (startTime.HasValue)
+            ChangeFeedRequestOptions.StartFrom startFrom;
+            if (continuationToken != null)
             {
-                requestOptions.StartTime = startTime.Value;
+                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuationToken);
+            }
+            else if (startTime.HasValue)
+            {
+                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromTime(startTime.Value);
             }
             else if (startFromBeginning)
             {
-                requestOptions.StartTime = ChangeFeedRequestOptions.DateTimeStartFromBeginning;
+                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+            }
+            else
+            {
+                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromNow();
             }
 
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+            {
+                MaxItemCount = maxItemCount,
+                FeedRange = new FeedRangePartitionKeyRange(partitionKeyRangeId),
+                From = startFrom,
+            };
+
             return new ChangeFeedPartitionKeyResultSetIteratorCore(
-                partitionKeyRangeId: partitionKeyRangeId,
-                continuationToken: continuationToken,
-                maxItemCount: maxItemCount,
                 clientContext: container.ClientContext,
                 container: container,
                 options: requestOptions);

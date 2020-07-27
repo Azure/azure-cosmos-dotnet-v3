@@ -2,10 +2,11 @@
   <Result>
     <Input>
       <Description>PointOperationStatistics</Description>
-      <CosmosDiagnostics><![CDATA[{
+      <DiagnosticsInternal><![CDATA[{
   "ActivityId": "00000000-0000-0000-0000-000000000000",
   "StatusCode": 200,
   "SubStatusCode": 3,
+  "ResponseTimeUtc": "2020-01-02T03:04:05.006",
   "RequestCharge": 4.0,
   "ErrorMessage": null,
   "Method": {
@@ -13,12 +14,11 @@
   },
   "RequestUri": "http://localhost.com",
   "RequestSessionToken": "RequestSessionToken",
-  "ResponseSessionToken": "ResponseSessionToken",
-  "ClientSideRequestStatistics": null
-}]]></CosmosDiagnostics>
+  "ResponseSessionToken": "ResponseSessionToken"
+}]]></DiagnosticsInternal>
     </Input>
     <Output>
-      <ToStringOutput><![CDATA[{"Id":"PointOperationStatistics","ActivityId":"00000000-0000-0000-0000-000000000000","StatusCode":200,"SubStatusCode":3,"RequestCharge":4.0,"RequestUri":"http://localhost.com","RequestSessionToken":"RequestSessionToken","ResponseSessionToken":"ResponseSessionToken"}]]></ToStringOutput>
+      <ToStringOutput><![CDATA[{"Id":"PointOperationStatistics","ActivityId":"00000000-0000-0000-0000-000000000000","ResponseTimeUtc":"2020-01-02T03:04:05.0060000","StatusCode":200,"SubStatusCode":3,"RequestCharge":4.0,"RequestUri":"http://localhost.com","RequestSessionToken":"RequestSessionToken","ResponseSessionToken":"ResponseSessionToken"}]]></ToStringOutput>
     </Output>
   </Result>
 </Results>

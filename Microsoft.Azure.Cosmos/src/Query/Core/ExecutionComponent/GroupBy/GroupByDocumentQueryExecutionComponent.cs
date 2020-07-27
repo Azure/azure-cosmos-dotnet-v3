@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
@@ -60,8 +61,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
-            string continuationToken,
-            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+            CosmosElement continuationToken,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue)
@@ -158,23 +159,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 }
             }
 
-            public CosmosElement Payload
-            {
-                get
-                {
-                    if (!this.cosmosObject.TryGetValue(PayloadPropertyName, out CosmosElement cosmosElement))
-                    {
-                        throw new InvalidOperationException($"Underlying object does not have an 'payload' field.");
-                    }
-
-                    return cosmosElement;
-                }
-            }
+            public bool TryGetPayload(out CosmosElement payload) => this.cosmosObject.TryGetValue(PayloadPropertyName, out payload);
         }
 
         protected sealed class GroupingTable : IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>
         {
-            private static readonly AggregateOperator[] EmptyAggregateOperators = new AggregateOperator[] { };
+            private static readonly IReadOnlyList<AggregateOperator> EmptyAggregateOperators = new AggregateOperator[] { };
 
             private readonly Dictionary<UInt128, SingleGroupAggregator> table;
             private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
@@ -198,21 +188,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
             public void AddPayload(RewrittenGroupByProjection rewrittenGroupByProjection)
             {
-                UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
-
-                if (!this.table.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
+                // For VALUE queries the payload will be undefined if the field was undefined.
+                if (rewrittenGroupByProjection.TryGetPayload(out CosmosElement payload))
                 {
-                    singleGroupAggregator = SingleGroupAggregator.TryCreate(
-                        EmptyAggregateOperators,
-                        this.groupByAliasToAggregateType,
-                        this.orderedAliases,
-                        this.hasSelectValue,
-                        continuationToken: null).Result;
-                    this.table[groupByKeysHash] = singleGroupAggregator;
-                }
+                    UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
 
-                CosmosElement payload = rewrittenGroupByProjection.Payload;
-                singleGroupAggregator.AddValues(payload);
+                    if (!this.table.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
+                    {
+                        singleGroupAggregator = SingleGroupAggregator.TryCreate(
+                            EmptyAggregateOperators,
+                            this.groupByAliasToAggregateType,
+                            this.orderedAliases,
+                            this.hasSelectValue,
+                            continuationToken: null).Result;
+                        this.table[groupByKeysHash] = singleGroupAggregator;
+                    }
+
+                    singleGroupAggregator.AddValues(payload);
+                }
             }
 
             public IReadOnlyList<CosmosElement> Drain(int maxItemCount)
@@ -244,19 +237,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 return results;
             }
 
-            public string GetContinuationToken()
+            public CosmosElement GetCosmosElementContinuationToken()
             {
-                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                jsonWriter.WriteObjectStart();
+                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
                 foreach (KeyValuePair<UInt128, SingleGroupAggregator> kvp in this.table)
                 {
-                    jsonWriter.WriteFieldName(kvp.Key.ToString());
-                    jsonWriter.WriteStringValue(kvp.Value.GetContinuationToken());
+                    dictionary.Add(kvp.Key.ToString(), kvp.Value.GetCosmosElementContinuationToken());
                 }
-                jsonWriter.WriteObjectEnd();
 
-                string result = Utf8StringHelpers.ToString(jsonWriter.GetResult());
-                return result;
+                return CosmosObject.Create(dictionary);
             }
 
             public IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();
@@ -265,24 +254,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
-                string groupingTableContinuationToken)
+                CosmosElement continuationToken)
             {
                 GroupingTable groupingTable = new GroupingTable(
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue);
 
-                if (groupingTableContinuationToken != null)
+                if (continuationToken != null)
                 {
-                    if (!CosmosElement.TryParse(
-                        groupingTableContinuationToken,
-                        out CosmosObject parsedGroupingTableContinuations))
+                    if (!(continuationToken is CosmosObject groupingTableContinuationToken))
                     {
                         return TryCatch<GroupingTable>.FromException(
                             new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
                     }
 
-                    foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
+                    foreach (KeyValuePair<string, CosmosElement> kvp in groupingTableContinuationToken)
                     {
                         string key = kvp.Key;
                         CosmosElement value = kvp.Value;
@@ -293,18 +280,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                                 new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
                         }
 
-                        if (!(value is CosmosString singleGroupAggregatorContinuationToken))
-                        {
-                            return TryCatch<GroupingTable>.FromException(
-                                new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
-                        }
-
                         TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
                             EmptyAggregateOperators,
                             groupByAliasToAggregateType,
                             orderedAliases,
                             hasSelectValue,
-                            singleGroupAggregatorContinuationToken.Value);
+                            value);
 
                         if (tryCreateSingleGroupAggregator.Succeeded)
                         {

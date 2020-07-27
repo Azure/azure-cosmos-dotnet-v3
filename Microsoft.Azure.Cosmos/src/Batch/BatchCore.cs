@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly PartitionKey partitionKey;
 
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
 
         private List<ItemBatchOperation> operations;
 
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="container">Container that has items on which batch operations are to be performed.</param>
         /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
         internal BatchCore(
-            ContainerCore container,
+            ContainerInternal container,
             PartitionKey partitionKey)
         {
             this.container = container;
@@ -46,7 +47,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resource: item,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -64,7 +66,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -82,7 +85,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Read,
                     operationIndex: this.operations.Count,
                     id: id,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -100,7 +104,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resource: item,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -118,7 +123,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -143,7 +149,8 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     id: id,
                     resource: item,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -168,7 +175,8 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     id: id,
                     resourceStream: streamPayload,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -186,7 +194,8 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Delete,
                     operationIndex: this.operations.Count,
                     id: id,
-                    requestOptions: requestOptions));
+                    requestOptions: requestOptions,
+                    containerCore: this.container));
 
             return this;
         }
@@ -202,23 +211,28 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Executes the batch at the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">Options that apply to the batch. Used only for EPK routing.</param>
+        /// <param name="requestOptions">Options that apply to the batch.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
-        public virtual Task<TransactionalBatchResponse> ExecuteAsync(
-            RequestOptions requestOptions,
+        public override Task<TransactionalBatchResponse> ExecuteAsync(
+            TransactionalBatchRequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
-            BatchExecutor executor = new BatchExecutor(
-                container: this.container,
-                partitionKey: this.partitionKey,
-                operations: this.operations,
-                batchOptions: requestOptions,
-                diagnosticsContext: diagnosticsContext);
+            return this.container.ClientContext.OperationHelperAsync(
+                nameof(ExecuteAsync),
+                requestOptions,
+                (diagnostics) =>
+                {
+                    BatchExecutor executor = new BatchExecutor(
+                                    container: this.container,
+                                    partitionKey: this.partitionKey,
+                                    operations: this.operations,
+                                    batchOptions: requestOptions,
+                                    diagnosticsContext: diagnostics);
 
-            this.operations = new List<ItemBatchOperation>();
-            return executor.ExecuteAsync(cancellationToken);
+                    this.operations = new List<ItemBatchOperation>();
+                    return executor.ExecuteAsync(cancellationToken);
+                });
         }
 
         /// <summary>
@@ -234,11 +248,51 @@ namespace Microsoft.Azure.Cosmos
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
-                    operationType: OperationType.Patch,
-                    operationIndex: this.operations.Count,
-                    id: id,
-                    resourceStream: patchStream,
-                    requestOptions: requestOptions));
+                operationType: OperationType.Patch,
+                operationIndex: this.operations.Count,
+                id: id,
+                resourceStream: patchStream,
+                requestOptions: requestOptions,
+                containerCore: this.container));
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an operation to patch an item into the batch.
+        /// </summary>
+        /// <param name="id">The cosmos item id.</param>
+        /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
+        /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
+#if INTERNAL
+        public override
+#else
+        internal
+#endif
+            TransactionalBatch PatchItem(
+                string id,
+                IReadOnlyList<PatchOperation> patchOperations,
+                TransactionalBatchItemRequestOptions requestOptions = null)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            this.operations.Add(new ItemBatchOperation<IReadOnlyList<PatchOperation>>(
+                operationType: OperationType.Patch,
+                operationIndex: this.operations.Count,
+                id: id,
+                resource: patchOperations,
+                requestOptions: requestOptions,
+                containerCore: this.container));
 
             return this;
         }

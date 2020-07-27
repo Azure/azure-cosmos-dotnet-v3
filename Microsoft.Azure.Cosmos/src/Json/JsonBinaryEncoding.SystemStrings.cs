@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Linq;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Core.Collections;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     internal static partial class JsonBinaryEncoding
     {
@@ -51,63 +51,325 @@ namespace Microsoft.Azure.Cosmos.Json
                 "_id",
             };
 
-            public static readonly ReadOnlyMemory<byte>[] Utf8Values = Utf16Values.Select(x => (ReadOnlyMemory<byte>)Encoding.UTF8.GetBytes(x)).ToArray();
+            public static readonly UtfAllString[] UtfAllStringValues = Utf16Values.Select(x => UtfAllString.Create(x)).ToArray();
 
-            public sealed class Dictionary
+            public static class TokenBuffers
             {
-                public static readonly Dictionary Singleton = new Dictionary();
+                public static readonly Utf8String String0 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("$s"));
+                public static readonly Utf8String String1 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("$t"));
+                public static readonly Utf8String String2 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("$v"));
+                public static readonly Utf8String String3 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("_attachments"));
+                public static readonly Utf8String String4 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("_etag"));
+                public static readonly Utf8String String5 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("_rid"));
+                public static readonly Utf8String String6 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("_self"));
+                public static readonly Utf8String String7 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("_ts"));
+                public static readonly Utf8String String8 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("attachments/"));
+                public static readonly Utf8String String9 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("coordinates"));
+                public static readonly Utf8String String10 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("geometry"));
+                public static readonly Utf8String String11 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("GeometryCollection"));
+                public static readonly Utf8String String12 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("id"));
+                public static readonly Utf8String String13 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("inE"));
+                public static readonly Utf8String String14 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("inV"));
+                public static readonly Utf8String String15 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("label"));
+                public static readonly Utf8String String16 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("LineString"));
+                public static readonly Utf8String String17 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("link"));
+                public static readonly Utf8String String18 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("MultiLineString"));
+                public static readonly Utf8String String19 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("MultiPoint"));
+                public static readonly Utf8String String20 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("MultiPolygon"));
+                public static readonly Utf8String String21 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("name"));
+                public static readonly Utf8String String22 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("outE"));
+                public static readonly Utf8String String23 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("outV"));
+                public static readonly Utf8String String24 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("Point"));
+                public static readonly Utf8String String25 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("Polygon"));
+                public static readonly Utf8String String26 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("properties"));
+                public static readonly Utf8String String27 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("type"));
+                public static readonly Utf8String String28 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("value"));
+                public static readonly Utf8String String29 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("Feature"));
+                public static readonly Utf8String String30 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("FeatureCollection"));
+                public static readonly Utf8String String31 = Utf8String.UnsafeFromUtf8BytesNoValidation(Encoding.UTF8.GetBytes("_id"));
+            }
 
-                private readonly Trie<byte, int> systemStrings;
-
-                private Dictionary()
+            public static int? GetSystemStringId(Utf8Span buffer)
+            {
+                switch (buffer.Length)
                 {
-                    this.systemStrings = new Trie<byte, int>();
-                    for (int index = 0; index < SystemStrings.Utf16Values.Length; index++)
-                    {
-                        ReadOnlySpan<byte> systemString = SystemStrings.Utf8Values[index].Span;
-                        this.systemStrings.AddOrUpdate(systemString, index);
-                    }
+                    case 2:
+                        return GetSystemStringIdLength2(buffer.Span);
+                    case 12:
+                        return GetSystemStringIdLength12(buffer.Span);
+                    case 5:
+                        return GetSystemStringIdLength5(buffer.Span);
+                    case 4:
+                        return GetSystemStringIdLength4(buffer.Span);
+                    case 3:
+                        return GetSystemStringIdLength3(buffer.Span);
+                    case 11:
+                        return GetSystemStringIdLength11(buffer.Span);
+                    case 8:
+                        return GetSystemStringIdLength8(buffer.Span);
+                    case 18:
+                        return GetSystemStringIdLength18(buffer.Span);
+                    case 10:
+                        return GetSystemStringIdLength10(buffer.Span);
+                    case 15:
+                        return GetSystemStringIdLength15(buffer.Span);
+                    case 7:
+                        return GetSystemStringIdLength7(buffer.Span);
+                    case 17:
+                        return GetSystemStringIdLength17(buffer.Span);
+                }
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength2(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String0.Span.Span))
+                {
+                    return 0;
                 }
 
-                public bool TryGetValue(ReadOnlySpan<byte> utf8String, out int systemStringId)
+                if (buffer.SequenceEqual(TokenBuffers.String1.Span.Span))
                 {
-                    return this.systemStrings.TryGetValue(utf8String, out systemStringId);
+                    return 1;
                 }
+
+                if (buffer.SequenceEqual(TokenBuffers.String2.Span.Span))
+                {
+                    return 2;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String12.Span.Span))
+                {
+                    return 12;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength12(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String3.Span.Span))
+                {
+                    return 3;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String8.Span.Span))
+                {
+                    return 8;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String20.Span.Span))
+                {
+                    return 20;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength5(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String4.Span.Span))
+                {
+                    return 4;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String6.Span.Span))
+                {
+                    return 6;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String15.Span.Span))
+                {
+                    return 15;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String24.Span.Span))
+                {
+                    return 24;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String28.Span.Span))
+                {
+                    return 28;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength4(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String5.Span.Span))
+                {
+                    return 5;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String17.Span.Span))
+                {
+                    return 17;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String21.Span.Span))
+                {
+                    return 21;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String22.Span.Span))
+                {
+                    return 22;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String23.Span.Span))
+                {
+                    return 23;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String27.Span.Span))
+                {
+                    return 27;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength3(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String7.Span.Span))
+                {
+                    return 7;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String13.Span.Span))
+                {
+                    return 13;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String14.Span.Span))
+                {
+                    return 14;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String31.Span.Span))
+                {
+                    return 31;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength11(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String9.Span.Span))
+                {
+                    return 9;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength8(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String10.Span.Span))
+                {
+                    return 10;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength18(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String11.Span.Span))
+                {
+                    return 11;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength10(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String16.Span.Span))
+                {
+                    return 16;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String19.Span.Span))
+                {
+                    return 19;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String26.Span.Span))
+                {
+                    return 26;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength15(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String18.Span.Span))
+                {
+                    return 18;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength7(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String25.Span.Span))
+                {
+                    return 25;
+                }
+
+                if (buffer.SequenceEqual(TokenBuffers.String29.Span.Span))
+                {
+                    return 29;
+                }
+
+                return null;
+            }
+
+            private static int? GetSystemStringIdLength17(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(TokenBuffers.String30.Span.Span))
+                {
+                    return 30;
+                }
+
+                return null;
             }
         }
 
         /// <summary>
         /// Gets the SystemStringId for a particular system string.
         /// </summary>
-        /// <param name="utf8String">The system string to get the enum id for.</param>
+        /// <param name="utf8Span">The system string to get the enum id for.</param>
         /// <param name="systemStringId">The id of the system string if found.</param>
         /// <returns>The SystemStringId for a particular system string.</returns>
-        public static bool TryGetSystemStringId(ReadOnlySpan<byte> utf8String, out int systemStringId)
+        public static bool TryGetSystemStringId(Utf8Span utf8Span, out int systemStringId)
         {
-            return SystemStrings.Dictionary.Singleton.TryGetValue(utf8String, out systemStringId);
+            int? id = SystemStrings.GetSystemStringId(utf8Span);
+            if (!id.HasValue)
+            {
+                systemStringId = default;
+                return false;
+            }
+
+            systemStringId = id.Value;
+            return true;
         }
 
-        public static bool TryGetSystemStringById(int id, out string systemString)
+        public static bool TryGetSystemStringById(int id, out UtfAllString systemString)
         {
-            if (id >= SystemStrings.Utf16Values.Length)
+            if (id >= SystemStrings.UtfAllStringValues.Length)
             {
                 systemString = default;
                 return false;
             }
 
-            systemString = SystemStrings.Utf16Values[id];
-            return true;
-        }
-
-        public static bool TryGetUtf8SystemStringById(int id, out ReadOnlyMemory<byte> utf8SystemString)
-        {
-            if (id >= SystemStrings.Utf8Values.Length)
-            {
-                utf8SystemString = default;
-                return false;
-            }
-
-            utf8SystemString = SystemStrings.Utf8Values[id];
+            systemString = SystemStrings.UtfAllStringValues[id];
             return true;
         }
     }

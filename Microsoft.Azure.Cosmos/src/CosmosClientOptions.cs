@@ -5,11 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Common;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
-        private CosmosSerializer serializer;
+        private CosmosSerializer serializerInternal;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -66,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
         private int? maxTcpConnectionsPerEndpoint;
         private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
+        private Func<HttpClient> httpClientFactory;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -102,8 +104,18 @@ namespace Microsoft.Azure.Cosmos
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master">Configure multi-master</seealso>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
         public string ApplicationRegion { get; set; }
+
+        /// <summary>
+        /// Gets and sets the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// </summary>
+        /// <remarks>
+        /// When this property is specified, the SDK will use the region list in the provided order to define the endpoint failover order.
+        /// This configuration is an alternative to <see cref="ApplicationRegion"/>, either one can be set but not both.
+        /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
+        public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
 
         /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target
@@ -185,16 +197,53 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
-        /// Get or set the number of times client should retry on rate throttled requests.
+        /// Gets or sets the maximum number of retries in the case where the request fails
+        /// because the Azure Cosmos DB service has applied rate limiting on the client.
         /// </summary>
+        /// <value>
+        /// The default value is 9. This means in the case where the request is rate limited,
+        /// the same request will be issued for a maximum of 10 times to the server before
+        /// an error is returned to the application.
+        ///
+        /// If the value of this property is set to 0, there will be no automatic retry on rate
+        /// limiting requests from the client and the exception needs to be handled at the
+        /// application level.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a client is sending requests faster than the allowed rate,
+        /// the service will return HttpStatusCode 429 (Too Many Requests) to rate limit the client. The current
+        /// implementation in the SDK will then wait for the amount of time the service tells it to wait and
+        /// retry after the time has elapsed.
+        /// </para>
+        /// <para>
+        /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips#throughput">Handle rate limiting/request rate too large</see>.
+        /// </para>
+        /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public int? MaxRetryAttemptsOnRateLimitedRequests { get; set; }
 
         /// <summary>
-        /// Get or set the max time to client is allowed to retry on rate throttled requests. 
+        /// Gets or sets the maximum retry time in seconds for the Azure Cosmos DB service.
         /// </summary>
+        /// <value>
+        /// The default value is 30 seconds. 
+        /// </value>
         /// <remarks>
+        /// <para>
         /// The minimum interval is seconds. Any interval that is smaller will be ignored.
+        /// </para>
+        /// <para>
+        /// When a request fails due to a rate limiting error, the service sends back a response that
+        /// contains a value indicating the client should not retry before the <see cref="Microsoft.Azure.Cosmos.CosmosException.RetryAfter"/> time period has
+        /// elapsed.
+        ///
+        /// This property allows the application to set a maximum wait time for all retry attempts.
+        /// If the cumulative wait time exceeds the this value, the client will stop retrying and return the error to the application.
+        /// </para>
+        /// <para>
+        /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips#throughput">Handle rate limiting/request rate too large</see>.
+        /// </para>
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
@@ -311,6 +360,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException($"{nameof(this.WebProxy)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
                 }
+
+                if (this.HttpClientFactory != null)
+                {
+                    throw new ArgumentException($"{nameof(this.WebProxy)} cannot be set along {nameof(this.HttpClientFactory)}");
+                }
             }
         }
 
@@ -361,7 +415,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer
         {
-            get => this.serializer;
+            get => this.serializerInternal;
             set
             {
                 if (this.SerializerOptions != null)
@@ -370,7 +424,7 @@ namespace Microsoft.Azure.Cosmos
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
                 }
 
-                this.serializer = value;
+                this.serializerInternal = value;
             }
         }
 
@@ -383,7 +437,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// When the value of this property is false, the SDK will automatically discover write and read regions, and use them when the configured application region is not available.
         /// When set to true, availability is limited to the endpoint specified on the CosmosClient constructor.
-        /// Defining the <see cref="ApplicationRegion"/> is not allowed when setting the value to true.
+        /// Defining the <see cref="ApplicationRegion"/> or <see cref="ApplicationPreferredRegions"/>  is not allowed when setting the value to true.
         /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability">High availability</seealso>
         public bool LimitToEndpoint { get; set; } = false;
@@ -392,6 +446,43 @@ namespace Microsoft.Azure.Cosmos
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
         /// </summary>
         public bool AllowBulkExecution { get; set; }
+
+        /// <summary>
+        /// Gets or sets the flag to enable address cache refresh on TCP connection reset notification.
+        /// </summary>
+        /// <remarks>
+        /// Does not apply if <see cref="ConnectionMode.Gateway"/> is used.
+        /// </remarks>
+        /// <value>
+        /// The default value is false
+        /// </value>
+        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// HTTPS communication is used when <see cref="ConnectionMode"/> is set to <see cref="ConnectionMode.Gateway"/> for all operations and when <see cref="ConnectionMode"/> is <see cref="ConnectionMode.Direct"/> (default) for metadata operations.
+        /// </para>
+        /// <para>
+        /// Useful in scenarios where the application is using a pool of HttpClient instances to be shared, like ASP.NET Core applications with IHttpClientFactory or Blazor WebAssembly applications.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+        public Func<HttpClient> HttpClientFactory
+        {
+            get => this.httpClientFactory;
+            set
+            {
+                if (this.WebProxy != null)
+                {
+                    throw new ArgumentException($"{nameof(this.HttpClientFactory)} cannot be set along {nameof(this.WebProxy)}");
+                }
+
+                this.httpClientFactory = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -497,6 +588,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
+        internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
+        {
+            if (this.serializerInternal == null)
+            {
+                this.serializerInternal = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            }
+        }
+
         internal CosmosClientOptions Clone()
         {
             CosmosClientOptions cloneConfiguration = (CosmosClientOptions)this.MemberwiseClone();
@@ -522,12 +621,19 @@ namespace Microsoft.Azure.Cosmos
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
-                PortReuseMode = this.portReuseMode
+                PortReuseMode = this.portReuseMode,
+                EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
+                HttpClientFactory = this.httpClientFactory
             };
 
             if (this.ApplicationRegion != null)
             {
                 connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
+            }
+
+            if (this.ApplicationPreferredRegions != null)
+            {
+                connectionPolicy.SetPreferredLocations(this.ApplicationPreferredRegions);
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
@@ -627,6 +733,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException($"Cannot specify {nameof(this.ApplicationRegion)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
             }
+
+            if (this.ApplicationPreferredRegions?.Count > 0 && this.LimitToEndpoint)
+            {
+                throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
+            }
+
+            if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.ApplicationPreferredRegions?.Count > 0)
+            {
+                throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
+            }
         }
 
         private void ValidateDirectTCPSettings()
@@ -688,6 +804,11 @@ namespace Microsoft.Azure.Cosmos
                 features |= CosmosClientOptionsFeatures.AllowBulkExecution;
             }
 
+            if (this.HttpClientFactory != null)
+            {
+                features |= CosmosClientOptionsFeatures.HttpClientFactory;
+            }
+
             if (features == CosmosClientOptionsFeatures.NoFeatures)
             {
                 return null;
@@ -712,8 +833,7 @@ namespace Microsoft.Azure.Cosmos
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                Collection<RequestHandler> handlers = value as Collection<RequestHandler>;
-                if (handlers != null)
+                if (value is Collection<RequestHandler> handlers)
                 {
                     writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));
                     return;

@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -13,38 +15,27 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosString : CosmosElement
+    abstract partial class CosmosString : CosmosElement, IEquatable<CosmosString>, IComparable<CosmosString>
     {
         private sealed class EagerCosmosString : CosmosString
         {
+            public static readonly EagerCosmosString Empty = new EagerCosmosString(string.Empty);
+
             public EagerCosmosString(string value)
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException($"{nameof(value)}");
-                }
-
                 this.Value = value;
             }
 
             public override string Value { get; }
 
-            public override bool TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value)
+            public override bool TryGetBufferedValue(out Utf8Memory bufferedValue)
             {
                 // Eager string only has the materialized value, so this method will always return false.
-                bufferedUtf8Value = default;
+                bufferedValue = default;
                 return false;
             }
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
-                jsonWriter.WriteStringValue(this.Value);
-            }
+            public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteStringValue(this.Value);
         }
     }
 #if INTERNAL

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -22,11 +23,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
-        public RequestInvokerHandler(CosmosClient client)
+        public RequestInvokerHandler(
+            CosmosClient client,
+            Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
         {
             this.client = client;
-            this.RequestedClientConsistencyLevel = this.client.ClientOptions.ConsistencyLevel;
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -58,11 +62,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public virtual async Task<T> SendAsync<T>(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
@@ -76,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             ResponseMessage responseMessage = await this.SendAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -91,36 +95,38 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public virtual async Task<ResponseMessage> SendAsync(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
+            ContainerInternal cosmosContainerCore,
             Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (resourceUri == null)
+            if (resourceUriString == null)
             {
-                throw new ArgumentNullException(nameof(resourceUri));
+                throw new ArgumentNullException(nameof(resourceUriString));
             }
 
-            HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
-
+            // DEVNOTE: Non-Item operations need to be refactored to always pass
+            // the diagnostic context in. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1276
+            bool disposeDiagnosticContext = false;
             if (diagnosticsContext == null)
             {
-                diagnosticsContext = new CosmosDiagnosticsContext();
+                diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+                disposeDiagnosticContext = true;
             }
 
-            diagnosticsContext.Summary.SetSdkUserAgent(this.client.ClientContext.UserAgent);
-            using (diagnosticsContext.CreateOverallScope("RequestInvokerHandler"))
+            try
             {
+                HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
                 RequestMessage request = new RequestMessage(
-                    method,
-                    resourceUri,
-                    diagnosticsContext)
+                        method,
+                        resourceUriString,
+                        diagnosticsContext)
                 {
                     OperationType = operationType,
                     ResourceType = resourceType,
@@ -163,9 +169,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     request.Headers.IsUpsert = bool.TrueString;
                 }
+                else if (operationType == OperationType.Patch)
+                {
+                    request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
+                }
 
                 requestEnricher?.Invoke(request);
                 return await this.SendAsync(request, cancellationToken);
+            }
+            finally
+            {
+                if (disposeDiagnosticContext)
+                {
+                    diagnosticsContext.GetOverallScope().Dispose();
+                }
             }
         }
 
@@ -195,6 +212,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             else if (operationType == OperationType.Delete)
             {
                 return HttpMethod.Delete;
+            }
+            else if (operationType == OperationType.Patch)
+            {
+                // There isn't support for PATCH method in .NetStandard 2.0
+                return httpPatchMethod;
             }
             else
             {

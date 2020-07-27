@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private static readonly string PreNonPartitionedMigrationApiVersion = "2018-08-31";
 
-        internal static async Task<ContainerCore> CreateNonPartitionedContainer(
+        internal static async Task<ContainerInternal> CreateNonPartitionedContainer(
             Cosmos.Database database,
             string containerId,
             string indexingPolicy = null)
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static async Task CreateUndefinedPartitionItem(
-            ContainerCore container,
+            ContainerInternal container,
             string itemId)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating undefined partition Container item.
             string verb = "POST";
             string resourceType = "docs";
-            string resourceId = container.LinkUri.OriginalString;
+            string resourceId = container.LinkUri;
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", container.Database.Id, container.Id);
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
                 verb,
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static async Task CreateItemInNonPartitionedContainer(
-            ContainerCore container,
+            ContainerInternal container,
             string itemId)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceType = "docs";
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", container.Database.Id, container.Id);
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
-                verb, container.LinkUri.OriginalString,
+                verb, container.LinkUri,
                 resourceType,
                 accountInfo.authKey,
                 "master",

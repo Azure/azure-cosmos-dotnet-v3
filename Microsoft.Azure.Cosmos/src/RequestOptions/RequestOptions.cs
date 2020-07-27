@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class RequestOptions
     {
-        internal Dictionary<string, object> Properties { get; set; }
-
         /// <summary>
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
@@ -33,6 +31,17 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
+        /// Application opted Cosmos request conext that flow through with the <see cref="RequestMessage" />.
+        /// Context will be available through handlers.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        IReadOnlyDictionary<string, object> Properties { get; set; }
+
+        /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
         internal bool IsEffectivePartitionKeyRouting { get; set; }
@@ -49,6 +58,13 @@ namespace Microsoft.Azure.Cosmos
         /// ConsistencyLevel compatibility will validated and set by RequestInvokeHandler
         /// </remarks>
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
+
+        /// <summary>
+        /// This allows user to pass in a custom factory for the diagnostic context.
+        /// A custom implementation can ignore certain calls to avoid additional overhead
+        /// when the information is not required.
+        /// </summary>
+        internal Func<CosmosDiagnosticsContext> DiagnosticContextFactory { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

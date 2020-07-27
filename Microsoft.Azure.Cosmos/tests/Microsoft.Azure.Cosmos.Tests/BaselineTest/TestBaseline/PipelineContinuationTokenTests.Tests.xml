@@ -6,7 +6,7 @@
     </Input>
     <Output>
       <ParsedToken><![CDATA[[{"asdf": "asdf"}]]]></ParsedToken>
-      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":"[{\"asdf\": \"asdf\"}]"}]]></LatestToken>
+      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":[{"asdf": "asdf"}]}]]></LatestToken>
     </Output>
   </Result>
   <Result>
@@ -35,8 +35,7 @@
       <ContinuationToken><![CDATA[{"asdf": ...]]></ContinuationToken>
     </Input>
     <Output>
-      <ParsedToken><![CDATA[{"asdf": ...]]></ParsedToken>
-      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":"{\"asdf\": ..."}]]></LatestToken>
+      <Reason><![CDATA[Failed to parse token.]]></Reason>
     </Output>
   </Result>
   <Result>
@@ -46,7 +45,7 @@
     </Input>
     <Output>
       <ParsedToken><![CDATA[42]]></ParsedToken>
-      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":"42"}]]></LatestToken>
+      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":42}]]></LatestToken>
     </Output>
   </Result>
   <Result>
@@ -62,15 +61,6 @@
     <Input>
       <Description>V1 No Source Continuation Token</Description>
       <ContinuationToken><![CDATA[{"Version":"1.0"}]]></ContinuationToken>
-    </Input>
-    <Output>
-      <Reason><![CDATA[Failed to parse token.]]></Reason>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>V1 Source Continuation Token Is Not A String</Description>
-      <ContinuationToken><![CDATA[{"Version":"1.0", "SourceContinuationToken": 42}]]></ContinuationToken>
     </Input>
     <Output>
       <Reason><![CDATA[Failed to parse token.]]></Reason>
@@ -98,15 +88,6 @@
     <Input>
       <Description>V1.1 No Source Continuation</Description>
       <ContinuationToken><![CDATA[{"Version":"1.1","QueryPlan": null}]]></ContinuationToken>
-    </Input>
-    <Output>
-      <Reason><![CDATA[Failed to parse token.]]></Reason>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>V1.1 Source Continuation Is Not A String</Description>
-      <ContinuationToken><![CDATA[{"Version":"1.1","QueryPlan": null,"SourceContinuationToken": 42}]]></ContinuationToken>
     </Input>
     <Output>
       <Reason><![CDATA[Failed to parse token.]]></Reason>

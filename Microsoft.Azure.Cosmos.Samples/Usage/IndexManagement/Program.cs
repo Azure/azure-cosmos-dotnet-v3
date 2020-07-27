@@ -11,7 +11,7 @@
     // Prerequisites - 
     // 
     // 1. An Azure Cosmos account - 
-    //    https://azure.microsoft.com/en-us/itemation/articles/itemdb-create-account/
+    //    https://docs.microsoft.com/azure/cosmos-db/create-cosmosdb-resources-portal
     //
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
@@ -145,15 +145,16 @@
                 ItemResponse<dynamic> created = await container.CreateItemAsync<dynamic>(new { id = "doc1", partitionKey = "doc1", orderId = "order1" }, new PartitionKey("doc1"));
                 Console.WriteLine("\nItem created: \n{0}", JsonConvert.SerializeObject(created.Resource));
 
-                FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(new QueryDefinition("SELECT * FROM root r WHERE r.orderId='order1'"), requestOptions: new QueryRequestOptions { MaxItemCount = 1 });
-                bool found = false;
-                while (resultSetIterator.HasMoreResults)
+                using (FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
+                    new QueryDefinition("SELECT * FROM root r WHERE r.orderId='order1'"),
+                    requestOptions: new QueryRequestOptions { MaxItemCount = 1 }))
                 {
-                    FeedResponse<dynamic> feedResponse = await resultSetIterator.ReadNextAsync();
-                    found = feedResponse.Count > 0;
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<dynamic> feedResponse = await resultSetIterator.ReadNextAsync();
+                        Console.WriteLine($"Item count by query: {feedResponse.Count}");
+                    }
                 }
-
-                Console.WriteLine("Item found by query: {0}", found);
 
                 // Now, create an item but this time explictly exclude it from the collection using IndexingDirective
                 // Then query for that document
@@ -166,14 +167,16 @@
 
                 Console.WriteLine("\nItem created: \n{0}", JsonConvert.SerializeObject(created.Resource));
 
-                resultSetIterator = container.GetItemQueryIterator<dynamic>(new QueryDefinition("SELECT * FROM root r WHERE r.orderId='order2'"), requestOptions: new QueryRequestOptions { MaxItemCount = 1 });
-                found = false;
-                while (resultSetIterator.HasMoreResults)
+                using (FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
+                    new QueryDefinition("SELECT * FROM root r WHERE r.orderId='order2'"),
+                    requestOptions: new QueryRequestOptions { MaxItemCount = 1 }))
                 {
-                    FeedResponse<dynamic> feedResponse = await resultSetIterator.ReadNextAsync();
-                    found = feedResponse.Count > 0;
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<dynamic> feedResponse = await resultSetIterator.ReadNextAsync();
+                        Console.WriteLine($"Item count by query: {feedResponse.Count}");
+                    }
                 }
-                Console.WriteLine("Item found by query: {0}", found);
 
                 ItemResponse<dynamic> document = await container.ReadItemAsync<dynamic>((string)created.Resource.id, new PartitionKey("doc2"));
                 Console.WriteLine("Item read by id: {0}", document != null);
@@ -300,16 +303,25 @@
         {
             try
             {
-                FeedIterator<dynamic> documentQuery = container.GetItemQueryIterator<dynamic>(
+                using (FeedIterator<dynamic> documentQuery = container.GetItemQueryIterator<dynamic>(
                     query,
-                    requestOptions: 
+                    requestOptions:
                     new QueryRequestOptions
                     {
                         MaxItemCount = -1
-                    });
+                    }))
+                {
+                    int itemCount = 0;
+                    double requestCharge = 0;
+                    while (documentQuery.HasMoreResults)
+                    {
+                        FeedResponse<dynamic> response = await documentQuery.ReadNextAsync();
+                        itemCount += response.Count;
+                        requestCharge += response.RequestCharge;
+                    }
 
-                FeedResponse<dynamic> response = await documentQuery.ReadNextAsync();
-                return new QueryStats(response.Count, response.RequestCharge);
+                    return new QueryStats(itemCount, requestCharge);
+                }
             }
             catch (Exception e)
             {
@@ -333,10 +345,9 @@
             Console.ForegroundColor = ConsoleColor.Red;
 
             Exception baseException = e.GetBaseException();
-            if (e is CosmosException)
+            if (e is CosmosException cosmosException)
             {
-                CosmosException de = (CosmosException)e;
-                Console.WriteLine("{0} error occurred: {1}, Message: {2}", de.StatusCode, de.Message, baseException.Message);
+                Console.WriteLine("{0} error occurred: {1}, Message: {2}", cosmosException.StatusCode, cosmosException.Message, baseException.Message);
             }
             else
             {

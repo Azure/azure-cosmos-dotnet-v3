@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 queryContext,
                 querySpecForInit,
                 partitionKeyRange,
-                (itemsBuffered, resourceUnitUsage, diagnostics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, diagnostics, requestLength, token),
+                (itemsBuffered, resourceUnitUsage, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, requestLength, token),
                 equalityComparer,
                 testSettings,
                 initialPageSize,
@@ -151,7 +151,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 
@@ -346,6 +345,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 else
                 {
                     return this.CurrentItemProducerTree.ActivityId;
+                }
+            }
+        }
+
+        public CosmosQueryExecutionInfo CosmosQueryExecutionInfo
+        {
+            get
+            {
+                if (this.CurrentItemProducerTree == this)
+                {
+                    return this.Root.CosmosQueryExecutionInfo;
+                }
+                else
+                {
+                    return this.CurrentItemProducerTree.CosmosQueryExecutionInfo;
                 }
             }
         }

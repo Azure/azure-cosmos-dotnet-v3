@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal sealed class CatchAllCosmosQueryExecutionContext : CosmosQueryExecutionContext
@@ -42,6 +44,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             {
                 queryResponseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Per cancellationToken.ThrowIfCancellationRequested(); line above, this function should still throw OperationCanceledException.
+                throw;
+            }
             catch (Exception ex)
             {
                 queryResponseCore = QueryResponseFactory.CreateFromException(ex);
@@ -55,9 +62,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return queryResponseCore;
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
-            return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
+            return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }
     }
 }

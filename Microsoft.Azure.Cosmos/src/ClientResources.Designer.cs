@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class ClientResources {
@@ -268,6 +268,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptor..
+        /// </summary>
+        internal static string EncryptorNotConfigured {
+            get {
+                return ResourceManager.GetString("EncryptorNotConfigured", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected valid byte[] value for {0} and string value for {1} when either property is set..
         /// </summary>
         internal static string EpkPropertiesPairingExpected {
@@ -304,6 +313,42 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot define EffectivePartitionKeyRouting and FeedRange simultaneously..
+        /// </summary>
+        internal static string FeedToken_EffectivePartitionKeyRouting {
+            get {
+                return ResourceManager.GetString("FeedToken_EffectivePartitionKeyRouting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The continuation was generated for container {0} but current container is {1}..
+        /// </summary>
+        internal static string FeedToken_InvalidFeedTokenForContainer {
+            get {
+                return ResourceManager.GetString("FeedToken_InvalidFeedTokenForContainer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The provided string &apos;{0}&apos; does not represent any known format..
+        /// </summary>
+        internal static string FeedToken_UnknownFormat {
+            get {
+                return ResourceManager.GetString("FeedToken_UnknownFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unrecognized Feed Token type..
+        /// </summary>
+        internal static string FeedToken_UnrecognizedFeedToken {
+            get {
+                return ResourceManager.GetString("FeedToken_UnrecognizedFeedToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Input is not of type IDocumentQuery..
         /// </summary>
         internal static string InputIsNotIDocumentQuery {
@@ -336,6 +381,15 @@ namespace Microsoft.Azure.Cosmos {
         internal static string InvalidRangeError {
             get {
                 return ResourceManager.GetString("InvalidRangeError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encryption options may not be specified on this request..
+        /// </summary>
+        internal static string InvalidRequestWithEncryptionOptions {
+            get {
+                return ResourceManager.GetString("InvalidRequestWithEncryptionOptions", resourceCulture);
             }
         }
         

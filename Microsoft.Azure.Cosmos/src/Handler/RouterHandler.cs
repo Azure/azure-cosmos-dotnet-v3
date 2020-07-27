@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Handler which selects the piepline for the requested resource operation
+    /// Handler which selects the pipeline for the requested resource operation
     /// </summary>
     internal class RouterHandler : RequestHandler
     {
@@ -41,14 +41,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestHandler targetHandler = null;
             if (request.IsPartitionKeyRangeHandlerRequired)
             {
-                targetHandler = documentFeedHandler;
+                targetHandler = this.documentFeedHandler;
             }
             else
             {
-                targetHandler = pointOperationHandler;
+                targetHandler = this.pointOperationHandler;
             }
 
-            return targetHandler.SendAsync(request, cancellationToken);
+            using (request.DiagnosticsContext.CreateRequestHandlerScopeScope(targetHandler))
+            {
+                return targetHandler.SendAsync(request, cancellationToken);
+            }
         }
     }
 }

@@ -5,9 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
@@ -29,27 +31,28 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            using (request.DiagnosticsContext.CreateScope("TransportHandler"))
+            using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
-                    using (new ActivityScope(Guid.NewGuid()))
-                    {
-                        DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
-                        return response.ToCosmosResponseMessage(request);
-                    }
+                    DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
+                    Debug.Assert(Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
+                    return response.ToCosmosResponseMessage(request);
                 }
                 //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request
                 catch (DocumentClientException ex)
                 {
+                    Debug.Assert(Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                     return ex.ToCosmosResponseMessage(request);
                 }
                 catch (CosmosException ce)
                 {
+                    Debug.Assert(Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                     return ce.ToCosmosResponseMessage(request);
                 }
                 catch (AggregateException ex)
                 {
+                    Debug.Assert(Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                     // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                     // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
                     // is removed this catch can be safely removed.
@@ -64,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        internal Task<DocumentServiceResponse> ProcessMessageAsync(
+        internal async Task<DocumentServiceResponse> ProcessMessageAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -76,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler
-            string authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
+            string authorization = ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 request.Method.ToString(),
@@ -87,13 +90,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
-            if (request.OperationType == OperationType.Upsert)
+            using (request.DiagnosticsContext.CreateScope(storeProxy.GetType().FullName))
             {
-                return this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
-            }
-            else
-            {
-                return storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+                if (request.OperationType == OperationType.Upsert)
+                {
+                    return await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
+                }
+                else
+                {
+                    return await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+                }
             }
         }
 
@@ -107,8 +113,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             Exception exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException);
-            CosmosException cosmosException = exception as CosmosException;
-            if (cosmosException != null)
+            if (exception is CosmosException cosmosException)
             {
                 return cosmosException.ToCosmosResponseMessage(request);
             }

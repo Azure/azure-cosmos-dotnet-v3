@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -27,17 +26,18 @@ namespace Microsoft.Azure.Cosmos
     internal class BatchAsyncContainerExecutor : IDisposable
     {
         private const int DefaultDispatchTimerInSeconds = 1;
-        private const int MinimumDispatchTimerInSeconds = 1;
+        private const int TimerWheelBucketCount = 20;
+        private readonly static TimeSpan TimerWheelResolution = TimeSpan.FromMilliseconds(50);
 
-        private readonly ContainerCore cosmosContainer;
+        private readonly ContainerInternal cosmosContainer;
         private readonly CosmosClientContext cosmosClientContext;
         private readonly int maxServerRequestBodyLength;
         private readonly int maxServerRequestOperationCount;
-        private readonly int dispatchTimerInSeconds;
         private readonly ConcurrentDictionary<string, BatchAsyncStreamer> streamersByPartitionKeyRange = new ConcurrentDictionary<string, BatchAsyncStreamer>();
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
-        private readonly TimerPool timerPool;
+        private readonly TimerWheel timerWheel;
         private readonly RetryOptions retryOptions;
+        private readonly int defaultMaxDegreeOfConcurrency = 50;
 
         /// <summary>
         /// For unit testing.
@@ -47,11 +47,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public BatchAsyncContainerExecutor(
-            ContainerCore cosmosContainer,
+            ContainerInternal cosmosContainer,
             CosmosClientContext cosmosClientContext,
             int maxServerRequestOperationCount,
-            int maxServerRequestBodyLength,
-            int dispatchTimerInSeconds = BatchAsyncContainerExecutor.DefaultDispatchTimerInSeconds)
+            int maxServerRequestBodyLength)
         {
             if (cosmosContainer == null)
             {
@@ -68,17 +67,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(maxServerRequestBodyLength));
             }
 
-            if (dispatchTimerInSeconds < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dispatchTimerInSeconds));
-            }
-
             this.cosmosContainer = cosmosContainer;
             this.cosmosClientContext = cosmosClientContext;
             this.maxServerRequestBodyLength = maxServerRequestBodyLength;
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
-            this.dispatchTimerInSeconds = dispatchTimerInSeconds;
-            this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
+            this.timerWheel = TimerWheel.CreateTimerWheel(BatchAsyncContainerExecutor.TimerWheelResolution, BatchAsyncContainerExecutor.TimerWheelBucketCount);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
         }
 
@@ -114,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                 limiter.Value.Dispose();
             }
 
-            this.timerPool.Dispose();
+            this.timerWheel.Dispose();
         }
 
         internal virtual async Task ValidateOperationAsync(
@@ -130,6 +123,11 @@ namespace Microsoft.Azure.Cosmos
                                 || itemRequestOptions.SessionToken != null)
                 {
                     throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);
+                }
+
+                if (itemRequestOptions.DiagnosticContextFactory != null)
+                {
+                    throw new ArgumentException("DiagnosticContext is not allowed when AllowBulkExecution is set to true");
                 }
 
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
@@ -156,9 +154,8 @@ namespace Microsoft.Azure.Cosmos
                             | itemRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.PartitionKey, out object pkStringObj)))
             {
                 byte[] epk = epkObj as byte[];
-                string epkStr = epkStrObj as string;
                 string pkString = pkStringObj as string;
-                if ((epk == null && pkString == null) || epkStr == null)
+                if ((epk == null && pkString == null) || !(epkStrObj is string _))
                 {
                     throw new InvalidOperationException(string.Format(
                         ClientResources.EpkPropertiesPairingExpected,
@@ -179,6 +176,7 @@ namespace Microsoft.Azure.Cosmos
         {
             requestMessage.Headers.PartitionKeyRangeId = partitionKeyRangeId;
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.FalseString);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
         }
 
@@ -221,12 +219,10 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeServerBatchRequest serverRequest,
             CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
-            CosmosDiagnosticScope limiterScope = diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.Limiter");
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
             SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(serverRequest.PartitionKeyRangeId);
-            using (await limiter.UsingWaitAsync(cancellationToken))
+            using (await limiter.UsingWaitAsync(diagnosticsContext, cancellationToken))
             {
-                limiterScope.Dispose();
                 using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
@@ -239,12 +235,17 @@ namespace Microsoft.Azure.Cosmos
                         partitionKey: null,
                         streamPayload: serverRequestPayload,
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
-                        diagnosticsScope: diagnosticsContext,
+                        diagnosticsContext: diagnosticsContext,
                         cancellationToken: cancellationToken).ConfigureAwait(false);
 
                     using (diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.ToResponse"))
                     {
-                        TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.SerializerCore).ConfigureAwait(false);
+                        TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                            responseMessage,
+                            serverRequest,
+                            this.cosmosClientContext.SerializerCore,
+                            shouldPromoteOperationStatus: true,
+                            cancellationToken).ConfigureAwait(false);
 
                         return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                     }
@@ -258,16 +259,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 return streamer;
             }
-
+            SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(partitionKeyRangeId);
             BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(
                 this.maxServerRequestOperationCount,
                 this.maxServerRequestBodyLength,
-                this.dispatchTimerInSeconds,
-                this.timerPool,
+                this.timerWheel,
+                limiter,
+                this.defaultMaxDegreeOfConcurrency,
                 this.cosmosClientContext.SerializerCore,
                 this.ExecuteAsync,
                 this.ReBatchAsync);
-
             if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
             {
                 newStreamer.Dispose();
@@ -283,7 +284,7 @@ namespace Microsoft.Azure.Cosmos
                 return limiter;
             }
 
-            SemaphoreSlim newLimiter = new SemaphoreSlim(1, 1);
+            SemaphoreSlim newLimiter = new SemaphoreSlim(1, this.defaultMaxDegreeOfConcurrency);
             if (!this.limitersByPartitionkeyRange.TryAdd(partitionKeyRangeId, newLimiter))
             {
                 newLimiter.Dispose();

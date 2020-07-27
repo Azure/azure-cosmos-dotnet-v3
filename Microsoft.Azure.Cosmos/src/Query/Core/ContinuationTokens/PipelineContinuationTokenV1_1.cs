@@ -21,14 +21,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public PipelineContinuationTokenV1_1(
             PartitionedQueryExecutionInfo queryPlan,
-            string sourceContinuationToken)
+            CosmosElement sourceContinuationToken)
             : base(PipelineContinuationTokenV1_1.VersionNumber)
         {
             this.QueryPlan = queryPlan;
             this.SourceContinuationToken = sourceContinuationToken ?? throw new ArgumentNullException(nameof(sourceContinuationToken));
         }
 
-        public string SourceContinuationToken { get; }
+        public CosmosElement SourceContinuationToken { get; }
 
         public PartitionedQueryExecutionInfo QueryPlan { get; }
 
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
             else
             {
-                shouldSerializeQueryPlan = (queryPlanString.Length + this.SourceContinuationToken.Length) < lengthLimitInBytes;
+                shouldSerializeQueryPlan = (queryPlanString.Length + this.SourceContinuationToken.ToString().Length) < lengthLimitInBytes;
             }
 
             return CosmosObject.Create(new Dictionary<string, CosmosElement>()
@@ -58,16 +58,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 },
                 {
                     PipelineContinuationTokenV1_1.QueryPlanPropertyName,
-                    shouldSerializeQueryPlan ? (CosmosElement)CosmosString.Create(queryPlanString) : (CosmosElement)CosmosNull.Create() 
+                    shouldSerializeQueryPlan ? (CosmosElement)CosmosString.Create(queryPlanString) : (CosmosElement)CosmosNull.Create()
                 },
                 {
                     PipelineContinuationTokenV1_1.SourceContinuationTokenPropertyName,
-                    CosmosString.Create(this.SourceContinuationToken)
+                    this.SourceContinuationToken
                 },
             }).ToString();
         }
 
-        public static bool TryParse(
+        public static bool TryCreateFromCosmosElement(
             CosmosObject parsedContinuationToken,
             out PipelineContinuationTokenV1_1 pipelinedContinuationToken)
         {
@@ -98,9 +98,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 return false;
             }
 
-            if (!PipelineContinuationTokenV1_1.TryParseSourceContinuationToken(
-                parsedContinuationToken,
-                out string sourceContinuationToken))
+            if (!parsedContinuationToken.TryGetValue(
+                SourceContinuationTokenPropertyName,
+                out CosmosElement sourceContinuationToken))
             {
                 pipelinedContinuationToken = default;
                 return false;
@@ -146,27 +146,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 return false;
             }
 
-            return true;
-        }
-
-        private static bool TryParseSourceContinuationToken(
-            CosmosObject parsedContinuationToken,
-            out string sourceContinuationToken)
-        {
-            if (parsedContinuationToken == null)
-            {
-                throw new ArgumentNullException(nameof(parsedContinuationToken));
-            }
-
-            if (!parsedContinuationToken.TryGetValue<CosmosString>(
-                PipelineContinuationTokenV1_1.SourceContinuationTokenPropertyName,
-                out CosmosString parsedSourceContinuationToken))
-            {
-                sourceContinuationToken = default;
-                return false;
-            }
-
-            sourceContinuationToken = parsedSourceContinuationToken.Value;
             return true;
         }
     }

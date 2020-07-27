@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -153,8 +153,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // ExpressionToSql is the query input value: a IDocumentQuery
-            IDocumentQuery input = inputExpression.Value as IDocumentQuery;
-            if (input == null)
+            if (!(inputExpression.Value is IDocumentQuery input))
             {
                 throw new DocumentQueryException(ClientResources.InputIsNotIDocumentQuery);
             }
@@ -183,8 +182,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string parameterName = null;
             if (peekMethod.Arguments.Count > 1)
             {
-                LambdaExpression lambda = peekMethod.Arguments[1] as LambdaExpression;
-                if (lambda != null && lambda.Parameters.Count > 0)
+                if (peekMethod.Arguments[1] is LambdaExpression lambda && lambda.Parameters.Count > 0)
                 {
                     parameterName = lambda.Parameters[0].Name;
                 }
@@ -292,9 +290,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // We have two cases here, if the udf was expecting only one parameter and this parameter is an array
                     // then the second argument will be an expression of this array.
                     // else we will have a NewArrayExpression of the udf arguments
-                    if (methodCallExpression.Arguments[1] is NewArrayExpression)
+                    if (methodCallExpression.Arguments[1] is NewArrayExpression newArrayExpression)
                     {
-                        ReadOnlyCollection<Expression> argumentsExpressions = ((NewArrayExpression)methodCallExpression.Arguments[1]).Expressions;
+                        ReadOnlyCollection<Expression> argumentsExpressions = newArrayExpression.Expressions;
                         foreach (Expression argument in argumentsExpressions)
                         {
                             arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
@@ -359,10 +357,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression operand = ExpressionToSql.VisitScalarExpression(inputExpression.Operand, context);
 
             // handle NOT IN
-            if (operand is SqlInScalarExpression && inputExpression.NodeType == ExpressionType.Not)
+            if (operand is SqlInScalarExpression sqlInScalarExpression && inputExpression.NodeType == ExpressionType.Not)
             {
-                SqlInScalarExpression inExpression = (SqlInScalarExpression)operand;
-                return SqlInScalarExpression.Create(inExpression.Expression, true, inExpression.Items);
+                SqlInScalarExpression inExpression = sqlInScalarExpression;
+                return SqlInScalarExpression.Create(inExpression.Needle, true, inExpression.Haystack);
             }
 
             if (inputExpression.NodeType == ExpressionType.Quote)
@@ -468,13 +466,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             SqlBinaryScalarOperatorKind op = GetBinaryOperatorKind(inputExpression.NodeType, inputExpression.Type);
 
-            if (left.Kind == SqlObjectKind.MemberIndexerScalarExpression && right.Kind == SqlObjectKind.LiteralScalarExpression)
+            if (left is SqlMemberIndexerScalarExpression && right is SqlLiteralScalarExpression literalScalarExpression)
             {
-                right = ExpressionToSql.ApplyCustomConverters(inputExpression.Left, right as SqlLiteralScalarExpression);
+                right = ExpressionToSql.ApplyCustomConverters(inputExpression.Left, literalScalarExpression);
             }
-            else if (right.Kind == SqlObjectKind.MemberIndexerScalarExpression && left.Kind == SqlObjectKind.LiteralScalarExpression)
+            else if (right is SqlMemberIndexerScalarExpression && left is SqlLiteralScalarExpression sqlLiteralScalarExpression)
             {
-                left = ExpressionToSql.ApplyCustomConverters(inputExpression.Right, left as SqlLiteralScalarExpression);
+                left = ExpressionToSql.ApplyCustomConverters(inputExpression.Right, sqlLiteralScalarExpression);
             }
 
             return SqlBinaryScalarExpression.Create(op, left, right);
@@ -483,9 +481,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
         {
             MemberExpression memberExpression;
-            if (left is UnaryExpression)
+            if (left is UnaryExpression unaryExpression)
             {
-                memberExpression = ((UnaryExpression)left).Operand as MemberExpression;
+                memberExpression = unaryExpression.Operand as MemberExpression;
             }
             else
             {
@@ -698,11 +696,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return GeometrySqlExpressionFactory.Construct(inputExpression);
             }
 
-            if (inputExpression.Value is IEnumerable)
+            if (inputExpression.Value is IEnumerable enumerable)
             {
                 List<SqlScalarExpression> arrayItems = new List<SqlScalarExpression>();
 
-                foreach (object item in (IEnumerable)inputExpression.Value)
+                foreach (object item in enumerable)
                 {
                     arrayItems.Add(ExpressionToSql.VisitConstant(Expression.Constant(item), context));
                 }
@@ -1236,10 +1234,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="expressionObjKind">The expression object kind of the expression</param>
         /// <param name="isMinMaxAvgMethod">True if the method is either Min, Max, or Avg</param>
         /// <returns>True if subquery is needed, otherwise false</returns>
-        private static bool IsSubqueryScalarExpression(Expression expression, out SqlObjectKind? expressionObjKind, out bool isMinMaxAvgMethod)
+        private static bool IsSubqueryScalarExpression(Expression expression, out SubqueryKind? expressionObjKind, out bool isMinMaxAvgMethod)
         {
-            MethodCallExpression methodCallExpression = expression as MethodCallExpression;
-            if (methodCallExpression == null)
+            if (!(expression is MethodCallExpression methodCallExpression))
             {
                 expressionObjKind = null;
                 isMinMaxAvgMethod = false;
@@ -1258,23 +1255,23 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Average:
                     isMinMaxAvgMethod = true;
                     isSubqueryExpression = true;
-                    expressionObjKind = SqlObjectKind.SubqueryScalarExpression;
+                    expressionObjKind = SubqueryKind.SubqueryScalarExpression;
                     break;
 
                 case LinqMethods.Sum:
                     isSubqueryExpression = true;
-                    expressionObjKind = SqlObjectKind.SubqueryScalarExpression;
+                    expressionObjKind = SubqueryKind.SubqueryScalarExpression;
                     break;
 
                 case LinqMethods.Count:
                     if (methodCallExpression.Arguments.Count > 1)
                     {
                         isSubqueryExpression = true;
-                        expressionObjKind = SqlObjectKind.SubqueryScalarExpression;
+                        expressionObjKind = SubqueryKind.SubqueryScalarExpression;
                     }
                     else
                     {
-                        SqlObjectKind? objKind;
+                        SubqueryKind? objKind;
                         bool isMinMaxAvg;
                         isSubqueryExpression = ExpressionToSql.IsSubqueryScalarExpression(
                             methodCallExpression.Arguments[0] as MethodCallExpression,
@@ -1283,7 +1280,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         if (isSubqueryExpression)
                         {
                             isSubqueryExpression = true;
-                            expressionObjKind = SqlObjectKind.SubqueryScalarExpression;
+                            expressionObjKind = SubqueryKind.SubqueryScalarExpression;
                         }
                         else
                         {
@@ -1295,7 +1292,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 case LinqMethods.Any:
                     isSubqueryExpression = true;
-                    expressionObjKind = SqlObjectKind.ExistsScalarExpression;
+                    expressionObjKind = SubqueryKind.ExistsScalarExpression;
                     break;
 
                 case LinqMethods.Select:
@@ -1309,7 +1306,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Take:
                 case LinqMethods.Distinct:
                     isSubqueryExpression = true;
-                    expressionObjKind = SqlObjectKind.ArrayScalarExpression;
+                    expressionObjKind = SubqueryKind.ArrayScalarExpression;
                     break;
 
                 default:
@@ -1427,7 +1424,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             ReadOnlyCollection<ParameterExpression> parameters,
             TranslationContext context)
         {
-            SqlObjectKind? expressionObjKind;
+            SubqueryKind? expressionObjKind;
             bool isMinMaxAvgMethod;
             bool shouldUseSubquery = ExpressionToSql.IsSubqueryScalarExpression(expression, out expressionObjKind, out isMinMaxAvgMethod);
 
@@ -1443,7 +1440,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 SqlCollection subqueryCollection = ExpressionToSql.CreateSubquerySqlCollection(
                     query, context,
-                    isMinMaxAvgMethod ? SqlObjectKind.ArrayScalarExpression : expressionObjKind.Value);
+                    isMinMaxAvgMethod ? SubqueryKind.ArrayScalarExpression : expressionObjKind.Value);
 
                 Binding newBinding = new Binding(parameterExpression, subqueryCollection,
                     isInCollection: false, isInputParameter: context.IsInMainBranchSelect());
@@ -1471,26 +1468,26 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="query">The SQL query object</param>
         /// <param name="context">The translation context</param>
         /// <param name="subqueryType">The subquery type</param>
-        private static SqlCollection CreateSubquerySqlCollection(SqlQuery query, TranslationContext context, SqlObjectKind subqueryType)
+        private static SqlCollection CreateSubquerySqlCollection(SqlQuery query, TranslationContext context, SubqueryKind subqueryType)
         {
             SqlCollection subqueryCollection;
             switch (subqueryType)
             {
-                case SqlObjectKind.ArrayScalarExpression:
+                case SubqueryKind.ArrayScalarExpression:
                     SqlArrayScalarExpression arrayScalarExpression = SqlArrayScalarExpression.Create(query);
                     query = SqlQuery.Create(
                         SqlSelectClause.Create(SqlSelectValueSpec.Create(arrayScalarExpression)),
                         fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, offsetLimitClause: null);
                     break;
 
-                case SqlObjectKind.ExistsScalarExpression:
+                case SubqueryKind.ExistsScalarExpression:
                     SqlExistsScalarExpression existsScalarExpression = SqlExistsScalarExpression.Create(query);
                     query = SqlQuery.Create(
                         SqlSelectClause.Create(SqlSelectValueSpec.Create(existsScalarExpression)),
                         fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, offsetLimitClause: null);
                     break;
 
-                case SqlObjectKind.SubqueryScalarExpression:
+                case SubqueryKind.SubqueryScalarExpression:
                     // No need to wrap query as in ArrayScalarExpression, or ExistsScalarExpression
                     break;
 
@@ -1625,10 +1622,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             literal = default(SqlNumberLiteral);
 
-            SqlLiteralScalarExpression literalScalarExpression = scalarExpression as SqlLiteralScalarExpression;
-            if (literalScalarExpression != null)
+            if (scalarExpression is SqlLiteralScalarExpression literalScalarExpression)
             {
-                if (literalScalarExpression.Literal.Kind == SqlObjectKind.NumberLiteral)
+                if (literalScalarExpression.Literal is SqlNumberLiteral numberLiteral)
                 {
                     // After a member access in SelectMany's lambda, if there is only Top/Skip/Take then
                     // it is necessary to trigger the binding because Skip is just a spec with no binding on its own. 
@@ -1638,7 +1634,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
                     context.PopParameter();
 
-                    literal = (SqlNumberLiteral)literalScalarExpression.Literal;
+                    literal = numberLiteral;
                 }
             }
 
@@ -1858,8 +1854,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<SqlIdentifier> identifiers = new List<SqlIdentifier>();
             while (true)
             {
-                identifiers.Add(propRef.PropertyIdentifier);
-                SqlScalarExpression parent = propRef.MemberExpression;
+                identifiers.Add(propRef.Identifer);
+                SqlScalarExpression parent = propRef.Member;
                 if (parent == null)
                 {
                     break;
@@ -1898,16 +1894,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<SqlStringLiteral> literals = new List<SqlStringLiteral>();
             while (true)
             {
-                literals.Add((SqlStringLiteral)((SqlLiteralScalarExpression)memberIndexerExpression.IndexExpression).Literal);
-                SqlScalarExpression parent = memberIndexerExpression.MemberExpression;
+                literals.Add((SqlStringLiteral)((SqlLiteralScalarExpression)memberIndexerExpression.Indexer).Literal);
+                SqlScalarExpression parent = memberIndexerExpression.Member;
                 if (parent == null)
                 {
                     break;
                 }
 
-                if (parent is SqlPropertyRefScalarExpression)
+                if (parent is SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
                 {
-                    literals.Add(SqlStringLiteral.Create(((SqlPropertyRefScalarExpression)parent).PropertyIdentifier.Value));
+                    literals.Add(SqlStringLiteral.Create(sqlPropertyRefScalarExpression.Identifer.Value));
                     break;
                 }
 
@@ -2009,6 +2005,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
             }
+        }
+        private enum SubqueryKind
+        {
+            ArrayScalarExpression,
+            ExistsScalarExpression,
+            SubqueryScalarExpression,
         }
     }
 }

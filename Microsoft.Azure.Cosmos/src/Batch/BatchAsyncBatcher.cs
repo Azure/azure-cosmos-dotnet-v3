@@ -6,9 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Maintains a batch of operations and dispatches it as a unit of work.
@@ -32,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxBatchOperationCount;
         private readonly InterlockIncrementCheck interlockIncrementCheck = new InterlockIncrementCheck();
         private long currentSize = 0;
-        private bool dispached = false;
+        private bool dispatched = false;
 
         public bool IsEmpty => this.batchOperations.Count == 0;
 
@@ -78,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual bool TryAdd(ItemBatchOperation operation)
         {
-            if (this.dispached)
+            if (this.dispatched)
             {
                 DefaultTrace.TraceCritical($"Add operation attempted on dispatched batch.");
                 return false;
@@ -117,7 +120,9 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public virtual async Task DispatchAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task DispatchAsync(
+            BatchPartitionMetric partitionMetric,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             this.interlockIncrementCheck.EnterLockCheck();
 
@@ -151,7 +156,16 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+
                     PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, cancellationToken);
+
+                    int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
+                    partitionMetric.Add(
+                        numberOfDocumentsOperatedOn: result.ServerResponse.Count,
+                        timeTakenInMilliseconds: stopwatch.ElapsedMilliseconds,
+                        numberOfThrottles: numThrottle);
+
                     using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
                     {
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
@@ -163,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                             if (itemBatchOperation.DiagnosticsContext != null)
                             {
                                 response.DiagnosticsContext = itemBatchOperation.DiagnosticsContext;
-                                response.DiagnosticsContext.Append(batchResponse.DiagnosticsContext);
+                                response.DiagnosticsContext.AddDiagnosticsInternal(batchResponse.DiagnosticsContext);
                             }
                             else
                             {
@@ -203,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             finally
             {
                 this.batchOperations.Clear();
-                this.dispached = true;
+                this.dispatched = true;
             }
         }
 

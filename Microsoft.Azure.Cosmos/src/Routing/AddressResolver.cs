@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
@@ -13,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -79,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException("parent");
             }
-            
+
             if (newlyResolved == null)
             {
                 return false;
@@ -428,7 +430,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!request.ResourceType.IsPartitioned() &&
                !(request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.ExecuteJavaScript) &&
-                // Collection head is sent internally for strong consistency given routing hints from original requst, which is for partitioned resource.
+               // Collection head is sent internally for strong consistency given routing hints from original requst, which is for partitioned resource.
                !(request.ResourceType == ResourceType.Collection && request.OperationType == OperationType.Head))
             {
                 DefaultTrace.TraceCritical(
@@ -529,7 +531,34 @@ namespace Microsoft.Azure.Cosmos
 
             if (collectionCacheIsUptoDate)
             {
-                throw new BadRequestException(RMResources.MissingPartitionKeyValue) { ResourceAddress = request.ResourceAddress };
+                // If the current collection is user-partitioned collection
+                if (collection.PartitionKey.Paths.Count >= 1 &&
+                    !collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
+                {
+                    throw new BadRequestException(RMResources.MissingPartitionKeyValue) { ResourceAddress = request.ResourceAddress };
+                }
+                else if (routingMap.OrderedPartitionKeyRanges.Count > 1)
+                {
+                    // With migrated-fixed-collection, it is possible to have multiple partition key ranges
+                    // due to parallel usage of V3 SDK and a possible storage or throughput split
+                    // The current client might be legacy and not aware of this.
+                    // In such case route the request to the first partition
+                    return this.TryResolveServerPartitionByPartitionKey(
+                                        request,
+                                        "[]", // This corresponds to first partition
+                                        collectionCacheIsUptoDate,
+                                        collection,
+                                        routingMap);
+                }
+                else
+                {
+                    // routingMap.OrderedPartitionKeyRanges.Count == 0
+                    // Should never come here.
+                    DefaultTrace.TraceCritical(
+                        "No Partition Key ranges present for the collection {0}", collection.ResourceId);
+                    throw new InternalServerErrorException(RMResources.InternalServerError) { ResourceAddress = request.ResourceAddress };
+
+                }
             }
             else
             {
@@ -680,6 +709,16 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey.Components.Count);
 
             return null;
+        }
+
+        public Task UpdateAsync(ServerKey serverKey, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UpdateAsync(IReadOnlyList<AddressCacheToken> addressCacheTokens, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
 
         private class ResolutionResult

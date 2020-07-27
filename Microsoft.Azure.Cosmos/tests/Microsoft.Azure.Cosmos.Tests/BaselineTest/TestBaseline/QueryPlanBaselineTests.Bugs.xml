@@ -1,0 +1,35 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>ARRAY_CONTAINS With Filter (This fans out to every partition when it really should just go to 1, 2, 3, 4).</Description>
+      <Query>SELECT * FROM c WHERE ARRAY_CONTAINS([1, 2, 3], c.a) and c.a = 4</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],[]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+</Results>

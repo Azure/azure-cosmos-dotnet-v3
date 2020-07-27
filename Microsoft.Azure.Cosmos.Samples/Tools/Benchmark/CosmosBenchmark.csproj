@@ -4,6 +4,7 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <RootNamespace>CosmosBenchmark</RootNamespace>
     <AssemblyName>CosmosBenchmark</AssemblyName>
+    <ServerGarbageCollection>true</ServerGarbageCollection>    
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">
@@ -15,6 +16,21 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.5.0" />
+    <PackageReference Include="HdrHistogram" Version="2.5.0" />
+    <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <!-- Enabled easier integration into master -->
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OSSProjectRef)' == 'True' ">
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" />
   </ItemGroup>
 </Project>

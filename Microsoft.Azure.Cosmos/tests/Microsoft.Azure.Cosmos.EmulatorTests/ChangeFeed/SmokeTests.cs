@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -129,11 +130,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithInMemoryLeaseContainer().Build();
+                .WithInMemoryLeaseContainer()
+                .Build();
 
             await processor.StartAsync();
+
             // Letting processor initialize
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
             // Inserting documents
             foreach (int id in expectedIds)
             {
@@ -143,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Waiting on all notifications to finish
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
+
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
         }
@@ -229,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             public override T FromStream<T>(Stream stream)
             {
                 // Only let changes serialization pass through
-                if (typeof(T) == typeof(TestClass))
+                if (typeof(T) == typeof(TestClass[]))
                 {
                     return this.cosmosSerializer.FromStream<T>(stream);
                 }

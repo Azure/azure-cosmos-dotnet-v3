@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
-            this.DiagnosticsContext = new CosmosDiagnosticsContext();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -42,23 +42,24 @@ namespace Microsoft.Azure.Cosmos
         public RequestMessage(HttpMethod method, Uri requestUri)
         {
             this.Method = method;
-            this.RequestUri = requestUri;
-            this.DiagnosticsContext = new CosmosDiagnosticsContext();
+            this.RequestUriString = requestUri?.OriginalString;
+            this.InternalRequestUri = requestUri;
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
         /// Create a <see cref="RequestMessage"/>
         /// </summary>
         /// <param name="method">The http method</param>
-        /// <param name="requestUri">The requested URI</param>
+        /// <param name="requestUriString">The requested URI</param>
         /// <param name="diagnosticsContext">The diagnostics object used to track the request</param>
         internal RequestMessage(
             HttpMethod method,
-            Uri requestUri,
+            string requestUriString,
             CosmosDiagnosticsContext diagnosticsContext)
         {
             this.Method = method;
-            this.RequestUri = requestUri;
+            this.RequestUriString = requestUriString;
             this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 
@@ -70,7 +71,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the <see cref="Uri"/> for the current request.
         /// </summary>
-        public virtual Uri RequestUri { get; private set; }
+        public virtual Uri RequestUri
+        {
+            get
+            {
+                if (this.InternalRequestUri == null)
+                {
+                    this.InternalRequestUri = new Uri(this.RequestUriString, UriKind.Relative);
+                }
+
+                return this.InternalRequestUri;
+            }
+        }
 
         /// <summary>
         /// Gets the current <see cref="RequestMessage"/> HTTP headers.
@@ -89,6 +101,10 @@ namespace Microsoft.Azure.Cosmos
                 this.content = value;
             }
         }
+
+        internal string RequestUriString { get; }
+
+        internal Uri InternalRequestUri { get; private set; }
 
         internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
@@ -117,8 +133,8 @@ namespace Microsoft.Azure.Cosmos
         /// where the partition key range needs to be computed. 
         /// </summary>
         internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed &&
-            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) &&
-            this.PartitionKeyRangeId == null && this.Headers.PartitionKey == null;
+            this.ResourceType.IsPartitioned() && this.PartitionKeyRangeId == null &&
+            this.Headers.PartitionKey == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -169,6 +185,29 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal void AddThroughputPropertiesHeader(ThroughputProperties throughputProperties)
+        {
+            if (throughputProperties == null)
+            {
+                return;
+            }
+
+            if (throughputProperties.Throughput.HasValue &&
+                (throughputProperties.AutoscaleMaxThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
+            {
+                throw new InvalidOperationException("Autoscale provisioned throughput can not be configured with fixed offer");
+            }
+
+            if (throughputProperties.Throughput.HasValue)
+            {
+                this.AddThroughputHeader(throughputProperties.Throughput);
+            }
+            else if (throughputProperties?.Content?.OfferAutoscaleSettings != null)
+            {
+                this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, throughputProperties.Content.OfferAutoscaleSettings.GetJsonString());
+            }
+        }
+
         internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
         {
             if (this.IsMasterOperation())
@@ -214,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUriString, this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
                 }
 
                 if (this.UseGatewayMode.HasValue)
@@ -222,6 +261,7 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
+                serviceRequest.RequestContext.ClientRequestStatistics = new CosmosClientSideRequestStatistics(this.DiagnosticsContext);
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;

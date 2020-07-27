@@ -27,6 +27,23 @@ namespace Microsoft.Azure.Cosmos
     public class ThroughputProperties
     {
         /// <summary>
+        /// Default constructor for serialization
+        /// </summary>
+        [JsonConstructor]
+        private ThroughputProperties()
+        {
+        }
+
+        /// <summary>
+        /// Create a instance for fixed throughput
+        /// </summary>
+        private ThroughputProperties(OfferContentProperties offerContentProperties)
+        {
+            this.OfferVersion = Constants.Offers.OfferVersion_V2;
+            this.Content = offerContentProperties;
+        }
+
+        /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -49,10 +66,75 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the provisioned throughput for a resource in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
+        [JsonIgnore]
         public int? Throughput
         {
             get => this.Content?.OfferThroughput;
-            private set => this.Content = new OfferContentV2(value.Value);
+            private set => this.Content = OfferContentProperties.CreateManualOfferConent(value.Value);
+        }
+
+        /// <summary>
+        /// The maximum throughput the autoscale will scale to.
+        /// </summary>
+        [JsonIgnore]
+        public int? AutoscaleMaxThroughput => this.Content?.OfferAutoscaleSettings?.MaxThroughput;
+
+        /// <summary>
+        /// The amount to increment if the maximum RUs is getting throttled.
+        /// </summary>
+        [JsonIgnore]
+        internal int? AutoUpgradeMaxThroughputIncrementPercentage => this.Content?.OfferAutoscaleSettings?.AutoscaleAutoUpgradeProperties?.ThroughputProperties?.IncrementPercent;
+
+        /// <summary>
+        /// The Throughput properties for manual provisioned throughput offering
+        /// </summary>
+        /// <param name="throughput">The current provisioned throughput for the resource.</param>
+        /// <returns>Returns a ThroughputProperties for manual throughput</returns>
+        public static ThroughputProperties CreateManualThroughput(int throughput)
+        {
+            if (throughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(throughput)} must be greater than 0");
+            }
+
+            return new ThroughputProperties(OfferContentProperties.CreateManualOfferConent(throughput));
+        }
+
+        /// <summary>
+        /// The Throughput properties for autoscale provisioned throughput offering
+        /// </summary>
+        /// <param name="autoscaleMaxThroughput">The maximum throughput the resource can scale to.</param>
+        /// <returns>Returns a ThroughputProperties for autoscale provisioned throughput</returns>
+        public static ThroughputProperties CreateAutoscaleThroughput(
+            int autoscaleMaxThroughput)
+        {
+            if (autoscaleMaxThroughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(autoscaleMaxThroughput)} must be greater than 0");
+            }
+
+            return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
+                startingMaxThroughput: autoscaleMaxThroughput,
+                autoUpgradeMaxThroughputIncrementPercentage: null));
+        }
+
+        internal static ThroughputProperties CreateManualThroughput(int? throughput)
+        {
+            if (!throughput.HasValue)
+            {
+                return null;
+            }
+
+            return CreateManualThroughput(throughput.Value);
+        }
+
+        internal static ThroughputProperties CreateAutoscaleThroughput(
+            int maxAutoscaleThroughput,
+            int? autoUpgradeMaxThroughputIncrementPercentage = null)
+        {
+            return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
+                maxAutoscaleThroughput,
+                autoUpgradeMaxThroughputIncrementPercentage));
         }
 
         /// <summary>
@@ -79,6 +161,12 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceRID { get; private set; }
 
         [JsonProperty(PropertyName = "content", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        private OfferContentV2 Content { get; set; }
+        internal OfferContentProperties Content { get; set; }
+
+        /// <summary>
+        /// Gets the version of this offer resource in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.OfferVersion, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal string OfferVersion { get; private set; }
     }
 }

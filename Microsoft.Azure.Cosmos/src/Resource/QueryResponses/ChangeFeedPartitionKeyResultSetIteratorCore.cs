@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
@@ -15,97 +16,55 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore container;
+        private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
-        private string continuationToken;
-        private string partitionKeyRangeId;
         private bool hasMoreResultsInternal;
+        private string continuationToken;
 
-        internal ChangeFeedPartitionKeyResultSetIteratorCore(
+        public ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
-            ContainerCore container,
-            string partitionKeyRangeId,
-            string continuationToken,
-            int? maxItemCount,
+            ContainerInternal container,
             ChangeFeedRequestOptions options)
         {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            if (partitionKeyRangeId == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRangeId));
-            }
-
-            this.clientContext = clientContext;
-            this.container = container;
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedOptions = options;
-            this.MaxItemCount = maxItemCount;
-            this.continuationToken = continuationToken;
-            this.partitionKeyRangeId = partitionKeyRangeId;
         }
 
-        /// <summary>
-        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
-        /// </summary>
-        public int? MaxItemCount { get; set; }
-
         public override bool HasMoreResults => this.hasMoreResultsInternal;
+
+        public override CosmosElement GetCosmosElementContinuationToken() => throw new NotImplementedException();
 
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            // Change Feed read uses Etag for continuation
+            if (this.continuationToken != null)
+            {
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.continuationToken);
+            }
 
-            return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
-                .ContinueWith(task =>
-                {
-                    ResponseMessage response = task.Result;
-                    // Change Feed uses ETAG
-                    this.continuationToken = response.Headers.ETag;
-                    this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
-                    response.Headers.ContinuationToken = this.continuationToken;
-                    return response;
-                }, cancellationToken);
-        }
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                cosmosContainerCore: this.container,
+                resourceUri: this.container.LinkUri,
+                resourceType: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: this.changeFeedOptions,
+                requestEnricher: default,
+                partitionKey: default,
+                streamPayload: default,
+                diagnosticsContext: default,
+                cancellationToken: cancellationToken);
 
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            continuationToken = this.continuationToken;
-            return true;
-        }
+            this.continuationToken = responseMessage.Headers.ETag;
+            this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
+            responseMessage.Headers.ContinuationToken = this.continuationToken;
 
-        private Task<ResponseMessage> NextResultSetDelegateAsync(
-            string continuationToken,
-            string partitionKeyRangeId,
-            int? maxItemCount,
-            ChangeFeedRequestOptions options,
-            CancellationToken cancellationToken)
-        {
-            Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationStreamAsync(
-               cosmosContainerCore: this.container,
-               resourceUri: resourceUri,
-               resourceType: Documents.ResourceType.Document,
-               operationType: Documents.OperationType.ReadFeed,
-               requestOptions: options,
-               requestEnricher: request =>
-               {
-                   ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                   ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                   ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
-               },
-               partitionKey: null,
-               streamPayload: null,
-               diagnosticsScope: null,
-               cancellationToken: cancellationToken);
-
+            return responseMessage;
         }
     }
 }

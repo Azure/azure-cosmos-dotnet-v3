@@ -8,8 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -257,15 +256,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, result.Count);
 
                 // Test query with no service interop via gateway query plan to replicate x32 app
-                ContainerCore containerCore = (ContainerInlineCore)tokenContainer;
-                CrossPartitionQueryTests.MockCosmosQueryClient mock = new CrossPartitionQueryTests.MockCosmosQueryClient(
+                ContainerInternal containerCore = (ContainerInlineCore)tokenContainer;
+                MockCosmosQueryClient mock = new MockCosmosQueryClient(
                     clientContext: containerCore.ClientContext,
                     cosmosContainerCore: containerCore,
                     forceQueryPlanGatewayElseServiceInterop: true);
 
-                Container tokenGatewayQueryPlan = new ContainerCore(
+                Container tokenGatewayQueryPlan = new ContainerInlineCore(
                     containerCore.ClientContext,
-                    (DatabaseCore)containerCore.Database,
+                    (DatabaseInternal)containerCore.Database,
                     containerCore.Id,
                     mock);
 
@@ -342,15 +341,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //delete resource with PermissionMode.All
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: null, resourceToken: permission.Token))
             {
-                FeedIterator<dynamic> feed = tokenCosmosClient
+                using (FeedIterator<dynamic> feed = tokenCosmosClient
                     .GetDatabase(this.cosmosDatabase.Id)
                     .GetContainer(containerId)
-                    .GetItemQueryIterator<dynamic>(new QueryDefinition("select * from t"));
-
-                while (feed.HasMoreResults)
+                    .GetItemQueryIterator<dynamic>(new QueryDefinition("select * from t")))
                 {
-                    FeedResponse<dynamic> response = await feed.ReadNextAsync();
-                    Assert.IsNotNull(response);
+                    while (feed.HasMoreResults)
+                    {
+                        FeedResponse<dynamic> response = await feed.ReadNextAsync();
+                        Assert.IsNotNull(response);
+                    }
                 }
             }
         }

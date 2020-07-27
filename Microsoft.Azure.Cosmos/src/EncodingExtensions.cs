@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static unsafe int GetChars(this Encoding encoding, ReadOnlySpan<byte> src, Span<char> dest)
         {
-            if (src.Length == 0)
+            if (src.IsEmpty)
             {
                 return 0;
             }
@@ -38,32 +38,46 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static unsafe int GetBytes(this Encoding encoding, string src, Span<byte> dest)
+        public static int GetBytes(this Encoding encoding, string src, Span<byte> dest)
+        {
+            return encoding.GetBytes(src.AsSpan(), dest);
+        }
+
+        public static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> src, Span<byte> dest)
         {
             if (src.Length == 0)
             {
                 return 0;
             }
 
+            if (dest.Length == 0)
+            {
+                return 0;
+            }
+
             fixed (char* charPointer = src)
             {
-                fixed (byte* spanPointer = dest)
+                fixed (byte* bytePointer = dest)
                 {
-                    return encoding.GetBytes(chars: charPointer, charCount: src.Length, bytes: spanPointer, byteCount: dest.Length);
+                    return encoding.GetBytes(
+                        chars: charPointer,
+                        charCount: src.Length,
+                        bytes: bytePointer,
+                        byteCount: dest.Length);
                 }
             }
         }
 
         public static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> src)
         {
-            if (src.Length == 0)
+            if (src.IsEmpty)
             {
                 return 0;
             }
 
             fixed (char* charPointer = src)
             {
-                return encoding.GetByteCount(chars: charPointer, src.Length);
+                return encoding.GetByteCount(chars: charPointer, count: src.Length);
             }
         }
     }

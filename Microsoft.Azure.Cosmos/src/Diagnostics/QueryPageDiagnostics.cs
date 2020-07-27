@@ -1,27 +1,32 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     internal sealed class QueryPageDiagnostics : CosmosDiagnosticsInternal
     {
         public QueryPageDiagnostics(
+            Guid clientQueryCorrelationId,
             string partitionKeyRangeId,
             string queryMetricText,
             string indexUtilizationText,
-            CosmosDiagnosticsContext diagnosticsContext,
-            SchedulingStopwatch schedulingStopwatch)
+            CosmosDiagnosticsContext diagnosticsContext)
         {
+            this.ClientCorrelationId = clientQueryCorrelationId;
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.QueryMetricText = queryMetricText ?? string.Empty;
             this.IndexUtilizationText = indexUtilizationText ?? string.Empty;
             this.DiagnosticsContext = diagnosticsContext;
-            this.SchedulingTimeSpan = schedulingStopwatch.Elapsed;
         }
+
+        /// <summary>
+        /// A client id for the query. This can be used to
+        /// correlate multiple query responses to a single
+        /// query iterator.
+        /// </summary>
+        public Guid ClientCorrelationId { get; }
 
         public string PartitionKeyRangeId { get; }
 
@@ -30,8 +35,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public string IndexUtilizationText { get; }
 
         public CosmosDiagnosticsContext DiagnosticsContext { get; }
-
-        public SchedulingTimeSpan SchedulingTimeSpan { get; }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor visitor)
         {

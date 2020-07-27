@@ -3,8 +3,11 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -13,58 +16,52 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    sealed class CosmosNull : CosmosElement
+    sealed class CosmosNull : CosmosElement, IEquatable<CosmosNull>, IComparable<CosmosNull>
     {
+        private const uint Hash = 448207988;
+
         private static readonly CosmosNull Singleton = new CosmosNull();
 
         private CosmosNull()
-            : base(CosmosElementType.Null)
+            : base()
         {
         }
 
-        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
+
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
+
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
+
+        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosNull cosmosNull && this.Equals(cosmosNull);
+
+        public bool Equals(CosmosNull cosmosNull) => true;
+
+        public static CosmosNull Create() => CosmosNull.Singleton;
+
+        public override int GetHashCode() => (int)Hash;
+
+        public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteNullValue();
+
+        public static new CosmosNull CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosNull>(buffer);
+
+        public static new CosmosNull Parse(string json) => CosmosElement.Parse<CosmosNull>(json);
+
+        public static bool TryCreateFromBuffer(
+            ReadOnlyMemory<byte> buffer,
+            out CosmosNull cosmosNull) => CosmosElement.TryCreateFromBuffer<CosmosNull>(buffer, out cosmosNull);
+
+        public static bool TryParse(
+            string json,
+            out CosmosNull cosmosNull) => CosmosElement.TryParse<CosmosNull>(json, out cosmosNull);
+
+        public int CompareTo(CosmosNull other) => 0;
+
+        public static new class Monadic
         {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+            public static TryCatch<CosmosNull> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosNull>(buffer);
 
-            cosmosElementVisitor.Visit(this);
-        }
-
-        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
-            return cosmosElementVisitor.Visit(this);
-        }
-
-        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
-            return cosmosElementVisitor.Visit(this, input);
-        }
-
-        public static CosmosNull Create()
-        {
-            return CosmosNull.Singleton;
-        }
-
-        public override void WriteTo(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonWriter)}");
-            }
-
-            jsonWriter.WriteNullValue();
+            public static TryCatch<CosmosNull> Parse(string json) => CosmosElement.Monadic.Parse<CosmosNull>(json);
         }
     }
 #if INTERNAL

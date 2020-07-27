@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class UserDefinedFunctionsTests : BaseCosmosClientHelper
     {
-        private ContainerCore container = null;
+        private ContainerInternal container = null;
         private Scripts scripts = null;
         private const string function = @"function(amt) { return amt * 0.05; }";
 
@@ -129,18 +129,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
              "SELECT t.id, t.status, t.cost, udf.calculateTax(t.cost) as total FROM toDoActivity t where t.cost > @expensive and t.status = @status")
                  .WithParameter("@expensive", 9000)
                  .WithParameter("@status", "Done");
-            
-             FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
-                 queryDefinition: sqlQuery);
-
             HashSet<string> iterIds = new HashSet<string>();
-            while (feedIterator.HasMoreResults)
+            using (FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
+                 queryDefinition: sqlQuery))
             {
-                foreach (var response in await feedIterator.ReadNextAsync())
+                while (feedIterator.HasMoreResults)
                 {
-                    Assert.IsTrue(response.cost > 9000);
-                    Assert.AreEqual(response.cost * .05, response.total);
-                    iterIds.Add(response.id.Value);
+                    foreach (dynamic response in await feedIterator.ReadNextAsync())
+                    {
+                        Assert.IsTrue(response.cost > 9000);
+                        Assert.AreEqual(response.cost * .05, response.total);
+                        iterIds.Add(response.id.Value);
+                    }
                 }
             }
 

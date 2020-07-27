@@ -6,24 +6,21 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using Newtonsoft.Json.Serialization;
 
     [TestClass]
     public class CosmosJsonSeriliazerUnitTests
     {
-        private ToDoActivity toDoActivity = new ToDoActivity()
+        private readonly ToDoActivity toDoActivity = new ToDoActivity()
         {
             id = "c1d433c1-369d-430e-91e5-14e3ce588f71",
             taskNum = 42,
@@ -32,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             status = "TBD"
         };
 
-        private string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
+        private readonly string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
 
         [TestMethod]
         public void ValidateSerializer()
@@ -92,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                $@"{{""id"":""{id}"",""operationType"":""Invalid"",""resourceType"":null,""resourceId"":null,""content"":null,""conflict_lsn"":0}}");
 
             // Throughput doesn't have an id.
-            string defaultThroughputJson = @"{""Throughput"":null}";
+            string defaultThroughputJson = @"{}";
             ThroughputProperties property = JsonConvert.DeserializeObject<ThroughputProperties>(defaultThroughputJson);
             Assert.IsNull(property.Throughput);
             string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings()
@@ -106,7 +103,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             dynamic property = JsonConvert.DeserializeObject<T>(defaultJson);
             Assert.AreEqual(id, property.Id);
-            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings() {
+            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings()
+            {
                 Formatting = Formatting.None
             });
 
@@ -166,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
-        public async Task ValidateResponseFactoryJsonSerializer()
+        public void ValidateResponseFactoryJsonSerializer()
         {
             ResponseMessage databaseResponse = this.CreateResponse();
             ResponseMessage containerResponse = this.CreateResponse();
@@ -176,9 +174,10 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage udfResponse = this.CreateResponse();
             ResponseMessage itemResponse = this.CreateResponse();
 
+
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
-            CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
+            CosmosResponseFactoryInternal cosmosResponseFactory = new CosmosResponseFactoryCore(
                serializerCore);
 
             // Test the user specified response
@@ -186,10 +185,38 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
-            await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse));
-            await cosmosResponseFactory.CreateStoredProcedureExecuteResponseAsync<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
+            cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            cosmosResponseFactory.CreateStoredProcedureExecuteResponse<ToDoActivity>(storedProcedureExecuteResponse);
 
             // Throw if the setups were not called
+            mockUserJsonSerializer.VerifyAll();
+
+            // Test read feed scenario
+            ResponseMessage readFeedResponse = this.CreateReadFeedResponse();
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity[]>(It.IsAny<Stream>()))
+                .Callback<Stream>(input => input.Dispose())
+                .Returns(new ToDoActivity[] { new ToDoActivity() });
+            FeedResponse<ToDoActivity> feedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(readFeedResponse);
+            foreach (ToDoActivity toDoActivity in feedResponse)
+            {
+                Assert.IsNotNull(toDoActivity);
+            }
+
+            mockUserJsonSerializer.VerifyAll();
+
+            ResponseMessage changeFeedResponseMessage = this.CreateChangeFeedNotModifiedResponse();
+            FeedResponse<ToDoActivity> changeFeedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(changeFeedResponseMessage);
+            Assert.AreEqual(HttpStatusCode.NotModified, changeFeedResponse.StatusCode);
+            Assert.IsFalse(changeFeedResponse.Resource.Any());
+
+            ResponseMessage queryResponse = this.CreateReadFeedResponse();
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity[]>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity[] { new ToDoActivity() });
+            FeedResponse<ToDoActivity> queryFeedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(queryResponse);
+            foreach (ToDoActivity toDoActivity in queryFeedResponse)
+            {
+                Assert.IsNotNull(toDoActivity);
+            }
+
             mockUserJsonSerializer.VerifyAll();
 
             // Test the system specified response
@@ -218,35 +245,39 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             Mock<Database> mockDatabase = new Mock<Database>();
 
             // Verify all the system types that should always use default
-            await cosmosResponseFactory.CreateContainerResponseAsync(mockContainer.Object, Task.FromResult(containerResponse));
-            await cosmosResponseFactory.CreateDatabaseResponseAsync(mockDatabase.Object, Task.FromResult(databaseResponse));
-            await cosmosResponseFactory.CreateStoredProcedureResponseAsync(Task.FromResult(storedProcedureResponse));
-            await cosmosResponseFactory.CreateTriggerResponseAsync(Task.FromResult(triggerResponse));
-            await cosmosResponseFactory.CreateUserDefinedFunctionResponseAsync(Task.FromResult(udfResponse));
+            cosmosResponseFactory.CreateContainerResponse(mockContainer.Object, containerResponse);
+            cosmosResponseFactory.CreateDatabaseResponse(mockDatabase.Object, databaseResponse);
+            cosmosResponseFactory.CreateStoredProcedureResponse(storedProcedureResponse);
+            cosmosResponseFactory.CreateTriggerResponse(triggerResponse);
+            cosmosResponseFactory.CreateUserDefinedFunctionResponse(udfResponse);
         }
 
         [TestMethod]
         public void ValidateSqlQuerySpecSerializer()
         {
-            List<SqlQuerySpec> sqlQuerySpecs = new List<SqlQuerySpec>();
-            sqlQuerySpecs.Add(new SqlQuerySpec()
+            List<SqlQuerySpec> sqlQuerySpecs = new List<SqlQuerySpec>
             {
-                QueryText = "SELECT root._rid, [{\"item\": root[\"NumberField\"]}] AS orderByItems, root AS payload\nFROM root\nWHERE (true)\nORDER BY root[\"NumberField\"] DESC"
-            });
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT root._rid, [{\"item\": root[\"NumberField\"]}] AS orderByItems, root AS payload\nFROM root\nWHERE (true)\nORDER BY root[\"NumberField\"] DESC"
+                },
 
-            sqlQuerySpecs.Add(new SqlQuerySpec()
-            {
-                QueryText = "Select * from something"
-            });
-           
-            sqlQuerySpecs.Add(new SqlQuerySpec()
-            {
-                QueryText = "Select * from something",
-                Parameters = new SqlParameterCollection()
-            });
+                new SqlQuerySpec()
+                {
+                    QueryText = "Select * from something"
+                },
 
-            SqlParameterCollection sqlParameters = new SqlParameterCollection();
-            sqlParameters.Add(new SqlParameter("@id", "test1"));
+                new SqlQuerySpec()
+                {
+                    QueryText = "Select * from something",
+                    Parameters = new SqlParameterCollection()
+                }
+            };
+
+            SqlParameterCollection sqlParameters = new SqlParameterCollection
+            {
+                new SqlParameter("@id", "test1")
+            };
 
             sqlQuerySpecs.Add(new SqlQuerySpec()
             {
@@ -254,12 +285,14 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Parameters = sqlParameters
             });
 
-            sqlParameters = new SqlParameterCollection();
-            sqlParameters.Add(new SqlParameter("@id", "test2"));
-            sqlParameters.Add(new SqlParameter("@double", 42.42));
-            sqlParameters.Add(new SqlParameter("@int", 9001));
-            sqlParameters.Add(new SqlParameter("@null", null));
-            sqlParameters.Add(new SqlParameter("@datetime", DateTime.UtcNow));
+            sqlParameters = new SqlParameterCollection
+            {
+                new SqlParameter("@id", "test2"),
+                new SqlParameter("@double", 42.42),
+                new SqlParameter("@int", 9001),
+                new SqlParameter("@null", null),
+                new SqlParameter("@datetime", DateTime.UtcNow)
+            };
 
             sqlQuerySpecs.Add(new SqlQuerySpec()
             {
@@ -303,6 +336,54 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Content = new MemoryStream()
             };
             return cosmosResponse;
+        }
+
+        private ResponseMessage CreateQueryResponse()
+        {
+            List<CosmosElement> cosmosElements = new List<CosmosElement>();
+            string serializedItem = this.GetSerializedToDoActivity();
+            CosmosObject cosmosObject = CosmosObject.Parse(serializedItem);
+            cosmosElements.Add(cosmosObject);
+
+            ResponseMessage cosmosResponse = QueryResponse.CreateSuccess(
+                cosmosElements,
+                1,
+                Encoding.UTF8.GetByteCount(serializedItem),
+                new CosmosQueryResponseMessageHeaders(
+                    continauationToken: null,
+                    disallowContinuationTokenMessage: null,
+                    resourceType: Documents.ResourceType.Document,
+                    "+o4fAPfXPzw="),
+                new CosmosDiagnosticsContextCore(),
+                null);
+
+            return cosmosResponse;
+        }
+
+        private ResponseMessage CreateChangeFeedNotModifiedResponse()
+        {
+            ResponseMessage cosmosResponse = new ResponseMessage(statusCode: HttpStatusCode.NotModified)
+            {
+                Content = null
+            };
+
+            return cosmosResponse;
+        }
+
+        private ResponseMessage CreateReadFeedResponse()
+        {
+            string documentWrapper = $"{{\"_rid\":\"+o4fAPfXPzw=\",\"Documents\":[{this.GetSerializedToDoActivity()}],\"_count\":1}}";
+            ResponseMessage cosmosResponse = new ResponseMessage(statusCode: HttpStatusCode.OK)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(documentWrapper))
+            };
+
+            return cosmosResponse;
+        }
+
+        private string GetSerializedToDoActivity()
+        {
+            return @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""status"":""TBD""}";
         }
 
         public class ToDoActivity

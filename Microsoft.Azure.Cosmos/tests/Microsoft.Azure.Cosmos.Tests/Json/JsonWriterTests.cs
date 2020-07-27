@@ -6,8 +6,8 @@
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Reflection;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     [TestClass]
     public class JsonWriterTests
@@ -401,9 +401,9 @@
         public void SystemStringTest()
         {
             int systemStringId = 0;
-            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out string systemString))
+            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
-                string expectedString = "\"" + systemString + "\"";
+                string expectedString = "\"" + systemString.Utf16String + "\"";
                 // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
                 expectedString = Newtonsoft.Json.Linq.JToken
                     .Parse(expectedString)
@@ -417,7 +417,7 @@
 
                 JsonToken[] tokensToWrite =
                 {
-                    JsonToken.String(systemString)
+                    JsonToken.String(systemString.Utf16String)
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedString);
@@ -488,8 +488,8 @@
             for (int i = 0; i < OneByteCount + 1; i++)
             {
                 string userEncodedString = "a" + i.ToString();
-                Assert.IsTrue(jsonStringDictionary.TryGetStringAtIndex(i, out string value));
-                Assert.AreEqual(userEncodedString, value);
+                Assert.IsTrue(jsonStringDictionary.TryGetStringAtIndex(i, out UtfAllString value));
+                Assert.AreEqual(userEncodedString, value.Utf16String);
             }
         }
         #endregion
@@ -1491,7 +1491,7 @@
             float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
             foreach (float value in values)
             {
-                string expectedStringOutput = $"S{value.ToString("G9", CultureInfo.InvariantCulture)}";
+                string expectedStringOutput = $"S{value.ToString("R", CultureInfo.InvariantCulture)}";
                 byte[] expectedBinaryOutput;
                 unchecked
                 {
@@ -1520,7 +1520,7 @@
             double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
             foreach (double value in values)
             {
-                string expectedStringOutput = $"D{value.ToString("G17", CultureInfo.InvariantCulture)}";
+                string expectedStringOutput = $"D{value.ToString("R", CultureInfo.InvariantCulture)}";
                 byte[] expectedBinaryOutput;
                 unchecked
                 {
@@ -1736,7 +1736,7 @@
                             string stringValue = (token as JsonStringToken).Value;
                             if (writeAsUtf8String)
                             {
-                                jsonWriter.WriteStringValue(Encoding.UTF8.GetBytes(stringValue));
+                                jsonWriter.WriteStringValue(Utf8Span.TranscodeUtf16(stringValue));
                             }
                             else
                             {
@@ -1746,7 +1746,7 @@
 
                         case JsonTokenType.Number:
                             Number64 numberValue = (token as JsonNumberToken).Value;
-                            jsonWriter.WriteNumberValue(numberValue);
+                            jsonWriter.WriteNumber64Value(numberValue);
                             break;
 
                         case JsonTokenType.True:
@@ -1765,7 +1765,7 @@
                             string fieldNameValue = (token as JsonFieldNameToken).Value;
                             if (writeAsUtf8String)
                             {
-                                jsonWriter.WriteFieldName(Encoding.UTF8.GetBytes(fieldNameValue));
+                                jsonWriter.WriteFieldName(Utf8Span.TranscodeUtf16(fieldNameValue));
                             }
                             else
                             {

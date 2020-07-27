@@ -7,12 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// This is an interface to allow a custom serializer to be used by the CosmosClient
@@ -20,8 +18,10 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosSerializerCore
     {
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
+        private readonly CosmosSerializer patchOperationSerializer;
 
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
@@ -30,11 +30,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.customSerializer = null;
                 this.sqlQuerySpecSerializer = null;
+                this.patchOperationSerializer = null;
             }
             else
             {
                 this.customSerializer = new CosmosJsonSerializerWrapper(customSerializer);
                 this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                    cosmosSerializer: this.customSerializer,
+                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+                this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
             }
@@ -61,6 +65,12 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosSerializer serializer = this.GetSerializer<T>();
             return serializer.FromStream<T>(stream);
+        }
+
+        internal T[] FromFeedStream<T>(Stream stream)
+        {
+            CosmosSerializer serializer = this.GetSerializer<T>();
+            return serializer.FromStream<T[]>(stream);
         }
 
         internal Stream ToStream<T>(T input)
@@ -92,17 +102,14 @@ namespace Microsoft.Azure.Cosmos
             return serializer.ToStream<SqlQuerySpec>(input);
         }
 
-        internal IEnumerable<T> FromFeedResponseStream<T>(
-            Stream stream,
-            ResourceType resourceType)
+        internal CosmosSerializer GetCustomOrDefaultSerializer()
         {
-            CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
-                    stream,
-                    resourceType);
+            if (this.customSerializer != null)
+            {
+                return this.customSerializer;
+            }
 
-            return CosmosElementSerializer.GetResources<T>(
-               cosmosArray: cosmosArray,
-               serializerCore: this);
+            return CosmosSerializerCore.propertiesSerializer;
         }
 
         private CosmosSerializer GetSerializer<T>()
@@ -128,6 +135,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }
+            else if (inputType.IsGenericType && inputType.GetGenericArguments()[0] == typeof(PatchOperation))
+            {
+                return this.patchOperationSerializer;
+            }
 
             if (inputType == typeof(SqlQuerySpec))
             {
@@ -135,11 +146,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
 #if DEBUG
+            // This check is used to stop internal developers from deserializing an internal with the user's serialier that doesn't know how to materialize said type.
             string clientAssemblyName = typeof(DatabaseProperties).Assembly.GetName().Name;
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
-            if (string.Equals(inputAssemblyName, clientAssemblyName) ||
-                string.Equals(inputAssemblyName, directAssemblyName)) 
+            bool inputIsClientOrDirect = string.Equals(inputAssemblyName, clientAssemblyName) || string.Equals(inputAssemblyName, directAssemblyName);
+            bool typeIsWhiteListed = inputType == typeof(Document);
+
+            if (!typeIsWhiteListed && inputIsClientOrDirect)
             {
                 throw new ArgumentException($"User serializer is being used for internal type:{inputType.FullName}.");
             }

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
-        public struct InitParams
+        public readonly struct InitParams
         {
             public IDocumentQueryClient Client { get; }
             public ResourceType ResourceTypeEnum { get; }

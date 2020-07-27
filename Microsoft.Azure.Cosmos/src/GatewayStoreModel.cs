@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -21,56 +20,30 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModel, IDisposable
     {
-        // Gateway has backoff/retry logic to hide transient errors.
-        private readonly TimeSpan requestTimeout = TimeSpan.FromSeconds(65);
         private readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         private readonly ISessionContainer sessionContainer;
         private readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
-        private CookieContainer cookieJar;
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
             ISessionContainer sessionContainer,
-            TimeSpan requestTimeout,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            UserAgentContainer userAgent,
-            ApiType apiType = ApiType.None,
-            HttpMessageHandler messageHandler = null)
+            HttpClient httpClient)
         {
-            // CookieContainer is not really required, but is helpful in debugging.
-            this.cookieJar = new CookieContainer();
             this.endpointManager = endpointManager;
-            HttpClient httpClient = new HttpClient(messageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar });
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
-
-            // Use max of client specified and our own request timeout value when sending
-            // requests to gateway. Otherwise, we will have gateway's transient
-            // error hiding retries are of no use.
-            httpClient.Timeout = (requestTimeout > this.requestTimeout) ? requestTimeout : this.requestTimeout;
-            httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-
-            httpClient.AddUserAgentHeader(userAgent);
-            httpClient.AddApiTypeHeader(apiType);
-
-            // Set requested API version header that can be used for
-            // version enforcement.
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                HttpConstants.Versions.CurrentVersion);
-
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
-
             this.eventSource = eventSource;
+
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
                 serializerSettings);
-
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
@@ -224,6 +197,19 @@ namespace Microsoft.Azure.Cosmos
                     request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
                 }
                 return; //User is explicitly controlling the session.
+            }
+
+            if (request.Headers != null &&
+                 request.OperationType == OperationType.QueryPlan)
+            {
+                {
+                    string isPlanOnlyString = request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest];
+                    bool isPlanOnly = false;
+                    if (bool.TryParse(isPlanOnlyString, out isPlanOnly) && isPlanOnly)
+                    {
+                        return; // for query plan session token is not needed
+                    }
+                }
             }
 
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];

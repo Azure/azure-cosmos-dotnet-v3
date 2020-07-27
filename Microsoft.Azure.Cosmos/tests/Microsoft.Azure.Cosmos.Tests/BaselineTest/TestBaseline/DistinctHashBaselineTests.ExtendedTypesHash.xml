@@ -1,0 +1,26 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <CosmosElement><![CDATA[B]]></CosmosElement>
+    </Input>
+    <Output>
+      <Hash><![CDATA[33-B6-49-44-DD-52-E3-B4-E7-F8-36-19-0A-BD-E9-BD]]></Hash>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <CosmosElement><![CDATA[BAQID]]></CosmosElement>
+    </Input>
+    <Output>
+      <Hash><![CDATA[13-3C-D4-AE-78-F6-92-36-F8-88-BA-45-BE-C5-E1-C4]]></Hash>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <CosmosElement><![CDATA[G00000000-0000-0000-0000-000000000000]]></CosmosElement>
+    </Input>
+    <Output>
+      <Hash><![CDATA[13-C1-43-9A-CF-8F-13-0A-C2-ED-30-A3-E0-D5-C2-D1]]></Hash>
+    </Output>
+  </Result>
+</Results>

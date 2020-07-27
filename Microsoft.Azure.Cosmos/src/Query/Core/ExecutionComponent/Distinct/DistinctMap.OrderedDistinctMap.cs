@@ -72,16 +72,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 return this.lastHash.ToString();
             }
 
-            public static TryCatch<DistinctMap> TryCreate(string continuationToken)
+            public override CosmosElement GetCosmosElementContinuationToken()
+            {
+                return CosmosBinary.Create(UInt128.ToByteArray(this.lastHash));
+            }
+
+            public static TryCatch<DistinctMap> TryCreate(CosmosElement requestContinuationToken)
             {
                 UInt128 lastHash;
-                if (continuationToken != null)
+                if (requestContinuationToken != null)
                 {
-                    if (!UInt128.TryParse(continuationToken, out lastHash))
+                    switch (requestContinuationToken)
                     {
-                        return TryCatch<DistinctMap>.FromException(
-                            new MalformedContinuationTokenException(
-                                $"Malformed {nameof(OrderedDistinctMap)} continuation token: {continuationToken}."));
+                        case CosmosString cosmosString:
+                            if (!UInt128.TryParse(cosmosString.Value, out lastHash))
+                            {
+                                return TryCatch<DistinctMap>.FromException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {requestContinuationToken}."));
+                            }
+                            break;
+
+                        case CosmosBinary cosmosBinary:
+                            if (!UInt128.TryCreateFromByteArray(cosmosBinary.Value.Span, out lastHash))
+                            {
+                                return TryCatch<DistinctMap>.FromException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {requestContinuationToken}."));
+                            }
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException($"Unknown {nameof(requestContinuationToken)} type. {requestContinuationToken.GetType()}.");
                     }
                 }
                 else

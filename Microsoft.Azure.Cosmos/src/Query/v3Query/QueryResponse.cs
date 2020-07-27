@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -41,15 +42,13 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             CosmosDiagnosticsContext diagnostics,
-            string errorMessage,
-            Error error,
+            CosmosException cosmosException,
             Lazy<MemoryStream> memoryStream,
             CosmosSerializationFormatOptions serializationOptions)
             : base(
                 statusCode: statusCode,
                 requestMessage: requestMessage,
-                errorMessage: errorMessage,
-                error: error,
+                cosmosException: cosmosException,
                 headers: responseHeaders,
                 diagnostics: diagnostics)
         {
@@ -108,10 +107,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Lazy<MemoryStream> memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
-                       responseHeaders.ContainerRid,
-                       result,
-                       responseHeaders.ResourceType,
-                       serializationOptions));
+                responseHeaders.ContainerRid,
+                result,
+                responseHeaders.ResourceType,
+                serializationOptions));
 
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,
@@ -120,8 +119,7 @@ namespace Microsoft.Azure.Cosmos
                responseHeaders: responseHeaders,
                diagnostics: diagnostics,
                statusCode: HttpStatusCode.OK,
-               errorMessage: null,
-               error: null,
+               cosmosException: null,
                requestMessage: null,
                memoryStream: memoryStream,
                serializationOptions: serializationOptions);
@@ -133,22 +131,20 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
-            string errorMessage,
-            Error error,
+            CosmosException cosmosException,
             CosmosDiagnosticsContext diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
-                    result: new List<CosmosElement>(),
-                    count: 0,
-                    responseLengthBytes: 0,
-                    responseHeaders: responseHeaders,
-                    diagnostics: diagnostics,
-                    statusCode: statusCode,
-                    errorMessage: errorMessage,
-                    error: error,
-                    requestMessage: requestMessage,
-                    memoryStream: null,
-                    serializationOptions: null);
+                result: new List<CosmosElement>(),
+                count: 0,
+                responseLengthBytes: 0,
+                responseHeaders: responseHeaders,
+                diagnostics: diagnostics,
+                statusCode: statusCode,
+                cosmosException: cosmosException,
+                requestMessage: requestMessage,
+                memoryStream: null,
+                serializationOptions: null);
 
             return cosmosQueryResponse;
         }

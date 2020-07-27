@@ -1,8 +1,13 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 139
+
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -13,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class CosmosFloat64 : CosmosNumber
+    abstract partial class CosmosFloat64 : CosmosNumber, IEquatable<CosmosFloat64>, IComparable<CosmosFloat64>
     {
         private sealed class LazyCosmosFloat64 : CosmosFloat64
         {
@@ -48,8 +53,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             }
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

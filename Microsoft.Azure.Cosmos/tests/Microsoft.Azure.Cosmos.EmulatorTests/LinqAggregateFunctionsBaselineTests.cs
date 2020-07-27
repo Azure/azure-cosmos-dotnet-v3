@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
 
-    [TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
     {
         private static CosmosClient client;
@@ -499,7 +499,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public override LinqAggregateOutput ExecuteTest(LinqAggregateInput input)
         {
             LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = null;
-            var compiledQuery = input.expression.Compile();
+            Func<bool, object> compiledQuery = input.expression.Compile();
 
             string errorMessage = null;
             string query = string.Empty;
@@ -522,7 +522,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
                 try
                 {
-                    var dataResult = compiledQuery(false);
+                    object dataResult = compiledQuery(false);
                     Assert.AreEqual(dataResult, queryResult);
                 }
                 catch (ArgumentException)
@@ -567,12 +567,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
-                xmlWriter.WriteStartElement(nameof(SqlQuery));
+                xmlWriter.WriteStartElement(nameof(this.SqlQuery));
                 xmlWriter.WriteCData(LinqTestOutput.FormatSql(this.SqlQuery));
                 xmlWriter.WriteEndElement();
                 if (this.ErrorMessage != null)
                 {
-                    xmlWriter.WriteStartElement(nameof(ErrorMessage));
+                    xmlWriter.WriteStartElement(nameof(this.ErrorMessage));
                     xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(this.ErrorMessage));
                     xmlWriter.WriteEndElement();
                 }
@@ -601,7 +601,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     throw new ArgumentNullException($"{nameof(xmlWriter)} cannot be null.");
                 }
 
-                var expressionString = LinqTestInput.FilterInputExpression(expression.Body.ToString());
+                string expressionString = LinqTestInput.FilterInputExpression(this.expression.Body.ToString());
 
                 xmlWriter.WriteStartElement("Description");
                 xmlWriter.WriteCData(this.Description);

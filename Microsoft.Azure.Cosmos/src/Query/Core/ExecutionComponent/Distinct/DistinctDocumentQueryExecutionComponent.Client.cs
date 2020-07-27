@@ -8,9 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Newtonsoft.Json;
 
     internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -39,33 +42,70 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                string requestContinuation,
-                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+                CosmosElement requestContinuation,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
                 DistinctQueryType distinctQueryType)
             {
+                if (tryCreateSourceAsync == null)
+                {
+                    throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+                }
+
                 DistinctContinuationToken distinctContinuationToken;
                 if (requestContinuation != null)
                 {
                     if (!DistinctContinuationToken.TryParse(requestContinuation, out distinctContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException($"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}"));
+                            new MalformedContinuationTokenException(
+                                $"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}"));
                     }
                 }
                 else
                 {
-                    distinctContinuationToken = new DistinctContinuationToken(sourceToken: null, distinctMapToken: null);
+                    distinctContinuationToken = new DistinctContinuationToken(
+                        sourceToken: null,
+                        distinctMapToken: null);
+                }
+
+                CosmosElement distinctMapToken;
+                if (distinctContinuationToken.DistinctMapToken != null)
+                {
+                    distinctMapToken = CosmosString.Create(distinctContinuationToken.DistinctMapToken);
+                }
+                else
+                {
+                    distinctMapToken = null;
                 }
 
                 TryCatch<DistinctMap> tryCreateDistinctMap = DistinctMap.TryCreate(
                     distinctQueryType,
-                    distinctContinuationToken.DistinctMapToken);
+                    distinctMapToken);
                 if (!tryCreateDistinctMap.Succeeded)
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateDistinctMap.Exception);
                 }
 
-                TryCatch<IDocumentQueryExecutionComponent> tryCreateSource = await tryCreateSourceAsync(distinctContinuationToken.SourceToken);
+                CosmosElement sourceToken;
+                if (distinctContinuationToken.SourceToken != null)
+                {
+                    TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(distinctContinuationToken.SourceToken);
+                    if (tryParse.Failed)
+                    {
+                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                            new MalformedContinuationTokenException(
+                                message: $"Invalid Source Token: {distinctContinuationToken.SourceToken}",
+                                innerException: tryParse.Exception));
+                    }
+
+                    sourceToken = tryParse.Result;
+                }
+                else
+                {
+                    sourceToken = null;
+                }
+
+                TryCatch<IDocumentQueryExecutionComponent> tryCreateSource = await tryCreateSourceAsync(sourceToken);
                 if (!tryCreateSource.Succeeded)
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateSource.Exception);
@@ -86,6 +126,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             /// <returns>A page of distinct results.</returns>
             public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 List<CosmosElement> distinctResults = new List<CosmosElement>();
                 QueryResponseCore sourceResponse = await base.DrainAsync(maxElements, cancellationToken);
 
@@ -104,15 +146,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
                 // For clients we write out the continuation token if it's a streaming query.
                 QueryResponseCore queryResponseCore;
-                if (this.TryGetContinuationToken(out string continuationToken))
+                if (this.distinctQueryType == DistinctQueryType.Ordered)
                 {
+                    string updatedContinuationToken;
+                    if (this.IsDone)
+                    {
+                        updatedContinuationToken = null;
+                    }
+                    else
+                    {
+                        updatedContinuationToken = new DistinctContinuationToken(
+                            sourceToken: sourceResponse.ContinuationToken,
+                            distinctMapToken: this.distinctMap.GetContinuationToken()).ToString();
+                    }
+
                     queryResponseCore = QueryResponseCore.CreateSuccess(
                         result: distinctResults,
-                        continuationToken: continuationToken,
+                        continuationToken: updatedContinuationToken,
                         disallowContinuationTokenMessage: null,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
-                        diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
                 }
                 else
@@ -123,37 +176,82 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         disallowContinuationTokenMessage: ClientDistinctDocumentQueryExecutionComponent.DisallowContinuationTokenMessage,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
-                        diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
                 }
 
                 return queryResponseCore;
             }
 
-            public override bool TryGetContinuationToken(out string continuationToken)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                if (this.distinctQueryType != DistinctQueryType.Ordered)
+                throw new NotImplementedException();
+            }
+
+            /// <summary>
+            /// Continuation token for distinct queries.
+            /// </summary>
+            private sealed class DistinctContinuationToken
+            {
+                private static class PropertyNames
                 {
-                    continuationToken = null;
-                    return false;
+                    public const string SourceToken = "SourceToken";
+                    public const string DistinctMapToken = "DistinctMapToken";
                 }
 
-                if (this.IsDone)
+                public DistinctContinuationToken(string sourceToken, string distinctMapToken)
                 {
-                    continuationToken = null;
+                    this.SourceToken = sourceToken;
+                    this.DistinctMapToken = distinctMapToken;
+                }
+
+                public string SourceToken { get; }
+
+                public string DistinctMapToken { get; }
+
+                /// <summary>
+                /// Tries to parse a DistinctContinuationToken from a string.
+                /// </summary>
+                /// <param name="cosmosElement">The value to parse.</param>
+                /// <param name="distinctContinuationToken">The output DistinctContinuationToken.</param>
+                /// <returns>True if we successfully parsed the DistinctContinuationToken, else false.</returns>
+                public static bool TryParse(
+                    CosmosElement cosmosElement,
+                    out DistinctContinuationToken distinctContinuationToken)
+                {
+                    if (!(cosmosElement is CosmosObject cosmosObject))
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+
+                    if (!cosmosObject.TryGetValue(
+                        DistinctContinuationToken.PropertyNames.SourceToken,
+                        out CosmosString sourceToken))
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+
+                    if (!cosmosObject.TryGetValue(
+                        DistinctContinuationToken.PropertyNames.DistinctMapToken,
+                        out CosmosString distinctMapToken))
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+
+                    distinctContinuationToken = new DistinctContinuationToken(sourceToken.Value, distinctMapToken.Value);
                     return true;
                 }
 
-                if (!this.Source.TryGetContinuationToken(out string sourceContinuationToken))
+                /// <summary>
+                /// Gets the serialized form of DistinctContinuationToken
+                /// </summary>
+                /// <returns>The serialized form of DistinctContinuationToken</returns>
+                public override string ToString()
                 {
-                    continuationToken = default;
-                    return false;
+                    return JsonConvert.SerializeObject(this);
                 }
-
-                continuationToken = new DistinctContinuationToken(
-                    sourceContinuationToken,
-                    this.distinctMap.GetContinuationToken()).ToString();
-                return true;
             }
         }
     }

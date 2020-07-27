@@ -1,10 +1,537 @@
 ﻿<Results>
   <Result>
     <Input>
+      <Description>Escape Sequence 0</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0000"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0000"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0000"
+]]></PrettyPrint>
+      <HashCode>766120006</HashCode>
+      <ObfusctedQuery><![CDATA["\u0000"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 1</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0001"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0001"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0001"
+]]></PrettyPrint>
+      <HashCode>766120001</HashCode>
+      <ObfusctedQuery><![CDATA["\u0001"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 2</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0002"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0002"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0002"
+]]></PrettyPrint>
+      <HashCode>766120000</HashCode>
+      <ObfusctedQuery><![CDATA["\u0002"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 3</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0003"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0003"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0003"
+]]></PrettyPrint>
+      <HashCode>766120003</HashCode>
+      <ObfusctedQuery><![CDATA["\u0003"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 4</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0004"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0004"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0004"
+]]></PrettyPrint>
+      <HashCode>766120002</HashCode>
+      <ObfusctedQuery><![CDATA["\u0004"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 5</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0005"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0005"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0005"
+]]></PrettyPrint>
+      <HashCode>766120013</HashCode>
+      <ObfusctedQuery><![CDATA["\u0005"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 6</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0006"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0006"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0006"
+]]></PrettyPrint>
+      <HashCode>766120012</HashCode>
+      <ObfusctedQuery><![CDATA["\u0006"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 7</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0007"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0007"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0007"
+]]></PrettyPrint>
+      <HashCode>766120015</HashCode>
+      <ObfusctedQuery><![CDATA["\u0007"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 8</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\b"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\b"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\b"
+]]></PrettyPrint>
+      <HashCode>766120014</HashCode>
+      <ObfusctedQuery><![CDATA["\b"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 9</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\t"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\t"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\t"
+]]></PrettyPrint>
+      <HashCode>766120009</HashCode>
+      <ObfusctedQuery><![CDATA["\t"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 10</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\n"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\n"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\n"
+]]></PrettyPrint>
+      <HashCode>766120008</HashCode>
+      <ObfusctedQuery><![CDATA["\n"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 11</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u000b"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u000B"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u000B"
+]]></PrettyPrint>
+      <HashCode>766120011</HashCode>
+      <ObfusctedQuery><![CDATA["\u000B"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 12</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\f"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\f"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\f"
+]]></PrettyPrint>
+      <HashCode>766120010</HashCode>
+      <ObfusctedQuery><![CDATA["\f"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 13</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\r"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\r"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\r"
+]]></PrettyPrint>
+      <HashCode>766120053</HashCode>
+      <ObfusctedQuery><![CDATA["\r"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 14</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u000e"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u000E"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u000E"
+]]></PrettyPrint>
+      <HashCode>766120052</HashCode>
+      <ObfusctedQuery><![CDATA["\u000E"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 15</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u000f"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u000F"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u000F"
+]]></PrettyPrint>
+      <HashCode>766120055</HashCode>
+      <ObfusctedQuery><![CDATA["\u000F"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 16</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0010"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0010"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0010"
+]]></PrettyPrint>
+      <HashCode>766120054</HashCode>
+      <ObfusctedQuery><![CDATA["\u0010"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 17</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0011"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0011"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0011"
+]]></PrettyPrint>
+      <HashCode>766120049</HashCode>
+      <ObfusctedQuery><![CDATA["\u0011"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 18</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0012"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0012"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0012"
+]]></PrettyPrint>
+      <HashCode>766120048</HashCode>
+      <ObfusctedQuery><![CDATA["\u0012"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 19</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0013"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0013"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0013"
+]]></PrettyPrint>
+      <HashCode>766120051</HashCode>
+      <ObfusctedQuery><![CDATA["\u0013"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 20</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0014"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0014"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0014"
+]]></PrettyPrint>
+      <HashCode>766120050</HashCode>
+      <ObfusctedQuery><![CDATA["\u0014"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 21</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0015"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0015"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0015"
+]]></PrettyPrint>
+      <HashCode>766120061</HashCode>
+      <ObfusctedQuery><![CDATA["\u0015"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 22</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0016"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0016"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0016"
+]]></PrettyPrint>
+      <HashCode>766120060</HashCode>
+      <ObfusctedQuery><![CDATA["\u0016"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 23</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0017"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0017"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0017"
+]]></PrettyPrint>
+      <HashCode>766120063</HashCode>
+      <ObfusctedQuery><![CDATA["\u0017"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 24</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0018"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0018"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0018"
+]]></PrettyPrint>
+      <HashCode>766120062</HashCode>
+      <ObfusctedQuery><![CDATA["\u0018"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 25</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u0019"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u0019"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u0019"
+]]></PrettyPrint>
+      <HashCode>766120057</HashCode>
+      <ObfusctedQuery><![CDATA["\u0019"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 26</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u001a"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u001A"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u001A"
+]]></PrettyPrint>
+      <HashCode>766120056</HashCode>
+      <ObfusctedQuery><![CDATA["\u001A"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 27</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u001b"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u001B"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u001B"
+]]></PrettyPrint>
+      <HashCode>766120059</HashCode>
+      <ObfusctedQuery><![CDATA["\u001B"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 28</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u001c"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u001C"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u001C"
+]]></PrettyPrint>
+      <HashCode>766120058</HashCode>
+      <ObfusctedQuery><![CDATA["\u001C"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 29</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u001d"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u001D"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u001D"
+]]></PrettyPrint>
+      <HashCode>766120037</HashCode>
+      <ObfusctedQuery><![CDATA["\u001D"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 30</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u001e"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u001E"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u001E"
+]]></PrettyPrint>
+      <HashCode>766120036</HashCode>
+      <ObfusctedQuery><![CDATA["\u001E"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Escape Sequence 31</Description>
+      <SqlObject><![CDATA[{
+  "Value": "\u001f"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["\u001F"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"\u001F"
+]]></PrettyPrint>
+      <HashCode>766120039</HashCode>
+      <ObfusctedQuery><![CDATA["\u001F"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Empty String</Description>
+      <SqlObject><![CDATA[{
+  "Value": ""
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[""]]></TextOutput>
+      <PrettyPrint><![CDATA[
+""
+]]></PrettyPrint>
+      <HashCode>766079270</HashCode>
+      <ObfusctedQuery><![CDATA[""]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>SqlStringLiteral</Description>
       <SqlObject><![CDATA[{
-  "Value": "Hello",
-  "Kind": "StringLiteral"
+  "Value": "Hello"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -18,10 +545,25 @@
   </Result>
   <Result>
     <Input>
+      <Description>SqlStringLiteral With Unicode</Description>
+      <SqlObject><![CDATA[{
+  "Value": "💩"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["💩"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"💩"
+]]></PrettyPrint>
+      <HashCode>773810028</HashCode>
+      <ObfusctedQuery><![CDATA["str1"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>SqlNumberLiteral</Description>
       <SqlObject><![CDATA[{
-  "Value": 1597463007,
-  "Kind": "NumberLiteral"
+  "Value": 1597463007
 }]]></SqlObject>
     </Input>
     <Output>
@@ -36,9 +578,7 @@
   <Result>
     <Input>
       <Description>SqlNullLiteral</Description>
-      <SqlObject><![CDATA[{
-  "Kind": "NullLiteral"
-}]]></SqlObject>
+      <SqlObject><![CDATA[{}]]></SqlObject>
     </Input>
     <Output>
       <TextOutput><![CDATA[null]]></TextOutput>
@@ -53,8 +593,7 @@ null
     <Input>
       <Description>SqlBooleanLiteralTrue</Description>
       <SqlObject><![CDATA[{
-  "Value": true,
-  "Kind": "BooleanLiteral"
+  "Value": true
 }]]></SqlObject>
     </Input>
     <Output>
@@ -70,8 +609,7 @@ true
     <Input>
       <Description>SqlBooleanLiteralFalse</Description>
       <SqlObject><![CDATA[{
-  "Value": false,
-  "Kind": "BooleanLiteral"
+  "Value": false
 }]]></SqlObject>
     </Input>
     <Output>
@@ -86,9 +624,7 @@ false
   <Result>
     <Input>
       <Description>SqlUndefinedLiteral</Description>
-      <SqlObject><![CDATA[{
-  "Kind": "UndefinedLiteral"
-}]]></SqlObject>
+      <SqlObject><![CDATA[{}]]></SqlObject>
     </Input>
     <Output>
       <TextOutput><![CDATA[undefined]]></TextOutput>
@@ -103,8 +639,7 @@ undefined
     <Input>
       <Description>Zero</Description>
       <SqlObject><![CDATA[{
-  "Value": 0,
-  "Kind": "NumberLiteral"
+  "Value": 0
 }]]></SqlObject>
     </Input>
     <Output>
@@ -120,8 +655,7 @@ undefined
     <Input>
       <Description>Positive Number</Description>
       <SqlObject><![CDATA[{
-  "Value": 1,
-  "Kind": "NumberLiteral"
+  "Value": 1
 }]]></SqlObject>
     </Input>
     <Output>
@@ -137,8 +671,7 @@ undefined
     <Input>
       <Description>Negative Number</Description>
       <SqlObject><![CDATA[{
-  "Value": -1,
-  "Kind": "NumberLiteral"
+  "Value": -1
 }]]></SqlObject>
     </Input>
     <Output>
@@ -154,8 +687,7 @@ undefined
     <Input>
       <Description>Double</Description>
       <SqlObject><![CDATA[{
-  "Value": 1337.1337,
-  "Kind": "NumberLiteral"
+  "Value": 1337.1337
 }]]></SqlObject>
     </Input>
     <Output>
@@ -171,8 +703,7 @@ undefined
     <Input>
       <Description>E</Description>
       <SqlObject><![CDATA[{
-  "Value": 2.7182818284590451,
-  "Kind": "NumberLiteral"
+  "Value": 2.7182818284590451
 }]]></SqlObject>
     </Input>
     <Output>
@@ -188,8 +719,7 @@ undefined
     <Input>
       <Description>Pi</Description>
       <SqlObject><![CDATA[{
-  "Value": 3.1415926535897931,
-  "Kind": "NumberLiteral"
+  "Value": 3.1415926535897931
 }]]></SqlObject>
     </Input>
     <Output>
@@ -205,8 +735,7 @@ undefined
     <Input>
       <Description>1/3</Description>
       <SqlObject><![CDATA[{
-  "Value": 0.33333333333333331,
-  "Kind": "NumberLiteral"
+  "Value": 0.33333333333333331
 }]]></SqlObject>
     </Input>
     <Output>
@@ -222,8 +751,7 @@ undefined
     <Input>
       <Description>Max Safe Integer 9007199254740991</Description>
       <SqlObject><![CDATA[{
-  "Value": 9007199254740991,
-  "Kind": "NumberLiteral"
+  "Value": 9007199254740991
 }]]></SqlObject>
     </Input>
     <Output>
@@ -239,8 +767,7 @@ undefined
     <Input>
       <Description>Max Safe Integer 9007199254740991 Plus One</Description>
       <SqlObject><![CDATA[{
-  "Value": 9007199254740992,
-  "Kind": "NumberLiteral"
+  "Value": 9007199254740992
 }]]></SqlObject>
     </Input>
     <Output>
@@ -256,8 +783,7 @@ undefined
     <Input>
       <Description>Max Safe Integer 9007199254740991 Minus One</Description>
       <SqlObject><![CDATA[{
-  "Value": 9007199254740990,
-  "Kind": "NumberLiteral"
+  "Value": 9007199254740990
 }]]></SqlObject>
     </Input>
     <Output>
@@ -273,8 +799,7 @@ undefined
     <Input>
       <Description>Min Safe Integer: -9007199254740991</Description>
       <SqlObject><![CDATA[{
-  "Value": -9007199254740991,
-  "Kind": "NumberLiteral"
+  "Value": -9007199254740991
 }]]></SqlObject>
     </Input>
     <Output>
@@ -290,8 +815,7 @@ undefined
     <Input>
       <Description>Min Safe Integer: -9007199254740991 Plus One</Description>
       <SqlObject><![CDATA[{
-  "Value": -9007199254740990,
-  "Kind": "NumberLiteral"
+  "Value": -9007199254740990
 }]]></SqlObject>
     </Input>
     <Output>
@@ -307,8 +831,7 @@ undefined
     <Input>
       <Description>Min Safe Integer: -9007199254740991 Minus One</Description>
       <SqlObject><![CDATA[{
-  "Value": -9007199254740992,
-  "Kind": "NumberLiteral"
+  "Value": -9007199254740992
 }]]></SqlObject>
     </Input>
     <Output>
@@ -324,8 +847,7 @@ undefined
     <Input>
       <Description>PositiveInfinity ∞</Description>
       <SqlObject><![CDATA[{
-  "Value": "Infinity",
-  "Kind": "NumberLiteral"
+  "Value": "Infinity"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -341,8 +863,7 @@ Infinity
     <Input>
       <Description>NegativeInfinity -∞</Description>
       <SqlObject><![CDATA[{
-  "Value": "-Infinity",
-  "Kind": "NumberLiteral"
+  "Value": "-Infinity"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -358,8 +879,7 @@ Infinity
     <Input>
       <Description>NaN NaN</Description>
       <SqlObject><![CDATA[{
-  "Value": "NaN",
-  "Kind": "NumberLiteral"
+  "Value": "NaN"
 }]]></SqlObject>
     </Input>
     <Output>
@@ -375,25 +895,23 @@ NaN
     <Input>
       <Description>Epsilon 4.94065645841247E-324</Description>
       <SqlObject><![CDATA[{
-  "Value": 4.94065645841247E-324,
-  "Kind": "NumberLiteral"
+  "Value": 4.94065645841247E-324
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[4.9406564584124654E-324]]></TextOutput>
+      <TextOutput><![CDATA[4.94065645841247E-324]]></TextOutput>
       <PrettyPrint><![CDATA[
-4.9406564584124654E-324
+4.94065645841247E-324
 ]]></PrettyPrint>
       <HashCode>198553994</HashCode>
-      <ObfusctedQuery><![CDATA[4.9406564584124654E-324]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[4.94065645841247E-324]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description>MaxValue 1.79769313486232E+308</Description>
       <SqlObject><![CDATA[{
-  "Value": 1.7976931348623157E+308,
-  "Kind": "NumberLiteral"
+  "Value": 1.7976931348623157E+308
 }]]></SqlObject>
     </Input>
     <Output>
@@ -409,8 +927,7 @@ NaN
     <Input>
       <Description>MinValue -1.79769313486232E+308</Description>
       <SqlObject><![CDATA[{
-  "Value": -1.7976931348623157E+308,
-  "Kind": "NumberLiteral"
+  "Value": -1.7976931348623157E+308
 }]]></SqlObject>
     </Input>
     <Output>
@@ -426,8 +943,7 @@ NaN
     <Input>
       <Description>MinValue -9223372036854775808</Description>
       <SqlObject><![CDATA[{
-  "Value": -9223372036854775808,
-  "Kind": "NumberLiteral"
+  "Value": -9223372036854775808
 }]]></SqlObject>
     </Input>
     <Output>
@@ -443,8 +959,7 @@ NaN
     <Input>
       <Description>MaxValue 9223372036854775807</Description>
       <SqlObject><![CDATA[{
-  "Value": 9223372036854775807,
-  "Kind": "NumberLiteral"
+  "Value": 9223372036854775807
 }]]></SqlObject>
     </Input>
     <Output>

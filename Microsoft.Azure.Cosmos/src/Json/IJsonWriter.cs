@@ -4,8 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Interface for all JsonWriters that know how to write jsons of a specific serialization format.
@@ -56,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Writes a UTF-8 field name to the internal buffer.
         /// </summary>
-        /// <param name="utf8FieldName"></param>
-        void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
+        /// <param name="fieldName"></param>
+        void WriteFieldName(Utf8Span fieldName);
 
         /// <summary>
         /// Writes a string to the internal buffer.
@@ -68,14 +67,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Writes a UTF-8 string value to the internal buffer.
         /// </summary>
-        /// <param name="utf8StringValue"></param>
-        void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
+        /// <param name="value"></param>
+        void WriteStringValue(Utf8Span value);
 
         /// <summary>
         /// Writes a number to the internal buffer.
         /// </summary>
         /// <param name="value">The value of the number to write.</param>
-        void WriteNumberValue(Number64 value);
+        void WriteNumber64Value(Number64 value);
 
         /// <summary>
         /// Writes a boolean to the internal buffer.
@@ -161,11 +160,12 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteJsonFragment(ReadOnlyMemory<byte> jsonFragment);
 
         /// <summary>
-        /// Writes a json node to the internal buffer.
+        /// Writes a raw JSON token to the writer.
         /// </summary>
-        /// <param name="jsonNavigator">The navigator to use to navigate the node</param>
-        /// <param name="jsonNavigatorNode">The node to write.</param>
-        void WriteJsonNode(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode);
+        /// <remarks>The raw json token has to be the same format.</remarks>
+        /// <param name="jsonTokenType">The type of jsonToken to write.</param>
+        /// <param name="rawJsonToken">The JSON token to write.</param>
+        void WriteRawJsonToken(JsonTokenType jsonTokenType, ReadOnlySpan<byte> rawJsonToken);
 
         /// <summary>
         /// Gets the result of the JsonWriter.

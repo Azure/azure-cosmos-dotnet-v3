@@ -1,22 +1,24 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
     using System;
+    using System.Buffers;
+    using System.Buffers.Text;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Text;
-    using Newtonsoft.Json;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
-        // Mongo's query translation tests do not use baseline files,
-        // so changing whitespaces involve manually updating the expected output for each test.
-        // When the tests are converted over to baseline files we can just bulk update them and remove this flag.
-        private const bool MongoDoesNotUseBaselineFiles = true;
-        private static readonly string Tab = "    ";
+        private const string Tab = "    ";
+        private static readonly char[] CharactersThatNeedEscaping = Enumerable
+            .Range(0, ' ')
+            .Select(x => (char)x)
+            .Concat(new char[] { '"', '\\' })
+            .ToArray();
         private readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
@@ -70,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlArrayIteratorCollectionExpression sqlArrayIteratorCollectionExpression)
         {
-            sqlArrayIteratorCollectionExpression.Alias.Accept(this);
+            sqlArrayIteratorCollectionExpression.Identifier.Accept(this);
             this.writer.Write(" IN ");
             sqlArrayIteratorCollectionExpression.Collection.Accept(this);
         }
@@ -88,15 +90,15 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.writer.Write("(");
             sqlBetweenScalarExpression.Expression.Accept(this);
 
-            if (sqlBetweenScalarExpression.IsNot)
+            if (sqlBetweenScalarExpression.Not)
             {
                 this.writer.Write(" NOT");
             }
 
             this.writer.Write(" BETWEEN ");
-            sqlBetweenScalarExpression.LeftExpression.Accept(this);
+            sqlBetweenScalarExpression.StartInclusive.Accept(this);
             this.writer.Write(" AND ");
-            sqlBetweenScalarExpression.RightExpression.Accept(this);
+            sqlBetweenScalarExpression.EndInclusive.Accept(this);
             this.writer.Write(")");
         }
 
@@ -119,20 +121,20 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
         {
             this.writer.Write("(");
-            sqlCoalesceScalarExpression.LeftExpression.Accept(this);
+            sqlCoalesceScalarExpression.Left.Accept(this);
             this.writer.Write(" ?? ");
-            sqlCoalesceScalarExpression.RightExpression.Accept(this);
+            sqlCoalesceScalarExpression.Right.Accept(this);
             this.writer.Write(")");
         }
 
         public override void Visit(SqlConditionalScalarExpression sqlConditionalScalarExpression)
         {
             this.writer.Write('(');
-            sqlConditionalScalarExpression.ConditionExpression.Accept(this);
+            sqlConditionalScalarExpression.Condition.Accept(this);
             this.writer.Write(" ? ");
-            sqlConditionalScalarExpression.FirstExpression.Accept(this);
+            sqlConditionalScalarExpression.Consequent.Accept(this);
             this.writer.Write(" : ");
-            sqlConditionalScalarExpression.SecondExpression.Accept(this);
+            sqlConditionalScalarExpression.Alternative.Accept(this);
             this.writer.Write(')');
         }
 
@@ -140,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             this.writer.Write("EXISTS");
             this.WriteStartContext("(");
-            sqlExistsScalarExpression.SqlQuery.Accept(this);
+            sqlExistsScalarExpression.Subquery.Accept(this);
             this.WriteEndContext(")");
         }
 
@@ -208,8 +210,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             if (sqlIdentifierPathExpression.ParentPath != null)
             {
                 sqlIdentifierPathExpression.ParentPath.Accept(this);
-                this.writer.Write(".");
             }
+
+            this.writer.Write(".");
 
             sqlIdentifierPathExpression.Value.Accept(this);
         }
@@ -226,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlInScalarExpression sqlInScalarExpression)
         {
             this.writer.Write("(");
-            sqlInScalarExpression.Expression.Accept(this);
+            sqlInScalarExpression.Needle.Accept(this);
             if (sqlInScalarExpression.Not)
             {
                 this.writer.Write(" NOT");
@@ -234,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
             this.writer.Write(" IN ");
 
-            int numberOfItems = sqlInScalarExpression.Items.Count();
+            int numberOfItems = sqlInScalarExpression.Haystack.Count();
             if (numberOfItems == 0)
             {
                 this.writer.Write("()");
@@ -242,21 +245,21 @@ namespace Microsoft.Azure.Cosmos.Sql
             else if (numberOfItems == 1)
             {
                 this.writer.Write("(");
-                sqlInScalarExpression.Items[0].Accept(this);
+                sqlInScalarExpression.Haystack[0].Accept(this);
                 this.writer.Write(")");
             }
             else
             {
                 this.WriteStartContext("(");
 
-                for (int i = 0; i < sqlInScalarExpression.Items.Count; i++)
+                for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
                 {
                     if (i > 0)
                     {
                         this.WriteDelimiter(",");
                     }
 
-                    sqlInScalarExpression.Items[i].Accept(this);
+                    sqlInScalarExpression.Haystack[i].Accept(this);
                 }
 
                 this.WriteEndContext(")");
@@ -266,34 +269,17 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlJoinCollectionExpression sqlJoinCollectionExpression)
         {
-            sqlJoinCollectionExpression.LeftExpression.Accept(this);
+            sqlJoinCollectionExpression.Left.Accept(this);
             this.WriteNewline();
             this.WriteTab();
             this.writer.Write(" JOIN ");
-            sqlJoinCollectionExpression.RightExpression.Accept(this);
+            sqlJoinCollectionExpression.Right.Accept(this);
         }
 
         public override void Visit(SqlLimitSpec sqlObject)
         {
             this.writer.Write("LIMIT ");
             sqlObject.LimitExpression.Accept(this);
-        }
-
-        public override void Visit(SqlLiteralArrayCollection sqlLiteralArrayCollection)
-        {
-            this.writer.Write("[");
-
-            for (int i = 0; i < sqlLiteralArrayCollection.Items.Count; i++)
-            {
-                if (i > 0)
-                {
-                    this.writer.Write(", ");
-                }
-
-                sqlLiteralArrayCollection.Items[i].Accept(this);
-            }
-
-            this.writer.Write("]");
         }
 
         public override void Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
@@ -303,9 +289,9 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlMemberIndexerScalarExpression sqlMemberIndexerScalarExpression)
         {
-            sqlMemberIndexerScalarExpression.MemberExpression.Accept(this);
+            sqlMemberIndexerScalarExpression.Member.Accept(this);
             this.writer.Write("[");
-            sqlMemberIndexerScalarExpression.IndexExpression.Accept(this);
+            sqlMemberIndexerScalarExpression.Indexer.Accept(this);
             this.writer.Write("]");
         }
 
@@ -316,26 +302,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlNumberLiteral sqlNumberLiteral)
         {
-            // We have to use InvariantCulture due to number formatting.
-            // "1234.1234" is correct while "1234,1234" is incorrect.
-            if (sqlNumberLiteral.Value.IsDouble)
-            {
-                string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
-                double literalValue = 0.0;
-                if (!sqlNumberLiteral.Value.IsNaN &&
-                    !sqlNumberLiteral.Value.IsInfinity &&
-                    (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
-                    !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
-                {
-                    literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
-                }
-
-                this.writer.Write(literalString);
-            }
-            else
-            {
-                this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
-            }
+            SqlObjectTextSerializer.WriteNumber64(this.writer.GetStringBuilder(), sqlNumberLiteral.Value);
         }
 
         public override void Visit(SqlNumberPathExpression sqlNumberPathExpression)
@@ -387,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             sqlObjectProperty.Name.Accept(this);
             this.writer.Write(": ");
-            sqlObjectProperty.Expression.Accept(this);
+            sqlObjectProperty.Value.Accept(this);
         }
 
         public override void Visit(SqlOffsetLimitClause sqlObject)
@@ -452,13 +419,13 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
         {
-            if (sqlPropertyRefScalarExpression.MemberExpression != null)
+            if (sqlPropertyRefScalarExpression.Member != null)
             {
-                sqlPropertyRefScalarExpression.MemberExpression.Accept(this);
+                sqlPropertyRefScalarExpression.Member.Accept(this);
                 this.writer.Write(".");
             }
 
-            sqlPropertyRefScalarExpression.PropertyIdentifier.Accept(this);
+            sqlPropertyRefScalarExpression.Identifer.Accept(this);
         }
 
         public override void Visit(SqlQuery sqlQuery)
@@ -493,11 +460,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 this.WriteDelimiter(string.Empty);
                 sqlQuery.OffsetLimitClause.Accept(this);
-            }
-
-            if (MongoDoesNotUseBaselineFiles)
-            {
-                this.writer.Write(" ");
             }
         }
 
@@ -576,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlStringLiteral sqlStringLiteral)
         {
             this.writer.Write("\"");
-            this.writer.Write(SqlObjectTextSerializer.GetEscapedString(sqlStringLiteral.Value));
+            SqlObjectTextSerializer.WriteEscapedString(this.writer.GetStringBuilder(), sqlStringLiteral.Value.AsSpan());
             this.writer.Write("\"");
         }
 
@@ -680,121 +642,136 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
-        private static string GetEscapedString(string value)
+        unsafe private static void WriteNumber64(StringBuilder stringBuilder, Number64 value)
         {
-            if (value == null)
+            const int MaxNumberLength = 32;
+            Span<byte> buffer = stackalloc byte[MaxNumberLength];
+            if (value.IsInteger)
             {
-                throw new ArgumentNullException("value");
-            }
-
-            if (value.All(c => !IsEscapedCharacter(c)))
-            {
-                return value;
-            }
-
-            StringBuilder stringBuilder = new StringBuilder(value.Length);
-
-            foreach (char c in value)
-            {
-                switch (c)
+                if (!Utf8Formatter.TryFormat(
+                    value: Number64.ToLong(value),
+                    destination: buffer,
+                    bytesWritten: out int bytesWritten))
                 {
-                    case '"':
-                        stringBuilder.Append("\\\"");
-                        break;
-                    case '\\':
-                        stringBuilder.Append("\\\\");
-                        break;
-                    case '\b':
-                        stringBuilder.Append("\\b");
-                        break;
-                    case '\f':
-                        stringBuilder.Append("\\f");
-                        break;
-                    case '\n':
-                        stringBuilder.Append("\\n");
-                        break;
-                    case '\r':
-                        stringBuilder.Append("\\r");
-                        break;
-                    case '\t':
-                        stringBuilder.Append("\\t");
-                        break;
-                    default:
-                        switch (CharUnicodeInfo.GetUnicodeCategory(c))
-                        {
-                            case UnicodeCategory.UppercaseLetter:
-                            case UnicodeCategory.LowercaseLetter:
-                            case UnicodeCategory.TitlecaseLetter:
-                            case UnicodeCategory.OtherLetter:
-                            case UnicodeCategory.DecimalDigitNumber:
-                            case UnicodeCategory.LetterNumber:
-                            case UnicodeCategory.OtherNumber:
-                            case UnicodeCategory.SpaceSeparator:
-                            case UnicodeCategory.ConnectorPunctuation:
-                            case UnicodeCategory.DashPunctuation:
-                            case UnicodeCategory.OpenPunctuation:
-                            case UnicodeCategory.ClosePunctuation:
-                            case UnicodeCategory.InitialQuotePunctuation:
-                            case UnicodeCategory.FinalQuotePunctuation:
-                            case UnicodeCategory.OtherPunctuation:
-                            case UnicodeCategory.MathSymbol:
-                            case UnicodeCategory.CurrencySymbol:
-                            case UnicodeCategory.ModifierSymbol:
-                            case UnicodeCategory.OtherSymbol:
-                                stringBuilder.Append(c);
-                                break;
-                            default:
-                                stringBuilder.AppendFormat("\\u{0:x4}", (int)c);
-                                break;
-                        }
-                        break;
+                    throw new InvalidOperationException($"Failed to write a long.");
+                }
+
+                buffer = buffer.Slice(start: 0, length: bytesWritten);
+
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    stringBuilder.Append((char)buffer[i]);
                 }
             }
-
-            return stringBuilder.ToString();
+            else
+            {
+                // Until we move to Core 3.0 we have to call ToString(),
+                // since neither G with precision nor R are supported for Utf8Formatter.
+                stringBuilder.Append(value.ToString("R", CultureInfo.InvariantCulture));
+            }
         }
 
-        private static bool IsEscapedCharacter(char c)
+        unsafe private static void WriteEscapedString(StringBuilder stringBuilder, ReadOnlySpan<char> unescapedString)
         {
-            switch (c)
+            while (!unescapedString.IsEmpty)
             {
-                case '"':
-                case '\\':
-                case '\b':
-                case '\f':
-                case '\n':
-                case '\r':
-                case '\t':
-                    return true;
+                int? indexOfFirstCharacterThatNeedsEscaping = SqlObjectTextSerializer.IndexOfCharacterThatNeedsEscaping(unescapedString);
+                if (!indexOfFirstCharacterThatNeedsEscaping.HasValue)
+                {
+                    // No escaping needed;
+                    indexOfFirstCharacterThatNeedsEscaping = unescapedString.Length;
+                }
 
-                default:
-                    switch (CharUnicodeInfo.GetUnicodeCategory(c))
+                // Write as much of the string as possible
+                ReadOnlySpan<char> noEscapeNeededPrefix = unescapedString.Slice(
+                    start: 0,
+                    length: indexOfFirstCharacterThatNeedsEscaping.Value);
+
+                fixed (char* noEscapeNeedPrefixPointer = noEscapeNeededPrefix)
+                {
+                    stringBuilder.Append(noEscapeNeedPrefixPointer, noEscapeNeededPrefix.Length);
+                }
+
+                unescapedString = unescapedString.Slice(start: indexOfFirstCharacterThatNeedsEscaping.Value);
+
+                // Escape the next character if it exists
+                if (!unescapedString.IsEmpty)
+                {
+                    char character = unescapedString[0];
+                    unescapedString = unescapedString.Slice(start: 1);
+
+                    switch (character)
                     {
-                        case UnicodeCategory.UppercaseLetter:
-                        case UnicodeCategory.LowercaseLetter:
-                        case UnicodeCategory.TitlecaseLetter:
-                        case UnicodeCategory.OtherLetter:
-                        case UnicodeCategory.DecimalDigitNumber:
-                        case UnicodeCategory.LetterNumber:
-                        case UnicodeCategory.OtherNumber:
-                        case UnicodeCategory.SpaceSeparator:
-                        case UnicodeCategory.ConnectorPunctuation:
-                        case UnicodeCategory.DashPunctuation:
-                        case UnicodeCategory.OpenPunctuation:
-                        case UnicodeCategory.ClosePunctuation:
-                        case UnicodeCategory.InitialQuotePunctuation:
-                        case UnicodeCategory.FinalQuotePunctuation:
-                        case UnicodeCategory.OtherPunctuation:
-                        case UnicodeCategory.MathSymbol:
-                        case UnicodeCategory.CurrencySymbol:
-                        case UnicodeCategory.ModifierSymbol:
-                        case UnicodeCategory.OtherSymbol:
-                            return false;
+                        case '\\':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('\\');
+                            break;
+
+                        case '"':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('"');
+                            break;
+
+                        case '/':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('/');
+                            break;
+
+                        case '\b':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('b');
+                            break;
+
+                        case '\f':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('f');
+                            break;
+
+                        case '\n':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('n');
+                            break;
+
+                        case '\r':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('r');
+                            break;
+
+                        case '\t':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('t');
+                            break;
 
                         default:
-                            return true;
+                            char wideCharToEscape = (char)character;
+                            // We got a control character (U+0000 through U+001F).
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('u');
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 12) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 8) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 4) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 0) & 0xF));
+                            break;
                     }
+                }
             }
+        }
+
+        private static int? IndexOfCharacterThatNeedsEscaping(ReadOnlySpan<char> unescapedString)
+        {
+            int? index = null;
+            int indexOfAny = unescapedString.IndexOfAny(SqlObjectTextSerializer.CharactersThatNeedEscaping);
+            if (indexOfAny != -1)
+            {
+                index = indexOfAny;
+            }
+
+            return index;
+        }
+
+        private static char GetHexDigit(int value)
+        {
+            return (char)((value < 10) ? '0' + value : 'A' + value - 10);
         }
 
         private static string SqlUnaryScalarOperatorKindToString(SqlUnaryScalarOperatorKind kind)

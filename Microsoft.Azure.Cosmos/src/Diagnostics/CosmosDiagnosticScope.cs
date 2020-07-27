@@ -5,10 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Text;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// This represents a single scope in the diagnostics.
@@ -18,16 +15,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     internal sealed class CosmosDiagnosticScope : CosmosDiagnosticsInternal, IDisposable
     {
         private readonly Stopwatch ElapsedTimeStopWatch;
-        private readonly Action<TimeSpan> ElapsedTimeCallback;
         private bool isDisposed = false;
 
         public CosmosDiagnosticScope(
-            string name,
-            Action<TimeSpan> elapsedTimeCallback = null)
+            string name)
         {
             this.Id = name;
             this.ElapsedTimeStopWatch = Stopwatch.StartNew();
-            this.ElapsedTimeCallback = elapsedTimeCallback;
         }
 
         public string Id { get; }
@@ -43,15 +37,24 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return true;
         }
 
+        internal TimeSpan GetElapsedTime()
+        {
+            return this.ElapsedTimeStopWatch.Elapsed;
+        }
+
+        internal bool IsComplete()
+        {
+            return !this.ElapsedTimeStopWatch.IsRunning;
+        }
+
         public void Dispose()
         {
             if (this.isDisposed)
             {
-                throw new InvalidOperationException("The CosmosDiagnosticScope has already been disposed.");
+                return;
             }
 
             this.ElapsedTimeStopWatch.Stop();
-            this.ElapsedTimeCallback?.Invoke(this.ElapsedTimeStopWatch.Elapsed);
             this.isDisposed = true;
         }
 

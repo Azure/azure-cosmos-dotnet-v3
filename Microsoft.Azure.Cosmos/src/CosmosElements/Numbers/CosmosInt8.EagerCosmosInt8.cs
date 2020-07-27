@@ -1,8 +1,15 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 101
+
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
+    using System;
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1601 // Partial elements should be documented
@@ -10,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class CosmosInt8 : CosmosNumber
+    abstract partial class CosmosInt8 : CosmosNumber, IEquatable<CosmosInt8>, IComparable<CosmosInt8>
     {
         private sealed class EagerCosmosInt8 : CosmosInt8
         {
@@ -27,8 +34,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             }
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

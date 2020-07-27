@@ -2510,7 +2510,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task LoadDocuments(DocumentCollection coll)
         {
-            await this.LoadDocuments(coll, File.ReadAllLines(@"Documents\MillionSong1KDocuments.json"));
+            await this.LoadDocuments(coll, File.ReadAllLines(@"Documents\MillionSong1KDocuments.txt"));
         }
 
         private async Task LoadDocuments(DocumentCollection coll, IEnumerable<string> serializedDocuments)

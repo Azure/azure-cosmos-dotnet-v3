@@ -212,10 +212,9 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: this.StatusCode,
                 requestMessage: null,
-                errorMessage: null,
-                error: null,
                 headers: headers,
-                diagnostics: this.DiagnosticsContext ?? new CosmosDiagnosticsContext())
+                cosmosException: null,
+                diagnostics: this.DiagnosticsContext ?? new CosmosDiagnosticsContextCore())
             {
                 Content = this.ResourceStream
             };

@@ -6,13 +6,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
     using System.IO;
-    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
     internal static class MockRequestHelper
     {
-        private static readonly byte[] testPayload;
+        internal static readonly byte[] testItemResponsePayload;
+        internal static readonly byte[] testItemFeedResponsePayload;
 
         static MockRequestHelper()
         {
@@ -20,7 +21,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             using (FileStream fs = File.OpenRead("samplepayload.json"))
             {
                 fs.CopyTo(ms);
-                MockRequestHelper.testPayload = ms.ToArray();
+                MockRequestHelper.testItemResponsePayload = ms.ToArray();
+            }
+
+            ms = new MemoryStream();
+            using (FileStream fs = File.OpenRead("samplefeedpayload.json"))
+            {
+                fs.CopyTo(ms);
+                MockRequestHelper.testItemFeedResponsePayload = ms.ToArray();
             }
         }
 
@@ -29,118 +37,44 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// </summary>
         /// <param name="request">The <see cref="DocumentServiceRequest"/> instance.</param>
         /// <returns>A <see cref="DocumentServiceResponse"/> instance.</returns>
-        public static Task<DocumentServiceResponse> GetDocumentServiceResponse(DocumentServiceRequest request)
+        public static DocumentServiceResponse GetDocumentServiceResponse(DocumentServiceRequest request)
         {
-            DocumentServiceResponse response = null;
+            DictionaryNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
+
             if (request.OperationType == OperationType.Read)
             {
-                if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
+                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-                    response = new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testPayload),
-                        new DictionaryNameValueCollection(),
+                    return new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
+                        headers,
                         System.Net.HttpStatusCode.OK
                     );
                 }
-                else
-                {
-                    response = new DocumentServiceResponse(
-                        Stream.Null,
-                        new DictionaryNameValueCollection(),
-                        System.Net.HttpStatusCode.NotFound
-                    );
-                }
+
+                return new DocumentServiceResponse(
+                    Stream.Null,
+                    headers,
+                    System.Net.HttpStatusCode.NotFound
+                );
             }
 
             if (request.OperationType == OperationType.Delete)
             {
-                if (request.ResourceAddress.EndsWith(Tests.Constants.ValidOperationId))
+                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-                    response = new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testPayload),
-                        new DictionaryNameValueCollection(),
+                    return new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
+                        headers,
                         System.Net.HttpStatusCode.OK
                     );
                 }
-                else
-                {
-                    response = new DocumentServiceResponse(
-                        Stream.Null,
-                        new DictionaryNameValueCollection(),
-                        System.Net.HttpStatusCode.NotFound
-                    );
-                }
-            }
 
-            if (request.OperationType == OperationType.Create 
-                || request.OperationType == OperationType.Replace 
-                || request.OperationType == OperationType.Upsert 
-                || request.OperationType == OperationType.Patch)
-            {
-                response = new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testPayload),
-                        new DictionaryNameValueCollection(),
-                        System.Net.HttpStatusCode.OK
-                    );
-            }
-
-            return Task.FromResult(response);
-        }
-
-        /// <summary>
-        /// For mocking a TransportClient response/
-        /// </summary>
-        /// <param name="request">The <see cref="DocumentServiceRequest"/> instance.</param>
-        /// <returns>A <see cref="StoreResponse"/> instance.</returns>
-        public static Task<StoreResponse> GetStoreResponse(DocumentServiceRequest request)
-        {
-            StoreResponse response = null;
-            if (request.OperationType == OperationType.Read)
-            {
-                if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
-                {
-                    response = new StoreResponse()
-                    {
-                        ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
-                        Status = (int)System.Net.HttpStatusCode.OK,
-                        ResponseHeaderNames = new string[] { WFConstants.BackendHeaders.LSN },
-                        ResponseHeaderValues = new string[] { "1" }
-                    };
-                }
-                else
-                {
-                    response = new StoreResponse()
-                    {
-                        ResponseBody = Stream.Null,
-                        Status = (int)System.Net.HttpStatusCode.NotFound,
-                        ResponseHeaderNames = new string[] { WFConstants.BackendHeaders.LSN },
-                        ResponseHeaderValues = new string[] { "1" }
-                    };
-                }
-            }
-
-            if (request.OperationType == OperationType.Delete)
-            {
-                if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
-                {
-                    response = new StoreResponse()
-                    {
-                        ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
-                        Status = (int)System.Net.HttpStatusCode.OK,
-                        ResponseHeaderNames = Array.Empty<string>(),
-                        ResponseHeaderValues = Array.Empty<string>()
-                    };
-                }
-                else
-                {
-                    response = new StoreResponse()
-                    {
-                        ResponseBody = Stream.Null,
-                        Status = (int)System.Net.HttpStatusCode.NotFound,
-                        ResponseHeaderNames = Array.Empty<string>(),
-                        ResponseHeaderValues = Array.Empty<string>()
-                    };
-                }
+                return new DocumentServiceResponse(
+                    Stream.Null,
+                    headers,
+                    System.Net.HttpStatusCode.NotFound
+                );
             }
 
             if (request.OperationType == OperationType.Create
@@ -148,16 +82,114 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Patch)
             {
-                response = new StoreResponse()
+                return new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
+                        headers,
+                        System.Net.HttpStatusCode.OK
+                    );
+            }
+
+            if (request.ResourceType == ResourceType.Document &&
+                request.OperationType == OperationType.ReadFeed)
+            {
+                return new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemFeedResponsePayload),
+                        headers,
+                        System.Net.HttpStatusCode.OK
+                    );
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// For mocking a TransportClient response/
+        /// </summary>
+        /// <param name="request">The <see cref="DocumentServiceRequest"/> instance.</param>
+        /// <returns>A <see cref="StoreResponse"/> instance.</returns>
+        public static StoreResponse GetStoreResponse(DocumentServiceRequest request)
+        {
+            DictionaryNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
+
+            if (request.OperationType == OperationType.Read)
+            {
+                headers.Add(WFConstants.BackendHeaders.LSN, "1");
+                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-                    ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
-                    Status = (int)System.Net.HttpStatusCode.OK,
-                    ResponseHeaderNames = Array.Empty<string>(),
-                    ResponseHeaderValues = Array.Empty<string>()
+
+                    return new StoreResponse()
+                    {
+                        ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
+                        Status = (int)System.Net.HttpStatusCode.OK,
+                        Headers = headers,
+                    };
+                }
+
+                return new StoreResponse()
+                {
+                    ResponseBody = Stream.Null,
+                    Status = (int)System.Net.HttpStatusCode.NotFound,
+                    Headers = headers,
                 };
             }
 
-            return Task.FromResult(response);
+            if (request.OperationType == OperationType.Delete)
+            {
+                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
+                {
+                    return new StoreResponse()
+                    {
+                        ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
+                        Status = (int)System.Net.HttpStatusCode.OK,
+                        Headers = headers,
+                    };
+                }
+
+                return new StoreResponse()
+                {
+                    ResponseBody = Stream.Null,
+                    Status = (int)System.Net.HttpStatusCode.NotFound,
+                    Headers = headers,
+                };
+            }
+
+            if (request.OperationType == OperationType.Create
+                || request.OperationType == OperationType.Replace
+                || request.OperationType == OperationType.Upsert
+                || request.OperationType == OperationType.Patch)
+            {
+                return new StoreResponse()
+                {
+                    ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
+                    Status = (int)System.Net.HttpStatusCode.OK,
+                    Headers = headers,
+                };
+            }
+
+            if (request.ResourceType == ResourceType.Document &&
+                request.OperationType == OperationType.ReadFeed)
+            {
+                return new StoreResponse()
+                {
+                    ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    Status = (int)System.Net.HttpStatusCode.OK,
+                    Headers = headers,
+                };
+            }
+
+            return null;
+        }
+
+        private static DictionaryNameValueCollection GenerateTestHeaders()
+        {
+            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+            for (int i = 0; i < 15; i++)
+            {
+                string random = Guid.NewGuid().ToString();
+                headers[random] = random;
+            }
+
+            return headers;
         }
     }
 }

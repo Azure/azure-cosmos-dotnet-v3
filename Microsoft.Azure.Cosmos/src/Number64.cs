@@ -20,13 +20,8 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    struct Number64 : IComparable<Number64>, IEquatable<Number64>
+    readonly struct Number64 : IComparable<Number64>, IEquatable<Number64>
     {
-        /// <summary>
-        /// Size of the Number64 when compared as a DoubleEx
-        /// </summary>
-        public const int SizeOf = sizeof(double) + sizeof(ushort);
-
         /// <summary>
         /// Maximum Number64.
         /// </summary>
@@ -119,20 +114,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return toString;
-        }
-
-        public void CopyTo(Span<byte> buffer)
-        {
-            if (buffer.Length < Number64.SizeOf)
-            {
-                throw new ArgumentException($"{nameof(buffer)} is too short.");
-            }
-
-            DoubleEx doubleEx = Number64.ToDoubleEx(this);
-            Span<double> doubleBuffer = MemoryMarshal.Cast<byte, double>(buffer);
-            doubleBuffer[0] = doubleEx.DoubleValue;
-            Span<ushort> ushortBuffer = MemoryMarshal.Cast<byte, ushort>(buffer.Slice(sizeof(double)));
-            ushortBuffer[0] = doubleEx.ExtraBits;
         }
 
         #region Static Operators
@@ -253,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
             return value;
         }
 
-        private static DoubleEx ToDoubleEx(Number64 number64)
+        public static DoubleEx ToDoubleEx(Number64 number64)
         {
             DoubleEx doubleEx;
             if (number64.IsDouble)
@@ -280,9 +261,9 @@ namespace Microsoft.Azure.Cosmos
                 return 1;
             }
 
-            if (value is Number64)
+            if (value is Number64 number64)
             {
-                return this.CompareTo((Number64)value);
+                return this.CompareTo(number64);
             }
 
             throw new ArgumentException("Value must be a Number64.");
@@ -331,9 +312,9 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            if (obj is Number64)
+            if (obj is Number64 number64)
             {
-                return this.Equals((Number64)obj);
+                return this.Equals(number64);
             }
 
             return false;
@@ -363,7 +344,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Represents an extended double number with 62-bit mantissa which is capable of representing a 64-bit integer with no precision loss
         /// </summary>
-        private readonly struct DoubleEx : IEquatable<DoubleEx>, IComparable<DoubleEx>
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
+        public readonly struct DoubleEx : IEquatable<DoubleEx>, IComparable<DoubleEx>
         {
             private DoubleEx(double doubleValue, ushort extraBits)
             {

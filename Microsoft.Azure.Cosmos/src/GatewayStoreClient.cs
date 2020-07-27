@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ICommunicationEventSource eventSource;
         private HttpClient httpClient;
         private JsonSerializerSettings SerializerSettings;
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
             HttpClient httpClient,
@@ -161,10 +162,6 @@ namespace Microsoft.Azure.Cosmos
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
-            // ensure there is no local ActivityId, since in Gateway mode ActivityId
-            // should always come from message headers
-            Trace.CorrelationManager.ActivityId = Guid.Empty;
-
             bool isNameBased = false;
             bool isFeed = false;
             string resourceTypeString;
@@ -297,6 +294,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 httpMethod = HttpMethod.Delete;
             }
+            else if (request.OperationType == OperationType.Patch)
+            {
+                // There isn't support for PATCH method in .NetStandard 2.0
+                httpMethod = httpPatchMethod;
+            }
             else
             {
                 throw new NotImplementedException();
@@ -358,11 +360,17 @@ namespace Microsoft.Azure.Cosmos
                     DateTime sendTimeUtc = DateTime.UtcNow;
                     Guid localGuid = Guid.NewGuid();  // For correlating HttpRequest and HttpResponse Traces
 
-                    IClientSideRequestStatistics clientSideRequestStatistics = request.RequestContext.ClientRequestStatistics;
-                    if (clientSideRequestStatistics == null)
+                    // DEVNOTE: This is temporary until IClientSideRequestStats is modified to support gateway calls.
+                    CosmosDiagnosticsContext diagnosticsContext = null;
+                    if (request.RequestContext.ClientRequestStatistics is CosmosClientSideRequestStatistics clientSideRequestStatistics)
                     {
-                        clientSideRequestStatistics = new CosmosClientSideRequestStatistics();
-                        request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics;
+                        diagnosticsContext = clientSideRequestStatistics.DiagnosticsContext;
+                    }
+                    else
+                    {
+                        // ClientRequestStatistics are not passed in use Empty to avoid null checks.
+                        // Caches do not pass in the ClientRequestStatistics
+                        diagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
                     }
 
                     Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
@@ -374,10 +382,13 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers);
 
                     TimeSpan durationTimeSpan;
-                    string recordAddressResolutionId = clientSideRequestStatistics.RecordAddressResolutionStart(requestMessage.RequestUri);
                     try
                     {
-                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
+                        HttpResponseMessage responseMessage;
+                        using (diagnosticsContext.CreateScope("GatewayRequestTime"))
+                        {
+                            responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
+                        }
 
                         DateTime receivedTimeUtc = DateTime.UtcNow;
                         durationTimeSpan = receivedTimeUtc - sendTimeUtc;
@@ -426,10 +437,6 @@ namespace Microsoft.Azure.Cosmos
                         {
                             throw;
                         }
-                    }
-                    finally
-                    {
-                        clientSideRequestStatistics.RecordAddressResolutionEnd(recordAddressResolutionId);
                     }
                 }
             };

@@ -44,8 +44,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 request.UseStatusCodeForFailures = true;
                 StoreResponse mockStoreResponse404 = new StoreResponse();
-                mockStoreResponse404.ResponseHeaderNames = new string[1] { WFConstants.BackendHeaders.SubStatus };
-                mockStoreResponse404.ResponseHeaderValues = new string[1] { ((int)SubStatusCodes.ReadSessionNotAvailable).ToString() };
+                mockStoreResponse404.Headers = new DictionaryNameValueCollection();
+                mockStoreResponse404.Headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
                 mockStoreResponse404.Status = (int)HttpStatusCode.NotFound;
 
 
@@ -211,8 +211,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 ResponseBody = Stream.Null,
                 Status = responseStatusCode,
-                ResponseHeaderNames = Array.Empty<string>(),
-                ResponseHeaderValues = Array.Empty<string>()
+                Headers = new DictionaryNameValueCollection()
             };
 
             // This is needed because in order to Mock a TransportClient we previously need an instance of CosmosClient
@@ -261,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .ReturnsAsync(sendDirectFunc);
 
             AddressInformation[] addressInformation = GetMockAddressInformation();
-            var mockAddressCache = GetMockAddressCache(addressInformation);
+            Mock<IAddressResolver> mockAddressCache = GetMockAddressCache(addressInformation);
 
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();
             replicationPolicy.MaxReplicaSetSize = 1;
@@ -308,13 +307,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             return new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 Cosmos.ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
-                new Cosmos.UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
         }
 
         private static Mock<IAddressResolver> GetMockAddressCache(AddressInformation[] addressInformation)

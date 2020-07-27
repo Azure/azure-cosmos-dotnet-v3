@@ -121,13 +121,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -167,13 +164,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -232,13 +226,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -299,13 +290,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -448,13 +436,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -517,13 +502,10 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
-                TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new UserAgentContainer(),
-                ApiType.None,
-                messageHandler);
+                new HttpClient(messageHandler));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -603,14 +585,11 @@ namespace Microsoft.Azure.Cosmos
 
             GatewayStoreModel storeModel = new GatewayStoreModel(
                endpointManager,
-               sessionContainer,
-               TimeSpan.FromSeconds(50),
-               ConsistencyLevel.Session,
-               eventSource,
-               null,
-               new UserAgentContainer(),
-               ApiType.None,
-               httpMessageHandler);
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new HttpClient(httpMessageHandler));
 
             return storeModel;
         }

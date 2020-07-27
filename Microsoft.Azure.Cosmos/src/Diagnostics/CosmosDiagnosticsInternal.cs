@@ -5,11 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System.IO;
+    using System.Text;
 
     /// <summary>
     /// Extends <see cref="CosmosDiagnostics"/> to expose internal APIs.
     /// </summary>
-    internal abstract class CosmosDiagnosticsInternal : CosmosDiagnostics
+    internal abstract class CosmosDiagnosticsInternal
     {
         public abstract void Accept(CosmosDiagnosticsInternalVisitor visitor);
 
@@ -17,9 +18,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override string ToString()
         {
-            StringWriter stringWriter = new StringWriter();
-            this.WriteTo(stringWriter);
-            return stringWriter.ToString();
+            using (StringWriter stringWriter = new StringWriter())
+            {
+                this.WriteTo(stringWriter);
+                return stringWriter.ToString();
+            }
         }
 
         public void WriteTo(TextWriter textWriter)
