@@ -14,17 +14,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using global::Azure.Core.Pipeline;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="KeyVaultClientPipelinePolicy"/> class.
+    /// Initializes a new instance of the <see cref="RetrieveTenantIdPipelinePolicy"/> class.
     /// This helps out in building a pipeline policy which is passed to KeyClient and in turn parsing out required information in Response message.
     /// Reusing this class from Azure Key Vault as implemented <see href="https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/keyvault/Azure.Security.KeyVault.Shared/src/ChallengeBasedAuthenticationPolicy.cs#L240-L256"> here </see>.
     /// </summary>
-    internal sealed class KeyVaultClientPipelinePolicy : HttpPipelinePolicy
+    internal sealed class RetrieveTenantIdPipelinePolicy : HttpPipelinePolicy
     {
-        public string TenantID { get;  set; }
+        public string TenantId { get; private set; }
 
         public override void Process(HttpMessage message, ReadOnlyMemory<HttpPipelinePolicy> pipeline)
         {
-            _ = this.ProcessCoreAsync(message, pipeline, false);
+            this.ProcessCoreAsync(message, pipeline, false).GetAwaiter().GetResult();
         }
 
         public override ValueTask ProcessAsync(HttpMessage message, ReadOnlyMemory<HttpPipelinePolicy> pipeline)
@@ -46,6 +46,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // go through the pipeline.
                 await ProcessNextAsync(message, pipeline).ConfigureAwait(false);
             }
+            else
+            {
+                ProcessNext(message, pipeline);
+            }
 
             // Start processing each of the response and if we get a 401 go through the response and get the Authority and Tenant ID
             if (message.Response.Status == 401)
@@ -54,25 +58,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 message.Request.Content = originalContent;
 
                 // get the tenant ID
-                this.TenantID = AuthenticationChallenge.GetTenantIdFromResponse(message.Response);
+                this.TenantId = AuthenticationChallenge.GetTenantIdFromResponse(message.Response);
 
-                // we are done with this response,signal an 200/OK message back to prevent exception.
-                HttpResponseMessage okresponse = new HttpResponseMessage(HttpStatusCode.OK);
+                // Return an OK Response only when we have a probable TenantId else fallback to the original response
+                // which will result in KeyVault throwing the required Exception on the way back.
+                if (!string.IsNullOrEmpty(this.TenantId) && !string.IsNullOrWhiteSpace(this.TenantId))
+                {
+                    // we are done with this response,signal an 200/OK message back to prevent exception.
+                    HttpResponseMessage okResponseMessage = new HttpResponseMessage(HttpStatusCode.OK);
 
-                // use the original RequestID and Content Stream and build a response.
-                KeyVaultClientPipelineResponse pipelineResponse = new KeyVaultClientPipelineResponse(message.Response.ClientRequestId, okresponse, message.Response.ContentStream);
-                message.Response = pipelineResponse;
-                return;
+                    // use the original RequestID and Content Stream and build a response.
+                    KeyVaultClientPipelineResponse pipelineResponse = new KeyVaultClientPipelineResponse(message.Response.ClientRequestId, okResponseMessage, message.Response.ContentStream);
+                    message.Response = pipelineResponse;
+                }
             }
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="KeyVaultClientPipelineResponse"/> class.
-        /// This PipelineResponse is based on <see href="https://github.com/Azure/azure-sdk-for-net/blob/bbc7e0d6334eec629960164960084cf2b6f068d4/sdk/core/Azure.Core/src/Pipeline/HttpClientTransport.cs"> this implementation </see>.
-        /// This is required to send back a response to avoid an exception when GetKeyAsync
-        /// is called with an Empty TokenCredenial with an intent to retreive the Tenant ID for the KeyVault-Key URI.
         /// </summary>
-        internal sealed class KeyVaultClientPipelineResponse : Response
+        private class KeyVaultClientPipelineResponse : Response
         {
             private readonly HttpResponseMessage responseMessage;
 
@@ -104,6 +109,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
+            protected override bool ContainsHeader(string name)
+            {
+                if (this.responseMessage.Headers.TryGetValues(name, out _))
+                {
+                    return true;
+                }
+
+                return this.responseContent?.Headers.TryGetValues(name, out _) == true;
+            }
+
             public override string ClientRequestId { get; set; }
 
             public override void Dispose()
@@ -113,48 +128,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             public override string ToString() => this.responseMessage.ToString();
 
-            protected override bool ContainsHeader(string name)
-            {
-                throw new NotImplementedException();
-            }
-
             protected override IEnumerable<HttpHeader> EnumerateHeaders()
             {
                 throw new NotImplementedException();
             }
 
-            protected override bool TryGetHeader(string name, [NotNullWhen(true)] out string? value)
+            protected override bool TryGetHeaderValues(string name, out IEnumerable<string> values)
             {
-                throw new NotImplementedException();
+                values = null;
+                return false;
             }
 
-            protected override bool TryGetHeaderValues(string name, [NotNullWhenAttribute(true), NullableAttribute(new[] { 2, 1 })] out IEnumerable<string> values)
+            protected override bool TryGetHeader(string name, out string value)
             {
-                throw new NotImplementedException();
-            }
-
-            internal class NullableAttribute : Attribute
-            {
-                private int[] vs;
-
-                public NullableAttribute(int[] vs)
-                {
-                    this.vs = vs;
-                }
-            }
-
-            internal class NotNullWhenAttribute : Attribute
-            {
-                private bool vs;
-
-                public NotNullWhenAttribute(bool vs)
-                {
-                    this.vs = vs;
-                }
+                value = null;
+                return false;
             }
         }
 
-        internal sealed class AuthenticationChallenge
+        private sealed class AuthenticationChallenge
         {
             private static readonly string[] ChallengeDelimiters = new string[] { "," };
 
@@ -162,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 string tenantID = null;
 
-                if (response.Headers.TryGetValue("WWW-Authenticate", out string challengeValue) && challengeValue.StartsWith(KeyVaultConstants.Bearer, StringComparison.OrdinalIgnoreCase))
+                if (response.Headers.TryGetValue(KeyVaultConstants.AuthenticationResponseHeaderName, out string challengeValue) && challengeValue.StartsWith(KeyVaultConstants.AuthenticationChallengePrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     tenantID = ParseBearerChallengeHeaderValue(challengeValue);
                 }
@@ -175,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 string tenantId;
 
                 // remove the bearer challenge prefix
-                string trimmedChallenge = challengeValue.Substring(KeyVaultConstants.Bearer.Length);
+                string trimmedChallenge = challengeValue.Substring(KeyVaultConstants.AuthenticationChallengePrefix.Length);
 
                 // Split the trimmed challenge into a set of name=value strings that
                 // are comma separated. The value fields are expected to be within
@@ -197,16 +189,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                             if (!string.IsNullOrEmpty(key))
                             {
-                                // Ordered by current likelihood.
-                                if (string.Equals(key, "authorization", StringComparison.OrdinalIgnoreCase))
+                                if (string.Equals(key, "authorization", StringComparison.OrdinalIgnoreCase) || string.Equals(key, "authorization_uri", StringComparison.OrdinalIgnoreCase))
                                 {
                                     // extract the tenant ID and return it.
-                                    tenantId = value.Substring(value.LastIndexOf('/') + 1);
-
-                                    if (!string.IsNullOrEmpty(tenantId) && !string.IsNullOrWhiteSpace(tenantId))
-                                    {
-                                        return tenantId;
-                                    }
+                                    return tenantId = value.Substring(value.LastIndexOf('/') + 1);
                                 }
                             }
                         }

@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Net;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
@@ -22,8 +23,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly string clientId;
         private readonly X509Certificate2 certificate;
-        private readonly AsyncCache<string, ClientCertificateCredential> clientCertCredCache;
-        private readonly AsyncCache<string, string> tenantIdMap;
+        private readonly AsyncCache<string, ClientCertificateCredential> clientCertificateCredentialByTenantId;
+        private readonly ConcurrentDictionary<Uri, string> tenantIdByKeyVaultUri;
 
         /// <summary>
         /// Initializes all the required information to
@@ -35,8 +36,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.certificate = clientCertificate;
             this.clientId = clientId;
-            this.clientCertCredCache = new AsyncCache<string, ClientCertificateCredential>();
-            this.tenantIdMap = new AsyncCache<string, string>();
+            this.clientCertificateCredentialByTenantId = new AsyncCache<string, ClientCertificateCredential>();
+            this.tenantIdByKeyVaultUri = new ConcurrentDictionary<Uri, string>();
         }
 
         /// <summary>
@@ -49,28 +50,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             cancellationToken.ThrowIfCancellationRequested();
             string tenantId;
-            KeyVaultUriProperties uriparser = new KeyVaultUriProperties(keyVaultKeyUri);
-            uriparser.TryParseUri();
+
+            if (!KeyVaultUriProperties.TryParseUri(keyVaultKeyUri, out KeyVaultUriProperties keyVaultUriProperties))
+            {
+                throw new ArgumentException("KeyVault Key Uri {0} is invalid.", keyVaultKeyUri.ToString());
+            }
 
             // build a keyvaultkey Uri and Tenant ID map
-            try
+            if (!this.tenantIdByKeyVaultUri.TryGetValue(keyVaultUriProperties.KeyVaultUri, out tenantId))
             {
-                tenantId = await this.tenantIdMap.GetAsync(
-                           key: uriparser.KeyValtName,
-                           obsoleteValue: null,
-                           singleValueInitFunc: async () =>
-                           {
-                               return await this.GetTenantIdAsync(keyVaultKeyUri, cancellationToken);
-                           },
-                           cancellationToken: cancellationToken);
-            }
-            catch
-            {
-                throw;
+                tenantId = await this.GetTenantIdAsync(keyVaultUriProperties, cancellationToken);
+                this.tenantIdByKeyVaultUri.TryAdd(keyVaultUriProperties.KeyVaultUri, tenantId);
             }
 
             // The idea is to get the Client Credentials,cache them per Tanant
-            return await this.clientCertCredCache.GetAsync(
+            return await this.clientCertificateCredentialByTenantId.GetAsync(
                                                key: tenantId,
                                                obsoleteValue: null,
                                                singleValueInitFunc: () =>
@@ -85,54 +79,43 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// This is basically used to retrieve Tenant ID.KeyVault SDK has not exposed any API to retreive the same.
         /// This is required to get Azure AD token to access KeyVault Services in multi-tenant model.
         ///  We return an empty token to retreive the required information.
-        /// FIXME : Move to SDK call once Azure SDK exposes the required API.
+        /// FIXME : Move to SDK call once Azure SDK exposes the required API.Issue tracked <see href="https://github.com/Azure/azure-sdk-for-net/issues/13713"> here </see>
         /// </summary>
-        /// <param name="keyVaultKeyUri"> KeyVault-Key URI for which we need the Authority</param>
+        /// <param name="keyVaultUriProperties"> KeyVault-Key URI for which we need the Authority</param>
         /// <param name="cancellationToken"> Cancellation Token </param>
         /// <returns> Tenant ID </returns>
-        private async Task<string> GetTenantIdAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
+        private async Task<string> GetTenantIdAsync(KeyVaultUriProperties keyVaultUriProperties, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             string tenantId;
 
-            KeyVaultUriProperties uriparser = new KeyVaultUriProperties(keyVaultKeyUri);
-            uriparser.TryParseUri();
-
             // key client options and set the pipeline policy.
             KeyClientOptions keyClientOptions = new KeyClientOptions();
             HttpPipelinePosition httpPipelinePosition = HttpPipelinePosition.PerCall;
-            KeyVaultClientPipelinePolicy kvcPolicy = new KeyVaultClientPipelinePolicy();
+            RetrieveTenantIdPipelinePolicy kvcPolicy = new RetrieveTenantIdPipelinePolicy();
             keyClientOptions.AddPolicy(kvcPolicy, httpPipelinePosition);
 
             TokenCredential creds = new EmptyTokenCredential();
-            KeyClient keyClient = new KeyClient(uriparser.KeyVaultUri, creds, keyClientOptions);
+            KeyClient keyClient = new KeyClient(keyVaultUriProperties.KeyVaultUri, creds, keyClientOptions);
 
             try
             {
-                await keyClient.GetKeyAsync(uriparser.KeyName, uriparser.KeyVersion);
+                await keyClient.GetKeyAsync(keyVaultUriProperties.KeyName, keyVaultUriProperties.KeyVersion);
 
                 // the pipeline policy configured above helps out in parsing in the 401 Response and
                 // sets the tenant ID and sends a 200 OK Response back to prevent an exception.
-                tenantId = kvcPolicy.TenantID;
-                if (!string.IsNullOrEmpty(tenantId))
-                {
-                    return tenantId;
-                }
-                else
-                {
-                    throw new KeyVaultAccessException(
-                           HttpStatusCode.NotFound,
-                           KeyVaultErrorCode.KeyVaultServiceUnavailable,
-                           "GetTenantIdAsync Failed to retreive Tenant ID for the KeyVaultKey Uri");
-                }
+                tenantId = kvcPolicy.TenantId;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 throw new KeyVaultAccessException(
                            HttpStatusCode.NotFound,
                            KeyVaultErrorCode.KeyVaultServiceUnavailable,
-                           "GetTenantIdAsync Failed to retreive Tenant ID for the KeyVaultKey Uri");
+                           "GetTenantIdAsync Failed to retreive Tenant ID for the KeyVaultKey Uri",
+                           ex);
             }
+
+            return tenantId;
         }
 
         private sealed class EmptyTokenCredential : TokenCredential

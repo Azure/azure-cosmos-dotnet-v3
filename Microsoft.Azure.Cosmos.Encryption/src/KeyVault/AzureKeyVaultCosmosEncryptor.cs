@@ -28,11 +28,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AzureKeyVaultCosmosEncryptor"/> class.
+        /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key via a Key Vault.
         /// </summary>
-        /// <param name="keyVaultTokenCredential"> Token Credentials </param>
-        public AzureKeyVaultCosmosEncryptor(KeyVaultTokenCredentialFactory keyVaultTokenCredential)
+        /// <param name="keyVaultTokenCredentialFactory"> Factory Instance which represents a method to acquire TokenCredentials for accessing Key Vault Services. </param>
+        public AzureKeyVaultCosmosEncryptor(KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory)
         {
-            EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(keyVaultTokenCredential);
+            EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(keyVaultTokenCredentialFactory);
             this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }

@@ -4,16 +4,12 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
     /// Provides functionality to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys stored in Azure Key Vault.
-    /// Please see <see href="https://docs.microsoft.com/en-us/rest/api/azure/index#register-your-client-application-with-azure-ad">this link</see> for details on registering your application with Azure AD.
-    /// The registered application must have the keys/readKey, keys/wrapKey and keys/unwrapKey permissions on the Azure Key Vaults that will be used for wrapping and unwrapping data encryption keys
-    /// -Please see <see href="https://docs.microsoft.com/en-us/azure/key-vault/about-keys-secrets-and-certificates#key-access-control">this link</see> for details on this.
-    /// Azure key vaults used with client side encryption for Cosmos DB need to have soft delete and purge protection enabled -
-    /// Please see <see href="https://docs.microsoft.com/en-us/azure/key-vault/key-vault-ovw-soft-delete">this link</see> for details regarding the same.
     /// Unwrapped data encryption keys will be cached within the client SDK for a period of 1 hour.
     /// </summary>
     internal class AzureKeyVaultKeyWrapProvider : EncryptionKeyWrapProvider
@@ -25,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Creates a new instance of a provider to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys stored in Azure Key Vault.
         /// </summary>
         /// <param name="keyVaultTokenCredentialFactory"> KeyVaultTokenCredentialFactory instance </param>
-        /// <param name="rawDataEncryptionKeyCacheTimeToLive">
         /// Amount of time the unencrypted form of the data encryption key can be cached on the client before <see cref="UnwrapKeyAsync"/> needs to be called again.
         public AzureKeyVaultKeyWrapProvider(KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory)
         {
@@ -53,17 +48,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             try
             {
-                byte[] result = await this.keyVaultAccessClient.UnwrapKeyAsync(wrappedKey, new Uri(metadata.Value), cancellationToken);
-                return new EncryptionKeyUnwrapResult(result, this.rawDekCacheTimeToLive);
-            }
-            catch (KeyVaultAccessException ex)
-            {
-                if (ex.KeyVaultErrorCode == KeyVaultErrorCode.KeyVaultKeyNotFound)
+                if (!KeyVaultUriProperties.TryParseUri(new Uri(metadata.Value), out KeyVaultUriProperties keyVaultUriProperties))
                 {
-                    throw new KeyNotFoundException(ex.Message, ex);
+                    throw new ArgumentException("KeyVault Key Uri {0} is invalid.", metadata.Value);
                 }
 
-                throw;
+                byte[] result = await this.keyVaultAccessClient.UnwrapKeyAsync(wrappedKey, keyVaultUriProperties, cancellationToken);
+                return new EncryptionKeyUnwrapResult(result, this.rawDekCacheTimeToLive);
+            }
+            catch (Exception ex)
+            {
+                throw new KeyVaultAccessException(
+                        HttpStatusCode.BadRequest,
+                        KeyVaultErrorCode.KeyVaultKeyNotFound,
+                        "UnwrapKeyAsync Failed with HTTP status BadRequest 400",
+                        ex);
             }
         }
 
@@ -80,24 +79,27 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             try
             {
-                Uri keyVaultKeyUri = new Uri(metadata.Value);
-                if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultKeyUri, cancellationToken))
+                if (!KeyVaultUriProperties.TryParseUri(new Uri(metadata.Value), out KeyVaultUriProperties keyVaultUriProperties))
                 {
-                    throw new ArgumentException("Key Vault provided must have soft delete and purge protection enabled.");
+                    throw new ArgumentException("KeyVault Key Uri {0} is invalid.",metadata.Value);
                 }
 
-                byte[] result = await this.keyVaultAccessClient.WrapKeyAsync(key, keyVaultKeyUri, cancellationToken);
+                if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken))
+                {
+                    throw new ArgumentException(string.Format("Key Vault {0} provided must have soft delete and purge protection enabled.", keyVaultUriProperties.KeyUri));
+                }
+
+                byte[] result = await this.keyVaultAccessClient.WrapKeyAsync(key, keyVaultUriProperties, cancellationToken);
                 EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Type, metadata.Value, KeyVaultConstants.RsaOaep256);
                 return new EncryptionKeyWrapResult(result, responseMetadata);
             }
-            catch (KeyVaultAccessException ex)
+            catch (Exception ex)
             {
-                if (ex.KeyVaultErrorCode == KeyVaultErrorCode.KeyVaultKeyNotFound)
-                {
-                    throw new KeyNotFoundException(ex.Message, ex);
-                }
-
-                throw;
+                throw new KeyVaultAccessException(
+                        HttpStatusCode.BadRequest,
+                        KeyVaultErrorCode.KeyVaultKeyNotFound,
+                        "WrapKeyAsync Failed with HTTP status BadRequest 400",
+                        ex);
             }
         }
     }

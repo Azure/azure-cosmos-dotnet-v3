@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal static class KeyVaultConstants
     {
         internal const string KeysSegment = "keys/";
-        internal const string Bearer = "Bearer";
+        internal const string AuthenticationChallengePrefix = "Bearer ";
         internal const string AuthenticationResponseHeaderName = "WWW-Authenticate";
         internal const string AuthenticationParameter = "authorization";
 
