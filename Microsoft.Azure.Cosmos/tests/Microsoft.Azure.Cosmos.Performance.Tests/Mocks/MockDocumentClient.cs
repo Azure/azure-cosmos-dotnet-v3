@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
-            this.authKeyHashFunction = new StringHMACSHA256Hash(MasterKeyAuthorizationBenchmark.GenerateRandomKey());
+            this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
 
             this.Init();
         }
@@ -74,6 +74,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
+
+        public static string GenerateRandomKey()
+        {
+            int keyLength = 64;
+            byte[] randomEntries = new byte[keyLength];
+
+            Random r = new Random((int)DateTime.Now.Ticks);
+            r.NextBytes(randomEntries);
+
+            return Convert.ToBase64String(randomEntries);
+        }
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
