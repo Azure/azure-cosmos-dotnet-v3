@@ -22,6 +22,26 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosDiagnosticsUnitTests
     {
         [TestMethod]
+        public void ValidateActivityScope()
+        {
+            Guid previousActivityId = Trace.CorrelationManager.ActivityId;
+            Guid testActivityId = Guid.NewGuid();
+            Trace.CorrelationManager.ActivityId = testActivityId;
+            using (ActivityScope scope = new ActivityScope(Guid.NewGuid()))
+            {
+                Assert.AreNotEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "Activity ID should not be the default");
+                Assert.AreNotEqual(testActivityId, Trace.CorrelationManager.ActivityId, "A new Activity ID should have set by the new ActivityScope");
+                Assert.IsNull(ActivityScope.CreateIfDefaultActivityId());
+            }
+
+            Assert.AreEqual(testActivityId, Trace.CorrelationManager.ActivityId, "Activity ID should be set back to previous version");
+            Trace.CorrelationManager.ActivityId = Guid.Empty;
+            Assert.IsNotNull(ActivityScope.CreateIfDefaultActivityId());
+
+            Trace.CorrelationManager.ActivityId = previousActivityId;
+        }
+
+        [TestMethod]
         public async Task ValidateActivityId()
         {
             CosmosClientContext clientContext = ClientContextCore.Create(

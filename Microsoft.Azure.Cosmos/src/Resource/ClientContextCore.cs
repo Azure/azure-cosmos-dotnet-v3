@@ -391,6 +391,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (new ActivityScope(Guid.NewGuid()))
                 {
+                    // The goal of synchronizationContextScope is to log how much latency the Task.Run added to the latency.
+                    // Dispose of it here so it only measures the latency added by the Task.Run.
                     synchronizationContextScope.Dispose();
                     return this.RunWithDiagnosticsHelperAsync<TResult>(
                         diagnosticsContext,
