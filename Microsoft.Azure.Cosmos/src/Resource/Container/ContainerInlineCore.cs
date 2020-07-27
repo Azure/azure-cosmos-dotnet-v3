@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos
             ChangesEstimationDetailedHandler estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
-            return this.container.GetChangeFeedEstimatorBuilder(processorName, estimationDelegate, estimationPeriod);
+            return base.GetChangeFeedEstimatorBuilder(processorName, estimationDelegate, estimationPeriod);
         }
 
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)

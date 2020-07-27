@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             long? receivedEstimation = 0;
             ChangeFeedProcessor estimator = this.Container
-                .GetChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseWork> estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation.Sum(remainingWork => remainingWork.RemainingWork);
                     return Task.CompletedTask;
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .GetChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseWork> estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation.Sum(remainingWork => remainingWork.RemainingWork);
                     return Task.CompletedTask;
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .GetChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseWork> estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation.Sum(remainingWork => remainingWork.RemainingWork);
                     return Task.CompletedTask;

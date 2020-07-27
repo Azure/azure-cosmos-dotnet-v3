@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private async Task EstimateDetailedAsync(CancellationToken cancellationToken)
         {
-            IReadOnlyList<RemainingLeaseTokenWork> estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken).ConfigureAwait(false);
+            IReadOnlyList<RemainingLeaseWork> estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await this.dispatchDetailedEstimation(estimation, cancellationToken).ConfigureAwait(false);

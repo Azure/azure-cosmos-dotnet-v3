@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidCustomStore_Detailed()
         {
-            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
+            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseWork> estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidContainerStore_Detailed()
         {
-            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
+            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseWork> estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullStore_Detailed()
         {
-            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
+            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseWork> estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer_Detailed()
         {
-            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
+            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseWork> estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -237,15 +237,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task StartAsync_TriggersDelegate_Detailed()
         {
-            IReadOnlyList<RemainingLeaseTokenWork> remainingWork = new List<RemainingLeaseTokenWork>()
+            IReadOnlyList<RemainingLeaseWork> remainingWork = new List<RemainingLeaseWork>()
             {
-                new RemainingLeaseTokenWork(new FeedTokenPartitionKeyRangeId(Guid.NewGuid().ToString()), 5),
-                new RemainingLeaseTokenWork(new FeedTokenPartitionKeyRangeId(Guid.NewGuid().ToString()), 10),
+                new RemainingLeaseWork(new FeedRangePartitionKeyRange(Guid.NewGuid().ToString()), 5),
+                new RemainingLeaseWork(new FeedRangePartitionKeyRange(Guid.NewGuid().ToString()), 10),
             };
 
-            IReadOnlyList<RemainingLeaseTokenWork> estimationDelegateValue = null;
+            IReadOnlyList<RemainingLeaseWork> estimationDelegateValue = null;
             bool receivedEstimation = false;
-            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation , CancellationToken token) =>
+            ChangesEstimationDetailedHandler estimationDelegate = (IReadOnlyList<RemainingLeaseWork> estimation , CancellationToken token) =>
             {
                 estimationDelegateValue = estimation;
                 receivedEstimation = true;
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             return new ChangeFeedEstimatorCore(estimationDelegate, TimeSpan.FromSeconds(5), remainingWorkEstimator.Object);
         }
 
-        private static ContainerCore GetMockedContainer(string containerName = null)
+        private static ContainerInternal GetMockedContainer(string containerName = null)
         {
             Mock<ContainerInternal> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             mockedContainer.Setup(c => c.ClientContext).Returns(ChangeFeedEstimatorCoreTests.GetMockedClientContext());

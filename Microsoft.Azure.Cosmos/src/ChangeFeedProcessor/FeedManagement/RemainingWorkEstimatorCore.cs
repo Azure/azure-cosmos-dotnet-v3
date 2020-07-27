@@ -57,25 +57,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task<long> GetEstimatedRemainingWorkAsync(CancellationToken cancellationToken)
         {
-            IReadOnlyList<RemainingLeaseTokenWork> leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
+            IReadOnlyList<RemainingLeaseWork> leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
             if (leaseTokens.Count == 0) return 1;
 
             return leaseTokens.Sum(leaseToken => leaseToken.RemainingWork);
         }
 
-        public override async Task<IReadOnlyList<RemainingLeaseTokenWork>> GetEstimatedRemainingWorkPerLeaseTokenAsync(CancellationToken cancellationToken)
+        public override async Task<IReadOnlyList<RemainingLeaseWork>> GetEstimatedRemainingWorkPerLeaseTokenAsync(CancellationToken cancellationToken)
         {
             IReadOnlyList<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
             if (leases == null || leases.Count == 0)
             {
-                return new List<RemainingLeaseTokenWork>().AsReadOnly();
+                return new List<RemainingLeaseWork>().AsReadOnly();
             }
 
-            IEnumerable<Task<List<RemainingLeaseTokenWork>>> tasks = Partitioner.Create(leases)
+            IEnumerable<Task<List<RemainingLeaseWork>>> tasks = Partitioner.Create(leases)
                 .GetPartitions(this.degreeOfParallelism)
                 .Select(partition => Task.Run(async () =>
                 {
-                    List<RemainingLeaseTokenWork> partialResults = new List<RemainingLeaseTokenWork>();
+                    List<RemainingLeaseWork> partialResults = new List<RemainingLeaseWork>();
                     using (partition)
                     {
                         while (!cancellationToken.IsCancellationRequested && partition.MoveNext())
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             {
                                 if (item?.CurrentLeaseToken == null) continue;
                                 long result = await this.GetRemainingWorkAsync(item, cancellationToken);
-                                partialResults.Add(new RemainingLeaseTokenWork(item.CurrentLeaseToken, result));
+                                partialResults.Add(new RemainingLeaseWork(item.CurrentLeaseToken, result));
                             }
                             catch (CosmosException ex)
                             {
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                     return partialResults;
                 })).ToArray();
 
-            IEnumerable<List<RemainingLeaseTokenWork>> results = await Task.WhenAll(tasks);
+            IEnumerable<List<RemainingLeaseWork>> results = await Task.WhenAll(tasks);
             return results.SelectMany(r => r).ToList().AsReadOnly();
         }
 

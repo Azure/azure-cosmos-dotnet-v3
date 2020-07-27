@@ -51,14 +51,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task FeedEstimatorCore_ReceivesEstimation_List()
         {
-            IReadOnlyList<RemainingLeaseTokenWork> estimation = new List<RemainingLeaseTokenWork>()
+            IReadOnlyList<RemainingLeaseWork> estimation = new List<RemainingLeaseWork>()
             {
-                new RemainingLeaseTokenWork(new FeedTokenPartitionKeyRangeId(Guid.NewGuid().ToString()), 5),
-                new RemainingLeaseTokenWork(new FeedTokenPartitionKeyRangeId(Guid.NewGuid().ToString()), 10),
+                new RemainingLeaseWork(new FeedRangePartitionKeyRange(Guid.NewGuid().ToString()), 5),
+                new RemainingLeaseWork(new FeedRangePartitionKeyRange(Guid.NewGuid().ToString()), 10),
             };
             bool detectedEstimationCorrectly = false;
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(500);
-            ChangesEstimationDetailedHandler estimatorDispatcher = (IReadOnlyList<RemainingLeaseTokenWork> detectedEstimation, CancellationToken token) =>
+            ChangesEstimationDetailedHandler estimatorDispatcher = (IReadOnlyList<RemainingLeaseWork> detectedEstimation, CancellationToken token) =>
             {
                 detectedEstimationCorrectly = detectedEstimation.Count == estimation.Count
                                             && detectedEstimation[1].RemainingWork == estimation[1].RemainingWork

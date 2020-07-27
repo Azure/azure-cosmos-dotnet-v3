@@ -1137,7 +1137,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the estimation.</returns>
         public delegate Task ChangesEstimationDetailedHandler(
-            IReadOnlyList<ChangeFeed.RemainingLeaseTokenWork> estimatedPendingChanges,
+            IReadOnlyList<ChangeFeed.RemainingLeaseWork> estimatedPendingChanges,
             CancellationToken cancellationToken);
 
         /// <summary>

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// <summary>
         /// Gets the processing distribution unit identifier.
         /// </summary>
-        public abstract FeedToken CurrentLeaseToken { get; }
+        public abstract FeedRange CurrentLeaseToken { get; }
 
         /// <summary>
         /// Gets or sets the host name owner of the lease.

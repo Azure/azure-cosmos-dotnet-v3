@@ -23,6 +23,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         /// Calculates an estimate of the pending work remaining to be read in the Change Feed in amount of documents per distributed lease token.
         /// </summary>
         /// <returns>An array of an estimation of pending work in amount of documents per distributed lease token.</returns>
-        public abstract Task<IReadOnlyList<RemainingLeaseTokenWork>> GetEstimatedRemainingWorkPerLeaseTokenAsync(CancellationToken cancellationToken);
+        public abstract Task<IReadOnlyList<RemainingLeaseWork>> GetEstimatedRemainingWorkPerLeaseTokenAsync(CancellationToken cancellationToken);
     }
 }
