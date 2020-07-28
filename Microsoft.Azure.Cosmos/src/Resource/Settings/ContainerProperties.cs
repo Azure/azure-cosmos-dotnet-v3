@@ -103,9 +103,16 @@ namespace Microsoft.Azure.Cosmos
         public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
+
+            Collection<string> paths = new Collection<string>();
+            foreach (string path in partitionKeyPaths)
+            {
+                paths.Add(path);
+            }
+
             this.PartitionKey = new PartitionKeyDefinition
             {
-                Paths = (Collection<string>)partitionKeyPaths,
+                Paths = paths,
                 Kind = Documents.PartitionKind.MultiHash,
                 Version = Documents.PartitionKeyDefinitionVersion.V2
             };
