@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal interface IComputeHash : IDisposable
     {
-        byte[] ComputeHash(MemoryStream bytesToHash);
+        byte[] ComputeHash(ArraySegment<byte> bytesToHash);
 
         SecureString Key
         {

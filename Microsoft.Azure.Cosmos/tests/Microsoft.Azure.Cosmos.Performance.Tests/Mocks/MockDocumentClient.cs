@@ -19,13 +19,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using System.IO;
 
-    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
+    internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
         string[] dummyHeaderNames;
+        private IComputeHash authKeyHashFunction;
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
@@ -61,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
+            this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
+
             this.Init();
         }
 
@@ -70,6 +74,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
+
+        public static string GenerateRandomKey()
+        {
+            int keyLength = 64;
+            byte[] randomEntries = new byte[keyLength];
+
+            Random r = new Random((int)DateTime.Now.Ticks);
+            r.NextBytes(randomEntries);
+
+            return Convert.ToBase64String(randomEntries);
+        }
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
@@ -83,16 +98,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
 
-        string IAuthorizationTokenProvider.GetUserAuthorizationToken(
+        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType,
-            out string payload) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType) // unused, use token based upon what is passed in constructor 
         {
-            payload = null;
-            return null;
+            // this is masterkey authZ
+            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+
+            string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
+                    requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out AuthorizationHelper.ArrayOwner payload);
+            using (payload)
+            {
+                return authorization;
+            }
         }
 
         private void Init()
