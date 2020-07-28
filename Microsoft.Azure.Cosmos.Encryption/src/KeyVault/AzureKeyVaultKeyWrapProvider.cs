@@ -46,24 +46,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     nameof(metadata));
             }
 
-            try
+            if (!KeyVaultKeyUriProperties.TryParse(new Uri(metadata.Value), out KeyVaultKeyUriProperties keyVaultUriProperties))
             {
-                if (!KeyVaultUriProperties.TryParseUri(new Uri(metadata.Value), out KeyVaultUriProperties keyVaultUriProperties))
-                {
-                    throw new ArgumentException("KeyVault Key Uri {0} is invalid.", metadata.Value);
-                }
+                throw new ArgumentException("KeyVault Key Uri {0} is invalid.", metadata.Value);
+            }
 
-                byte[] result = await this.keyVaultAccessClient.UnwrapKeyAsync(wrappedKey, keyVaultUriProperties, cancellationToken);
-                return new EncryptionKeyUnwrapResult(result, this.rawDekCacheTimeToLive);
-            }
-            catch (Exception ex)
-            {
-                throw new KeyVaultAccessException(
-                        HttpStatusCode.BadRequest,
-                        KeyVaultErrorCode.KeyVaultKeyNotFound,
-                        "UnwrapKeyAsync Failed with HTTP status BadRequest 400",
-                        ex);
-            }
+            byte[] result = await this.keyVaultAccessClient.UnwrapKeyAsync(wrappedKey, keyVaultUriProperties, cancellationToken);
+            return new EncryptionKeyUnwrapResult(result, this.rawDekCacheTimeToLive);
         }
 
         /// <inheritdoc />
@@ -77,30 +66,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentException("Invalid metadata", nameof(metadata));
             }
 
-            try
+            if (!KeyVaultKeyUriProperties.TryParse(new Uri(metadata.Value), out KeyVaultKeyUriProperties keyVaultUriProperties))
             {
-                if (!KeyVaultUriProperties.TryParseUri(new Uri(metadata.Value), out KeyVaultUriProperties keyVaultUriProperties))
-                {
-                    throw new ArgumentException("KeyVault Key Uri {0} is invalid.",metadata.Value);
-                }
-
-                if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken))
-                {
-                    throw new ArgumentException(string.Format("Key Vault {0} provided must have soft delete and purge protection enabled.", keyVaultUriProperties.KeyUri));
-                }
-
-                byte[] result = await this.keyVaultAccessClient.WrapKeyAsync(key, keyVaultUriProperties, cancellationToken);
-                EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Type, metadata.Value, KeyVaultConstants.RsaOaep256);
-                return new EncryptionKeyWrapResult(result, responseMetadata);
+                throw new ArgumentException("KeyVault Key Uri {0} is invalid.",metadata.Value);
             }
-            catch (Exception ex)
+
+            if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken))
             {
-                throw new KeyVaultAccessException(
-                        HttpStatusCode.BadRequest,
-                        KeyVaultErrorCode.KeyVaultKeyNotFound,
-                        "WrapKeyAsync Failed with HTTP status BadRequest 400",
-                        ex);
+                throw new ArgumentException(string.Format("Key Vault {0} provided must have soft delete and purge protection enabled.", keyVaultUriProperties.KeyUri));
             }
+
+            byte[] result = await this.keyVaultAccessClient.WrapKeyAsync(key, keyVaultUriProperties, cancellationToken);
+            EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Type, metadata.Value, KeyVaultConstants.RsaOaep256);
+            return new EncryptionKeyWrapResult(result, responseMetadata);
         }
     }
 }

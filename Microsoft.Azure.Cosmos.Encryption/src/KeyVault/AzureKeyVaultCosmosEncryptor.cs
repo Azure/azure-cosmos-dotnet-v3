@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
 
     /// <summary>
     /// Provides the default implementation for client-side encryption for Cosmos DB.
@@ -34,6 +35,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public AzureKeyVaultCosmosEncryptor(KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory)
         {
             EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(keyVaultTokenCredentialFactory);
+            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
+            this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AzureKeyVaultCosmosEncryptor"/> class.
+        /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key via a Key Vault.
+        /// </summary>
+        /// <param name="tokenCredential"> User provided TokenCredential for accessing Key Vault services. </param>
+        public AzureKeyVaultCosmosEncryptor(TokenCredential tokenCredential)
+        {
+            EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(new UserProvidedTokenCredentialFactory(tokenCredential));
             this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }

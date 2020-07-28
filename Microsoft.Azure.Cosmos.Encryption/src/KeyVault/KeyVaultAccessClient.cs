@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Result including KeyIdentifier and decrypted bytes in base64 string format, can be convert to bytes using Convert.FromBase64String().</returns>
         public async Task<byte[]> UnwrapKeyAsync(
             byte[] wrappedKey,
-            KeyVaultUriProperties keyVaultUriProperties,
+            KeyVaultKeyUriProperties keyVaultUriProperties,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             UnwrapResult keyOpResult;
@@ -56,18 +56,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 keyOpResult = await cryptoClient.UnwrapKeyAsync(KeyVaultConstants.RsaOaep256, wrappedKey, cancellationToken);
             }
-            catch (Exception ex)
+            catch (RequestFailedException ex)
             {
-                if (ex is ArgumentException || ex is ArgumentNullException || ex is RequestFailedException)
-                {
-                   throw new KeyVaultAccessException(
-                            HttpStatusCode.BadRequest,
-                            KeyVaultErrorCode.KeyVaultWrapUnwrapFailure,
-                            "UnwrapKeyAsync Failed with HTTP status BadRequest 400",
+                throw new KeyVaultAccessException(
+                            ex.Status,
+                            ex.ErrorCode,
+                            "UnwrapKeyAsync:Failed to Unwrap the encrypted key.",
                             ex);
-                }
-
-                throw;
             }
 
             return keyOpResult.Key;
@@ -83,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Result including KeyIdentifier and encrypted bytes in base64 string format.</returns>
         public async Task<byte[]> WrapKeyAsync(
             byte[] key,
-            KeyVaultUriProperties keyVaultUriProperties,
+            KeyVaultKeyUriProperties keyVaultUriProperties,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             WrapResult keyOpResult;
@@ -95,18 +90,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 keyOpResult = await cryptoClient.WrapKeyAsync(KeyVaultConstants.RsaOaep256, key, cancellationToken);
             }
-            catch (Exception ex)
+            catch (RequestFailedException ex)
             {
-                if (ex is ArgumentException || ex is ArgumentNullException || ex is RequestFailedException)
-                {
-                    throw new KeyVaultAccessException(
-                            HttpStatusCode.BadRequest,
-                            KeyVaultErrorCode.KeyVaultWrapUnwrapFailure,
-                            "WrapKeyAsync:Failed with HTTP status BadRequest 400",
+                throw new KeyVaultAccessException(
+                            ex.Status,
+                            ex.ErrorCode,
+                            "WrapKeyAsync: Failed to Wrap the data encryption key.",
                             ex);
-                }
-
-                throw;
             }
 
             return keyOpResult.EncryptedKey;
@@ -119,55 +109,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Whether The Customer has the correct Deletion Level. </returns>
         public async Task<bool> ValidatePurgeProtectionAndSoftDeleteSettingsAsync(
-            KeyVaultUriProperties keyVaultUriProperties,
+            KeyVaultKeyUriProperties keyVaultUriProperties,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            KeyVaultKey getKeyResponse = await this.InternalGetKeyAsync(keyVaultUriProperties, cancellationToken);
-
-            string keyDeletionRecoveryLevel = getKeyResponse?.Properties?.RecoveryLevel;
-
-            return keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.Recoverable)
-                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.RecoverableProtectedSubscription)
-                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverable)
-                    || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverableProtectedSubscription);
-        }
-
-        /// <summary>
-        /// Get The Key Information like public key and recovery level.
-        /// </summary>
-        /// <param name="keyVaultUriProperties"> Parsed key Vault Uri Properties. </param>
-        /// <param name="cancellationToken"> cancellation token </param>
-        /// <returns> Key Vault Key </returns>
-        private async Task<KeyVaultKey> InternalGetKeyAsync(
-            KeyVaultUriProperties keyVaultUriProperties,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            KeyClient akvClient = null;
-            KeyVaultKey kvk = null;
-
+            KeyClient akvClient = await this.GetAkvClientAsync(keyVaultUriProperties, cancellationToken);
             try
             {
-                akvClient = await this.GetAkvClientAsync(keyVaultUriProperties, cancellationToken);
+                KeyVaultKey getKeyResponse = await akvClient.GetKeyAsync(keyVaultUriProperties.KeyName, cancellationToken: cancellationToken);
 
-                kvk = await akvClient.GetKeyAsync(keyVaultUriProperties.KeyName, cancellationToken: cancellationToken);
+                string keyDeletionRecoveryLevel = getKeyResponse?.Properties?.RecoveryLevel;
+
+                return keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.Recoverable)
+                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.RecoverableProtectedSubscription)
+                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverable)
+                        || keyDeletionRecoveryLevel.Contains(KeyVaultConstants.DeletionRecoveryLevel.CustomizedRecoverableProtectedSubscription);
             }
-            catch (Exception ex)
+            catch (RequestFailedException ex)
             {
-                if (ex is ArgumentException || ex is ArgumentNullException || ex is RequestFailedException)
-                {
-                    throw new KeyVaultAccessException(
-                            HttpStatusCode.NotFound,
-                            KeyVaultErrorCode.KeyVaultKeyNotFound,
-                            "InternalGetKeyAsync Failed with HTTP status BadRequest 404",
+                throw new KeyVaultAccessException(
+                            ex.Status,
+                            ex.ErrorCode,
+                            "ValidatePurgeProtectionAndSoftDeleteSettingsAsync: Failed to fetch Key from Key Vault.",
                             ex);
-                }
-
-                throw;
             }
-
-            return kvk;
         }
 
         /// <summary>
@@ -177,16 +141,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> Key Client </returns>
         private async Task<KeyClient> GetAkvClientAsync(
-            KeyVaultUriProperties keyVaultUriProperties,
+            KeyVaultKeyUriProperties keyVaultUriProperties,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             // Called once per KEYVALTNAME
             // Eg:https://KEYVALTNAME.vault.azure.net/
-            try
-            {
-                KeyClient akvClient = await this.akvClientCache.GetAsync(
+            KeyClient akvClient = await this.akvClientCache.GetAsync(
                 key: keyVaultUriProperties.KeyVaultUri,
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
@@ -195,12 +157,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return new KeyClient(keyVaultUriProperties.KeyVaultUri, tokenCred);
                 },
                 cancellationToken: cancellationToken);
-                return akvClient;
-            }
-            catch (Exception ex)
-            {
-                throw new KeyVaultAccessException(HttpStatusCode.ServiceUnavailable, KeyVaultErrorCode.AadServiceUnavailable, ex.ToString(), ex);
-            }
+
+            return akvClient;
         }
 
         /// <summary>
@@ -210,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> CryptographyClient </returns>
         private async Task<CryptographyClient> GetCryptoClientAsync(
-            KeyVaultUriProperties keyVaultUriProperties,
+            KeyVaultKeyUriProperties keyVaultUriProperties,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -218,9 +176,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // Get a Crypto Client for Wrap and UnWrap,this gets init per Key Version
             // Cache it against the KeyVersion/KeyId
             // Eg: :https://KEYVAULTNAME.vault.azure.net/keys/keyname/KEYID
-            try
-            {
-                CryptographyClient cryptoClient = await this.akvCryptoClientCache.GetAsync(
+            CryptographyClient cryptoClient = await this.akvCryptoClientCache.GetAsync(
                 key: keyVaultUriProperties.KeyUri,
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
@@ -230,12 +186,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return new CryptographyClient(keyVaultUriProperties.KeyUri, tokenCred);
                 },
                 cancellationToken: cancellationToken);
-                return cryptoClient;
-            }
-            catch (Exception ex)
-            {
-                throw new KeyVaultAccessException(HttpStatusCode.ServiceUnavailable, KeyVaultErrorCode.AadServiceUnavailable, ex.ToString(), ex);
-            }
+            return cryptoClient;
         }
     }
 }
