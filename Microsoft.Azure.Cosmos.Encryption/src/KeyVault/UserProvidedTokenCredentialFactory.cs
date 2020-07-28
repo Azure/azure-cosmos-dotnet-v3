@@ -23,7 +23,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="tokenCredential"> TokenCredentials </param>
         public UserProvidedTokenCredentialFactory(TokenCredential tokenCredential)
         {
-            this.tokenCredential = tokenCredential;
+            if (tokenCredential != null)
+            {
+                this.tokenCredential = tokenCredential;
+            }
+            else
+            {
+                throw new ArgumentNullException("UserProvidedTokenCredentialFactory: Invalid null TokenCredentials Passed");
+            }
         }
 
         /// <summary>
@@ -36,14 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async ValueTask<TokenCredential> GetTokenCredentialAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            if (this.tokenCredential != null)
-            {
-                 return this.tokenCredential;
-            }
-            else
-            {
-                throw new ArgumentNullException("GetTokenCredentialAsync: Invalid null TokenCredentials Passed");
-            }
+            return this.tokenCredential;
         }
     }
 }
