@@ -55,36 +55,20 @@ namespace Microsoft.Azure.Cosmos.Linq
                     false,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(string)}
+                        new Type[]{typeof(string)},
+                        new Type[]{typeof(char)}
                     })
             {
             }
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
-                bool isStaticMethod = methodCallExpression.Object == null;
-
-                if (methodCallExpression.Arguments.Count == 2 && !isStaticMethod)
+                if (methodCallExpression.Arguments.Count == 2 && methodCallExpression.Object != null)
                 {
-                    // builtin: bool Contains(string value, StringComparison comparisonType) (netcoreapp2.1+)
                     SqlScalarExpression haystack = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
                     SqlScalarExpression needle = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
                     SqlScalarExpression caseInsensitive = SqlStringWithComparisonVisitor.GetCaseInsensitiveExpression(methodCallExpression.Arguments[1]);
                     return SqlFunctionCallScalarExpression.CreateBuiltin("CONTAINS", haystack, needle, caseInsensitive);
-                }
-                else if (methodCallExpression.Arguments.Count == 3 && isStaticMethod)
-                {
-                    // custom extension method: bool Contains(this string value, StringComparison comparisonType)
-                    SqlScalarExpression haystack = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
-                    SqlScalarExpression needle = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[1], context);
-                    SqlScalarExpression caseInsensitive = SqlStringWithComparisonVisitor.GetCaseInsensitiveExpression(methodCallExpression.Arguments[2]);
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONTAINS", haystack, needle, caseInsensitive);
-                }
-                else if (methodCallExpression.Arguments.Count == 2)
-                {
-                    SqlScalarExpression haystack = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
-                    SqlScalarExpression needle = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[1], context);
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONTAINS", haystack, needle);
                 }
 
                 return null;

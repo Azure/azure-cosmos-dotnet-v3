@@ -726,9 +726,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string expectedQueryText = $"SELECT VALUE root FROM root WHERE {expectedMethod}(root[\"description\"], @param1{(caseInsensitive ? ", true" : "")})";
 
                 IArgumentProvider arguments = (IArgumentProvider)expression.Body;
-                int index = arguments.ArgumentCount > 2 ? 1 : 0;
 
-                string searchString = (arguments.GetArgument(index) as ConstantExpression).Value as string;
+                string searchString = (arguments.GetArgument(0) as ConstantExpression).Value as string;
 
                 IQueryable<ToDoActivity> queryable = linqQueryable.Where(expression);
 
@@ -807,16 +806,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 diagnostics: response.Diagnostics,
                 isFirstPage: false,
                 disableDiagnostics: disableDiagnostics);
-        }
-    }
-
-    static class StringExtensions
-    {
-        // string.Contains overload is only available in netcoreapp2.1+, this adds support for an extension method
-        // for programs targeting netstandard2.0 or netcoreapp2.0
-        public static bool Contains(this string haystack, string needle, StringComparison comparisonType)
-        {
-            return haystack.IndexOf(needle, comparisonType) >= 0;
         }
     }
 }
