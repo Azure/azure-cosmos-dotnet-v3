@@ -65,6 +65,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        public async Task DefaultsToNoPartitionIdInSchema()
+        {
+            IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
+            List<int> receivedIds = new List<int>();
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                {
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            // Letting processor initialize
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            // Verify that no leases have PartitionId (V2 contract)
+            using FeedIterator<dynamic> iterator = this.LeaseContainer.GetItemQueryIterator<dynamic>();
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<dynamic> page = await iterator.ReadNextAsync();
+                foreach (dynamic lease in page)
+                {
+                    string leaseId = lease.id;
+                    if (leaseId.Contains(".info") || leaseId.Contains(".lock"))
+                    {
+                        // These are the store initialization marks
+                        continue;
+                    }
+
+                    Assert.IsNotNull(lease.LeaseToken);
+                    Assert.IsNull(lease.PartitionId);
+                }
+            }
+
+            await processor.StopAsync();
+        }
+
+        [TestMethod]
         public async Task NotExistentLeaseContainer()
         {
             Container notFoundContainer = this.cosmosClient.GetContainer(this.database.Id, "NonExistent");
