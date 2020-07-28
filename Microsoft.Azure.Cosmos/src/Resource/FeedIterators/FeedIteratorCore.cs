@@ -21,14 +21,14 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
-        private readonly Uri resourceLink;
+        private readonly string resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
 
         public FeedIteratorCore(
             CosmosClientContext clientContext,
-            Uri resourceLink,
+            string resourceLink,
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
@@ -62,10 +62,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnostics.GetOverallScope())
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnosticsContext.GetOverallScope())
             {
-                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                return await this.ReadNextInternalAsync(diagnosticsContext, cancellationToken);
             }
         }
 
@@ -155,6 +155,12 @@ namespace Microsoft.Azure.Cosmos
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            this.feedIterator.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

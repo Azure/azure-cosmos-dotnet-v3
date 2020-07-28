@@ -46,11 +46,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             return cosmosClientBuilder.Build(documentClient);
         }
 
+        public static CosmosDiagnosticsContext CreateDiagnosticsContext()
+        {
+            return new CosmosDiagnosticsContextCore(
+                nameof(CreateDiagnosticsContext),
+                "DiagnosticValidatorUserAgentString");
+        }
+
         public static Mock<ContainerInternal> CreateMockContainer(
             string dbName = "myDb",
             string containerName = "myContainer")
         {
-            Uri link = new Uri($"/dbs/{dbName}/colls/{containerName}" , UriKind.Relative);
+            string link = $"/dbs/{dbName}/colls/{containerName}";
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             return mockContainer;
@@ -58,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static Mock<DatabaseInternal> CreateMockDatabase(string dbName = "myDb")
         {
-            Uri link = new Uri($"/dbs/{dbName}", UriKind.Relative);
+            string link = $"/dbs/{dbName}";
             Mock<DatabaseInternal> mockDB = new Mock<DatabaseInternal>();
             mockDB.Setup(x => x.LinkUri).Returns(link);
             mockDB.Setup(x => x.GetRIDAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(dbName));

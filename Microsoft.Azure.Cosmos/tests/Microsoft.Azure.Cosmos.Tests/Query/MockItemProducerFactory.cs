@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 sqlQuerySpec,
                 partitionKeyRange,
                 completeDelegate,
-                CosmosElementEqualityComparer.Value,
+                new DefaultCosmosElementEqualityComparer(),
                 new TestInjections(simulate429s: false, simulateEmptyPages: false),
                 maxPageSize,
                 initialContinuationToken: continuationToken);
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKeyRange,
                 completeDelegate,
                 itemProducerTreeComparer,
-                CosmosElementEqualityComparer.Value,
+                new DefaultCosmosElementEqualityComparer(),
                 new TestInjections(simulate429s: false, simulateEmptyPages: false),
                 deferFirstPage,
                 collectionRid,
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 mockQueryContext.Setup(x =>
                     x.ExecuteItemQueryAsync(
-                        It.IsAny<Uri>(),
+                        It.IsAny<string>(),
                         ResourceType.Document,
                         OperationType.Query,
                         It.IsAny<Guid>(),
@@ -339,6 +339,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             return expected.SequenceEqual(actual);
+        }
+
+        private sealed class DefaultCosmosElementEqualityComparer : IEqualityComparer<CosmosElement>
+        {
+            public bool Equals(CosmosElement x, CosmosElement y)
+            {
+                return x == y;
+            }
+
+            public int GetHashCode(CosmosElement obj)
+            {
+                return obj.GetHashCode();
+            }
         }
     }
 }

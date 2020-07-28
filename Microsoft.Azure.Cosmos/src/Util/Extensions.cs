@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge: headers.RequestCharge,
                     errorMessage: null,
                     method: requestMessage?.Method,
-                    requestUri: requestMessage?.RequestUri,
+                    requestUri: requestMessage?.RequestUriString,
                     requestSessionToken: requestMessage?.Headers?.Session,
                     responseSessionToken: headers.Session));
             }
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: cosmosException.Headers.RequestCharge,
                 errorMessage: documentClientException.ToString(),
                 method: requestMessage?.Method,
-                requestUri: requestMessage?.RequestUri,
+                requestUri: requestMessage?.RequestUriString,
                 requestSessionToken: requestMessage?.Headers?.Session,
                 responseSessionToken: cosmosException.Headers.Session);
 

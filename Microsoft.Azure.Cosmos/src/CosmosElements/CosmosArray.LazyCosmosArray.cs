@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -15,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
+    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>, IComparable<CosmosArray>
     {
         private sealed class LazyCosmosArray : CosmosArray
         {
@@ -27,16 +29,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 IJsonNavigator jsonNavigator,
                 IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Array)
                 {
@@ -59,7 +51,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                     return lazyArray;
                 });
-                
             }
 
             public override int Count => this.lazyCosmosElementArray.Value.Length;
@@ -68,15 +59,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override IEnumerator<CosmosElement> GetEnumerator() => this.lazyCosmosElementArray.Value.Select(lazyItem => lazyItem.Value).GetEnumerator();
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
 
-                this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
-            }
+            public override IJsonReader CreateReader() => this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
         }
     }
 #if INTERNAL

@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -13,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosGuid : CosmosElement
+    abstract partial class CosmosGuid : CosmosElement, IEquatable<CosmosGuid>, IComparable<CosmosGuid>
     {
         private sealed class LazyCosmosGuid : CosmosGuid
         {
@@ -21,35 +23,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public LazyCosmosGuid(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Guid)
                 {
                     throw new ArgumentOutOfRangeException($"{nameof(jsonNavigatorNode)} must be a {JsonNodeType.Guid} node. Got {type} instead.");
                 }
 
-                this.lazyGuid = new Lazy<Guid>(() =>
-                {
-                    return jsonNavigator.GetGuidValue(jsonNavigatorNode);
-                });
+                this.lazyGuid = new Lazy<Guid>(() => jsonNavigator.GetGuidValue(jsonNavigatorNode));
             }
 
-            public override Guid Value
-            {
-                get
-                {
-                    return this.lazyGuid.Value;
-                }
-            }
+            public override Guid Value => this.lazyGuid.Value;
         }
     }
 #if INTERNAL

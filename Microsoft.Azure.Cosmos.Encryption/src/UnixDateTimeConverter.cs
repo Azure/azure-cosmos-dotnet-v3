@@ -11,12 +11,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Converts a DateTime object to and from JSON.
     /// DateTime is represented as the total number of seconds
-    /// that have elapsed since January 1, 1970 (midnight UTC/GMT), 
+    /// that have elapsed since January 1, 1970 (midnight UTC/GMT),
     /// not counting leap seconds (in ISO 8601: 1970-01-01T00:00:00Z).
     /// </summary>
     internal sealed class UnixDateTimeConverter : DateTimeConverterBase
     {
-        private static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         /// <summary>
         /// Writes the JSON representation of the DateTime object.
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (value is DateTime)
             {
-                Int64 totalSeconds = (Int64)((DateTime)value - UnixStartTime).TotalSeconds;
+                long totalSeconds = (long)((DateTime)value - UnixStartTime).TotalSeconds;
                 writer.WriteValue(totalSeconds);
             }
             else
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new Exception("Invalid value; expected integer.");
             }
 
-            double totalSeconds = 0;
+            double totalSeconds;
 
             try
             {

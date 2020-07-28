@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
     internal static class CosmosQueryExecutionContextFactory
     {
@@ -142,6 +144,52 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
                 else
                 {
+                    // If the query would go to gateway, but we have a partition key,
+                    // then try seeing if we can execute as a passthrough using client side only logic.
+                    // This is to short circuit the need to go to the gateway to get the query plan.
+                    if (cosmosQueryContext.QueryClient.ByPassQueryParsing()
+                        && inputParameters.PartitionKey.HasValue)
+                    {
+                        bool parsed;
+                        SqlQuery sqlQuery;
+                        using (cosmosQueryContext.CreateDiagnosticScope("QueryParsing"))
+                        {
+                            parsed = SqlQuery.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
+                        }
+
+                        if (parsed)
+                        {
+                            bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
+                            bool hasGroupBy = sqlQuery.GroupByClause != default;
+                            bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
+                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
+
+                            if (createPassthroughQuery)
+                            {
+                                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
+                                if (responseStats != null)
+                                {
+                                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
+                                }
+
+                                // Only thing that matters is that we target the correct range.
+                                Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
+                                List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                                    cosmosQueryContext.ResourceLink,
+                                    containerQueryProperties.ResourceId,
+                                    inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
+
+                                return await CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContextAsync(
+                                    cosmosQueryContext,
+                                    inputParameters,
+                                    partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo(),
+                                    targetRanges,
+                                    containerQueryProperties.ResourceId,
+                                    cancellationToken);
+                            }
+                        }
+                    }
+
                     if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
                     {
                         // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
@@ -157,28 +205,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     {
                         using (cosmosQueryContext.CreateDiagnosticScope("ServiceInterop"))
                         {
-                            //todo:elasticcollections this may rely on information from collection cache which is outdated
-                            //if collection is deleted/created with same name.
-                            //need to make it not rely on information from collection cache.
-                            Documents.PartitionKeyDefinition partitionKeyDefinition;
-                            if ((inputParameters.Properties != null)
-                                && inputParameters.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out object partitionKeyDefinitionObject))
-                            {
-                                if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
-                                {
-                                    partitionKeyDefinition = definition;
-                                }
-                                else
-                                {
-                                    throw new ArgumentException(
-                                        "partitionkeydefinition has invalid type",
-                                        nameof(partitionKeyDefinitionObject));
-                                }
-                            }
-                            else
-                            {
-                                partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
-                            }
+                            Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
 
                             partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
                                 cosmosQueryContext.QueryClient,
@@ -210,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                    cosmosQueryContext.QueryClient,
-                   cosmosQueryContext.ResourceLink.OriginalString,
+                   cosmosQueryContext.ResourceLink,
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
                    inputParameters.Properties,
@@ -454,6 +481,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return false;
         }
 
+        private static Documents.PartitionKeyDefinition GetPartitionKeyDefinition(InputParameters inputParameters, ContainerQueryProperties containerQueryProperties)
+        {
+            //todo:elasticcollections this may rely on information from collection cache which is outdated
+            //if collection is deleted/created with same name.
+            //need to make it not rely on information from collection cache.
+
+            Documents.PartitionKeyDefinition partitionKeyDefinition;
+            if ((inputParameters.Properties != null)
+                && inputParameters.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out object partitionKeyDefinitionObject))
+            {
+                if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
+                {
+                    partitionKeyDefinition = definition;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        "partitionkeydefinition has invalid type",
+                        nameof(partitionKeyDefinitionObject));
+                }
+            }
+            else
+            {
+                partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
+            }
+
+            return partitionKeyDefinition;
+        }
+
         public sealed class InputParameters
         {
             private const int DefaultMaxConcurrency = 0;
@@ -524,6 +580,177 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
             public bool ForcePassthrough { get; }
+        }
+
+        internal sealed class AggregateProjectionDetector
+        {
+            /// <summary>
+            /// Determines whether or not the SqlSelectSpec has an aggregate in the outer most query.
+            /// </summary>
+            /// <param name="selectSpec">The select spec to traverse.</param>
+            /// <returns>Whether or not the SqlSelectSpec has an aggregate in the outer most query.</returns>
+            public static bool HasAggregate(SqlSelectSpec selectSpec)
+            {
+                return selectSpec.Accept(AggregateProjectionDectorVisitor.Singleton);
+            }
+
+            private sealed class AggregateProjectionDectorVisitor : SqlSelectSpecVisitor<bool>
+            {
+                public static readonly AggregateProjectionDectorVisitor Singleton = new AggregateProjectionDectorVisitor();
+
+                public override bool Visit(SqlSelectListSpec selectSpec)
+                {
+                    bool hasAggregates = false;
+                    foreach (SqlSelectItem selectItem in selectSpec.Items)
+                    {
+                        hasAggregates |= selectItem.Expression.Accept(AggregateScalarExpressionDetector.Singleton);
+                    }
+
+                    return hasAggregates;
+                }
+
+                public override bool Visit(SqlSelectValueSpec selectSpec)
+                {
+                    return selectSpec.Expression.Accept(AggregateScalarExpressionDetector.Singleton);
+                }
+
+                public override bool Visit(SqlSelectStarSpec selectSpec)
+                {
+                    return false;
+                }
+
+                /// <summary>
+                /// Determines if there is an aggregate in a scalar expression.
+                /// </summary>
+                private sealed class AggregateScalarExpressionDetector : SqlScalarExpressionVisitor<bool>
+                {
+                    private enum Aggregate
+                    {
+                        Min,
+                        Max,
+                        Sum,
+                        Count,
+                        Avg,
+                    }
+
+                    public static readonly AggregateScalarExpressionDetector Singleton = new AggregateScalarExpressionDetector();
+
+                    public override bool Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
+                    {
+                        bool hasAggregates = false;
+                        foreach (SqlScalarExpression item in sqlArrayCreateScalarExpression.Items)
+                        {
+                            hasAggregates |= item.Accept(this);
+                        }
+
+                        return hasAggregates;
+                    }
+
+                    public override bool Visit(SqlArrayScalarExpression sqlArrayScalarExpression)
+                    {
+                        // No need to worry about aggregates in the subquery (they will recursively get rewritten).
+                        return false;
+                    }
+
+                    public override bool Visit(SqlBetweenScalarExpression sqlBetweenScalarExpression)
+                    {
+                        return sqlBetweenScalarExpression.Expression.Accept(this) ||
+                            sqlBetweenScalarExpression.StartInclusive.Accept(this) ||
+                            sqlBetweenScalarExpression.EndInclusive.Accept(this);
+                    }
+
+                    public override bool Visit(SqlBinaryScalarExpression sqlBinaryScalarExpression)
+                    {
+                        return sqlBinaryScalarExpression.LeftExpression.Accept(this) ||
+                            sqlBinaryScalarExpression.RightExpression.Accept(this);
+                    }
+
+                    public override bool Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
+                    {
+                        return sqlCoalesceScalarExpression.Left.Accept(this) ||
+                            sqlCoalesceScalarExpression.Right.Accept(this);
+                    }
+
+                    public override bool Visit(SqlConditionalScalarExpression sqlConditionalScalarExpression)
+                    {
+                        return sqlConditionalScalarExpression.Condition.Accept(this) ||
+                            sqlConditionalScalarExpression.Consequent.Accept(this) ||
+                            sqlConditionalScalarExpression.Alternative.Accept(this);
+                    }
+
+                    public override bool Visit(SqlExistsScalarExpression sqlExistsScalarExpression)
+                    {
+                        // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                        return false;
+                    }
+
+                    public override bool Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
+                    {
+                        return !sqlFunctionCallScalarExpression.IsUdf &&
+                            Enum.TryParse<Aggregate>(value: sqlFunctionCallScalarExpression.Name.Value, ignoreCase: true, result: out _);
+                    }
+
+                    public override bool Visit(SqlInScalarExpression sqlInScalarExpression)
+                    {
+                        bool hasAggregates = false;
+                        for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
+                        {
+                            hasAggregates |= sqlInScalarExpression.Haystack[i].Accept(this);
+                        }
+
+                        return hasAggregates;
+                    }
+
+                    public override bool Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
+                    {
+                        return false;
+                    }
+
+                    public override bool Visit(SqlMemberIndexerScalarExpression sqlMemberIndexerScalarExpression)
+                    {
+                        return sqlMemberIndexerScalarExpression.Member.Accept(this) ||
+                            sqlMemberIndexerScalarExpression.Indexer.Accept(this);
+                    }
+
+                    public override bool Visit(SqlObjectCreateScalarExpression sqlObjectCreateScalarExpression)
+                    {
+                        bool hasAggregates = false;
+                        foreach (SqlObjectProperty property in sqlObjectCreateScalarExpression.Properties)
+                        {
+                            hasAggregates |= property.Value.Accept(this);
+                        }
+
+                        return hasAggregates;
+                    }
+
+                    public override bool Visit(SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
+                    {
+                        bool hasAggregates = false;
+                        if (sqlPropertyRefScalarExpression.Member != null)
+                        {
+                            hasAggregates = sqlPropertyRefScalarExpression.Member.Accept(this);
+                        }
+
+                        return hasAggregates;
+                    }
+
+                    public override bool Visit(SqlSubqueryScalarExpression sqlSubqueryScalarExpression)
+                    {
+                        // No need to worry about the aggregates within the subquery since they get recursively evaluated.
+                        return false;
+                    }
+
+                    public override bool Visit(SqlUnaryScalarExpression sqlUnaryScalarExpression)
+                    {
+                        return sqlUnaryScalarExpression.Expression.Accept(this);
+                    }
+
+                    public override bool Visit(SqlParameterRefScalarExpression scalarExpression)
+                    {
+                        return false;
+                    }
+                }
+            }
         }
     }
 }

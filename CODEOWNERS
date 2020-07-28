@@ -14,4 +14,9 @@ Microsoft.Azure.Cosmos/src/Linq @khdang @j82w @sboshra @kirankumarkolli @bchong9
 Microsoft.Azure.Cosmos/src/Spatial @lalithamv @sboshra @kirankumarkolli @j82w
 Microsoft.Azure.Cosmos/tests @khdang @sboshra @bchong95 @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
 Microsoft.Azure.Cosmos.Samples @khdang @sboshra @bchong95 @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
-Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/DotNetSDKAPI.json @kirillg @kirankumarkolli
+
+# Order is important; the last matching pattern takes the most precedence
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts @kirillg @kirankumarkolli @j82w @ealsur @FabianMeiswinkel
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Contracts @kirillg @kirankumarkolli @j82w @ealsur @FabianMeiswinkel
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKAPI.json @kirillg @kirankumarkolli
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetPreviewSDKAPI.json @kirillg @kirankumarkolli

@@ -13,11 +13,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
@@ -60,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    partitionKeyRange: mockResponse[0].PartitionKeyRange,
                    produceAsyncCompleteCallback: MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
                    itemProducerTreeComparer: DeterministicParallelItemProducerTreeComparer.Singleton,
-                   equalityComparer: CosmosElementEqualityComparer.Value,
+                   equalityComparer: new DefaultCosmosElementEqualityComparer(),
                    testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false),
                    deferFirstPage: true,
                    collectionRid: MockQueryFactory.DefaultCollectionRid,
@@ -119,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    mockResponse[0].PartitionKeyRange,
                    MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
                    DeterministicParallelItemProducerTreeComparer.Singleton,
-                   CosmosElementEqualityComparer.Value,
+                   new DefaultCosmosElementEqualityComparer(),
                    new TestInjections(simulate429s: false, simulateEmptyPages: false),
                    true,
                    MockQueryFactory.DefaultCollectionRid,
@@ -177,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             IReadOnlyList<CosmosElement> cosmosElements = new List<CosmosElement>()
             {
-                new Mock<CosmosElement>(CosmosElementType.Object).Object
+                new Mock<CosmosElement>().Object
             };
 
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
@@ -189,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Post,
-                requestUri: new Uri("http://localhost.com"),
+                requestUri: "http://localhost.com",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -243,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestCharge: 10.2,
                 errorMessage: "Error message",
                 method: HttpMethod.Post,
-                requestUri: new Uri("http://localhost.com"),
+                requestUri: "http://localhost.com",
                 requestSessionToken: null,
                 responseSessionToken: null));
 
@@ -313,6 +311,19 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
             Assert.IsFalse(itemProducerTree.HasMoreResults);
+        }
+
+        private sealed class DefaultCosmosElementEqualityComparer : IEqualityComparer<CosmosElement>
+        {
+            public bool Equals(CosmosElement x, CosmosElement y)
+            {
+                return x == y;
+            }
+
+            public int GetHashCode(CosmosElement obj)
+            {
+                return obj.GetHashCode();
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\ContractEnforcement.cs" Link="ContractEnforcement.cs" />
+    <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\ContractEnforcement.cs" Link="Contracts\ContractEnforcement.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,10 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="testbaseline.cmd">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="DotNetSDKEncryptionAPI.json">
+    <None Include="Contracts\DotNetSDKEncryptionAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

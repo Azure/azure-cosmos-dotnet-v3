@@ -1177,7 +1177,7 @@
                     }
 
                     Assert.IsTrue(
-                        expected.SequenceEqual(actualFromQueryWithoutContinutionTokens, CosmosElementEqualityComparer.Value),
+                        expected.SequenceEqual(actualFromQueryWithoutContinutionTokens),
                         $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
                             actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionTokens)}");

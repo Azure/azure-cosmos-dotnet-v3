@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
@@ -28,14 +29,10 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private string containerRid;
-        private string continuationToken;
-        private int? maxItemCount;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
-            ContainerInternal container,
-            string continuationToken,
-            int? maxItemCount,
+            ContainerCore container,
             ChangeFeedRequestOptions options)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
@@ -43,8 +40,6 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
             this.container = container;
             this.changeFeedOptions = options;
-            this.maxItemCount = maxItemCount;
-            this.continuationToken = continuationToken;
         }
 
         /// <summary>
@@ -91,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
+        internal async Task<(string, ResponseMessage)> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -99,13 +94,41 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.container.GetRIDAsync(cancellationToken);
-                this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
+
+                if (this.changeFeedOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+                {
+                    this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
+                        this.containerRid,
+                        startFromContinuation.Continuation,
+                        pkRangeCache.TryGetOverlappingRangesAsync);
+                    (CompositeContinuationToken token, string id) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+
+                    if (token.Token != null)
+                    {
+                        this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(token.Token);
+                    }
+                    else
+                    {
+                        this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+                    }
+                }
+                else
+                {
+                    this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
+                        this.containerRid,
+                        initialStandByFeedContinuationToken: null,
+                        pkRangeCache.TryGetOverlappingRangesAsync);
+                }
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-            string partitionKeyRangeId = rangeId;
-            this.continuationToken = currentRangeToken.Token;
-            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            if (currentRangeToken.Token != null)
+            {
+                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(currentRangeToken.Token);
+            }
+
+            this.changeFeedOptions.FeedRange = new FeedRangePartitionKeyRange(rangeId);
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
                 return await this.ReadNextInternalAsync(cancellationToken);
@@ -118,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
                 currentRangeToken.Token = response.Headers.ETag;
             }
 
-            return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
+            return (rangeId, response);
         }
 
         /// <summary>
@@ -146,29 +169,21 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal virtual Task<ResponseMessage> NextResultSetDelegateAsync(
-            string continuationToken,
-            string partitionKeyRangeId,
-            int? maxItemCount,
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            Uri resourceUri = this.container.LinkUri;
+            string resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                cosmosContainerCore: this.container,
-                requestEnricher: request =>
-                {
-                    ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                    ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                    ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
-                },
+                containerInternal: this.container,
+                requestEnricher: default,
                 responseCreator: response => response,
-                partitionKey: null,
-                streamPayload: null,
-                diagnosticsContext: null,
+                partitionKey: default,
+                streamPayload: default,
+                diagnosticsContext: default,
                 cancellationToken: cancellationToken);
         }
 

@@ -180,40 +180,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 // Unordered distinct does not need to return a valid hash.
                 // Since it doesn't need the last hash for a continuation.
                 hash = default;
-                bool added = false;
-                CosmosElementType cosmosElementType = cosmosElement.Type;
-                switch (cosmosElementType)
+                return cosmosElement switch
                 {
-                    case CosmosElementType.Array:
-                        added = this.AddArrayValue(cosmosElement as CosmosArray);
-                        break;
-
-                    case CosmosElementType.Boolean:
-                        added = this.AddSimpleValue((cosmosElement as CosmosBoolean).Value ? SimpleValues.True : SimpleValues.False);
-                        break;
-
-                    case CosmosElementType.Null:
-                        added = this.AddSimpleValue(SimpleValues.Null);
-                        break;
-
-                    case CosmosElementType.Number:
-                        CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                        added = this.AddNumberValue(cosmosNumber.Value);
-                        break;
-
-                    case CosmosElementType.Object:
-                        added = this.AddObjectValue(cosmosElement as CosmosObject);
-                        break;
-
-                    case CosmosElementType.String:
-                        added = this.AddStringValue((cosmosElement as CosmosString).Value);
-                        break;
-
-                    default:
-                        throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElementType}");
-                }
-
-                return added;
+                    CosmosArray cosmosArray => this.AddArrayValue(cosmosArray),
+                    CosmosBoolean cosmosBoolean => this.AddSimpleValue(cosmosBoolean.Value ? SimpleValues.True : SimpleValues.False),
+                    CosmosNull _ => this.AddSimpleValue(SimpleValues.Null),
+                    CosmosNumber cosmosNumber => this.AddNumberValue(cosmosNumber.Value),
+                    CosmosObject cosmosObject => this.AddObjectValue(cosmosObject),
+                    CosmosString cosmosString => this.AddStringValue(cosmosString.Value),
+                    _ => throw new ArgumentOutOfRangeException($"Unexpected {nameof(CosmosElement)}: {cosmosElement}"),
+                };
             }
 
             public override string GetContinuationToken()

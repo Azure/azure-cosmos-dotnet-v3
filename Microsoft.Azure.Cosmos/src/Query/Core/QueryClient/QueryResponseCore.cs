@@ -5,13 +5,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Linq;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using SubStatusCodes = Documents.SubStatusCodes;
 
 #if INTERNAL
@@ -37,7 +32,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string disallowContinuationTokenMessage,
             string continuationToken,
             CosmosException cosmosException,
-            SubStatusCodes? subStatusCode)
+            SubStatusCodes? subStatusCode,
+            CosmosQueryExecutionInfo cosmosQueryExecutionInfo = default)
         {
             this.IsSuccess = isSuccess;
             this.CosmosElements = result;
@@ -49,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.ContinuationToken = continuationToken;
             this.CosmosException = cosmosException;
             this.SubStatusCode = subStatusCode;
+            this.CosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
         }
 
         internal IReadOnlyList<CosmosElement> CosmosElements { get; }
@@ -69,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal long ResponseLengthBytes { get; }
 
+        internal CosmosQueryExecutionInfo CosmosQueryExecutionInfo { get; }
+
         internal bool IsSuccess { get; }
 
         internal static QueryResponseCore CreateSuccess(
@@ -77,7 +76,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string activityId,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
-            string continuationToken)
+            string continuationToken,
+            CosmosQueryExecutionInfo cosmosQueryExecutionInfo = default)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                result: result,
@@ -89,7 +89,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                continuationToken: continuationToken,
                cosmosException: null,
-               subStatusCode: null);
+               subStatusCode: null,
+               cosmosQueryExecutionInfo: cosmosQueryExecutionInfo);
 
             return cosmosQueryResponse;
         }
