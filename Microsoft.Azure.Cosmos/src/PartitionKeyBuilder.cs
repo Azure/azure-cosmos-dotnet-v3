@@ -98,8 +98,12 @@ namespace Microsoft.Azure.Cosmos
             //	
             // For collections with multiple path keys, absence of a partition key values is	
             // always treated as a PartitionKey.Undefined.
-            if (this.partitionKeyValues.Count == 0
-                || (this.partitionKeyValues.Count == 1 && PartitionKey.None.Equals(this.partitionKeyValues[0])))
+            if (this.partitionKeyValues.Count == 0)
+            {
+                throw new ArgumentException($"No partition key value has been specifed");
+            }
+
+            if (this.partitionKeyValues.Count == 1 && PartitionKey.None.Equals(this.partitionKeyValues[0]))
             {
                 return PartitionKey.None;
             }
