@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public IReadOnlyList<string> PartitionKeyPaths
         {
-            get => this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths : null;
+            get => this.PartitionKey?.Paths;
             set
             {
                 if (value == null)
