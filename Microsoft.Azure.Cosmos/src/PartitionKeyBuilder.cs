@@ -81,22 +81,22 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyValues.Add(PartitionKey.None);
             return this;
         }
-           
+
         /// <summary>
         /// Builds a new instance of the <see cref="PartitionKey"/> with the specified Partition Key values.
         /// </summary>
         /// <returns>An instance of <see cref="PartitionKey"/> </returns>
         public PartitionKey Build()
         {
-            // Why these checks?	
-            // These changes are being added for SDK to support multiple paths in a partition key. 	
-            //	
-            // Currently, when a resource does not specify a value for the PartitionKey,	
-            // we assign a temporary value `PartitionKey.None` and later discern whether 	
-            // it is a PartitionKey.Undefined or PartitionKey.Empty based on the Collection Type.	
-            // We retain this behaviour for single path partition keys.	
-            //	
-            // For collections with multiple path keys, absence of a partition key values is	
+            // Why these checks?
+            // These changes are being added for SDK to support multiple paths in a partition key.
+            //
+            // Currently, when a resource does not specify a value for the PartitionKey,
+            // we assign a temporary value `PartitionKey.None` and later discern whether
+            // it is a PartitionKey.Undefined or PartitionKey.Empty based on the Collection Type.
+            // We retain this behaviour for single path partition keys.
+            //
+            // For collections with multiple path keys, absence of a partition key values is
             // always treated as a PartitionKey.Undefined.
             if (this.partitionKeyValues.Count == 0)
             {
