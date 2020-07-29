@@ -59,10 +59,7 @@ namespace Azure.Cosmos.Test.Spatial
                     new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
                     new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiLineString multiLineString2 = new MultiLineString(
                 new[]
@@ -70,10 +67,7 @@ namespace Azure.Cosmos.Test.Spatial
                     new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
                     new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiLineString multiLineString3 = new MultiLineString(
                 new[]
@@ -81,10 +75,7 @@ namespace Azure.Cosmos.Test.Spatial
                     new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 41) }),
                     new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiLineString multiLineString4 = new MultiLineString(
                 new[]
@@ -92,10 +83,7 @@ namespace Azure.Cosmos.Test.Spatial
                     new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
                     new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiLineString multiLineString5 = new MultiLineString(
                 new[]
@@ -103,10 +91,7 @@ namespace Azure.Cosmos.Test.Spatial
                     new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
                     new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 41)));
 
             MultiLineString multiLineString6 = new MultiLineString(
                 new[]
@@ -114,10 +99,7 @@ namespace Azure.Cosmos.Test.Spatial
                     new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
                     new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(multiLineString1, multiLineString2);
             Assert.AreEqual(multiLineString1.GetHashCode(), multiLineString2.GetHashCode());
@@ -157,10 +139,7 @@ namespace Azure.Cosmos.Test.Spatial
                     new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
                     new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(new Position(20, 30), multiLineString.LineStrings[0].Positions[0]);
 

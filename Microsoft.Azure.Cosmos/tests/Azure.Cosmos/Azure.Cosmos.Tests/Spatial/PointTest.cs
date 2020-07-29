@@ -5,7 +5,6 @@
 namespace Azure.Cosmos.Test.Spatial
 {
     using System;
-    using System.Collections.Generic;
     using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -53,45 +52,27 @@ namespace Azure.Cosmos.Test.Spatial
         {
             Point point1 = new Point(
                 new Position(20, 30),
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Point point2 = new Point(
                 new Position(20, 30),
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Point point3 = new Point(
                 new Position(20, 31),
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Point point4 = new Point(
                 new Position(20, 31),
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Point point5 = new Point(
                 new Position(20, 30),
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 41)));
 
             Point point6 = new Point(
                 new Position(20, 30),
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(point1, point2);
             Assert.AreEqual(point1.GetHashCode(), point2.GetHashCode());
@@ -127,10 +108,7 @@ namespace Azure.Cosmos.Test.Spatial
         {
             Point point = new Point(
                 new Position(20, 30),
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(20, point.Position.Longitude);
             Assert.AreEqual(30, point.Position.Latitude);

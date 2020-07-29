@@ -55,45 +55,27 @@ namespace Azure.Cosmos.Test.Spatial
         {
             LineString lineString1 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             LineString lineString2 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             LineString lineString3 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 41) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             LineString lineString4 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             LineString lineString5 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 41)));
 
             LineString lineString6 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(lineString1, lineString2);
             Assert.AreEqual(lineString1.GetHashCode(), lineString2.GetHashCode());
@@ -129,10 +111,7 @@ namespace Azure.Cosmos.Test.Spatial
         {
             LineString lineString = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(new Position(20, 30), lineString.Positions[0]);
             Assert.AreEqual(new Position(30, 40), lineString.Positions[1]);

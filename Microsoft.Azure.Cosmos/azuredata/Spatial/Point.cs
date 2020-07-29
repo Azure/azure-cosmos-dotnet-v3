@@ -23,7 +23,7 @@ namespace Azure.Cosmos.Spatial
         /// Latitude of the point.
         /// </param>
         public Point(double longitude, double latitude)
-            : this(new Position(longitude, latitude), new GeometryParams())
+            : this(new Position(longitude, latitude))
         {
         }
 
@@ -34,7 +34,7 @@ namespace Azure.Cosmos.Spatial
         /// Position of the point.
         /// </param>
         public Point(Position position)
-            : this(position, new GeometryParams())
+            : this(position, boundingBox: default)
         {
         }
 
@@ -44,11 +44,11 @@ namespace Azure.Cosmos.Spatial
         /// <param name="position">
         /// Point coordinates.
         /// </param>
-        /// <param name="geometryParams">
+        /// <param name="boundingBox">
         /// Additional geometry parameters.
         /// </param>
-        public Point(Position position, GeometryParams geometryParams)
-            : base(GeometryType.Point, geometryParams)
+        public Point(Position position, BoundingBox boundingBox)
+            : base(GeometryType.Point, boundingBox)
         {
             if (position == null)
             {
@@ -65,7 +65,7 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal Point()
-            : base(GeometryType.Point, new GeometryParams())
+            : base(GeometryType.Point)
         {
         }
 

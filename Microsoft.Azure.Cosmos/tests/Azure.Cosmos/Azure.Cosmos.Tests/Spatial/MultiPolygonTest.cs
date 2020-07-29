@@ -72,10 +72,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new GeometryParams
-                    {
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    });
+                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiPolygon multiPolygon2 =
                 new MultiPolygon(
@@ -92,10 +89,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new GeometryParams
-                    {
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    });
+                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiPolygon polygon3 =
                 new MultiPolygon(
@@ -112,10 +106,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new GeometryParams
-                    {
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    });
+                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiPolygon polygon4 =
                 new MultiPolygon(
@@ -132,10 +123,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new GeometryParams
-                    {
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    });
+                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiPolygon polygon5 =
                 new MultiPolygon(
@@ -152,10 +140,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new GeometryParams
-                    {
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                    });
+                    new BoundingBox(new Position(0, 0), new Position(40, 41)));
 
             MultiPolygon polygon6 =
                 new MultiPolygon(
@@ -172,10 +157,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new GeometryParams
-                    {
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    });
+                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(multiPolygon1, multiPolygon2);
             Assert.AreEqual(multiPolygon1.GetHashCode(), multiPolygon2.GetHashCode());
@@ -224,10 +206,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new GeometryParams
-                    {
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    });
+                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(new Position(20, 20), multiPolygon.Polygons[0].Rings[0].Positions[0]);
 

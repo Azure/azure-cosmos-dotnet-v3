@@ -54,45 +54,27 @@ namespace Azure.Cosmos.Test.Spatial
         {
             MultiPoint multiPoint1 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiPoint multiPoint2 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiPoint multiPoint3 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(31, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiPoint multiPoint4 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             MultiPoint multiPoint5 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 41)));
 
             MultiPoint multiPoint6 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(multiPoint1, multiPoint2);
             Assert.AreEqual(multiPoint1.GetHashCode(), multiPoint2.GetHashCode());
@@ -128,10 +110,7 @@ namespace Azure.Cosmos.Test.Spatial
         {
             MultiPoint multiPoint = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(new Position(20, 30), multiPoint.Points[0]);
             Assert.AreEqual(new Position(0, 0), multiPoint.BoundingBox.Min);

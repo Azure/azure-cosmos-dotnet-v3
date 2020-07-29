@@ -20,7 +20,6 @@ namespace Azure.Cosmos.Test.Spatial
             this.restContractOptions = new JsonSerializerOptions();
             CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
             this.restContractOptions.Converters.Add(new TextJsonGeometryConverterFactory());
-            this.restContractOptions.Converters.Add(new TextJsonGeometryParamsJsonConverter());
             this.restContractOptions.Converters.Add(new TextJsonBoundingBoxConverter());
             this.restContractOptions.Converters.Add(new TextJsonGeometryValidationResultConverter());
             this.restContractOptions.Converters.Add(new TextJsonLinearRingConverter());

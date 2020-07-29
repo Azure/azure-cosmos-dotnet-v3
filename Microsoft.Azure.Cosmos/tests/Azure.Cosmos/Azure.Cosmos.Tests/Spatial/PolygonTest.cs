@@ -60,108 +60,90 @@ namespace Azure.Cosmos.Test.Spatial
                     {
                         new LinearRing(
                             new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 21),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
+                            {
+                                new Position(20, 20),
+                                new Position(20, 21),
+                                new Position(21, 21),
+                                new Position(21, 20),
+                                new Position(22, 20)
+                            })
                     },
-                    new GeometryParams
-                    {
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    });
+                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Polygon polygon2 = new Polygon(
                 new[]
                 {
                     new LinearRing(
                         new[]
-                            {
-                                new Position(20, 20),
-                                new Position(20, 21),
-                                new Position(21, 21),
-                                new Position(21, 20),
-                                new Position(22, 20)
-                            })
+                        {
+                            new Position(20, 20),
+                            new Position(20, 21),
+                            new Position(21, 21),
+                            new Position(21, 20),
+                            new Position(22, 20)
+                        })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Polygon polygon3 = new Polygon(
                 new[]
                 {
                     new LinearRing(
                         new[]
-                            {
-                                new Position(20, 20),
-                                new Position(20, 22),
-                                new Position(21, 21),
-                                new Position(21, 20),
-                                new Position(22, 20)
-                            })
+                        {
+                            new Position(20, 20),
+                            new Position(20, 22),
+                            new Position(21, 21),
+                            new Position(21, 20),
+                            new Position(22, 20)
+                        })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Polygon polygon4 = new Polygon(
                 new[]
                 {
                     new LinearRing(
                         new[]
-                            {
-                                new Position(20, 20),
-                                new Position(20, 21),
-                                new Position(21, 21),
-                                new Position(21, 20),
-                                new Position(22, 20)
-                            })
+                        {
+                            new Position(20, 20),
+                            new Position(20, 21),
+                            new Position(21, 21),
+                            new Position(21, 20),
+                            new Position(22, 20)
+                        })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Polygon polygon5 = new Polygon(
                 new[]
                 {
                     new LinearRing(
                         new[]
-                            {
-                                new Position(20, 20),
-                                new Position(20, 21),
-                                new Position(21, 21),
-                                new Position(21, 20),
-                                new Position(22, 20)
-                            })
+                        {
+                            new Position(20, 20),
+                            new Position(20, 21),
+                            new Position(21, 21),
+                            new Position(21, 20),
+                            new Position(22, 20)
+                        })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 41)));
 
             Polygon polygon6 = new Polygon(
                 new[]
-                    {
-                        new LinearRing(
-                            new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 21),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
-                    },
-                new GeometryParams
                 {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                    new LinearRing(
+                        new[]
+                        {
+                            new Position(20, 20),
+                            new Position(20, 21),
+                            new Position(21, 21),
+                            new Position(21, 20),
+                            new Position(22, 20)
+                        })
+                },
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(polygon1, polygon2);
             Assert.AreEqual(polygon1.GetHashCode(), polygon2.GetHashCode());
@@ -208,10 +190,7 @@ namespace Azure.Cosmos.Test.Spatial
                             new Position(22, 20)
                         })
                 },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(new Position(20, 20), polygon.Rings[0].Positions[0]);
 

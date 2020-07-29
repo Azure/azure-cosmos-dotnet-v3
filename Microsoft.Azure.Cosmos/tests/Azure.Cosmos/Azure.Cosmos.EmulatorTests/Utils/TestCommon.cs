@@ -294,7 +294,6 @@ namespace Azure.Cosmos.EmulatorTests
         public static void AddSpatialConverters(JsonSerializerOptions jsonSerializerOptions)
         {
             jsonSerializerOptions.Converters.Add(new TextJsonGeometryConverterFactory());
-            jsonSerializerOptions.Converters.Add(new TextJsonGeometryParamsJsonConverter());
             jsonSerializerOptions.Converters.Add(new TextJsonBoundingBoxConverter());
             jsonSerializerOptions.Converters.Add(new TextJsonGeometryValidationResultConverter());
             jsonSerializerOptions.Converters.Add(new TextJsonLinearRingConverter());

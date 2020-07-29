@@ -53,45 +53,27 @@ namespace Azure.Cosmos.Test.Spatial
         {
             GeometryCollection geometryCollection1 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             GeometryCollection geometryCollection2 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             GeometryCollection geometryCollection3 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 41) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             GeometryCollection geometryCollection4 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             GeometryCollection geometryCollection5 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 41)));
 
             GeometryCollection geometryCollection6 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(geometryCollection1, geometryCollection2);
             Assert.AreEqual(geometryCollection1.GetHashCode(), geometryCollection2.GetHashCode());
@@ -127,10 +109,7 @@ namespace Azure.Cosmos.Test.Spatial
         {
             GeometryCollection geometryCollection = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
-                new GeometryParams
-                {
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
-                });
+                new BoundingBox(new Position(0, 0), new Position(40, 40)));
 
             Assert.AreEqual(new Point(20, 30), geometryCollection.Geometries[0]);
             Assert.AreEqual(new Point(30, 40), geometryCollection.Geometries[1]);

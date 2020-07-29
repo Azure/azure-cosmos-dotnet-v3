@@ -17,17 +17,6 @@ namespace Azure.Cosmos.Spatial
     internal class GeometryCollection : Geometry, IEquatable<GeometryCollection>
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="GeometryCollection"/> class. 
-        /// </summary>
-        /// <param name="geometries">
-        /// List of geometries.
-        /// </param>
-        public GeometryCollection(IList<Geometry> geometries)
-            : this(geometries, new GeometryParams())
-        {
-        }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="GeometryCollection"/> class.
         /// </summary>
         /// <param name="geometries">
@@ -36,7 +25,7 @@ namespace Azure.Cosmos.Spatial
         /// <param name="geometryParams">
         /// Additional geometry parameters.
         /// </param>
-        public GeometryCollection(IList<Geometry> geometries, GeometryParams geometryParams)
+        public GeometryCollection(IList<Geometry> geometries, BoundingBox geometryParams = null)
             : base(GeometryType.GeometryCollection, geometryParams)
         {
             if (geometries == null)
@@ -45,17 +34,6 @@ namespace Azure.Cosmos.Spatial
             }
 
             this.Geometries = new ReadOnlyCollection<Geometry>(geometries);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="GeometryCollection"/> class.
-        /// </summary>
-        /// <remarks>
-        /// This constructor is used only during deserialization.
-        /// </remarks>
-        internal GeometryCollection()
-            : base(GeometryType.GeometryCollection, new GeometryParams())
-        {
         }
 
         /// <summary>

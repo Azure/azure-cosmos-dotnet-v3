@@ -19,21 +19,21 @@ namespace Azure.Cosmos.Spatial
         /// <summary>
         /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="type">
-        /// Geometry type.
-        /// </param>
-        /// <param name="geometryParams">
-        /// Coordinate reference system, additional properties etc.
-        /// </param>
-        protected Geometry(GeometryType type, GeometryParams geometryParams)
+        /// <param name="type">The type.</param>
+        protected Geometry(GeometryType type)
+            : this(type, boundingBox: default)
         {
-            if (geometryParams == null)
-            {
-                throw new ArgumentNullException("geometryParams");
-            }
+        }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="boundingBox">Bounding box.</param>
+        protected Geometry(GeometryType type, BoundingBox boundingBox)
+        {
             this.Type = type;
-            this.BoundingBox = geometryParams.BoundingBox;
+            this.BoundingBox = boundingBox;
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Azure.Cosmos.Spatial
         /// Type of geometry.
         /// </value>
         [DataMember(Name = "type")]
-        public GeometryType Type { get; private set; }
+        public GeometryType Type { get; }
 
         /// <summary>
         /// Gets bounding box for this geometry in the Azure Cosmos DB service.
@@ -52,7 +52,7 @@ namespace Azure.Cosmos.Spatial
         /// Bounding box of the geometry.
         /// </value>
         [DataMember(Name = "bbox")]
-        public BoundingBox BoundingBox { get; private set; }
+        public BoundingBox BoundingBox { get; }
 
         /// <summary>
         /// Determines whether the specified <see cref="Geometry" /> is equal to the current <see cref="Geometry" /> in the Azure Cosmos DB service.
@@ -61,10 +61,7 @@ namespace Azure.Cosmos.Spatial
         /// true if the specified object  is equal to the current object; otherwise, false.
         /// </returns>
         /// <param name="obj">The object to compare with the current object. </param>
-        public override bool Equals(object obj)
-        {
-            return this.Equals(obj as Geometry);
-        }
+        public override bool Equals(object obj) => obj is Geometry geometry && this.Equals(geometry);
 
         /// <summary>
         /// Serves as a hash function for the <see cref="Geometry" /> type in the Azure Cosmos DB service.
@@ -226,8 +223,7 @@ namespace Azure.Cosmos.Spatial
                 return true;
             }
 
-            return this.Type == other.Type
-                   && object.Equals(this.BoundingBox, other.BoundingBox);
+            return this.Type == other.Type && this.BoundingBox.Equals(other.BoundingBox);
         }
     }
 }

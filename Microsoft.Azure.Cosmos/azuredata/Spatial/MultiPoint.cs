@@ -22,7 +22,7 @@ namespace Azure.Cosmos.Spatial
         /// </summary>
         /// <param name="points">List of <see cref="Position"/> representing individual points.</param>
         public MultiPoint(IList<Position> points)
-            : this(points, new GeometryParams())
+            : this(points, boundingBox: default)
         {
         }
 
@@ -32,11 +32,11 @@ namespace Azure.Cosmos.Spatial
         /// <param name="points">
         /// List of <see cref="Position"/> representing individual points.
         /// </param>
-        /// <param name="geometryParams">
+        /// <param name="boundingBox">
         /// Additional geometry parameters.
         /// </param>
-        public MultiPoint(IList<Position> points, GeometryParams geometryParams)
-            : base(GeometryType.MultiPoint, geometryParams)
+        public MultiPoint(IList<Position> points, BoundingBox boundingBox)
+            : base(GeometryType.MultiPoint, boundingBox)
         {
             if (points == null)
             {
@@ -53,7 +53,7 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal MultiPoint()
-            : base(GeometryType.MultiPoint, new GeometryParams())
+            : base(GeometryType.MultiPoint, boundingBox: default)
         {
         }
 

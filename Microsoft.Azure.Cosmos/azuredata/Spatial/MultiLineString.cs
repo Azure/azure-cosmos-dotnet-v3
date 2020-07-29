@@ -24,7 +24,7 @@ namespace Azure.Cosmos.Spatial
         /// List of <see cref="LineStringCoordinates"/> instances representing individual line strings.
         /// </param>
         public MultiLineString(IList<LineStringCoordinates> lineStrings)
-            : this(lineStrings, new GeometryParams())
+            : this(lineStrings, boundingBox: default)
         {
         }
 
@@ -34,11 +34,11 @@ namespace Azure.Cosmos.Spatial
         /// <param name="lineStrings">
         /// List of <see cref="LineStringCoordinates"/> instances representing individual line strings.
         /// </param>
-        /// <param name="geometryParams">
+        /// <param name="boundingBox">
         /// Additional geometry parameters.
         /// </param>
-        public MultiLineString(IList<LineStringCoordinates> lineStrings, GeometryParams geometryParams)
-            : base(GeometryType.MultiLineString, geometryParams)
+        public MultiLineString(IList<LineStringCoordinates> lineStrings, BoundingBox boundingBox)
+            : base(GeometryType.MultiLineString, boundingBox)
         {
             if (lineStrings == null)
             {
@@ -55,7 +55,7 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal MultiLineString()
-            : base(GeometryType.MultiLineString, new GeometryParams())
+            : base(GeometryType.MultiLineString, boundingBox: default)
         {
         }
 

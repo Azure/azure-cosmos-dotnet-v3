@@ -150,7 +150,7 @@ namespace Azure.Cosmos
                 throw new JsonException(RMResources.SpatialInvalidGeometryType);
             }
 
-            GeometryParams geometryParams = TextJsonGeometryParamsJsonConverter.ReadProperty(root, options);
+            BoundingBox boundingBox = TextJsonBoundingBoxConverter.ReadProperty(root);
 
             Geometry geometry = null;
             switch (geometryType)
@@ -166,7 +166,7 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new GeometryCollection(geometries, geometryParams);
+                        geometry = new GeometryCollection(geometries, boundingBox);
                     }
                     break;
                 case GeometryType.LineString:
@@ -180,7 +180,7 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new LineString(positions, geometryParams);
+                        geometry = new LineString(positions, boundingBox);
                     }
                     break;
                 case GeometryType.MultiLineString:
@@ -194,7 +194,7 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new MultiLineString(lines, geometryParams);
+                        geometry = new MultiLineString(lines, boundingBox);
                     }
                     break;
                 case GeometryType.Point:
@@ -203,10 +203,10 @@ namespace Azure.Cosmos
                         if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             position = TextJsonPositionConverter.ReadProperty(coordinatesElement);
-                            geometry = new Point(position, geometryParams);
+                            geometry = new Point(position, boundingBox);
                         }
 
-                        geometry = new Point(position, geometryParams);
+                        geometry = new Point(position, boundingBox);
                     }
                     break;
                 case GeometryType.MultiPoint:
@@ -220,7 +220,7 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new MultiPoint(positions, geometryParams);
+                        geometry = new MultiPoint(positions, boundingBox);
                     }
                     break;
                 case GeometryType.Polygon:
@@ -234,7 +234,7 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new Polygon(linearRings, geometryParams);
+                        geometry = new Polygon(linearRings, boundingBox);
                     }
                     break;
                 case GeometryType.MultiPolygon:
@@ -248,7 +248,7 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new MultiPolygon(polygonCoordinates, geometryParams);
+                        geometry = new MultiPolygon(polygonCoordinates, boundingBox);
                     }
                     break;
             }

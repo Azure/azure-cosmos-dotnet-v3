@@ -67,23 +67,7 @@ namespace Azure.Cosmos.Spatial
         /// External polygon ring coordinates.
         /// </param>
         public Polygon(IList<Position> externalRingPositions)
-            : this(new[] { new LinearRing(externalRingPositions) }, new GeometryParams())
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="rings">
-        /// <para>
-        /// Polygon rings.
-        /// </para>
-        /// <para>
-        /// First ring is external ring. Following rings define 'holes' in the polygon.
-        /// </para>
-        /// </param>
-        public Polygon(IList<LinearRing> rings)
-            : this(rings, new GeometryParams())
+            : this(new[] { new LinearRing(externalRingPositions) })
         {
         }
 
@@ -93,11 +77,11 @@ namespace Azure.Cosmos.Spatial
         /// <param name="rings">
         /// Polygon rings.
         /// </param>
-        /// <param name="geometryParams">
+        /// <param name="boundingBox">
         /// Additional geometry parameters.
         /// </param>
-        public Polygon(IList<LinearRing> rings, GeometryParams geometryParams)
-            : base(GeometryType.Polygon, geometryParams)
+        public Polygon(IList<LinearRing> rings, BoundingBox boundingBox = null)
+            : base(GeometryType.Polygon, boundingBox)
         {
             if (rings == null)
             {
@@ -114,7 +98,7 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal Polygon()
-            : base(GeometryType.Polygon, new GeometryParams())
+            : base(GeometryType.Polygon)
         {
         }
 

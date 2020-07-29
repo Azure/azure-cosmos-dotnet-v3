@@ -23,7 +23,7 @@ namespace Azure.Cosmos.Spatial
         /// List of positions through which the line string goes.
         /// </param>
         public LineString(IList<Position> coordinates)
-            : this(coordinates, new GeometryParams())
+            : this(coordinates, boundingBox: default)
         {
         }
 
@@ -33,11 +33,11 @@ namespace Azure.Cosmos.Spatial
         /// <param name="coordinates">
         /// The coordinates.
         /// </param>
-        /// <param name="geometryParams">
+        /// <param name="boundingBox">
         /// Additional geometry parameters.
         /// </param>
-        public LineString(IList<Position> coordinates, GeometryParams geometryParams)
-            : base(GeometryType.LineString, geometryParams)
+        public LineString(IList<Position> coordinates, BoundingBox boundingBox)
+            : base(GeometryType.LineString, boundingBox)
         {
             if (coordinates == null)
             {
@@ -54,7 +54,7 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal LineString()
-            : base(GeometryType.LineString, new GeometryParams())
+            : base(GeometryType.LineString, boundingBox: default)
         {
         }
 
