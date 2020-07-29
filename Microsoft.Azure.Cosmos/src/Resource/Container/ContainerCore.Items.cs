@@ -628,7 +628,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionKey.HasValue)
             {
                 PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
-                if (partitionKey.HasValue && partitionKey.Value.InternalKey.Components.Count != pKeyDefinition.Paths.Count)
+                if (partitionKey.HasValue && partitionKey.Value != PartitionKey.None && partitionKey.Value.InternalKey.Components.Count != pKeyDefinition.Paths.Count)
                 {
                     throw new ArgumentException(RMResources.MissingPartitionKeyValue);
                 }

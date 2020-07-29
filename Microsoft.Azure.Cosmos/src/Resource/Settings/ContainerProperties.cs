@@ -301,7 +301,16 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public string PartitionKeyPath
         {
-            get => this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
+            get 
+            { 
+                #if SUBPARTITIONING
+                if(this.PartitionKey?.Kind == PartitionKind.MultiHash)
+                {
+                    throw new NotImplementedException($"For MultiHash collections please use `PartitionKeyPaths`");
+                }
+                #endif
+                return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
+            }
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -624,6 +633,5 @@ namespace Microsoft.Azure.Cosmos
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
             }
         }
-
     }
 }
