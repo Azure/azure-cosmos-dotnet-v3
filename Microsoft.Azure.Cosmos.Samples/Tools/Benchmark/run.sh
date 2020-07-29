@@ -26,6 +26,6 @@ fi
 
 for BENCHMARK_NAME in InsertV3 ReadStreamExistsV3 #ReadFeedStreamV3 ReadNotExistsV3 ReadTExistsV3
 do
-    dotnet run -c Release  -- -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $(git log -1 | head -n 1 | cut -d ' ' -f 2) --commitdate $(git log -1 --date=format:'%Y-%m-%d %H:%M:%S' | grep Date | cut -f 2- -d ':' | sed 's/^[ \t]*//;s/[ \t]*$//' | cut -f 1 -d ' ') --committime $(git log -1 --date=format:'%Y-%m-%d %H:%M:%S' | grep Date | cut -f 2- -d ':' | sed 's/^[ \t]*//;s/[ \t]*$//' | cut -f 2 -d ' ') --branchname $(git rev-parse --abbrev-ref HEAD)  --database testdb --container testcol --partitionkeypath /pk -n 2000000 -w $BENCHMARK_NAME --pl $PL 
+    dotnet run -c Release  -- -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY --DisableCoreSdkLogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $(git log -1 | head -n 1 | cut -d ' ' -f 2) --commitdate $(git log -1 --date=format:'%Y-%m-%d %H:%M:%S' | grep Date | cut -f 2- -d ':' | sed 's/^[ \t]*//;s/[ \t]*$//' | cut -f 1 -d ' ') --committime $(git log -1 --date=format:'%Y-%m-%d %H:%M:%S' | grep Date | cut -f 2- -d ':' | sed 's/^[ \t]*//;s/[ \t]*$//' | cut -f 2 -d ' ') --branchname $(git rev-parse --abbrev-ref HEAD)  --database testdb --container testcol --partitionkeypath /pk -n 2000000 -w $BENCHMARK_NAME --pl $PL 
 done
 
