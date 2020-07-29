@@ -304,10 +304,11 @@ namespace Microsoft.Azure.Cosmos
             get 
             { 
                 #if SUBPARTITIONING
-                if(this.PartitionKey?.Kind == PartitionKind.MultiHash)
+                if(this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
-                    throw new NotImplementedException($"For MultiHash collections please use `PartitionKeyPaths`");
+                    throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
+                
                 #endif
                 return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
             }
