@@ -117,7 +117,7 @@ namespace CosmosBenchmark
                 {
 
                     Console.WriteLine();
-                    Console.WriteLine("After Excluding outliers");
+                    Utility.TeeTraceInformation("After Excluding outliers");
 
                     runSummary.Top10PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.1 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top20PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.2 * summaryCounters.Length)).Average(), 0);
@@ -131,7 +131,8 @@ namespace CosmosBenchmark
                     runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.95 * summaryCounters.Length)).Average(), 0);
                     runSummary.AverageRps = Math.Round(summaryCounters.Average(), 0);
 
-                    Console.WriteLine(JsonHelper.ToString(runSummary));
+                    string summary = JsonHelper.ToString(runSummary);
+                    Utility.TeeTraceInformation(summary);
                 }
 
                 Console.WriteLine("--------------------------------------------------------------------- ");
@@ -139,6 +140,5 @@ namespace CosmosBenchmark
                 return runSummary;
             }
         }
-
     }
 }
