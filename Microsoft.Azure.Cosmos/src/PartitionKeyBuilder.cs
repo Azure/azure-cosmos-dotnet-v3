@@ -81,6 +81,13 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyValues.Add(PartitionKey.None);
             return this;
         }
+           
+        /// <summary>
+        /// Builds a new instance of the <see cref="PartitionKey"/> with the specified Partition Key values.
+        /// </summary>
+        /// <returns>An instance of <see cref="PartitionKey"/> </returns>
+        public PartitionKey Build()
+        {
             // Why these checks?	
             // These changes are being added for SDK to support multiple paths in a partition key. 	
             //	
@@ -91,12 +98,6 @@ namespace Microsoft.Azure.Cosmos
             //	
             // For collections with multiple path keys, absence of a partition key values is	
             // always treated as a PartitionKey.Undefined.
-        /// <summary>
-        /// Builds a new instance of the <see cref="PartitionKey"/> with the specified Partition Key values.
-        /// </summary>
-        /// <returns>An instance of <see cref="PartitionKey"/> </returns>
-        public PartitionKey Build()
-        {
             if (this.partitionKeyValues.Count == 0
                 || (this.partitionKeyValues.Count == 1 && PartitionKey.None.Equals(this.partitionKeyValues[0])))
             {
