@@ -54,12 +54,6 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            if (geometryParams.Crs != null)
-            {
-                writer.WritePropertyName(JsonEncodedStrings.Crs);
-                TextJsonCrsConverter.WritePropertyValues(writer, geometryParams.Crs, options);
-            }
-
             if (geometryParams.BoundingBox != null)
             {
                 writer.WritePropertyName(JsonEncodedStrings.BoundingBox);
@@ -79,10 +73,6 @@ namespace Azure.Cosmos
             JsonSerializerOptions options)
         {
             GeometryParams geometryParams = new GeometryParams();
-            if (root.TryGetProperty(JsonEncodedStrings.Crs.EncodedUtf8Bytes, out JsonElement crsElement))
-            {
-                geometryParams.Crs = TextJsonCrsConverter.ReadProperty(crsElement);
-            }
 
             if (root.TryGetProperty(JsonEncodedStrings.BoundingBox.EncodedUtf8Bytes, out JsonElement bboxElement))
             {

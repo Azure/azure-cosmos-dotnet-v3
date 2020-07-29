@@ -45,12 +45,6 @@ namespace Azure.Cosmos
             writer.WriteStartObject();
             writer.WriteString(JsonEncodedStrings.Type, geometry.Type.ToString());
 
-            if (geometry.CrsForSerialization != null)
-            {
-                writer.WritePropertyName(JsonEncodedStrings.Crs);
-                TextJsonCrsConverter.WritePropertyValues(writer, geometry.CrsForSerialization, options);
-            }
-
             if (geometry.BoundingBox != null)
             {
                 writer.WritePropertyName(JsonEncodedStrings.BoundingBox);

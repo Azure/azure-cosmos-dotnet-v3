@@ -23,15 +23,6 @@ namespace Azure.Cosmos.Spatial
         public IDictionary<string, object> AdditionalProperties { get; set; }
 
         /// <summary>
-        /// Gets or sets Coordinate Reference System for the geometry in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// Coordinate Reference System for the geometry.
-        /// </value>
-        [DataMember(Name = "crs")]
-        public Crs Crs { get; set; }
-
-        /// <summary>
         /// Gets or sets a bounding box for the geometry in the Azure Cosmos DB service.
         /// </summary>
         /// <value>

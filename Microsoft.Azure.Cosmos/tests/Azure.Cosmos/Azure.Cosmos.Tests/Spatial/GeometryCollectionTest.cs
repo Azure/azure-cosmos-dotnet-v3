@@ -27,27 +27,25 @@ namespace Azure.Cosmos.Test.Spatial
                    ""type"":""GeometryCollection"",
                    ""geometries"":[{""type"":""Point"", ""coordinates"":[20, 20]}],
                    ""bbox"":[20, 20, 30, 30],
-                   ""extra"":1,
-                   ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
+                   ""extra"":1
                   }";
 
-            var geometryCollection = JsonSerializer.Deserialize<GeometryCollection>(json, this.restContractOptions);
+            GeometryCollection geometryCollection = JsonSerializer.Deserialize<GeometryCollection>(json, this.restContractOptions);
 
             Assert.AreEqual(1, geometryCollection.Geometries.Count);
             Assert.IsInstanceOfType(geometryCollection.Geometries[0], typeof(Point));
             Assert.AreEqual(new Position(20, 20), (geometryCollection.Geometries[0] as Point).Position);
 
-            Assert.AreEqual("hello", ((NamedCrs)geometryCollection.Crs).Name);
             Assert.AreEqual(1, geometryCollection.AdditionalProperties.Count);
             Assert.AreEqual(1L, geometryCollection.AdditionalProperties["extra"]);
 
-            var geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
+            Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.GeometryCollection, geom.Type);
 
             Assert.AreEqual(geom, geometryCollection);
 
             string json1 = JsonSerializer.Serialize(geometryCollection, this.restContractOptions);
-            var geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
+            Geometry geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -57,58 +55,52 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestGeometryCollectionEqualsHashCode()
         {
-            var geometryCollection1 = new GeometryCollection(
+            GeometryCollection geometryCollection1 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
                     AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
-            var geometryCollection2 = new GeometryCollection(
+            GeometryCollection geometryCollection2 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
                     AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
-            var geometryCollection3 = new GeometryCollection(
+            GeometryCollection geometryCollection3 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 41) },
                 new GeometryParams
                 {
                     AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
-            var geometryCollection4 = new GeometryCollection(
+            GeometryCollection geometryCollection4 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
                     AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
-            var geometryCollection5 = new GeometryCollection(
+            GeometryCollection geometryCollection5 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
                     AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                    Crs = Crs.Named("SomeCrs")
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41))
                 });
 
-            var geometryCollection6 = new GeometryCollection(
+            GeometryCollection geometryCollection6 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
                     AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs1")
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
             Assert.AreEqual(geometryCollection1, geometryCollection2);
@@ -143,13 +135,12 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestGeometryCollectionConstructors()
         {
-            var geometryCollection = new GeometryCollection(
+            GeometryCollection geometryCollection = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
                     AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
             Assert.AreEqual(new Point(20, 30), geometryCollection.Geometries[0]);
@@ -158,7 +149,6 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(new Position(0, 0), geometryCollection.BoundingBox.Min);
             Assert.AreEqual(new Position(40, 40), geometryCollection.BoundingBox.Max);
             Assert.AreEqual("b", geometryCollection.AdditionalProperties["a"]);
-            Assert.AreEqual("SomeCrs", ((NamedCrs)geometryCollection.Crs).Name);
         }
     }
 }

@@ -33,32 +33,8 @@ namespace Azure.Cosmos.Spatial
             }
 
             this.Type = type;
-
-            if (geometryParams.Crs == null || geometryParams.Crs.Equals(Crs.Default))
-            {
-                this.CrsForSerialization = null;
-            }
-            else
-            {
-                this.CrsForSerialization = geometryParams.Crs;
-            }
-
             this.BoundingBox = geometryParams.BoundingBox;
             this.AdditionalProperties = geometryParams.AdditionalProperties ?? new Dictionary<string, object>();
-        }
-
-        /// <summary>
-        /// Gets the Coordinate Reference System for this geometry in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The Coordinate Reference System for this geometry.
-        /// </value>
-        public Crs Crs
-        {
-            get
-            {
-                return this.CrsForSerialization ?? Crs.Default;
-            }
         }
 
         /// <summary>
@@ -89,16 +65,6 @@ namespace Azure.Cosmos.Spatial
         public IDictionary<string, object> AdditionalProperties { get; private set; }
 
         /// <summary>
-        /// Gets or sets CRS value used for serialization in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// This is artificial property needed for serialization. If CRS is default one, we don't want
-        /// to serialize anything.
-        /// </remarks>
-        [DataMember(Name = "crs")]
-        internal Crs CrsForSerialization { get; set; }
-
-        /// <summary>
         /// Determines whether the specified <see cref="Geometry" /> is equal to the current <see cref="Geometry" /> in the Azure Cosmos DB service.
         /// </summary>
         /// <returns>
@@ -120,8 +86,7 @@ namespace Azure.Cosmos.Spatial
         {
             unchecked
             {
-                int hashCode = this.Crs.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)this.Type;
+                int hashCode = this.Type.GetHashCode();
                 hashCode = (hashCode * 397) ^ (this.BoundingBox != null ? this.BoundingBox.GetHashCode() : 0);
                 hashCode = this.AdditionalProperties.Aggregate(
                     hashCode,
@@ -264,7 +229,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if geometries are equal. <c>false</c> otherwise.</returns>
         private bool Equals(Geometry other)
         {
-            if (ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
@@ -274,7 +239,7 @@ namespace Azure.Cosmos.Spatial
                 return true;
             }
 
-            return this.Crs.Equals(other.Crs) && this.Type == other.Type
+            return this.Type == other.Type
                    && object.Equals(this.BoundingBox, other.BoundingBox)
                    && this.AdditionalProperties.SequenceEqual(other.AdditionalProperties);
         }
