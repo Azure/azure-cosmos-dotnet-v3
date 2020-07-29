@@ -5,11 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.IO;
     using System.Security;
 
     internal interface IComputeHash : IDisposable
     {
-        byte[] ComputeHash(byte[] bytesToHash);
+        byte[] ComputeHash(ArraySegment<byte> bytesToHash);
 
         SecureString Key
         {
