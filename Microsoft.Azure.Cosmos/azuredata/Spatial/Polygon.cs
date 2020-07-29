@@ -81,7 +81,7 @@ namespace Azure.Cosmos.Spatial
         /// Additional geometry parameters.
         /// </param>
         public Polygon(IList<LinearRing> rings, BoundingBox boundingBox = null)
-            : base(GeometryType.Polygon, boundingBox)
+            : base(boundingBox)
         {
             if (rings == null)
             {
@@ -98,9 +98,12 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal Polygon()
-            : base(GeometryType.Polygon)
+            : base()
         {
         }
+
+        /// <inheritdoc/>
+        public override GeometryType Type => GeometryType.Polygon;
 
         /// <summary>
         /// Gets the polygon rings in the Azure Cosmos DB service.

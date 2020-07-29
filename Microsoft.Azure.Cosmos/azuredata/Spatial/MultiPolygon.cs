@@ -24,7 +24,7 @@ namespace Azure.Cosmos.Spatial
         /// List of <see cref="PolygonCoordinates"/> instances. Each <see cref="PolygonCoordinates"/> represents separate polygon.
         /// </param>
         public MultiPolygon(IList<PolygonCoordinates> polygons)
-            : this(polygons, geometryParams: default)
+            : this(polygons, boundingBox: default)
         {
         }
 
@@ -34,9 +34,9 @@ namespace Azure.Cosmos.Spatial
         /// <param name="polygons">
         /// List of <see cref="PolygonCoordinates"/> instances. Each <see cref="PolygonCoordinates"/> represents separate polygon.
         /// </param>
-        /// <param name="geometryParams">Additional geometry parameters.</param>
-        public MultiPolygon(IList<PolygonCoordinates> polygons, BoundingBox geometryParams)
-            : base(GeometryType.MultiPolygon, geometryParams)
+        /// <param name="boundingBox">Additional geometry parameters.</param>
+        public MultiPolygon(IList<PolygonCoordinates> polygons, BoundingBox boundingBox)
+            : base(boundingBox)
         {
             if (polygons == null)
             {
@@ -53,9 +53,12 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal MultiPolygon()
-            : base(GeometryType.MultiPolygon)
+            : base()
         {
         }
+
+        /// <inheritdoc/>
+        public override GeometryType Type => GeometryType.MultiPolygon;
 
         /// <summary>
         /// Gets collection of <see cref="PolygonCoordinates"/> instances. Each <see cref="PolygonCoordinates"/> represents separate polygon.

@@ -48,7 +48,7 @@ namespace Azure.Cosmos.Spatial
         /// Additional geometry parameters.
         /// </param>
         public Point(Position position, BoundingBox boundingBox)
-            : base(GeometryType.Point, boundingBox)
+            : base(boundingBox)
         {
             if (position == null)
             {
@@ -65,9 +65,12 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal Point()
-            : base(GeometryType.Point)
+            : base()
         {
         }
+
+        /// <inheritdoc/>
+        public override GeometryType Type => GeometryType.Point;
 
         /// <summary>
         /// Gets point coordinates in the Azure Cosmos DB service.

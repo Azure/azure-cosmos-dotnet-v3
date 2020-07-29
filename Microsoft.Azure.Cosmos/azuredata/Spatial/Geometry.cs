@@ -19,20 +19,17 @@ namespace Azure.Cosmos.Spatial
         /// <summary>
         /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="type">The type.</param>
-        protected Geometry(GeometryType type)
-            : this(type, boundingBox: default)
+        protected Geometry()
+            : this(boundingBox: default)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="type">The type.</param>
         /// <param name="boundingBox">Bounding box.</param>
-        protected Geometry(GeometryType type, BoundingBox boundingBox)
+        protected Geometry(BoundingBox boundingBox)
         {
-            this.Type = type;
             this.BoundingBox = boundingBox;
         }
 
@@ -43,7 +40,7 @@ namespace Azure.Cosmos.Spatial
         /// Type of geometry.
         /// </value>
         [DataMember(Name = "type")]
-        public GeometryType Type { get; }
+        public abstract GeometryType Type { get; }
 
         /// <summary>
         /// Gets bounding box for this geometry in the Azure Cosmos DB service.

@@ -36,7 +36,7 @@ namespace Azure.Cosmos.Spatial
         /// Additional geometry parameters.
         /// </param>
         public MultiPoint(IList<Position> points, BoundingBox boundingBox)
-            : base(GeometryType.MultiPoint, boundingBox)
+            : base(boundingBox)
         {
             if (points == null)
             {
@@ -53,9 +53,12 @@ namespace Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal MultiPoint()
-            : base(GeometryType.MultiPoint, boundingBox: default)
+            : base(boundingBox: default)
         {
         }
+
+        /// <inheritdoc/>
+        public override GeometryType Type => GeometryType.MultiPoint;
 
         /// <summary>
         /// Gets collections of <see cref="Position"/> representing individual points.

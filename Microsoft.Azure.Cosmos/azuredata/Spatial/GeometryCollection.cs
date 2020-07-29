@@ -22,11 +22,22 @@ namespace Azure.Cosmos.Spatial
         /// <param name="geometries">
         /// Child geometries.
         /// </param>
-        /// <param name="geometryParams">
-        /// Additional geometry parameters.
+        public GeometryCollection(IList<Geometry> geometries)
+            : this(geometries, boundingBox: default)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GeometryCollection"/> class.
+        /// </summary>
+        /// <param name="geometries">
+        /// Child geometries.
         /// </param>
-        public GeometryCollection(IList<Geometry> geometries, BoundingBox geometryParams = null)
-            : base(GeometryType.GeometryCollection, geometryParams)
+        /// <param name="boundingBox">
+        /// The bounding box.
+        /// </param>
+        public GeometryCollection(IList<Geometry> geometries, BoundingBox boundingBox)
+            : base(boundingBox)
         {
             if (geometries == null)
             {
@@ -36,6 +47,9 @@ namespace Azure.Cosmos.Spatial
             this.Geometries = new ReadOnlyCollection<Geometry>(geometries);
         }
 
+        /// <inheritdoc/>
+        public override GeometryType Type => GeometryType.GeometryCollection;
+
         /// <summary>
         /// Gets child geometries.
         /// </summary>
@@ -43,7 +57,7 @@ namespace Azure.Cosmos.Spatial
         /// Child geometries.
         /// </value>
         [DataMember(Name = "geometries")]
-        public ReadOnlyCollection<Geometry> Geometries { get; private set; }
+        public ReadOnlyCollection<Geometry> Geometries { get; }
 
         /// <summary>
         /// Determines whether the specified <see cref="GeometryCollection" /> is equal to the current <see cref="GeometryCollection" />.
