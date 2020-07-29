@@ -108,6 +108,8 @@ namespace CosmosBenchmark
                         cosmosClient,
                         documentClient);
 
+                    DefaultTrace.ClearListeners();
+
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
                     runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
                 }
@@ -273,7 +275,10 @@ namespace CosmosBenchmark
 
             public static void ClearListeners()
             {
-                DefaultTrace.TraceSourceInternal.Listeners.Clear();
+                Type? defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
+                TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
+                traceSource.Switch.Level = SourceLevels.All;
+                traceSource.Listeners.Clear();
             }
 
             public static TraceSource TraceSource
