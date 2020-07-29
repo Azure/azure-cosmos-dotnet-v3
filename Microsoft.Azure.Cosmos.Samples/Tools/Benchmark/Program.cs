@@ -100,7 +100,11 @@ namespace CosmosBenchmark
                         cosmosClient,
                         documentClient);
 
-                    Program.ClearCoreSdkListeners();
+                    if (config.DisableCoreSdkLogging)
+                    {
+                        // Do it after client initialization (HACK)
+                        Program.ClearCoreSdkListeners();
+                    }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
                     runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
