@@ -26,27 +26,23 @@ namespace Azure.Cosmos.Test.Spatial
                 @"{
                     ""type"":""MultiPoint"",
                     ""coordinates"":[[20,30], [30, 40]],
-                    ""bbox"":[20, 20, 30, 30],
-                    ""extra"":1,
-                    ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
-            var multiPoint = JsonSerializer.Deserialize<MultiPoint>(json, this.restContractOptions);
+                    ""bbox"":[20, 20, 30, 30]
+                }";
+            MultiPoint multiPoint = JsonSerializer.Deserialize<MultiPoint>(json, this.restContractOptions);
 
             Assert.AreEqual(new Position(20, 30), multiPoint.Points[0]);
             Assert.AreEqual(new Position(30, 40), multiPoint.Points[1]);
 
             Assert.AreEqual(new Position(20, 20), multiPoint.BoundingBox.Min);
             Assert.AreEqual(new Position(30, 30), multiPoint.BoundingBox.Max);
-            Assert.AreEqual("hello", ((NamedCrs)multiPoint.Crs).Name);
-            Assert.AreEqual(1, multiPoint.AdditionalProperties.Count);
-            Assert.AreEqual(1L, multiPoint.AdditionalProperties["extra"]);
 
-            var geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
+            Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.MultiPoint, geom.Type);
 
             Assert.AreEqual(geom, multiPoint);
 
             string json1 = JsonSerializer.Serialize(multiPoint, this.restContractOptions);
-            var geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
+            Geometry geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -56,58 +52,46 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiPointEqualsHashCode()
         {
-            var multiPoint1 = new MultiPoint(
+            MultiPoint multiPoint1 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint2 = new MultiPoint(
+            MultiPoint multiPoint2 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint3 = new MultiPoint(
+            MultiPoint multiPoint3 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(31, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint4 = new MultiPoint(
+            MultiPoint multiPoint4 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint5 = new MultiPoint(
+            MultiPoint multiPoint5 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                    Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint6 = new MultiPoint(
+            MultiPoint multiPoint6 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs1")
                 });
 
             Assert.AreEqual(multiPoint1, multiPoint2);
@@ -142,20 +126,16 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiPointConstructors()
         {
-            var multiPoint = new MultiPoint(
+            MultiPoint multiPoint = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
                 });
 
             Assert.AreEqual(new Position(20, 30), multiPoint.Points[0]);
             Assert.AreEqual(new Position(0, 0), multiPoint.BoundingBox.Min);
             Assert.AreEqual(new Position(40, 40), multiPoint.BoundingBox.Max);
-            Assert.AreEqual("b", multiPoint.AdditionalProperties["a"]);
-            Assert.AreEqual("SomeCrs", ((NamedCrs)multiPoint.Crs).Name);
         }
     }
 }

@@ -60,11 +60,6 @@ namespace Azure.Cosmos
                 TextJsonBoundingBoxConverter.WritePropertyValues(writer, geometryParams.BoundingBox, options);
             }
 
-            if (geometryParams.AdditionalProperties != null)
-            {
-                TextJsonObjectToPrimitiveConverter.SerializeDictionary(writer, geometryParams.AdditionalProperties, options);
-            }
-
             writer.WriteEndObject();
         }
 
@@ -79,8 +74,6 @@ namespace Azure.Cosmos
                 geometryParams.BoundingBox = TextJsonBoundingBoxConverter.ReadProperty(bboxElement);
             }
 
-            geometryParams.AdditionalProperties = new Dictionary<string, object>();
-
             // JsonExtensionData support
             foreach (JsonProperty jsonProperty in root.EnumerateObject())
             {
@@ -92,8 +85,6 @@ namespace Azure.Cosmos
                 {
                     continue;
                 }
-
-                geometryParams.AdditionalProperties.Add(jsonProperty.Name, TextJsonObjectToPrimitiveConverter.ReadProperty(jsonProperty.Value));
             }
 
             return geometryParams;

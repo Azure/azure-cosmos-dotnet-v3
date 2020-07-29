@@ -14,7 +14,7 @@ namespace Azure.Cosmos.Spatial
     /// Represents a geometry consisting of connected line segments.
     /// </summary>
     [DataContract]
-    internal sealed class LineString : Geometry, IEquatable<LineString>
+    internal class LineString : Geometry, IEquatable<LineString>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LineString"/> class. 
@@ -100,7 +100,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if line strings are equal. <c>false</c> otherwise.</returns>
         public bool Equals(LineString other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

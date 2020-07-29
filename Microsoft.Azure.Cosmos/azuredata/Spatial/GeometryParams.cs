@@ -4,24 +4,14 @@
 
 namespace Azure.Cosmos.Spatial
 {
-    using System.Collections.Generic;
     using System.Runtime.Serialization;
-    
+
     /// <summary>
     /// Not frequently used geometry parameters in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
     internal class GeometryParams
     {
-        /// <summary>
-        /// Gets or sets any additional properties to be stored as part of a geometry in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// Additional geometry properties.
-        /// </value>
-        [DataMember(Name = "properties")]
-        public IDictionary<string, object> AdditionalProperties { get; set; }
-
         /// <summary>
         /// Gets or sets a bounding box for the geometry in the Azure Cosmos DB service.
         /// </summary>

@@ -51,11 +51,6 @@ namespace Azure.Cosmos
                 TextJsonBoundingBoxConverter.WritePropertyValues(writer, geometry.BoundingBox, options);
             }
 
-            if (geometry.AdditionalProperties != null)
-            {
-                TextJsonObjectToPrimitiveConverter.SerializeDictionary(writer, geometry.AdditionalProperties, options);
-            }
-
             switch (geometry.Type)
             {
                 case GeometryType.Point:

@@ -68,7 +68,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if bounding boxes are equal. <c>false</c> otherwise.</returns>
         public bool Equals(BoundingBox other)
         {
-            if (ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

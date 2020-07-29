@@ -26,8 +26,7 @@ namespace Azure.Cosmos.Test.Spatial
                 @"{
                    ""type"":""GeometryCollection"",
                    ""geometries"":[{""type"":""Point"", ""coordinates"":[20, 20]}],
-                   ""bbox"":[20, 20, 30, 30],
-                   ""extra"":1
+                   ""bbox"":[20, 20, 30, 30]
                   }";
 
             GeometryCollection geometryCollection = JsonSerializer.Deserialize<GeometryCollection>(json, this.restContractOptions);
@@ -35,9 +34,6 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, geometryCollection.Geometries.Count);
             Assert.IsInstanceOfType(geometryCollection.Geometries[0], typeof(Point));
             Assert.AreEqual(new Position(20, 20), (geometryCollection.Geometries[0] as Point).Position);
-
-            Assert.AreEqual(1, geometryCollection.AdditionalProperties.Count);
-            Assert.AreEqual(1L, geometryCollection.AdditionalProperties["extra"]);
 
             Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.GeometryCollection, geom.Type);
@@ -59,7 +55,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -67,7 +62,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -75,7 +69,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Point(20, 30), new Point(30, 41) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -83,7 +76,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -91,7 +83,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41))
                 });
 
@@ -99,7 +90,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -139,7 +129,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -148,7 +137,6 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(new Position(0, 0), geometryCollection.BoundingBox.Min);
             Assert.AreEqual(new Position(40, 40), geometryCollection.BoundingBox.Max);
-            Assert.AreEqual("b", geometryCollection.AdditionalProperties["a"]);
         }
     }
 }

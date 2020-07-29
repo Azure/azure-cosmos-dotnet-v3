@@ -11,7 +11,7 @@ namespace Azure.Cosmos.Spatial
     /// Point geometry class in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    internal sealed class Point : Geometry, IEquatable<Point>
+    internal class Point : Geometry, IEquatable<Point>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Point" /> class in the Azure Cosmos DB service.
@@ -85,7 +85,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(Point other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

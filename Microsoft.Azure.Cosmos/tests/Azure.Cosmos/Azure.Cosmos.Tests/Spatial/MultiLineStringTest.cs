@@ -26,9 +26,7 @@ namespace Azure.Cosmos.Test.Spatial
                 @"{
                    ""type"":""MultiLineString"",
                    ""coordinates"":[[[20,30], [21,31]], [[40,50], [21,32]]],
-                   ""bbox"":[20, 20, 30, 30],
-                   ""extra"":1,
-                   ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
+                   ""bbox"":[20, 20, 30, 30]
                   }";
             MultiLineString multiLineString = JsonSerializer.Deserialize<MultiLineString>(json, this.restContractOptions);
 
@@ -38,8 +36,6 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(new Position(20, 20), multiLineString.BoundingBox.Min);
             Assert.AreEqual(new Position(30, 30), multiLineString.BoundingBox.Max);
-            Assert.AreEqual(1, multiLineString.AdditionalProperties.Count);
-            Assert.AreEqual(1L, multiLineString.AdditionalProperties["extra"]);
 
             Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.MultiLineString, geom.Type);
@@ -59,73 +55,67 @@ namespace Azure.Cosmos.Test.Spatial
         {
             MultiLineString multiLineString1 = new MultiLineString(
                 new[]
-                    {
-                        new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
-                        new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
-                    },
+                {
+                    new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
+                    new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
+                },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
             MultiLineString multiLineString2 = new MultiLineString(
                 new[]
-                    {
-                        new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
-                        new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
-                    },
+                {
+                    new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
+                    new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
+                },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
             MultiLineString multiLineString3 = new MultiLineString(
                 new[]
-                    {
-                        new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 41) }),
-                        new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
-                    },
+                {
+                    new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 41) }),
+                    new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
+                },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
             MultiLineString multiLineString4 = new MultiLineString(
                 new[]
-                    {
-                        new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
-                        new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
-                    },
+                {
+                    new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
+                    new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
+                },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
             MultiLineString multiLineString5 = new MultiLineString(
                 new[]
-                    {
-                        new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
-                        new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
-                    },
+                {
+                    new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
+                    new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
+                },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41))
                 });
 
             MultiLineString multiLineString6 = new MultiLineString(
                 new[]
-                    {
-                        new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
-                        new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
-                    },
+                {
+                    new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
+                    new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
+                },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -163,13 +153,12 @@ namespace Azure.Cosmos.Test.Spatial
         {
             MultiLineString multiLineString = new MultiLineString(
                 new[]
-                    {
-                        new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
-                        new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
-                    },
+                {
+                    new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
+                    new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
+                },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -177,7 +166,6 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(new Position(0, 0), multiLineString.BoundingBox.Min);
             Assert.AreEqual(new Position(40, 40), multiLineString.BoundingBox.Max);
-            Assert.AreEqual("b", multiLineString.AdditionalProperties["a"]);
         }
     }
 }

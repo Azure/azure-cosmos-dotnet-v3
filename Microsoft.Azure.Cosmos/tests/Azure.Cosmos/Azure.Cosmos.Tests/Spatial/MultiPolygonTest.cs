@@ -28,11 +28,10 @@ namespace Azure.Cosmos.Test.Spatial
                         [[[20,30], [30,30], [30,20], [20,20], [20, 30]], [[25,28], [25,25], [25, 28], [28,28], [25, 28]]],
                         [[[0,0], [0, 1], [1, 0], [0, 0], [0, 10]]]
                     ],
-                    ""bbox"":[20, 20, 30, 30],
-                    ""extra"":1,
-                    ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
+                    ""bbox"":[20, 20, 30, 30]
+            }";
 
-            var multiPolygon = JsonSerializer.Deserialize<MultiPolygon>(json, this.restContractOptions);
+            MultiPolygon multiPolygon = JsonSerializer.Deserialize<MultiPolygon>(json, this.restContractOptions);
 
             Assert.AreEqual(2, multiPolygon.Polygons.Count);
             Assert.AreEqual(2, multiPolygon.Polygons[0].Rings.Count);
@@ -41,17 +40,14 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(new Position(20, 20), multiPolygon.BoundingBox.Min);
             Assert.AreEqual(new Position(30, 30), multiPolygon.BoundingBox.Max);
-            Assert.AreEqual("hello", ((NamedCrs)multiPolygon.Crs).Name);
-            Assert.AreEqual(1, multiPolygon.AdditionalProperties.Count);
-            Assert.AreEqual(1L, multiPolygon.AdditionalProperties["extra"]);
 
-            var geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
+            Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.MultiPolygon, geom.Type);
 
             Assert.AreEqual(geom, multiPolygon);
 
             string json1 = JsonSerializer.Serialize(multiPolygon, this.restContractOptions);
-            var geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
+            Geometry geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -61,136 +57,124 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiPolygonEqualsHashCode()
         {
-            var multiPolygon1 =
+            MultiPolygon multiPolygon1 =
                 new MultiPolygon(
                     new[]
-                        {
-                            new PolygonCoordinates(
-                                new[]
-                                    {
-                                        new LinearRing(
-                                            new[]
-                                                {
-                                                    new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(22, 20)
-                                                })
-                                    })
-                        },
+                    {
+                        new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(22, 20)
+                                            })
+                                })
+                    },
                     new GeometryParams
                     {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
                     });
 
-            var multiPolygon2 =
+            MultiPolygon multiPolygon2 =
                 new MultiPolygon(
                     new[]
-                        {
-                            new PolygonCoordinates(
-                                new[]
-                                    {
-                                        new LinearRing(
-                                            new[]
-                                                {
-                                                    new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(22, 20)
-                                                })
-                                    })
-                        },
+                    {
+                        new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(22, 20)
+                                            })
+                                })
+                    },
                     new GeometryParams
                     {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon3 =
+            MultiPolygon polygon3 =
                 new MultiPolygon(
                     new[]
-                        {
-                            new PolygonCoordinates(
-                                new[]
-                                    {
-                                        new LinearRing(
-                                            new[]
-                                                {
-                                                    new Position(20, 21), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(22, 20)
-                                                })
-                                    })
-                        },
+                    {
+                        new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 21), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(22, 20)
+                                            })
+                                })
+                    },
                     new GeometryParams
                     {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon4 =
+            MultiPolygon polygon4 =
                 new MultiPolygon(
                     new[]
-                        {
-                            new PolygonCoordinates(
-                                new[]
-                                    {
-                                        new LinearRing(
-                                            new[]
-                                                {
-                                                    new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(22, 20)
-                                                })
-                                    })
-                        },
+                    {
+                        new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(22, 20)
+                                            })
+                                })
+                    },
                     new GeometryParams
                     {
-                        AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon5 =
+            MultiPolygon polygon5 =
                 new MultiPolygon(
                     new[]
-                        {
-                            new PolygonCoordinates(
-                                new[]
-                                    {
-                                        new LinearRing(
-                                            new[]
-                                                {
-                                                    new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(22, 20)
-                                                })
-                                    })
-                        },
+                    {
+                        new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(22, 20)
+                                            })
+                                })
+                    },
                     new GeometryParams
                     {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                        Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon6 =
+            MultiPolygon polygon6 =
                 new MultiPolygon(
                     new[]
-                        {
-                            new PolygonCoordinates(
-                                new[]
-                                    {
-                                        new LinearRing(
-                                            new[]
-                                                {
-                                                    new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(22, 20)
-                                                })
-                                    })
-                        },
+                    {
+                        new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(22, 20)
+                                            })
+                                })
+                    },
                     new GeometryParams
                     {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs1")
                     });
 
             Assert.AreEqual(multiPolygon1, multiPolygon2);
@@ -225,34 +209,30 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiPolygonConstructors()
         {
-            var multiPolygon =
+            MultiPolygon multiPolygon =
                 new MultiPolygon(
                     new[]
-                        {
-                            new PolygonCoordinates(
-                                new[]
-                                    {
-                                        new LinearRing(
-                                            new[]
-                                                {
-                                                    new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(22, 20)
-                                                })
-                                    })
-                        },
+                    {
+                        new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(22, 20)
+                                            })
+                                })
+                    },
                     new GeometryParams
                     {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
                     });
 
             Assert.AreEqual(new Position(20, 20), multiPolygon.Polygons[0].Rings[0].Positions[0]);
 
             Assert.AreEqual(new Position(0, 0), multiPolygon.BoundingBox.Min);
             Assert.AreEqual(new Position(40, 40), multiPolygon.BoundingBox.Max);
-            Assert.AreEqual("b", multiPolygon.AdditionalProperties["a"]);
-            Assert.AreEqual("SomeCrs", ((NamedCrs)multiPolygon.Crs).Name);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="Polygon"/>
     [DataContract]
-    internal sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
+    internal class MultiPolygon : Geometry, IEquatable<MultiPolygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPolygon"/> class.
@@ -99,7 +99,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(MultiPolygon other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

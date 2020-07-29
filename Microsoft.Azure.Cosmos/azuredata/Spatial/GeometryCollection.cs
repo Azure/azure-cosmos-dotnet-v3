@@ -14,7 +14,7 @@ namespace Azure.Cosmos.Spatial
     /// Represents a geometry consisting of other geometries.
     /// </summary>
     [DataContract]
-    internal sealed class GeometryCollection : Geometry, IEquatable<GeometryCollection>
+    internal class GeometryCollection : Geometry, IEquatable<GeometryCollection>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="GeometryCollection"/> class. 
@@ -100,7 +100,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if geometry collections are equal. <c>false</c> otherwise.</returns>
         public bool Equals(GeometryCollection other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

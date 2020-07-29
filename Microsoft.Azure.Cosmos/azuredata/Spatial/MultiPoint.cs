@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="Point"/>.
     [DataContract]
-    internal sealed class MultiPoint : Geometry, IEquatable<MultiPoint>
+    internal class MultiPoint : Geometry, IEquatable<MultiPoint>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPoint" /> class.
@@ -96,7 +96,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(MultiPoint other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

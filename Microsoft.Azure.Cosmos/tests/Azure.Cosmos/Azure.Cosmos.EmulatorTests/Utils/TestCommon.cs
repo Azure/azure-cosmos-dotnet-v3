@@ -6,26 +6,15 @@ namespace Azure.Cosmos.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
-    using System.Text;
     using System.Text.Json;
-    using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos;
     using Azure.Cosmos.Serialization;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.Routing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     internal static class TestCommon
     {
@@ -304,7 +293,6 @@ namespace Azure.Cosmos.EmulatorTests
 
         public static void AddSpatialConverters(JsonSerializerOptions jsonSerializerOptions)
         {
-            jsonSerializerOptions.Converters.Add(new TextJsonCrsConverterFactory());
             jsonSerializerOptions.Converters.Add(new TextJsonGeometryConverterFactory());
             jsonSerializerOptions.Converters.Add(new TextJsonGeometryParamsJsonConverter());
             jsonSerializerOptions.Converters.Add(new TextJsonBoundingBoxConverter());

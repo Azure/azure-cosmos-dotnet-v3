@@ -34,7 +34,6 @@ namespace Azure.Cosmos.Spatial
 
             this.Type = type;
             this.BoundingBox = geometryParams.BoundingBox;
-            this.AdditionalProperties = geometryParams.AdditionalProperties ?? new Dictionary<string, object>();
         }
 
         /// <summary>
@@ -54,15 +53,6 @@ namespace Azure.Cosmos.Spatial
         /// </value>
         [DataMember(Name = "bbox")]
         public BoundingBox BoundingBox { get; private set; }
-
-        /// <summary>
-        /// Gets additional properties in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// Additional geometry properties.
-        /// </value>
-        [DataMember(Name = "properties")]
-        public IDictionary<string, object> AdditionalProperties { get; private set; }
 
         /// <summary>
         /// Determines whether the specified <see cref="Geometry" /> is equal to the current <see cref="Geometry" /> in the Azure Cosmos DB service.
@@ -88,9 +78,6 @@ namespace Azure.Cosmos.Spatial
             {
                 int hashCode = this.Type.GetHashCode();
                 hashCode = (hashCode * 397) ^ (this.BoundingBox != null ? this.BoundingBox.GetHashCode() : 0);
-                hashCode = this.AdditionalProperties.Aggregate(
-                    hashCode,
-                    (current, value) => (current * 397) ^ value.GetHashCode());
 
                 return hashCode;
             }
@@ -240,8 +227,7 @@ namespace Azure.Cosmos.Spatial
             }
 
             return this.Type == other.Type
-                   && object.Equals(this.BoundingBox, other.BoundingBox)
-                   && this.AdditionalProperties.SequenceEqual(other.AdditionalProperties);
+                   && object.Equals(this.BoundingBox, other.BoundingBox);
         }
     }
 }

@@ -219,51 +219,45 @@
         private Polygon GetPolygon()
         {
             Polygon polygon = new Polygon(
-                          new[]
-        {
-                        new LinearRing(
-                            new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 21),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
-        },
-                          new GeometryParams
-                          {
-                              AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
-                              BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                              Crs = Crs.Named("SomeCrs")
-                          });
+                new[]
+                {
+                    new LinearRing(
+                        new[]
+                            {
+                                new Position(20, 20),
+                                new Position(20, 21),
+                                new Position(21, 21),
+                                new Position(21, 20),
+                                new Position(22, 20)
+                            })
+                },
+                new GeometryParams
+                {
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                });
             return polygon;
         }
 
         private LineString GetLineString()
         {
             LineString lineString = new LineString(
-                             new[] {
-                                 new Position(20, 30), new Position(30, 40) },
-                                 new GeometryParams
-                                 {
-                                     AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                                     Crs = Crs.Named("SomeCrs")
-                                 });
+                new[] {
+                    new Position(20, 30), new Position(30, 40) },
+                    new GeometryParams
+                    {
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
+                    });
             return lineString;
         }
 
         private Point GetPoint()
         {
             Point point = new Point(
-                        new Position(20, 30),
-                        new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                            Crs = Crs.Named("SomeCrs")
-                        });
+                new Position(20, 30),
+                new GeometryParams
+                {
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
+                });
             return point;
         }
     }

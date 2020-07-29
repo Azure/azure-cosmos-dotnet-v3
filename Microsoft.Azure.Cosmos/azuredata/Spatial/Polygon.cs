@@ -57,7 +57,7 @@ namespace Azure.Cosmos.Spatial
     /// </code>
     /// </example>
     [DataContract]
-    internal sealed class Polygon : Geometry, IEquatable<Polygon>
+    internal class Polygon : Geometry, IEquatable<Polygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Polygon"/> class,
@@ -160,7 +160,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(Polygon other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

@@ -26,9 +26,7 @@ namespace Azure.Cosmos.Test.Spatial
                 @"{
                    ""type"":""LineString"",
                    ""coordinates"":[[20,30], [21,31]],
-                   ""bbox"":[20, 20, 30, 30],
-                   ""extra"":1,
-                   ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
+                   ""bbox"":[20, 20, 30, 30]
                   }";
             LineString lineString = JsonSerializer.Deserialize<LineString>(json, this.restContractOptions);
 
@@ -38,8 +36,6 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(new Position(20, 20), lineString.BoundingBox.Min);
             Assert.AreEqual(new Position(30, 30), lineString.BoundingBox.Max);
-            Assert.AreEqual(1, lineString.AdditionalProperties.Count);
-            Assert.AreEqual(1L, lineString.AdditionalProperties["extra"]);
 
             Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.LineString, geom.Type);
@@ -61,7 +57,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -69,7 +64,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -77,7 +71,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Position(20, 30), new Position(30, 41) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -85,7 +78,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -93,7 +85,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41))
                 });
 
@@ -101,7 +92,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -141,7 +131,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40))
                 });
 
@@ -150,7 +139,6 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(new Position(0, 0), lineString.BoundingBox.Min);
             Assert.AreEqual(new Position(40, 40), lineString.BoundingBox.Max);
-            Assert.AreEqual("b", lineString.AdditionalProperties["a"]);
         }
     }
 }

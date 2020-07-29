@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="LineString"/>.
     [DataContract]
-    internal sealed class MultiLineString : Geometry, IEquatable<MultiLineString>
+    internal class MultiLineString : Geometry, IEquatable<MultiLineString>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiLineString"/> class. 
@@ -101,7 +101,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if line strings are equal. <c>false</c> otherwise.</returns>
         public bool Equals(MultiLineString other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

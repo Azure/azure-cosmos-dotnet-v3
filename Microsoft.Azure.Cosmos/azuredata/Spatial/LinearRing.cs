@@ -17,7 +17,7 @@ namespace Azure.Cosmos.Spatial
     /// the <see cref="Polygon"/> geometry type definition in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    internal sealed class LinearRing : IEquatable<LinearRing>
+    internal class LinearRing : IEquatable<LinearRing>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LinearRing" /> class in the Azure Cosmos DB service.
@@ -78,7 +78,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if linear rings are equal. <c>false</c> otherwise.</returns>
         public bool Equals(LinearRing other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
