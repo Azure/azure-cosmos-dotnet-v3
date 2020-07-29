@@ -85,6 +85,9 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Partitionkey, only for publish")]
         public string ResultsPartitionKeyValue { get; set; }
 
+        [Option(Required = false, HelpText = "Disable core SDK logging")]
+        public bool DisableCoreSdkLogging { get; set; }
+
         [Option(Required = false, HelpText = "Container to publish results to")]
         internal string ResultsContainer { get; set; } = "runsummary";
 
