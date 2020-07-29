@@ -113,7 +113,7 @@ namespace CosmosBenchmark
 
                 RunSummary runSummary = new RunSummary();
 
-                if (summaryCounters.Length > 0)
+                if (summaryCounters.Length > 10)
                 {
 
                     Console.WriteLine();
@@ -133,6 +133,10 @@ namespace CosmosBenchmark
 
                     string summary = JsonHelper.ToString(runSummary);
                     Utility.TeeTraceInformation(summary);
+                }
+                else
+                {
+                    Utility.TeeTraceInformation("Please adjust ItemCount high to run of at-least 1M");
                 }
 
                 Console.WriteLine("--------------------------------------------------------------------- ");
