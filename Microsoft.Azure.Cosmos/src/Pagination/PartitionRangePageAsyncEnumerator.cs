@@ -17,8 +17,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
         where TPage : Page<TState>
         where TState : State
     {
-        private bool hasStarted;
-
         protected PartitionRangePageAsyncEnumerator(PartitionKeyRange range, TState state = default)
         {
             this.Range = range;
@@ -31,7 +29,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public TState State { get; private set; }
 
-        private bool HasMoreResults => !this.hasStarted || (this.State != default);
+        public bool HasStarted { get; private set; }
+
+        private bool HasMoreResults => !this.HasStarted || (this.State != default);
 
         public async ValueTask<bool> MoveNextAsync()
         {
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.State = this.Current.Result.State;
             }
 
-            this.hasStarted = true;
+            this.HasStarted = true;
 
             return true;
         }

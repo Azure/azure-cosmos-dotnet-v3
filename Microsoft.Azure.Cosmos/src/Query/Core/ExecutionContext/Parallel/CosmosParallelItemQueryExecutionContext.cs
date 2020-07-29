@@ -9,13 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
-    /// <summary>
-    /// CosmosParallelItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
-    /// This class is responsible for draining cross partition queries that do not have order by conditions.
-    /// The way parallel queries work is that it drains from the left most partition first.
-    /// This class handles draining in the correct order and can also stop and resume the query 
-    /// by generating a continuation token and resuming from said continuation token.
-    /// </summary>
     internal sealed partial class CosmosParallelItemQueryExecutionContext : CosmosCrossPartitionQueryExecutionContext
     {
         /// <summary>

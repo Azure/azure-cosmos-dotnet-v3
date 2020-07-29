@@ -15,6 +15,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
+    /// <summary>
+    /// <see cref="ParallelCrossPartitionQueryPipelineStage"/> is an implementation of <see cref="IQueryPipelineStage"/> that drain results from multiple remote nodes.
+    /// This class is responsible for draining cross partition queries that do not have order by conditions.
+    /// The way parallel queries work is that it drains from the left most partition first.
+    /// This class handles draining in the correct order and can also stop and resume the query 
+    /// by generating a continuation token and resuming from said continuation token.
+    /// </summary>
     internal sealed class ParallelCrossPartitionQueryPipelineStage : IQueryPipelineStage
     {
         private readonly CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionRangePageAsyncEnumerator;
