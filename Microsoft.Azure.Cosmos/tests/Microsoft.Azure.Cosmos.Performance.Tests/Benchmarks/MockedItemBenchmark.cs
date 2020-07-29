@@ -16,8 +16,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         OfTCustom = 2,
     }
 
-    [MemoryDiagnoser]
-    [Config(typeof(ItemBenchmarkConfig))]
+    [Config(typeof(SdkBenchmarkConfiguration))]
     public class MockedItemBenchmark : IItemBenchmark
     {
         public static readonly IItemBenchmark[] IterParameters = new IItemBenchmark[]
@@ -88,19 +87,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task UpsertItem()
         {
             await this.CurrentBenchmark.UpsertItem();
-        }
-
-        private class ItemBenchmarkConfig : ManualConfig
-        {
-            public ItemBenchmarkConfig()
-            {
-                this.Add(StatisticColumn.Q3);
-                this.Add(StatisticColumn.P80);
-                this.Add(StatisticColumn.P85);
-                this.Add(StatisticColumn.P90);
-                this.Add(StatisticColumn.P95);
-                this.Add(StatisticColumn.P100);
-            }
         }
     }
 }
