@@ -1027,36 +1027,36 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
             // ConnectionPolicy always overrides appconfig
-            if (this.ConnectionPolicy != null)
+            if (connectionPolicy != null)
             {
-                if (this.ConnectionPolicy.IdleTcpConnectionTimeout.HasValue)
+                if (connectionPolicy.IdleTcpConnectionTimeout.HasValue)
                 {
-                    this.idleConnectionTimeoutInSeconds = (int)this.ConnectionPolicy.IdleTcpConnectionTimeout.Value.TotalSeconds;
+                    this.idleConnectionTimeoutInSeconds = (int)connectionPolicy.IdleTcpConnectionTimeout.Value.TotalSeconds;
                 }
 
-                if (this.ConnectionPolicy.OpenTcpConnectionTimeout.HasValue)
+                if (connectionPolicy.OpenTcpConnectionTimeout.HasValue)
                 {
-                    this.openConnectionTimeoutInSeconds = (int)this.ConnectionPolicy.OpenTcpConnectionTimeout.Value.TotalSeconds;
+                    this.openConnectionTimeoutInSeconds = (int)connectionPolicy.OpenTcpConnectionTimeout.Value.TotalSeconds;
                 }
 
-                if (this.ConnectionPolicy.MaxRequestsPerTcpConnection.HasValue)
+                if (connectionPolicy.MaxRequestsPerTcpConnection.HasValue)
                 {
-                    this.maxRequestsPerRntbdChannel = this.ConnectionPolicy.MaxRequestsPerTcpConnection.Value;
+                    this.maxRequestsPerRntbdChannel = connectionPolicy.MaxRequestsPerTcpConnection.Value;
                 }
 
-                if (this.ConnectionPolicy.MaxTcpPartitionCount.HasValue)
+                if (connectionPolicy.MaxTcpPartitionCount.HasValue)
                 {
-                    this.rntbdPartitionCount = this.ConnectionPolicy.MaxTcpPartitionCount.Value;
+                    this.rntbdPartitionCount = connectionPolicy.MaxTcpPartitionCount.Value;
                 }
 
-                if (this.ConnectionPolicy.MaxTcpConnectionsPerEndpoint.HasValue)
+                if (connectionPolicy.MaxTcpConnectionsPerEndpoint.HasValue)
                 {
-                    this.maxRntbdChannels = this.ConnectionPolicy.MaxTcpConnectionsPerEndpoint.Value;
+                    this.maxRntbdChannels = connectionPolicy.MaxTcpConnectionsPerEndpoint.Value;
                 }
 
-                if (this.ConnectionPolicy.PortReuseMode.HasValue)
+                if (connectionPolicy.PortReuseMode.HasValue)
                 {
-                    this.rntbdPortReuseMode = this.ConnectionPolicy.PortReuseMode.Value;
+                    this.rntbdPortReuseMode = connectionPolicy.PortReuseMode.Value;
                 }
             }
 
