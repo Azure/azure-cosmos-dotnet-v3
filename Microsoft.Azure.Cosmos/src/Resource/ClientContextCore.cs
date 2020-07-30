@@ -464,14 +464,16 @@ namespace Microsoft.Azure.Cosmos
 
         private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
         {
-            if (clientOptions == null || clientOptions.WebProxy == null)
+            if (clientOptions == null)
             {
-                return null;
+                throw new ArgumentNullException(nameof(clientOptions));
             }
-
+            
+            // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
             HttpClientHandler httpClientHandler = new HttpClientHandler
             {
-                Proxy = clientOptions.WebProxy
+                Proxy = clientOptions.WebProxy,
+                MaxConnectionsPerServer = clientOptions.GatewayModeMaxConnectionLimit
             };
 
             return httpClientHandler;
