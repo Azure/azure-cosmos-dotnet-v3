@@ -42,7 +42,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override GeometryType Type => GeometryType.MultiPoint;
+        public override GeoJsonType Type => GeoJsonType.MultiPoint;
 
         /// <summary>
         /// Gets collections of <see cref="Position"/> representing individual points.

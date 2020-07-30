@@ -54,7 +54,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override GeometryType Type => GeometryType.LineString;
+        public override GeoJsonType Type => GeoJsonType.LineString;
 
         /// <summary>
         /// Gets line string positions.

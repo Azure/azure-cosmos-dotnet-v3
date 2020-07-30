@@ -108,7 +108,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override GeometryType Type => GeometryType.Polygon;
+        public override GeoJsonType Type => GeoJsonType.Polygon;
 
         /// <summary>
         /// Gets the polygon rings in the Azure Cosmos DB service.

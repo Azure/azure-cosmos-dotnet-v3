@@ -41,7 +41,7 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(new Position(30, 30), multiPolygon.BoundingBox.NortheasertlyPoint);
 
             GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
-            Assert.AreEqual(GeometryType.MultiPolygon, geom.Type);
+            Assert.AreEqual(GeoJsonType.MultiPolygon, geom.Type);
 
             Assert.AreEqual(geom, multiPolygon);
 

@@ -43,7 +43,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override GeometryType Type => GeometryType.MultiPolygon;
+        public override GeoJsonType Type => GeoJsonType.MultiPolygon;
 
         /// <summary>
         /// Gets collection of <see cref="PolygonCoordinates"/> instances. Each <see cref="PolygonCoordinates"/> represents separate polygon.

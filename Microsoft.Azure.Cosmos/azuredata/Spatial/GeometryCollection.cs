@@ -44,7 +44,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override GeometryType Type => GeometryType.GeometryCollection;
+        public override GeoJsonType Type => GeoJsonType.GeometryCollection;
 
         /// <summary>
         /// Gets child geometries.

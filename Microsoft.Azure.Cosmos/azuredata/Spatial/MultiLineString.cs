@@ -44,7 +44,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override GeometryType Type => GeometryType.MultiLineString;
+        public override GeoJsonType Type => GeoJsonType.MultiLineString;
 
         /// <summary>
         /// Gets collection of <see cref="LineStringCoordinates"/> representing individual line strings.

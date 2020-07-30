@@ -37,7 +37,7 @@ namespace Azure.Cosmos.Spatial
         /// Type of geometry.
         /// </value>
         [DataMember(Name = "type")]
-        public abstract GeometryType Type { get; }
+        public abstract GeoJsonType Type { get; }
 
         /// <summary>
         /// Gets bounding box for this geometry in the Azure Cosmos DB service.

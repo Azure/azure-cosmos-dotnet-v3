@@ -41,7 +41,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override GeometryType Type => GeometryType.Point;
+        public override GeoJsonType Type => GeoJsonType.Point;
 
         /// <summary>
         /// Gets point coordinates in the Azure Cosmos DB service.
