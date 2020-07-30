@@ -5,9 +5,14 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.NetworkInformation;
+    using System.Reflection;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
@@ -30,13 +35,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Database db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
                 DocumentCollection coll = await TestCommon.CreateCollectionAsync(client, db, new DocumentCollection()
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            PartitionKey = new PartitionKeyDefinition()
-                            {
-                                Paths = new System.Collections.ObjectModel.Collection<string>() { "/id" }
-                            }
-                        });
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PartitionKey = new PartitionKeyDefinition()
+                    {
+                        Paths = new System.Collections.ObjectModel.Collection<string>() { "/id" }
+                    }
+                });
                 ResourceResponse<Document> doc = await client.CreateDocumentAsync(coll.SelfLink, new Document() { Id = Guid.NewGuid().ToString() });
 
                 Assert.AreEqual(doc.ResponseStream.Position, 0);
@@ -281,7 +286,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             );
 
-            await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(async () =>
+            {
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             });
 
@@ -298,7 +304,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             );
 
-            await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(async () =>
+            {
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             });
         }
@@ -335,11 +342,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                if (database!= null)
+                if (database != null)
                 {
                     await database.DeleteAsync();
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task HttpClientConnectionLimitTest()
+        {
+            int gatewayConnectionLimit = 1;
+
+            CosmosClient cosmosClient = new CosmosClient(
+                ConfigurationManager.AppSettings["GatewayEndpoint"],
+                ConfigurationManager.AppSettings["MasterKey"],
+                new CosmosClientOptions
+                {
+                    ApplicationName = "test",
+                    GatewayModeMaxConnectionLimit = gatewayConnectionLimit,
+                    ConnectionMode = ConnectionMode.Direct,
+                    ConnectionProtocol = Protocol.Https
+                }
+            );
+
+            DelegatingHandler handler = (DelegatingHandler)cosmosClient.DocumentClient.httpMessageHandler;
+            HttpClientHandler httpClientHandler = (HttpClientHandler)handler.InnerHandler;
+            Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
+
+            Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(
+                "TestConnections",
+                "/pk",
+                throughput: 20000);
+
+            List<Task> creates = new List<Task>();
+            for (int i = 0; i < 100; i++)
+            {
+                creates.Add(container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString(), pk = Guid.NewGuid().ToString() }));
+            }
+
+            await Task.WhenAll(creates);
+
+            // Verify the handler still exists after client warm up
+            Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
         }
     }
 

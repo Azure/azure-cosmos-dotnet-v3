@@ -468,7 +468,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException(nameof(clientOptions));
             }
-
+            
+            // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
             HttpClientHandler httpClientHandler = new HttpClientHandler
             {
                 Proxy = clientOptions.WebProxy,

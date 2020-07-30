@@ -136,11 +136,6 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                if (this.ConnectionMode != ConnectionMode.Gateway)
-                {
-                    throw new ArgumentException("Max connection limit is only valid for ConnectionMode.Gateway.");
-                }
-
                 this.gatewayModeMaxConnectionLimit = value;
             }
         }
@@ -623,7 +618,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory
+                HttpClientFactory = this.httpClientFactory,
             };
 
             if (this.ApplicationRegion != null)
