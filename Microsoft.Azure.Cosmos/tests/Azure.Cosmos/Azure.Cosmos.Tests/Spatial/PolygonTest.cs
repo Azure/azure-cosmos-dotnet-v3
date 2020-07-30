@@ -30,13 +30,13 @@ namespace Azure.Cosmos.Test.Spatial
 
             Polygon polygon = JsonSerializer.Deserialize<Polygon>(json, this.restContractOptions);
 
-            Assert.AreEqual(2, polygon.Rings.Count);
-            Assert.AreEqual(5, polygon.Rings[0].Positions.Count);
-            Assert.AreEqual(new Position(20, 30), polygon.Rings[0].Positions[0]);
-            Assert.AreEqual(new Position(30, 20), polygon.Rings[0].Positions[2]);
+            Assert.AreEqual(2, polygon.Coordinates.Count);
+            Assert.AreEqual(5, polygon.Coordinates[0].Count);
+            Assert.AreEqual(new Position(20, 30), polygon.Coordinates[0][0]);
+            Assert.AreEqual(new Position(30, 20), polygon.Coordinates[0][2]);
 
-            Assert.AreEqual(new Position(20, 20), polygon.BoundingBox.Min);
-            Assert.AreEqual(new Position(30, 30), polygon.BoundingBox.Max);
+            Assert.AreEqual((20, 20), polygon.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((30, 30), polygon.BoundingBox.NortheasertlyPoint);
 
             GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
             Assert.AreEqual(GeoJsonType.Polygon, geom.Type);
@@ -68,7 +68,7 @@ namespace Azure.Cosmos.Test.Spatial
                                 new Position(22, 20)
                             })
                     },
-                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                    new BoundingBox((0, 0), (40, 40)));
 
             Polygon polygon2 = new Polygon(
                 new[]
@@ -83,7 +83,7 @@ namespace Azure.Cosmos.Test.Spatial
                             new Position(22, 20)
                         })
                 },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Polygon polygon3 = new Polygon(
                 new[]
@@ -98,7 +98,7 @@ namespace Azure.Cosmos.Test.Spatial
                             new Position(22, 20)
                         })
                 },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Polygon polygon4 = new Polygon(
                 new[]
@@ -113,7 +113,7 @@ namespace Azure.Cosmos.Test.Spatial
                             new Position(22, 20)
                         })
                 },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Polygon polygon5 = new Polygon(
                 new[]
@@ -128,7 +128,7 @@ namespace Azure.Cosmos.Test.Spatial
                             new Position(22, 20)
                         })
                 },
-                new BoundingBox(new Position(0, 0), new Position(40, 41)));
+                new BoundingBox((0, 0), (40, 41)));
 
             Polygon polygon6 = new Polygon(
                 new[]
@@ -143,7 +143,7 @@ namespace Azure.Cosmos.Test.Spatial
                             new Position(22, 20)
                         })
                 },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(polygon1, polygon2);
             Assert.AreEqual(polygon1.GetHashCode(), polygon2.GetHashCode());
@@ -168,7 +168,7 @@ namespace Azure.Cosmos.Test.Spatial
         [ExpectedException(typeof(ArgumentNullException))]
         public void TestPolygonConstructorNullException()
         {
-            new Polygon((IList<Position>)null);
+            new Polygon(externalRing: null);
         }
 
         /// <summary>
@@ -190,12 +190,12 @@ namespace Azure.Cosmos.Test.Spatial
                             new Position(22, 20)
                         })
                 },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
-            Assert.AreEqual(new Position(20, 20), polygon.Rings[0].Positions[0]);
+            Assert.AreEqual(new Position(20, 20), polygon.Coordinates[0][0]);
 
-            Assert.AreEqual(new Position(0, 0), polygon.BoundingBox.Min);
-            Assert.AreEqual(new Position(40, 40), polygon.BoundingBox.Max);
+            Assert.AreEqual((0, 0), polygon.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((40, 40), polygon.BoundingBox.NortheasertlyPoint);
         }
     }
 }

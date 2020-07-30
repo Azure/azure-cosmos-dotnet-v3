@@ -53,7 +53,7 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartArray();
-            foreach (LinearRing linearRing in polygonCoordinates.Rings)
+            foreach (LinearRing linearRing in polygonCoordinates)
             {
                 TextJsonLinearRingConverter.WritePropertyValues(writer, linearRing, options);
             }

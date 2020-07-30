@@ -28,11 +28,11 @@ namespace Azure.Cosmos.Test.Spatial
             }";
             Point point = JsonSerializer.Deserialize<Point>(json, this.restContractOptions);
 
-            Assert.AreEqual(2, point.Position.Coordinates.Count);
-            Assert.AreEqual(20.232323232323232, point.Position.Longitude);
-            Assert.AreEqual(30.3, point.Position.Latitude);
-            Assert.AreEqual(new Position(20, 20), point.BoundingBox.Min);
-            Assert.AreEqual(new Position(30, 30), point.BoundingBox.Max);
+            Assert.AreEqual(2, point.Coordinates.Count);
+            Assert.AreEqual(20.232323232323232, point.Coordinates.Easting);
+            Assert.AreEqual(30.3, point.Coordinates.Northing);
+            Assert.AreEqual((20, 20), point.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((30, 30), point.BoundingBox.NortheasertlyPoint);
 
             GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
             Assert.AreEqual(GeoJsonType.Point, geom.Type);
@@ -52,27 +52,27 @@ namespace Azure.Cosmos.Test.Spatial
         {
             Point point1 = new Point(
                 new Position(20, 30),
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Point point2 = new Point(
                 new Position(20, 30),
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Point point3 = new Point(
                 new Position(20, 31),
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Point point4 = new Point(
                 new Position(20, 31),
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Point point5 = new Point(
                 new Position(20, 30),
-                new BoundingBox(new Position(0, 0), new Position(40, 41)));
+                new BoundingBox((0, 0), (40, 41)));
 
             Point point6 = new Point(
                 new Position(20, 30),
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(point1, point2);
             Assert.AreEqual(point1.GetHashCode(), point2.GetHashCode());
@@ -108,12 +108,12 @@ namespace Azure.Cosmos.Test.Spatial
         {
             Point point = new Point(
                 new Position(20, 30),
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
-            Assert.AreEqual(20, point.Position.Longitude);
-            Assert.AreEqual(30, point.Position.Latitude);
-            Assert.AreEqual(new Position(0, 0), point.BoundingBox.Min);
-            Assert.AreEqual(new Position(40, 40), point.BoundingBox.Max);
+            Assert.AreEqual(20, point.Coordinates.Easting);
+            Assert.AreEqual(30, point.Coordinates.Northing);
+            Assert.AreEqual((0, 0), point.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((40, 40), point.BoundingBox.NortheasertlyPoint);
         }
     }
 }

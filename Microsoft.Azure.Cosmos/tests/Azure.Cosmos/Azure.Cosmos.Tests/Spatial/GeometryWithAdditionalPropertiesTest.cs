@@ -28,9 +28,9 @@
             }";
             PointWithAdditionalProperties point = JsonSerializer.Deserialize<PointWithAdditionalProperties>(json);
 
-            Assert.AreEqual(2, point.Position.Coordinates.Count);
-            Assert.AreEqual(20.232323232323232, point.Position.Longitude);
-            Assert.AreEqual(30.3, point.Position.Latitude);
+            Assert.AreEqual(2, point.Coordinates.Count);
+            Assert.AreEqual(20.232323232323232, point.Coordinates.Easting);
+            Assert.AreEqual(30.3, point.Coordinates.Northing);
             Assert.AreEqual("asdf", point.Description);
 
             string json1 = JsonSerializer.Serialize(point);
@@ -90,7 +90,7 @@
                 writer.WriteStartObject();
                 writer.WriteString(propertyName: "type", value: "Point");
                 writer.WritePropertyName("coordinates");
-                TextJsonPositionConverter.WritePropertyValues(writer, value.Position, options);
+                TextJsonPositionConverter.WritePropertyValues(writer, value.Coordinates, options);
                 writer.WriteString(propertyName: "description", value: value.Description);
                 writer.WriteEndObject();
             }

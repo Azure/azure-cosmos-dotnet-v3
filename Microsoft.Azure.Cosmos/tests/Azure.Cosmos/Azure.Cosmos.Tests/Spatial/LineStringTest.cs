@@ -30,12 +30,12 @@ namespace Azure.Cosmos.Test.Spatial
                   }";
             LineString lineString = JsonSerializer.Deserialize<LineString>(json, this.restContractOptions);
 
-            Assert.AreEqual(2, lineString.Positions.Count);
-            Assert.AreEqual(new Position(20, 30), lineString.Positions[0]);
-            Assert.AreEqual(new Position(21, 31), lineString.Positions[1]);
+            Assert.AreEqual(2, lineString.Coordinates.Count);
+            Assert.AreEqual(new Position(20, 30), lineString.Coordinates[0]);
+            Assert.AreEqual(new Position(21, 31), lineString.Coordinates[1]);
 
-            Assert.AreEqual(new Position(20, 20), lineString.BoundingBox.Min);
-            Assert.AreEqual(new Position(30, 30), lineString.BoundingBox.Max);
+            Assert.AreEqual((20, 20), lineString.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((30, 30), lineString.BoundingBox.NortheasertlyPoint);
 
             GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
             Assert.AreEqual(GeoJsonType.LineString, geom.Type);
@@ -55,27 +55,27 @@ namespace Azure.Cosmos.Test.Spatial
         {
             LineString lineString1 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             LineString lineString2 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             LineString lineString3 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 41) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             LineString lineString4 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             LineString lineString5 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 41)));
+                new BoundingBox((0, 0), (40, 41)));
 
             LineString lineString6 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(lineString1, lineString2);
             Assert.AreEqual(lineString1.GetHashCode(), lineString2.GetHashCode());
@@ -111,13 +111,13 @@ namespace Azure.Cosmos.Test.Spatial
         {
             LineString lineString = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
 
-            Assert.AreEqual(new Position(20, 30), lineString.Positions[0]);
-            Assert.AreEqual(new Position(30, 40), lineString.Positions[1]);
+            Assert.AreEqual(new Position(20, 30), lineString.Coordinates[0]);
+            Assert.AreEqual(new Position(30, 40), lineString.Coordinates[1]);
 
-            Assert.AreEqual(new Position(0, 0), lineString.BoundingBox.Min);
-            Assert.AreEqual(new Position(40, 40), lineString.BoundingBox.Max);
+            Assert.AreEqual((0, 0), lineString.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((40, 40), lineString.BoundingBox.NortheasertlyPoint);
         }
     }
 }

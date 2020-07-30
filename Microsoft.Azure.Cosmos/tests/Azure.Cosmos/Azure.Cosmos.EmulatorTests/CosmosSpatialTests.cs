@@ -208,7 +208,7 @@
                                 new Position(22, 20)
                             })
                 },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
             return polygon;
         }
 
@@ -217,7 +217,7 @@
             LineString lineString = new LineString(
                 new[] {
                     new Position(20, 30), new Position(30, 40) },
-                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                    new BoundingBox((0, 0), (40, 40)));
             return lineString;
         }
 
@@ -225,7 +225,7 @@
         {
             Point point = new Point(
                 new Position(20, 30),
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new BoundingBox((0, 0), (40, 40)));
             return point;
         }
     }

@@ -5,7 +5,6 @@
 namespace Azure.Cosmos.Test.Spatial
 {
     using System;
-    using System.Collections.Generic;
     using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -33,7 +32,7 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(1, geometryCollection.Geometries.Count);
             Assert.IsInstanceOfType(geometryCollection.Geometries[0], typeof(Point));
-            Assert.AreEqual(new Position(20, 20), (geometryCollection.Geometries[0] as Point).Position);
+            Assert.AreEqual(new Position(20, 20), (geometryCollection.Geometries[0] as Point).Coordinates);
 
             GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
             Assert.AreEqual(GeoJsonType.GeometryCollection, geom.Type);
@@ -52,28 +51,28 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestGeometryCollectionEqualsHashCode()
         {
             GeometryCollection geometryCollection1 = new GeometryCollection(
-                new[] { new Point(20, 30), new Point(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new[] { new Point(new Position(20, 30)), new Point(new Position(30, 40)) },
+                new BoundingBox((0, 0), (40, 40)));
 
             GeometryCollection geometryCollection2 = new GeometryCollection(
-                new[] { new Point(20, 30), new Point(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new[] { new Point(new Position(20, 30)), new Point(new Position(30, 40)) },
+                new BoundingBox((0, 0), (40, 40)));
 
             GeometryCollection geometryCollection3 = new GeometryCollection(
-                new[] { new Point(20, 30), new Point(30, 41) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new[] { new Point(new Position(20, 30)), new Point(new Position(30, 41)) },
+                new BoundingBox((0, 0), (40, 40)));
 
             GeometryCollection geometryCollection4 = new GeometryCollection(
-                new[] { new Point(20, 30), new Point(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new[] { new Point(new Position(20, 30)), new Point(new Position(30, 40)) },
+                new BoundingBox((0, 0), (40, 40)));
 
             GeometryCollection geometryCollection5 = new GeometryCollection(
-                new[] { new Point(20, 30), new Point(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 41)));
+                new[] { new Point(new Position(20, 30)), new Point(new Position(30, 40)) },
+                new BoundingBox((0, 0), (40, 41)));
 
             GeometryCollection geometryCollection6 = new GeometryCollection(
-                new[] { new Point(20, 30), new Point(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new[] { new Point(new Position(20, 30)), new Point(new Position(30, 40)) },
+                new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(geometryCollection1, geometryCollection2);
             Assert.AreEqual(geometryCollection1.GetHashCode(), geometryCollection2.GetHashCode());
@@ -108,14 +107,14 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestGeometryCollectionConstructors()
         {
             GeometryCollection geometryCollection = new GeometryCollection(
-                new[] { new Point(20, 30), new Point(30, 40) },
-                new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                new[] { new Point(new Position(20, 30)), new Point(new Position(30, 40)) },
+                new BoundingBox((0, 0), (40, 40)));
 
-            Assert.AreEqual(new Point(20, 30), geometryCollection.Geometries[0]);
-            Assert.AreEqual(new Point(30, 40), geometryCollection.Geometries[1]);
+            Assert.AreEqual(new Point(new Position(20, 30)), geometryCollection.Geometries[0]);
+            Assert.AreEqual(new Point(new Position(30, 40)), geometryCollection.Geometries[1]);
 
-            Assert.AreEqual(new Position(0, 0), geometryCollection.BoundingBox.Min);
-            Assert.AreEqual(new Position(40, 40), geometryCollection.BoundingBox.Max);
+            Assert.AreEqual((0, 0), geometryCollection.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((40, 40), geometryCollection.BoundingBox.NortheasertlyPoint);
         }
     }
 }
