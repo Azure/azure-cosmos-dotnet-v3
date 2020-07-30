@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyDefinition: null);
         }
 
-        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeEPK feedRange, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeEpk feedRange, CancellationToken cancellationToken = default)
         {
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(

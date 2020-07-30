@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool CanConvert(Type objectType)
         {
-            return objectType == typeof(FeedRangeEPK)
+            return objectType == typeof(FeedRangeEpk)
                 || objectType == typeof(FeedRangePartitionKey)
                 || objectType == typeof(FeedRangePartitionKeyRange);
         }
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     Documents.Routing.Range<string> completeRange = (Documents.Routing.Range<string>)rangeJsonConverter.ReadJson(rangeJToken.CreateReader(), typeof(Documents.Routing.Range<string>), null, serializer);
-                    return new FeedRangeEPK(completeRange);
+                    return new FeedRangeEpk(completeRange);
                 }
                 catch (JsonSerializationException)
                 {
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            if (value is FeedRangeEPK feedRangeEPK)
+            if (value is FeedRangeEpk feedRangeEPK)
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.RangePropertyName);
                 rangeJsonConverter.WriteJson(writer, feedRangeEPK.Range, serializer);

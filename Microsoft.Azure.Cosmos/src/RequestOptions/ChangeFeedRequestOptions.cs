@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or set which ranges to execute the ChangeFeed operation on.
         /// </summary>
-        public FeedRange FeedRange { get; set; } = FeedRangeEPK.FullRange;
+        public FeedRange FeedRange { get; set; } = FeedRangeEpk.FullRange;
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

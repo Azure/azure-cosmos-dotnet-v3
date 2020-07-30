@@ -21,10 +21,12 @@ namespace Microsoft.Azure.Cosmos
     [JsonConverter(typeof(FeedRangeCompositeContinuationConverter))]
     internal sealed class FeedRangeCompositeContinuation : FeedRangeContinuation
     {
-        public readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
+        private static readonly Documents.ShouldRetryResult Retry = Documents.ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+        private static readonly Documents.ShouldRetryResult NoRetry = Documents.ShouldRetryResult.NoRetry();
+
+        public Queue<CompositeContinuationToken> CompositeContinuationTokens { get; }
         public CompositeContinuationToken CurrentToken { get; private set; }
-        private static Documents.ShouldRetryResult Retry = Documents.ShouldRetryResult.RetryAfter(TimeSpan.Zero);
-        private static Documents.ShouldRetryResult NoRetry = Documents.ShouldRetryResult.NoRetry();
+
         private string initialNoResultsRange;
 
         private FeedRangeCompositeContinuation(
@@ -102,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.CurrentToken != null)
             {
-                return new FeedRangeEPK(this.CurrentToken.Range);
+                return new FeedRangeEpk(this.CurrentToken.Range);
             }
 
             return null;
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
                 feedToken = JsonConvert.DeserializeObject<FeedRangeCompositeContinuation>(toStringValue);
                 return true;
             }
-            catch (JsonReaderException)
+            catch (JsonException)
             {
                 feedToken = null;
                 return false;
