@@ -20,5 +20,15 @@ namespace Microsoft.Azure.Cosmos
         {
             Trace.CorrelationManager.ActivityId = this.ambientActivityId;
         }
+
+        public static ActivityScope CreateIfDefaultActivityId()
+        {
+            if (Trace.CorrelationManager.ActivityId == Guid.Empty)
+            {
+                return new ActivityScope(Guid.NewGuid());
+            }
+
+            return null;
+        }
     }
 }
