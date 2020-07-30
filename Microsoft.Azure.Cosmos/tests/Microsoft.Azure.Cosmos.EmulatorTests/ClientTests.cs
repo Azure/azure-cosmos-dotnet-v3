@@ -354,6 +354,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int gatewayConnectionLimit = 1;
 
+            IReadOnlyList<string> excludeConnections = GetActiveConnections();
             CosmosClient cosmosClient = new CosmosClient(
                 ConfigurationManager.AppSettings["GatewayEndpoint"],
                 ConfigurationManager.AppSettings["MasterKey"],
@@ -361,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     ApplicationName = "test",
                     GatewayModeMaxConnectionLimit = gatewayConnectionLimit,
-                    ConnectionMode = ConnectionMode.Direct,
+                    ConnectionMode = ConnectionMode.Gateway,
                     ConnectionProtocol = Protocol.Https
                 }
             );
@@ -385,7 +386,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(creates);
 
             // Verify the handler still exists after client warm up
-            Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
+            //Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
+            IReadOnlyList<string> afterConnections = GetActiveConnections();
+
+            // Clean up the database and container
+            await database.DeleteAsync();
+
+            int connectionDiff = afterConnections.Count - excludeConnections.Count;
+            Assert.IsTrue(connectionDiff <= gatewayConnectionLimit, $"Connection before : {excludeConnections.Count}, after {afterConnections.Count}");
+        }
+
+        public static IReadOnlyList<string> GetActiveConnections()
+        {
+            string testPid = Process.GetCurrentProcess().Id.ToString();
+            using (Process p = new Process())
+            {
+                ProcessStartInfo ps = new ProcessStartInfo();
+                ps.Arguments = "-a -n -o";
+                ps.FileName = "netstat.exe";
+                ps.UseShellExecute = false;
+                ps.WindowStyle = ProcessWindowStyle.Hidden;
+                ps.RedirectStandardInput = true;
+                ps.RedirectStandardOutput = true;
+                ps.RedirectStandardError = true;
+
+                p.StartInfo = ps;
+                p.Start();
+
+                StreamReader stdOutput = p.StandardOutput;
+                StreamReader stdError = p.StandardError;
+
+                string content = stdOutput.ReadToEnd() + stdError.ReadToEnd();
+                string exitStatus = p.ExitCode.ToString();
+
+                if (exitStatus != "0")
+                {
+                    // Command Errored. Handle Here If Need Be
+                }
+
+                List<string> connections = content.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .Where(x => x.EndsWith(testPid)).ToList();
+
+                Assert.IsTrue(connections.Count > 0);
+
+                return connections;
+            }
         }
     }
 
